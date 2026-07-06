@@ -24,11 +24,13 @@
     </aside>
     <main class="app-main">
       <ToastNotification />
+    <ErrorBoundary>
     <router-view v-slot="{ Component }">
         <transition name="page" mode="out-in">
           <component :is="Component" />
         </transition>
       </router-view>
+        </ErrorBoundary>
     </main>
   </div>
 </template>
@@ -36,6 +38,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import ToastNotification from './components/ToastNotification.vue'
+import ErrorBoundary from './components/ErrorBoundary.vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
