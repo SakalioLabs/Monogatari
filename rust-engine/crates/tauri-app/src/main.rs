@@ -8,6 +8,7 @@
 mod commands;
 mod state;
 
+
 use state::AppState;
 use tracing_subscriber::EnvFilter;
 
@@ -91,6 +92,9 @@ fn main() {
             commands::i18n::load_locale,
             commands::i18n::list_locales,
             commands::i18n::translate,
+            commands::marketplace::list_marketplace_entries,
+            commands::marketplace::export_template,
+            commands::marketplace::import_template,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
