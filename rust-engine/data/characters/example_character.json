@@ -1,0 +1,39 @@
+[
+  {
+    "id": "sakura",
+    "name": "Sakura",
+    "description": "A cheerful girl who loves nature and cherry blossoms.",
+    "background": "Sakura grew up in a small town surrounded by cherry blossom trees. She moved to the city to study botany and dreams of creating a beautiful garden. She's always optimistic and loves making new friends.",
+    "personality": {
+      "openness": 0.8,
+      "conscientiousness": 0.6,
+      "extraversion": 0.7,
+      "agreeableness": 0.9,
+      "neuroticism": 0.3,
+      "likes": ["cherry blossoms", "gardening", "tea", "nature walks"],
+      "dislikes": ["pollution", "rudeness", "cold weather"],
+      "speech_style": "cheerful and friendly",
+      "current_emotion": "happy",
+      "emotion_intensity": 0.7,
+      "emotion_states": {
+        "happy": ["smile", "laugh"],
+        "sad": ["frown", "cry"],
+        "surprised": ["shock", "gasp"],
+        "angry": ["pout", "stern"],
+        "neutral": ["default"]
+      }
+    },
+    "memory": {
+      "memories": [],
+      "max_capacity": 100
+    },
+    "emotion": "happy",
+    "relationships": {},
+    "sprite_paths": {
+      "happy": "sprites/sakura_happy.png",
+      "sad": "sprites/sakura_sad.png",
+      "neutral": "sprites/sakura_neutral.png"
+    },
+    "live2d_model_path": "live2d/sakura/sakura.model3.json"
+  }
+]

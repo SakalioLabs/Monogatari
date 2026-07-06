@@ -1,0 +1,32 @@
+[
+    {
+        "id": "location_park",
+        "category": "Locations",
+        "title": "Central Park",
+        "content": "A beautiful park in the center of the city, known for its cherry blossom trees and peaceful atmosphere.",
+        "tags": ["park", "nature", "cherry blossom", "relaxation"],
+        "importance": 0.8,
+        "metadata": { "timeOfDay": "any", "weather": "best in spring" },
+        "relatedEntries": ["item_cherry_blossom"]
+    },
+    {
+        "id": "item_cherry_blossom",
+        "category": "Items",
+        "title": "Cherry Blossom",
+        "content": "A delicate pink flower that blooms in spring. It symbolizes the fleeting nature of life.",
+        "tags": ["flower", "spring", "symbolism"],
+        "importance": 0.6,
+        "metadata": { "season": "spring", "rarity": "common" },
+        "relatedEntries": ["location_park"]
+    },
+    {
+        "id": "lore_world",
+        "category": "Lore",
+        "title": "World Setting",
+        "content": "A modern city where technology and nature coexist harmoniously. Famous for its botanical gardens and research facilities.",
+        "tags": ["world", "setting", "technology", "nature"],
+        "importance": 1.0,
+        "metadata": {},
+        "relatedEntries": ["location_park"]
+    }
+]

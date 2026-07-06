@@ -1,0 +1,73 @@
+{
+    "id": "intro_conversation",
+    "title": "Meeting Sakura",
+    "description": "The first conversation with Sakura at the park.",
+    "startNodeId": "start",
+    "nodes": [
+        {
+            "id": "start",
+            "speakerId": "sakura",
+            "text": "Oh! Hello there! I didn't see you coming. Are you here to enjoy the cherry blossoms too?",
+            "emotion": "surprised",
+            "nextNodeId": "response_1"
+        },
+        {
+            "id": "response_1",
+            "speakerId": "sakura",
+            "text": "They're absolutely beautiful this time of year, aren't they?",
+            "emotion": "happy",
+            "choices": [
+                {
+                    "text": "Yes, they're stunning! Do you come here often?",
+                    "nextNodeId": "sakura_often",
+                    "relationshipDelta": 0.1
+                },
+                {
+                    "text": "I prefer roses, actually.",
+                    "nextNodeId": "sakura_roses",
+                    "relationshipDelta": -0.05
+                },
+                {
+                    "text": "I'm just passing through.",
+                    "nextNodeId": "sakura_passing"
+                }
+            ]
+        },
+        {
+            "id": "sakura_often",
+            "speakerId": "sakura",
+            "text": "Yes! I study botany at the university, so I come here almost every day to observe the plants. Each season brings something new to discover!",
+            "emotion": "happy",
+            "nextNodeId": "sakura_botany"
+        },
+        {
+            "id": "sakura_roses",
+            "speakerId": "sakura",
+            "text": "Roses? They are lovely too, I suppose. But there's something magical about how cherry blossoms float on the wind... like nature's confetti!",
+            "emotion": "neutral",
+            "nextNodeId": "sakura_botany"
+        },
+        {
+            "id": "sakura_passing",
+            "speakerId": "sakura",
+            "text": "Oh, I see... Well, if you have a moment, maybe you'd like to sit and enjoy the view?",
+            "emotion": "sad",
+            "nextNodeId": "sakura_botany"
+        },
+        {
+            "id": "sakura_botany",
+            "speakerId": "sakura",
+            "text": "By the way, my name is Sakura! What's yours?",
+            "emotion": "happy",
+            "nextNodeId": "end"
+        },
+        {
+            "id": "end",
+            "speakerId": "sakura",
+            "text": "Nice to meet you! I hope we can talk again sometime.",
+            "emotion": "happy",
+            "script": "setFlag('met_sakura', true)"
+        }
+    ],
+    "variables": {}
+}

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\LLMAssistant.Core\LLMAssistant.Core.csproj" />
+    <ProjectReference Include="..\LLMAssistant.Renderer\LLMAssistant.Renderer.csproj" />
+    <ProjectReference Include="..\LLMAssistant.Game\LLMAssistant.Game.csproj" />
+    <ProjectReference Include="..\LLMAssistant.AI\LLMAssistant.AI.csproj" />
+    <ProjectReference Include="..\LLMAssistant.Scripting\LLMAssistant.Scripting.csproj" />
+    <ProjectReference Include="..\LLMAssistant.Assets\LLMAssistant.Assets.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\runtimes\win-x64\native\SDL2.dll" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\runtimes\win-x64\native\SDL2_ttf.dll" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\runtimes\win-x64\native\SDL2_image.dll" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\runtimes\win-x64\native\libavif-16.dll" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\..\runtimes\win-x64\native\libavif-16.dll')" />
+    <None Include="..\..\runtimes\win-x64\native\libtiff-5.dll" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\..\runtimes\win-x64\native\libtiff-5.dll')" />
+    <None Include="..\..\runtimes\win-x64\native\libwebp-7.dll" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\..\runtimes\win-x64\native\libwebp-7.dll')" />
+    <None Include="..\..\runtimes\win-x64\native\libwebpdemux-2.dll" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\..\runtimes\win-x64\native\libwebpdemux-2.dll')" />
+  </ItemGroup>
+
+</Project>

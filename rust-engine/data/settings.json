@@ -1,0 +1,43 @@
+{
+  "engine": {
+    "target_fps": 60,
+    "vsync": true,
+    "debug_mode": false
+  },
+  "render": {
+    "width": 1280,
+    "height": 720,
+    "fullscreen": false,
+    "title": "LLM Galgame Engine"
+  },
+  "dialogue": {
+    "typewriter_speed_ms": 30,
+    "auto_advance_seconds": 0,
+    "text_font_size": 18,
+    "name_font_size": 16
+  },
+  "ai": {
+    "provider": "api",
+    "api": {
+      "base_url": "https://api.openai.com/v1",
+      "api_key": "",
+      "model": "gpt-3.5-turbo",
+      "max_tokens": 512,
+      "temperature": 0.7,
+      "timeout_seconds": 60
+    },
+    "onnx": {
+      "model_path": "models/model.onnx",
+      "tokenizer_path": "models/tokenizer.json",
+      "max_sequence_length": 2048,
+      "use_directml": true
+    }
+  },
+  "paths": {
+    "characters": "characters",
+    "dialogue": "dialogue",
+    "knowledge": "knowledge",
+    "saves": "saves",
+    "assets": "../assets"
+  }
+}

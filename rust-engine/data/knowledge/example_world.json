@@ -1,0 +1,41 @@
+[
+  {
+    "id": "central_park",
+    "category": "location",
+    "title": "Central Park",
+    "content": "A beautiful park in the heart of the city, famous for its cherry blossom trees that bloom every spring. The park has a small pond, walking paths, and several benches where visitors can rest and enjoy the scenery.",
+    "tags": ["park", "location", "cherry blossom", "nature"],
+    "importance": 0.8,
+    "metadata": {
+      "atmosphere": "peaceful",
+      "time_of_day": "any"
+    },
+    "related_entries": ["cherry_blossom", "sakura_character"]
+  },
+  {
+    "id": "cherry_blossom",
+    "category": "item",
+    "title": "Cherry Blossom",
+    "content": "Delicate pink flowers that bloom on cherry trees in spring. They symbolize the ephemeral nature of life and are celebrated in many cultures. In the park, they create a magical atmosphere when petals fall like snow.",
+    "tags": ["flower", "spring", "symbol", "nature"],
+    "importance": 0.7,
+    "metadata": {
+      "season": "spring",
+      "color": "pink"
+    },
+    "related_entries": ["central_park"]
+  },
+  {
+    "id": "world_setting",
+    "category": "lore",
+    "title": "World Setting",
+    "content": "The story takes place in a modern Japanese-inspired city where nature and technology coexist harmoniously. The city is known for its beautiful parks and gardens, where people come to find peace and connect with nature.",
+    "tags": ["world", "setting", "lore", "city"],
+    "importance": 0.9,
+    "metadata": {
+      "era": "modern",
+      "culture": "japanese-inspired"
+    },
+    "related_entries": ["central_park"]
+  }
+]

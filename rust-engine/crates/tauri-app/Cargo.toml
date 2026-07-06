@@ -1,0 +1,38 @@
+[package]
+name = "llm-galgame-app"
+version.workspace = true
+edition.workspace = true
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# Tauri
+tauri = { version = "2", features = [] }
+tauri-plugin-shell = "2"
+
+# Internal crates
+llm-core = { workspace = true }
+llm-ai = { workspace = true }
+llm-game = { workspace = true }
+llm-assets = { workspace = true }
+llm-scripting = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true }
+futures = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Error handling & logging
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# AI dependencies
+reqwest = { workspace = true }
+
+# Scripting
+rhai = { workspace = true }
