@@ -283,7 +283,7 @@ cargo tauri build
 - [ ] Voice synthesis integration (TTS for character voices)
 - [ ] Music/ambient sound management
 - [ ] Multi-language support (i18n)
-- [ ] Plugin system for custom node types
+- [x] Plugin system for custom node types (scaffold with register/list/remove)
 - [ ] Cloud save sync
 - [ ] Analytics dashboard (player behavior tracking)
 - [ ] Template marketplace (shareable workflows/characters)
