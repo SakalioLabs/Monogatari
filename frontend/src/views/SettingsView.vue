@@ -1,84 +1,81 @@
-<template>
-  <div class="settings">
-    <h2>⚙️ Settings</h2>
+﻿<template>
+  <div class="settings-page">
+    <header class="page-header">
+      <h1>Settings</h1>
+      <p>Configure AI models, API keys, and engine options</p>
+    </header>
 
-    <!-- AI Configuration -->
-    <div class="card section">
-      <h3>🤖 AI Configuration</h3>
-      <div class="tabs">
-        <button
-          class="tab"
-          :class="{ active: aiTab === 'api' }"
-          @click="aiTab = 'api'"
-        >
-          API (OpenAI)
-        </button>
-        <button
-          class="tab"
-          :class="{ active: aiTab === 'onnx' }"
-          @click="aiTab = 'onnx'"
-        >
-          ONNX (Local)
-        </button>
-      </div>
-
-      <div v-if="aiTab === 'api'" class="form">
-        <div class="form-group">
-          <label>Base URL</label>
-          <input class="input" v-model="apiConfig.baseUrl" placeholder="https://api.openai.com/v1" />
+    <section class="settings-section">
+      <h2>AI Backend</h2>
+      <div class="card">
+        <div class="form-row">
+          <label>Provider</label>
+          <select v-model="provider" class="input">
+            <option value="api">OpenAI-compatible API</option>
+            <option value="onnx">Local ONNX Model</option>
+          </select>
         </div>
-        <div class="form-group">
-          <label>API Key</label>
-          <input class="input" type="password" v-model="apiConfig.apiKey" placeholder="sk-..." />
-        </div>
-        <div class="form-group">
-          <label>Model</label>
-          <input class="input" v-model="apiConfig.model" placeholder="gpt-3.5-turbo" />
-        </div>
-        <button class="btn btn-primary" @click="configureAPI">Connect API</button>
-      </div>
-
-      <div v-if="aiTab === 'onnx'" class="form">
-        <div class="form-group">
-          <label>Model Path</label>
-          <input class="input" v-model="onnxConfig.modelPath" placeholder="path/to/model.onnx" />
-        </div>
-        <div class="form-group">
-          <label>Tokenizer Path</label>
-          <input class="input" v-model="onnxConfig.tokenizerPath" placeholder="path/to/tokenizer.json" />
-        </div>
-        <button class="btn btn-primary" @click="configureONNX">Load Model</button>
-      </div>
-
-      <div class="ai-status" v-if="aiStatus">
-        <p>Active Engine: <strong>{{ aiStatus.active_engine || 'None' }}</strong></p>
-        <p>Available Engines: {{ aiStatus.engines.map(e => e.name).join(', ') || 'None' }}</p>
-      </div>
-    </div>
-
-    <!-- Project Configuration -->
-    <div class="card section">
-      <h3>📁 Project</h3>
-      <div class="form-group">
-        <label>Project Directory</label>
-        <div class="input-group">
-          <input class="input" v-model="projectPath" placeholder="path/to/project" />
-          <button class="btn btn-secondary" @click="initializeEngine">Load</button>
+        <template v-if="provider === 'api'">
+          <div class="form-row">
+            <label>Base URL</label>
+            <input v-model="apiBaseUrl" class="input" placeholder="https://api.openai.com/v1" />
+          </div>
+          <div class="form-row">
+            <label>API Key</label>
+            <input v-model="apiKey" type="password" class="input" placeholder="sk-..." />
+          </div>
+          <div class="form-row">
+            <label>Model</label>
+            <input v-model="apiModel" class="input" placeholder="gpt-4o-mini" />
+          </div>
+        </template>
+        <template v-else>
+          <div class="form-row">
+            <label>Model Path</label>
+            <input v-model="modelPath" class="input" placeholder="models/model.onnx" />
+          </div>
+          <div class="form-row">
+            <label>Tokenizer Path</label>
+            <input v-model="tokenizerPath" class="input" placeholder="models/tokenizer.json" />
+          </div>
+          <div class="form-row">
+            <label>Use DirectML</label>
+            <input type="checkbox" v-model="useDirectML" />
+          </div>
+        </template>
+        <div class="form-actions">
+          <button class="btn btn-primary" @click="saveAI" :disabled="saving">
+            {{ saving ? 'Saving...' : 'Save & Connect' }}
+          </button>
+          <span v-if="aiStatus" class="status-msg" :class="aiStatusOk ? 'ok' : 'err'">{{ aiStatus }}</span>
         </div>
       </div>
-      <div v-if="engineStatus" class="engine-status">
-        <p>Characters: {{ engineStatus.character_count }}</p>
-        <p>Dialogues: {{ engineStatus.dialogue_count }}</p>
-        <p>Knowledge: {{ engineStatus.knowledge_count }}</p>
-      </div>
-    </div>
+    </section>
 
-    <!-- Engine Status -->
-    <div class="card section">
-      <h3>📊 Engine Status</h3>
-      <button class="btn btn-secondary" @click="refreshStatus">Refresh</button>
-      <pre v-if="engineStatus" class="status-json">{{ JSON.stringify(engineStatus, null, 2) }}</pre>
-    </div>
+    <section class="settings-section">
+      <h2>Engine</h2>
+      <div class="card">
+        <div class="form-row">
+          <label>Project Data Path</label>
+          <input v-model="projectPath" class="input" placeholder="./data" />
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" @click="initEngine">Initialize Engine</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="settings-section" v-if="aiStatusObj">
+      <h2>Connection Status</h2>
+      <div class="card">
+        <div class="status-grid">
+          <div class="sg-item"><span class="sg-label">Initialized</span><span class="sg-val">{{ aiStatusObj.initialized ? 'Yes' : 'No' }}</span></div>
+          <div class="sg-item"><span class="sg-label">Characters</span><span class="sg-val">{{ aiStatusObj.character_count }}</span></div>
+          <div class="sg-item"><span class="sg-label">Dialogues</span><span class="sg-val">{{ aiStatusObj.dialogue_count }}</span></div>
+          <div class="sg-item"><span class="sg-label">AI Engine</span><span class="sg-val">{{ aiStatusObj.active_ai_engine || 'None' }}</span></div>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -86,188 +83,74 @@
 import { ref, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 
-interface AIStatus {
-  engines: { name: string; ready: boolean }[]
-  active_engine: string | null
-}
+const provider = ref('api')
+const apiBaseUrl = ref('https://api.openai.com/v1')
+const apiKey = ref('')
+const apiModel = ref('gpt-4o-mini')
+const modelPath = ref('')
+const tokenizerPath = ref('')
+const useDirectML = ref(true)
+const projectPath = ref('./data')
+const saving = ref(false)
+const aiStatus = ref('')
+const aiStatusOk = ref(false)
+const aiStatusObj = ref<any>(null)
 
-interface EngineStatus {
-  initialized: boolean
-  character_count: number
-  dialogue_count: number
-  knowledge_count: number
-  ai_engines: string[]
-  active_ai_engine: string | null
-}
-
-const aiTab = ref<'api' | 'onnx'>('api')
-const projectPath = ref('')
-const aiStatus = ref<AIStatus | null>(null)
-const engineStatus = ref<EngineStatus | null>(null)
-
-const apiConfig = ref({
-  baseUrl: 'https://api.openai.com/v1',
-  apiKey: '',
-  model: 'gpt-3.5-turbo',
-})
-
-const onnxConfig = ref({
-  modelPath: '',
-  tokenizerPath: '',
-})
-
-async function configureAPI() {
+async function saveAI() {
+  saving.value = true
+  aiStatus.value = ''
   try {
-    const result = await invoke<string>('configure_api', {
-      baseUrl: apiConfig.value.baseUrl,
-      apiKey: apiConfig.value.apiKey,
-      model: apiConfig.value.model,
-    })
-    alert(result)
-    await refreshAIStatus()
-  } catch (e) {
-    alert(`Error: ${e}`)
+    if (provider.value === 'api') {
+      await invoke('configure_api', { baseUrl: apiBaseUrl.value, apiKey: apiKey.value, model: apiModel.value })
+    } else {
+      await invoke('configure_onnx', { modelPath: modelPath.value, tokenizerPath: tokenizerPath.value })
+    }
+    aiStatus.value = 'Connected!'
+    aiStatusOk.value = true
+  } catch (e: any) {
+    aiStatus.value = String(e)
+    aiStatusOk.value = false
+  } finally {
+    saving.value = false
   }
 }
 
-async function configureONNX() {
+async function initEngine() {
   try {
-    const result = await invoke<string>('configure_onnx', {
-      modelPath: onnxConfig.value.modelPath,
-      tokenizerPath: onnxConfig.value.tokenizerPath,
-    })
-    alert(result)
-    await refreshAIStatus()
-  } catch (e) {
-    alert(`Error: ${e}`)
-  }
-}
-
-async function initializeEngine() {
-  if (!projectPath.value) {
-    alert('Please enter a project path')
-    return
-  }
-  try {
-    const result = await invoke<string>('initialize_engine', {
-      projectPath: projectPath.value,
-    })
-    alert(result)
-    await refreshStatus()
-  } catch (e) {
-    alert(`Error: ${e}`)
-  }
-}
-
-async function refreshAIStatus() {
-  try {
-    aiStatus.value = await invoke('get_ai_status')
-  } catch (e) {
-    console.error('Failed to get AI status:', e)
+    await invoke('initialize_engine', { projectPath: projectPath.value })
+    aiStatus.value = 'Engine initialized'
+    aiStatusOk.value = true
+    refreshStatus()
+  } catch (e: any) {
+    aiStatus.value = String(e)
+    aiStatusOk.value = false
   }
 }
 
 async function refreshStatus() {
-  try {
-    engineStatus.value = await invoke('get_engine_status')
-  } catch (e) {
-    console.error('Failed to get engine status:', e)
-  }
+  try { aiStatusObj.value = await invoke('get_engine_status') } catch {}
 }
 
-onMounted(() => {
-  refreshAIStatus()
-  refreshStatus()
-})
+onMounted(refreshStatus)
 </script>
 
 <style scoped>
-.settings {
-  padding: 30px;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.settings h2 {
-  margin-bottom: 30px;
-  color: var(--primary);
-}
-
-.section {
-  margin-bottom: 20px;
-}
-
-.section h3 {
-  margin-bottom: 20px;
-  color: var(--secondary);
-}
-
-.tabs {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 20px;
-}
-
-.tab {
-  padding: 8px 16px;
-  background: var(--bg-input);
-  border: none;
-  border-radius: var(--radius);
-  color: var(--text-muted);
-  cursor: pointer;
-}
-
-.tab.active {
-  background: var(--primary);
-  color: white;
-}
-
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.form-group label {
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.input-group {
-  display: flex;
-  gap: 10px;
-}
-
-.input-group .input {
-  flex: 1;
-}
-
-.ai-status, .engine-status {
-  margin-top: 15px;
-  padding: 15px;
-  background: var(--bg-input);
-  border-radius: var(--radius);
-}
-
-.ai-status p, .engine-status p {
-  font-size: 13px;
-  color: var(--text-muted);
-  margin-bottom: 5px;
-}
-
-.status-json {
-  margin-top: 15px;
-  padding: 15px;
-  background: var(--bg-input);
-  border-radius: var(--radius);
-  font-size: 12px;
-  overflow-x: auto;
-  color: var(--secondary);
-}
+.settings-page { max-width: 720px; margin: 0 auto; padding: 32px 40px; }
+.page-header { margin-bottom: 32px; }
+.page-header h1 { font-size: 24px; font-weight: 700; }
+.page-header p { color: var(--text-tertiary); font-size: 14px; margin-top: 4px; }
+.settings-section { margin-bottom: 32px; }
+.settings-section h2 { font-size: 16px; font-weight: 600; color: var(--brand-light); margin-bottom: 12px; }
+.form-row { margin-bottom: 16px; }
+.form-row label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+.form-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--brand); }
+select.input { cursor: pointer; }
+.form-actions { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+.status-msg { font-size: 13px; }
+.status-msg.ok { color: var(--success); }
+.status-msg.err { color: var(--danger); }
+.status-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.sg-item { text-align: center; padding: 14px; background: var(--surface-2); border-radius: var(--radius-sm); }
+.sg-label { display: block; font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; margin-bottom: 4px; }
+.sg-val { display: block; font-size: 18px; font-weight: 700; color: var(--brand-light); }
 </style>
