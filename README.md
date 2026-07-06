@@ -282,7 +282,7 @@ cargo tauri build
 ### In Progress
 
 - [x] Multiple character simultaneous group chat (backend + frontend complete)
-- [ ] 3D character model support
+- [x] 3D character model support (Three.js + CharacterModelView)
 - [ ] Installer signing and distribution channel configuration
 
 ### Planned
@@ -293,7 +293,7 @@ cargo tauri build
 - [x] Plugin system for custom node types (scaffold with register/list/remove)
 - [x] Cloud save sync with local manifest and checksum tracking
 - [x] Analytics dashboard with engagement metrics and JSON export
-- [ ] Template marketplace (shareable workflows/characters)
+- [x] Template marketplace scaffold (Rust backend + MarketplaceView frontend)
 - [ ] Mobile deployment (Tauri mobile)
 
 ## Tech Stack
