@@ -1,0 +1,76 @@
+{
+  "id": "luna_stargazing",
+  "title": "Stargazing with Luna",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "speaker_id": "luna",
+      "text": "Look up... do you see that bright star? That is Vega, in the constellation Lyra. In the old stories, she is the Weaver Girl who wove clouds into silk.",
+      "choices": [
+        { "text": "Tell me more about the Weaver Girl.", "next_node_id": "myth", "relationship_changes": { "luna": 0.3 } },
+        { "text": "The stars are beautiful tonight.", "next_node_id": "beauty", "relationship_changes": { "luna": 0.2 } },
+        { "text": "Do you come here often?", "next_node_id": "often" }
+      ]
+    },
+    "myth": {
+      "speaker_id": "luna",
+      "text": "The Weaver Girl fell in love with a mortal cowherd. Their love was so strong that even the gods could not ignore it. Once a year, magpies form a bridge across the Milky Way so they can meet. *gazes at the sky* I think that is the most beautiful story in the world.",
+      "choices": [
+        { "text": "Do you believe in that kind of love?", "next_node_id": "believe", "relationship_changes": { "luna": 0.4 } },
+        { "text": "It is a lovely legend.", "next_node_id": "end_happy" }
+      ]
+    },
+    "beauty": {
+      "speaker_id": "luna",
+      "text": "*smiles softly* They are, aren't they? Every time I look at them, I feel like the whole universe is listening. The stars do not judge, they simply shine.",
+      "choices": [
+        { "text": "You seem to really love the night sky.", "next_node_id": "love_sky", "relationship_changes": { "luna": 0.2 } }
+      ]
+    },
+    "often": {
+      "speaker_id": "luna",
+      "text": "Whenever I can. The city lights make it hard to see the faint ones, but Vega always breaks through. *adjusts her scarf* It reminds me of home.",
+      "choices": [
+        { "text": "Do you miss your village?", "next_node_id": "miss_home", "relationship_changes": { "luna": 0.3 } }
+      ]
+    },
+    "believe": {
+      "speaker_id": "luna",
+      "text": "*pauses for a long moment* ...I want to. Love that crosses impossible distances... that is the kind worth hoping for. *turns to you with a faint blush* Thank you for listening to me ramble.",
+      "choices": [
+        { "text": "I enjoy listening to you, Luna.", "next_node_id": "end_best", "relationship_changes": { "luna": 0.5 } }
+      ]
+    },
+    "love_sky": {
+      "speaker_id": "luna",
+      "text": "When I was small, I thought if I memorized every constellation, I could read the future in them. *laughs quietly* I still half-believe it.",
+      "choices": [
+        { "text": "What does tonight's sky say?", "next_node_id": "tonight" }
+      ]
+    },
+    "miss_home": {
+      "speaker_id": "luna",
+      "text": "Sometimes. But meeting new people who care enough to ask... that helps more than you know. *looks grateful*",
+      "choices": [
+        { "text": "You are always welcome to stargaze with me.", "next_node_id": "end_happy", "relationship_changes": { "luna": 0.4 } }
+      ]
+    },
+    "tonight": {
+      "speaker_id": "luna",
+      "text": "*studies the sky intently* Tonight... the stars say that a good conversation is worth more than a thousand wishes. *smiles* They are right.",
+      "choices": [
+        { "text": "Then let us keep talking.", "next_node_id": "end_happy", "relationship_changes": { "luna": 0.3 } }
+      ]
+    },
+    "end_happy": {
+      "speaker_id": "luna",
+      "text": "*nods with a warm smile* I am glad we shared this moment. The stars will remember, even if no one else does.",
+      "choices": []
+    },
+    "end_best": {
+      "speaker_id": "luna",
+      "text": "*blushes deeply and looks away* You... you are kind. *quietly* Perhaps the Weaver Girl was right. Some meetings are written in the stars.",
+      "choices": []
+    }
+  }
+}
