@@ -274,7 +274,7 @@ cargo tauri build
 
 ### In Progress
 
-- [ ] Multiple character simultaneous chat (group chat backend ready, frontend pending)
+- [x] Multiple character simultaneous group chat (group chat backend ready, frontend pending)
 - [ ] 3D character model support
 - [ ] Installer signing and distribution channel configuration
 
