@@ -21,6 +21,19 @@
 ### Documentation
 - Updated CHANGELOG with v0.5.0 release notes.
 
+## v0.5.1 - 2026-07-07 (Commercialization Continued)
+
+### Features
+- Template marketplace scaffold with list, export, and import commands (Rust backend)
+- MarketplaceView frontend with template browsing, filtering, and import functionality
+- Three.js dependency added for 3D character model support
+- CharacterModelView component with Three.js dynamic import and rotation animation
+- Tauri app config rebranded to Monogatari v0.5.0 (product name, identifier, window title)
+- Game store enhanced with saveGame, loadGame, listSaves, deleteSave, setActiveScene, getRelationshipScore
+
+### Bug Fixes
+- Fixed Tauri config to use proper Monogatari branding instead of generic LLM Galgame Engine
+
 ---
 
 ## v0.4.1 - 2026-07-06
