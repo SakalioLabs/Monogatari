@@ -1,4 +1,5 @@
-import { createRouter, createWebHistory } from 'vue-router'
+﻿import { createRouter, createWebHistory } from 'vue-router'
+import HomeView from '../views/HomeView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -6,12 +7,17 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: () => import('../views/HomeView.vue'),
+      component: HomeView,
     },
     {
       path: '/game',
       name: 'game',
       component: () => import('../views/GameView.vue'),
+    },
+    {
+      path: '/chat',
+      name: 'chat',
+      component: () => import('../views/ChatView.vue'),
     },
     {
       path: '/editor',

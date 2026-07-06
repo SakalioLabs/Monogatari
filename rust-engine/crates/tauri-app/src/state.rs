@@ -1,5 +1,6 @@
-//! Application state management.
+﻿//! Application state management.
 
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -12,6 +13,8 @@ use llm_game::{
     scenes::SceneManager,
 };
 use llm_scripting::ScriptEngine;
+
+use crate::commands::chat::ChatSession;
 
 /// Main application state shared across all Tauri commands.
 pub struct AppState {
@@ -26,6 +29,8 @@ pub struct AppState {
     pub script_engine: Arc<RwLock<ScriptEngine>>,
     pub project_path: Arc<RwLock<Option<PathBuf>>>,
     pub initialized: Arc<RwLock<bool>>,
+    /// Chat sessions keyed by character_id.
+    pub chat_sessions: Arc<RwLock<HashMap<String, ChatSession>>>,
 }
 
 impl AppState {
@@ -46,6 +51,7 @@ impl AppState {
             script_engine: Arc::new(RwLock::new(ScriptEngine::new())),
             project_path: Arc::new(RwLock::new(None)),
             initialized: Arc::new(RwLock::new(false)),
+            chat_sessions: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 }

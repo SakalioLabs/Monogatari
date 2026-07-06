@@ -1,4 +1,4 @@
-//! Workflow editor commands (Dify-style no-code workflow).
+﻿//! Workflow editor commands (Dify-style no-code workflow).
 
 use serde::{Deserialize, Serialize};
 use tauri::State;
@@ -192,3 +192,4 @@ pub async fn load_workflow(
         .map_err(|e| e.to_string())?;
     serde_json::from_str(&content).map_err(|e| e.to_string())
 }
+

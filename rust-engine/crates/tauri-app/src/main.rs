@@ -1,4 +1,4 @@
-//! # LLM Galgame Engine - Tauri Application
+﻿//! # LLM Galgame Engine - Tauri Application
 //!
 //! Main entry point for the Tauri desktop application.
 //! Provides Tauri commands for frontend-backend communication.
@@ -45,6 +45,13 @@ fn main() {
             commands::ai::generate_response,
             commands::ai::generate_stream,
             commands::ai::get_ai_status,
+            // Chat commands (core feature)
+            commands::chat::send_chat_message,
+            commands::chat::get_chat_history,
+            commands::chat::clear_chat_history,
+            commands::chat::evaluate_conversation,
+            commands::chat::get_relationship_score,
+            commands::chat::get_available_events,
             // Save/Load commands
             commands::save::save_game,
             commands::save::load_game,
