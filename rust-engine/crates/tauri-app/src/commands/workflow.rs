@@ -261,6 +261,54 @@ pub async fn execute_workflow_node(
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({"text": result.text}))
         }
+        "narration" => {
+            let text = node.config["text"].as_str().unwrap_or("");
+            let speaker = node.config["speaker"].as_str().unwrap_or("Narrator");
+            Ok(serde_json::json!({"action": "narration", "speaker": speaker, "text": text}))
+        }
+        "bgm" => {
+            let track = node.config["track_path"].as_str().unwrap_or("");
+            let action = node.config["action"].as_str().unwrap_or("play");
+            let volume = node.config["volume"].as_f64().unwrap_or(1.0);
+            Ok(serde_json::json!({"action": "bgm", "track": track, "play_action": action, "volume": volume}))
+        }
+        "sfx" => {
+            let sound = node.config["sound_path"].as_str().unwrap_or("");
+            let volume = node.config["volume"].as_f64().unwrap_or(1.0);
+            Ok(serde_json::json!({"action": "sfx", "sound": sound, "volume": volume}))
+        }
+        "wait" => {
+            let ms = node.config["duration_ms"].as_u64().unwrap_or(1000);
+            Ok(serde_json::json!({"action": "wait", "duration_ms": ms}))
+        }
+        "random_branch" => {
+            let weights: Vec<f64> = node.config["weights"].as_array()
+                .map(|a| a.iter().filter_map(|v| v.as_f64()).collect())
+                .unwrap_or_else(|| node.connections.iter().map(|_| 1.0).collect());
+            let total: f64 = weights.iter().sum();
+            let r = rand::random::<f64>() * total;
+            let mut acc = 0.0;
+            let mut selected = 0usize;
+            for (i, w) in weights.iter().enumerate() {
+                acc += w;
+                if r < acc { selected = i; break; }
+            }
+            let chosen = node.connections.get(selected).cloned().unwrap_or_default();
+            Ok(serde_json::json!({"action": "random_branch", "chosen_connection": chosen, "index": selected}))
+        }
+        "camera" => {
+            let action = node.config["action"].as_str().unwrap_or("move");
+            let x = node.config["target_x"].as_f64().unwrap_or(0.0);
+            let y = node.config["target_y"].as_f64().unwrap_or(0.0);
+            let zoom = node.config["zoom"].as_f64().unwrap_or(1.0);
+            let ms = node.config["duration_ms"].as_u64().unwrap_or(500);
+            Ok(serde_json::json!({"action": "camera", "camera_action": action, "x": x, "y": y, "zoom": zoom, "duration_ms": ms}))
+        }
+        "shake" => {
+            let intensity = node.config["intensity"].as_f64().unwrap_or(5.0);
+            let ms = node.config["duration_ms"].as_u64().unwrap_or(300);
+            Ok(serde_json::json!({"action": "shake", "intensity": intensity, "duration_ms": ms}))
+        }
         _ => Err(format!("Unknown node type: {}", node.node_type)),
     }
 }

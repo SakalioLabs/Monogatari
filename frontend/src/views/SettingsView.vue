@@ -270,6 +270,19 @@ const apiModel = ref('gpt-4o-mini')
 const modelPath = ref('models/model.onnx')
 const tokenizerPath = ref('models/tokenizer.json')
 const useDirectML = ref(true)
+const ttsConfig = ref({ provider: 'system', language: 'ja', speed: 1.0, pitch: 1.0 })
+
+async function saveTts() {
+  try {
+    await invokeCommand('configure_tts', { config: ttsConfig.value })
+    statusMessage.value = 'TTS configured'
+    statusOk.value = true
+  } catch (e: any) {
+    statusMessage.value = 'TTS save failed: ' + e
+    statusOk.value = false
+  }
+}
+
 const pathEdits = reactive<Record<string, string>>({
   characters: 'characters',
   dialogue: 'dialogue',
