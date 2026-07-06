@@ -1,6 +1,6 @@
-# Monogatari
+# Monogatari v0.5
 
-An LLM-powered visual novel / galgame engine. Build interactive story experiences where AI-driven characters respond dynamically to player conversations, with automatic conversation scoring that triggers special plot events.
+An LLM-powered v0.5 visual novel / galgame engine. Build interactive story experiences where AI-driven characters respond dynamically to player conversations, with automatic conversation scoring that triggers special plot events.
 
 ## What It Is
 
@@ -281,18 +281,18 @@ cargo tauri build
 
 ### In Progress
 
-- [x] Multiple character simultaneous group chat (group chat backend ready, frontend pending)
+- [x] Multiple character simultaneous group chat (backend + frontend complete)
 - [ ] 3D character model support
 - [ ] Installer signing and distribution channel configuration
 
 ### Planned
 
-- [ ] Voice synthesis integration (TTS for character voices)
+- [x] Voice synthesis integration (Windows SAPI TTS with emotion-based speech rate)
 - [ ] Music/ambient sound management
 - [x] Multi-language support (i18n scaffold with locale loading and translation)
 - [x] Plugin system for custom node types (scaffold with register/list/remove)
-- [x] Cloud save sync (scaffold with push/pull/conflict resolution)
-- [x] Analytics dashboard (scaffold with event recording and summary)
+- [x] Cloud save sync with local manifest and checksum tracking
+- [x] Analytics dashboard with engagement metrics and JSON export
 - [ ] Template marketplace (shareable workflows/characters)
 - [ ] Mobile deployment (Tauri mobile)
 
