@@ -29,7 +29,19 @@
 - `dotnet test LLMAssistant.sln --no-restore` exits successfully for the legacy C# solution.
 
 
-### v0.3.1 - 2026-07-06 (Character Gallery and Workflow Execution)
+#
+### v0.4.0 - 2026-07-07
+
+#### New Capabilities
+- Plugin system for custom workflow node types (register/list/remove from JSON manifests).
+- Cloud save sync scaffold with push/pull/conflict resolution commands.
+- Analytics scaffold with event recording, summary stats, and data export.
+- Total Tauri commands now exceeds 50.
+
+#### Verification
+- Frontend production build passes.
+- npm audit reports 0 vulnerabilities.
+## v0.3.1 - 2026-07-06 (Character Gallery and Workflow Execution)
 
 #### New Features
 - Character Gallery view with grid layout, avatar colors, Big Five personality trait visualization bars, and detail overlay.

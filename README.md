@@ -284,8 +284,8 @@ cargo tauri build
 - [ ] Music/ambient sound management
 - [ ] Multi-language support (i18n)
 - [x] Plugin system for custom node types (scaffold with register/list/remove)
-- [ ] Cloud save sync
-- [ ] Analytics dashboard (player behavior tracking)
+- [x] Cloud save sync (scaffold with push/pull/conflict resolution)
+- [x] Analytics dashboard (scaffold with event recording and summary)
 - [ ] Template marketplace (shareable workflows/characters)
 - [ ] Mobile deployment (Tauri mobile)
 
