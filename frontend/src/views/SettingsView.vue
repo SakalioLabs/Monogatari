@@ -38,6 +38,42 @@
         <div class="panel">
           <div class="panel-head">
             <div>
+
+    <section class="panel">
+      <span class="eyebrow">Voice / TTS</span>
+      <p class="muted">Configure text-to-speech for character voices. Select a provider and set language, speed, and pitch defaults.</p>
+      <div class="field-grid">
+        <div class="field">
+          <label>TTS Provider</label>
+          <select v-model="ttsConfig.provider" class="input">
+            <option value="system">System</option>
+            <option value="api">API</option>
+            <option value="local">Local Model</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Language</label>
+          <select v-model="ttsConfig.language" class="input">
+            <option value="ja">Japanese</option>
+            <option value="en">English</option>
+            <option value="zh">Chinese</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Speed</label>
+          <input type="range" v-model.number="ttsConfig.speed" min="0.5" max="2.0" step="0.1" />
+          <span class="muted">{{ ttsConfig.speed.toFixed(1) }}x</span>
+        </div>
+        <div class="field">
+          <label>Pitch</label>
+          <input type="range" v-model.number="ttsConfig.pitch" min="0.5" max="2.0" step="0.1" />
+          <span class="muted">{{ ttsConfig.pitch.toFixed(1) }}</span>
+        </div>
+      </div>
+      <div class="actions" style="margin-top:12px">
+        <button class="btn btn-primary btn-sm" @click="saveTts">Save TTS Config</button>
+      </div>
+    </section>
               <span class="eyebrow">Project</span>
               <strong>Workspace</strong>
             </div>
