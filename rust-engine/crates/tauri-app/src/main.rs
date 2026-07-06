@@ -74,6 +74,9 @@ fn main() {
             commands::tts::set_character_voice,
             commands::tts::synthesize_speech,
             commands::tts::get_available_voices,
+            commands::plugin::list_plugins,
+            commands::plugin::register_plugin,
+            commands::plugin::remove_plugin,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

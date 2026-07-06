@@ -14,3 +14,4 @@ pub mod scenes;
 pub mod script;
 pub mod tts;
 pub mod workflow;
+pub mod plugin;
