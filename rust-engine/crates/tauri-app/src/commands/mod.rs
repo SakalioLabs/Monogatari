@@ -18,3 +18,4 @@ pub mod plugin;
 pub mod cloud_sync;
 pub mod analytics;
 pub mod character_manager;
+pub mod i18n;

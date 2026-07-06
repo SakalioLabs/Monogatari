@@ -282,7 +282,7 @@ cargo tauri build
 
 - [ ] Voice synthesis integration (TTS for character voices)
 - [ ] Music/ambient sound management
-- [ ] Multi-language support (i18n)
+- [x] Multi-language support (i18n scaffold with locale loading and translation)
 - [x] Plugin system for custom node types (scaffold with register/list/remove)
 - [x] Cloud save sync (scaffold with push/pull/conflict resolution)
 - [x] Analytics dashboard (scaffold with event recording and summary)

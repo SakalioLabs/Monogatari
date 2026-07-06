@@ -88,6 +88,9 @@ fn main() {
             commands::character_manager::create_character,
             commands::character_manager::delete_character,
             commands::character_manager::get_character_summaries,
+            commands::i18n::load_locale,
+            commands::i18n::list_locales,
+            commands::i18n::translate,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
