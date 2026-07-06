@@ -23,7 +23,8 @@
       </div>
     </aside>
     <main class="app-main">
-      <router-view v-slot="{ Component }">
+      <ToastNotification />
+    <router-view v-slot="{ Component }">
         <transition name="page" mode="out-in">
           <component :is="Component" />
         </transition>
@@ -34,6 +35,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import ToastNotification from './components/ToastNotification.vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
