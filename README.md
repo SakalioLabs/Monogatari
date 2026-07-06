@@ -184,6 +184,13 @@ cargo tauri build
 
 ## Data Format
 
+### Example Characters and Content
+
+- **Sakura** (cheerful): Nature-loving artist. Park walk dialogue with branching paths.
+- **Luna** (thoughtful): Poetic stargazer. Stargazing dialogue with constellation lore.
+- **Kenji** (honorable): Martial artist poet. Dojo visit dialogue with training themes.
+- **Springtown**: Shared world with cherry blossom park, observatory, and dojo.
+
 ### Character
 
 ```json
