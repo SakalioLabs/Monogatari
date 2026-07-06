@@ -28,6 +28,22 @@
 - `cargo check --locked -p llm-galgame-app` passes for the Tauri app crate.
 - `dotnet test LLMAssistant.sln --no-restore` exits successfully for the legacy C# solution.
 
+
+### v0.3.1 - 2026-07-06 (Character Gallery and Workflow Execution)
+
+#### New Features
+- Character Gallery view with grid layout, avatar colors, Big Five personality trait visualization bars, and detail overlay.
+- Workflow execution handlers for 7 new node types: narration, bgm, sfx, wait, random_branch, camera, shake.
+- random_branch uses weighted probability to select among connections.
+- TTS settings panel in SettingsView with provider, language, speed, and pitch controls.
+
+#### Bug Fixes
+- Fixed missing ttsConfig ref and saveTts function in SettingsView script section.
+
+#### Verification
+- Frontend production build passes.
+- npm audit reports 0 vulnerabilities.
+
 ## v0.3.0 - 2026-07-06
 ### Frontend
 - Added Group Chat View with character multi-select, shared conversation area, and participant tracking.
