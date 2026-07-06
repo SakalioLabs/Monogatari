@@ -109,6 +109,10 @@ const readinessItems = computed(() => [
   { name: 'Workflow import validation', done: true },
   { name: 'Scene asset management', done: true },
   { name: 'Project configuration panel', done: true },
+  { name: 'Multi-character group chat', done: true },
+  { name: 'Character gallery with personality visualization', done: true },
+  { name: 'TTS integration scaffold', done: true },
+  { name: '21 workflow node types with execution', done: true },
   { name: 'Commercial packaging checklist', done: false },
 ])
 
