@@ -26,7 +26,7 @@ Monogatari is a development engine for creating LLM-driven text adventure games.
 
 ## Current Development Status
 
-Verified on 2026-07-06:
+Verified on 2026-07-06 (updated):
 
 - Frontend production build passes with `npm run build`.
 - Full frontend dependency audit passes with `npm audit`.
@@ -268,7 +268,7 @@ cargo tauri build
 - [x] Professional UI design system
 - [x] Multi-character simultaneous group chat
 - [x] TTS integration scaffold with voice assignment
-- [x] 21 workflow node types (8 new media/flow nodes)
+- [x] 21 workflow node types with execution handlers for all types
 - [x] Async-safe chat evaluation (blocking_read fix)
 - [x] Cargo dev profile optimization for faster builds
 
