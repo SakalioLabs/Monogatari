@@ -1060,3 +1060,12 @@ onMounted(async () => {
   }
 }
 </style>
+
+.node-type-narration { border-left: 3px solid #a78bfa; }
+.node-type-bgm { border-left: 3px solid #f472b6; }
+.node-type-sfx { border-left: 3px solid #fb923c; }
+.node-type-wait { border-left: 3px solid #94a3b8; }
+.node-type-random_branch { border-left: 3px solid #4ade80; }
+.node-type-sub_workflow { border-left: 3px solid #60a5fa; }
+.node-type-camera { border-left: 3px solid #38bdf8; }
+.node-type-shake { border-left: 3px solid #fbbf24; }

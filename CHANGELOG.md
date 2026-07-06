@@ -29,6 +29,11 @@
 - `dotnet test LLMAssistant.sln --no-restore` exits successfully for the legacy C# solution.
 
 ## v0.3.0 - 2026-07-06
+### Frontend
+- Added Group Chat View with character multi-select, shared conversation area, and participant tracking.
+- Added Group Chat route and sidebar navigation entry.
+- Added CSS classes for 8 new workflow editor node types with category-specific left-border colors.
+
 
 ### New Capabilities
 - **Multi-Character Group Chat**: New multi_chat module enabling simultaneous conversations with multiple AI characters who react to each other and the player.

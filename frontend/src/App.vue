@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div id="app" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
     <aside v-if="showSidebar" class="app-sidebar">
       <div class="sidebar-header">
@@ -46,6 +46,7 @@ const navItems = [
   { path: '/game', label: 'Story Mode', icon: '&#9654;' },
   { path: '/editor', label: 'Workflow', icon: '&#8942;' },
   { path: '/assets', label: 'Scene Assets', icon: '&#9638;' },
+  { path: '/group-chat', label: 'Group Chat', icon: '&#9733;' },
   { path: '/settings', label: 'Settings', icon: '&#9881;' },
 ]
 </script>
