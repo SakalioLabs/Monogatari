@@ -534,14 +534,12 @@ async fn check_event_triggers(
             "relationship_milestone" => {
                 let relationship = {
                     let cm = state.character_manager.read().await;
-                    cm.get_character(character_id)
-                        .map(|c| {
-                            c.blocking_read()
-                                .relationships
-                                .get("player")
-                                .copied()
-                                .unwrap_or(0.0)
-                        })
+                    if let Some(character) = cm.get_character(character_id) {
+                        let c = character.read().await;
+                        c.relationships.get("player").copied().unwrap_or(0.0)
+                    } else {
+                        0.0
+                    }
                         .unwrap_or(0.0)
                 };
                 match def.event_id.as_str() {

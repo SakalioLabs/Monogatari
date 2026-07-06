@@ -28,6 +28,23 @@
 - `cargo check --locked -p llm-galgame-app` passes for the Tauri app crate.
 - `dotnet test LLMAssistant.sln --no-restore` exits successfully for the legacy C# solution.
 
+## v0.3.0 - 2026-07-06
+
+### New Capabilities
+- **Multi-Character Group Chat**: New multi_chat module enabling simultaneous conversations with multiple AI characters who react to each other and the player.
+- **TTS Integration Scaffold**: New 	ts module with configuration, voice assignment, and speech synthesis command interfaces ready for backend provider integration.
+- **8 New Workflow Node Types**: Narration, BGM, SFX, Wait, Random Branch, Sub Workflow, Camera, and Shake nodes expand the visual editor to 21 total node types across 6 categories (flow, content, logic, ai, character, media).
+
+### Performance and Quality
+- Fixed locking_read() call in async chat event trigger evaluation, preventing potential deadlocks during character relationship scoring.
+- Added Cargo dev profile with opt-level = 0 for dev builds and opt-level = 2 for dependencies, significantly improving development iteration speed.
+- Registered all new command modules in mod.rs and main.rs with proper Tauri command handler bindings.
+
+### Architecture
+- commands/multi_chat.rs: GroupChatSession, GroupChatMessage types with start_group_chat, send_group_message, get_group_chat_characters commands.
+- commands/tts.rs: TtsConfig, CharacterVoice, TtsResult types with configure_tts, set_character_voice, synthesize_speech, get_available_voices commands.
+- workflow.rs: Extended WorkflowNodeTypeInfo with 8 new nodes in media and extended flow categories.
+
 ## v0.2.0 - 2026-07-06
 
 ### New Features

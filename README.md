@@ -1,4 +1,4 @@
-﻿# Monogatari
+# Monogatari
 
 An LLM-powered visual novel / galgame engine. Build interactive story experiences where AI-driven characters respond dynamically to player conversations, with automatic conversation scoring that triggers special plot events.
 
@@ -137,6 +137,14 @@ cargo tauri build
 | Scene Change | Content | Change the background scene |
 | Trigger Event | Flow | Trigger a special game event |
 | Relationship | Character | Modify relationship score |
+| Narration | Content | Display narrator text or inner monologue |
+| BGM | Media | Control background music playback |
+| SFX | Media | Play a sound effect |
+| Wait | Flow | Pause workflow execution for a duration |
+| Random Branch | Flow | Randomly select one of multiple branches |
+| Sub Workflow | Flow | Execute another workflow as a subroutine |
+| Camera | Media | Control camera position, zoom, and effects |
+| Shake | Media | Screen shake effect for dramatic moments |
 | Change Emotion | Character | Change a character's emotion |
 | Set Variable | Logic | Set a game variable |
 | Set Flag | Logic | Set a game flag |
@@ -258,10 +266,15 @@ cargo tauri build
 - [x] Live2D rendering (PixiJS)
 - [x] Tauri desktop application
 - [x] Professional UI design system
+- [x] Multi-character simultaneous group chat
+- [x] TTS integration scaffold with voice assignment
+- [x] 21 workflow node types (8 new media/flow nodes)
+- [x] Async-safe chat evaluation (blocking_read fix)
+- [x] Cargo dev profile optimization for faster builds
 
 ### In Progress
 
-- [ ] Multiple character simultaneous chat
+- [ ] Multiple character simultaneous chat (group chat backend ready, frontend pending)
 - [ ] 3D character model support
 - [ ] Installer signing and distribution channel configuration
 
