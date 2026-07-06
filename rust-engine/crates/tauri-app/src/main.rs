@@ -77,6 +77,14 @@ fn main() {
             commands::plugin::list_plugins,
             commands::plugin::register_plugin,
             commands::plugin::remove_plugin,
+            commands::cloud_sync::configure_cloud_sync,
+            commands::cloud_sync::get_sync_status,
+            commands::cloud_sync::push_saves_to_cloud,
+            commands::cloud_sync::pull_saves_from_cloud,
+            commands::cloud_sync::resolve_sync_conflict,
+            commands::analytics::record_analytics_event,
+            commands::analytics::get_analytics_summary,
+            commands::analytics::export_analytics,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
