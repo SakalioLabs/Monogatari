@@ -17,3 +17,4 @@ pub mod workflow;
 pub mod plugin;
 pub mod cloud_sync;
 pub mod analytics;
+pub mod character_manager;

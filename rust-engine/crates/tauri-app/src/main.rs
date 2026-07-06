@@ -85,6 +85,9 @@ fn main() {
             commands::analytics::record_analytics_event,
             commands::analytics::get_analytics_summary,
             commands::analytics::export_analytics,
+            commands::character_manager::create_character,
+            commands::character_manager::delete_character,
+            commands::character_manager::get_character_summaries,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
