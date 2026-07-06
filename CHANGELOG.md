@@ -1,4 +1,32 @@
-﻿# Changelog
+# Changelog
+
+## Unreleased - 2026-07-06
+
+### Commercialization Progress
+- Redesigned the frontend into a more production-oriented workbench: dashboard, AI chat, story mode, and workflow editor now use cleaner dark surfaces, denser operational layouts, and consistent design tokens.
+- Connected the AI Chat page to the existing Tauri streaming command (`send_chat_message_stream`) and event stream (`chat-chunk`, `chat-complete`, `chat-emotion`, `chat-relationship`, `chat-error`) for real-time response display.
+- Added streamed evaluation and event notification parity through `chat-evaluation` and `chat-events`, so the streaming path now updates scoring and unlock toasts without manual refresh.
+- Added a Tauri command wrapper with browser-preview fallbacks so design review in plain Vite no longer depends on desktop runtime APIs.
+- Cleaned corrupted visible text in Story Mode and Workflow Editor and replaced placeholder-like icon glyphs with stable text markers.
+- Improved Workflow Editor connection behavior by targeting the node under the mouse instead of linking to an arbitrary node.
+- Added workflow validation through the new `validate_workflow` Tauri command, with save/load rejection for structural errors and a diagnostics panel in the editor.
+- Added a Scene Assets workbench backed by `list_scene_assets`, `get_current_scene`, and `set_scene` Tauri commands, including metadata/background validation and sample scene assets.
+- Added a Project Control settings console backed by `get_project_config` and `save_project_config`, with settings persistence, content path readiness, and runtime initialization controls.
+
+### Security And Tooling
+- Upgraded the frontend build toolchain to Vite 8, `@vitejs/plugin-vue` 6, `vue-tsc` 3, TypeScript 6, and explicit `esbuild` to remove dev-server audit findings.
+- Kept Live2D on `pixi-live2d-display@0.4.0` while overriding its transitive `gh-pages` dependency to `6.3.0`, clearing the critical production audit issue without downgrading Live2D.
+- Stopped ignoring `rust-engine/Cargo.lock` and added the generated lockfile so Tauri desktop builds can be verified with `cargo --locked`.
+- Added `docs/RELEASE_CHECKLIST.md` with commercial release gates, packaging policy, signing reminders, and manual QA coverage.
+
+### Performance
+- Reduced chat-session write-lock duration in both non-streaming and streaming chat commands so slow LLM calls do not hold the global chat session lock for the full request.
+
+### Verification
+- `npm run build` passes for the Vue frontend.
+- `npm audit` reports 0 vulnerabilities.
+- `cargo check --locked -p llm-galgame-app` passes for the Tauri app crate.
+- `dotnet test LLMAssistant.sln --no-restore` exits successfully for the legacy C# solution.
 
 ## v0.2.0 - 2026-07-06
 

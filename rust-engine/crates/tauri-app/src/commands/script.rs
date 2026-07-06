@@ -6,10 +6,7 @@ use crate::state::AppState;
 
 /// Execute a Rhai script expression.
 #[tauri::command]
-pub async fn execute_script(
-    state: State<'_, AppState>,
-    script: String,
-) -> Result<String, String> {
+pub async fn execute_script(state: State<'_, AppState>, script: String) -> Result<String, String> {
     let se = state.script_engine.read().await;
     let result = se.execute(&script).map_err(|e| e.to_string())?;
     Ok(format!("{:?}", result))

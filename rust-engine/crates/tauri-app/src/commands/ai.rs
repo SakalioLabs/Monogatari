@@ -37,7 +37,9 @@ pub async fn configure_api(
     let engine = APIEngine::new(config);
     let mut pipeline = state.inference_pipeline.write().await;
     pipeline.register_engine(std::sync::Arc::new(tokio::sync::RwLock::new(engine)));
-    pipeline.set_active_engine("API").map_err(|e| e.to_string())?;
+    pipeline
+        .set_active_engine("API")
+        .map_err(|e| e.to_string())?;
 
     Ok("API engine configured".to_string())
 }

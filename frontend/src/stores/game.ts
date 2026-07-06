@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { invoke } from '@tauri-apps/api/core'
+import { invokeCommand } from '../lib/tauri'
 
 interface Character {
   id: string
@@ -19,6 +19,15 @@ interface DialogueState {
   live2d_expression: string | null
 }
 
+const emptyDialogueState: DialogueState = {
+  is_active: false,
+  speaker: null,
+  text: '',
+  emotion: null,
+  choices: [],
+  live2d_expression: null,
+}
+
 export const useGameStore = defineStore('game', () => {
   const characters = ref<Character[]>([])
   const currentCharacter = ref<Character | null>(null)
@@ -27,7 +36,7 @@ export const useGameStore = defineStore('game', () => {
 
   async function loadCharacters() {
     try {
-      characters.value = await invoke('get_characters')
+      characters.value = await invokeCommand<Character[]>('get_characters', undefined, [])
     } catch (e) {
       console.error('Failed to load characters:', e)
     }
@@ -35,7 +44,7 @@ export const useGameStore = defineStore('game', () => {
 
   async function setCurrentCharacter(id: string) {
     try {
-      currentCharacter.value = await invoke('get_character', { characterId: id })
+      currentCharacter.value = await invokeCommand<Character>('get_character', { characterId: id })
     } catch (e) {
       console.error('Failed to get character:', e)
     }
@@ -43,7 +52,7 @@ export const useGameStore = defineStore('game', () => {
 
   async function refreshDialogueState() {
     try {
-      dialogueState.value = await invoke('get_dialogue_state')
+      dialogueState.value = await invokeCommand<DialogueState>('get_dialogue_state', undefined, emptyDialogueState)
     } catch (e) {
       console.error('Failed to get dialogue state:', e)
     }
@@ -52,7 +61,7 @@ export const useGameStore = defineStore('game', () => {
   async function startDialogue(dialogueId: string) {
     isLoading.value = true
     try {
-      dialogueState.value = await invoke('start_dialogue', { dialogueId })
+      dialogueState.value = await invokeCommand<DialogueState>('start_dialogue', { dialogueId })
     } catch (e) {
       console.error('Failed to start dialogue:', e)
     } finally {
@@ -62,7 +71,7 @@ export const useGameStore = defineStore('game', () => {
 
   async function advanceDialogue() {
     try {
-      dialogueState.value = await invoke('advance_dialogue')
+      dialogueState.value = await invokeCommand<DialogueState>('advance_dialogue')
     } catch (e) {
       console.error('Failed to advance dialogue:', e)
     }
@@ -70,7 +79,7 @@ export const useGameStore = defineStore('game', () => {
 
   async function selectChoice(index: number) {
     try {
-      dialogueState.value = await invoke('select_choice', { choiceIndex: index })
+      dialogueState.value = await invokeCommand<DialogueState>('select_choice', { choiceIndex: index })
     } catch (e) {
       console.error('Failed to select choice:', e)
     }

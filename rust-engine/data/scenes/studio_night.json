@@ -1,0 +1,9 @@
+{
+  "id": "studio_night",
+  "name": "Studio Night",
+  "background_path": "assets/backgrounds/studio_night.svg",
+  "bgm_path": null,
+  "weather": "clear",
+  "time_of_day": "night",
+  "tags": ["indoor", "focus", "demo"]
+}

@@ -37,7 +37,8 @@
     "characters": "characters",
     "dialogue": "dialogue",
     "knowledge": "knowledge",
+    "scenes": "scenes",
     "saves": "saves",
-    "assets": "../assets"
+    "assets": "assets"
   }
 }

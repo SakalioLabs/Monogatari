@@ -1,6 +1,7 @@
 //! Engine initialization and status commands.
 
 use serde::Serialize;
+use std::path::{Path, PathBuf};
 use tauri::State;
 
 use crate::state::AppState;
@@ -21,7 +22,7 @@ pub async fn initialize_engine(
     state: State<'_, AppState>,
     project_path: String,
 ) -> Result<String, String> {
-    let path = std::path::PathBuf::from(&project_path);
+    let path = normalize_project_path(&project_path)?;
 
     // Load characters
     let char_path = path.join("characters");
@@ -60,6 +61,33 @@ pub async fn initialize_engine(
     Ok("Engine initialized successfully".to_string())
 }
 
+fn normalize_project_path(project_path: &str) -> Result<PathBuf, String> {
+    let current_dir = std::env::current_dir().map_err(|e| e.to_string())?;
+    let requested = if project_path.trim().is_empty() {
+        PathBuf::from("data")
+    } else {
+        PathBuf::from(project_path)
+    };
+
+    if requested.is_absolute() {
+        return Ok(requested);
+    }
+
+    let direct = current_dir.join(&requested);
+    if direct.exists() {
+        return Ok(direct);
+    }
+
+    Ok(find_upward(&current_dir, &requested).unwrap_or(direct))
+}
+
+fn find_upward(start: &Path, relative: &Path) -> Option<PathBuf> {
+    start
+        .ancestors()
+        .map(|ancestor| ancestor.join(relative))
+        .find(|candidate| candidate.exists())
+}
+
 /// Get the current engine status.
 #[tauri::command]
 pub async fn get_engine_status(state: State<'_, AppState>) -> Result<EngineStatus, String> {
@@ -74,7 +102,11 @@ pub async fn get_engine_status(state: State<'_, AppState>) -> Result<EngineStatu
         character_count: cm.character_ids().len(),
         dialogue_count: dm.script_ids().len(),
         knowledge_count: kb.len(),
-        ai_engines: pipeline.engine_names().iter().map(|s| s.to_string()).collect(),
+        ai_engines: pipeline
+            .engine_names()
+            .iter()
+            .map(|s| s.to_string())
+            .collect(),
         active_ai_engine: pipeline.active_engine_name().map(|s| s.to_string()),
     })
 }

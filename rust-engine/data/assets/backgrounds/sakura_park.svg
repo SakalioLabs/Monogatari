@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-label="Sakura park background">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#93c5fd"/>
+      <stop offset="0.58" stop-color="#fbcfe8"/>
+      <stop offset="1" stop-color="#134e4a"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="68%" cy="22%" r="28%">
+      <stop offset="0" stop-color="#fef3c7" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#fef3c7" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#sky)"/>
+  <rect width="1600" height="900" fill="url(#sun)"/>
+  <path d="M0 600 C250 520 420 650 650 590 C900 525 1060 620 1600 545 L1600 900 L0 900 Z" fill="#115e59"/>
+  <path d="M0 690 C260 630 430 760 705 710 C1000 655 1220 735 1600 665 L1600 900 L0 900 Z" fill="#0f3f3b"/>
+  <path d="M260 300 C240 430 220 610 200 900 L260 900 C278 650 292 455 328 315 Z" fill="#4a2c2a"/>
+  <path d="M1250 250 C1235 405 1220 650 1210 900 L1270 900 C1285 620 1300 410 1324 270 Z" fill="#3f2a2a"/>
+  <g fill="#f9a8d4" opacity="0.86">
+    <circle cx="240" cy="240" r="115"/>
+    <circle cx="335" cy="225" r="135"/>
+    <circle cx="420" cy="300" r="100"/>
+    <circle cx="1215" cy="215" r="125"/>
+    <circle cx="1328" cy="230" r="145"/>
+    <circle cx="1410" cy="315" r="100"/>
+  </g>
+  <path d="M0 780 C210 745 390 820 575 770 C745 724 890 742 1030 776 C1210 820 1390 800 1600 750 L1600 900 L0 900 Z" fill="#072f2d" opacity="0.72"/>
+</svg>

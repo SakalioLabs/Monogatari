@@ -7,6 +7,8 @@ pub mod dialogue;
 pub mod engine;
 pub mod knowledge;
 pub mod live2d;
+pub mod project;
 pub mod save;
+pub mod scenes;
 pub mod script;
 pub mod workflow;

@@ -15,17 +15,15 @@ pub struct SaveInfo {
 
 /// Save the current game state.
 #[tauri::command]
-pub async fn save_game(
-    state: State<'_, AppState>,
-    save_name: String,
-) -> Result<String, String> {
+pub async fn save_game(state: State<'_, AppState>, save_name: String) -> Result<String, String> {
     let _dm = state.dialogue_manager.read().await;
     let sm = state.scene_manager.read().await;
     let se = state.script_engine.read().await;
+    let active_scene_id = state.active_scene_id.read().await.clone();
 
     let mut save = llm_assets::SaveManager::create_save(
         &save_name,
-        sm.current_scene_name().map(|s| s.to_string()),
+        active_scene_id.or_else(|| sm.current_scene_name().map(|s| s.to_string())),
         None,
         None,
     );
@@ -39,25 +37,16 @@ pub async fn save_game(
         .collect();
 
     let save_mgr = state.save_manager.read().await;
-    save_mgr
-        .save(&save)
-        .await
-        .map_err(|e| e.to_string())?;
+    save_mgr.save(&save).await.map_err(|e| e.to_string())?;
 
     Ok(save.save_id)
 }
 
 /// Load a game state by save ID.
 #[tauri::command]
-pub async fn load_game(
-    state: State<'_, AppState>,
-    save_id: String,
-) -> Result<String, String> {
+pub async fn load_game(state: State<'_, AppState>, save_id: String) -> Result<String, String> {
     let save_mgr = state.save_manager.read().await;
-    let save = save_mgr
-        .load(&save_id)
-        .await
-        .map_err(|e| e.to_string())?;
+    let save = save_mgr.load(&save_id).await.map_err(|e| e.to_string())?;
 
     // Restore flags and variables
     let se = state.script_engine.read().await;
@@ -87,14 +76,8 @@ pub async fn list_saves(state: State<'_, AppState>) -> Result<Vec<SaveInfo>, Str
 
 /// Delete a save by ID.
 #[tauri::command]
-pub async fn delete_save(
-    state: State<'_, AppState>,
-    save_id: String,
-) -> Result<String, String> {
+pub async fn delete_save(state: State<'_, AppState>, save_id: String) -> Result<String, String> {
     let save_mgr = state.save_manager.read().await;
-    save_mgr
-        .delete(&save_id)
-        .await
-        .map_err(|e| e.to_string())?;
+    save_mgr.delete(&save_id).await.map_err(|e| e.to_string())?;
     Ok("Save deleted".to_string())
 }

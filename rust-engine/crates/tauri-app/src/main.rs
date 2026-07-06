@@ -26,6 +26,9 @@ fn main() {
             // Engine commands
             commands::engine::initialize_engine,
             commands::engine::get_engine_status,
+            // Project configuration commands
+            commands::project::get_project_config,
+            commands::project::save_project_config,
             // Character commands
             commands::characters::get_characters,
             commands::characters::get_character,
@@ -58,9 +61,14 @@ fn main() {
             commands::save::load_game,
             commands::save::list_saves,
             commands::save::delete_save,
+            // Scene asset commands
+            commands::scenes::list_scene_assets,
+            commands::scenes::get_current_scene,
+            commands::scenes::set_scene,
             // Workflow commands
             commands::workflow::get_workflow_nodes,
             commands::workflow::execute_workflow_node,
+            commands::workflow::validate_workflow,
             commands::workflow::save_workflow,
             commands::workflow::load_workflow,
             // Script commands
@@ -76,4 +84,3 @@ fn main() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
-

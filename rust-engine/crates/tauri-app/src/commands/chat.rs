@@ -1,4 +1,4 @@
-﻿//! Free-form chat and LLM evaluation commands.
+//! Free-form chat and LLM evaluation commands.
 //!
 //! This is the core feature: players chat freely with LLM-driven characters,
 //! and the LLM evaluates conversations to trigger special plot events.
@@ -12,7 +12,7 @@ use crate::state::AppState;
 /// A single chat message in the conversation history.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatMessage {
-    pub role: String,       // "player" or "character"
+    pub role: String, // "player" or "character"
     pub content: String,
     pub emotion: Option<String>,
     pub timestamp: String,
@@ -31,10 +31,10 @@ pub struct ChatResponse {
 /// LLM evaluation of a conversation segment.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConversationEvaluation {
-    pub friendliness: f32,    // 0.0 - 1.0
-    pub engagement: f32,      // 0.0 - 1.0
-    pub creativity: f32,      // 0.0 - 1.0
-    pub overall_score: f32,   // 0.0 - 1.0
+    pub friendliness: f32,  // 0.0 - 1.0
+    pub engagement: f32,    // 0.0 - 1.0
+    pub creativity: f32,    // 0.0 - 1.0
+    pub overall_score: f32, // 0.0 - 1.0
     pub summary: String,
 }
 
@@ -42,7 +42,7 @@ pub struct ConversationEvaluation {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TriggeredEvent {
     pub event_id: String,
-    pub event_type: String,   // "special_dialogue", "scene_change", "relationship_milestone", "unlock"
+    pub event_type: String, // "special_dialogue", "scene_change", "relationship_milestone", "unlock"
     pub description: String,
     pub data: serde_json::Value,
 }
@@ -83,7 +83,13 @@ pub async fn send_chat_message(
     character_id: String,
     message: String,
 ) -> Result<ChatResponse, String> {
-    let now = format!("{:?}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs());
+    let now = format!(
+        "{:?}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs()
+    );
 
     // Get character info
     let (char_name, char_description, char_background, char_personality, char_emotion) = {
@@ -117,32 +123,37 @@ pub async fn send_chat_message(
         }
     };
 
-    // Get or create chat session
-    let mut sessions = state.chat_sessions.write().await;
-    let session = sessions
-        .entry(character_id.clone())
-        .or_insert_with(|| ChatSession::new(character_id.clone()));
+    // Add player message and snapshot recent history without holding the
+    // session write lock during the potentially slow LLM request.
+    let history: Vec<String> = {
+        let mut sessions = state.chat_sessions.write().await;
+        let session = sessions
+            .entry(character_id.clone())
+            .or_insert_with(|| ChatSession::new(character_id.clone()));
 
-    // Add player message to history
-    session.messages.push(ChatMessage {
-        role: "player".to_string(),
-        content: message.clone(),
-        emotion: None,
-        timestamp: now.clone(),
-    });
+        session.messages.push(ChatMessage {
+            role: "player".to_string(),
+            content: message.clone(),
+            emotion: None,
+            timestamp: now.clone(),
+        });
 
-    // Build conversation history for context (last 10 messages)
-    let history: Vec<String> = session
-        .messages
-        .iter()
-        .rev()
-        .take(10)
-        .rev()
-        .map(|m| {
-            let role = if m.role == "player" { "Player" } else { &char_name };
-            format!("{role}: {}", m.content)
-        })
-        .collect();
+        session
+            .messages
+            .iter()
+            .rev()
+            .take(10)
+            .rev()
+            .map(|m| {
+                let role = if m.role == "player" {
+                    "Player"
+                } else {
+                    &char_name
+                };
+                format!("{role}: {}", m.content)
+            })
+            .collect()
+    };
 
     // Build the full prompt
     let system_prompt = format!(
@@ -174,7 +185,8 @@ You MUST:
     );
 
     let conversation = history.join("\n");
-    let full_prompt = format!("[System]\n{system_prompt}\n\n[Conversation]\n{conversation}\n\n[{char_name}]");
+    let full_prompt =
+        format!("[System]\n{system_prompt}\n\n[Conversation]\n{conversation}\n\n[{char_name}]");
 
     // Call LLM for character response
     let pipeline = state.inference_pipeline.read().await;
@@ -187,7 +199,9 @@ You MUST:
     let response_text = match pipeline.generate_response(&full_prompt, &options).await {
         Ok(result) if result.success => result.text,
         Ok(result) => {
-            return Err(result.error.unwrap_or_else(|| "AI generation failed".to_string()));
+            return Err(result
+                .error
+                .unwrap_or_else(|| "AI generation failed".to_string()));
         }
         Err(e) => {
             return Err(format!("AI error: {e}"));
@@ -196,14 +210,6 @@ You MUST:
 
     // Analyze emotion from response (simple keyword matching)
     let detected_emotion = detect_emotion(&response_text, &char_emotion);
-
-    // Add character response to history
-    session.messages.push(ChatMessage {
-        role: "character".to_string(),
-        content: response_text.clone(),
-        emotion: Some(detected_emotion.clone()),
-        timestamp: format!("{:?}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()),
-    });
 
     // Calculate relationship delta based on message sentiment
     let relationship_delta = estimate_sentiment(&message);
@@ -224,24 +230,57 @@ You MUST:
         }
     }
 
+    // Add character response and snapshot evaluation inputs.
+    let (should_evaluate, messages_for_eval, cumulative_score, evaluation_count, already_triggered) = {
+        let mut sessions = state.chat_sessions.write().await;
+        let session = sessions
+            .entry(character_id.clone())
+            .or_insert_with(|| ChatSession::new(character_id.clone()));
+
+        session.messages.push(ChatMessage {
+            role: "character".to_string(),
+            content: response_text.clone(),
+            emotion: Some(detected_emotion.clone()),
+            timestamp: format!(
+                "{:?}",
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs()
+            ),
+        });
+
+        let player_msg_count = session
+            .messages
+            .iter()
+            .filter(|m| m.role == "player")
+            .count();
+        (
+            player_msg_count > 0 && player_msg_count % 5 == 0,
+            session.messages.clone(),
+            session.cumulative_score,
+            session.evaluation_count,
+            session.triggered_event_ids.clone(),
+        )
+    };
+
     // Periodic evaluation (every 5 player messages)
-    let player_msg_count = session.messages.iter().filter(|m| m.role == "player").count();
     let mut evaluation = None;
     let mut triggered_events = Vec::new();
 
-    if player_msg_count > 0 && player_msg_count % 5 == 0 {
+    if should_evaluate {
         let eval_result = evaluate_conversation_internal(
             &state,
             &char_name,
-            &session.messages,
-            session.cumulative_score,
-            session.evaluation_count,
+            &messages_for_eval,
+            cumulative_score,
+            evaluation_count,
         )
         .await;
 
         if let Ok(eval) = eval_result {
-            session.cumulative_score += eval.overall_score;
-            session.evaluation_count += 1;
+            let next_cumulative_score = cumulative_score + eval.overall_score;
+            let next_evaluation_count = evaluation_count + 1;
             evaluation = Some(eval.clone());
 
             // Check for triggered events
@@ -249,14 +288,24 @@ You MUST:
                 &state,
                 &character_id,
                 &eval,
-                session.cumulative_score,
-                session.evaluation_count,
-                &session.triggered_event_ids,
+                next_cumulative_score,
+                next_evaluation_count,
+                &already_triggered,
             )
             .await;
 
-            for event in &events {
-                session.triggered_event_ids.push(event.event_id.clone());
+            {
+                let mut sessions = state.chat_sessions.write().await;
+                let session = sessions
+                    .entry(character_id.clone())
+                    .or_insert_with(|| ChatSession::new(character_id.clone()));
+                session.cumulative_score += eval.overall_score;
+                session.evaluation_count += 1;
+                for event in &events {
+                    if !session.triggered_event_ids.contains(&event.event_id) {
+                        session.triggered_event_ids.push(event.event_id.clone());
+                    }
+                }
             }
             triggered_events = events;
         }
@@ -357,7 +406,11 @@ pub async fn get_available_events(
         .into_iter()
         .filter(|e| {
             !session.triggered_event_ids.contains(&e.event_id)
-                && check_event_condition(e.event_type.as_str(), session.cumulative_score, session.evaluation_count)
+                && check_event_condition(
+                    e.event_type.as_str(),
+                    session.cumulative_score,
+                    session.evaluation_count,
+                )
         })
         .collect();
 
@@ -380,7 +433,11 @@ async fn evaluate_conversation_internal(
         .take(20)
         .rev()
         .map(|m| {
-            let role = if m.role == "player" { "Player" } else { character_name };
+            let role = if m.role == "player" {
+                "Player"
+            } else {
+                character_name
+            };
             format!("{role}: {}", m.content)
         })
         .collect();
@@ -422,7 +479,10 @@ Respond ONLY in this exact JSON format:
                 let friendliness = parsed["friendliness"].as_f64().unwrap_or(0.5) as f32;
                 let engagement = parsed["engagement"].as_f64().unwrap_or(0.5) as f32;
                 let creativity = parsed["creativity"].as_f64().unwrap_or(0.5) as f32;
-                let summary = parsed["summary"].as_str().unwrap_or("No summary").to_string();
+                let summary = parsed["summary"]
+                    .as_str()
+                    .unwrap_or("No summary")
+                    .to_string();
                 let overall = (friendliness + engagement + creativity) / 3.0;
 
                 Ok(ConversationEvaluation {
@@ -491,20 +551,16 @@ async fn check_event_triggers(
                     _ => false,
                 }
             }
-            "special_dialogue" => {
-                match def.event_id.as_str() {
-                    "high_engagement" => eval.engagement > 0.8 && eval_count >= 2,
-                    "creative_talk" => eval.creativity > 0.8 && eval_count >= 2,
-                    _ => false,
-                }
-            }
-            "cumulative_achievement" => {
-                match def.event_id.as_str() {
-                    "dedicated_player" => eval_count >= 5,
-                    "super_dedicated" => eval_count >= 10,
-                    _ => false,
-                }
-            }
+            "special_dialogue" => match def.event_id.as_str() {
+                "high_engagement" => eval.engagement > 0.8 && eval_count >= 2,
+                "creative_talk" => eval.creativity > 0.8 && eval_count >= 2,
+                _ => false,
+            },
+            "cumulative_achievement" => match def.event_id.as_str() {
+                "dedicated_player" => eval_count >= 5,
+                "super_dedicated" => eval_count >= 10,
+                _ => false,
+            },
             _ => false,
         };
 
@@ -541,7 +597,8 @@ fn get_event_definitions() -> Vec<TriggeredEvent> {
         TriggeredEvent {
             event_id: "best_friend".to_string(),
             event_type: "relationship_milestone".to_string(),
-            description: "You've become best friends! A special ending is now available.".to_string(),
+            description: "You've become best friends! A special ending is now available."
+                .to_string(),
             data: serde_json::json!({
                 "unlock_ending": "best_friend_ending",
                 "dialogue_id": "best_friend_dialogue"
@@ -596,28 +653,42 @@ fn check_event_condition(event_type: &str, cumulative_score: f32, eval_count: u3
 fn detect_emotion(text: &str, current: &str) -> String {
     let lower = text.to_lowercase();
 
-    if lower.contains("happy") || lower.contains("smile") || lower.contains("laugh")
-        || lower.contains("grin") || lower.contains("joy") || lower.contains("*beam")
+    if lower.contains("happy")
+        || lower.contains("smile")
+        || lower.contains("laugh")
+        || lower.contains("grin")
+        || lower.contains("joy")
+        || lower.contains("*beam")
     {
         "happy".to_string()
-    } else if lower.contains("sad") || lower.contains("cry") || lower.contains("tear")
-        || lower.contains("sigh") || lower.contains("melancholy")
+    } else if lower.contains("sad")
+        || lower.contains("cry")
+        || lower.contains("tear")
+        || lower.contains("sigh")
+        || lower.contains("melancholy")
     {
         "sad".to_string()
-    } else if lower.contains("angry") || lower.contains("frown") || lower.contains("glare")
-        || lower.contains("stern") || lower.contains("mad")
+    } else if lower.contains("angry")
+        || lower.contains("frown")
+        || lower.contains("glare")
+        || lower.contains("stern")
+        || lower.contains("mad")
     {
         "angry".to_string()
-    } else if lower.contains("surprise") || lower.contains("gasp") || lower.contains("shock")
-        || lower.contains("oh!") || lower.contains("wow")
+    } else if lower.contains("surprise")
+        || lower.contains("gasp")
+        || lower.contains("shock")
+        || lower.contains("oh!")
+        || lower.contains("wow")
     {
         "surprised".to_string()
-    } else if lower.contains("love") || lower.contains("heart") || lower.contains("blush")
+    } else if lower.contains("love")
+        || lower.contains("heart")
+        || lower.contains("blush")
         || lower.contains("adore")
     {
         "love".to_string()
-    } else if lower.contains("embarrass") || lower.contains("shy") || lower.contains("fluster")
-    {
+    } else if lower.contains("embarrass") || lower.contains("shy") || lower.contains("fluster") {
         "embarrassed".to_string()
     } else {
         current.to_string()
@@ -630,17 +701,47 @@ fn estimate_sentiment(message: &str) -> f32 {
     let mut score: f32 = 0.0;
 
     // Positive words
-    for word in &["love", "happy", "great", "amazing", "wonderful", "beautiful",
-                   "kind", "nice", "good", "like", "enjoy", "fun", "thank",
-                   "cute", "sweet", "pretty", "awesome", "cool", "friend"] {
+    for word in &[
+        "love",
+        "happy",
+        "great",
+        "amazing",
+        "wonderful",
+        "beautiful",
+        "kind",
+        "nice",
+        "good",
+        "like",
+        "enjoy",
+        "fun",
+        "thank",
+        "cute",
+        "sweet",
+        "pretty",
+        "awesome",
+        "cool",
+        "friend",
+    ] {
         if lower.contains(word) {
             score += 0.15;
         }
     }
 
     // Negative words
-    for word in &["hate", "bad", "ugly", "stupid", "boring", "annoying",
-                   "dumb", "worst", "terrible", "horrible", "disgusting", "idiot"] {
+    for word in &[
+        "hate",
+        "bad",
+        "ugly",
+        "stupid",
+        "boring",
+        "annoying",
+        "dumb",
+        "worst",
+        "terrible",
+        "horrible",
+        "disgusting",
+        "idiot",
+    ] {
         if lower.contains(word) {
             score -= 0.2;
         }
@@ -659,8 +760,6 @@ fn estimate_sentiment(message: &str) -> f32 {
     score.clamp(-0.5, 0.5)
 }
 
-
-
 /// Send a streaming chat message. Chunks are emitted via Tauri events.
 #[tauri::command]
 pub async fn send_chat_message_stream(
@@ -675,7 +774,13 @@ pub async fn send_chat_message_stream(
         let cm = state.character_manager.read().await;
         if let Some(character) = cm.get_character(&character_id) {
             let c = character.read().await;
-            (c.name.clone(), c.description.clone(), c.background.clone(), c.personality.to_prompt_description(), c.emotion.clone())
+            (
+                c.name.clone(),
+                c.description.clone(),
+                c.background.clone(),
+                c.personality.to_prompt_description(),
+                c.emotion.clone(),
+            )
         } else {
             return Err(format!("Character not found: {character_id}"));
         }
@@ -684,22 +789,52 @@ pub async fn send_chat_message_stream(
     let knowledge_context = {
         let kb = state.knowledge_base.read().await;
         let entries = kb.search(&message, 3);
-        if entries.is_empty() { String::new() }
-        else {
-            let parts: Vec<String> = entries.iter().map(|e| format!("{}: {}", e.title, e.content)).collect();
+        if entries.is_empty() {
+            String::new()
+        } else {
+            let parts: Vec<String> = entries
+                .iter()
+                .map(|e| format!("{}: {}", e.title, e.content))
+                .collect();
             format!("Relevant world knowledge:\n{}", parts.join("\n"))
         }
     };
 
-    let mut sessions = state.chat_sessions.write().await;
-    let session = sessions.entry(character_id.clone()).or_insert_with(|| ChatSession::new(character_id.clone()));
-    let now = format!("{:?}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs());
-    session.messages.push(ChatMessage { role: "player".to_string(), content: message.clone(), emotion: None, timestamp: now });
+    let now = format!(
+        "{:?}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs()
+    );
+    let history: Vec<String> = {
+        let mut sessions = state.chat_sessions.write().await;
+        let session = sessions
+            .entry(character_id.clone())
+            .or_insert_with(|| ChatSession::new(character_id.clone()));
+        session.messages.push(ChatMessage {
+            role: "player".to_string(),
+            content: message.clone(),
+            emotion: None,
+            timestamp: now,
+        });
 
-    let history: Vec<String> = session.messages.iter().rev().take(10).rev().map(|m| {
-        let role = if m.role == "player" { "Player" } else { &char_name };
-        format!("{role}: {}", m.content)
-    }).collect();
+        session
+            .messages
+            .iter()
+            .rev()
+            .take(10)
+            .rev()
+            .map(|m| {
+                let role = if m.role == "player" {
+                    "Player"
+                } else {
+                    &char_name
+                };
+                format!("{role}: {}", m.content)
+            })
+            .collect()
+    };
 
     let system_prompt = format!(
         r#"You are the character "{name}" in a visual novel game.
@@ -709,23 +844,38 @@ Personality: {personality}
 Current emotion: {emotion}
 Stay in character. Respond naturally with emotion (use *actions* for body language). Keep responses 1-3 sentences.
 {knowledge}"#,
-        name = char_name, desc = char_description, bg = char_background,
-        personality = char_personality, emotion = char_emotion,
-        knowledge = if knowledge_context.is_empty() { String::new() } else { format!("\nContext:\n{}", knowledge_context) }
+        name = char_name,
+        desc = char_description,
+        bg = char_background,
+        personality = char_personality,
+        emotion = char_emotion,
+        knowledge = if knowledge_context.is_empty() {
+            String::new()
+        } else {
+            format!("\nContext:\n{}", knowledge_context)
+        }
     );
 
     let conversation = history.join("\n");
-    let full_prompt = format!("[System]\n{system_prompt}\n\n[Conversation]\n{conversation}\n\n[{char_name}]");
+    let full_prompt =
+        format!("[System]\n{system_prompt}\n\n[Conversation]\n{conversation}\n\n[{char_name}]");
 
     let pipeline = state.inference_pipeline.read().await;
-    let options = llm_ai::InferenceOptions { max_tokens: 300, temperature: 0.85, ..Default::default() };
+    let options = llm_ai::InferenceOptions {
+        max_tokens: 300,
+        temperature: 0.85,
+        ..Default::default()
+    };
 
     let window_clone = window.clone();
     let on_chunk = Box::new(move |chunk: String| {
         let _ = window_clone.emit("chat-chunk", &chunk);
     });
 
-    let result = pipeline.generate_stream(&full_prompt, &options, on_chunk).await.map_err(|e| format!("AI error: {e}"))?;
+    let result = pipeline
+        .generate_stream(&full_prompt, &options, on_chunk)
+        .await
+        .map_err(|e| format!("AI error: {e}"))?;
 
     if result.success {
         let _ = window.emit("chat-complete", &result.text);
@@ -733,7 +883,43 @@ Stay in character. Respond naturally with emotion (use *actions* for body langua
         let detected_emotion = detect_emotion(&result.text, &char_emotion);
         let relationship_delta = estimate_sentiment(&message);
 
-        session.messages.push(ChatMessage { role: "character".to_string(), content: result.text.clone(), emotion: Some(detected_emotion.clone()), timestamp: format!("{:?}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()) });
+        let (
+            should_evaluate,
+            messages_for_eval,
+            cumulative_score,
+            evaluation_count,
+            already_triggered,
+        ) = {
+            let mut sessions = state.chat_sessions.write().await;
+            let session = sessions
+                .entry(character_id.clone())
+                .or_insert_with(|| ChatSession::new(character_id.clone()));
+            session.messages.push(ChatMessage {
+                role: "character".to_string(),
+                content: result.text.clone(),
+                emotion: Some(detected_emotion.clone()),
+                timestamp: format!(
+                    "{:?}",
+                    std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs()
+                ),
+            });
+
+            let player_msg_count = session
+                .messages
+                .iter()
+                .filter(|m| m.role == "player")
+                .count();
+            (
+                player_msg_count > 0 && player_msg_count % 5 == 0,
+                session.messages.clone(),
+                session.cumulative_score,
+                session.evaluation_count,
+                session.triggered_event_ids.clone(),
+            )
+        };
 
         {
             let cm = state.character_manager.read().await;
@@ -741,14 +927,75 @@ Stay in character. Respond naturally with emotion (use *actions* for body langua
                 let mut c = character.write().await;
                 c.set_emotion(&detected_emotion);
                 c.update_relationship("player", relationship_delta * 0.1);
-                c.add_memory(format!("Player said: {}", message), llm_game::characters::memory::MemoryType::Conversation, 0.5, vec!["conversation".to_string()]);
+                c.add_memory(
+                    format!("Player said: {}", message),
+                    llm_game::characters::memory::MemoryType::Conversation,
+                    0.5,
+                    vec!["conversation".to_string()],
+                );
+            }
+        }
+
+        let mut evaluation = None;
+        let mut triggered_events = Vec::new();
+
+        if should_evaluate {
+            let eval_result = evaluate_conversation_internal(
+                &state,
+                &char_name,
+                &messages_for_eval,
+                cumulative_score,
+                evaluation_count,
+            )
+            .await;
+
+            if let Ok(eval) = eval_result {
+                let next_cumulative_score = cumulative_score + eval.overall_score;
+                let next_evaluation_count = evaluation_count + 1;
+                let events = check_event_triggers(
+                    &state,
+                    &character_id,
+                    &eval,
+                    next_cumulative_score,
+                    next_evaluation_count,
+                    &already_triggered,
+                )
+                .await;
+
+                {
+                    let mut sessions = state.chat_sessions.write().await;
+                    let session = sessions
+                        .entry(character_id.clone())
+                        .or_insert_with(|| ChatSession::new(character_id.clone()));
+                    session.cumulative_score += eval.overall_score;
+                    session.evaluation_count += 1;
+                    for event in &events {
+                        if !session.triggered_event_ids.contains(&event.event_id) {
+                            session.triggered_event_ids.push(event.event_id.clone());
+                        }
+                    }
+                }
+
+                evaluation = Some(eval);
+                triggered_events = events;
             }
         }
 
         let _ = window.emit("chat-emotion", &detected_emotion);
         let _ = window.emit("chat-relationship", &relationship_delta);
+        if let Some(eval) = evaluation {
+            let _ = window.emit("chat-evaluation", &eval);
+        }
+        if !triggered_events.is_empty() {
+            let _ = window.emit("chat-events", &triggered_events);
+        }
     } else {
-        let _ = window.emit("chat-error", &result.error.unwrap_or_else(|| "Generation failed".to_string()));
+        let _ = window.emit(
+            "chat-error",
+            &result
+                .error
+                .unwrap_or_else(|| "Generation failed".to_string()),
+        );
     }
 
     Ok(())

@@ -1,7 +1,6 @@
 # Rust
 rust-engine/target/
 **/*.rs.bk
-Cargo.lock
 
 # Node
 frontend/node_modules/

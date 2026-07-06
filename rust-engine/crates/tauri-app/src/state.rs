@@ -29,6 +29,9 @@ pub struct AppState {
     pub script_engine: Arc<RwLock<ScriptEngine>>,
     pub project_path: Arc<RwLock<Option<PathBuf>>>,
     pub initialized: Arc<RwLock<bool>>,
+    /// Active authoring/runtime scene selected from the scene asset catalog.
+    pub active_scene_id: Arc<RwLock<Option<String>>>,
+    pub scene_history: Arc<RwLock<Vec<String>>>,
     /// Chat sessions keyed by character_id.
     pub chat_sessions: Arc<RwLock<HashMap<String, ChatSession>>>,
 }
@@ -51,6 +54,8 @@ impl AppState {
             script_engine: Arc::new(RwLock::new(ScriptEngine::new())),
             project_path: Arc::new(RwLock::new(None)),
             initialized: Arc::new(RwLock::new(false)),
+            active_scene_id: Arc::new(RwLock::new(None)),
+            scene_history: Arc::new(RwLock::new(Vec::new())),
             chat_sessions: Arc::new(RwLock::new(HashMap::new())),
         }
     }

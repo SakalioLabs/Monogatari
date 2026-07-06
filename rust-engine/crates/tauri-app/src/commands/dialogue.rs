@@ -57,9 +57,7 @@ pub async fn select_choice(
 
 /// Get the current dialogue state.
 #[tauri::command]
-pub async fn get_dialogue_state(
-    state: State<'_, AppState>,
-) -> Result<DialogueState, String> {
+pub async fn get_dialogue_state(state: State<'_, AppState>) -> Result<DialogueState, String> {
     let dm = state.dialogue_manager.read().await;
     get_dialogue_state_inner(&dm)
 }

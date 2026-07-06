@@ -1,0 +1,9 @@
+{
+  "id": "sakura_park",
+  "name": "Sakura Park",
+  "background_path": "assets/backgrounds/sakura_park.svg",
+  "bgm_path": null,
+  "weather": "spring",
+  "time_of_day": "day",
+  "tags": ["outdoor", "calm", "demo"]
+}

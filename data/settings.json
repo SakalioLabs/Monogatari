@@ -34,9 +34,10 @@
         }
     },
     "paths": {
-        "characters": "data/characters",
-        "knowledge": "data/knowledge",
-        "dialogue": "data/dialogue",
+        "characters": "characters",
+        "knowledge": "knowledge",
+        "dialogue": "dialogue",
+        "scenes": "scenes",
         "assets": "assets",
         "saves": "saves"
     }

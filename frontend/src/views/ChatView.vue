@@ -1,116 +1,174 @@
-﻿<template>
-  <div class="chat-container">
-    <div class="chat-header">
-      <button class="back-btn" @click="$router.push('/')">Back</button>
-      <div class="character-info" v-if="selectedCharacter">
-        <span class="char-name">{{ selectedCharacter.name }}</span>
-        <span class="char-emotion">{{ currentEmotion }}</span>
-        <span class="relationship" :class="relationshipClass">Relation: {{ relationshipScore.toFixed(1) }}</span>
+<template>
+  <div class="chat-workbench">
+    <aside class="character-rail">
+      <div class="rail-header">
+        <div>
+          <span class="eyebrow">Cast</span>
+          <h1>AI Chat</h1>
+        </div>
+        <span class="status-dot" :class="{ online: characters.length > 0 }"></span>
       </div>
-      <div class="header-actions">
-        <button class="btn btn-secondary btn-sm" @click="showEvaluation = !showEvaluation">Score</button>
-        <button class="btn btn-secondary btn-sm" @click="clearChat">Clear</button>
-      </div>
-    </div>
 
-    <div class="chat-body">
-      <!-- Character selector -->
-      <div v-if="!selectedCharacter" class="character-select">
-        <h2>Choose a character to chat with</h2>
-        <div class="char-grid">
-          <div
-            v-for="char in characters"
-            :key="char.id"
-            class="char-card"
-            @click="selectCharacter(char)"
-          >
-            <div class="char-avatar">{{ char.name[0] }}</div>
-            <div class="char-name">{{ char.name }}</div>
-            <div class="char-desc">{{ char.description }}</div>
-          </div>
+      <div class="character-list">
+        <button
+          v-for="char in characters"
+          :key="char.id"
+          class="character-row"
+          :class="{ selected: selectedCharacter?.id === char.id }"
+          @click="selectCharacter(char)"
+        >
+          <span class="avatar">{{ initials(char.name) }}</span>
+          <span class="character-copy">
+            <span class="row-title">{{ char.name }}</span>
+            <span class="row-subtitle">{{ char.description || 'No profile text' }}</span>
+          </span>
+        </button>
+
+        <div v-if="characters.length === 0" class="empty-rail">
+          <span class="empty-mark">--</span>
+          <span>No characters loaded</span>
         </div>
       </div>
+    </aside>
 
-      <!-- Chat messages -->
-      <div v-else class="messages-area" ref="messagesRef">
-        <div
+    <section class="conversation-panel">
+      <header class="conversation-header">
+        <button class="icon-btn" title="Back to dashboard" @click="$router.push('/')">‹</button>
+        <div class="conversation-title">
+          <span class="eyebrow">{{ selectedCharacter ? 'Session' : 'Ready' }}</span>
+          <h2>{{ selectedCharacter?.name || 'Select a character' }}</h2>
+        </div>
+        <div class="session-metrics" v-if="selectedCharacter">
+          <span class="metric-pill">{{ currentEmotion }}</span>
+          <span class="metric-pill" :class="relationshipClass">Rel {{ relationshipScore.toFixed(2) }}</span>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-secondary btn-sm" :disabled="!selectedCharacter || isLoading" @click="refreshEvaluation">Score</button>
+          <button class="btn btn-secondary btn-sm" :disabled="!selectedCharacter || isLoading" @click="clearChat">Clear</button>
+        </div>
+      </header>
+
+      <main v-if="selectedCharacter" ref="messagesRef" class="messages-area">
+        <div v-if="messages.length === 0" class="conversation-empty">
+          <span class="empty-mark">00</span>
+          <h3>{{ selectedCharacter.name }}</h3>
+          <p>{{ selectedCharacter.description || 'Character profile is ready.' }}</p>
+        </div>
+
+        <article
           v-for="(msg, i) in messages"
-          :key="i"
+          :key="`${msg.timestamp}-${i}`"
           class="message"
           :class="msg.role === 'player' ? 'msg-player' : 'msg-character'"
         >
-          <div class="msg-avatar">{{ msg.role === 'player' ? 'P' : selectedCharacter.name[0] }}</div>
-          <div class="msg-bubble">
-            <div class="msg-content">{{ msg.content }}</div>
+          <div class="msg-avatar">{{ msg.role === 'player' ? 'P' : initials(selectedCharacter.name) }}</div>
+          <div class="msg-stack">
+            <div class="msg-bubble">
+              <span v-if="msg.content">{{ msg.content }}</span>
+              <span v-else class="stream-placeholder">Generating</span>
+            </div>
             <div class="msg-meta">
-              <span v-if="msg.emotion" class="msg-emotion">{{ msg.emotion }}</span>
-              <span class="msg-time">{{ formatTime(msg.timestamp) }}</span>
+              <span v-if="msg.emotion">{{ msg.emotion }}</span>
+              <span>{{ formatTime(msg.timestamp) }}</span>
             </div>
           </div>
-        </div>
-        <div v-if="isLoading" class="message msg-character">
-          <div class="msg-avatar">{{ selectedCharacter.name[0] }}</div>
-          <div class="msg-bubble typing">
-            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-          </div>
-        </div>
-      </div>
+        </article>
+      </main>
 
-      <!-- Input area -->
-      <div v-if="selectedCharacter" class="input-area">
+      <main v-else class="select-state">
+        <div class="select-state-inner">
+          <span class="empty-mark">M</span>
+          <h2>Character session desk</h2>
+          <p>Profiles, relationship state, streaming replies, and scoring stay in one focused surface.</p>
+        </div>
+      </main>
+
+      <footer v-if="selectedCharacter" class="composer">
         <textarea
           ref="inputRef"
           v-model="inputText"
-          @keydown.enter.exact.prevent="sendMessage"
-          placeholder="Type your message..."
+          :disabled="isLoading"
+          placeholder="Message"
           rows="1"
+          @input="resizeInput"
+          @keydown.enter.exact.prevent="sendMessage"
         ></textarea>
-        <button class="send-btn" @click="sendMessage" :disabled="!inputText.trim() || isLoading">
-          Send
+        <button class="send-btn" :disabled="!inputText.trim() || isLoading" title="Send" @click="sendMessage">
+          <span v-if="isLoading" class="spinner"></span>
+          <span v-else>Send</span>
         </button>
-      </div>
-    </div>
+      </footer>
+    </section>
 
-    <!-- Event notification -->
+    <aside class="insight-panel">
+      <section class="insight-section">
+        <span class="eyebrow">Signal</span>
+        <div class="insight-grid">
+          <div class="insight-item">
+            <span class="insight-value">{{ messageCount }}</span>
+            <span class="insight-label">Messages</span>
+          </div>
+          <div class="insight-item">
+            <span class="insight-value">{{ playerMessageCount }}</span>
+            <span class="insight-label">Player</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="insight-section">
+        <div class="section-head">
+          <span class="eyebrow">Evaluation</span>
+          <button class="link-btn" :disabled="!selectedCharacter || isLoading" @click="refreshEvaluation">Refresh</button>
+        </div>
+        <div v-if="evaluation" class="score-stack">
+          <div class="score-row">
+            <span>Friendliness</span>
+            <strong>{{ percent(evaluation.friendliness) }}</strong>
+            <div class="bar-track"><div class="bar-fill" :style="{ width: percent(evaluation.friendliness) }"></div></div>
+          </div>
+          <div class="score-row">
+            <span>Engagement</span>
+            <strong>{{ percent(evaluation.engagement) }}</strong>
+            <div class="bar-track"><div class="bar-fill engagement" :style="{ width: percent(evaluation.engagement) }"></div></div>
+          </div>
+          <div class="score-row">
+            <span>Creativity</span>
+            <strong>{{ percent(evaluation.creativity) }}</strong>
+            <div class="bar-track"><div class="bar-fill creativity" :style="{ width: percent(evaluation.creativity) }"></div></div>
+          </div>
+          <p class="eval-summary">{{ evaluation.summary }}</p>
+        </div>
+        <p v-else class="muted-copy">No score yet.</p>
+      </section>
+
+      <section class="insight-section">
+        <span class="eyebrow">Runtime</span>
+        <div class="runtime-list">
+          <span><b>Mode</b>{{ isStreaming ? 'Streaming' : 'Idle' }}</span>
+          <span><b>Emotion</b>{{ currentEmotion }}</span>
+          <span><b>Relation</b>{{ relationshipScore.toFixed(2) }}</span>
+        </div>
+      </section>
+    </aside>
+
     <Transition name="fade">
       <div v-if="activeEvent" class="event-toast" @click="activeEvent = null">
-        <div class="event-icon">&#9733;</div>
-        <div class="event-text">
-          <strong>{{ activeEvent.description }}</strong>
-          <p v-if="activeEvent.data.unlock_scene">New scene unlocked!</p>
-          <p v-if="activeEvent.data.dialogue_id">Special dialogue available!</p>
-        </div>
+        <strong>{{ activeEvent.description }}</strong>
+        <span v-if="activeEvent.data.unlock_scene">Scene unlocked</span>
+        <span v-if="activeEvent.data.dialogue_id">Dialogue available</span>
       </div>
     </Transition>
 
-    <!-- Evaluation panel -->
-    <Transition name="slide">
-      <div v-if="showEvaluation && evaluation" class="eval-panel">
-        <h3>Conversation Score</h3>
-        <div class="eval-bar">
-          <label>Friendliness</label>
-          <div class="bar-track"><div class="bar-fill" :style="{ width: evaluation.friendliness * 100 + '%' }"></div></div>
-          <span>{{ (evaluation.friendliness * 100).toFixed(0) }}%</span>
-        </div>
-        <div class="eval-bar">
-          <label>Engagement</label>
-          <div class="bar-track"><div class="bar-fill engagement" :style="{ width: evaluation.engagement * 100 + '%' }"></div></div>
-          <span>{{ (evaluation.engagement * 100).toFixed(0) }}%</span>
-        </div>
-        <div class="eval-bar">
-          <label>Creativity</label>
-          <div class="bar-track"><div class="bar-fill creativity" :style="{ width: evaluation.creativity * 100 + '%' }"></div></div>
-          <span>{{ (evaluation.creativity * 100).toFixed(0) }}%</span>
-        </div>
-        <p class="eval-summary">{{ evaluation.summary }}</p>
-      </div>
+    <Transition name="fade">
+      <div v-if="errorMessage" class="error-toast" @click="errorMessage = null">{{ errorMessage }}</div>
     </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
-import { invoke } from '@tauri-apps/api/core'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { invokeCommand } from '../lib/tauri'
 
 interface ChatMessage {
   role: string
@@ -118,13 +176,7 @@ interface ChatMessage {
   emotion: string | null
   timestamp: string
 }
-interface ChatResponse {
-  character_response: string
-  emotion: string
-  relationship_delta: number
-  evaluation: ConversationEvaluation | null
-  triggered_events: TriggeredEvent[]
-}
+
 interface ConversationEvaluation {
   friendliness: number
   engagement: number
@@ -132,12 +184,14 @@ interface ConversationEvaluation {
   overall_score: number
   summary: string
 }
+
 interface TriggeredEvent {
   event_id: string
   event_type: string
   description: string
-  data: Record<string, any>
+  data: Record<string, unknown>
 }
+
 interface CharacterInfo {
   id: string
   name: string
@@ -151,19 +205,39 @@ const selectedCharacter = ref<CharacterInfo | null>(null)
 const messages = ref<ChatMessage[]>([])
 const inputText = ref('')
 const isLoading = ref(false)
+const isStreaming = ref(false)
 const currentEmotion = ref('neutral')
 const relationshipScore = ref(0)
 const evaluation = ref<ConversationEvaluation | null>(null)
-const showEvaluation = ref(false)
 const activeEvent = ref<TriggeredEvent | null>(null)
+const errorMessage = ref<string | null>(null)
 const messagesRef = ref<HTMLDivElement>()
 const inputRef = ref<HTMLTextAreaElement>()
 
-const relationshipClass = ref('')
+let streamUnlisteners: UnlistenFn[] = []
+
+const messageCount = computed(() => messages.value.length)
+const playerMessageCount = computed(() => messages.value.filter((m) => m.role === 'player').length)
+const relationshipClass = computed(() => {
+  if (relationshipScore.value >= 0.6) return 'rel-high'
+  if (relationshipScore.value >= 0.3) return 'rel-mid'
+  return 'rel-low'
+})
+
+function initials(name: string): string {
+  return name.trim().slice(0, 2).toUpperCase() || 'AI'
+}
+
+function percent(value: number): string {
+  return `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`
+}
 
 function formatTime(ts: string): string {
-  try { return new Date(ts).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) }
-  catch { return '' }
+  try {
+    return new Date(ts).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  } catch {
+    return ''
+  }
 }
 
 function scrollToBottom() {
@@ -172,132 +246,688 @@ function scrollToBottom() {
   })
 }
 
+function resizeInput() {
+  nextTick(() => {
+    if (!inputRef.value) return
+    inputRef.value.style.height = 'auto'
+    inputRef.value.style.height = `${Math.min(inputRef.value.scrollHeight, 144)}px`
+  })
+}
+
 async function selectCharacter(char: CharacterInfo) {
   selectedCharacter.value = char
   currentEmotion.value = char.emotion || 'neutral'
+  evaluation.value = null
+  errorMessage.value = null
   try {
-    messages.value = await invoke('get_chat_history', { characterId: char.id })
-    relationshipScore.value = await invoke('get_relationship_score', { characterId: char.id })
-    updateRelationshipClass()
-  } catch (e) { console.error(e) }
+    messages.value = await invokeCommand<ChatMessage[]>('get_chat_history', { characterId: char.id }, [])
+    relationshipScore.value = await invokeCommand<number>('get_relationship_score', { characterId: char.id }, 0)
+  } catch (e) {
+    errorMessage.value = String(e)
+  }
   scrollToBottom()
   nextTick(() => inputRef.value?.focus())
 }
 
+async function attachStreamListeners(assistantMessage: ChatMessage) {
+  cleanupStreamListeners()
+  streamUnlisteners = await Promise.all([
+    listen<string>('chat-chunk', (event) => {
+      assistantMessage.content += event.payload
+      isStreaming.value = true
+      scrollToBottom()
+    }),
+    listen<string>('chat-complete', (event) => {
+      if (event.payload) assistantMessage.content = event.payload
+      isStreaming.value = false
+      scrollToBottom()
+    }),
+    listen<string>('chat-emotion', (event) => {
+      currentEmotion.value = event.payload || currentEmotion.value
+      assistantMessage.emotion = currentEmotion.value
+    }),
+    listen<number>('chat-relationship', async () => {
+      await refreshRelationship()
+    }),
+    listen<ConversationEvaluation>('chat-evaluation', (event) => {
+      evaluation.value = event.payload
+    }),
+    listen<TriggeredEvent[]>('chat-events', (event) => {
+      if (event.payload.length > 0) activeEvent.value = event.payload[0]
+    }),
+    listen<string>('chat-error', (event) => {
+      errorMessage.value = event.payload || 'Generation failed'
+      if (!assistantMessage.content) assistantMessage.content = errorMessage.value
+      isStreaming.value = false
+    }),
+  ])
+}
+
+function cleanupStreamListeners() {
+  for (const unlisten of streamUnlisteners) unlisten()
+  streamUnlisteners = []
+}
+
 async function sendMessage() {
   if (!inputText.value.trim() || !selectedCharacter.value || isLoading.value) return
+
+  const character = selectedCharacter.value
   const text = inputText.value.trim()
   inputText.value = ''
+  resizeInput()
+  errorMessage.value = null
+
   messages.value.push({ role: 'player', content: text, emotion: null, timestamp: new Date().toISOString() })
+  const assistantMessage: ChatMessage = {
+    role: 'character',
+    content: '',
+    emotion: null,
+    timestamp: new Date().toISOString(),
+  }
+  messages.value.push(assistantMessage)
   scrollToBottom()
+
   isLoading.value = true
+  isStreaming.value = true
+
   try {
-    const resp = await invoke<ChatResponse>('send_chat_message', {
-      characterId: selectedCharacter.value.id,
+    await attachStreamListeners(assistantMessage)
+    await invokeCommand<void>('send_chat_message_stream', {
+      characterId: character.id,
       message: text,
     })
-    messages.value.push({
-      role: 'character',
-      content: resp.character_response,
-      emotion: resp.emotion,
-      timestamp: new Date().toISOString(),
-    })
-    currentEmotion.value = resp.emotion
-    relationshipScore.value += resp.relationship_delta
-    updateRelationshipClass()
-    if (resp.evaluation) evaluation.value = resp.evaluation
-    if (resp.triggered_events.length > 0) activeEvent.value = resp.triggered_events[0]
-  } catch (e: any) {
-    messages.value.push({ role: 'character', content: `Error: ${e}`, emotion: null, timestamp: new Date().toISOString() })
+    await refreshRelationship()
+  } catch (e) {
+    errorMessage.value = String(e)
+    if (!assistantMessage.content) assistantMessage.content = `Error: ${e}`
   } finally {
     isLoading.value = false
+    isStreaming.value = false
+    cleanupStreamListeners()
     scrollToBottom()
+    nextTick(() => inputRef.value?.focus())
   }
 }
 
-function updateRelationshipClass() {
-  if (relationshipScore.value >= 0.6) relationshipClass.value = 'rel-high'
-  else if (relationshipScore.value >= 0.3) relationshipClass.value = 'rel-mid'
-  else relationshipClass.value = 'rel-low'
+async function refreshRelationship() {
+  if (!selectedCharacter.value) return
+  try {
+    relationshipScore.value = await invokeCommand<number>('get_relationship_score', { characterId: selectedCharacter.value.id }, 0)
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+async function refreshEvaluation() {
+  if (!selectedCharacter.value) return
+  try {
+    evaluation.value = await invokeCommand<ConversationEvaluation>('evaluate_conversation', { characterId: selectedCharacter.value.id })
+  } catch (e) {
+    errorMessage.value = String(e)
+  }
 }
 
 async function clearChat() {
   if (!selectedCharacter.value) return
-  await invoke('clear_chat_history', { characterId: selectedCharacter.value.id })
-  messages.value = []
-  evaluation.value = null
+  try {
+    await invokeCommand<void>('clear_chat_history', { characterId: selectedCharacter.value.id }, undefined)
+    messages.value = []
+    evaluation.value = null
+    await refreshRelationship()
+  } catch (e) {
+    errorMessage.value = String(e)
+  }
 }
 
 onMounted(async () => {
-  try { characters.value = await invoke('get_characters') } catch (e) { console.error(e) }
+  try {
+    characters.value = await invokeCommand<CharacterInfo[]>('get_characters', undefined, [])
+  } catch (e) {
+    errorMessage.value = String(e)
+  }
 })
+
+onUnmounted(cleanupStreamListeners)
 </script>
 
 <style scoped>
-.chat-container { height: 100vh; display: flex; flex-direction: column; background: var(--bg-dark, #0a0a1a); }
-.chat-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; background: var(--bg-card, #16213e); border-bottom: 1px solid var(--border, #2a2a4a); }
-.back-btn { background: none; border: 1px solid var(--border, #2a2a4a); color: var(--text-muted, #888); padding: 6px 12px; border-radius: 6px; cursor: pointer; }
-.back-btn:hover { border-color: var(--primary, #6c5ce7); color: var(--primary, #6c5ce7); }
-.character-info { display: flex; align-items: center; gap: 12px; }
-.char-name { font-weight: 600; color: var(--primary, #6c5ce7); font-size: 16px; }
-.char-emotion { font-size: 13px; color: var(--text-muted, #888); padding: 2px 8px; background: rgba(108,92,231,0.1); border-radius: 10px; }
-.relationship { font-size: 13px; padding: 2px 8px; border-radius: 10px; }
-.rel-high { background: rgba(0,184,148,0.15); color: #00b894; }
-.rel-mid { background: rgba(253,203,110,0.15); color: #fdcb6e; }
-.rel-low { background: rgba(225,112,85,0.15); color: #e17055; }
-.header-actions { display: flex; gap: 8px; }
-.btn-sm { padding: 5px 10px; font-size: 12px; }
-.chat-body { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-.character-select { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; }
-.character-select h2 { color: var(--primary, #6c5ce7); margin-bottom: 24px; }
-.char-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; max-width: 800px; }
-.char-card { background: var(--bg-card, #16213e); border: 1px solid var(--border, #2a2a4a); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; }
-.char-card:hover { border-color: var(--primary, #6c5ce7); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(108,92,231,0.2); }
-.char-avatar { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--primary, #6c5ce7), var(--secondary, #00cec9)); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; font-size: 24px; color: white; font-weight: bold; }
-.char-card .char-name { font-weight: 600; color: var(--text, #e0e0e0); margin-bottom: 4px; }
-.char-desc { font-size: 12px; color: var(--text-muted, #888); }
-.messages-area { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-.message { display: flex; gap: 10px; max-width: 70%; animation: fadeIn 0.3s ease; }
-.msg-player { align-self: flex-end; flex-direction: row-reverse; }
-.msg-character { align-self: flex-start; }
-.msg-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0; }
-.msg-player .msg-avatar { background: var(--primary, #6c5ce7); color: white; }
-.msg-character .msg-avatar { background: var(--secondary, #00cec9); color: white; }
-.msg-bubble { padding: 12px 16px; border-radius: 16px; }
-.msg-player .msg-bubble { background: rgba(108,92,231,0.2); border: 1px solid rgba(108,92,231,0.3); border-bottom-right-radius: 4px; }
-.msg-character .msg-bubble { background: rgba(22,33,62,0.95); border: 1px solid var(--border, #2a2a4a); border-bottom-left-radius: 4px; }
-.msg-content { font-size: 15px; line-height: 1.6; color: var(--text, #e0e0e0); }
-.msg-meta { display: flex; gap: 8px; margin-top: 6px; font-size: 11px; color: var(--text-muted, #666); }
-.msg-emotion { padding: 1px 6px; background: rgba(0,206,201,0.15); border-radius: 8px; }
-.typing { display: flex; gap: 4px; align-items: center; padding: 16px 20px; }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted, #888); animation: bounce 1.4s infinite; }
-.dot:nth-child(2) { animation-delay: 0.2s; }
-.dot:nth-child(3) { animation-delay: 0.4s; }
-.input-area { display: flex; gap: 10px; padding: 16px 20px; background: var(--bg-card, #16213e); border-top: 1px solid var(--border, #2a2a4a); }
-.input-area textarea { flex: 1; background: var(--bg-input, #1a1a3e); border: 1px solid var(--border, #2a2a4a); border-radius: 12px; padding: 10px 14px; color: var(--text, #e0e0e0); font-size: 15px; resize: none; outline: none; font-family: inherit; }
-.input-area textarea:focus { border-color: var(--primary, #6c5ce7); }
-.send-btn { padding: 10px 24px; background: var(--primary, #6c5ce7); color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 15px; font-weight: 600; transition: all 0.2s; }
-.send-btn:hover:not(:disabled) { background: #5a4bd1; }
-.send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.event-toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, rgba(108,92,231,0.95), rgba(0,206,201,0.95)); color: white; padding: 16px 24px; border-radius: 16px; display: flex; align-items: center; gap: 12px; z-index: 200; cursor: pointer; box-shadow: 0 8px 32px rgba(0,0,0,0.4); max-width: 500px; animation: slideDown 0.5s ease; }
-.event-icon { font-size: 28px; }
-.event-text strong { display: block; margin-bottom: 4px; }
-.event-text p { font-size: 13px; opacity: 0.9; margin: 0; }
-.eval-panel { position: fixed; right: 0; top: 60px; width: 300px; background: var(--bg-card, #16213e); border-left: 1px solid var(--border, #2a2a4a); padding: 20px; z-index: 50; height: calc(100vh - 60px); overflow-y: auto; }
-.eval-panel h3 { color: var(--primary, #6c5ce7); margin-bottom: 16px; }
-.eval-bar { margin-bottom: 14px; }
-.eval-bar label { display: block; font-size: 12px; color: var(--text-muted, #888); margin-bottom: 4px; }
-.bar-track { height: 8px; background: var(--bg-input, #1a1a3e); border-radius: 4px; overflow: hidden; }
-.bar-fill { height: 100%; background: var(--primary, #6c5ce7); border-radius: 4px; transition: width 0.5s ease; }
-.bar-fill.engagement { background: var(--secondary, #00cec9); }
-.bar-fill.creativity { background: #fdcb6e; }
-.eval-bar span { font-size: 12px; color: var(--text-muted, #888); }
-.eval-summary { font-size: 13px; color: var(--text-muted, #888); margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border, #2a2a4a); }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes bounce { 0%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-6px); } }
-@keyframes slideDown { from { opacity: 0; transform: translate(-50%, -20px); } to { opacity: 1; transform: translate(-50%, 0); } }
-.fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
-.slide-enter-active, .slide-leave-active { transition: transform 0.3s ease; }
-.slide-enter-from, .slide-leave-to { transform: translateX(100%); }
+.chat-workbench {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr) 300px;
+  height: 100vh;
+  min-height: 0;
+  background: var(--surface-0);
+}
+
+.character-rail,
+.insight-panel {
+  min-width: 0;
+  background: var(--surface-1);
+  border-color: var(--border);
+}
+
+.character-rail {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+}
+
+.rail-header,
+.conversation-header,
+.insight-section {
+  border-bottom: 1px solid var(--border);
+}
+
+.rail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+}
+
+.eyebrow {
+  display: block;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.rail-header h1,
+.conversation-title h2,
+.select-state h2 {
+  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--surface-4);
+  box-shadow: 0 0 0 4px rgba(255,255,255,0.04);
+}
+
+.status-dot.online {
+  background: var(--success);
+}
+
+.character-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.character-row {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 6px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.character-row:hover,
+.character-row.selected {
+  background: var(--surface-2);
+  border-color: var(--border-light);
+}
+
+.avatar,
+.msg-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--surface-0);
+  background: var(--brand);
+  font-weight: 800;
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+}
+
+.character-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.row-title {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.row-subtitle {
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conversation-panel {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.025), transparent 220px),
+    var(--surface-0);
+}
+
+.conversation-header {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 18px;
+  background: rgba(15,17,21,0.86);
+  backdrop-filter: blur(16px);
+}
+
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.icon-btn:hover {
+  border-color: var(--brand);
+  color: var(--brand-light);
+}
+
+.session-metrics,
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.metric-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  background: var(--surface-1);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.metric-pill.rel-high { color: var(--success); }
+.metric-pill.rel-mid { color: var(--warning); }
+.metric-pill.rel-low { color: var(--danger); }
+
+.messages-area {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 28px min(5vw, 56px);
+}
+
+.message {
+  display: flex;
+  gap: 12px;
+  max-width: min(760px, 86%);
+  margin-bottom: 18px;
+  animation: slideInUp 0.18s ease;
+}
+
+.msg-player {
+  flex-direction: row-reverse;
+  margin-left: auto;
+}
+
+.msg-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+
+.msg-player .msg-avatar {
+  background: var(--accent);
+}
+
+.msg-stack {
+  min-width: 0;
+}
+
+.msg-bubble {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  color: var(--text-primary);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-sm);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.msg-player .msg-bubble {
+  background: rgba(245,158,11,0.12);
+  border-color: rgba(245,158,11,0.32);
+}
+
+.msg-meta {
+  display: flex;
+  gap: 8px;
+  padding: 5px 2px 0;
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+.stream-placeholder {
+  color: var(--text-tertiary);
+}
+
+.composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px;
+  gap: 10px;
+  align-items: end;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-1);
+}
+
+.composer textarea {
+  width: 100%;
+  max-height: 144px;
+  min-height: 42px;
+  resize: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  padding: 11px 12px;
+  font: inherit;
+  outline: none;
+}
+
+.composer textarea:focus {
+  border-color: var(--brand);
+  box-shadow: var(--shadow-brand);
+}
+
+.send-btn {
+  min-height: 42px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--brand);
+  color: var(--surface-0);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.send-btn:hover:not(:disabled) {
+  background: var(--brand-light);
+}
+
+.send-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.insight-panel {
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+.insight-section {
+  padding: 18px;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.insight-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.insight-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  padding: 12px;
+}
+
+.insight-value {
+  display: block;
+  color: var(--brand-light);
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.insight-label {
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+.score-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.score-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 10px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.score-row strong {
+  color: var(--text-primary);
+}
+
+.bar-track {
+  grid-column: 1 / -1;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-3);
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand);
+  transition: width var(--transition);
+}
+
+.bar-fill.engagement { background: var(--info); }
+.bar-fill.creativity { background: var(--accent); }
+
+.eval-summary,
+.muted-copy {
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.runtime-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.runtime-list span {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.runtime-list b {
+  color: var(--text-tertiary);
+  font-weight: 600;
+}
+
+.link-btn {
+  border: none;
+  background: transparent;
+  color: var(--brand-light);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.link-btn:disabled {
+  cursor: not-allowed;
+  color: var(--text-tertiary);
+}
+
+.conversation-empty,
+.select-state,
+.empty-rail {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+.conversation-empty {
+  min-height: 60%;
+}
+
+.select-state {
+  flex: 1;
+  padding: 24px;
+}
+
+.select-state-inner {
+  max-width: 420px;
+}
+
+.conversation-empty h3,
+.select-state h2 {
+  margin-top: 12px;
+  color: var(--text-primary);
+}
+
+.conversation-empty p,
+.select-state p {
+  margin-top: 6px;
+  color: var(--text-tertiary);
+}
+
+.empty-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  height: 42px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--brand-light);
+  background: var(--surface-2);
+  font-family: var(--font-mono);
+  font-weight: 800;
+}
+
+.event-toast,
+.error-toast {
+  position: fixed;
+  z-index: 100;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  gap: 2px;
+  min-width: min(420px, calc(100vw - 32px));
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+}
+
+.event-toast {
+  top: 18px;
+  border: 1px solid rgba(45,212,191,0.36);
+  background: rgba(15,118,110,0.96);
+  color: white;
+}
+
+.error-toast {
+  bottom: 18px;
+  border: 1px solid rgba(239,68,68,0.42);
+  background: rgba(127,29,29,0.96);
+  color: white;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+@media (max-width: 1120px) {
+  .chat-workbench {
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+
+  .insight-panel {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .chat-workbench {
+    grid-template-columns: 1fr;
+  }
+
+  .character-rail {
+    max-height: 220px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .conversation-header {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .session-metrics,
+  .header-actions {
+    grid-column: 2;
+    justify-self: start;
+    flex-wrap: wrap;
+  }
+
+  .message {
+    max-width: 100%;
+  }
+}
 </style>

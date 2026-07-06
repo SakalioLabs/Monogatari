@@ -8,10 +8,13 @@ Monogatari is a development engine for creating LLM-driven text adventure games.
 
 ## Key Features
 
-- **AI Chat Mode** - Players talk freely with LLM-driven characters. The AI stays in character using personality, background, and world knowledge.
+- **AI Chat Mode** - Players talk freely with LLM-driven characters. The AI stays in character using personality, background, world knowledge, streaming response events, and streamed evaluation/event notifications.
 - **Conversation Scoring** - The LLM evaluates every conversation on friendliness, engagement, and creativity. Cumulative scores unlock special events.
 - **Event Trigger System** - Relationship milestones, dialogue achievements, and cumulative progress trigger plot events, scene changes, and special dialogues.
 - **Visual Workflow Editor** - Drag-and-drop node-based editor for designing dialogue flows, branching conditions, LLM generation nodes, evaluation triggers, and scene transitions.
+- **Workflow Validation** - Import/export and save paths validate node ids, start/end structure, missing config fields, broken links, duplicate links, and unreachable nodes.
+- **Scene Asset Library** - Project scene metadata and background files are scanned, validated, listed, and selectable as the active runtime scene.
+- **Project Control Panel** - Project settings, path readiness, AI backend selection, and runtime initialization are managed from one production-oriented console.
 - **Character System** - Full personality model (Big Five traits), memory system, emotion tracking, and relationship scores per character.
 - **Knowledge Base** - Keyword-indexed world lore and context system that feeds into AI prompts for consistent storytelling.
 - **Branching Dialogue** - Pre-scripted dialogue trees with choices, relationship changes, and flag-based conditional branching.
@@ -19,6 +22,19 @@ Monogatari is a development engine for creating LLM-driven text adventure games.
 - **Save/Load System** - Full game state persistence including character states, flags, variables, and chat history.
 - **Rhai Scripting** - Embedded scripting engine for custom game logic, conditions, and triggers.
 - **Multiple AI Backends** - OpenAI-compatible API (GPT, Claude, etc.) and local ONNX models with DirectML.
+- **Commercial Workbench UI** - Desktop-first dashboard, streaming chat desk, story runtime, workflow authoring surface, and settings panels designed for repeated production use.
+
+## Current Development Status
+
+Verified on 2026-07-06:
+
+- Frontend production build passes with `npm run build`.
+- Full frontend dependency audit passes with `npm audit`.
+- Rust Tauri app crate passes `cargo check --locked -p llm-galgame-app`.
+- C# legacy solution exits successfully with `dotnet test LLMAssistant.sln --no-restore`.
+- Live2D remains on `pixi-live2d-display@0.4.0`; its transitive `gh-pages` dependency is pinned to the safe `6.3.0` line through npm overrides.
+- Rust desktop dependencies are pinned through `rust-engine/Cargo.lock` for reproducible Tauri builds.
+- Commercial release gates are tracked in `docs/RELEASE_CHECKLIST.md`.
 
 ## Architecture
 
@@ -32,10 +48,10 @@ monogatari/
 |   |   +-- assets/        # Asset management, save/load
 |   |   +-- scripting/     # Rhai scripting engine
 |   |   +-- tauri-app/     # Tauri commands (AI, Chat, Dialogue, Workflow, etc.)
-|   +-- data/              # Example characters, dialogues, knowledge
+|   +-- data/              # Example characters, dialogues, knowledge, scenes, assets
 +-- frontend/              # Vue 3 + Vite + Pinia
 |   +-- src/
-|   |   +-- views/         # HomeView, ChatView, GameView, WorkflowEditor, SettingsView
+|   |   +-- views/         # HomeView, ChatView, GameView, WorkflowEditor, SceneAssetsView, SettingsView
 |   |   +-- components/    # Live2DCanvas
 |   |   +-- stores/        # Pinia game store
 |   |   +-- styles/        # Design system (CSS variables, components)
@@ -92,7 +108,21 @@ cargo tauri build
 2. Drag nodes from the palette: Start, Dialogue, Choice, Condition, LLM Generate, Evaluation, Scene Change, Trigger Event, Relationship, Set Variable, Set Flag, End
 3. Connect nodes to create story flows
 4. Configure node properties in the side panel
-5. Export workflow as JSON
+5. Validate the graph before saving or exporting workflow JSON
+
+### Scene Assets
+
+1. Open Scene Assets from the sidebar
+2. Review project scenes from `scenes/*.json` and backgrounds from `assets/backgrounds`
+3. Fix any missing or invalid background paths shown by diagnostics
+4. Set a scene active before testing Story Mode or saving runtime state
+
+### Project Control
+
+1. Open Settings from the sidebar
+2. Set the project data path, title, target FPS, and content directory mappings
+3. Review readiness diagnostics for characters, dialogue, knowledge, scenes, assets, and saves
+4. Save `settings.json`, configure the AI backend, then initialize the runtime
 
 ### Node Types
 
@@ -183,6 +213,20 @@ cargo tauri build
 }
 ```
 
+### Scene
+
+```json
+{
+  "id": "sakura_park",
+  "name": "Sakura Park",
+  "background_path": "assets/backgrounds/sakura_park.svg",
+  "bgm_path": null,
+  "weather": "spring",
+  "time_of_day": "day",
+  "tags": ["outdoor", "calm", "demo"]
+}
+```
+
 ## Development Roadmap
 
 ### Completed
@@ -198,18 +242,28 @@ cargo tauri build
 - [x] Conversation evaluation and scoring
 - [x] Event trigger system (relationship milestones, achievements)
 - [x] Visual workflow editor (drag-and-drop)
+- [x] Frontend streaming chat integration via Tauri events
+- [x] Streaming evaluation and event notifications (`chat-evaluation`, `chat-events`)
+- [x] Chat session lock optimization for slower LLM requests
+- [x] Commercial workbench UI refresh (dashboard/chat/story/workflow shell)
+- [x] Browser preview fallback for non-Tauri UI review
+- [x] Frontend supply-chain audit remediation (Vite 8 + Live2D transitive override)
+- [x] Rust lockfile policy for reproducible Tauri builds
+- [x] Release checklist for packaging and QA gates
+- [x] Workflow editor connection hit testing improvement
+- [x] Workflow import/export validation and editor diagnostics panel
+- [x] Scene/background asset management with catalog validation and active scene selection
+- [x] Project configuration panel with settings persistence, path readiness, and runtime initialization
+- [x] Story mode text, layout, and playback settings cleanup
 - [x] Live2D rendering (PixiJS)
 - [x] Tauri desktop application
 - [x] Professional UI design system
 
 ### In Progress
 
-- [ ] Streaming LLM responses (real-time text display)
-- [ ] Scene/background image management
 - [ ] Multiple character simultaneous chat
-- [ ] Project configuration panel (per-project settings)
-- [ ] Workflow import/export with validation
 - [ ] 3D character model support
+- [ ] Installer signing and distribution channel configuration
 
 ### Planned
 

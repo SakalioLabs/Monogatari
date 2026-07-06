@@ -1,168 +1,149 @@
 <template>
   <div class="game-container">
-    <!-- Background Layer -->
-    <div class="background-layer">
-      <div class="bg-gradient"></div>
+    <div class="scene-backdrop" :style="sceneBackdropStyle">
+      <div class="scene-horizon"></div>
     </div>
 
-    <!-- Live2D Model Area -->
-    <div class="model-area">
-      <Live2DCanvas
-        v-if="currentCharacter"
-        :model-path="currentCharacter.live2d_model_path"
-        :expression="currentExpression"
-        :motion="currentMotion"
-      />
-      <div v-else class="placeholder">
-        <div class="placeholder-icon">🎭</div>
-        <p>等待加载角色...</p>
+    <header class="game-topbar">
+      <button class="control-btn" title="Dashboard" @click="$router.push('/')">Home</button>
+      <div class="scene-meta">
+        <span class="eyebrow">Story Mode</span>
+        <strong>{{ dialogueState?.speaker || currentCharacter?.name || activeScene?.name || 'Demo Scene' }}</strong>
       </div>
-    </div>
+      <div class="top-actions">
+        <button class="control-btn" title="Save" @click="saveGame">Save</button>
+        <button class="control-btn" title="Load" @click="openLoadDialog">Load</button>
+        <button class="control-btn" title="Settings" @click="toggleSettings">Tune</button>
+      </div>
+    </header>
 
-    <!-- Dialogue Area -->
-    <div class="dialogue-area">
-      <div v-if="dialogueState?.is_active" class="dialogue-box">
-        <div class="speaker-name" v-if="dialogueState.speaker">
-          <span class="speaker-icon">💬</span>
-          {{ dialogueState.speaker }}
+    <main class="stage">
+      <section class="model-area">
+        <Live2DCanvas
+          v-if="currentCharacter"
+          :model-path="currentCharacter.live2d_model_path"
+          :expression="currentExpression"
+          :motion="currentMotion"
+        />
+        <div v-else class="model-placeholder">
+          <span class="empty-mark">VN</span>
+          <strong>No character on stage</strong>
+          <span>Scene runtime is waiting.</span>
         </div>
-        <div class="dialogue-text">
-          {{ displayedText }}
-          <span v-if="isTyping" class="cursor">▎</span>
-        </div>
+      </section>
 
-        <!-- Choices -->
-        <div v-if="dialogueState.choices.length > 0" class="choices">
-          <button
-            v-for="(choice, idx) in dialogueState.choices"
-            :key="choice.index"
-            class="choice-btn"
-            :style="{ animationDelay: `${idx * 0.1}s` }"
-            @click="selectChoice(choice.index)"
-          >
-            <span class="choice-number">{{ idx + 1 }}</span>
-            {{ choice.text }}
+      <section class="dialogue-area">
+        <div v-if="dialogueState?.is_active" class="dialogue-box">
+          <div class="speaker-name" v-if="dialogueState.speaker">
+            <span>{{ dialogueState.speaker }}</span>
+            <small>{{ dialogueState.emotion || currentExpression }}</small>
+          </div>
+
+          <p class="dialogue-text">
+            {{ displayedText }}
+            <span v-if="isTyping" class="cursor"></span>
+          </p>
+
+          <div v-if="dialogueState.choices.length > 0" class="choices">
+            <button
+              v-for="(choice, idx) in dialogueState.choices"
+              :key="choice.index"
+              class="choice-btn"
+              :style="{ animationDelay: `${idx * 0.06}s` }"
+              @click="selectChoice(choice.index)"
+            >
+              <span class="choice-number">{{ idx + 1 }}</span>
+              <span>{{ choice.text }}</span>
+            </button>
+          </div>
+
+          <button v-else class="advance-hint" @click="advanceDialogue">
+            {{ isTyping ? 'Complete line' : 'Continue' }}
           </button>
         </div>
 
-        <!-- Advance hint -->
-        <div v-else class="advance-hint" @click="advanceDialogue">
-          <span class="hint-icon">▼</span>
-          点击或按空格继续
-        </div>
-      </div>
-
-      <!-- No dialogue state -->
-      <div v-else class="no-dialogue">
-        <div class="welcome-card">
-          <h2>🎮 LLM Galgame Engine</h2>
-          <p>AI驱动的视觉小说引擎</p>
-          <button class="btn btn-primary btn-lg" @click="startDemoDialogue" :disabled="isLoading">
+        <div v-else class="scene-empty">
+          <span class="empty-mark">M</span>
+          <h1>Monogatari Runtime</h1>
+          <p>{{ activeScene ? activeScene.background_path || 'Active scene is ready.' : 'AI-ready visual novel playback with dialogue state, Live2D staging, and saves.' }}</p>
+          <button class="btn btn-primary btn-lg" :disabled="isLoading" @click="startDemoDialogue">
             <span v-if="isLoading" class="loading-spinner"></span>
-            <span v-else>▶</span>
-            {{ isLoading ? '加载中...' : '开始演示' }}
+            <span>{{ isLoading ? 'Loading' : 'Start Demo' }}</span>
           </button>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
 
-    <!-- Error Message -->
     <Transition name="fade">
-      <div v-if="errorMessage" class="error-toast" @click="errorMessage = null">
-        <span class="error-icon">⚠️</span>
-        {{ errorMessage }}
-        <span class="error-close">✕</span>
-      </div>
+      <div v-if="toastMessage" class="toast" @click="toastMessage = null">{{ toastMessage }}</div>
     </Transition>
 
-    <!-- Controls -->
-    <div class="game-controls">
-      <button class="control-btn" @click="$router.push('/')" title="返回主页">
-        🏠
-      </button>
-      <button class="control-btn" @click="saveGame" title="保存游戏">
-        💾
-      </button>
-      <button class="control-btn" @click="showLoadDialog = true" title="加载游戏">
-        📂
-      </button>
-      <button class="control-btn" @click="toggleSettings" title="设置">
-        ⚙️
-      </button>
-    </div>
+    <Transition name="fade">
+      <div v-if="errorMessage" class="error-toast" @click="errorMessage = null">{{ errorMessage }}</div>
+    </Transition>
 
-    <!-- Load Dialog -->
     <Transition name="fade">
       <div v-if="showLoadDialog" class="modal-overlay" @click.self="showLoadDialog = false">
-        <div class="card modal">
-          <h3>📂 加载游戏</h3>
-          <div class="save-list">
-            <div
-              v-for="save in saves"
-              :key="save.save_id"
-              class="save-item"
-              @click="loadGame(save.save_id)"
-            >
-              <div class="save-icon">💾</div>
-              <div class="save-info">
-                <span class="save-name">{{ save.save_name }}</span>
-                <span class="save-time">{{ formatTime(save.timestamp) }}</span>
-              </div>
-            </div>
-            <p v-if="saves.length === 0" class="no-saves">
-              <span>📭</span> 暂无存档
-            </p>
+        <div class="modal">
+          <div class="modal-head">
+            <span class="eyebrow">Saves</span>
+            <button class="close-btn" @click="showLoadDialog = false">Close</button>
           </div>
-          <button class="btn btn-secondary" @click="showLoadDialog = false">关闭</button>
+          <div class="save-list">
+            <button v-for="save in saves" :key="save.save_id" class="save-item" @click="loadGame(save.save_id)">
+              <span class="save-name">{{ save.save_name }}</span>
+              <span class="save-time">{{ formatTime(save.timestamp) }}</span>
+            </button>
+            <p v-if="saves.length === 0" class="no-saves">No saves yet.</p>
+          </div>
         </div>
       </div>
     </Transition>
 
-    <!-- Settings Panel -->
     <Transition name="slide">
-      <div v-if="showSettings" class="settings-panel">
+      <aside v-if="showSettings" class="settings-panel">
         <div class="settings-header">
-          <h3>⚙️ 设置</h3>
-          <button class="close-btn" @click="showSettings = false">✕</button>
+          <div>
+            <span class="eyebrow">Playback</span>
+            <h3>Settings</h3>
+          </div>
+          <button class="close-btn" @click="showSettings = false">Close</button>
         </div>
         <div class="settings-content">
-          <div class="setting-group">
-            <label>文字速度</label>
+          <label class="setting-group">
+            <span>Text speed</span>
             <input type="range" v-model="settings.textSpeed" min="10" max="100" />
-            <span>{{ settings.textSpeed }}ms</span>
-          </div>
-          <div class="setting-group">
-            <label>自动播放</label>
-            <label class="switch">
-              <input type="checkbox" v-model="settings.autoPlay" />
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="setting-group">
-            <label>BGM音量</label>
+            <b>{{ settings.textSpeed }}ms</b>
+          </label>
+          <label class="setting-line">
+            <span>Auto play</span>
+            <input type="checkbox" v-model="settings.autoPlay" />
+          </label>
+          <label class="setting-group">
+            <span>BGM volume</span>
             <input type="range" v-model="settings.bgmVolume" min="0" max="100" />
-            <span>{{ settings.bgmVolume }}%</span>
-          </div>
-          <div class="setting-group">
-            <label>音效音量</label>
+            <b>{{ settings.bgmVolume }}%</b>
+          </label>
+          <label class="setting-group">
+            <span>SFX volume</span>
             <input type="range" v-model="settings.sfxVolume" min="0" max="100" />
-            <span>{{ settings.sfxVolume }}%</span>
-          </div>
-          <div class="setting-group">
-            <label>语音音量</label>
+            <b>{{ settings.sfxVolume }}%</b>
+          </label>
+          <label class="setting-group">
+            <span>Voice volume</span>
             <input type="range" v-model="settings.voiceVolume" min="0" max="100" />
-            <span>{{ settings.voiceVolume }}%</span>
-          </div>
+            <b>{{ settings.voiceVolume }}%</b>
+          </label>
         </div>
-      </div>
+      </aside>
     </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-import { invoke } from '@tauri-apps/api/core'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import Live2DCanvas from '../components/Live2DCanvas.vue'
+import { invokeCommand } from '../lib/tauri'
 
 interface DialogueState {
   is_active: boolean
@@ -188,19 +169,39 @@ interface SaveInfo {
   current_scene: string | null
 }
 
+interface SceneInfo {
+  id: string
+  name: string
+  background_path: string | null
+  bgm_path: string | null
+  weather: string | null
+  time_of_day: string | null
+  tags: string[]
+  source: string
+  background_exists: boolean
+  absolute_background_path: string | null
+}
+
+interface ActiveScene {
+  scene: SceneInfo | null
+  scene_history: string[]
+}
+
 const dialogueState = ref<DialogueState | null>(null)
+const characters = ref<CharacterInfo[]>([])
 const currentCharacter = ref<CharacterInfo | null>(null)
-const currentExpression = ref<string>('neutral')
-const currentMotion = ref<string>('idle')
+const activeScene = ref<SceneInfo | null>(null)
+const currentExpression = ref('neutral')
+const currentMotion = ref('idle')
 const displayedText = ref('')
 const isTyping = ref(false)
 const showLoadDialog = ref(false)
 const showSettings = ref(false)
 const saves = ref<SaveInfo[]>([])
 const errorMessage = ref<string | null>(null)
+const toastMessage = ref<string | null>(null)
 const isLoading = ref(false)
 
-// Settings
 const settings = ref({
   textSpeed: 30,
   autoPlay: false,
@@ -211,22 +212,83 @@ const settings = ref({
 })
 
 let typingTimer: number | null = null
+let autoPlayTimer: number | null = null
+const activeSceneStorageKey = 'monogatari.activeScene'
+
+const sceneBackdropStyle = computed(() => {
+  if (!activeScene.value) return {}
+  const seed = Array.from(activeScene.value.id).reduce((sum, char) => sum + char.charCodeAt(0), 0)
+  const hueA = (seed * 17) % 360
+  const hueB = (hueA + 44) % 360
+  const hueC = (hueA + 172) % 360
+  return {
+    background:
+      `linear-gradient(180deg, hsl(${hueA} 44% 18%), hsl(${hueB} 42% 10%)), ` +
+      `radial-gradient(circle at 50% 72%, hsl(${hueC} 62% 36% / 0.36), transparent 38%)`,
+  }
+})
 
 function formatTime(timestamp: string): string {
   try {
-    const date = new Date(timestamp)
-    return date.toLocaleString('zh-CN')
+    return new Date(timestamp).toLocaleString('zh-CN')
   } catch {
     return timestamp
   }
 }
 
+async function loadActiveScene() {
+  try {
+    const active = await invokeCommand<ActiveScene>('get_current_scene', undefined, previewActiveScene)
+    activeScene.value = active.scene
+  } catch (e) {
+    console.error('Failed to load active scene:', e)
+  }
+}
+
+function previewActiveScene(): ActiveScene {
+  const stored = localStorage.getItem(activeSceneStorageKey)
+  if (!stored) return { scene: null, scene_history: [] }
+  try {
+    const scene = JSON.parse(stored) as SceneInfo
+    return { scene, scene_history: [scene.id] }
+  } catch {
+    localStorage.removeItem(activeSceneStorageKey)
+    return { scene: null, scene_history: [] }
+  }
+}
+
+async function loadCharacters() {
+  try {
+    characters.value = await invokeCommand<CharacterInfo[]>('get_characters', undefined, [])
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+function syncCurrentCharacter() {
+  const speaker = dialogueState.value?.speaker
+  if (!speaker) return
+  currentCharacter.value =
+    characters.value.find((char) => char.name === speaker || char.id === speaker) || currentCharacter.value
+}
+
 async function updateDialogueState() {
   try {
-    dialogueState.value = await invoke('get_dialogue_state')
+    dialogueState.value = await invokeCommand<DialogueState>('get_dialogue_state', undefined, {
+      is_active: false,
+      speaker: null,
+      text: '',
+      emotion: null,
+      choices: [],
+      live2d_expression: null,
+    })
     if (dialogueState.value?.live2d_expression) {
       currentExpression.value = dialogueState.value.live2d_expression
     }
+    if (dialogueState.value?.emotion) {
+      currentExpression.value = dialogueState.value.emotion
+    }
+    syncCurrentCharacter()
     if (dialogueState.value?.text) {
       typewriterEffect(dialogueState.value.text)
     }
@@ -237,29 +299,32 @@ async function updateDialogueState() {
 
 function typewriterEffect(text: string) {
   if (typingTimer) clearInterval(typingTimer)
+  if (autoPlayTimer) clearTimeout(autoPlayTimer)
   displayedText.value = ''
   isTyping.value = true
   let i = 0
   typingTimer = window.setInterval(() => {
     if (i < text.length) {
       displayedText.value += text[i]
-      i++
+      i += 1
     } else {
       if (typingTimer) clearInterval(typingTimer)
       isTyping.value = false
+      if (settings.value.autoPlay && dialogueState.value?.choices.length === 0) {
+        autoPlayTimer = window.setTimeout(advanceDialogue, settings.value.autoPlaySpeed)
+      }
     }
-  }, 30)
+  }, settings.value.textSpeed)
 }
 
 async function startDemoDialogue() {
   isLoading.value = true
   errorMessage.value = null
   try {
-    await invoke('start_dialogue', { dialogueId: 'meeting_sakura' })
+    await invokeCommand<void>('start_dialogue', { dialogueId: 'meeting_sakura' })
     await updateDialogueState()
   } catch (e) {
-    console.error('Failed to start dialogue:', e)
-    errorMessage.value = `无法开始对话: ${e}`
+    errorMessage.value = `Unable to start dialogue: ${e}`
   } finally {
     isLoading.value = false
   }
@@ -267,57 +332,62 @@ async function startDemoDialogue() {
 
 async function selectChoice(index: number) {
   try {
-    await invoke('select_choice', { choiceIndex: index })
+    await invokeCommand<void>('select_choice', { choiceIndex: index })
     await updateDialogueState()
   } catch (e) {
-    console.error('Failed to select choice:', e)
+    errorMessage.value = String(e)
   }
 }
 
 async function advanceDialogue() {
   if (isTyping.value) {
-    // Skip typing animation
     if (typingTimer) clearInterval(typingTimer)
     isTyping.value = false
-    if (dialogueState.value?.text) {
-      displayedText.value = dialogueState.value.text
-    }
+    displayedText.value = dialogueState.value?.text || displayedText.value
     return
   }
   try {
-    await invoke('advance_dialogue')
+    await invokeCommand<void>('advance_dialogue')
     await updateDialogueState()
   } catch (e) {
-    console.error('Failed to advance dialogue:', e)
+    errorMessage.value = String(e)
   }
 }
 
 async function saveGame() {
   try {
-    const name = `存档 ${new Date().toLocaleString('zh-CN')}`
-    const saveId = await invoke<string>('save_game', { saveName: name })
-    alert(`游戏已保存: ${saveId}`)
+    const name = `Save ${new Date().toLocaleString('zh-CN')}`
+    const saveId = await invokeCommand<string>('save_game', { saveName: name })
+    toastMessage.value = `Saved ${saveId}`
+    await loadSaves()
   } catch (e) {
-    console.error('Failed to save:', e)
+    errorMessage.value = String(e)
   }
 }
 
 async function loadGame(saveId: string) {
   try {
-    await invoke('load_game', { saveId })
+    await invokeCommand<void>('load_game', { saveId })
     showLoadDialog.value = false
+    toastMessage.value = 'Save loaded'
+    await loadActiveScene()
     await updateDialogueState()
   } catch (e) {
-    console.error('Failed to load:', e)
+    errorMessage.value = String(e)
   }
 }
 
 async function loadSaves() {
   try {
-    saves.value = await invoke('list_saves')
+    saves.value = await invokeCommand<SaveInfo[]>('list_saves', undefined, [])
   } catch (e) {
     console.error('Failed to list saves:', e)
   }
+}
+
+async function openLoadDialog() {
+  await loadSaves()
+  showLoadDialog.value = true
 }
 
 function toggleSettings() {
@@ -331,330 +401,426 @@ function handleKeydown(e: KeyboardEvent) {
   }
 }
 
-onMounted(() => {
-  updateDialogueState()
-  loadSaves()
+onMounted(async () => {
+  await loadActiveScene()
+  await loadCharacters()
+  await updateDialogueState()
+  await loadSaves()
   window.addEventListener('keydown', handleKeydown)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
   if (typingTimer) clearInterval(typingTimer)
+  if (autoPlayTimer) clearTimeout(autoPlayTimer)
 })
 </script>
 
 <style scoped>
 .game-container {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
   position: relative;
+  height: 100vh;
   overflow: hidden;
+  color: var(--text-primary);
+  background: var(--surface-0);
 }
 
-.background-layer {
+.scene-backdrop,
+.scene-horizon {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 0;
+  inset: 0;
 }
 
-.bg-gradient {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(180deg, #0a0a1a 0%, #1a1a3e 50%, #0a0a1a 100%);
+.scene-backdrop {
+  background: var(--surface-0);
+}
+
+.scene-horizon {
+  background:
+    linear-gradient(180deg, rgba(96,165,250,0.16), transparent 42%),
+    radial-gradient(circle at 50% 78%, rgba(45,212,191,0.16), transparent 34%),
+    linear-gradient(180deg, rgba(21,25,34,0.28), rgba(15,17,21,0.82));
+}
+
+.game-topbar {
+  position: relative;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  background: rgba(15,17,21,0.72);
+  backdrop-filter: blur(16px);
+}
+
+.scene-meta {
+  min-width: 0;
+}
+
+.scene-meta strong {
+  display: block;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.eyebrow {
+  display: block;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.top-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.control-btn,
+.close-btn {
+  min-height: 34px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(21,25,34,0.86);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 6px 10px;
+}
+
+.control-btn:hover,
+.close-btn:hover {
+  border-color: var(--brand);
+  color: var(--brand-light);
+}
+
+.stage {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  height: calc(100vh - 63px);
 }
 
 .model-area {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  z-index: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
 }
 
-.placeholder {
-  text-align: center;
-  color: var(--text-muted);
+.model-placeholder {
+  display: grid;
+  gap: 8px;
+  place-items: center;
+  color: var(--text-tertiary);
 }
 
-.placeholder-icon {
-  font-size: 64px;
-  margin-bottom: 16px;
-  opacity: 0.5;
+.model-placeholder strong {
+  color: var(--text-primary);
 }
 
 .dialogue-area {
   padding: 20px;
-  position: relative;
-  z-index: 2;
+}
+
+.dialogue-box,
+.scene-empty {
+  max-width: 920px;
+  margin: 0 auto;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--radius-lg);
+  background: rgba(21,25,34,0.88);
+  backdrop-filter: blur(18px);
+  box-shadow: var(--shadow-lg);
 }
 
 .dialogue-box {
-  background: rgba(22, 33, 62, 0.95);
-  border: 1px solid rgba(108, 92, 231, 0.3);
-  border-radius: 16px;
-  padding: 24px;
-  max-width: 800px;
-  margin: 0 auto;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  padding: 20px;
 }
 
 .speaker-name {
   display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--primary);
+  gap: 10px;
+  align-items: baseline;
   margin-bottom: 12px;
-  padding: 4px 12px;
-  background: rgba(108, 92, 231, 0.1);
-  border-radius: 8px;
+  color: var(--brand-light);
+  font-weight: 800;
 }
 
-.speaker-icon {
-  font-size: 14px;
+.speaker-name small {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .dialogue-text {
+  min-height: 76px;
+  color: var(--text-primary);
   font-size: 18px;
-  line-height: 1.8;
-  min-height: 60px;
-  color: #e0e0e0;
+  line-height: 1.75;
+  white-space: pre-wrap;
 }
 
 .cursor {
-  color: var(--primary);
+  display: inline-block;
+  width: 8px;
+  height: 1.1em;
+  margin-left: 4px;
+  vertical-align: -0.15em;
+  background: var(--brand);
   animation: blink 0.8s infinite;
-  font-weight: bold;
-}
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
 }
 
 .choices {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 20px;
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
 }
 
 .choice-btn {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
   gap: 12px;
-  padding: 14px 20px;
-  background: rgba(108, 92, 231, 0.1);
-  border: 1px solid rgba(108, 92, 231, 0.3);
-  border-radius: 12px;
-  color: var(--text);
+  align-items: center;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text-primary);
   cursor: pointer;
+  padding: 12px;
   text-align: left;
-  transition: all 0.3s;
-  animation: slideIn 0.3s ease forwards;
   opacity: 0;
-  transform: translateX(-20px);
-}
-
-@keyframes slideIn {
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  transform: translateY(8px);
+  animation: optionIn 0.22s ease forwards;
 }
 
 .choice-btn:hover {
-  background: rgba(108, 92, 231, 0.3);
-  border-color: var(--primary);
-  transform: translateX(4px);
+  border-color: var(--brand);
+  background: var(--surface-3);
 }
 
 .choice-number {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  background: var(--primary);
-  border-radius: 50%;
-  font-size: 14px;
-  font-weight: bold;
-  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  background: var(--brand);
+  color: var(--surface-0);
+  font-weight: 900;
 }
 
 .advance-hint {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  width: 100%;
   margin-top: 16px;
-  color: var(--text-muted);
-  font-size: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text-secondary);
   cursor: pointer;
-  transition: color 0.2s;
+  font-weight: 800;
+  padding: 11px;
 }
 
 .advance-hint:hover {
-  color: var(--primary);
+  border-color: var(--brand);
+  color: var(--brand-light);
 }
 
-.hint-icon {
-  animation: bounce 1.5s infinite;
+.scene-empty {
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  padding: 34px;
+  text-align: center;
 }
 
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(4px); }
+.scene-empty h1 {
+  color: var(--text-primary);
+  font-size: 28px;
 }
 
-.no-dialogue {
-  display: flex;
+.scene-empty p {
+  max-width: 520px;
+  color: var(--text-secondary);
+}
+
+.empty-mark {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 40px;
-}
-
-.welcome-card {
-  text-align: center;
-  background: rgba(22, 33, 62, 0.9);
-  border: 1px solid rgba(108, 92, 231, 0.3);
-  border-radius: 20px;
-  padding: 40px 60px;
-  backdrop-filter: blur(10px);
-}
-
-.welcome-card h2 {
-  font-size: 28px;
-  margin-bottom: 12px;
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.welcome-card p {
-  color: var(--text-muted);
-  margin-bottom: 24px;
-}
-
-.btn-lg {
-  padding: 14px 32px;
-  font-size: 18px;
-}
-
-.game-controls {
-  display: flex;
-  gap: 8px;
-  padding: 12px 20px;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(10px);
-  position: relative;
-  z-index: 2;
-}
-
-.control-btn {
-  padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: var(--text);
-  cursor: pointer;
-  font-size: 18px;
-  transition: all 0.2s;
-}
-
-.control-btn:hover {
-  background: rgba(108, 92, 231, 0.3);
-  border-color: var(--primary);
+  min-width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--brand-light);
+  font-family: var(--font-mono);
+  font-weight: 900;
 }
 
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  backdrop-filter: blur(4px);
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background: rgba(0,0,0,0.66);
+  backdrop-filter: blur(5px);
 }
 
 .modal {
-  width: 420px;
-  max-height: 500px;
-  overflow-y: auto;
+  width: min(460px, calc(100vw - 32px));
+  max-height: min(560px, calc(100vh - 80px));
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-lg);
+  padding: 18px;
 }
 
-.modal h3 {
-  margin-bottom: 20px;
-  color: var(--primary);
-  font-size: 20px;
+.modal-head,
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
 }
 
 .save-list {
-  margin-bottom: 20px;
-}
-
-.save-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px;
-  border-bottom: 1px solid var(--border);
-  cursor: pointer;
-  transition: background 0.2s;
-  border-radius: 8px;
-}
-
-.save-item:hover {
-  background: rgba(108, 92, 231, 0.1);
-}
-
-.save-icon {
-  font-size: 24px;
-}
-
-.save-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.save-name {
-  font-weight: 500;
-}
-
-.save-time {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.no-saves {
-  text-align: center;
-  color: var(--text-muted);
-  padding: 30px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  display: grid;
   gap: 8px;
 }
 
-.no-saves span {
-  font-size: 32px;
-  opacity: 0.5;
+.save-item {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 12px;
+  text-align: left;
+}
+
+.save-item:hover {
+  border-color: var(--brand);
+}
+
+.save-name {
+  font-weight: 800;
+}
+
+.save-time,
+.no-saves {
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.settings-panel {
+  position: fixed;
+  z-index: 35;
+  top: 0;
+  right: 0;
+  width: min(340px, 100vw);
+  height: 100vh;
+  border-left: 1px solid var(--border);
+  background: rgba(21,25,34,0.98);
+  box-shadow: var(--shadow-lg);
+  padding: 20px;
+}
+
+.settings-header h3 {
+  color: var(--text-primary);
+}
+
+.settings-content {
+  display: grid;
+  gap: 18px;
+}
+
+.setting-group,
+.setting-line {
+  display: grid;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+.setting-line {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+.setting-group input[type='range'] {
+  width: 100%;
+  accent-color: var(--brand);
+}
+
+.setting-group b {
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.toast,
+.error-toast {
+  position: fixed;
+  z-index: 80;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: min(420px, calc(100vw - 32px));
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 12px 14px;
+  color: white;
+  text-align: center;
+}
+
+.toast {
+  top: 82px;
+  border: 1px solid rgba(45,212,191,0.36);
+  background: rgba(15,118,110,0.96);
+}
+
+.error-toast {
+  bottom: 18px;
+  border: 1px solid rgba(239,68,68,0.42);
+  background: rgba(127,29,29,0.96);
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.btn:disabled,
+.control-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.3s;
+  transition: opacity 0.22s;
 }
 
 .fade-enter-from,
@@ -662,141 +828,9 @@ onUnmounted(() => {
   opacity: 0;
 }
 
-/* Settings Panel */
-.settings-panel {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 320px;
-  height: 100vh;
-  background: rgba(22, 33, 62, 0.98);
-  border-left: 1px solid var(--border);
-  z-index: 50;
-  display: flex;
-  flex-direction: column;
-  backdrop-filter: blur(10px);
-}
-
-.settings-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid var(--border);
-}
-
-.settings-header h3 {
-  color: var(--primary);
-  font-size: 18px;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  font-size: 20px;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: all 0.2s;
-}
-
-.close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text);
-}
-
-.settings-content {
-  padding: 20px;
-  overflow-y: auto;
-  flex: 1;
-}
-
-.setting-group {
-  margin-bottom: 20px;
-}
-
-.setting-group label {
-  display: block;
-  font-size: 14px;
-  color: var(--text-muted);
-  margin-bottom: 8px;
-}
-
-.setting-group input[type="range"] {
-  width: 100%;
-  height: 6px;
-  -webkit-appearance: none;
-  background: var(--bg-input);
-  border-radius: 3px;
-  outline: none;
-}
-
-.setting-group input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
-  background: var(--primary);
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.setting-group span {
-  display: inline-block;
-  margin-top: 4px;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-/* Toggle Switch */
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 48px;
-  height: 24px;
-}
-
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--bg-input);
-  transition: 0.3s;
-  border-radius: 24px;
-}
-
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
-  transition: 0.3s;
-  border-radius: 50%;
-}
-
-input:checked + .slider {
-  background-color: var(--primary);
-}
-
-input:checked + .slider:before {
-  transform: translateX(24px);
-}
-
 .slide-enter-active,
 .slide-leave-active {
-  transition: transform 0.3s ease;
+  transition: transform 0.24s ease;
 }
 
 .slide-enter-from,
@@ -804,57 +838,37 @@ input:checked + .slider:before {
   transform: translateX(100%);
 }
 
-/* Error Toast */
-.error-toast {
-  position: fixed;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(225, 112, 85, 0.95);
-  color: white;
-  padding: 12px 20px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  z-index: 200;
-  cursor: pointer;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  max-width: 500px;
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 
-.error-icon {
-  font-size: 18px;
-}
-
-.error-close {
-  margin-left: 10px;
-  opacity: 0.7;
-}
-
-.error-close:hover {
-  opacity: 1;
-}
-
-/* Loading Spinner */
-.loading-spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+@keyframes optionIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-/* Disabled button */
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+@media (max-width: 720px) {
+  .game-topbar {
+    grid-template-columns: 1fr;
+  }
+
+  .top-actions {
+    flex-wrap: wrap;
+  }
+
+  .dialogue-area {
+    padding: 12px;
+  }
+
+  .dialogue-text {
+    font-size: 16px;
+  }
 }
 </style>

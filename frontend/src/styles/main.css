@@ -1,37 +1,45 @@
 ﻿:root {
-  --brand: #7c5cfc;
-  --brand-light: #9d85ff;
-  --brand-dark: #5a3fd6;
-  --accent: #38d9a9;
-  --accent-dark: #20c997;
-  --surface-0: #0c0c1d;
-  --surface-1: #12122b;
-  --surface-2: #1a1a3a;
-  --surface-3: #242450;
-  --surface-4: #2e2e5c;
-  --text-primary: #eef0f6;
-  --text-secondary: #8b8fa8;
-  --text-tertiary: #5c6080;
-  --border: #2a2a52;
-  --border-light: #3a3a6a;
-  --success: #34d399;
-  --warning: #fbbf24;
-  --danger: #f87171;
+  --brand: #2dd4bf;
+  --brand-light: #5eead4;
+  --brand-dark: #0f766e;
+  --accent: #f59e0b;
+  --accent-dark: #d97706;
+  --narrative: #c084fc;
+  --surface-0: #0f1115;
+  --surface-1: #151922;
+  --surface-2: #1c222d;
+  --surface-3: #252c38;
+  --surface-4: #303846;
+  --text-primary: #f4f7fb;
+  --text-secondary: #aab4c3;
+  --text-tertiary: #6f7a8c;
+  --border: #2b3340;
+  --border-light: #3a4454;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
   --info: #60a5fa;
   --radius-sm: 6px;
-  --radius: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
-  --shadow: 0 4px 16px rgba(0,0,0,0.25);
-  --shadow-lg: 0 12px 40px rgba(0,0,0,0.35);
-  --shadow-brand: 0 4px 20px rgba(124,92,252,0.25);
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.25);
+  --shadow: 0 8px 24px rgba(0,0,0,0.24);
+  --shadow-lg: 0 18px 48px rgba(0,0,0,0.34);
+  --shadow-brand: 0 0 0 3px rgba(45,212,191,0.14);
   --transition-fast: 0.15s ease;
   --transition: 0.25s ease;
   --transition-slow: 0.4s ease;
   --font-sans: 'Inter', 'SF Pro Display', -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
-  --sidebar-width: 220px;
+  --sidebar-width: 232px;
+  --primary: var(--brand);
+  --secondary: var(--narrative);
+  --bg-dark: var(--surface-0);
+  --bg-card: var(--surface-1);
+  --bg-input: var(--surface-2);
+  --text: var(--text-primary);
+  --text-muted: var(--text-tertiary);
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { font-size: 14px; }
@@ -50,11 +58,11 @@ body {
 .btn {
   padding: 8px 18px; border: none; border-radius: var(--radius-sm); cursor: pointer;
   font-size: 13px; font-weight: 600; transition: all var(--transition-fast);
-  display: inline-flex; align-items: center; gap: 6px; letter-spacing: 0.01em;
+  display: inline-flex; align-items: center; gap: 6px; letter-spacing: 0;
   font-family: var(--font-sans); line-height: 1.4;
 }
 .btn-primary { background: var(--brand); color: white; }
-.btn-primary:hover { background: var(--brand-light); box-shadow: var(--shadow-brand); transform: translateY(-1px); }
+.btn-primary:hover { background: var(--brand-dark); box-shadow: var(--shadow-brand); transform: translateY(-1px); }
 .btn-secondary { background: var(--surface-3); color: var(--text-primary); border: 1px solid var(--border); }
 .btn-secondary:hover { background: var(--surface-4); border-color: var(--border-light); }
 .btn-ghost { background: transparent; color: var(--text-secondary); }
@@ -82,7 +90,7 @@ textarea.input { resize: vertical; min-height: 60px; }
 .badge {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 600;
-  letter-spacing: 0.03em; text-transform: uppercase;
+  letter-spacing: 0; text-transform: uppercase;
 }
 .badge-brand { background: rgba(124,92,252,0.15); color: var(--brand-light); }
 .badge-accent { background: rgba(56,217,169,0.15); color: var(--accent); }
