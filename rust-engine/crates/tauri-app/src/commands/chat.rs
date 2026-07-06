@@ -540,7 +540,6 @@ async fn check_event_triggers(
                     } else {
                         0.0
                     }
-                        .unwrap_or(0.0)
                 };
                 match def.event_id.as_str() {
                     "first_friend" => relationship >= 0.3,

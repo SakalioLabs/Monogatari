@@ -5,7 +5,7 @@
         <div class="logo-mark">M</div>
         <div class="logo-text" v-show="!sidebarCollapsed">
           <span class="logo-name">Monogatari</span>
-          <span class="logo-badge">Engine v0.2</span>
+          <span class="logo-badge">Engine v0.5</span>
         </div>
       </div>
       <nav class="sidebar-nav">
@@ -46,6 +46,7 @@ const navItems = [
   { path: '/game', label: 'Story Mode', icon: '&#9654;' },
   { path: '/editor', label: 'Workflow', icon: '&#8942;' },
   { path: '/assets', label: 'Scene Assets', icon: '&#9638;' },
+  { path: '/character-editor', label: 'Editor', icon: '&#9998;' },
   { path: '/characters', label: 'Characters', icon: '&#9786;' },
   { path: '/group-chat', label: 'Group Chat', icon: '&#9733;' },
   { path: '/settings', label: 'Settings', icon: '&#9881;' },

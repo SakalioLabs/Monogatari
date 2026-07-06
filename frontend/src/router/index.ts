@@ -25,6 +25,11 @@ const router = createRouter({
       component: () => import('../views/WorkflowEditor.vue'),
     },
     {
+      path: '/character-editor',
+      name: 'character-editor',
+      component: () => import('../views/CharacterEditorView.vue'),
+    },
+    {
       path: '/assets',
       name: 'assets',
       component: () => import('../views/SceneAssetsView.vue'),
@@ -33,6 +38,21 @@ const router = createRouter({
       path: '/settings',
       name: 'settings',
       component: () => import('../views/SettingsView.vue'),
+    },
+    {
+      path: '/characters',
+      name: 'characters',
+      component: () => import('../views/CharacterGalleryView.vue'),
+    },
+    {
+      path: '/group-chat',
+      name: 'group-chat',
+      component: () => import('../views/GroupChatView.vue'),
+    },
+    {
+      path: '/analytics',
+      name: 'analytics',
+      component: () => import('../views/AnalyticsView.vue'),
     },
   ],
 })

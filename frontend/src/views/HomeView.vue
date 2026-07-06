@@ -98,6 +98,9 @@ const features = [
   { title: 'Story Mode', desc: 'Branching dialogue playback with visual novel controls.', path: '/game', icon: 'S' },
   { title: 'Workflow', desc: 'Node graph authoring for story logic and triggers.', path: '/editor', icon: 'W' },
   { title: 'Scene Assets', desc: 'Background catalog, scene metadata, and runtime selection.', path: '/assets', icon: 'A' },
+  { title: 'Characters', desc: 'Character gallery with personality visualization and traits.', path: '/characters', icon: 'G' },
+  { title: 'Group Chat', desc: 'Multi-character simultaneous conversations.', path: '/group-chat', icon: 'M' },
+  { title: 'Analytics', desc: 'Player engagement metrics, conversation patterns, and choice tracking.', path: '/settings', icon: 'D' },
   { title: 'Settings', desc: 'Project config, path readiness, AI backend, and runtime setup.', path: '/settings', icon: 'T' },
 ]
 
@@ -113,6 +116,11 @@ const readinessItems = computed(() => [
   { name: 'Character gallery with personality visualization', done: true },
   { name: 'TTS integration scaffold', done: true },
   { name: '21 workflow node types with execution', done: true },
+  { name: 'Analytics dashboard with engagement metrics', done: true },
+  { name: 'i18n multi-language scaffold', done: true },
+  { name: 'Plugin system for custom nodes', done: true },
+  { name: 'Cloud save sync scaffold', done: true },
+  { name: 'Bug fix: chat.rs relationship score compile error', done: true },
   { name: 'Commercial packaging checklist', done: false },
 ])
 

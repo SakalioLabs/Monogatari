@@ -1,8 +1,11 @@
-//! Analytics scaffold for player behavior tracking.
+//! Analytics engine for player behavior tracking.
 //!
-//! Collects anonymized gameplay metrics to help creators understand
-//! player engagement, dialogue choices, and conversation patterns.
+//! Collects anonymized gameplay metrics in memory with file persistence
+//! to help creators understand player engagement and conversation patterns.
 
+use std::collections::HashMap;
+use std::sync::Arc;
+use tokio::sync::RwLock;
 use serde::{Deserialize, Serialize};
 use tauri::State;
 
@@ -26,39 +29,146 @@ pub struct AnalyticsSummary {
     pub avg_relationship_score: f32,
 }
 
-/// Record an analytics event.
+/// Global analytics event store (in-memory, persisted to disk).
+static ANALYTICS_STORE: once_cell::sync::Lazy<Arc<RwLock<Vec<AnalyticsEvent>>>> =
+    once_cell::sync::Lazy::new(|| Arc::new(RwLock::new(Vec::new())));
+
+fn analytics_file_path() -> std::path::PathBuf {
+    std::env::current_dir()
+        .unwrap_or_default()
+        .join("data")
+        .join("analytics.json")
+}
+
+async fn load_events_from_disk() -> Vec<AnalyticsEvent> {
+    let path = analytics_file_path();
+    if path.exists() {
+        if let Ok(content) = tokio::fs::read_to_string(&path).await {
+            if let Ok(events) = serde_json::from_str::<Vec<AnalyticsEvent>>(&content) {
+                return events;
+            }
+        }
+    }
+    Vec::new()
+}
+
+async fn persist_events(events: &[AnalyticsEvent]) {
+    let path = analytics_file_path();
+    if let Some(parent) = path.parent() {
+        let _ = tokio::fs::create_dir_all(parent).await;
+    }
+    if let Ok(json) = serde_json::to_string_pretty(events) {
+        let _ = tokio::fs::write(&path, json).await;
+    }
+}
+
+/// Record an analytics event with persistence.
 #[tauri::command]
 pub async fn record_analytics_event(
     event_type: String,
     data: serde_json::Value,
 ) -> Result<String, String> {
-    tracing::debug!("Analytics event: {event_type}");
+    let event = AnalyticsEvent {
+        event_type: event_type.clone(),
+        timestamp: format!("{}", std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs()),
+        data,
+    };
+    let mut store = ANALYTICS_STORE.write().await;
+    store.push(event);
+    tracing::debug!("Analytics event recorded: {} (total: {})", event_type, store.len());
+    persist_events(&store).await;
     Ok("recorded".to_string())
 }
 
-/// Get analytics summary for the current project.
+/// Get analytics summary from recorded events.
 #[tauri::command]
 pub async fn get_analytics_summary(
-    _state: State<'_, AppState>,
+    state: State<'_, AppState>,
 ) -> Result<AnalyticsSummary, String> {
+    let mut store = ANALYTICS_STORE.write().await;
+    if store.is_empty() {
+        *store = load_events_from_disk().await;
+    }
+    let total = store.len();
+
+    // Count characters
+    let mut char_counts: HashMap<String, u32> = HashMap::new();
+    let mut choice_counts: HashMap<String, u32> = HashMap::new();
+    let mut session_ids: HashMap<String, u64> = HashMap::new();
+    let mut conv_count: u32 = 0;
+
+    for event in store.iter() {
+        match event.event_type.as_str() {
+            "chat_message" => {
+                if let Some(cid) = event.data.get("character_id").and_then(|v| v.as_str()) {
+                    *char_counts.entry(cid.to_string()).or_insert(0) += 1;
+                }
+                conv_count += 1;
+            }
+            "choice_selected" => {
+                if let Some(text) = event.data.get("choice_text").and_then(|v| v.as_str()) {
+                    *choice_counts.entry(text.to_string()).or_insert(0) += 1;
+                }
+            }
+            "session_start" => {
+                if let Some(sid) = event.data.get("session_id").and_then(|v| v.as_str()) {
+                    let ts = event.timestamp.parse::<u64>().unwrap_or(0);
+                    session_ids.insert(sid.to_string(), ts);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let mut top_characters: Vec<(String, u32)> = char_counts.into_iter().collect();
+    top_characters.sort_by(|a, b| b.1.cmp(&a.1));
+    top_characters.truncate(10);
+
+    let mut top_choices: Vec<(String, u32)> = choice_counts.into_iter().collect();
+    top_choices.sort_by(|a, b| b.1.cmp(&a.1));
+    top_choices.truncate(10);
+
+    // Get relationship score
+    let avg_rel = {
+        let cm = state.character_manager.read().await;
+        let chars = cm.list_character_ids();
+        if chars.is_empty() {
+            0.0
+        } else {
+            let mut total_rel: f32 = 0.0;
+            let mut count = 0;
+            for cid in &chars {
+                if let Some(ch) = cm.get_character(cid) {
+                    let c = ch.read().await;
+                    if let Some(score) = c.relationships.get("player") {
+                        total_rel += score;
+                        count += 1;
+                    }
+                }
+            }
+            if count > 0 { total_rel / count as f32 } else { 0.0 }
+        }
+    };
+
     Ok(AnalyticsSummary {
-        total_events: 0,
-        session_count: 0,
+        total_events: total,
+        session_count: session_ids.len(),
         avg_session_duration_ms: 0,
-        top_choices: Vec::new(),
-        top_characters: Vec::new(),
-        conversation_count: 0,
-        avg_relationship_score: 0.0,
+        top_choices,
+        top_characters,
+        conversation_count: conv_count,
+        avg_relationship_score: avg_rel,
     })
 }
 
 /// Export analytics data as JSON.
 #[tauri::command]
 pub async fn export_analytics(
-    _state: State<'_, AppState>,
-    format: Option<String>,
+    _format: Option<String>,
 ) -> Result<String, String> {
-    let fmt = format.unwrap_or_else(|| "json".to_string());
-    tracing::info!("Exporting analytics as {fmt}");
-    Ok("{}".to_string())
+    let store = ANALYTICS_STORE.read().await;
+    serde_json::to_string_pretty(&*store).map_err(|e| e.to_string())
 }
