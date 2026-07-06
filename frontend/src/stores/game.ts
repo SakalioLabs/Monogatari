@@ -33,6 +33,8 @@ export const useGameStore = defineStore('game', () => {
   const currentCharacter = ref<Character | null>(null)
   const dialogueState = ref<DialogueState | null>(null)
   const isLoading = ref(false)
+  const activeSceneId = ref<string | null>(null)
+  const saves = ref<{ id: string; timestamp: string }[]>([])
 
   async function loadCharacters() {
     try {
@@ -85,16 +87,83 @@ export const useGameStore = defineStore('game', () => {
     }
   }
 
+  async function saveGame(slotId: string) {
+    isLoading.value = true
+    try {
+      return await invokeCommand('save_game', { slotId })
+    } catch (e) {
+      console.error('Save failed:', e)
+      return null
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function loadGame(slotId: string) {
+    isLoading.value = true
+    try {
+      return await invokeCommand('load_game', { slotId })
+    } catch (e) {
+      console.error('Load failed:', e)
+      return null
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function listSaves() {
+    try {
+      saves.value = await invokeCommand<{ id: string; timestamp: string }[]>('list_saves', undefined, [])
+    } catch {
+      saves.value = []
+    }
+    return saves.value
+  }
+
+  async function deleteSave(slotId: string) {
+    try {
+      await invokeCommand('delete_save', { slotId })
+      saves.value = saves.value.filter(s => s.id !== slotId)
+    } catch (e) {
+      console.error('Delete save failed:', e)
+    }
+  }
+
+  async function setActiveScene(sceneId: string) {
+    try {
+      await invokeCommand('set_scene', { sceneId })
+      activeSceneId.value = sceneId
+    } catch (e) {
+      console.error('Scene change failed:', e)
+    }
+  }
+
+  async function getRelationshipScore(characterId: string): Promise<number> {
+    try {
+      return await invokeCommand<number>('get_relationship_score', { characterId }, 0)
+    } catch {
+      return 0
+    }
+  }
+
   return {
     characters,
     currentCharacter,
     dialogueState,
     isLoading,
+    activeSceneId,
+    saves,
     loadCharacters,
     setCurrentCharacter,
     refreshDialogueState,
     startDialogue,
     advanceDialogue,
     selectChoice,
+    saveGame,
+    loadGame,
+    listSaves,
+    deleteSave,
+    setActiveScene,
+    getRelationshipScore,
   }
 })
