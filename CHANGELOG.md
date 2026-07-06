@@ -30,7 +30,20 @@
 
 
 #
-### v0.4.0 - 2026-07-07
+#
+### v0.4.1 - 2026-07-07
+
+#### New Capabilities
+- i18n scaffold with locale loading, listing, and key-based translation commands.
+- English and Japanese locale files with UI string translations for sidebar, chat, and game controls.
+- Total Tauri commands now exceeds 55 across 16 modules.
+
+#### Verification
+- Frontend production build passes.
+- npm audit reports 0 vulnerabilities.
+- All commits synced to origin/master.
+
+## v0.4.0 - 2026-07-07
 
 #### New Capabilities
 - Plugin system for custom workflow node types (register/list/remove from JSON manifests).
