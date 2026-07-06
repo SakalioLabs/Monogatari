@@ -1,0 +1,17 @@
+{
+  "id": "sakura_meeting",
+  "name": "Sakura First Meeting",
+  "start_node_id": "start",
+  "nodes": [
+    { "id": "start", "node_type": "start", "label": "Begin", "x": 100, "y": 100, "config": {}, "connections": ["scene_setup"] },
+    { "id": "scene_setup", "node_type": "scene_change", "label": "Sakura Park", "x": 300, "y": 100, "config": { "scene_id": "sakura_park" }, "connections": ["bgm_play"] },
+    { "id": "bgm_play", "node_type": "bgm", "label": "Spring Music", "x": 500, "y": 100, "config": { "track_path": "audio/spring.ogg", "action": "play", "volume": 0.6 }, "connections": ["intro"] },
+    { "id": "intro", "node_type": "dialogue", "label": "Sakura Intro", "x": 700, "y": 100, "config": { "speaker": "sakura", "text": "Hello there! Beautiful day, isn't it?", "emotion": "happy" }, "connections": ["player_choice"] },
+    { "id": "player_choice", "node_type": "choice", "label": "Player Response", "x": 900, "y": 100, "config": { "choices": ["Hi!", "The blossoms are lovely.", "Just passing by."] }, "connections": ["check_friendship", "check_friendship", "check_friendship"] },
+    { "id": "check_friendship", "node_type": "condition", "label": "Check Relationship", "x": 1100, "y": 100, "config": { "condition": "relationship > 0.5" }, "connections": ["high_friend", "low_friend"] },
+    { "id": "high_friend", "node_type": "dialogue", "label": "Warm Response", "x": 1300, "y": 50, "config": { "speaker": "sakura", "text": "I feel like we will be great friends!", "emotion": "love" }, "connections": ["set_flag"] },
+    { "id": "low_friend", "node_type": "dialogue", "label": "Polite Response", "x": 1300, "y": 200, "config": { "speaker": "sakura", "text": "I hope we meet again.", "emotion": "happy" }, "connections": ["set_flag"] },
+    { "id": "set_flag", "node_type": "set_flag", "label": "Mark Met", "x": 1500, "y": 100, "config": { "flag_name": "met_sakura", "value": true }, "connections": ["end"] },
+    { "id": "end", "node_type": "end", "label": "End", "x": 1700, "y": 100, "config": {}, "connections": [] }
+  ]
+}
