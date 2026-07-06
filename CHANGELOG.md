@@ -38,6 +38,11 @@
 - Analytics scaffold with event recording, summary stats, and data export.
 - Total Tauri commands now exceeds 50.
 
+
+#### Character Management
+- Added CRUD commands for character creation, deletion, and summary listing.
+- create_character validates input and saves JSON to project characters directory.
+- get_character_summaries returns all characters with relationship scores and Live2D status.
 #### Verification
 - Frontend production build passes.
 - npm audit reports 0 vulnerabilities.
