@@ -1,0 +1,77 @@
+{
+  "id": "sakura_park_walk",
+  "title": "A Walk in the Park with Sakura",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "speaker_id": "sakura",
+      "text": "Hey! What a coincidence running into you here! *twirls happily* I was just looking for the perfect cherry blossom to sketch.",
+      "choices": [
+        { "text": "You draw? That is amazing!", "next_node_id": "draw", "relationship_changes": { "sakura": 0.3 } },
+        { "text": "This park is beautiful in spring.", "next_node_id": "park", "relationship_changes": { "sakura": 0.2 } },
+        { "text": "Want some company?", "next_node_id": "company", "relationship_changes": { "sakura": 0.4 } }
+      ]
+    },
+    "draw": {
+      "speaker_id": "sakura",
+      "text": "Yeah! I am not very good yet, but practice makes perfect, right? *holds up sketchbook* See? This one is a sparrow I drew yesterday!",
+      "choices": [
+        { "text": "That is really cute! You have talent.", "next_node_id": "talent", "relationship_changes": { "sakura": 0.4 } },
+        { "text": "Can you draw me something?", "next_node_id": "draw_me", "relationship_changes": { "sakura": 0.3 } }
+      ]
+    },
+    "park": {
+      "speaker_id": "sakura",
+      "text": "Right?! I love how the petals float down like pink snow! *catches a petal* Every year I try to press them in a book, but they always crumble.",
+      "choices": [
+        { "text": "Maybe you need to dry them first.", "next_node_id": "tip", "relationship_changes": { "sakura": 0.2 } },
+        { "text": "The memory is what matters most.", "next_node_id": "memory", "relationship_changes": { "sakura": 0.3 } }
+      ]
+    },
+    "company": {
+      "speaker_id": "sakura",
+      "text": "Really?! *beams with joy* I would love that! I was getting a bit lonely sketching by myself. Two pairs of eyes are better than one for finding the best blossoms!",
+      "choices": [
+        { "text": "Lead the way!", "next_node_id": "end_happy", "relationship_changes": { "sakura": 0.3 } }
+      ]
+    },
+    "talent": {
+      "speaker_id": "sakura",
+      "text": "You think so? *blushes* That means a lot... Most people just say it is cute and move on. But you really mean it, don't you?",
+      "choices": [
+        { "text": "I always mean what I say to you.", "next_node_id": "end_best", "relationship_changes": { "sakura": 0.5 } }
+      ]
+    },
+    "draw_me": {
+      "speaker_id": "sakura",
+      "text": "Ooh, a portrait? *eyes light up* Hold still! Let me capture your good side... actually, all your sides are good! *giggles and starts sketching*",
+      "choices": [
+        { "text": "No flattering me!", "next_node_id": "end_happy", "relationship_changes": { "sakura": 0.3 } }
+      ]
+    },
+    "tip": {
+      "speaker_id": "sakura",
+      "text": "Dry them? That is genius! Why did I never think of that? *scribbles a note* You are like a walking encyclopedia! I am writing this down!",
+      "choices": [
+        { "text": "Glad I could help.", "next_node_id": "end_happy", "relationship_changes": { "sakura": 0.2 } }
+      ]
+    },
+    "memory": {
+      "speaker_id": "sakura",
+      "text": "*smiles warmly* That is such a sweet way to think about it. You know what? I will remember this moment forever. The blossoms, the breeze, and... you.",
+      "choices": [
+        { "text": "I will remember it too, Sakura.", "next_node_id": "end_best", "relationship_changes": { "sakura": 0.5 } }
+      ]
+    },
+    "end_happy": {
+      "speaker_id": "sakura",
+      "text": "Today is the best day ever! *laughs and spins under the cherry blossoms* Let us make lots more memories like this!",
+      "choices": []
+    },
+    "end_best": {
+      "speaker_id": "sakura",
+      "text": "*looks at you with sparkling eyes* You know... meeting you was the luckiest thing that ever happened to me in this park. *hugs sketchbook tightly* I am going to draw this moment so I never forget.",
+      "choices": []
+    }
+  }
+}
