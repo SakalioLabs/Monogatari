@@ -47,6 +47,7 @@ fn main() {
             commands::ai::get_ai_status,
             // Chat commands (core feature)
             commands::chat::send_chat_message,
+            commands::chat::send_chat_message_stream,
             commands::chat::get_chat_history,
             commands::chat::clear_chat_history,
             commands::chat::evaluate_conversation,
@@ -75,3 +76,4 @@ fn main() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
+

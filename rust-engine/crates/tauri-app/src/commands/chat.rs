@@ -659,3 +659,97 @@ fn estimate_sentiment(message: &str) -> f32 {
     score.clamp(-0.5, 0.5)
 }
 
+
+
+/// Send a streaming chat message. Chunks are emitted via Tauri events.
+#[tauri::command]
+pub async fn send_chat_message_stream(
+    state: State<'_, AppState>,
+    character_id: String,
+    message: String,
+    window: tauri::WebviewWindow,
+) -> Result<(), String> {
+    use tauri::Emitter;
+
+    let (char_name, char_description, char_background, char_personality, char_emotion) = {
+        let cm = state.character_manager.read().await;
+        if let Some(character) = cm.get_character(&character_id) {
+            let c = character.read().await;
+            (c.name.clone(), c.description.clone(), c.background.clone(), c.personality.to_prompt_description(), c.emotion.clone())
+        } else {
+            return Err(format!("Character not found: {character_id}"));
+        }
+    };
+
+    let knowledge_context = {
+        let kb = state.knowledge_base.read().await;
+        let entries = kb.search(&message, 3);
+        if entries.is_empty() { String::new() }
+        else {
+            let parts: Vec<String> = entries.iter().map(|e| format!("{}: {}", e.title, e.content)).collect();
+            format!("Relevant world knowledge:\n{}", parts.join("\n"))
+        }
+    };
+
+    let mut sessions = state.chat_sessions.write().await;
+    let session = sessions.entry(character_id.clone()).or_insert_with(|| ChatSession::new(character_id.clone()));
+    let now = format!("{:?}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs());
+    session.messages.push(ChatMessage { role: "player".to_string(), content: message.clone(), emotion: None, timestamp: now });
+
+    let history: Vec<String> = session.messages.iter().rev().take(10).rev().map(|m| {
+        let role = if m.role == "player" { "Player" } else { &char_name };
+        format!("{role}: {}", m.content)
+    }).collect();
+
+    let system_prompt = format!(
+        r#"You are the character "{name}" in a visual novel game.
+Description: {desc}
+Background: {bg}
+Personality: {personality}
+Current emotion: {emotion}
+Stay in character. Respond naturally with emotion (use *actions* for body language). Keep responses 1-3 sentences.
+{knowledge}"#,
+        name = char_name, desc = char_description, bg = char_background,
+        personality = char_personality, emotion = char_emotion,
+        knowledge = if knowledge_context.is_empty() { String::new() } else { format!("\nContext:\n{}", knowledge_context) }
+    );
+
+    let conversation = history.join("\n");
+    let full_prompt = format!("[System]\n{system_prompt}\n\n[Conversation]\n{conversation}\n\n[{char_name}]");
+
+    let pipeline = state.inference_pipeline.read().await;
+    let options = llm_ai::InferenceOptions { max_tokens: 300, temperature: 0.85, ..Default::default() };
+
+    let window_clone = window.clone();
+    let on_chunk = Box::new(move |chunk: String| {
+        let _ = window_clone.emit("chat-chunk", &chunk);
+    });
+
+    let result = pipeline.generate_stream(&full_prompt, &options, on_chunk).await.map_err(|e| format!("AI error: {e}"))?;
+
+    if result.success {
+        let _ = window.emit("chat-complete", &result.text);
+
+        let detected_emotion = detect_emotion(&result.text, &char_emotion);
+        let relationship_delta = estimate_sentiment(&message);
+
+        session.messages.push(ChatMessage { role: "character".to_string(), content: result.text.clone(), emotion: Some(detected_emotion.clone()), timestamp: format!("{:?}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()) });
+
+        {
+            let cm = state.character_manager.read().await;
+            if let Some(character) = cm.get_character(&character_id) {
+                let mut c = character.write().await;
+                c.set_emotion(&detected_emotion);
+                c.update_relationship("player", relationship_delta * 0.1);
+                c.add_memory(format!("Player said: {}", message), llm_game::characters::memory::MemoryType::Conversation, 0.5, vec!["conversation".to_string()]);
+            }
+        }
+
+        let _ = window.emit("chat-emotion", &detected_emotion);
+        let _ = window.emit("chat-relationship", &relationship_delta);
+    } else {
+        let _ = window.emit("chat-error", &result.error.unwrap_or_else(|| "Generation failed".to_string()));
+    }
+
+    Ok(())
+}
