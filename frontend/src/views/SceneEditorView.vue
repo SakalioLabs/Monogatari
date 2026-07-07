@@ -3,7 +3,7 @@
     <header class="editor-header">
       <div>
         <span class="eyebrow">Authoring</span>
-        <h1>Scene Editor</h1>
+        <h1>{{ t("scene.title", "Scene Editor") }}</h1>
         <p>{{ scenes.length }} scenes in project</p>
       </div>
       <div class="header-actions">
@@ -118,6 +118,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { invokeCommand } from '../lib/tauri'
+import { useI18n } from '../lib/i18n'
+
+const { t } = useI18n()
 
 interface Scene {
   id: string

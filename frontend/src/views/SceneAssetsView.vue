@@ -3,7 +3,7 @@
     <header class="page-header">
       <div>
         <span class="eyebrow">Scene Library</span>
-        <h1>Scene Assets</h1>
+        <h1>{{ t("assets.title", "Scene Assets") }}</h1>
         <p>{{ catalog?.project_path || 'Preview project' }}</p>
       </div>
       <div class="header-actions">
@@ -122,6 +122,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { invokeCommand } from '../lib/tauri'
+import { useI18n } from '../lib/i18n'
+
+const { t } = useI18n()
 
 interface SceneInfo {
   id: string

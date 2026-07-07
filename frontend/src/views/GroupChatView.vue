@@ -39,7 +39,7 @@
       </div>
       <div class="input-area">
         <input v-model="input" class="input" placeholder="Type a message to the group..." @keyup.enter="send" :disabled="loading" />
-        <button class="btn btn-primary" @click="send" :disabled="!input.trim() || loading">Send</button>
+        <button class="btn btn-primary" @click="send" :disabled="!input.trim() || loading">{{ t("group.send", "Send") }}</button>
       </div>
     </div>
   </div>
@@ -49,6 +49,9 @@
 import { ref, nextTick, onMounted, onUnmounted } from 'vue'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { invokeCommand } from '../lib/tauri'
+import { useI18n } from '../lib/i18n'
+
+const { t } = useI18n()
 
 interface GroupMessage {
   role: string

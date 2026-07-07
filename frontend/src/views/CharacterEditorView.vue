@@ -37,7 +37,7 @@
           <h2>{{ isNew ? 'New Character' : form.name }}</h2>
         </div>
         <div class="toolbar-right">
-          <button class="btn btn-secondary btn-sm" @click="exportChar">Export JSON</button>
+          <button class="btn btn-secondary btn-sm" @click="exportChar">{{ t("characters.export", "Export JSON") }}</button>
           <button class="btn btn-secondary btn-sm" @click="cancelEdit">Cancel</button>
           <button class="btn btn-primary btn-sm" :disabled="saving" @click="save">
             {{ saving ? 'Saving' : 'Save' }}
@@ -229,6 +229,9 @@
 <script setup lang="ts">
 import { computed, reactive, ref, onMounted } from 'vue'
 import { invokeCommand } from '../lib/tauri'
+import { useI18n } from '../lib/i18n'
+
+const { t } = useI18n()
 
 interface KnowledgeEntry {
   topic: string

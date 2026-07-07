@@ -3,7 +3,7 @@
     <header class="page-header">
       <div>
         <span class="eyebrow">Media</span>
-        <h1>Audio Manager</h1>
+        <h1>{{ t("audio.title", "Audio Manager") }}</h1>
         <p>Manage background music, ambient sounds, and sound effects for your scenes.</p>
       </div>
       <div class="header-actions">
@@ -91,6 +91,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from '../lib/i18n'
 import { ref, computed } from 'vue'
 
 interface AudioTrack {
@@ -110,6 +111,7 @@ const tracks = ref<AudioTrack[]>([
 ])
 
 const playingId = ref<string | null>(null)
+const { t } = useI18n()
 const showAddTrack = ref(false)
 const newTrackName = ref('')
 const newTrackType = ref('bgm')

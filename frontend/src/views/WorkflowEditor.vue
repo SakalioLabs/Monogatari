@@ -162,8 +162,11 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from '../lib/i18n'
 import { computed, onMounted, ref } from 'vue'
 import { invokeCommand } from '../lib/tauri'
+
+const { t } = useI18n()
 
 interface WorkflowNode {
   id: string

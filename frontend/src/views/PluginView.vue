@@ -3,12 +3,12 @@
     <header class="page-header">
       <div>
         <span class="eyebrow">Extensibility</span>
-        <h1>Plugins</h1>
+        <h1>{{ t("plugins.title", "Plugins") }}</h1>
         <p>Manage custom node types, workflow extensions, and third-party integrations.</p>
       </div>
       <div class="header-actions">
         <button class="btn btn-secondary btn-sm" @click="refreshPlugins">Refresh</button>
-        <button class="btn btn-primary btn-sm" @click="showRegister = true">Register Plugin</button>
+        <button class="btn btn-primary btn-sm" @click="showRegister = true">{{ t("plugins.register", "Register Plugin") }}</button>
       </div>
     </header>
 
@@ -75,6 +75,9 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { invokeCommand } from '../lib/tauri'
+import { useI18n } from '../lib/i18n'
+
+const { t } = useI18n()
 
 interface PluginInfo {
   name: string

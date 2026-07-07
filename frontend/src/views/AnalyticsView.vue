@@ -8,7 +8,7 @@
       </div>
       <div class="header-actions">
         <button class="btn btn-secondary btn-sm" @click="refresh">Refresh</button>
-        <button class="btn btn-primary btn-sm" @click="exportData">Export JSON</button>
+        <button class="btn btn-primary btn-sm" @click="exportData">{{ t("analytics.export", "Export JSON") }}</button>
       </div>
     </header>
 
@@ -81,6 +81,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { invokeCommand } from '../lib/tauri'
+import { useI18n } from '../lib/i18n'
+
+const { t } = useI18n()
 
 interface AnalyticsSummary {
   total_events: number

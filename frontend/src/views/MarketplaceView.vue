@@ -3,7 +3,7 @@
     <header class="page-header">
       <div>
         <span class="eyebrow">Templates</span>
-        <h1>Marketplace</h1>
+        <h1>{{ t("marketplace.title", "Marketplace") }}</h1>
         <p>Browse and import shareable workflows, characters, and project templates.</p>
       </div>
       <div class="header-actions">
@@ -57,6 +57,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { invokeCommand } from '../lib/tauri'
+import { useI18n } from '../lib/i18n'
+
+const { t } = useI18n()
 interface MarketEntry { id: string; name: string; description: string; author: string; version: string; entry_type: string; tags: string[]; download_count: number; rating: number }
 const entries = ref<MarketEntry[]>([])
 const loading = ref(true)

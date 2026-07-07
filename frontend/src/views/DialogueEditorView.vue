@@ -3,14 +3,14 @@
     <header class="toolbar">
       <div class="toolbar-left">
         <span class="eyebrow">Authoring</span>
-        <h1>Dialogue Editor</h1>
+        <h1>{{ t("dialogue.title", "Dialogue Editor") }}</h1>
         <span class="dialogue-name">{{ currentDialogue?.title || 'Untitled' }}</span>
       </div>
       <div class="toolbar-right">
         <button class="btn btn-secondary btn-sm" @click="newDialogue">New</button>
-        <button class="btn btn-secondary btn-sm" @click="importDialogue">Import</button>
-        <button class="btn btn-secondary btn-sm" @click="validate">Validate</button>
-        <button class="btn btn-primary btn-sm" @click="exportDialogue">Export</button>
+        <button class="btn btn-secondary btn-sm" @click="importDialogue">{{ t("dialogue.import", "Import") }}</button>
+        <button class="btn btn-secondary btn-sm" @click="validate">{{ t("dialogue.validate", "Validate") }}</button>
+        <button class="btn btn-primary btn-sm" @click="exportDialogue">{{ t("dialogue.export", "Export") }}</button>
       </div>
     </header>
 
@@ -143,6 +143,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { invokeCommand } from '../lib/tauri'
+import { useI18n } from '../lib/i18n'
+
+const { t } = useI18n()
 
 interface DialogueChoice {
   text: string
