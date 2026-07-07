@@ -48,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import ToastNotification from './components/ToastNotification.vue'
 import ErrorBoundary from './components/ErrorBoundary.vue'
 import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp.vue'
@@ -61,7 +61,8 @@ import { useI18n } from './lib/i18n'
 
 const { t } = useI18n()
 const route = useRoute()
-const sidebarCollapsed = ref(false)
+const sidebarCollapsed = ref(localStorage.getItem('monogatari-sidebar') === 'collapsed')
+watch(sidebarCollapsed, (val) => { localStorage.setItem('monogatari-sidebar', val ? 'collapsed' : 'expanded') })
 const showShortcuts = ref(false)
 const achievementToast = ref('')
 const achievementToastVisible = ref(false)
