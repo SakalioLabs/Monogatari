@@ -100,8 +100,9 @@ const features = [
   { title: 'Scene Assets', desc: 'Background catalog, scene metadata, and runtime selection.', path: '/assets', icon: 'A' },
   { title: 'Characters', desc: 'Character gallery with personality visualization and traits.', path: '/characters', icon: 'G' },
   { title: 'Group Chat', desc: 'Multi-character simultaneous conversations.', path: '/group-chat', icon: 'M' },
-  { title: 'Analytics', desc: 'Player engagement metrics, conversation patterns, and choice tracking.', path: '/settings', icon: 'D' },
+  { title: 'Analytics', desc: 'Player engagement metrics, conversation patterns, and choice tracking.', path: '/analytics', icon: 'D' },
   { title: 'Settings', desc: 'Project config, path readiness, AI backend, and runtime setup.', path: '/settings', icon: 'T' },
+  { title: 'Marketplace', desc: 'Browse and import community templates, characters, and story modules.', path: '/marketplace', icon: 'K' },
 ]
 
 const readinessItems = computed(() => [

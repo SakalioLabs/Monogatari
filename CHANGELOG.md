@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.6.0] - 2026-07-07
+
+### Added
+- **Plugin Management UI** (`PluginView.vue`): Full frontend view for registering, listing, and removing custom plugins with modal registration form and status indicators.
+- **Cloud Sync Settings** (SettingsView): Integrated cloud sync configuration with push/pull buttons, sync status display (last sync, file count, conflicts), and endpoint/token configuration.
+- **i18n Locale Files**: Added zh-CN, ja-JP, and ko-KR locale files covering navigation, chat, game, settings, and common UI strings for multi-language support.
+- **Sidebar Navigation**: Added Analytics and Marketplace nav items to main sidebar; added Plugins nav item.
+- **Router Updates**: Added `/marketplace` and `/plugins` routes with lazy-loaded views.
+- **Marketplace Dashboard Tile**: Added Marketplace tile to HomeView dashboard with community template browsing link.
+- **Enhanced Group Chat**: Added streaming listener support, emotion display, relationship scores per participant, and animated spinner for typing indicators.
+
+### Fixed
+- **HomeView Dashboard**: Fixed Analytics tile route from `/settings` to `/analytics`.
+
+### Changed
+- Dashboard now shows 10 feature tiles covering all major modules.
+- Sidebar navigation expanded to 12 items for complete feature coverage.
+- Commercialization progress updated to reflect new capabilities.
+
+
 ## v0.5.0 - 2026-07-07 (Commercialization Push)
 
 ### Bug Fixes

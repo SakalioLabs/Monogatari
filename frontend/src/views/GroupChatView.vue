@@ -20,13 +20,18 @@
 
     <div v-else class="chat-area">
       <div class="participants-bar">
-        <span v-for="id in session.character_ids" :key="id" class="participant-tag">{{ id }}</span>
+        <span v-for="id in session.character_ids" :key="id" class="participant-tag">
+          <span class="participant-dot"></span>{{ id }}
+          <span v-if="relationshipScores[id]" class="rel-score">{{ relationshipScores[id]?.toFixed(1) }}</span>
+        </span>
       </div>
       <div class="messages" ref="messagesEl">
         <div v-for="(m, i) in session.messages" :key="i" class="message" :class="m.role">
           <div class="msg-sender">{{ m.character_name }}</div>
           <div class="msg-content">{{ m.content }}</div>
-          <div v-if="m.emotion" class="msg-emotion">{{ m.emotion }}</div>
+          <div v-if="m.emotion" class="msg-emotion">
+            <span class="emotion-dot"></span>{{ m.emotion }}
+          </div>
         </div>
         <div v-if="loading" class="message system">
           <div class="msg-content"><span class="spinner"></span> Characters are thinking...</div>
@@ -41,7 +46,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, onMounted, onUnmounted } from 'vue'
+import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { invokeCommand } from '../lib/tauri'
 
 interface GroupMessage {
@@ -65,6 +71,9 @@ const session = ref<GroupSession | null>(null)
 const input = ref('')
 const loading = ref(false)
 const messagesEl = ref<HTMLElement>()
+const currentEmotion = ref('neutral')
+const relationshipScores = ref<Record<string, number>>({})
+let streamUnlisteners: UnlistenFn[] = []
 
 async function loadCharacters() {
   try {
@@ -72,6 +81,30 @@ async function loadCharacters() {
   } catch { available.value = [] }
 }
 loadCharacters()
+
+function cleanupStreamListeners() {
+  for (const u of streamUnlisteners) u()
+  streamUnlisteners = []
+}
+
+async function attachGroupStreamListeners() {
+  cleanupStreamListeners()
+  streamUnlisteners = await Promise.all([
+    listen<string>('chat-chunk', (event) => {
+      if (session.value && session.value.messages.length > 0) {
+        const lastMsg = session.value.messages[session.value.messages.length - 1]
+        if (lastMsg.role === 'character') {
+          lastMsg.content += event.payload
+        }
+      }
+    }),
+    listen<string>('chat-emotion', (event) => {
+      currentEmotion.value = event.payload || currentEmotion.value
+    }),
+  ])
+}
+
+onUnmounted(cleanupStreamListeners)
 
 function toggle(id: string) {
   const idx = selectedIds.value.indexOf(id)
@@ -125,4 +158,24 @@ async function send() {
 .msg-emotion { font-size: 10px; color: var(--text-tertiary); margin-top: 4px; text-transform: uppercase; }
 .input-area { display: flex; gap: 8px; }
 .input-area .input { flex: 1; }
+.participant-dot {
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--success); margin-right: 4px;
+}
+.rel-score {
+  margin-left: 6px; padding: 1px 6px; border-radius: 100px;
+  font-size: 9px; font-weight: 800; background: rgba(45,212,191,0.12);
+  color: var(--brand-light);
+}
+.emotion-dot {
+  display: inline-block; width: 5px; height: 5px; border-radius: 50%;
+  background: var(--warning); margin-right: 4px;
+}
+.spinner {
+  display: inline-block; width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.3); border-top-color: white;
+  border-radius: 50%; animation: spin 0.8s linear infinite;
+  margin-right: 8px; vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>

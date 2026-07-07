@@ -54,6 +54,16 @@ const router = createRouter({
       name: 'analytics',
       component: () => import('../views/AnalyticsView.vue'),
     },
+    {
+      path: '/marketplace',
+      name: 'marketplace',
+      component: () => import('../views/MarketplaceView.vue'),
+    },
+    {
+      path: '/plugins',
+      name: 'plugins',
+      component: () => import('../views/PluginView.vue'),
+    },
   ],
 })
 

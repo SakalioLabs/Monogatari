@@ -161,6 +161,46 @@
       </div>
     </section>
 
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">Sync</span>
+              <strong>Cloud Sync</strong>
+            </div>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-secondary btn-sm" :disabled="syncLoading" @click="checkSyncStatus">Check</button>
+              <button class="btn btn-primary btn-sm" :disabled="syncLoading" @click="pushToCloud">Push</button>
+              <button class="btn btn-secondary btn-sm" :disabled="syncLoading" @click="pullFromCloud">Pull</button>
+            </div>
+          </div>
+          <div class="sync-status">
+            <div class="sync-row">
+              <span>Status</span>
+              <strong>{{ syncStatus?.status || 'Not configured' }}</strong>
+            </div>
+            <div class="sync-row">
+              <span>Last Sync</span>
+              <strong>{{ syncStatus?.last_sync || 'Never' }}</strong>
+            </div>
+            <div class="sync-row">
+              <span>Files</span>
+              <strong>{{ syncStatus?.file_count ?? '-' }}</strong>
+            </div>
+            <div class="sync-row">
+              <span>Conflicts</span>
+              <strong :class="{ 'bad-text': (syncStatus?.conflict_count ?? 0) > 0 }">{{ syncStatus?.conflict_count ?? 0 }}</strong>
+            </div>
+          </div>
+          <label class="form-field" style="margin-top:12px">
+            <span>Remote Endpoint</span>
+            <input v-model="syncEndpoint" class="input" placeholder="https://sync.example.com" />
+          </label>
+          <label class="form-field">
+            <span>Sync Token</span>
+            <input v-model="syncToken" type="password" class="input" placeholder="Authentication token" />
+          </label>
+        </div>
       </section>
 
       <aside class="inspector">
@@ -272,6 +312,50 @@ const modelPath = ref('models/model.onnx')
 const tokenizerPath = ref('models/tokenizer.json')
 const useDirectML = ref(true)
 const ttsConfig = ref({ provider: 'system', language: 'ja', speed: 1.0, pitch: 1.0 })
+
+const syncEndpoint = ref('')
+const syncToken = ref('')
+const syncLoading = ref(false)
+const syncStatus = ref<any>(null)
+
+async function checkSyncStatus() {
+  syncLoading.value = true
+  try {
+    syncStatus.value = await invokeCommand('get_sync_status', undefined, { status: 'unknown', last_sync: 'Never', file_count: 0, conflict_count: 0 })
+  } catch (e: any) {
+    statusMessage.value = 'Sync check failed: ' + e
+    statusOk.value = false
+  }
+  syncLoading.value = false
+}
+
+async function pushToCloud() {
+  syncLoading.value = true
+  try {
+    await invokeCommand('push_saves_to_cloud', { endpoint: syncEndpoint.value, token: syncToken.value })
+    statusMessage.value = 'Saves pushed to cloud'
+    statusOk.value = true
+    await checkSyncStatus()
+  } catch (e: any) {
+    statusMessage.value = 'Push failed: ' + e
+    statusOk.value = false
+  }
+  syncLoading.value = false
+}
+
+async function pullFromCloud() {
+  syncLoading.value = true
+  try {
+    await invokeCommand('pull_saves_from_cloud', { endpoint: syncEndpoint.value, token: syncToken.value })
+    statusMessage.value = 'Saves pulled from cloud'
+    statusOk.value = true
+    await checkSyncStatus()
+  } catch (e: any) {
+    statusMessage.value = 'Pull failed: ' + e
+    statusOk.value = false
+  }
+  syncLoading.value = false
+}
 
 async function saveTts() {
   try {
@@ -794,4 +878,8 @@ select.input {
     grid-template-columns: 1fr;
   }
 }
+.sync-status { display: grid; gap: 10px; }
+.sync-row { display: flex; justify-content: space-between; gap: 12px; color: var(--text-secondary); font-size: 13px; }
+.sync-row strong { color: var(--brand-light); }
+.bad-text { color: var(--danger) !important; }
 </style>

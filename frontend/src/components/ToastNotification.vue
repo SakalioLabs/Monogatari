@@ -6,16 +6,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref } from 'vue'
-export interface ToastItem { id: number; message: string; type: string }
-const toasts = ref<ToastItem[]>([])
-let nextId = 0
-export function showToast(message: string, type = 'info', duration = 3000) {
-  const id = nextId++
-  toasts.value.push({ id, message, type })
-  setTimeout(() => { toasts.value = toasts.value.filter(t => t.id !== id) }, duration)
-}
-defineExpose({ showToast })
+import { toasts } from "../lib/toast"
 </script>
 <style scoped>
 .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }

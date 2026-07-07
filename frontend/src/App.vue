@@ -55,6 +55,9 @@ const navItems = [
   { path: '/characters', label: 'Characters', icon: '&#9786;' },
   { path: '/group-chat', label: 'Group Chat', icon: '&#9733;' },
   { path: '/settings', label: 'Settings', icon: '&#9881;' },
+  { path: '/analytics', label: 'Analytics', icon: '&#9636;' },
+  { path: '/plugins', label: 'Plugins', icon: '&#128295;' },
+  { path: '/marketplace', label: 'Marketplace', icon: '&#9733;', badge: 'New' },
 ]
 </script>
 

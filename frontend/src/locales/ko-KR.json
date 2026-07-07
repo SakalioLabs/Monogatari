@@ -1,0 +1,25 @@
+{
+  "nav": {
+    "dashboard": "대시보드",
+    "chat": "AI 채팅",
+    "story": "스토리",
+    "workflow": "워크플로",
+    "assets": "씬 에셋",
+    "editor": "편집기",
+    "characters": "캐릭터",
+    "groupChat": "그룹 채팅",
+    "settings": "설정",
+    "analytics": "분석",
+    "marketplace": "마켓플레이스",
+    "plugins": "플러그인"
+  },
+  "common": {
+    "loading": "로딩 중...",
+    "error": "오류",
+    "success": "성공",
+    "cancel": "취소",
+    "confirm": "확인",
+    "delete": "삭제",
+    "close": "닫기"
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "nav": {
+    "dashboard": "控制台",
+    "chat": "AI 聊天",
+    "story": "剧情模式",
+    "workflow": "工作流",
+    "assets": "场景资产",
+    "editor": "编辑器",
+    "characters": "角色",
+    "groupChat": "群聊",
+    "settings": "设置",
+    "analytics": "数据分析",
+    "marketplace": "市场",
+    "plugins": "插件"
+  },
+  "chat": {
+    "selectCharacter": "选择角色",
+    "messagePlaceholder": "输入消息...",
+    "send": "发送",
+    "clear": "清空",
+    "score": "评分",
+    "friendliness": "友好度",
+    "engagement": "参与度",
+    "creativity": "创造力",
+    "messages": "消息",
+    "player": "玩家",
+    "mode": "模式",
+    "emotion": "情感",
+    "relation": "关系"
+  },
+  "game": {
+    "storyMode": "剧情模式",
+    "save": "保存",
+    "load": "加载",
+    "settings": "设置",
+    "continue": "继续",
+    "startDemo": "开始演示",
+    "textSpeed": "文字速度",
+    "autoPlay": "自动播放",
+    "bgmVolume": "背景音乐音量",
+    "sfxVolume": "音效音量",
+    "voiceVolume": "语音音量"
+  },
+  "settings": {
+    "projectControl": "项目控制",
+    "workspace": "工作空间",
+    "aiBackend": "AI 后端",
+    "tts": "语音合成",
+    "cloudSync": "云端同步",
+    "save": "保存",
+    "refresh": "刷新",
+    "initialize": "初始化"
+  },
+  "common": {
+    "loading": "加载中...",
+    "error": "错误",
+    "success": "成功",
+    "cancel": "取消",
+    "confirm": "确认",
+    "delete": "删除",
+    "close": "关闭"
+  }
+}

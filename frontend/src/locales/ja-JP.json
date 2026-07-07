@@ -1,0 +1,63 @@
+{
+  "nav": {
+    "dashboard": "ダッシュボード",
+    "chat": "AIチャット",
+    "story": "ストーリー",
+    "workflow": "ワークフロー",
+    "assets": "シーン",
+    "editor": "エディター",
+    "characters": "キャラクター",
+    "groupChat": "グループチャット",
+    "settings": "設定",
+    "analytics": "分析",
+    "marketplace": "マーケット",
+    "plugins": "プラグイン"
+  },
+  "chat": {
+    "selectCharacter": "キャラクターを選択",
+    "messagePlaceholder": "メッセージを入力...",
+    "send": "送信",
+    "clear": "クリア",
+    "score": "スコア",
+    "friendliness": "友好度",
+    "engagement": "参加度",
+    "creativity": "創造性",
+    "messages": "メッセージ",
+    "player": "プレイヤー",
+    "mode": "モード",
+    "emotion": "感情",
+    "relation": "関係"
+  },
+  "game": {
+    "storyMode": "ストーリーモード",
+    "save": "セーブ",
+    "load": "ロード",
+    "settings": "設定",
+    "continue": "続ける",
+    "startDemo": "デモ開始",
+    "textSpeed": "テキスト速度",
+    "autoPlay": "自動再生",
+    "bgmVolume": "BGM音量",
+    "sfxVolume": "効果音音量",
+    "voiceVolume": "ボイス音量"
+  },
+  "settings": {
+    "projectControl": "プロジェクト管理",
+    "workspace": "ワークスペース",
+    "aiBackend": "AIバックエンド",
+    "tts": "音声合成",
+    "cloudSync": "クラウド同期",
+    "save": "保存",
+    "refresh": "更新",
+    "initialize": "初期化"
+  },
+  "common": {
+    "loading": "読み込み中...",
+    "error": "エラー",
+    "success": "成功",
+    "cancel": "キャンセル",
+    "confirm": "確認",
+    "delete": "削除",
+    "close": "閉じる"
+  }
+}
