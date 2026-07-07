@@ -321,6 +321,27 @@ async function sendMessage() {
   errorMessage.value = null
 
   messages.value.push({ role: 'player', content: text, emotion: null, timestamp: new Date().toISOString() })
+    
+    // Track message count for achievements
+    const charKey = 'monogatari-chat-count-' + character.id
+    const count = parseInt(localStorage.getItem(charKey) || '0') + 1
+    localStorage.setItem(charKey, String(count))
+    
+    // Check achievement unlocks
+    if (typeof (window as any).__monogatari_unlock === 'function') {
+      const unlock = (window as any).__monogatari_unlock
+      if (count === 1) unlock('first_chat')
+      if (count >= 10) unlock('chat_10')
+      
+      // Check total messages across all characters
+      let total = 0
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i)
+        if (k?.startsWith('monogatari-chat-count-')) total += parseInt(localStorage.getItem(k) || '0')
+      }
+      if (total >= 50) unlock('chat_50')
+      if (total >= 10) unlock('all_characters')
+    }
   const assistantMessage: ChatMessage = {
     role: 'character',
     content: '',
@@ -356,6 +377,10 @@ async function refreshRelationship() {
   if (!selectedCharacter.value) return
   try {
     relationshipScore.value = await invokeCommand<number>('get_relationship_score', { characterId: selectedCharacter.value.id }, 0)
+    // Check relationship achievement
+    if (relationshipScore.value >= 0.8 && typeof (window as any).__monogatari_unlock === 'function') {
+      (window as any).__monogatari_unlock('high_relationship')
+    }
   } catch (e) {
     console.error(e)
   }
@@ -365,6 +390,10 @@ async function refreshEvaluation() {
   if (!selectedCharacter.value) return
   try {
     evaluation.value = await invokeCommand<ConversationEvaluation>('evaluate_conversation', { characterId: selectedCharacter.value.id })
+    // Check evaluation achievement
+    if (evaluation.value && evaluation.value.overall_score > 0.8 && typeof (window as any).__monogatari_unlock === 'function') {
+      (window as any).__monogatari_unlock('eval_high')
+    }
   } catch (e) {
     errorMessage.value = String(e)
   }
