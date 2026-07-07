@@ -1,0 +1,17 @@
+[
+  {
+    "id": "ren_detective_knowledge",
+    "category": "character",
+    "title": "Ren the Detective",
+    "content": "Ren is the most respected detective in Springtown. He solved the Great Library artifact theft, the harbor smuggling ring, and the case of the vanished moonstone. His methods rely on careful observation and logical deduction rather than physical confrontation. He carries a worn leather notebook filled with observations, character sketches, and case notes. His office is above the bookshop on Lantern Street. He has a network of informants throughout the town. Known associates include Yuki at the Great Library and Kenji at the dojo, who occasionally assists with cases requiring physical skill. He respects those who think before they act and distrusts those who jump to conclusions.",
+    "tags": [
+      "ren",
+      "detective",
+      "mystery",
+      "springtown",
+      "investigation",
+      "logic"
+    ],
+    "importance": 0.8
+  }
+]

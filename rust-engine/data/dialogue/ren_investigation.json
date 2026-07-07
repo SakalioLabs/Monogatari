@@ -1,0 +1,196 @@
+{
+  "id": "ren_investigation",
+  "title": "The Library Mystery",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "speaker_id": "ren",
+      "text": "Ah, you must be the one who reported the missing manuscript. *flips open notebook* Tell me everything you noticed. Details matter.",
+      "choices": [
+        {
+          "text": "I saw someone near the restricted section last night.",
+          "next_node_id": "clue1",
+          "relationship_changes": {
+            "ren": 0.2
+          }
+        },
+        {
+          "text": "I just want to help however I can.",
+          "next_node_id": "willing",
+          "relationship_changes": {
+            "ren": 0.1
+          }
+        },
+        {
+          "text": "Are you really a detective?",
+          "next_node_id": "doubt",
+          "relationship_changes": {
+            "ren": 0.0
+          }
+        }
+      ]
+    },
+    "clue1": {
+      "speaker_id": "ren",
+      "text": "*scribbles in notebook* Interesting. The restricted section has its own key. *narrows eyes* Was this person wearing gloves? The answer tells me volumes about intent.",
+      "choices": [
+        {
+          "text": "Yes, they were wearing dark gloves.",
+          "next_node_id": "key_clue",
+          "relationship_changes": {
+            "ren": 0.3
+          }
+        },
+        {
+          "text": "I could not tell from where I stood.",
+          "next_node_id": "honest",
+          "relationship_changes": {
+            "ren": 0.15
+          }
+        }
+      ]
+    },
+    "willing": {
+      "speaker_id": "ren",
+      "text": "That is exactly what I need. *smiles slightly* People who want to help are rarer than you think. Most prefer to look away from mysteries.",
+      "choices": [
+        {
+          "text": "Mysteries deserve answers.",
+          "next_node_id": "bond",
+          "relationship_changes": {
+            "ren": 0.25
+          }
+        },
+        {
+          "text": "I am curious by nature.",
+          "next_node_id": "bond",
+          "relationship_changes": {
+            "ren": 0.2
+          }
+        }
+      ]
+    },
+    "doubt": {
+      "speaker_id": "ren",
+      "text": "*raises an eyebrow* A fair question. Not all who investigate carry badges. *shows worn notebook* My credentials are in every case I have solved. Shall we proceed?",
+      "choices": [
+        {
+          "text": "Your reputation speaks for itself.",
+          "next_node_id": "bond",
+          "relationship_changes": {
+            "ren": 0.2
+          }
+        },
+        {
+          "text": "Show me what you can do.",
+          "next_node_id": "prove",
+          "relationship_changes": {
+            "ren": 0.1
+          }
+        }
+      ]
+    },
+    "key_clue": {
+      "speaker_id": "ren",
+      "text": "*eyes light up* Gloves. That narrows it considerably. *taps notebook* This was not a crime of opportunity. Someone planned this carefully. I think I know where to look next.",
+      "choices": [
+        {
+          "text": "Can I come along?",
+          "next_node_id": "partner",
+          "relationship_changes": {
+            "ren": 0.3
+          }
+        },
+        {
+          "text": "What should I do in the meantime?",
+          "next_node_id": "task",
+          "relationship_changes": {
+            "ren": 0.15
+          }
+        }
+      ]
+    },
+    "honest": {
+      "speaker_id": "ren",
+      "text": "Honesty about what you did not see is as valuable as what you did. *nods approvingly* Many witnesses fabricate details. You are trustworthy.",
+      "choices": [
+        {
+          "text": "I try to be accurate.",
+          "next_node_id": "bond",
+          "relationship_changes": {
+            "ren": 0.2
+          }
+        }
+      ]
+    },
+    "bond": {
+      "speaker_id": "ren",
+      "text": "You know, most people find detective work tedious. But you... you see it differently. *closes notebook* I could use someone like you on my cases.",
+      "choices": [
+        {
+          "text": "I would be honored to help.",
+          "next_node_id": "end_partner",
+          "relationship_changes": {
+            "ren": 0.35
+          }
+        },
+        {
+          "text": "Just tell me where to start.",
+          "next_node_id": "end_task",
+          "relationship_changes": {
+            "ren": 0.2
+          }
+        }
+      ]
+    },
+    "prove": {
+      "speaker_id": "ren",
+      "text": "*stands and walks to a bookshelf, pulls a volume* This book was reported missing three months ago. I found it behind a false panel. *places it on table* Observe. Deduce. Solve. That is the method.",
+      "choices": [
+        {
+          "text": "Impressive. Let us work together.",
+          "next_node_id": "end_partner",
+          "relationship_changes": {
+            "ren": 0.3
+          }
+        }
+      ]
+    },
+    "partner": {
+      "speaker_id": "ren",
+      "text": "A partner. *slight smile* I have worked alone for a long time. Perhaps it is time for that to change. Come, the trail grows cold.",
+      "choices": [
+        {
+          "text": "Lead the way, Detective.",
+          "next_node_id": "end_partner",
+          "relationship_changes": {
+            "ren": 0.2
+          }
+        }
+      ]
+    },
+    "task": {
+      "speaker_id": "ren",
+      "text": "Keep your eyes open. Note anything unusual. *tears a page from notebook* My contact information. Call if you see anything suspicious.",
+      "choices": [
+        {
+          "text": "I will be your eyes and ears.",
+          "next_node_id": "end_task",
+          "relationship_changes": {
+            "ren": 0.15
+          }
+        }
+      ]
+    },
+    "end_partner": {
+      "speaker_id": "ren",
+      "text": "*folds notebook shut with purpose* Together, we will solve this. The Great Library has kept its secrets long enough. *walks toward the door* Coming?",
+      "choices": []
+    },
+    "end_task": {
+      "speaker_id": "ren",
+      "text": "Thank you. Every mystery needs someone who cares enough to look closer. *bows slightly* Until we meet again.",
+      "choices": []
+    }
+  }
+}

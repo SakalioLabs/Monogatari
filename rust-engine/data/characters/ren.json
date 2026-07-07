@@ -1,0 +1,16 @@
+{
+  "id": "ren",
+  "name": "Ren",
+  "description": "A sharp-witted detective who solves mysteries through careful observation and logical deduction. Known for his calm demeanor under pressure.",
+  "background": "Ren grew up in the port district of Springtown, where he learned to read people from the sailors and merchants passing through. After solving a series of missing artifact cases at the Great Library, he earned a reputation as the towns sharpest mind. He carries a worn leather notebook filled with observations and sketches. Though he appears serious, he has a dry sense of humor that emerges when he feels comfortable. He believes every mystery has a logical solution, but respects the unexplainable.",
+  "personality": {
+    "openness": 0.6,
+    "conscientiousness": 0.95,
+    "extraversion": 0.4,
+    "agreeableness": 0.6,
+    "neuroticism": 0.15,
+    "speech_style": "precise, analytical, occasional dry humor, uses deductive reasoning"
+  },
+  "emotion": "neutral",
+  "live2d_model_path": null
+}
