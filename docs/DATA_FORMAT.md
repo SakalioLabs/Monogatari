@@ -1,0 +1,121 @@
+# Monogatari Data Format Reference
+
+## Character Format
+
+Characters are stored as JSON files in `rust-engine/data/characters/`.
+
+```json
+{
+  "id": "character_id",
+  "name": "Display Name",
+  "description": "Brief description for UI",
+  "background": "Detailed backstory for AI context",
+  "personality": {
+    "openness": 0.8,
+    "conscientiousness": 0.6,
+    "extraversion": 0.7,
+    "agreeableness": 0.9,
+    "neuroticism": 0.2,
+    "speech_style": "Description of how the character speaks"
+  },
+  "live2d_model_path": null
+}
+```
+
+### Personality Traits (0.0 - 1.0)
+- **openness**: Curiosity, creativity, willingness to try new things
+- **conscientiousness**: Organization, dependability, self-discipline
+- **extraversion**: Sociability, assertiveness, energy level
+- **agreeableness**: Cooperation, trust, empathy
+- **neuroticism**: Emotional instability, anxiety (lower is calmer)
+
+## Dialogue Format
+
+Dialogues are stored in `rust-engine/data/dialogue/`.
+
+```json
+{
+  "id": "dialogue_id",
+  "title": "Dialogue Title",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "speaker_id": "character_id",
+      "text": "Dialogue text",
+      "choices": [
+        {
+          "text": "Choice text",
+          "next_node_id": "response_node",
+          "relationship_changes": { "character_id": 0.2 }
+        }
+      ]
+    },
+    "response_node": {
+      "speaker_id": "character_id",
+      "text": "Response text",
+      "choices": []
+    }
+  }
+}
+```
+
+### Choice Properties
+- `text`: Player-facing choice text
+- `next_node_id`: Node to transition to
+- `relationship_changes`: Map of character_id to delta (-1.0 to 1.0)
+
+## Knowledge Format
+
+Knowledge entries are stored in `rust-engine/data/knowledge/`.
+
+```json
+{
+  "id": "knowledge_id",
+  "title": "Entry Title",
+  "content": "Detailed knowledge content for AI context",
+  "category": "location|character|lore|event",
+  "tags": ["tag1", "tag2"]
+}
+```
+
+## Scene Format
+
+Scenes are stored in `rust-engine/data/scenes/`.
+
+```json
+{
+  "id": "scene_id",
+  "name": "Scene Name",
+  "background_path": "assets/backgrounds/scene.svg",
+  "bgm_path": null,
+  "weather": "spring|summer|autumn|winter|clear|rain|snow|enchanted",
+  "time_of_day": "day|night|dawn|dusk|golden_hour|eternal_twilight",
+  "tags": ["outdoor", "calm", "demo"]
+}
+```
+
+## Workflow Format
+
+Workflows are stored as JSON files and loaded via the Workflow Editor.
+
+```json
+{
+  "id": "workflow_id",
+  "name": "Workflow Name",
+  "start_node_id": "node_1",
+  "nodes": [
+    {
+      "id": "node_1",
+      "node_type": "start",
+      "label": "Begin",
+      "x": 100,
+      "y": 200,
+      "config": {},
+      "connections": ["node_2"]
+    }
+  ]
+}
+```
+
+### Node Types
+See the Workflow Editor documentation for all 21 available node types and their configurable fields.
