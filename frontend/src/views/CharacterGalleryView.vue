@@ -8,7 +8,7 @@
       </div>
       <div class="gallery-actions">
         <div class="search-bar">
-          <input class="input" v-model="searchQuery" placeholder="Search characters..." />
+          <input class="input" v-model="searchQuery" :placeholder="t('characters.search', 'Search characters...')" />
         </div>
         <button class="btn btn-secondary btn-sm" @click="loadChars">Refresh</button>
         <button class="btn btn-primary btn-sm" @click="$router.push('/character-editor')">+ New</button>
@@ -112,7 +112,7 @@
 
         <div class="detail-actions">
           <button class="btn btn-primary" @click="startChat(selected)">Start Chat</button>
-          <button class="btn btn-secondary" @click="editChar(selected)">Edit</button>
+          <button class="btn btn-secondary" @click="editChar(selected)">{{ t('characters.edit', 'Edit') }}</button>
         </div>
       </aside>
     </div>
@@ -123,6 +123,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { invokeCommand } from '../lib/tauri'
+import { useI18n } from '../lib/i18n'
+
+const { t } = useI18n()
 
 interface Character {
   id: string

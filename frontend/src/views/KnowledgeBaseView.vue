@@ -3,7 +3,7 @@
     <header class="kb-header">
       <div>
         <span class="eyebrow">Knowledge</span>
-        <h1>Knowledge Base</h1>
+        <h1>{{ t('knowledge.title', 'Knowledge Base') }}</h1>
         <p>Manage world lore, character backgrounds, and context entries that feed into AI prompts.</p>
       </div>
       <div class="header-actions">
@@ -141,6 +141,9 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
 import { invokeCommand } from '../lib/tauri'
+import { useI18n } from '../lib/i18n'
+
+const { t } = useI18n()
 
 interface KnowledgeEntry {
   id: string
