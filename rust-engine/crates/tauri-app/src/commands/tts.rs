@@ -7,6 +7,8 @@ use crate::state::AppState;
 pub struct TtsConfig {
     pub provider: String,
     pub api_url: Option<String>,
+    pub api_region: Option<String>,
+    pub api_voice_id: Option<String>,
     pub api_key: Option<String>,
     pub default_voice: Option<String>,
     pub language: String,
@@ -43,6 +45,56 @@ pub async fn set_character_voice(_state: State<'_, AppState>, voice: CharacterVo
 }
 
 #[tauri::command]
+
+/// Synthesize speech using Azure Cognitive Services API
+async fn azure_tts(text: &str, api_key: &str, region: &str, voice: &str) -> Result<String, String> {
+    let url = format!("https://{}.tts.speech.microsoft.com/cognitiveservices/v1", region);
+    let body = format!(
+        r#"<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US"><voice name="{}">{}</voice></speak>"#,
+        voice, text
+    );
+    let client = reqwest::Client::new();
+    let resp = client
+        .post(&url)
+        .header("Ocp-Apim-Subscription-Key", api_key)
+        .header("Content-Type", "application/ssml+xml")
+        .header("X-Microsoft-OutputFormat", "audio-16khz-32kbitrate-mono-mp3")
+        .body(body)
+        .send()
+        .await
+        .map_err(|e| format!("Azure TTS request failed: {}", e))?;
+    if resp.status().is_success() {
+        let bytes = resp.bytes().await.map_err(|e| format!("Azure TTS read failed: {}", e))?;
+        let output = std::env::temp_dir().join("monogatari_tts_azure.mp3");
+        std::fs::write(&output, &bytes).map_err(|e| format!("Azure TTS write failed: {}", e))?;
+        Ok(output.to_string_lossy().to_string())
+    } else {
+        Err(format!("Azure TTS error: {}", resp.status()))
+    }
+}
+
+/// Synthesize speech using ElevenLabs API
+async fn elevenlabs_tts(text: &str, api_key: &str, voice_id: &str) -> Result<String, String> {
+    let url = format!("https://api.elevenlabs.io/v1/text-to-speech/{}", voice_id);
+    let client = reqwest::Client::new();
+    let resp = client
+        .post(&url)
+        .header("xi-api-key", api_key)
+        .header("Content-Type", "application/json")
+        .json(&serde_json::json!({"text": text, "model_id": "eleven_monolingual_v1"}))
+        .send()
+        .await
+        .map_err(|e| format!("ElevenLabs request failed: {}", e))?;
+    if resp.status().is_success() {
+        let bytes = resp.bytes().await.map_err(|e| format!("ElevenLabs read failed: {}", e))?;
+        let output = std::env::temp_dir().join("monogatari_tts_elevenlabs.mp3");
+        std::fs::write(&output, &bytes).map_err(|e| format!("ElevenLabs write failed: {}", e))?;
+        Ok(output.to_string_lossy().to_string())
+    } else {
+        Err(format!("ElevenLabs error: {}", resp.status()))
+    }
+}
+
 pub async fn synthesize_speech(
     _state: State<'_, AppState>, character_id: String, text: String, emotion: Option<String>,
 ) -> Result<TtsResult, String> {
