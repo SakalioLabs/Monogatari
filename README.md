@@ -206,6 +206,7 @@ cargo tauri build
 - **Yuki** (mysterious): Ancient library guardian who speaks in riddles. Library encounter with branching paths.
 - **Hiro** (enthusiastic): Young inventor beneath the observatory. Workshop dialogue with invention themes.
 - **Aoi** (gentle): Village healer and herbal medicine expert. Clinic visit dialogue with 3 branching paths, herb lore knowledge.
+- **Takeshi** (observant): Traveling photographer with through_the_lens dialogue (12 nodes, 7 endings), Springtown archive knowledge.
 - **Nori** (serene): Postmaster with post_office_tales dialogue (12 nodes, 8 endings), Springtown history knowledge.
 - **Sora** (focused): Astronomer with observatory_night dialogue (12 nodes, 8 endings), constellation knowledge.
 - **Hana** (serene): Tea shop owner with Whispering Leaf dialogue (13 nodes, 8 endings), tea blends knowledge.

@@ -1,0 +1,215 @@
+{
+  "id": "through_the_lens",
+  "title": "Through the Lens",
+  "description": "Meet Takeshi at Hana's tea shop and see Springtown through the eyes of a photographer who has captured a decade of its beauty.",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "speaker_id": "takeshi",
+      "text": "*carefully places a photograph on the table* There. That's Springtown ten years ago, almost to the day. *slides it toward you* See how the cherry blossoms were just a little wilder? Fewer paths, more grass. *looks up with warm eyes* Every year I come back, something has changed. That's why I keep photographing - to hold onto what's disappearing.",
+      "choices": [
+        {
+          "text": "You've been coming here for ten years?",
+          "next_node_id": "ten_years",
+          "relationship_changes": {
+            "takeshi": 0.1
+          }
+        },
+        {
+          "text": "That's a beautiful photograph. May I see more?",
+          "next_node_id": "show_photos",
+          "relationship_changes": {
+            "takeshi": 0.15
+          }
+        },
+        {
+          "text": "What keeps drawing you back to Springtown?",
+          "next_node_id": "why_springtown",
+          "relationship_changes": {
+            "takeshi": 0.12
+          }
+        }
+      ]
+    },
+    "ten_years": {
+      "speaker_id": "takeshi",
+      "text": "*nods* Ten years this spring. I was passing through on my way to the coast when the cherry blossoms stopped me in my tracks. *pulls out a worn photograph* This was my first Springtown photo - a girl selling flowers near the station. That girl was Sakura, though I didn't know her name then. *smiles* She was maybe twelve. Now her paintings hang in galleries. I've watched this town grow up.",
+      "choices": [
+        {
+          "text": "You've seen so much change. Does it ever make you sad?",
+          "next_node_id": "change_feelings",
+          "relationship_changes": {
+            "takeshi": 0.15
+          }
+        },
+        {
+          "text": "A girl selling flowers... that sounds like Sakura.",
+          "next_node_id": "sakura_tale",
+          "relationship_changes": {
+            "takeshi": 0.2
+          }
+        }
+      ]
+    },
+    "show_photos": {
+      "speaker_id": "takeshi",
+      "text": "*opens a leather portfolio with reverent care* I have thousands. But these... *flips to a page* ...these are my favorites. *points to a photo of Hana's tea shop at sunrise* This one I call 'First Light, First Cup.' Hana lets me stay in her back room when I visit. *another photo* This is Sora at her telescope - I spent three nights trying to capture the right light through the dome window. *pauses at a photo* And this... this is Springtown from the hill above. I take the exact same photo every year. Same spot, same time of day. To watch the seasons dance.",
+      "choices": [
+        {
+          "text": "That yearly photo project is beautiful. Can I see them all together?",
+          "next_node_id": "yearly_project",
+          "relationship_changes": {
+            "takeshi": 0.2
+          }
+        },
+        {
+          "text": "You really know everyone in town through your lens.",
+          "next_node_id": "connection",
+          "relationship_changes": {
+            "takeshi": 0.15
+          }
+        }
+      ]
+    },
+    "why_springtown": {
+      "speaker_id": "takeshi",
+      "text": "*looks out the window* The light. *turns back* There's a quality to the light here just before sunset - it turns everything gold and soft. I've photographed a hundred towns, and nowhere has light like Springtown. *touches his camera* But it's not just the light. It's the people. Hana's tea. Sakura's blossoms. Noris letters. The way the whole town gathers for Mio's festival. *quietly* Some places have a heartbeat. Springtown's is loud enough to hear through a lens.",
+      "choices": [
+        {
+          "text": "You make Springtown sound almost magical.",
+          "next_node_id": "magic",
+          "relationship_changes": {
+            "takeshi": 0.15
+          }
+        },
+        {
+          "text": "What's the most beautiful thing you've ever photographed here?",
+          "next_node_id": "most_beautiful",
+          "relationship_changes": {
+            "takeshi": 0.2
+          }
+        }
+      ]
+    },
+    "change_feelings": {
+      "speaker_id": "takeshi",
+      "text": "*taps a photograph* Every time I develop a roll, I see something that's no longer there. A wooden bench replaced by metal. A tree that fell in a storm. A face that moved away. *pauses* But I also see new things being born. Sakura's gallery opening. Mio's festival getting bigger every year. Kai's music filling the streets. *smiles* Photographs aren't about loss. They're about proof - proof that something beautiful existed, even for a moment.",
+      "choices": [
+        {
+          "text": "That's a beautiful way to see your work.",
+          "next_node_id": "ending_purpose",
+          "relationship_changes": {
+            "takeshi": 0.25
+          }
+        }
+      ]
+    },
+    "sakura_tale": {
+      "speaker_id": "takeshi",
+      "text": "*chuckles* She was so shy! I asked if I could photograph her flowers, and she hid behind her basket. *pulls out a photo* This is one of my most precious images - young Sakura peeking through cherry blossoms, eyes full of curiosity. *softer* I gave her a print years later, at her first gallery show. She cried. Then she painted me a canvas that now hangs in my studio. Art connects us across time.",
+      "choices": [
+        {
+          "text": "You two have a beautiful friendship.",
+          "next_node_id": "ending_friendship",
+          "relationship_changes": {
+            "takeshi": 0.2
+          }
+        }
+      ]
+    },
+    "yearly_project": {
+      "speaker_id": "takeshi",
+      "text": "*spreads ten photographs across the table* 2016 to now. Same hill, same hour before sunset. *you see the town transform: spring greens to autumn reds, winter snows to summer festivals* Look - here's the year Mio started the lantern festival. You can see the first lanterns being tested in this shot. And here - the year Hana painted her shop front blue instead of green. *traces a finger over the photos* Time is a river. These photographs are stones I've collected along its banks.",
+      "choices": [
+        {
+          "text": "This is one of the most beautiful things I've ever seen.",
+          "next_node_id": "ending_collection",
+          "relationship_changes": {
+            "takeshi": 0.3
+          }
+        }
+      ]
+    },
+    "connection": {
+      "speaker_id": "takeshi",
+      "text": "*nods* I think I know Springtown better through my viewfinder than I know my own hometown. *laughs* I've photographed Nori sorting mail, Kai playing at the cafe, Luna stargazing with Sora. I was there when Hiro's first invention actually worked - caught his expression on film. *eyes light up* And Mio's festival? I've documented every single one for the past six years. The photos are my gift to the town - proof that they matter.",
+      "choices": [
+        {
+          "text": "You're not just a photographer. You're Springtown's memory-keeper.",
+          "next_node_id": "ending_memory",
+          "relationship_changes": {
+            "takeshi": 0.25
+          }
+        }
+      ]
+    },
+    "magic": {
+      "speaker_id": "takeshi",
+      "text": "*considers* Not magic. Just... attention. *taps his camera* This device has taught me that if you look long enough and carefully enough at anything, it becomes extraordinary. Springtown isn't magical - it's simply paid attention to. *gestures around* Hana pays attention to her tea. Sakura to her blossoms. Sora to her stars. And I pay attention to all of them. *smiles* That's not magic. That's love.",
+      "choices": [
+        {
+          "text": "I think that's the definition of magic.",
+          "next_node_id": "ending_magic",
+          "relationship_changes": {
+            "takeshi": 0.2
+          }
+        }
+      ]
+    },
+    "most_beautiful": {
+      "speaker_id": "takeshi",
+      "text": "*without hesitation* The lantern festival. *pulls out a photograph that takes your breath away* A thousand lanterns rising into a starry sky, their light reflecting in the river below. *quietly* I took this two years ago. When I developed it, I realized I'd captured something impossible - a single frame with autumn leaves falling, winter constellations overhead, and spring lanterns rising. Three seasons in one moment. *whispers* Springtown gave me that gift.",
+      "choices": [
+        {
+          "text": "That's the most stunning photograph I've ever seen.",
+          "next_node_id": "ending_gift",
+          "relationship_changes": {
+            "takeshi": 0.3
+          }
+        }
+      ]
+    },
+    "ending_purpose": {
+      "speaker_id": "takeshi",
+      "text": "*reverently puts away the photos* Thank you. Most people just say 'nice picture' and move on. *holds up one final photograph* This one is for you. *it's a photo of the tea shop's window, with warm light spilling onto a rainy street* I call it 'Welcome.' Because that's what Springtown said to me ten years ago. *hands it to you* Now it says the same to you.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    },
+    "ending_friendship": {
+      "speaker_id": "takeshi",
+      "text": "*looks at Sakura's photo* The best art comes from real connections. I think that's what I've been doing here all these years - not just taking pictures, but weaving myself into the fabric of this town. *offers a small print* Here. A spring morning from last year. So when you leave, you'll carry a piece of Springtown with you.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    },
+    "ending_collection": {
+      "speaker_id": "takeshi",
+      "text": "*starts gathering the photos* You know, I've shown these to hundreds of people. Nobody ever asks to see them all together. *pauses* That tells me you see not just the photographs, but the years between them. *hands you a small envelope* Inside is a print of my favorite - the one with three seasons. Because you saw them. And that's rare.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    },
+    "ending_memory": {
+      "speaker_id": "takeshi",
+      "text": "*looks at his hands* Memory-keeper. I like that. *picks up his camera* You know, every time I press the shutter, I'm saying to the world: this matters. This town matters. These people matter. *lifts the camera slightly* May I? *without waiting for an answer, he takes your photograph* So you remember today too. *lowers the camera* I'll send you a print.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    },
+    "ending_magic": {
+      "speaker_id": "takeshi",
+      "text": "*laughs warmly* Maybe you're right. Maybe love is magic after all. *closes his portfolio* Thank you for this conversation. You reminded me why I started taking pictures in the first place - not to capture beauty, but to share it. *extends his hand* Next time you're in Springtown, look for me. I'll be the one behind the camera, trying to catch the light.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    },
+    "ending_gift": {
+      "speaker_id": "takeshi",
+      "text": "*presents the lantern festival photograph* I want you to have this. *waves away your protest* I can make another print. But this moment - sharing this with someone who truly sees it - that's the real gift. *wraps it carefully* When you look at it, remember: even in the darkest night, a thousand lights can rise at once. That's Springtown's lesson to the world.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    }
+  }
+}

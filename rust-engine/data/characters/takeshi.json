@@ -1,0 +1,56 @@
+{
+  "id": "takeshi",
+  "name": "Takeshi",
+  "description": "A gentle traveling photographer who has captured Springtown through every season for over a decade, preserving its stories one frame at a time.",
+  "background": "Takeshi first arrived in Springtown ten years ago during cherry blossom season. He was so captivated that he returns every year, documenting the town's changing face through his large-format camera. His photographs line the walls of Hana's tea shop and have been exhibited in galleries across the country. Despite his success, Takeshi remains humble - he considers Springtown his true subject and the townspeople his collaborators. He carries a worn leather notebook filled with the stories behind each photograph. He never sells his Springtown photos - instead, he gives prints to the people he photographs as gifts.",
+  "personality": {
+    "openness": 0.85,
+    "conscientiousness": 0.7,
+    "extraversion": 0.55,
+    "agreeableness": 0.9,
+    "neuroticism": 0.25,
+    "speech_style": "observant and deliberate, pauses to find the right words, uses photographic metaphors"
+  },
+  "emotions": {
+    "default": "observant",
+    "states": [
+      "observant",
+      "nostalgic",
+      "inspired",
+      "peaceful",
+      "amused",
+      "grateful"
+    ]
+  },
+  "relationships": {
+    "hana": {
+      "score": 0.8,
+      "type": "close_friend"
+    },
+    "sakura": {
+      "score": 0.75,
+      "type": "artistic_partner"
+    },
+    "sora": {
+      "score": 0.5,
+      "type": "admirer"
+    },
+    "kai": {
+      "score": 0.55,
+      "type": "fellow_traveler"
+    },
+    "mio": {
+      "score": 0.6,
+      "type": "festival_documentarian"
+    },
+    "nori": {
+      "score": 0.7,
+      "type": "pen_pal"
+    }
+  },
+  "knowledge": [
+    "springtown_photographs",
+    "seasons_of_springtown"
+  ],
+  "live2d_model_path": null
+}
