@@ -5,7 +5,7 @@
         <div class="logo-mark">M</div>
         <div class="logo-text" v-show="!sidebarCollapsed">
           <span class="logo-name">Monogatari</span>
-          <span class="logo-badge">Engine v0.8</span>
+          <span class="logo-badge">{{ t('app.version', 'Engine v0.9') }}</span>
         </div>
       </div>
       <nav class="sidebar-nav">
@@ -18,7 +18,7 @@
       <div class="sidebar-footer">
         <button class="nav-item" @click="sidebarCollapsed = !sidebarCollapsed">
           <span class="nav-icon" v-html="sidebarCollapsed ? '&rsaquo;' : '&lsaquo;'"></span>
-          <span class="nav-label" v-show="!sidebarCollapsed">Compact</span>
+          <span class="nav-label" v-show="!sidebarCollapsed">{{ t('app.compact', 'Compact') }}</span>
         </button>
       </div>
     </aside>
@@ -40,29 +40,33 @@ import { ref, computed } from 'vue'
 import ToastNotification from './components/ToastNotification.vue'
 import ErrorBoundary from './components/ErrorBoundary.vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from './lib/i18n'
 
+const { t } = useI18n()
 const route = useRoute()
 const sidebarCollapsed = ref(false)
-const showSidebar = computed(() => route.name !== 'game')
+const showSidebar = computed(() => route.name !== 'game' && route.name !== 'title')
 
-const navItems = [
-  { path: '/', label: 'Dashboard', icon: '&#9632;' },
-  { path: '/chat', label: 'AI Chat', icon: '&#9670;', badge: 'Live' },
-  { path: '/game', label: 'Story Mode', icon: '&#9654;' },
-  { path: '/editor', label: 'Workflow', icon: '&#8942;' },
-  { path: '/assets', label: 'Scene Assets', icon: '&#9638;' },
-  { path: '/character-editor', label: 'Editor', icon: '&#9998;' },
-  { path: '/characters', label: 'Characters', icon: '&#9786;' },
-  { path: '/group-chat', label: 'Group Chat', icon: '&#9733;' },
-  { path: '/settings', label: 'Settings', icon: '&#9881;' },
-  { path: '/analytics', label: 'Analytics', icon: '&#9636;' },
-  { path: '/plugins', label: 'Plugins', icon: '&#128295;' },
-  { path: '/scene-editor', label: 'Scenes', icon: '&#127912;' },
-  { path: '/dialogue-editor', label: 'Dialogues', icon: '&#128172;' },
-  { path: '/knowledge', label: 'Knowledge', icon: '&#128218;' },
-  { path: '/audio', label: 'Audio', icon: '&#9835;' },
-  { path: '/marketplace', label: 'Marketplace', icon: '&#9733;', badge: 'New' },
-]
+const navItems = computed(() => [
+  { path: '/', label: t('nav.dashboard', 'Dashboard'), icon: '&#9632;' },
+  { path: '/chat', label: t('nav.chat', 'AI Chat'), icon: '&#9670;', badge: 'Live' },
+  { path: '/game', label: t('nav.story', 'Story Mode'), icon: '&#9654;' },
+  { path: '/editor', label: t('nav.workflow', 'Workflow'), icon: '&#8942;' },
+  { path: '/assets', label: t('nav.assets', 'Scene Assets'), icon: '&#9638;' },
+  { path: '/character-editor', label: t('nav.editor', 'Editor'), icon: '&#9998;' },
+  { path: '/characters', label: t('nav.characters', 'Characters'), icon: '&#9786;' },
+  { path: '/group-chat', label: t('nav.group', 'Group Chat'), icon: '&#9733;' },
+  { path: '/settings', label: t('nav.settings', 'Settings'), icon: '&#9881;' },
+  { path: '/analytics', label: t('nav.analytics', 'Analytics'), icon: '&#9636;' },
+  { path: '/plugins', label: t('nav.plugins', 'Plugins'), icon: '&#128295;' },
+  { path: '/scene-editor', label: t('nav.scenes', 'Scenes'), icon: '&#127912;' },
+  { path: '/dialogue-editor', label: t('nav.dialogues', 'Dialogues'), icon: '&#128172;' },
+  { path: '/knowledge', label: t('nav.knowledge', 'Knowledge'), icon: '&#128218;' },
+  { path: '/audio', label: t('nav.audio', 'Audio'), icon: '&#9835;' },
+  { path: '/marketplace', label: t('nav.marketplace', 'Marketplace'), icon: '&#9733;', badge: 'New' },
+  { path: '/cg-gallery', label: t('nav.cg-gallery', 'CG Gallery'), icon: '&#127912;' },
+  { path: '/backlog', label: t('nav.backlog', 'Backlog'), icon: '&#128214;' },
+])
 </script>
 
 <style scoped>
@@ -87,7 +91,7 @@ const navItems = [
 .logo-text { overflow: hidden; white-space: nowrap; }
 .logo-name { font-weight: 700; font-size: 16px; color: var(--text-primary); display: block; }
 .logo-badge { font-size: 10px; color: var(--text-tertiary); }
-.sidebar-nav { flex: 1; padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; }
+.sidebar-nav { flex: 1; padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
 .nav-item {
   display: flex; align-items: center; gap: 12px;
   padding: 10px 12px; border-radius: var(--radius-sm);
@@ -116,75 +120,20 @@ const navItems = [
 .page-leave-active { animation: fadeIn 0.15s ease reverse; }
 
 @media (max-width: 720px) {
-  #app {
-    flex-direction: column;
+  #app { flex-direction: column; }
+  .app-sidebar, .sidebar-collapsed .app-sidebar {
+    width: 100%; min-width: 0; flex-direction: row; align-items: stretch;
+    border-right: none; border-bottom: 1px solid var(--border);
   }
-
-  .app-sidebar,
-  .sidebar-collapsed .app-sidebar {
-    width: 100%;
-    min-width: 0;
-    flex-direction: row;
-    align-items: stretch;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .sidebar-header {
-    flex-shrink: 0;
-    padding: 10px 12px;
-    border-right: 1px solid var(--border);
-    border-bottom: none;
-  }
-
-  .logo-mark {
-    width: 32px;
-    height: 32px;
-  }
-
-  .logo-text {
-    display: none;
-  }
-
-  .sidebar-nav {
-    flex: 1;
-    min-width: 0;
-    flex-direction: row;
-    gap: 4px;
-    overflow-x: auto;
-    padding: 8px;
-  }
-
-  .nav-item {
-    width: auto;
-    min-width: max-content;
-    padding: 8px 10px;
-  }
-
-  .nav-icon {
-    width: 16px;
-  }
-
-  .nav-badge {
-    display: none;
-  }
-
-  .nav-item.active::before {
-    left: 8px;
-    right: 8px;
-    top: auto;
-    bottom: 0;
-    width: auto;
-    height: 3px;
-    border-radius: 3px 3px 0 0;
-  }
-
-  .sidebar-footer {
-    display: none;
-  }
-
-  .app-main {
-    width: 100%;
-  }
+  .sidebar-header { flex-shrink: 0; padding: 10px 12px; border-right: 1px solid var(--border); border-bottom: none; }
+  .logo-mark { width: 32px; height: 32px; }
+  .logo-text { display: none; }
+  .sidebar-nav { flex: 1; min-width: 0; flex-direction: row; gap: 4px; overflow-x: auto; padding: 8px; }
+  .nav-item { width: auto; min-width: max-content; padding: 8px 10px; }
+  .nav-icon { width: 16px; }
+  .nav-badge { display: none; }
+  .nav-item.active::before { left: 8px; right: 8px; top: auto; bottom: 0; width: auto; height: 3px; border-radius: 3px 3px 0 0; }
+  .sidebar-footer { display: none; }
+  .app-main { width: 100%; }
 }
 </style>

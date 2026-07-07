@@ -1,4 +1,4 @@
-# Monogatari v0.8.1
+# Monogatari v0.9.0
 
 An LLM-powered v0.5 visual novel / galgame engine. Build interactive story experiences where AI-driven characters respond dynamically to player conversations, with automatic conversation scoring that triggers special plot events.
 
@@ -30,6 +30,11 @@ Monogatari is a development engine for creating LLM-driven text adventure games.
 
 - **Project Export** - Export project as distributable JSON manifest with content inventory for packaging.
 - **Multiple AI Backends** - OpenAI-compatible API (GPT, Claude, etc.) and local ONNX models with DirectML.
+- **Title Screen** - Cinematic animated title screen with particle effects, glowing brand logo, and quick-access menu for game start, workflow editing, gallery, and settings.
+- **CG Gallery** - Scene and character art collection viewer with grid layout, locked/unlocked states, preview modal with weather/time metadata, and color-coded thumbnails.
+- **Backlog Viewer** - Full conversation history replay with character selector, role-based filtering (player/character/system), emotion badges, and jump-to-latest.
+- **Full i18n Internationalization** - 280+ translation keys covering all views and UI strings. Complete Simplified Chinese (zh-CN), Japanese (ja-JP), and Korean (ko-KR) locale files for international deployment.
+- **i18n-Integrated Sidebar** - All 18 navigation labels render through the `t()` translation function with automatic locale switching.
 - **Commercial Workbench UI** - Desktop-first dashboard, streaming chat desk, story runtime, workflow authoring surface, and settings panels designed for repeated production use.
 
 ## Current Development Status
@@ -271,7 +276,7 @@ cargo tauri build
 - [x] Frontend streaming chat integration via Tauri events
 - [x] Streaming evaluation and event notifications (`chat-evaluation`, `chat-events`)
 - [x] Chat session lock optimization for slower LLM requests
-- [x] Commercial workbench UI refresh with 16-item sidebar navigation navigation (dashboard/chat/story/workflow/analytics/marketplace/plugins)
+- [x] Commercial workbench UI refresh with 18-item sidebar navigation navigation (dashboard/chat/story/workflow/analytics/marketplace/plugins)
 - [x] Browser preview fallback for non-Tauri UI review
 - [x] Frontend supply-chain audit remediation (Vite 8 + Live2D transitive override)
 - [x] Rust lockfile policy for reproducible Tauri builds
@@ -289,12 +294,17 @@ cargo tauri build
 - [x] 21 workflow node types with execution handlers for all types
 - [x] Async-safe chat evaluation (blocking_read fix)
 - [x] Cargo dev profile optimization for faster builds
+- [x] Title Screen with cinematic animated particle effects and quick-access menu
+- [x] CG Gallery view with scene/character art collection and preview modal
+- [x] Backlog viewer with conversation history replay and role-based filtering
+- [x] Comprehensive i18n system with 280+ translation keys across all views
+- [x] Full Simplified Chinese (zh-CN), Japanese (ja-JP), Korean (ko-KR) locale support
+- [x] i18n-integrated sidebar with 18 navigation items using t() function
 
 ### In Progress
 
-- [x] Multiple character simultaneous group chat (backend + frontend complete)
-- [x] 3D character model support (Three.js + CharacterModelView)
 - [ ] Installer signing and distribution channel configuration
+- [ ] Mobile deployment (Tauri mobile)
 
 ### Planned
 
@@ -319,6 +329,8 @@ cargo tauri build
 - [x] i18n composable with nested key support and locale persistence
 - [x] i18n composable upgraded with nested key support and localStorage persistence
 - [x] Sidebar navigation expanded to 12 items with Analytics, Marketplace, Plugins
+- [x] Title Screen, CG Gallery, Backlog viewer views
+- [x] Full i18n with 280+ keys and 4 locale files (en, zh-CN, ja-JP, ko-KR)
 - [ ] Mobile deployment (Tauri mobile)
 
 ## Tech Stack

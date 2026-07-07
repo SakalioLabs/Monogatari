@@ -10,6 +10,11 @@ const router = createRouter({
       component: HomeView,
     },
     {
+      path: '/title',
+      name: 'title',
+      component: () => import('../views/TitleScreenView.vue'),
+    },
+    {
       path: '/game',
       name: 'game',
       component: () => import('../views/GameView.vue'),
@@ -83,6 +88,16 @@ const router = createRouter({
       path: '/scene-editor',
       name: 'scene-editor',
       component: () => import('../views/SceneEditorView.vue'),
+    },
+    {
+      path: '/cg-gallery',
+      name: 'cg-gallery',
+      component: () => import('../views/CGGalleryView.vue'),
+    },
+    {
+      path: '/backlog',
+      name: 'backlog',
+      component: () => import('../views/BacklogView.vue'),
     },
   ],
 })

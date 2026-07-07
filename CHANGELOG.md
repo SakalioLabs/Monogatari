@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.9.0] - 2026-07-07
+
+### Added
+- **TitleScreenView**: Cinematic title screen with animated particle effects, glowing logo, menu navigation (Start Game, Continue, Workflow, Gallery, Settings), version badge, and MIT license footer. Hides sidebar for immersive first impression.
+- **CGGalleryView**: Scene and character art collection gallery with grid layout, locked/unlocked states, scene preview modal with weather/time-of-day metadata, tag pills, and color-coded thumbnails derived from scene IDs.
+- **BacklogView**: Full conversation history viewer with character selector chips, role-based filtering (All/Player/Character), avatar color coding, emotion badges, timestamps, and jump-to-latest functionality.
+- **Comprehensive i18n locale system**: Expanded from 13 keys to 280+ keys across all views covering navigation, chat, game, settings, workflow, characters, knowledge, dialogue, scene, audio, analytics, marketplace, plugins, group chat, title screen, backlog, CG gallery, and common UI strings.
+- **Chinese locale (zh-CN)**: 280 translation keys for full Simplified Chinese support.
+- **Japanese locale (ja-JP)**: 187 translation keys for Japanese market readiness.
+- **Korean locale (ko-KR)**: 159 translation keys for Korean market support.
+- **i18n integration in App.vue**: All 18 sidebar navigation labels now use `t()` function with locale-aware rendering via `useI18n()` composable.
+
+### Changed
+- **Router expanded** to 19 routes with Title Screen, CG Gallery, and Backlog entries.
+- **Sidebar navigation** expanded to 18 items with CG Gallery and Backlog entries.
+- **App.vue** now imports `useI18n` composable and uses `computed` nav items with `t()` for all labels.
+- **Title Screen and Story Mode** routes hide the sidebar for immersive gameplay experience.
+- **Total frontend views**: 19 (up from 16).
+- **Version badge**: Updated from v0.8 to v0.9 in sidebar.
+
 ## [0.8.2] - 2026-07-07
 
 ### Added
