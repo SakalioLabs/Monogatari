@@ -38,6 +38,7 @@
       </div>
     </Transition>
     <KeyboardShortcutsHelp :visible="showShortcuts" @close="showShortcuts = false" />
+    <WhatsNew />
   </div>
 </template>
 
@@ -46,6 +47,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import ToastNotification from './components/ToastNotification.vue'
 import ErrorBoundary from './components/ErrorBoundary.vue'
 import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp.vue'
+import WhatsNew from './components/WhatsNew.vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from './lib/i18n'
 
