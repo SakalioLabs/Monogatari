@@ -60,7 +60,7 @@ impl KnowledgeBase {
         let query_lower = query.to_lowercase();
         let query_words: Vec<&str> = query_lower.split_whitespace().collect();
 
-        if query_words.is_empty() {
+        if query_words.is_empty() || query.trim().is_empty() {
             return Vec::new();
         }
 

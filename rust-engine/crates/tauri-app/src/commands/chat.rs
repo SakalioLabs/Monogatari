@@ -83,6 +83,15 @@ pub async fn send_chat_message(
     character_id: String,
     message: String,
 ) -> Result<ChatResponse, String> {
+    // Input validation
+    let message = message.trim().to_string();
+    if message.is_empty() {
+        return Err("Message cannot be empty".to_string());
+    }
+    if character_id.trim().is_empty() {
+        return Err("Character ID is required".to_string());
+    }
+
     let now = format!(
         "{:?}",
         std::time::SystemTime::now()
@@ -104,7 +113,7 @@ pub async fn send_chat_message(
                 c.emotion.clone(),
             )
         } else {
-            return Err(format!("Character not found: {character_id}"));
+            return Err(format!("Character not found: \"{}\". Please check the character ID and ensure characters are loaded.", character_id));
         }
     };
 
@@ -769,6 +778,12 @@ pub async fn send_chat_message_stream(
 ) -> Result<(), String> {
     use tauri::Emitter;
 
+    // Input validation
+    let message = message.trim().to_string();
+    if message.is_empty() {
+        return Err("Message cannot be empty".to_string());
+    }
+
     let (char_name, char_description, char_background, char_personality, char_emotion) = {
         let cm = state.character_manager.read().await;
         if let Some(character) = cm.get_character(&character_id) {
@@ -781,7 +796,7 @@ pub async fn send_chat_message_stream(
                 c.emotion.clone(),
             )
         } else {
-            return Err(format!("Character not found: {character_id}"));
+            return Err(format!("Character not found: \"{}\". Please check the character ID and ensure characters are loaded.", character_id));
         }
     };
 
