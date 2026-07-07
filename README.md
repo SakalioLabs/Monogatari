@@ -305,6 +305,8 @@ cargo tauri build
 - [x] Multi-language locale files (zh-CN, ja-JP, ko-KR)
 - [x] Enhanced group chat with streaming and emotion display
 - [x] Audio manager view with BGM/SFX mixer
+- [x] GLTF/GLB 3D model loading with Three.js GLTFLoader, OrbitControls, animation playback
+- [x] i18n composable with nested key support and locale persistence
 - [x] i18n composable upgraded with nested key support and localStorage persistence
 - [x] Sidebar navigation expanded to 12 items with Analytics, Marketplace, Plugins
 - [ ] Mobile deployment (Tauri mobile)

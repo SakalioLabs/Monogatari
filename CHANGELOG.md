@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.6.2] - 2026-07-07
+
+### Added
+- **GLTF 3D Model Loading**: CharacterModelView now loads .glb/.gltf models via Three.js GLTFLoader with OrbitControls, animation playback, ambient+directional lighting, and graceful fallback to a placeholder cube on error.
+- **i18n nested key support**: Upgraded i18n composable with dot-notation nested keys, localStorage locale persistence, and local JSON file fallback.
+
+### Changed
+- CharacterModelView completely rewritten from static placeholder to full 3D pipeline with dynamic model loading and watch-based model path reactivity.
+
+
 ## [0.6.1] - 2026-07-07
 
 ### Added
