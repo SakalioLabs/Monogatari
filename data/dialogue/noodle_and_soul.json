@@ -1,0 +1,193 @@
+{
+  "id": "noodle_and_soul",
+  "title": "Noodle & Soul",
+  "description": "Visit Rin's ramen shop and discover how food tells the story of Springtown - one bowl at a time.",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "speaker_id": "rin",
+      "text": "*slaps a towel over her shoulder and grins* Welcome to Noodle & Soul! Sit wherever - but not that seat, that's Taro's. *gestures with a ladle* He carved it himself, so I let him pretend it's reserved. *laughs* I'm Rin. I make ramen. The best ramen. *winks* No pressure, right? So what brings you in today? Hungry? Curious? Or did someone finally send you to taste the broth they won't stop talking about?",
+      "choices": [
+        {
+          "text": "I heard your tonkotsu broth simmers for three days. That's dedication.",
+          "next_node_id": "broth_story",
+          "relationship_changes": {
+            "rin": 0.15
+          }
+        },
+        {
+          "text": "What do you recommend for a first-timer?",
+          "next_node_id": "recommend",
+          "relationship_changes": {
+            "rin": 0.12
+          }
+        },
+        {
+          "text": "This place has so much character. How did you find it?",
+          "next_node_id": "finding_the_shop",
+          "relationship_changes": {
+            "rin": 0.1
+          }
+        }
+      ]
+    },
+    "broth_story": {
+      "speaker_id": "rin",
+      "text": "*puffs up with pride* Three days, four hours, and seventeen minutes! *lifts the lid off a massive pot, releasing an aromatic cloud* This broth has been simmering since Tuesday. Pork bones, kombu, dried mushrooms, and a secret ingredient I'll take to my grave. *stirs it lovingly* My master taught me that you can't rush flavor. Every hour the pot bubbles, it absorbs a little more of the cook's intention. *looks at you* I put my whole heart into this pot. You can taste it.",
+      "choices": [
+        {
+          "text": "I can smell it. Can I try a bowl?",
+          "next_node_id": "first_bowl",
+          "relationship_changes": {
+            "rin": 0.2
+          }
+        },
+        {
+          "text": "A secret ingredient? You can't just say that and not tell me!",
+          "next_node_id": "secret_ingredient",
+          "relationship_changes": {
+            "rin": 0.15
+          }
+        }
+      ]
+    },
+    "recommend": {
+      "speaker_id": "rin",
+      "text": "*studies you for a moment with a chef's eye* You look like you've been traveling. Slightly tired, but the good kind of tired - the kind that comes from seeing new things. *nods* You need my shio ramen. Light, clear broth with bamboo shoots and a soft-boiled egg. It'll restore you without weighing you down. *calls back over her shoulder as she moves to the kitchen* One shio coming up! And I'll throw in an extra slice of chashu - on the house.",
+      "choices": [
+        {
+          "text": "You read me perfectly. Thank you.",
+          "next_node_id": "eating",
+          "relationship_changes": {
+            "rin": 0.15
+          }
+        }
+      ]
+    },
+    "finding_the_shop": {
+      "speaker_id": "rin",
+      "text": "*wipes the counter* Five years ago, this was an abandoned storage room. Leaky ceiling, creaky floorboards, and a kitchen that barely worked. *looks around fondly* But the light was perfect. Morning sun comes through that window right onto the counter. I knew this was the spot the first time I walked in. *picks up a hand-carved bowl* Taro helped me fix it up. Hana brought tea every day during renovations. Nori spread the word before I even opened. *smiles* Springtown built this shop with me.",
+      "choices": [
+        {
+          "text": "This town really takes care of its own.",
+          "next_node_id": "town_spirit",
+          "relationship_changes": {
+            "rin": 0.2
+          }
+        }
+      ]
+    },
+    "first_bowl": {
+      "speaker_id": "rin",
+      "text": "*sets a steaming bowl in front of you with theatrical flair* One bowl of tonkotsu ramen - our signature! *you see a rich, milky broth with perfectly arranged toppings* The egg first - my secret marinade. Then taste the broth. *watches anxiously* ...Well?",
+      "choices": [
+        {
+          "text": "*takes a sip* This is... incredible. The flavor is so deep.",
+          "next_node_id": "praise",
+          "relationship_changes": {
+            "rin": 0.25
+          }
+        }
+      ]
+    },
+    "secret_ingredient": {
+      "speaker_id": "rin",
+      "text": "*leans in conspiratorially* If I told you, I'd have to... well, I wouldn't do anything dramatic. I'd just be very disappointed. *laughs* But between us? *whispers* A tiny piece of dried citrus peel. Just one. It doesn't make the broth fruity - it makes everything else taste more like itself. *grins* My master would kill me for telling you.",
+      "choices": [
+        {
+          "text": "Your secret is safe with me. Can I try it now?",
+          "next_node_id": "first_bowl",
+          "relationship_changes": {
+            "rin": 0.2
+          }
+        }
+      ]
+    },
+    "eating": {
+      "speaker_id": "rin",
+      "text": "*leans on the counter, watching you eat* See? The shio wakes you up gently. *points with chopsticks* The key is the menma - bamboo shoots. I marinate them in sake and soy for exactly two days. Any less and they're too crunchy. Any more and they lose their soul. *as you take another bite* ...You know, I can always tell if someone's enjoying my food by the sound they make. You just made the good sound. *nods, satisfied*",
+      "choices": [
+        {
+          "text": "I didn't realize I made a sound! This is the best ramen I've ever had.",
+          "next_node_id": "best_ramen",
+          "relationship_changes": {
+            "rin": 0.2
+          }
+        }
+      ]
+    },
+    "town_spirit": {
+      "speaker_id": "rin",
+      "text": "*stirs the broth pot thoughtfully* Springtown doesn't just take care of its own - it takes care of anyone who needs it. *looks at you* I came here with a broken dream and a rusty pot. The town gave me a reason to cook again. *voice softens* Now when someone sits at my counter and takes that first sip, and I see their shoulders relax... *smiles* ...I know I'm paying it forward. *hands you a small bowl* Here. Miso soup. On the house. Because you listened.",
+      "choices": [
+        {
+          "text": "Thank you, Rin. I think I understand Springtown a little better now.",
+          "next_node_id": "ending_understand",
+          "relationship_changes": {
+            "rin": 0.3
+          }
+        }
+      ]
+    },
+    "praise": {
+      "speaker_id": "rin",
+      "text": "*a rare soft smile crosses her face* Thank you. *then the energy returns* But you haven't tried the noodles yet! Slurp them - don't be polite. Slurping aerates the broth and enhances the flavor. *demonstrates with an impressive slurp* See? *laughs* My master said 'If you don't slurp, you don't respect the noodle.' I've been slurping ever since.",
+      "choices": [
+        {
+          "text": "*slurps loudly* How was that?",
+          "next_node_id": "slurp_approval",
+          "relationship_changes": {
+            "rin": 0.15
+          }
+        }
+      ]
+    },
+    "best_ramen": {
+      "speaker_id": "rin",
+      "text": "*puts a hand over her heart* Best you've ever had? I'm writing that down. *pretends to write on her hand* 'Customer said best ramen ever - frame this.' *laughs* But seriously, that means a lot. I put everything into these bowls. *looks at the simmering pot* Every broth, every topping, every garnish is a conversation between me and the ingredients. *turns back to you* And you just made it worth it. *refills your bowl* Here. Have more. You look like you need it.",
+      "choices": [
+        {
+          "text": "I think I'm going to become a regular customer.",
+          "next_node_id": "ending_regular",
+          "relationship_changes": {
+            "rin": 0.25
+          }
+        }
+      ]
+    },
+    "slurp_approval": {
+      "speaker_id": "rin",
+      "text": "*nods approvingly* Not bad for a first attempt! You've got potential. *leans on the counter* You know, cooking for someone who truly appreciates food - that's the whole point of this shop. *gestures around* The bowls, the broth, the music Kai plays on his guitar outside on weekends - it all comes together to create a moment. *looks at you warmly* And you just became part of that moment. *hands you a small cookie* Fortune cookie. Homemade. It says 'Good food awaits you.' I put that in all of them.",
+      "choices": [
+        {
+          "text": "I'll keep this forever.",
+          "next_node_id": "ending_cookie",
+          "relationship_changes": {
+            "rin": 0.2
+          }
+        }
+      ]
+    },
+    "ending_understand": {
+      "speaker_id": "rin",
+      "text": "*nods slowly* Yeah. I think you do. *looks around her tiny shop* Springtown isn't the buildings or the streets. It's the bowls we share, the broths we simmer, the stories we tell over steaming food. *hands you a small jar* Here. Some of my special shio tare. So you can make a little Springtown wherever you go. *smiles* Just add love. That's the real secret ingredient.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    },
+    "ending_regular": {
+      "speaker_id": "rin",
+      "text": "*brightens* I was hoping you'd say that. *pulls out a worn notebook* I keep a list of regulars and their orders. What's your name? *writes it down* Good. Next time you walk through that door, I'll already have your bowl started. *closes the notebook* That's what I love about this job - watching strangers become regulars, and regulars become family. *winks* Welcome to the family.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    },
+    "ending_cookie": {
+      "speaker_id": "rin",
+      "text": "*laughs* Keep it. And remember - when life gets complicated, there's always ramen. *extends her hand* Come back anytime, okay? The pot is always simmering. *calls out as you leave* And tell your friends! A chef's dream is a full house and empty bowls!",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    }
+  }
+}

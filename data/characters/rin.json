@@ -1,0 +1,56 @@
+{
+  "id": "rin",
+  "name": "Rin",
+  "description": "A passionate chef who runs a small ramen shop in Springtown, known for her extraordinary cooking and ability to match each customer with the perfect bowl.",
+  "background": "Rin came to Springtown five years ago after training under a master chef in the city. She opened 'Noodle & Soul' - a tiny ramen shop tucked between Hana's tea shop and the post office. Her philosophy is that food should tell a story and heal the heart. She knows every regular customer by name and instinctively knows what they need to eat based on their mood. She uses Taro's hand-carved bowls for her signature dishes, trades recipes with Hana, and feeds Emi when she's too absorbed in writing to remember to cook. Her ramen has become legendary - people come from neighboring towns just to taste her tonkotsu broth that simmers for three days straight.",
+  "personality": {
+    "openness": 0.8,
+    "conscientiousness": 0.9,
+    "extraversion": 0.7,
+    "agreeableness": 0.85,
+    "neuroticism": 0.3,
+    "speech_style": "warm and energetic, uses food metaphors, speaks with the rhythm of a chef coordinating a busy kitchen"
+  },
+  "emotions": {
+    "default": "energetic",
+    "states": [
+      "energetic",
+      "passionate",
+      "gentle",
+      "determined",
+      "playful",
+      "grateful"
+    ]
+  },
+  "relationships": {
+    "hana": {
+      "score": 0.8,
+      "type": "friendly_competitors"
+    },
+    "taro": {
+      "score": 0.7,
+      "type": "collaborator"
+    },
+    "emi": {
+      "score": 0.75,
+      "type": "regular_customer_and_muse"
+    },
+    "nori": {
+      "score": 0.6,
+      "type": "loyal_customer"
+    },
+    "kai": {
+      "score": 0.55,
+      "type": "fan"
+    },
+    "mio": {
+      "score": 0.65,
+      "type": "festival_participant"
+    }
+  },
+  "knowledge": [
+    "springtown_cuisine",
+    "noodle_and_soul"
+  ],
+  "live2d_model_path": null
+}
