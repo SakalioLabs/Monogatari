@@ -1,87 +1,989 @@
 <template>
-  <div class="editor-page">
-    <header class="editor-header">
-      <h1>Character Editor</h1>
-      <button class="btn btn-primary btn-sm" @click="createNew">+ New Character</button>
-    </header>
-    <div v-if="editing" class="editor-form">
-      <div class="field-grid">
-        <div class="field"><label>ID</label><input class="input" v-model="form.id" placeholder="unique_id" /></div>
-        <div class="field"><label>Name</label><input class="input" v-model="form.name" placeholder="Character Name" /></div>
-        <div class="field full"><label>Description</label><textarea class="input" v-model="form.description" rows="2"></textarea></div>
-        <div class="field full"><label>Background</label><textarea class="input" v-model="form.background" rows="3"></textarea></div>
-        <div class="field full"><label>Speech Style</label><input class="input" v-model="form.speech_style" placeholder="e.g. cheerful and friendly" /></div>
+  <div class="editor-workbench">
+    <aside class="char-rail">
+      <div class="rail-header">
+        <div>
+          <span class="eyebrow">Content</span>
+          <h1>Characters</h1>
+        </div>
+        <button class="btn btn-primary btn-sm" @click="createNew">+ New</button>
       </div>
-      <div class="personality-section">
-        <h3>Personality Traits (Big Five)</h3>
-        <div class="trait-grid">
-          <div class="trait-row"><label>Openness</label><input type="range" v-model.number="form.openness" min="0" max="1" step="0.1" /><span class="trait-val">{{ form.openness.toFixed(1) }}</span></div>
-          <div class="trait-row"><label>Conscientiousness</label><input type="range" v-model.number="form.conscientiousness" min="0" max="1" step="0.1" /><span class="trait-val">{{ form.conscientiousness.toFixed(1) }}</span></div>
-          <div class="trait-row"><label>Extraversion</label><input type="range" v-model.number="form.extraversion" min="0" max="1" step="0.1" /><span class="trait-val">{{ form.extraversion.toFixed(1) }}</span></div>
-          <div class="trait-row"><label>Agreeableness</label><input type="range" v-model.number="form.agreeableness" min="0" max="1" step="0.1" /><span class="trait-val">{{ form.agreeableness.toFixed(1) }}</span></div>
-          <div class="trait-row"><label>Neuroticism</label><input type="range" v-model.number="form.neuroticism" min="0" max="1" step="0.1" /><span class="trait-val">{{ form.neuroticism.toFixed(1) }}</span></div>
+      <div class="char-list">
+        <button
+          v-for="char in characterList"
+          :key="char.id"
+          class="char-card"
+          :class="{ selected: selectedId === char.id }"
+          @click="selectChar(char.id)"
+        >
+          <span class="avatar" :style="{ background: avatarColor(char.id) }">{{ initials(char.name) }}</span>
+          <div class="char-info">
+            <strong>{{ char.name }}</strong>
+            <small>{{ char.description || 'No description' }}</small>
+          </div>
+          <span class="char-emotion">{{ char.emotion || 'neutral' }}</span>
+        </button>
+        <div v-if="characterList.length === 0" class="empty-list">
+          <span class="empty-mark">--</span>
+          <span>No characters loaded</span>
         </div>
       </div>
-      <div class="actions">
-        <button class="btn btn-primary" @click="save">Save Character</button>
-        <button class="btn btn-secondary" @click="editing = false">Cancel</button>
+    </aside>
+
+    <main v-if="editing" class="editor-main">
+      <header class="editor-toolbar">
+        <div class="toolbar-left">
+          <span class="eyebrow">Editing</span>
+          <h2>{{ isNew ? 'New Character' : form.name }}</h2>
+        </div>
+        <div class="toolbar-right">
+          <button class="btn btn-secondary btn-sm" @click="exportChar">Export JSON</button>
+          <button class="btn btn-secondary btn-sm" @click="cancelEdit">Cancel</button>
+          <button class="btn btn-primary btn-sm" :disabled="saving" @click="save">
+            {{ saving ? 'Saving' : 'Save' }}
+          </button>
+        </div>
+      </header>
+
+      <div class="editor-tabs">
+        <button
+          v-for="tab in tabs"
+          :key="tab.key"
+          class="tab-btn"
+          :class="{ active: activeTab === tab.key }"
+          @click="activeTab = tab.key"
+        >{{ tab.label }}</button>
       </div>
-    </div>
-    <div v-else class="char-list">
-      <div v-for="cid in charIds" :key="cid" class="char-row" @click="selectChar(cid)">
-        <span class="char-id">{{ cid }}</span>
+
+      <div class="editor-content">
+        <!-- Basic Info Tab -->
+        <div v-if="activeTab === 'basic'" class="tab-panel">
+          <div class="section">
+            <span class="section-title">Identity</span>
+            <div class="form-grid">
+              <label class="form-field">
+                <span>Character ID</span>
+                <input class="input" v-model="form.id" placeholder="unique_id" :disabled="!isNew" />
+              </label>
+              <label class="form-field">
+                <span>Display Name</span>
+                <input class="input" v-model="form.name" placeholder="Character Name" />
+              </label>
+              <label class="form-field full">
+                <span>Description</span>
+                <textarea class="input" v-model="form.description" rows="2" placeholder="Short description shown in character list"></textarea>
+              </label>
+              <label class="form-field full">
+                <span>Background Story</span>
+                <textarea class="input" v-model="form.background" rows="5" placeholder="Character background and history"></textarea>
+              </label>
+            </div>
+          </div>
+          <div class="section">
+            <span class="section-title">Speech and Appearance</span>
+            <div class="form-grid">
+              <label class="form-field">
+                <span>Speech Style</span>
+                <input class="input" v-model="form.speech_style" placeholder="e.g. cheerful, formal, mysterious" />
+              </label>
+              <label class="form-field">
+                <span>Default Emotion</span>
+                <select class="input" v-model="form.default_emotion">
+                  <option v-for="e in emotions" :key="e" :value="e">{{ e }}</option>
+                </select>
+              </label>
+              <label class="form-field">
+                <span>Live2D Model Path</span>
+                <input class="input" v-model="form.live2d_model_path" placeholder="live2d/model.model3.json" />
+              </label>
+              <label class="form-field">
+                <span>3D Model Path (GLB/GLTF)</span>
+                <input class="input" v-model="form.model_3d_path" placeholder="models/character.glb" />
+              </label>
+              <label class="form-field">
+                <span>Portrait Image</span>
+                <input class="input" v-model="form.portrait_path" placeholder="assets/portraits/char.png" />
+              </label>
+              <label class="form-field">
+                <span>Sprite Sheet</span>
+                <input class="input" v-model="form.sprite_path" placeholder="assets/sprites/char.png" />
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Personality Tab -->
+        <div v-if="activeTab === 'personality'" class="tab-panel">
+          <div class="section">
+            <span class="section-title">Big Five Personality Traits</span>
+            <p class="section-desc">These traits shape how the LLM generates character responses. Higher values amplify the trait in conversations.</p>
+            <div class="trait-columns">
+              <div class="trait-list">
+                <div v-for="trait in personalityTraits" :key="trait.key" class="trait-item">
+                  <div class="trait-header">
+                    <label>{{ trait.label }}</label>
+                    <span class="trait-val">{{ form[trait.key].toFixed(2) }}</span>
+                  </div>
+                  <input type="range" v-model.number="form[trait.key]" min="0" max="1" step="0.05" />
+                  <p class="trait-desc">{{ trait.desc }}</p>
+                </div>
+              </div>
+              <div class="radar-chart">
+                <svg viewBox="0 0 260 260" class="radar-svg">
+                  <polygon v-for="ring in 5" :key="ring"
+                    :points="radarRing(ring * 20)"
+                    fill="none" stroke="var(--border)" stroke-width="1"
+                  />
+                  <polygon :points="radarPolygon" fill="rgba(45,212,191,0.18)" stroke="var(--brand)" stroke-width="2" />
+                  <circle v-for="(pt, i) in radarPoints" :key="i" :cx="pt.x" :cy="pt.y" r="4" fill="var(--brand)" />
+                  <text v-for="(label, i) in radarLabels" :key="label"
+                    :x="radarLabelPos(i).x" :y="radarLabelPos(i).y"
+                    text-anchor="middle" fill="var(--text-secondary)" font-size="10" font-weight="700"
+                  >{{ label }}</text>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Emotions Tab -->
+        <div v-if="activeTab === 'emotions'" class="tab-panel">
+          <div class="section">
+            <span class="section-title">Emotion Configuration</span>
+            <p class="section-desc">Configure how the character expresses different emotions in dialogue and chat.</p>
+            <div class="emotion-grid">
+              <div v-for="em in emotionConfigs" :key="em.name" class="emotion-card">
+                <div class="emotion-header">
+                  <span class="emotion-icon">{{ em.icon }}</span>
+                  <strong>{{ em.name }}</strong>
+                </div>
+                <label class="form-field">
+                  <span>Speech Modifier</span>
+                  <input class="input" v-model="form.emotion_modifiers[em.key]" :placeholder="em.default_modifier" />
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Relationships Tab -->
+        <div v-if="activeTab === 'relationships'" class="tab-panel">
+          <div class="section">
+            <span class="section-title">Default Relationships</span>
+            <p class="section-desc">Set initial relationship scores with other characters. Range from -1.0 (hostile) to 1.0 (close bond).</p>
+            <div class="rel-list">
+              <div v-for="other in otherCharacters" :key="other.id" class="rel-item">
+                <span class="rel-avatar" :style="{ background: avatarColor(other.id) }">{{ initials(other.name) }}</span>
+                <span class="rel-name">{{ other.name }}</span>
+                <input type="range" v-model.number="form.relationships[other.id]" min="-1" max="1" step="0.1" />
+                <span class="rel-val">{{ (form.relationships[other.id] || 0).toFixed(1) }}</span>
+              </div>
+              <p v-if="otherCharacters.length === 0" class="muted">No other characters available. Create more characters first.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Knowledge Tab -->
+        <div v-if="activeTab === 'knowledge'" class="tab-panel">
+          <div class="section">
+            <span class="section-title">Character Knowledge</span>
+            <p class="section-desc">Define what this character knows. These entries are injected into the LLM context during conversations.</p>
+            <div class="knowledge-editor">
+              <div v-for="(entry, i) in form.knowledge_entries" :key="i" class="knowledge-item">
+                <label class="form-field">
+                  <span>Topic</span>
+                  <input class="input" v-model="entry.topic" placeholder="e.g. My hometown" />
+                </label>
+                <label class="form-field full">
+                  <span>Content</span>
+                  <textarea class="input" v-model="entry.content" rows="2" placeholder="What the character knows"></textarea>
+                </label>
+                <button class="btn-icon danger" @click="removeKnowledge(i)" title="Remove">x</button>
+              </div>
+              <button class="btn btn-secondary btn-sm" @click="addKnowledge">+ Add Knowledge Entry</button>
+            </div>
+          </div>
+        </div>
       </div>
-      <p v-if="charIds.length === 0" class="muted">No characters found. Click New Character to create one.</p>
-    </div>
+    </main>
+
+    <main v-else class="editor-empty">
+      <div class="empty-state">
+        <span class="empty-mark">CE</span>
+        <h2>Character Editor</h2>
+        <p>Select a character from the list to edit, or create a new one. Configure personality, appearance, knowledge, and relationships.</p>
+        <div class="quick-stats">
+          <span><strong>{{ characterList.length }}</strong> characters loaded</span>
+        </div>
+      </div>
+    </main>
+
+    <Transition name="fade">
+      <div v-if="statusMsg" class="status-toast" :class="{ error: !statusOk }" @click="statusMsg = null">
+        {{ statusMsg }}
+      </div>
+    </Transition>
   </div>
 </template>
+
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { computed, reactive, ref, onMounted } from 'vue'
 import { invokeCommand } from '../lib/tauri'
 
-interface CharForm {
-  id: string; name: string; description: string; background: string; speech_style: string;
-  openness: number; conscientiousness: number; extraversion: number; agreeableness: number; neuroticism: number;
+interface KnowledgeEntry {
+  topic: string
+  content: string
 }
 
-const charIds = ref<string[]>([])
+interface CharForm {
+  id: string
+  name: string
+  description: string
+  background: string
+  speech_style: string
+  default_emotion: string
+  live2d_model_path: string
+  model_3d_path: string
+  portrait_path: string
+  sprite_path: string
+  openness: number
+  conscientiousness: number
+  extraversion: number
+  agreeableness: number
+  neuroticism: number
+  relationships: Record<string, number>
+  knowledge_entries: KnowledgeEntry[]
+  emotion_modifiers: Record<string, string>
+  [key: string]: any
+}
+
+interface CharacterSummary {
+  id: string
+  name: string
+  description: string
+  emotion: string
+  live2d_model_path: string | null
+}
+
+const emotions = ['neutral', 'happy', 'sad', 'angry', 'surprised', 'love', 'embarrassed', 'thoughtful', 'excited', 'anxious']
+
+const personalityTraits = [
+  { key: 'openness', label: 'Openness', desc: 'Curiosity, creativity, and willingness to try new things.' },
+  { key: 'conscientiousness', label: 'Conscientiousness', desc: 'Organization, discipline, and goal-oriented behavior.' },
+  { key: 'extraversion', label: 'Extraversion', desc: 'Sociability, assertiveness, and energy from interactions.' },
+  { key: 'agreeableness', label: 'Agreeableness', desc: 'Compassion, cooperation, and trust toward others.' },
+  { key: 'neuroticism', label: 'Neuroticism', desc: 'Emotional sensitivity, anxiety, and mood variability.' },
+]
+
+const emotionConfigs = [
+  { name: 'Happy', key: 'happy', icon: '\u263A', default_modifier: 'cheerful, upbeat, uses exclamations' },
+  { name: 'Sad', key: 'sad', icon: '\u2639', default_modifier: 'quiet, hesitant, trailing off' },
+  { name: 'Angry', key: 'angry', icon: '\u2620', default_modifier: 'sharp, direct, shorter sentences' },
+  { name: 'Surprised', key: 'surprised', icon: '!', default_modifier: 'exclamatory, questions, disbelief' },
+  { name: 'Love', key: 'love', icon: '\u2665', default_modifier: 'warm, tender, softer tone' },
+  { name: 'Embarrassed', key: 'embarrassed', icon: '~', default_modifier: 'stammering, deflecting, nervous laughter' },
+]
+
+const tabs = [
+  { key: 'basic', label: 'Basic Info' },
+  { key: 'personality', label: 'Personality' },
+  { key: 'emotions', label: 'Emotions' },
+  { key: 'relationships', label: 'Relationships' },
+  { key: 'knowledge', label: 'Knowledge' },
+]
+
+const characterList = ref<CharacterSummary[]>([])
+const selectedId = ref<string | null>(null)
 const editing = ref(false)
-const form = reactive<CharForm>({
+const isNew = ref(false)
+const saving = ref(false)
+const activeTab = ref('basic')
+const statusMsg = ref<string | null>(null)
+const statusOk = ref(true)
+
+const defaultForm = (): CharForm => ({
   id: '', name: '', description: '', background: '', speech_style: '',
-  openness: 0.5, conscientiousness: 0.5, extraversion: 0.5, agreeableness: 0.5, neuroticism: 0.5
+  default_emotion: 'neutral', live2d_model_path: '', model_3d_path: '',
+  portrait_path: '', sprite_path: '',
+  openness: 0.5, conscientiousness: 0.5, extraversion: 0.5, agreeableness: 0.5, neuroticism: 0.5,
+  relationships: {}, knowledge_entries: [], emotion_modifiers: {},
 })
 
-const resetForm = () => { Object.assign(form, { id: '', name: '', description: '', background: '', speech_style: '', openness: 0.5, conscientiousness: 0.5, extraversion: 0.5, agreeableness: 0.5, neuroticism: 0.5 }) }
+const form = reactive<CharForm>(defaultForm())
 
-async function loadList() { try { charIds.value = await invokeCommand<string[]>('get_characters', {}, []) } catch {} }
-function createNew() { resetForm(); editing.value = true }
-async function save() { try { await invokeCommand('create_character', { input: { ...form } }); editing.value = false; await loadList() } catch (e: any) { alert('Save failed: ' + e) } }
+const otherCharacters = computed(() =>
+  characterList.value.filter(c => c.id !== form.id)
+)
+
+const radarTraits = computed(() => [
+  form.openness, form.agreeableness, form.extraversion, form.neuroticism, form.conscientiousness
+])
+
+const radarPoints = computed(() => {
+  const cx = 130, cy = 130, maxR = 100
+  return radarTraits.value.map((val, i) => {
+    const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2
+    return { x: cx + Math.cos(angle) * maxR * val, y: cy + Math.sin(angle) * maxR * val }
+  })
+})
+
+const radarPolygon = computed(() => radarPoints.value.map(p => p.x + ',' + p.y).join(' '))
+
+const radarLabels = ['O', 'A', 'E', 'N', 'C']
+
+function radarRing(radius: number): string {
+  const cx = 130, cy = 130
+  return Array.from({ length: 5 }, (_, i) => {
+    const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2
+    return (cx + Math.cos(angle) * radius) + ',' + (cy + Math.sin(angle) * radius)
+  }).join(' ')
+}
+
+function radarLabelPos(i: number) {
+  const cx = 130, cy = 130, r = 118
+  const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2
+  return { x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r + 4 }
+}
+
+function avatarColor(id: string): string {
+  const hue = Array.from(id).reduce((s, c) => s + c.charCodeAt(0), 0) * 37 % 360
+  return 'hsl(' + hue + ', 55%, 45%)'
+}
+
+function initials(name: string): string {
+  return name.trim().slice(0, 2).toUpperCase() || '??'
+}
+
+function resetForm() {
+  Object.assign(form, defaultForm())
+}
+
+function createNew() {
+  resetForm()
+  isNew.value = true
+  editing.value = true
+  activeTab.value = 'basic'
+}
+
+function cancelEdit() {
+  editing.value = false
+  isNew.value = false
+  selectedId.value = null
+}
+
+async function loadList() {
+  try {
+    const chars = await invokeCommand<CharacterSummary[]>('get_characters', undefined, [])
+    characterList.value = chars
+  } catch (e) {
+    console.error('Failed to load characters:', e)
+  }
+}
+
 async function selectChar(id: string) {
   try {
     const c = await invokeCommand<any>('get_character', { characterId: id })
-    if (c) { Object.assign(form, { id: c.id, name: c.name, description: c.description || '', background: c.background || '', speech_style: c.personality?.speech_style || '', openness: c.personality?.openness ?? 0.5, conscientiousness: c.personality?.conscientiousness ?? 0.5, extraversion: c.personality?.extraversion ?? 0.5, agreeableness: c.personality?.agreeableness ?? 0.5, neuroticism: c.personality?.neuroticism ?? 0.5 }); editing.value = true }
-  } catch {}
+    if (!c) return
+    selectedId.value = id
+    isNew.value = false
+    Object.assign(form, {
+      id: c.id, name: c.name || '', description: c.description || '',
+      background: c.background || '', speech_style: c.personality?.speech_style || '',
+      default_emotion: c.emotion || 'neutral',
+      live2d_model_path: c.live2d_model_path || '', model_3d_path: c.model_3d_path || '',
+      portrait_path: c.portrait_path || '', sprite_path: c.sprite_path || '',
+      openness: c.personality?.openness ?? 0.5,
+      conscientiousness: c.personality?.conscientiousness ?? 0.5,
+      extraversion: c.personality?.extraversion ?? 0.5,
+      agreeableness: c.personality?.agreeableness ?? 0.5,
+      neuroticism: c.personality?.neuroticism ?? 0.5,
+      relationships: c.relationships || {},
+      knowledge_entries: c.knowledge_entries || [],
+      emotion_modifiers: c.emotion_modifiers || {},
+    })
+    editing.value = true
+    activeTab.value = 'basic'
+  } catch (e) {
+    statusMsg.value = 'Failed to load character: ' + String(e)
+    statusOk.value = false
+  }
 }
+
+async function save() {
+  if (!form.id.trim() || !form.name.trim()) {
+    statusMsg.value = 'ID and Name are required'
+    statusOk.value = false
+    return
+  }
+  saving.value = true
+  try {
+    await invokeCommand('create_character', {
+      input: {
+        id: form.id,
+        name: form.name,
+        description: form.description,
+        background: form.background,
+        personality: {
+          openness: form.openness,
+          conscientiousness: form.conscientiousness,
+          extraversion: form.extraversion,
+          agreeableness: form.agreeableness,
+          neuroticism: form.neuroticism,
+          speech_style: form.speech_style,
+        },
+        live2d_model_path: form.live2d_model_path || null,
+      }
+    })
+    statusMsg.value = 'Character "' + form.name + '" saved'
+    statusOk.value = true
+    editing.value = false
+    isNew.value = false
+    await loadList()
+  } catch (e) {
+    statusMsg.value = 'Save failed: ' + String(e)
+    statusOk.value = false
+  } finally {
+    saving.value = false
+  }
+}
+
+function exportChar() {
+  const data = {
+    id: form.id, name: form.name, description: form.description,
+    background: form.background,
+    personality: {
+      openness: form.openness, conscientiousness: form.conscientiousness,
+      extraversion: form.extraversion, agreeableness: form.agreeableness,
+      neuroticism: form.neuroticism, speech_style: form.speech_style,
+    },
+    emotion: form.default_emotion,
+    live2d_model_path: form.live2d_model_path || null,
+    relationships: form.relationships,
+    knowledge_entries: form.knowledge_entries,
+  }
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = (form.id || 'character') + '.json'
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function addKnowledge() {
+  form.knowledge_entries.push({ topic: '', content: '' })
+}
+
+function removeKnowledge(i: number) {
+  form.knowledge_entries.splice(i, 1)
+}
+
 onMounted(loadList)
 </script>
+
 <style scoped>
-.editor-page { padding: 24px; max-width: 800px; margin: 0 auto; }
-.editor-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
-.editor-header h1 { font-size: 22px; font-weight: 700; }
-.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.field-grid .full { grid-column: 1 / -1; }
-.field label { display: block; font-size: 11px; font-weight: 700; color: var(--text-tertiary); text-transform: uppercase; margin-bottom: 6px; }
-.personality-section { margin-top: 24px; padding: 20px; background: var(--surface-2); border-radius: var(--radius); }
-.personality-section h3 { font-size: 14px; font-weight: 700; margin-bottom: 16px; }
-.trait-grid { display: flex; flex-direction: column; gap: 10px; }
-.trait-row { display: flex; align-items: center; gap: 12px; }
-.trait-row label { width: 140px; font-size: 12px; color: var(--text-secondary); }
-.trait-row input[type=range] { flex: 1; }
-.trait-val { width: 30px; font-size: 12px; color: var(--text-tertiary); text-align: right; }
-.actions { margin-top: 24px; display: flex; gap: 8px; }
-.char-list { display: flex; flex-direction: column; gap: 8px; }
-.char-row { padding: 12px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; transition: all 0.15s; }
-.char-row:hover { border-color: var(--brand); }
-.char-id { font-size: 14px; font-weight: 600; }
-.muted { color: var(--text-tertiary); font-size: 13px; }
+.editor-workbench {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  height: 100vh;
+  min-height: 0;
+  background: var(--surface-0);
+}
+
+.char-rail {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  background: var(--surface-1);
+}
+
+.rail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 16px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.rail-header h1 {
+  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 750;
+  margin-top: 3px;
+}
+
+.eyebrow {
+  display: block;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.char-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.char-card {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 6px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.char-card:hover, .char-card.selected {
+  background: var(--surface-2);
+  border-color: var(--border-light);
+}
+
+.char-card.selected {
+  border-color: var(--brand);
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  color: white;
+  font-weight: 800;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.char-info {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 2px;
+}
+
+.char-info strong {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.char-info small {
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.char-emotion {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.empty-list {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  padding: 40px 20px;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+.empty-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  height: 42px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--brand-light);
+  font-family: var(--font-mono);
+  font-weight: 900;
+}
+
+.editor-main {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.editor-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-1);
+}
+
+.toolbar-left h2 {
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 750;
+  margin-top: 2px;
+}
+
+.toolbar-right {
+  display: flex;
+  gap: 8px;
+}
+
+.editor-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-1);
+}
+
+.tab-btn {
+  padding: 10px 16px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13px;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.tab-btn:hover {
+  color: var(--text-primary);
+}
+
+.tab-btn.active {
+  color: var(--brand-light);
+  border-bottom-color: var(--brand);
+}
+
+.editor-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.tab-panel {
+  display: grid;
+  gap: 28px;
+  max-width: 880px;
+}
+
+.section-title {
+  display: block;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 750;
+  margin-bottom: 14px;
+}
+
+.section-desc {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.form-grid .full {
+  grid-column: 1 / -1;
+}
+
+.form-field {
+  display: grid;
+  gap: 6px;
+}
+
+.form-field span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.trait-columns {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 24px;
+  align-items: start;
+}
+
+.trait-list {
+  display: grid;
+  gap: 14px;
+}
+
+.trait-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  background: var(--surface-1);
+}
+
+.trait-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.trait-header label {
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.trait-val {
+  color: var(--brand-light);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.trait-item input[type='range'] {
+  width: 100%;
+  accent-color: var(--brand);
+}
+
+.trait-desc {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+.radar-chart {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+}
+
+.radar-svg {
+  width: 260px;
+  height: 260px;
+}
+
+.emotion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.emotion-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  background: var(--surface-1);
+}
+
+.emotion-header {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.emotion-icon {
+  font-size: 18px;
+  color: var(--brand-light);
+}
+
+.emotion-header strong {
+  font-size: 13px;
+}
+
+.rel-list {
+  display: grid;
+  gap: 12px;
+}
+
+.rel-item {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+}
+
+.rel-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 800;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.rel-name {
+  min-width: 100px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.rel-item input[type='range'] {
+  flex: 1;
+  accent-color: var(--brand);
+}
+
+.rel-val {
+  width: 36px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--brand-light);
+}
+
+.muted {
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+
+.knowledge-editor {
+  display: grid;
+  gap: 14px;
+}
+
+.knowledge-item {
+  display: grid;
+  grid-template-columns: 200px 1fr auto;
+  gap: 12px;
+  align-items: start;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+}
+
+.knowledge-item .full {
+  grid-column: 2;
+}
+
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.btn-icon.danger:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.editor-empty {
+  display: grid;
+  place-items: center;
+  padding: 40px;
+}
+
+.empty-state {
+  text-align: center;
+  max-width: 460px;
+}
+
+.empty-state h2 {
+  color: var(--text-primary);
+  font-size: 24px;
+  margin-top: 16px;
+}
+
+.empty-state p {
+  color: var(--text-tertiary);
+  font-size: 13px;
+  margin-top: 8px;
+  line-height: 1.6;
+}
+
+.quick-stats {
+  margin-top: 20px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.quick-stats strong {
+  color: var(--brand-light);
+  font-size: 18px;
+}
+
+.status-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 300px;
+  padding: 12px 18px;
+  border: 1px solid rgba(45,212,191,0.36);
+  border-radius: var(--radius);
+  background: rgba(15,118,110,0.96);
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  z-index: 100;
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+}
+
+.status-toast.error {
+  border-color: rgba(239,68,68,0.42);
+  background: rgba(127,29,29,0.96);
+}
+
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
+@media (max-width: 860px) {
+  .editor-workbench {
+    grid-template-columns: 1fr;
+  }
+  .char-rail {
+    max-height: 240px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .trait-columns {
+    grid-template-columns: 1fr;
+  }
+  .knowledge-item {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

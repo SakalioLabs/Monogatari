@@ -1,0 +1,14 @@
+{
+  "id": "great_library",
+  "name": "Great Library Interior",
+  "background_path": "assets/backgrounds/great_library.svg",
+  "bgm_path": "assets/audio/library_theme.mp3",
+  "weather": "enchanted",
+  "time_of_day": "eternal_twilight",
+  "tags": [
+    "indoor",
+    "magical",
+    "mysterious",
+    "books"
+  ]
+}

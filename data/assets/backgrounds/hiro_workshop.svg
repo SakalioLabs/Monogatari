@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">
+  <rect width="1920" height="1080" fill="#2d2d3d"/>
+  <rect x="0" y="0" width="1920" height="60" fill="#3d3d4d"/>
+  <rect x="100" y="200" width="300" height="400" fill="#4a4a5a" rx="8"/>
+  <rect x="120" y="220" width="100" height="80" fill="#3a3a4a" rx="4"/>
+  <circle cx="300" cy="350" r="60" fill="none" stroke="#FFD700" stroke-width="3" opacity="0.6"/>
+  <circle cx="300" cy="350" r="40" fill="none" stroke="#FFD700" stroke-width="2" opacity="0.4"/>
+  <rect x="500" y="300" width="250" height="200" fill="#3a3a4a" rx="5"/>
+  <rect x="520" y="320" width="80" height="60" fill="#2a2a3a"/>
+  <rect x="620" y="320" width="80" height="60" fill="#2a2a3a"/>
+  <rect x="520" y="400" width="180" height="8" fill="#FFD700" opacity="0.3"/>
+  <rect x="900" y="150" width="400" height="600" fill="#4a4a5a" rx="10"/>
+  <rect x="920" y="180" width="160" height="120" fill="#3a3a4a" rx="4"/>
+  <rect x="1100" y="180" width="160" height="120" fill="#3a3a4a" rx="4"/>
+  <rect x="920" y="320" width="340" height="8" fill="#64B5F6" opacity="0.4"/>
+  <circle cx="1100" cy="500" r="80" fill="none" stroke="#FF9800" stroke-width="4" opacity="0.5"/>
+  <line x1="1100" y1="420" x2="1100" y2="580" stroke="#FF9800" stroke-width="2" opacity="0.3"/>
+  <line x1="1020" y1="500" x2="1180" y2="500" stroke="#FF9800" stroke-width="2" opacity="0.3"/>
+  <rect x="1400" y="250" width="350" height="500" fill="#4a4a5a" rx="8"/>
+  <rect x="1420" y="280" width="100" height="40" fill="#3a3a4a"/>
+  <rect x="1540" y="280" width="100" height="40" fill="#3a3a4a"/>
+  <rect x="1420" y="340" width="310" height="6" fill="#4CAF50" opacity="0.4"/>
+  <rect x="0" y="800" width="1920" height="280" fill="#252535"/>
+  <circle cx="200" cy="900" r="30" fill="#FFD700" opacity="0.2"/>
+  <circle cx="600" cy="850" r="20" fill="#64B5F6" opacity="0.3"/>
+  <text x="960" y="960" text-anchor="middle" fill="#5a5a6a" font-size="48" font-family="serif">Inventor Workshop</text>
+</svg>

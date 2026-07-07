@@ -1,4 +1,4 @@
-# Monogatari v0.7.2
+# Monogatari v0.8.0
 
 An LLM-powered v0.5 visual novel / galgame engine. Build interactive story experiences where AI-driven characters respond dynamically to player conversations, with automatic conversation scoring that triggers special plot events.
 
@@ -21,7 +21,7 @@ Monogatari is a development engine for creating LLM-driven text adventure games.
 - **Live2D Support** - Animated character models via PixiJS + pixi-live2d-display.
 - **Save/Load System** - Full game state persistence including character states, flags, variables, and chat history.
 - **Rhai Scripting** - Embedded scripting engine for custom game logic, conditions, and triggers.
-- **Audio Manager** - Manage background music, ambient sounds, and sound effects with per-track volume control and master mixer.
+- **Knowledge Base Manager** - Full CRUD interface for world lore, character backgrounds, and AI context entries with category filtering, tag cloud, and keyword search.\n- **Professional Character Editor** - 5-tab editor with Big Five personality sliders, radar chart visualization, emotion configuration, relationship management, and knowledge entries with JSON export.\n- **Audio Manager** - Manage background music, ambient sounds, and sound effects with per-track volume control and master mixer.
 - **Plugin System** - Register and manage custom workflow node types, event triggers, and action handlers through a dedicated management UI.
 - **Cloud Save Sync** - Push/pull save data to remote endpoints with conflict detection and sync status tracking.
 - **Multi-Language Support** - i18n scaffold with zh-CN, ja-JP, and ko-KR locale files for international deployment.
@@ -268,7 +268,7 @@ cargo tauri build
 - [x] Frontend streaming chat integration via Tauri events
 - [x] Streaming evaluation and event notifications (`chat-evaluation`, `chat-events`)
 - [x] Chat session lock optimization for slower LLM requests
-- [x] Commercial workbench UI refresh with 12-item sidebar navigation (dashboard/chat/story/workflow/analytics/marketplace/plugins)
+- [x] Commercial workbench UI refresh with 14-item sidebar navigation (dashboard/chat/story/workflow/analytics/marketplace/plugins)
 - [x] Browser preview fallback for non-Tauri UI review
 - [x] Frontend supply-chain audit remediation (Vite 8 + Live2D transitive override)
 - [x] Rust lockfile policy for reproducible Tauri builds
@@ -301,7 +301,7 @@ cargo tauri build
 - [x] Plugin system for custom node types (scaffold with register/list/remove)
 - [x] Cloud save sync with local manifest and checksum tracking
 - [x] Analytics dashboard with engagement metrics and JSON export
-- [x] Template marketplace scaffold (Rust backend + MarketplaceView frontend)
+- [x] Knowledge Base Manager view with CRUD and filtering\n- [x] Professional Character Editor with 5 tabs and radar chart\n- [x] Frontend data sync with rust-engine content\n- [x] Template marketplace scaffold (Rust backend + MarketplaceView frontend)
 - [x] Plugin management frontend UI with register/list/remove
 - [x] Cloud sync settings integration with push/pull/status
 - [x] Multi-language locale files (zh-CN, ja-JP, ko-KR)

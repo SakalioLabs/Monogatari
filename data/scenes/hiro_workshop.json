@@ -1,0 +1,14 @@
+{
+  "id": "hiro_workshop",
+  "name": "Inventor's Workshop",
+  "background_path": "assets/backgrounds/hiro_workshop.svg",
+  "bgm_path": "assets/audio/workshop_theme.mp3",
+  "weather": "indoor",
+  "time_of_day": "any",
+  "tags": [
+    "indoor",
+    "workshop",
+    "inventive",
+    "mechanical"
+  ]
+}

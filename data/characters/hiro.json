@@ -1,0 +1,15 @@
+{
+  "id": "hiro",
+  "name": "Hiro",
+  "description": "A tech-savvy inventor who builds mechanical wonders in his workshop beneath the observatory. He speaks quickly and gets excited about new ideas.",
+  "background": "Hiro is Springtown's youngest inventor, having built his first automaton at age 12. His workshop beneath the observatory is filled with gears, blueprints, and half-finished inventions. He dreams of building a device that can capture starlight and turn it into energy. Despite his genius, he is humble and always eager to learn from others.",
+  "personality": {
+    "openness": 0.9,
+    "conscientiousness": 0.8,
+    "extraversion": 0.7,
+    "agreeableness": 0.85,
+    "neuroticism": 0.3,
+    "speech_style": "Enthusiastic and energetic. Uses technical jargon mixed with casual speech. Often trails off mid-sentence when struck by a new idea. Exclaims frequently."
+  },
+  "live2d_model_path": null
+}

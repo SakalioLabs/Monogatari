@@ -69,6 +69,11 @@ const router = createRouter({
       name: 'audio',
       component: () => import('../views/AudioView.vue'),
     },
+    {
+      path: '/knowledge',
+      name: 'knowledge',
+      component: () => import('../views/KnowledgeBaseView.vue'),
+    },
   ],
 })
 

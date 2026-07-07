@@ -1,0 +1,168 @@
+{
+  "id": "mei_crossroads",
+  "title": "The Storyteller's Crossroads",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "speaker_id": "mei",
+      "text": "Ah, a new face at the crossroads! *closes her journal* I was just writing about this very moment. Every great story begins when someone unexpected arrives.",
+      "choices": [
+        {
+          "text": "You write stories about the people here?",
+          "next_node_id": "stories",
+          "relationship_changes": {
+            "mei": 0.15
+          }
+        },
+        {
+          "text": "I know some of the residents already!",
+          "next_node_id": "residents",
+          "relationship_changes": {
+            "mei": 0.1
+          }
+        },
+        {
+          "text": "What kind of stories?",
+          "next_node_id": "kind",
+          "relationship_changes": {
+            "mei": 0.1
+          }
+        }
+      ]
+    },
+    "stories": {
+      "speaker_id": "mei",
+      "text": "Every person in Springtown is a chapter waiting to be written. Sakura paints the world in cherry blossoms, Luna reads the stars, Kenji finds poetry in combat, Yuki guards ancient wisdom, and Hiro builds tomorrow's dreams. *smiles* And now, perhaps you will be a new chapter.",
+      "choices": [
+        {
+          "text": "Tell me about Sakura!",
+          "next_node_id": "about_sakura",
+          "relationship_changes": {
+            "mei": 0.05
+          }
+        },
+        {
+          "text": "What about Hiro?",
+          "next_node_id": "about_hiro",
+          "relationship_changes": {
+            "mei": 0.05
+          }
+        },
+        {
+          "text": "I want to be part of this story.",
+          "next_node_id": "join_story",
+          "relationship_changes": {
+            "mei": 0.2
+          }
+        }
+      ]
+    },
+    "residents": {
+      "speaker_id": "mei",
+      "text": "Oh! You have already begun your own story then! *opens journal excitedly* Which chapter are you in? The cherry blossom chapter, the starlight chapter, or perhaps the ancient library chapter?",
+      "choices": [
+        {
+          "text": "The cherry blossom chapter - I met Sakura!",
+          "next_node_id": "about_sakura"
+        },
+        {
+          "text": "I want to meet everyone!",
+          "next_node_id": "meet_all",
+          "relationship_changes": {
+            "mei": 0.2
+          }
+        }
+      ]
+    },
+    "kind": {
+      "speaker_id": "mei",
+      "text": "Stories of connection. Every person here is connected by invisible threads. When you befriend one, the threads to others grow stronger. *traces a finger through the air* It is all one grand tapestry.",
+      "choices": [
+        {
+          "text": "That is beautiful. Show me the tapestry.",
+          "next_node_id": "join_story",
+          "relationship_changes": {
+            "mei": 0.25
+          }
+        }
+      ]
+    },
+    "about_sakura": {
+      "speaker_id": "mei",
+      "text": "Sakura is the heart of Springtown. Her cherry blossoms are not just flowers - they are promises the first settlers made to the spirits. When she smiles, even the wind stops to listen. *whispers* She likes it when you compliment the park.",
+      "choices": [
+        {
+          "text": "I should visit her again.",
+          "next_node_id": "end_visit",
+          "relationship_changes": {
+            "sakura": 0.1
+          }
+        }
+      ]
+    },
+    "about_hiro": {
+      "speaker_id": "mei",
+      "text": "Hiro is building a dream beneath the observatory. His starlight condenser could change everything. *leans in* Between you and me, he could use a friend who believes in impossible things.",
+      "choices": [
+        {
+          "text": "I love impossible things!",
+          "next_node_id": "end_visit",
+          "relationship_changes": {
+            "hiro": 0.1
+          }
+        }
+      ]
+    },
+    "join_story": {
+      "speaker_id": "mei",
+      "text": "*writes in journal* Then your chapter begins now! Meet the residents, learn their stories, and weave your own thread into the tapestry. The Grand Chronicle awaits your story!",
+      "choices": [
+        {
+          "text": "I will make this the best chapter yet!",
+          "next_node_id": "end_epic",
+          "relationship_changes": {
+            "mei": 0.3,
+            "sakura": 0.05,
+            "luna": 0.05,
+            "kenji": 0.05,
+            "yuki": 0.05,
+            "hiro": 0.05
+          }
+        }
+      ]
+    },
+    "meet_all": {
+      "speaker_id": "mei",
+      "text": "A grand tour! *claps hands* Start with Sakura in the park, visit Luna at the observatory, find Kenji at the dojo, seek Yuki in the library, and discover Hiro in his workshop. Each holds a piece of the puzzle.",
+      "choices": [
+        {
+          "text": "Consider it done!",
+          "next_node_id": "end_quest",
+          "relationship_changes": {
+            "mei": 0.2,
+            "sakura": 0.05,
+            "luna": 0.05,
+            "kenji": 0.05,
+            "yuki": 0.05,
+            "hiro": 0.05
+          }
+        }
+      ]
+    },
+    "end_visit": {
+      "speaker_id": "mei",
+      "text": "I will be here at the crossroads when you return. Every story needs a narrator, and I have plenty of ink left in my pen. *winks*",
+      "choices": []
+    },
+    "end_epic": {
+      "speaker_id": "mei",
+      "text": "*writes furiously* This is going to be the best chapter in the Grand Chronicle! I can feel it! The tapestry grows stronger with every connection you make!",
+      "choices": []
+    },
+    "end_quest": {
+      "speaker_id": "mei",
+      "text": "And when you have met them all, come back and tell me your favorite chapter. Every great adventurer needs a storyteller to remember their journey. *waves*",
+      "choices": []
+    }
+  }
+}

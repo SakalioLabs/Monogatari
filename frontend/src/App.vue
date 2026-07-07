@@ -5,7 +5,7 @@
         <div class="logo-mark">M</div>
         <div class="logo-text" v-show="!sidebarCollapsed">
           <span class="logo-name">Monogatari</span>
-          <span class="logo-badge">Engine v0.5</span>
+          <span class="logo-badge">Engine v0.8</span>
         </div>
       </div>
       <nav class="sidebar-nav">
@@ -57,6 +57,7 @@ const navItems = [
   { path: '/settings', label: 'Settings', icon: '&#9881;' },
   { path: '/analytics', label: 'Analytics', icon: '&#9636;' },
   { path: '/plugins', label: 'Plugins', icon: '&#128295;' },
+  { path: '/knowledge', label: 'Knowledge', icon: '&#128218;' },
   { path: '/audio', label: 'Audio', icon: '&#9835;' },
   { path: '/marketplace', label: 'Marketplace', icon: '&#9733;', badge: 'New' },
 ]

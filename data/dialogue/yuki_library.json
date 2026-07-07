@@ -1,0 +1,169 @@
+{
+  "id": "yuki_library",
+  "title": "The Great Library",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "speaker_id": "yuki",
+      "text": "Ah, a visitor. The library has been expecting you. Tell me, do you seek knowledge, or does knowledge seek you?",
+      "choices": [
+        {
+          "text": "I'm looking for answers about Springtown's past.",
+          "next_node_id": "history",
+          "relationship_changes": {
+            "yuki": 0.1
+          }
+        },
+        {
+          "text": "This place is amazing! What's in here?",
+          "next_node_id": "wonder",
+          "relationship_changes": {
+            "yuki": 0.15
+          }
+        },
+        {
+          "text": "I was just passing by...",
+          "next_node_id": "casual",
+          "relationship_changes": {
+            "yuki": -0.05
+          }
+        }
+      ]
+    },
+    "history": {
+      "speaker_id": "yuki",
+      "text": "Springtown's past... *traces a finger along a dusty spine* Every cherry blossom planted here was a promise. The first settlers made a pact with the spirits of this valley.",
+      "choices": [
+        {
+          "text": "What kind of pact?",
+          "next_node_id": "pact"
+        },
+        {
+          "text": "That sounds like a fairy tale.",
+          "next_node_id": "skeptical"
+        }
+      ]
+    },
+    "wonder": {
+      "speaker_id": "yuki",
+      "text": "*smiles enigmatically* Everything that ever was, and everything that could be. These books are not merely written - they dream themselves into existence. Would you like to read one?",
+      "choices": [
+        {
+          "text": "Yes, please show me something special!",
+          "next_node_id": "special_book",
+          "relationship_changes": {
+            "yuki": 0.2
+          }
+        },
+        {
+          "text": "How do books dream?",
+          "next_node_id": "dream_books"
+        }
+      ]
+    },
+    "casual": {
+      "speaker_id": "yuki",
+      "text": "*raises an eyebrow* No one 'just passes by' the Great Library. The path here only appears to those who need it most. But I will not press you.",
+      "choices": [
+        {
+          "text": "You're right, I actually am curious.",
+          "next_node_id": "history",
+          "relationship_changes": {
+            "yuki": 0.05
+          }
+        }
+      ]
+    },
+    "pact": {
+      "speaker_id": "yuki",
+      "text": "In exchange for eternal spring, the spirits asked only that the townspeople never forget to appreciate beauty. A simple price, yet one many struggle to pay in their busy lives.",
+      "choices": [
+        {
+          "text": "That's beautiful. I want to learn more.",
+          "next_node_id": "end_curious"
+        },
+        {
+          "text": "Do you keep the pact alive?",
+          "next_node_id": "yuki_role"
+        }
+      ]
+    },
+    "skeptical": {
+      "speaker_id": "yuki",
+      "text": "*chuckles softly* Fairy tales are truths wearing masks. But skepticism has its own wisdom. Come back when you are ready to see what lies beneath.",
+      "choices": [
+        {
+          "text": "I'm sorry, I didn't mean to be rude.",
+          "next_node_id": "forgive",
+          "relationship_changes": {
+            "yuki": 0.1
+          }
+        }
+      ]
+    },
+    "special_book": {
+      "speaker_id": "yuki",
+      "text": "*pulls a glowing tome from the shelf* This one tells the story of a traveler who found a town where it was always spring. *winks* Sound familiar?",
+      "choices": [
+        {
+          "text": "Is this about me?",
+          "next_node_id": "end_mystery",
+          "relationship_changes": {
+            "yuki": 0.3
+          }
+        }
+      ]
+    },
+    "dream_books": {
+      "speaker_id": "yuki",
+      "text": "Every story ever imagined leaves a trace in the world. The library collects those traces. Here, even your thoughts might become a book someday.",
+      "choices": [
+        {
+          "text": "That's both amazing and terrifying.",
+          "next_node_id": "end_curious"
+        }
+      ]
+    },
+    "yuki_role": {
+      "speaker_id": "yuki",
+      "text": "I am its guardian. *places hand on heart* I remind the books that they matter. And occasionally, I remind visitors too.",
+      "choices": [
+        {
+          "text": "Thank you, Yuki. I'll come back often.",
+          "next_node_id": "end_friendship",
+          "relationship_changes": {
+            "yuki": 0.25
+          }
+        }
+      ]
+    },
+    "forgive": {
+      "speaker_id": "yuki",
+      "text": "No offense taken. Doubt is the first step toward understanding. Return whenever you wish - the library always has room for curious minds.",
+      "choices": [
+        {
+          "text": "I will. Thank you.",
+          "next_node_id": "end_curious",
+          "relationship_changes": {
+            "yuki": 0.1
+          }
+        }
+      ]
+    },
+    "end_curious": {
+      "speaker_id": "yuki",
+      "text": "The library will be here when you are ready. *turns back to her books, humming an ancient melody*",
+      "choices": []
+    },
+    "end_mystery": {
+      "speaker_id": "yuki",
+      "text": "*smiles mysteriously* All the best stories are about the reader. Until next time, traveler.",
+      "choices": []
+    },
+    "end_friendship": {
+      "speaker_id": "yuki",
+      "text": "*a genuine warmth enters her voice* I would like that. The books have much to tell you - and so do I.",
+      "choices": []
+    }
+  }
+}

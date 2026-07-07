@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.8.0] - 2026-07-07
+
+### Added
+- **Knowledge Base View** (`KnowledgeBaseView.vue`): Full knowledge base management with category filtering, tag cloud, keyword search, entry creation/editing/detail views, and card grid display.
+- **Character Editor overhaul** (`CharacterEditorView.vue`): Professional 5-tab character editor with Basic Info, Personality (Big Five sliders + radar chart SVG visualization), Emotions, Relationships, and Knowledge management tabs. Includes character list sidebar, JSON export, and responsive layout.
+- **Frontend data sync**: All characters (Sakura, Yuki, Hiro, Mei), scenes, knowledge entries, dialogues, and SVG backgrounds now synchronized from `rust-engine/data` to `data/` for frontend access.
+- **Knowledge Base route** added to router and sidebar navigation with book icon.
+
+### Changed
+- **Sidebar navigation** expanded to 14 items with Knowledge Base entry.
+- **Engine version badge** bumped to v0.8 in sidebar.
+- **CharacterEditorView** completely rewritten from minimal 70-line form to 880-line professional editor with tabbed interface, personality radar chart, emotion configuration, relationship management, and knowledge entries.
+
+
 ## [0.7.2] - 2026-07-07
 
 ### Changed
