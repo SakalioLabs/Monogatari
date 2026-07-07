@@ -1,26 +1,37 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720">
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#87CEEB"/>
-      <stop offset="60%" stop-color="#E0F0FF"/>
-      <stop offset="100%" stop-color="#FFF8DC"/>
+      <stop offset="60%" stop-color="#B0E0E6"/>
+      <stop offset="100%" stop-color="#E0F0FF"/>
     </linearGradient>
     <radialGradient id="sun" cx="0.8" cy="0.2" r="0.15">
-      <stop offset="0%" stop-color="#FFFACD"/>
-      <stop offset="100%" stop-color="transparent"/>
+      <stop offset="0%" stop-color="#FFF8DC" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#FFD700" stop-opacity="0"/>
     </radialGradient>
   </defs>
-  <rect width="1920" height="1080" fill="url(#sky)"/>
-  <circle cx="1536" cy="216" r="240" fill="url(#sun)"/>
-  <ellipse cx="960" cy="1080" rx="1200" ry="400" fill="#4CAF50"/>
-  <ellipse cx="960" cy="980" rx="1400" ry="300" fill="#66BB6A"/>
-  <circle cx="400" cy="500" r="180" fill="#FFB7C5" opacity="0.7"/>
-  <circle cx="500" cy="450" r="150" fill="#FFB7C5" opacity="0.6"/>
-  <circle cx="350" cy="420" r="130" fill="#FF69B4" opacity="0.4"/>
-  <circle cx="1400" cy="480" r="160" fill="#FFB7C5" opacity="0.7"/>
-  <circle cx="1500" cy="430" r="140" fill="#FFB7C5" opacity="0.6"/>
-  <circle cx="1350" cy="400" r="120" fill="#FF69B4" opacity="0.4"/>
-  <rect x="380" y="600" width="30" height="200" fill="#8B4513" rx="5"/>
-  <rect x="1380" y="620" width="30" height="180" fill="#8B4513" rx="5"/>
-  <text x="960" y="900" text-anchor="middle" fill="white" font-size="48" font-family="serif" opacity="0.5">Sakura Park</text>
+  <rect width="1280" height="720" fill="url(#sky)"/>
+  <circle cx="1024" cy="144" r="180" fill="url(#sun)"/>
+  <circle cx="1024" cy="144" r="50" fill="#FFF8DC" opacity="0.7"/>
+  <ellipse cx="640" cy="620" rx="700" ry="160" fill="#4CAF50"/>
+  <ellipse cx="640" cy="660" rx="700" ry="120" fill="#388E3C"/>
+  <path d="M200,400 Q220,300 240,400 Q260,300 280,400 Q300,250 320,400" stroke="#8B6914" stroke-width="6" fill="none"/>
+  <circle cx="240" cy="300" r="60" fill="#FFB7C5" opacity="0.8"/>
+  <circle cx="280" cy="280" r="50" fill="#FFB7C5" opacity="0.7"/>
+  <circle cx="260" cy="260" r="55" fill="#FFC0CB" opacity="0.75"/>
+  <circle cx="220" cy="290" r="45" fill="#FFB7C5" opacity="0.6"/>
+  <path d="M900,420 Q920,320 940,420 Q960,320 980,420" stroke="#8B6914" stroke-width="5" fill="none"/>
+  <circle cx="940" cy="330" r="55" fill="#FFB7C5" opacity="0.7"/>
+  <circle cx="960" cy="310" r="48" fill="#FFC0CB" opacity="0.65"/>
+  <circle cx="920" cy="320" r="42" fill="#FFB7C5" opacity="0.6"/>
+  <g opacity="0.5">
+    <circle cx="100" cy="600" r="3" fill="#FFB7C5"/><circle cx="200" cy="580" r="2.5" fill="#FFB7C5"/>
+    <circle cx="350" cy="610" r="3" fill="#FFB7C5"/><circle cx="500" cy="590" r="2" fill="#FFB7C5"/>
+    <circle cx="650" cy="600" r="2.5" fill="#FFB7C5"/><circle cx="800" cy="585" r="3" fill="#FFB7C5"/>
+    <circle cx="950" cy="595" r="2" fill="#FFB7C5"/><circle cx="1100" cy="605" r="2.5" fill="#FFB7C5"/>
+  </g>
+  <path d="M0,680 Q320,650 640,680 Q960,650 1280,680 L1280,720 L0,720 Z" fill="#2E7D32"/>
+  <rect x="580" y="640" width="120" height="40" rx="4" fill="#5D4037"/>
+  <rect x="590" y="648" width="44" height="24" rx="2" fill="#8D6E63"/>
+  <rect x="646" y="648" width="44" height="24" rx="2" fill="#8D6E63"/>
 </svg>

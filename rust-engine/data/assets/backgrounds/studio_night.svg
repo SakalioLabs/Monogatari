@@ -1,27 +1,32 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720">
   <defs>
-    <linearGradient id="nightsky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#0a0a2e"/>
-      <stop offset="100%" stop-color="#1a1a3e"/>
+    <linearGradient id="nsky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0D1B2A"/>
+      <stop offset="50%" stop-color="#1B2838"/>
+      <stop offset="100%" stop-color="#2C3E50"/>
     </linearGradient>
-    <radialGradient id="moon" cx="0.2" cy="0.15" r="0.08">
-      <stop offset="0%" stop-color="#F5F5DC"/>
-      <stop offset="80%" stop-color="#F5F5DC" stop-opacity="0.3"/>
-      <stop offset="100%" stop-color="transparent"/>
-    </radialGradient>
   </defs>
-  <rect width="1920" height="1080" fill="url(#nightsky)"/>
-  <circle cx="384" cy="162" r="150" fill="url(#moon)"/>
-  <circle cx="200" cy="100" r="2" fill="white"/><circle cx="500" cy="200" r="1.5" fill="white"/>
-  <circle cx="800" cy="80" r="2" fill="white"/><circle cx="1100" cy="150" r="1.5" fill="white"/>
-  <circle cx="1400" cy="100" r="2" fill="white"/><circle cx="1600" cy="250" r="1.5" fill="white"/>
-  <circle cx="300" cy="300" r="1" fill="white"/><circle cx="700" cy="250" r="2" fill="white"/>
-  <circle cx="1200" cy="200" r="1" fill="white"/><circle cx="900" cy="300" r="1.5" fill="white"/>
-  <rect x="0" y="700" width="1920" height="380" fill="#1a1a2e"/>
-  <rect x="100" y="400" width="600" height="300" fill="#2a2a4e" rx="10"/>
-  <rect x="150" y="430" width="120" height="100" fill="#3a3a5e" rx="5"/>
-  <rect x="320" y="430" width="120" height="100" fill="#3a3a5e" rx="5"/>
-  <rect x="490" y="430" width="120" height="100" fill="#3a3a5e" rx="5"/>
-  <rect x="150" y="560" width="500" height="8" fill="#FFD700" opacity="0.3"/>
-  <text x="960" y="900" text-anchor="middle" fill="#4a4a6e" font-size="48" font-family="serif">Studio Night</text>
+  <rect width="1280" height="720" fill="url(#nsky)"/>
+  <g fill="#FFF" opacity="0.8">
+    <circle cx="100" cy="80" r="1.5"/><circle cx="250" cy="120" r="1"/><circle cx="400" cy="60" r="2"/>
+    <circle cx="550" cy="150" r="1"/><circle cx="700" cy="90" r="1.5"/><circle cx="850" cy="130" r="1"/>
+    <circle cx="1000" cy="70" r="2"/><circle cx="1150" cy="160" r="1"/><circle cx="180" cy="200" r="1.5"/>
+    <circle cx="320" cy="180" r="1"/><circle cx="480" cy="220" r="1"/><circle cx="620" cy="200" r="1.5"/>
+    <circle cx="780" cy="240" r="1"/><circle cx="920" cy="210" r="1"/><circle cx="1060" cy="190" r="1.5"/>
+    <circle cx="150" cy="300" r="1"/><circle cx="350" cy="320" r="1.5"/><circle cx="550" cy="290" r="1"/>
+  </g>
+  <circle cx="1100" cy="100" r="40" fill="#F5F5DC" opacity="0.9"/>
+  <circle cx="1085" cy="90" r="38" fill="#0D1B2A"/>
+  <rect x="0" y="500" width="1280" height="220" fill="#1A1A2E"/>
+  <rect x="400" y="400" width="480" height="320" rx="4" fill="#16213E"/>
+  <rect x="420" y="420" width="200" height="120" rx="2" fill="#0F3460"/>
+  <rect x="660" y="420" width="200" height="120" rx="2" fill="#0F3460"/>
+  <rect x="420" y="560" width="200" height="120" rx="2" fill="#0F3460"/>
+  <rect x="660" y="560" width="200" height="120" rx="2" fill="#0F3460"/>
+  <g fill="#4CAF50" opacity="0.3">
+    <circle cx="520" cy="480" r="20"/><circle cx="760" cy="480" r="20"/>
+    <circle cx="520" cy="620" r="20"/><circle cx="760" cy="620" r="20"/>
+  </g>
+  <rect x="580" y="680" width="120" height="40" rx="4" fill="#2C3E50"/>
+  <circle cx="640" cy="700" r="8" fill="#E67E22" opacity="0.6"/>
 </svg>

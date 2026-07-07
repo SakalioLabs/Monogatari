@@ -1,28 +1,37 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-label="Sakura park background">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720">
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#93c5fd"/>
-      <stop offset="0.58" stop-color="#fbcfe8"/>
-      <stop offset="1" stop-color="#134e4a"/>
+      <stop offset="0%" stop-color="#87CEEB"/>
+      <stop offset="60%" stop-color="#B0E0E6"/>
+      <stop offset="100%" stop-color="#E0F0FF"/>
     </linearGradient>
-    <radialGradient id="sun" cx="68%" cy="22%" r="28%">
-      <stop offset="0" stop-color="#fef3c7" stop-opacity="0.95"/>
-      <stop offset="1" stop-color="#fef3c7" stop-opacity="0"/>
+    <radialGradient id="sun" cx="0.8" cy="0.2" r="0.15">
+      <stop offset="0%" stop-color="#FFF8DC" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#FFD700" stop-opacity="0"/>
     </radialGradient>
   </defs>
-  <rect width="1600" height="900" fill="url(#sky)"/>
-  <rect width="1600" height="900" fill="url(#sun)"/>
-  <path d="M0 600 C250 520 420 650 650 590 C900 525 1060 620 1600 545 L1600 900 L0 900 Z" fill="#115e59"/>
-  <path d="M0 690 C260 630 430 760 705 710 C1000 655 1220 735 1600 665 L1600 900 L0 900 Z" fill="#0f3f3b"/>
-  <path d="M260 300 C240 430 220 610 200 900 L260 900 C278 650 292 455 328 315 Z" fill="#4a2c2a"/>
-  <path d="M1250 250 C1235 405 1220 650 1210 900 L1270 900 C1285 620 1300 410 1324 270 Z" fill="#3f2a2a"/>
-  <g fill="#f9a8d4" opacity="0.86">
-    <circle cx="240" cy="240" r="115"/>
-    <circle cx="335" cy="225" r="135"/>
-    <circle cx="420" cy="300" r="100"/>
-    <circle cx="1215" cy="215" r="125"/>
-    <circle cx="1328" cy="230" r="145"/>
-    <circle cx="1410" cy="315" r="100"/>
+  <rect width="1280" height="720" fill="url(#sky)"/>
+  <circle cx="1024" cy="144" r="180" fill="url(#sun)"/>
+  <circle cx="1024" cy="144" r="50" fill="#FFF8DC" opacity="0.7"/>
+  <ellipse cx="640" cy="620" rx="700" ry="160" fill="#4CAF50"/>
+  <ellipse cx="640" cy="660" rx="700" ry="120" fill="#388E3C"/>
+  <path d="M200,400 Q220,300 240,400 Q260,300 280,400 Q300,250 320,400" stroke="#8B6914" stroke-width="6" fill="none"/>
+  <circle cx="240" cy="300" r="60" fill="#FFB7C5" opacity="0.8"/>
+  <circle cx="280" cy="280" r="50" fill="#FFB7C5" opacity="0.7"/>
+  <circle cx="260" cy="260" r="55" fill="#FFC0CB" opacity="0.75"/>
+  <circle cx="220" cy="290" r="45" fill="#FFB7C5" opacity="0.6"/>
+  <path d="M900,420 Q920,320 940,420 Q960,320 980,420" stroke="#8B6914" stroke-width="5" fill="none"/>
+  <circle cx="940" cy="330" r="55" fill="#FFB7C5" opacity="0.7"/>
+  <circle cx="960" cy="310" r="48" fill="#FFC0CB" opacity="0.65"/>
+  <circle cx="920" cy="320" r="42" fill="#FFB7C5" opacity="0.6"/>
+  <g opacity="0.5">
+    <circle cx="100" cy="600" r="3" fill="#FFB7C5"/><circle cx="200" cy="580" r="2.5" fill="#FFB7C5"/>
+    <circle cx="350" cy="610" r="3" fill="#FFB7C5"/><circle cx="500" cy="590" r="2" fill="#FFB7C5"/>
+    <circle cx="650" cy="600" r="2.5" fill="#FFB7C5"/><circle cx="800" cy="585" r="3" fill="#FFB7C5"/>
+    <circle cx="950" cy="595" r="2" fill="#FFB7C5"/><circle cx="1100" cy="605" r="2.5" fill="#FFB7C5"/>
   </g>
-  <path d="M0 780 C210 745 390 820 575 770 C745 724 890 742 1030 776 C1210 820 1390 800 1600 750 L1600 900 L0 900 Z" fill="#072f2d" opacity="0.72"/>
+  <path d="M0,680 Q320,650 640,680 Q960,650 1280,680 L1280,720 L0,720 Z" fill="#2E7D32"/>
+  <rect x="580" y="640" width="120" height="40" rx="4" fill="#5D4037"/>
+  <rect x="590" y="648" width="44" height="24" rx="2" fill="#8D6E63"/>
+  <rect x="646" y="648" width="44" height="24" rx="2" fill="#8D6E63"/>
 </svg>
