@@ -56,7 +56,7 @@
             </div>
             <p class="asset-path">{{ scene.background_path || 'No background path' }}</p>
             <div class="scene-actions">
-              <button class="btn btn-primary btn-sm" :disabled="settingSceneId === scene.id" @click="activateScene(scene)">
+              <button class="btn btn-primary btn-sm" :disabled="settingSceneId === scene.id" @click="activateScene(scene); trackView(scene.name, scene.id, 'scenes')">
                 {{ settingSceneId === scene.id ? 'Setting' : 'Set Active' }}
               </button>
               <span v-if="scene.background_path && !scene.background_exists" class="inline-error">Missing file</span>
@@ -90,7 +90,7 @@
           </div>
           <div v-if="catalog?.issues.length" class="issue-list">
             <div v-for="(issue, index) in catalog.issues" :key="`${issue.code}-${index}`" class="issue-item" :class="issue.severity">
-              <span>{{ issue.severity }} · {{ issue.code }}</span>
+              <span>{{ issue.severity }} 路 {{ issue.code }}</span>
               <strong>{{ issue.scene_id || issue.path || 'catalog' }}</strong>
               <p>{{ issue.message }}</p>
             </div>
@@ -106,7 +106,7 @@
           <div class="background-list">
             <div v-for="asset in catalog?.backgrounds" :key="asset.relative_path" class="background-row">
               <span>{{ asset.file_name }}</span>
-              <small>{{ formatBytes(asset.file_size) }} · {{ asset.linked_scene_id || 'unlinked' }}</small>
+              <small>{{ formatBytes(asset.file_size) }} 路 {{ asset.linked_scene_id || 'unlinked' }}</small>
             </div>
           </div>
         </section>
@@ -125,6 +125,12 @@ import { invokeCommand } from '../lib/tauri'
 import { useI18n } from '../lib/i18n'
 
 const { t } = useI18n()
+
+function trackView(name: any, id: any, type: any) {
+  if (typeof window !== 'undefined' && (window as any).__monogatari_track) {
+    (window as any).__monogatari_track({ icon: 'S', name, type, path: '/assets' })
+  }
+}
 
 interface SceneInfo {
   id: string
