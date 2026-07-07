@@ -179,3 +179,37 @@ textarea.input { resize: vertical; min-height: 60px; }
   h2 { font-size: 18px; }
   h3 { font-size: 15px; }
 }
+
+/* === Light Theme === */
+:root[data-theme="light"] {
+  --surface-0: #ffffff;
+  --surface-1: #f8f9fa;
+  --surface-2: #f0f1f3;
+  --surface-3: #e4e6e9;
+  --surface-4: #d0d3d8;
+  --text-primary: #1a1d23;
+  --text-secondary: #4a4e57;
+  --text-tertiary: #6b7280;
+  --border: #d4d7dd;
+  --border-light: #e4e6e9;
+  --brand: #0d9488;
+  --brand-light: #0f766e;
+  --accent: #d97706;
+  --warning: #b45309;
+  --danger: #dc2626;
+  --success: #16a34a;
+  --info: #2563eb;
+  --narrative: #7c3aed;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.1);
+  --shadow-brand: 0 0 0 3px rgba(13,148,136,0.15);
+}
+:root[data-theme="light"] .app-sidebar {
+  background: rgba(248,249,250,0.98);
+  border-right-color: var(--border);
+}
+:root[data-theme="light"] .conversation-header,
+:root[data-theme="light"] .toolbar {
+  background: rgba(248,249,250,0.9);
+}

@@ -311,6 +311,13 @@ const apiModel = ref('gpt-4o-mini')
 const modelPath = ref('models/model.onnx')
 const tokenizerPath = ref('models/tokenizer.json')
 const useDirectML = ref(true)
+const selectedTheme = ref(localStorage.getItem('monogatari-theme') || 'dark')
+
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', selectedTheme.value)
+  localStorage.setItem('monogatari-theme', selectedTheme.value)
+}
+
 const ttsConfig = ref({ provider: 'system', language: 'ja', speed: 1.0, pitch: 1.0 })
 
 const syncEndpoint = ref('')
@@ -550,7 +557,7 @@ function setConfigValue(config: Record<string, any>, path: string[], value: any)
   current[path[path.length - 1]] = value
 }
 
-onMounted(refreshAll)
+onMounted(() => { applyTheme(); refreshAll() })
 </script>
 
 <style scoped>
