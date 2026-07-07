@@ -102,6 +102,22 @@
       </div>
     </Transition>
 
+    <Transition name="fade">
+      <div v-if="showPause" class="pause-overlay" @click.self="showPause = false">
+        <div class="pause-panel">
+          <div class="pause-title">Paused</div>
+          <div class="pause-actions">
+            <button class="pause-btn primary" @click="showPause = false">Resume</button>
+            <button class="pause-btn" @click="saveGame(); showPause = false">Save</button>
+            <button class="pause-btn" @click="openLoadDialog(); showPause = false">Load</button>
+            <button class="pause-btn" @click="$router.push('/backlog')">Backlog</button>
+            <button class="pause-btn" @click="showSettings = true; showPause = false">Settings</button>
+            <button class="pause-btn secondary" @click="$router.push('/title')">Title Screen</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <Transition name="slide">
       <aside v-if="showSettings" class="settings-panel">
         <div class="settings-header">
@@ -202,6 +218,7 @@ const displayedText = ref('')
 const isTyping = ref(false)
 const showLoadDialog = ref(false)
 const showSettings = ref(false)
+const showPause = ref(false)
 const saves = ref<SaveInfo[]>([])
 const errorMessage = ref<string | null>(null)
 const toastMessage = ref<string | null>(null)
@@ -401,6 +418,11 @@ function toggleSettings() {
 }
 
 function handleKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    showPause.value = !showPause.value
+    return
+  }
   if (e.key === ' ' || e.key === 'Enter') {
     e.preventDefault()
     advanceDialogue()
