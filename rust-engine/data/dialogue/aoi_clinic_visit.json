@@ -1,0 +1,182 @@
+{
+  "id": "aoi_clinic_visit",
+  "title": "Visit to the Clinic",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "speaker_id": "aoi",
+      "text": "Welcome to the clinic. Please, have a seat. What brings you here today?",
+      "choices": [
+        {
+          "text": "I have a headache that won't go away.",
+          "next_node_id": "headache",
+          "relationship_changes": {
+            "aoi": 0.1
+          }
+        },
+        {
+          "text": "I just wanted to meet the famous village healer.",
+          "next_node_id": "flattered",
+          "relationship_changes": {
+            "aoi": 0.15
+          }
+        },
+        {
+          "text": "I'm looking for information about rare herbs.",
+          "next_node_id": "herbs",
+          "relationship_changes": {
+            "aoi": 0.2
+          }
+        }
+      ]
+    },
+    "headache": {
+      "speaker_id": "aoi",
+      "text": "I see. Let me prepare a chamomile and lavender blend for you. *gathers herbs from the shelf* Sometimes headaches are the body's way of asking for rest.",
+      "choices": [
+        {
+          "text": "You're right, I haven't been sleeping well.",
+          "next_node_id": "sleep",
+          "relationship_changes": {
+            "aoi": 0.1
+          }
+        },
+        {
+          "text": "Is there anything else I can do?",
+          "next_node_id": "advice",
+          "relationship_changes": {
+            "aoi": 0.05
+          }
+        }
+      ]
+    },
+    "flattered": {
+      "speaker_id": "aoi",
+      "text": "*blushes slightly* Famous? I'm just doing what my grandmother taught me. The real credit goes to the herbs and the patience of those who come seeking help.",
+      "choices": [
+        {
+          "text": "Your grandmother sounds like an amazing person.",
+          "next_node_id": "grandmother",
+          "relationship_changes": {
+            "aoi": 0.2
+          }
+        },
+        {
+          "text": "You're too humble.",
+          "next_node_id": "humble",
+          "relationship_changes": {
+            "aoi": 0.1
+          }
+        }
+      ]
+    },
+    "herbs": {
+      "speaker_id": "aoi",
+      "text": "Ah, a fellow herb enthusiast! *eyes light up* The forest behind the clinic has many rare specimens. Moonpetal blooms only under starlight, and Sunroot must be harvested at dawn.",
+      "choices": [
+        {
+          "text": "Could you teach me to identify them?",
+          "next_node_id": "teach",
+          "relationship_changes": {
+            "aoi": 0.25
+          }
+        },
+        {
+          "text": "Have you ever found something truly unique?",
+          "next_node_id": "unique",
+          "relationship_changes": {
+            "aoi": 0.15
+          }
+        }
+      ]
+    },
+    "sleep": {
+      "speaker_id": "aoi",
+      "text": "Rest is the foundation of health. *hands over a warm cup* Drink this before bed tonight. And remember, it's okay to take time for yourself.",
+      "choices": [
+        {
+          "text": "Thank you, Aoi. I feel better already.",
+          "next_node_id": "end_good",
+          "relationship_changes": {
+            "aoi": 0.15
+          }
+        }
+      ]
+    },
+    "advice": {
+      "speaker_id": "aoi",
+      "text": "Walk in the forest when the sun is gentle. Listen to the birds. Nature has a way of mending what medicine alone cannot.",
+      "choices": [
+        {
+          "text": "That's beautiful advice. Thank you.",
+          "next_node_id": "end_good",
+          "relationship_changes": {
+            "aoi": 0.1
+          }
+        }
+      ]
+    },
+    "grandmother": {
+      "speaker_id": "aoi",
+      "text": "*smiles warmly* She was the heart of this village. Every plant in this garden was planted by her hands. I hope I can honor her legacy.",
+      "choices": [
+        {
+          "text": "I'm sure you already are.",
+          "next_node_id": "end_good",
+          "relationship_changes": {
+            "aoi": 0.2
+          }
+        }
+      ]
+    },
+    "humble": {
+      "speaker_id": "aoi",
+      "text": "Perhaps. But in healing, the patient's will matters far more than the healer's skill. You came here today - that takes courage.",
+      "choices": [
+        {
+          "text": "I'm glad I did.",
+          "next_node_id": "end_good",
+          "relationship_changes": {
+            "aoi": 0.1
+          }
+        }
+      ]
+    },
+    "teach": {
+      "speaker_id": "aoi",
+      "text": "*beaming* I would love that! Come by tomorrow morning, and we'll walk the forest trail together. I'll show you Moonpetal, Sunroot, and maybe even Starbloom if we're lucky.",
+      "choices": [
+        {
+          "text": "I'll be there! Thank you, Aoi.",
+          "next_node_id": "end_best",
+          "relationship_changes": {
+            "aoi": 0.3
+          }
+        }
+      ]
+    },
+    "unique": {
+      "speaker_id": "aoi",
+      "text": "Once, deep in the forest, I found a flower that glowed faintly in the dark. My grandmother called it Dreamblossom. She said it blooms only for those with pure intentions.",
+      "choices": [
+        {
+          "text": "Did you keep it?",
+          "next_node_id": "end_good",
+          "relationship_changes": {
+            "aoi": 0.15
+          }
+        }
+      ]
+    },
+    "end_good": {
+      "speaker_id": "aoi",
+      "text": "Take care of yourself. The clinic door is always open for you.",
+      "choices": []
+    },
+    "end_best": {
+      "speaker_id": "aoi",
+      "text": "I look forward to it. *waves gently* Until then, may the forest spirits watch over you.",
+      "choices": []
+    }
+  }
+}

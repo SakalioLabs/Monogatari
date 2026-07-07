@@ -1,0 +1,16 @@
+{
+  "id": "aoi",
+  "name": "Aoi",
+  "description": "A gentle healer who runs the village clinic. Known for her calm demeanor and vast knowledge of herbal medicine.",
+  "background": "Aoi inherited the village clinic from her grandmother, who taught her the ancient art of herbal healing. She spends her days gathering herbs in the forest and tending to the sick. Despite her quiet nature, she carries a deep compassion for all living things. She believes that true healing comes not just from medicine, but from understanding and patience.",
+  "personality": {
+    "openness": 0.7,
+    "conscientiousness": 0.9,
+    "extraversion": 0.3,
+    "agreeableness": 0.95,
+    "neuroticism": 0.2,
+    "speech_style": "gentle, calm, uses nature metaphors"
+  },
+  "emotion": "neutral",
+  "live2d_model_path": null
+}

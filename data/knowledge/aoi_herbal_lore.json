@@ -1,0 +1,17 @@
+[
+  {
+    "id": "aoi_herbal_lore",
+    "category": "character",
+    "title": "Aoi's Herbal Medicine Knowledge",
+    "content": "Aoi is the village healer who inherited her grandmother's clinic. She specializes in herbal medicine and knows the properties of hundreds of forest plants. Key herbs she uses: Chamomile for relaxation, Lavender for headaches, Moonpetal for insomnia (blooms only under starlight), Sunroot for fevers (harvested at dawn), Starbloom for anxiety (extremely rare), Dreamblossom (legendary, said to glow in the dark). Her clinic is located at the edge of the village near the forest trail. She offers herb identification walks on clear mornings.",
+    "tags": [
+      "aoi",
+      "healer",
+      "herbs",
+      "medicine",
+      "forest",
+      "clinic"
+    ],
+    "importance": 0.8
+  }
+]
