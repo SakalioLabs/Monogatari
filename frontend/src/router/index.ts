@@ -99,6 +99,11 @@ const router = createRouter({
       name: 'backlog',
       component: () => import('../views/BacklogView.vue'),
     },
+    {
+      path: '/achievements',
+      name: 'achievements',
+      component: () => import('../views/AchievementsView.vue'),
+    },
   ],
 })
 

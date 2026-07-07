@@ -66,6 +66,7 @@ const navItems = computed(() => [
   { path: '/marketplace', label: t('nav.marketplace', 'Marketplace'), icon: '&#9733;', badge: 'New' },
   { path: '/cg-gallery', label: t('nav.cg-gallery', 'CG Gallery'), icon: '&#127912;' },
   { path: '/backlog', label: t('nav.backlog', 'Backlog'), icon: '&#128214;' },
+  { path: '/achievements', label: t('nav.achievements', 'Achievements'), icon: '&#127942;' },
 ])
 </script>
 
