@@ -1,0 +1,307 @@
+{
+  "id": "festival_preparations",
+  "title": "Starlight Festival Preparations",
+  "description": "Help Mio prepare for the annual Starlight Festival",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "speaker_id": "mio",
+      "text": "Oh! You're here! Perfect timing! The Starlight Festival is just three days away and I could really use an extra pair of hands. What do you say?",
+      "choices": [
+        {
+          "text": "I'd love to help! What needs doing?",
+          "next_node_id": "eager_help",
+          "relationship_changes": {
+            "mio": 0.15
+          }
+        },
+        {
+          "text": "Tell me about the festival first.",
+          "next_node_id": "festival_info",
+          "relationship_changes": {
+            "mio": 0.05
+          }
+        },
+        {
+          "text": "I'm not sure I'm qualified...",
+          "next_node_id": "reassure",
+          "relationship_changes": {
+            "mio": 0.1
+          }
+        }
+      ]
+    },
+    "eager_help": {
+      "speaker_id": "mio",
+      "text": "That's the spirit! *claps hands* Okay, so we need to hang the lanterns along the main path, set up the food stalls, and most importantly - we need someone to test the fireworks safety zone. Interested?",
+      "choices": [
+        {
+          "text": "Lanterns sound beautiful. Let's start there!",
+          "next_node_id": "lanterns",
+          "relationship_changes": {
+            "mio": 0.1
+          }
+        },
+        {
+          "text": "Did you say fireworks?!",
+          "next_node_id": "fireworks",
+          "relationship_changes": {
+            "mio": 0.15
+          }
+        },
+        {
+          "text": "I'll help with whatever is most needed.",
+          "next_node_id": "humble",
+          "relationship_changes": {
+            "mio": 0.2
+          }
+        }
+      ]
+    },
+    "festival_info": {
+      "speaker_id": "mio",
+      "text": "Oh, you haven't heard? The Starlight Festival has been a Springtown tradition for over fifty years! My grandmother started it. Every summer, we light a thousand paper lanterns and release them into the sky. It's said that each lantern carries a wish. *eyes sparkle* It's the most magical night of the year.",
+      "choices": [
+        {
+          "text": "That sounds incredibly beautiful.",
+          "next_node_id": "touched",
+          "relationship_changes": {
+            "mio": 0.15
+          }
+        },
+        {
+          "text": "Your grandmother sounds like an amazing person.",
+          "next_node_id": "grandmother",
+          "relationship_changes": {
+            "mio": 0.2
+          }
+        }
+      ]
+    },
+    "reassure": {
+      "speaker_id": "mio",
+      "text": "Nonsense! The festival is for everyone! You don't need special skills - just a willing heart and maybe some comfortable shoes. *laughs* Trust me, by the end of the night, you'll feel like you've been part of Springtown forever.",
+      "choices": [
+        {
+          "text": "When you put it that way... count me in!",
+          "next_node_id": "eager_help",
+          "relationship_changes": {
+            "mio": 0.15
+          }
+        },
+        {
+          "text": "Comfortable shoes? How much walking is involved?",
+          "next_node_id": "practical",
+          "relationship_changes": {
+            "mio": 0.05
+          }
+        }
+      ]
+    },
+    "lanterns": {
+      "speaker_id": "mio",
+      "text": "Great choice! Each lantern is handmade by the townspeople. My grandmother believed that handcrafting the lanterns gave them a piece of your soul. *carefully picks up a lantern* Here, try this one. See how the paper catches the light? When we release them, it's like letting go of your worries and sending your hopes into the sky.",
+      "choices": [
+        {
+          "text": "Can I make one too?",
+          "next_node_id": "make_lantern",
+          "relationship_changes": {
+            "mio": 0.2
+          }
+        },
+        {
+          "text": "What do you wish for every year?",
+          "next_node_id": "mio_wish",
+          "relationship_changes": {
+            "mio": 0.15
+          }
+        }
+      ]
+    },
+    "fireworks": {
+      "speaker_id": "mio",
+      "text": "*grins* I knew you'd pick fireworks! We have a special display this year - Hiro helped design some new patterns. But we need to make sure the safety perimeter is clear. Want to help me check the field? *hands you a clipboard* Safety first, fun second... okay, maybe tied for first.",
+      "choices": [
+        {
+          "text": "Safety officer Mio at your service! Let's go.",
+          "next_node_id": "fireworks_check",
+          "relationship_changes": {
+            "mio": 0.15
+          }
+        },
+        {
+          "text": "Hiro made fireworks? That sounds... explosive.",
+          "next_node_id": "hiro_fireworks",
+          "relationship_changes": {
+            "mio": 0.1
+          }
+        }
+      ]
+    },
+    "humble": {
+      "speaker_id": "mio",
+      "text": "*beams* That's the most festival-ready answer I've heard all week! Okay, I'm putting you on lantern duty. The lanterns need to be hung at exactly the right height - not too low (fire hazard) and not too high (can't see the glow). Ready?",
+      "choices": [
+        {
+          "text": "Ready! Show me the way.",
+          "next_node_id": "lanterns",
+          "relationship_changes": {
+            "mio": 0.15
+          }
+        }
+      ]
+    },
+    "touched": {
+      "speaker_id": "mio",
+      "text": "*smiles softly* It really is. Last year, a little girl told me that watching the lanterns float away made her believe in magic again. That's why I do this - not for the big spectacle, but for those small moments. *pauses* Would you like to help create more of those moments?",
+      "choices": [
+        {
+          "text": "Absolutely. Where do I sign up?",
+          "next_node_id": "eager_help",
+          "relationship_changes": {
+            "mio": 0.2
+          }
+        }
+      ]
+    },
+    "grandmother": {
+      "speaker_id": "mio",
+      "text": "*eyes glisten* She really was. She taught me that the best festivals aren't about perfection - they're about bringing hearts together. I still use her original lantern patterns. *pulls out an old, worn sketchbook* See? Each design tells a story. Would you like to hear one?",
+      "choices": [
+        {
+          "text": "I'd love to hear every single one.",
+          "next_node_id": "stories",
+          "relationship_changes": {
+            "mio": 0.25
+          }
+        },
+        {
+          "text": "She must be very proud of you.",
+          "next_node_id": "proud",
+          "relationship_changes": {
+            "mio": 0.2
+          }
+        }
+      ]
+    },
+    "practical": {
+      "speaker_id": "mio",
+      "text": "*laughs* Fair question! The festival grounds stretch from the cherry blossom park all the way to the riverbank. That's about a fifteen-minute walk end to end. But trust me, with all the food stalls, games, and performances along the way, you won't even notice the distance!",
+      "choices": [
+        {
+          "text": "Food stalls? I'm sold!",
+          "next_node_id": "eager_help",
+          "relationship_changes": {
+            "mio": 0.1
+          }
+        }
+      ]
+    },
+    "make_lantern": {
+      "speaker_id": "mio",
+      "text": "Of course! *sets out materials* Here's the bamboo frame, the paper, and the glue. The trick is to be gentle - the paper is thin as a whisper. My grandmother always said 'treat each lantern like a letter to someone you love.' *watches you carefully* That's it... beautiful! Your first festival lantern!",
+      "choices": [
+        {
+          "text": "I'll write a wish on it and release it at the festival.",
+          "next_node_id": "ending_wish",
+          "relationship_changes": {
+            "mio": 0.25
+          }
+        }
+      ]
+    },
+    "mio_wish": {
+      "speaker_id": "mio",
+      "text": "*blushes slightly* Every year I wish for the same thing - that the festival will keep bringing people together for another fifty years. That the lanterns will keep glowing. That Springtown will always feel like home. *looks up* What about you? What would you wish for?",
+      "choices": [
+        {
+          "text": "Right now? More moments like this one.",
+          "next_node_id": "ending_together",
+          "relationship_changes": {
+            "mio": 0.3
+          }
+        }
+      ]
+    },
+    "fireworks_check": {
+      "speaker_id": "mio",
+      "text": "*marches purposefully with clipboard* Okay, perimeter check! Left side clear... right side clear... *suddenly stops* Wait, is that a cat? *a small tabby cat sits in the middle of the field* Well, I guess we have our first official festival mascot! *scribbles on clipboard* 'Safety check: one adorable obstacle.'",
+      "choices": [
+        {
+          "text": "The cat clearly has great taste in festival locations.",
+          "next_node_id": "ending_cat",
+          "relationship_changes": {
+            "mio": 0.2
+          }
+        }
+      ]
+    },
+    "hiro_fireworks": {
+      "speaker_id": "mio",
+      "text": "Right?! I was nervous at first, but Hiro's actually really careful with safety. He built a special launcher that keeps everything at a safe distance. *leans in* Between you and me, he's been working on a secret finale pattern. Even I haven't seen it yet!",
+      "choices": [
+        {
+          "text": "A secret finale? Now I'm definitely staying for the whole show!",
+          "next_node_id": "ending_cat",
+          "relationship_changes": {
+            "mio": 0.15
+          }
+        }
+      ]
+    },
+    "stories": {
+      "speaker_id": "mio",
+      "text": "This one here - the spiral pattern - represents the journey of life. My grandmother drew it the year she first came to Springtown. And this one, the starburst, she designed for her first festival. *traces the patterns* Each lantern is a chapter of her story. And now... *hands you the book* ...I'd like you to be part of the next chapter.",
+      "choices": [
+        {
+          "text": "I'd be honored. Let's make this the best festival yet.",
+          "next_node_id": "ending_best",
+          "relationship_changes": {
+            "mio": 0.3
+          }
+        }
+      ]
+    },
+    "proud": {
+      "speaker_id": "mio",
+      "text": "*wipes eyes* Thank you. I... I really needed to hear that today. *takes a deep breath* You know what? You're good at this. The festival, the preparations - it's all better with someone like you here. Ready to get to work?",
+      "choices": [
+        {
+          "text": "Always. Let's make your grandmother proud.",
+          "next_node_id": "ending_best",
+          "relationship_changes": {
+            "mio": 0.25
+          }
+        }
+      ]
+    },
+    "ending_wish": {
+      "speaker_id": "mio",
+      "text": "That's beautiful! I'll make sure your lantern goes right in the center of the formation - the heart of the wish cluster. *carefully places your lantern* Three days from now, this little light will join a thousand others in the sky. And every single one will carry hope. Thank you for being part of this.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    },
+    "ending_together": {
+      "speaker_id": "mio",
+      "text": "*blushes deeper* That's... *laughs softly* You know, in all the years I've organized this festival, nobody's ever said something like that to me before. *looks at the lanterns* I have a feeling this is going to be the best Starlight Festival yet. I'm really glad you're here.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    },
+    "ending_cat": {
+      "speaker_id": "mio",
+      "text": "*laughs* You know what? The best festivals always have a little chaos. That's what makes them memorable! *scribbles on clipboard* Okay, safety check complete, one cat mascot acquired, and I have the best assistant in Springtown. Let's make this festival shine!",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    },
+    "ending_best": {
+      "speaker_id": "mio",
+      "text": "*eyes shining* Yes! Let's do it! *grabs your hand* Come on, we've got lanterns to hang, fireworks to check, and a festival to build! *pauses at the door* And hey - thank you. For being here. For caring. It means more than you know. Now, festival time!",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    }
+  }
+}
