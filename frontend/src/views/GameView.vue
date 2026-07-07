@@ -377,6 +377,24 @@ async function advanceDialogue() {
   }
 }
 
+const QUICK_SAVE_ID = 'quick_save_0'
+
+async function saveQuick() {
+  try {
+    await invokeCommand<string>('save_game', { saveName: 'Quick Save' })
+    toastMessage.value = 'Quick saved'
+  } catch (e) { errorMessage.value = String(e) }
+}
+
+async function quickLoad() {
+  try {
+    await loadGame(QUICK_SAVE_ID)
+    toastMessage.value = 'Quick loaded'
+  } catch (e) {
+    errorMessage.value = 'No quick save found'
+  }
+}
+
 async function saveGame() {
   try {
     const name = `Save ${new Date().toLocaleString('zh-CN')}`
@@ -421,6 +439,19 @@ function handleKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') {
     e.preventDefault()
     showPause.value = !showPause.value
+    return
+  }
+  // Quick save/load
+  if (e.key === 's' && !e.ctrlKey && !e.metaKey) {
+    e.preventDefault()
+    if (dialogueState.value?.is_active) {
+      saveQuick()
+    }
+    return
+  }
+  if (e.key === 'l' && !e.ctrlKey && !e.metaKey) {
+    e.preventDefault()
+    quickLoad()
     return
   }
   if (e.key === ' ' || e.key === 'Enter') {
