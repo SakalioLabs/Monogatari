@@ -74,6 +74,11 @@ const router = createRouter({
       name: 'knowledge',
       component: () => import('../views/KnowledgeBaseView.vue'),
     },
+    {
+      path: '/dialogue-editor',
+      name: 'dialogue-editor',
+      component: () => import('../views/DialogueEditorView.vue'),
+    },
   ],
 })
 

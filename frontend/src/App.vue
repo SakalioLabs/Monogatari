@@ -57,6 +57,7 @@ const navItems = [
   { path: '/settings', label: 'Settings', icon: '&#9881;' },
   { path: '/analytics', label: 'Analytics', icon: '&#9636;' },
   { path: '/plugins', label: 'Plugins', icon: '&#128295;' },
+  { path: '/dialogue-editor', label: 'Dialogues', icon: '&#128172;' },
   { path: '/knowledge', label: 'Knowledge', icon: '&#128218;' },
   { path: '/audio', label: 'Audio', icon: '&#9835;' },
   { path: '/marketplace', label: 'Marketplace', icon: '&#9733;', badge: 'New' },
