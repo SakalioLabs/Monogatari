@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.8.1] - 2026-07-07
+
+### Added
+- **DialogueEditorView**: Visual branching dialogue editor with node tree canvas, inline choice editing, speaker assignment, validation, and JSON import/export.
+- **export_project command**: Export project as JSON manifest with content inventory (characters, dialogues, knowledge, scenes) for packaging and distribution.
+- **Aoi character**: Gentle healer with herbal medicine knowledge, clinic visit dialogue (11 nodes, 3 branching paths, 2 endings), and herbal lore knowledge entry.
+- **CharacterGalleryView overhaul**: Search, detail panel with radar chart visualization, personality traits, quick action buttons (Chat/Edit), responsive layout.
+
+### Changed
+- **Sidebar navigation** expanded to 16 items with Dialogue Editor entry.
+- **Total Tauri commands**: 30 (up from 25).
+- **Total frontend views**: 15 (up from 14).
+- **Content inventory**: 7 characters, 8 dialogues, 9 knowledge entries, 5 scenes.
+
+
 ### Fixed
 - **Locale files encoding**: Fixed mojibake in zh-CN.json and ja-JP.json locale files. All translations now use proper UTF-8 encoding.
 - **SettingsView language picker**: Language selector now calls loadI18n() to apply locale changes immediately without restart.
