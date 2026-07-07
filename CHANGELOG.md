@@ -1,5 +1,14 @@
 # Changelog
 
+### Fixed
+- **Locale files encoding**: Fixed mojibake in zh-CN.json and ja-JP.json locale files. All translations now use proper UTF-8 encoding.
+- **SettingsView language picker**: Language selector now calls loadI18n() to apply locale changes immediately without restart.
+
+### Added
+- **Japanese locale**: Complete ja-JP.json with nav, chat, game, settings, and common translations.
+- **Knowledge Base Rust commands**: list_knowledge_entries, get_knowledge_entry, list_knowledge_tags Tauri commands for full KB management.
+- **KnowledgeBase backend methods**: all_entries, all_tags, all_categories for comprehensive knowledge base access.
+
 ## [0.8.0] - 2026-07-07
 
 ### Added

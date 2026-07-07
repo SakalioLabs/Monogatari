@@ -1,17 +1,19 @@
 {
   "nav": {
     "dashboard": "ダッシュボード",
-    "chat": "AIチャット",
+    "chat": "AI チャット",
     "story": "ストーリー",
     "workflow": "ワークフロー",
     "assets": "シーン",
-    "editor": "エディター",
+    "editor": "エディタ",
     "characters": "キャラクター",
     "groupChat": "グループチャット",
     "settings": "設定",
     "analytics": "分析",
     "marketplace": "マーケット",
-    "plugins": "プラグイン"
+    "plugins": "プラグイン",
+    "knowledge": "知識ベース",
+    "audio": "オーディオ"
   },
   "chat": {
     "selectCharacter": "キャラクターを選択",
@@ -21,7 +23,7 @@
     "score": "スコア",
     "friendliness": "友好度",
     "engagement": "参加度",
-    "creativity": "創造性",
+    "creativity": "創造力",
     "messages": "メッセージ",
     "player": "プレイヤー",
     "mode": "モード",
@@ -36,15 +38,15 @@
     "continue": "続ける",
     "startDemo": "デモ開始",
     "textSpeed": "テキスト速度",
-    "autoPlay": "自動再生",
+    "autoPlay": "オートプレイ",
     "bgmVolume": "BGM音量",
-    "sfxVolume": "効果音音量",
+    "sfxVolume": "効果音量",
     "voiceVolume": "ボイス音量"
   },
   "settings": {
     "projectControl": "プロジェクト管理",
     "workspace": "ワークスペース",
-    "aiBackend": "AIバックエンド",
+    "aiBackend": "AI バックエンド",
     "tts": "音声合成",
     "cloudSync": "クラウド同期",
     "save": "保存",

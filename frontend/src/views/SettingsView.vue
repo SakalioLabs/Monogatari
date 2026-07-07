@@ -254,6 +254,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { invokeCommand } from '../lib/tauri'
+import { loadI18n } from '../lib/i18n'
 
 interface EngineStatus {
   initialized: boolean
