@@ -1,0 +1,15 @@
+{
+    "id":  "festival_night",
+    "name":  "Starlight Festival Night",
+    "background_path":  "assets/backgrounds/festival_night.svg",
+    "weather":  "summer_clear",
+    "tags":  [
+                 "festival",
+                 "outdoor",
+                 "festive",
+                 "night",
+                 "lanterns"
+             ],
+    "bgm_path":  "assets/audio/festival_bgm.mp3",
+    "time_of_day":  "night"
+}
