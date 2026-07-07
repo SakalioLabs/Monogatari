@@ -150,6 +150,22 @@ impl KnowledgeBase {
         Ok(total)
     }
 
+
+    /// Get all entries as a vector.
+    pub fn all_entries(&self) -> Vec<&KnowledgeEntry> {
+        self.entries.values().collect()
+    }
+
+    /// Get all unique tags across all entries.
+    pub fn all_tags(&self) -> Vec<String> {
+        self.tag_index.keys().cloned().collect()
+    }
+
+    /// Get all unique categories across all entries.
+    pub fn all_categories(&self) -> Vec<KnowledgeCategory> {
+        self.category_index.keys().cloned().collect()
+    }
+
     /// Get the total number of entries.
     pub fn len(&self) -> usize {
         self.entries.len()

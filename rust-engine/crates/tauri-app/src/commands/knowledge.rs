@@ -50,3 +50,50 @@ pub async fn load_knowledge(
         .await
         .map_err(|e| e.to_string())
 }
+
+/// List all knowledge entries (returns full metadata for each entry).
+#[tauri::command]
+pub async fn list_knowledge_entries(
+    state: State<'_, AppState>,
+) -> Result<Vec<KnowledgeResult>, String> {
+    let kb = state.knowledge_base.read().await;
+    let entries = kb.all_entries();
+
+    Ok(entries
+        .into_iter()
+        .map(|e| KnowledgeResult {
+            id: e.id.clone(),
+            category: format!("{:?}", e.category),
+            title: e.title.clone(),
+            content: e.content.clone(),
+            tags: e.tags.clone(),
+            importance: e.importance,
+        })
+        .collect())
+}
+
+/// Get a single knowledge entry by ID.
+#[tauri::command]
+pub async fn get_knowledge_entry(
+    state: State<'_, AppState>,
+    entry_id: String,
+) -> Result<Option<KnowledgeResult>, String> {
+    let kb = state.knowledge_base.read().await;
+    Ok(kb.get_entry(&entry_id).map(|e| KnowledgeResult {
+        id: e.id.clone(),
+        category: format!("{:?}", e.category),
+        title: e.title.clone(),
+        content: e.content.clone(),
+        tags: e.tags.clone(),
+        importance: e.importance,
+    }))
+}
+
+/// Get all unique tags in the knowledge base.
+#[tauri::command]
+pub async fn list_knowledge_tags(
+    state: State<'_, AppState>,
+) -> Result<Vec<String>, String> {
+    let kb = state.knowledge_base.read().await;
+    Ok(kb.all_tags())
+}

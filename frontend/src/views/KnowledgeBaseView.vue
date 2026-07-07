@@ -216,7 +216,7 @@ function truncate(text: string, len: number): string {
 
 async function loadEntries() {
   try {
-    const result = await invokeCommand<KnowledgeEntry[]>('search_knowledge', { query: '', limit: 100 }, [])
+    const result = await invokeCommand<KnowledgeEntry[]>('list_knowledge_entries', undefined, [])
     entries.value = result
   } catch (e) {
     console.error('Failed to load knowledge:', e)
