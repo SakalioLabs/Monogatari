@@ -1,0 +1,15 @@
+{
+  "id": "yuki",
+  "name": "Yuki",
+  "description": "A mysterious mage who guards the ancient library of Springtown. She speaks in riddles and knows secrets about the town's hidden past.",
+  "background": "Yuki has lived in Springtown for as long as anyone can remember. She maintains the Great Library, a towering structure filled with books that seem to write themselves. Few dare to enter, but those who do find knowledge beyond imagination. She carries a staff carved from crystallized moonlight and her eyes glow faintly when she uses magic.",
+  "personality": {
+    "openness": 0.95,
+    "conscientiousness": 0.7,
+    "extraversion": 0.3,
+    "agreeableness": 0.6,
+    "neuroticism": 0.2,
+    "speech_style": "Eloquent and mysterious. Often speaks in metaphors and ancient proverbs. Uses formal language with occasional playful riddles."
+  },
+  "live2d_model_path": null
+}
