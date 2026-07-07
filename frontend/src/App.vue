@@ -42,6 +42,7 @@
     </Transition>
     <KeyboardShortcutsHelp :visible="showShortcuts" @close="showShortcuts = false" />
     <WhatsNew />
+    <BackToTop />
   </div>
 </template>
 
@@ -52,6 +53,7 @@ import ErrorBoundary from './components/ErrorBoundary.vue'
 import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp.vue'
 import WhatsNew from './components/WhatsNew.vue'
 import GlobalSearch from './components/GlobalSearch.vue'
+import BackToTop from './components/BackToTop.vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from './lib/i18n'
 
