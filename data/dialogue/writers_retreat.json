@@ -1,0 +1,268 @@
+{
+  "id": "writers_retreat",
+  "title": "The Writer's Retreat",
+  "description": "Meet Emi at Hana's tea shop and discover the novel she's writing about Springtown - and the stories she's finding along the way.",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "speaker_id": "emi",
+      "text": "*looks up from a notebook covered in crossed-out sentences* Oh! I'm sorry, I didn't see you there. I get lost in my own head sometimes. *closes the notebook quickly, then hesitantly opens it again* Actually... would you like to hear something I wrote? I've been here three months and I still can't tell if it's any good. *nervous laugh* That's the thing about writing - you never really know.",
+      "choices": [
+        {
+          "text": "I'd love to hear what you've written.",
+          "next_node_id": "first_read",
+          "relationship_changes": {
+            "emi": 0.15
+          }
+        },
+        {
+          "text": "You're a writer? That's amazing!",
+          "next_node_id": "aspiring_writer",
+          "relationship_changes": {
+            "emi": 0.1
+          }
+        },
+        {
+          "text": "Three months in Springtown? What brought you here?",
+          "next_node_id": "why_springtown",
+          "relationship_changes": {
+            "emi": 0.12
+          }
+        }
+      ]
+    },
+    "first_read": {
+      "speaker_id": "emi",
+      "text": "*takes a deep breath* Okay. *reads* 'The lanterns rose like questions released into the night - each one hoping for an answer. She watched from the riverbank, her heart caught between the weight of what she was leaving behind and the lightness of what might be waiting ahead.' *looks up anxiously* It's about Mio's festival. I changed names, of course. But... does it feel real?",
+      "choices": [
+        {
+          "text": "It's beautiful. It feels like I'm there.",
+          "next_node_id": "encouragement",
+          "relationship_changes": {
+            "emi": 0.2
+          }
+        },
+        {
+          "text": "You based it on the Starlight Festival?",
+          "next_node_id": "festival_chapter",
+          "relationship_changes": {
+            "emi": 0.15
+          }
+        }
+      ]
+    },
+    "aspiring_writer": {
+      "speaker_id": "emi",
+      "text": "*blushes* I'm... trying to be. I was an editor for six years. I spent my days fixing other people's sentences and dreaming of writing my own. *twirls a pen* One day I just... walked out. Took a train as far as it would go, and ended up here. *looks around Hana's tea shop* Best decision I ever made, even if I haven't finished a single chapter yet.",
+      "choices": [
+        {
+          "text": "Six years as an editor! You must have learned so much.",
+          "next_node_id": "editor_life",
+          "relationship_changes": {
+            "emi": 0.15
+          }
+        },
+        {
+          "text": "What's your novel about?",
+          "next_node_id": "novel_topic",
+          "relationship_changes": {
+            "emi": 0.2
+          }
+        }
+      ]
+    },
+    "why_springtown": {
+      "speaker_id": "emi",
+      "text": "*sets down her pen* I was looking for a story. A real one. In the city, everything felt... written already. The same coffee shops, the same conversations, the same endings. *gestures out the window* But Springtown feels like an unwritten page. Every morning, Hana tells me a new story about her grandmother. Nori shows me letters people wrote fifty years ago. *eyes light up* There's a story in every face here.",
+      "choices": [
+        {
+          "text": "You sound like you've found your muse.",
+          "next_node_id": "muse",
+          "relationship_changes": {
+            "emi": 0.15
+          }
+        },
+        {
+          "text": "What's the most interesting story you've found?",
+          "next_node_id": "best_story",
+          "relationship_changes": {
+            "emi": 0.2
+          }
+        }
+      ]
+    },
+    "encouragement": {
+      "speaker_id": "emi",
+      "text": "*a visible wave of relief passes over her face* Really? You're not just being kind? *clutches the notebook* I've rewritten that paragraph seventeen times. Seventeen! Nori told me that stories are like letters - they need the right moment to be delivered. Maybe... maybe this is the right moment. *smiles* Thank you. That one sentence of encouragement means more than you know.",
+      "choices": [
+        {
+          "text": "Can I read more? I'd love to hear the whole story.",
+          "next_node_id": "more_reading",
+          "relationship_changes": {
+            "emi": 0.25
+          }
+        }
+      ]
+    },
+    "festival_chapter": {
+      "speaker_id": "emi",
+      "text": "*nods* The Starlight Festival is the heart of my book. I interviewed Mio for three hours - she told me everything. Her grandmother's first lantern. The year the rain almost canceled it. The time a thousand lanterns spelled out 'thank you' in the sky. *flips through pages* I have an entire chapter about the lantern-making. I watched Sakura paint one. Her hands moved like... like she was writing a letter to the sky.",
+      "choices": [
+        {
+          "text": "You've really immersed yourself in this town.",
+          "next_node_id": "immersed",
+          "relationship_changes": {
+            "emi": 0.15
+          }
+        },
+        {
+          "text": "Can I read the festival chapter?",
+          "next_node_id": "festival_read",
+          "relationship_changes": {
+            "emi": 0.2
+          }
+        }
+      ]
+    },
+    "editor_life": {
+      "speaker_id": "emi",
+      "text": "*laughs* I learned that every writer hates the first draft. And the second. And sometimes the tenth. *sobering* But I also learned that the best stories aren't perfect - they're honest. *taps her notebook* I'm trying to be honest. About Springtown. About the people here. About the way this place makes me feel like I belong somewhere for the first time. *small voice* That's scary to write down.",
+      "choices": [
+        {
+          "text": "The most honest stories are the ones worth reading.",
+          "next_node_id": "ending_honest",
+          "relationship_changes": {
+            "emi": 0.25
+          }
+        }
+      ]
+    },
+    "novel_topic": {
+      "speaker_id": "emi",
+      "text": "*takes a breath* It's about a woman who inherits a lantern from a grandmother she never knew. The lantern has a letter inside, and the letter leads her to a town called Springtown. *sheepish* It's a little sentimental, I know. But there's a mystery too - the grandmother disappeared years ago, and the lantern holds clues. *pauses* Really, it's about finding home in unexpected places. About how a town can hold a story together when a person can't.",
+      "choices": [
+        {
+          "text": "That sounds exactly like the kind of story Springtown deserves.",
+          "next_node_id": "ending_book",
+          "relationship_changes": {
+            "emi": 0.3
+          }
+        }
+      ]
+    },
+    "muse": {
+      "speaker_id": "emi",
+      "text": "*looks around the tea shop* Hana is my muse, I think. She doesn't know it. Every morning she brings me tea without asking what I want - she just knows. Chamomile when I'm anxious, green tea when I'm focused, jasmine when I'm sad. *teary* How does someone just... know that? *wipes her eyes* That's the kind of detail I could never invent. That's why I had to come here - to find the details that are truer than fiction.",
+      "choices": [
+        {
+          "text": "I think you've found the heart of your story.",
+          "next_node_id": "ending_heart",
+          "relationship_changes": {
+            "emi": 0.25
+          }
+        }
+      ]
+    },
+    "best_story": {
+      "speaker_id": "emi",
+      "text": "*without hesitation* Nori's undelivered letters. *leans forward* He showed me a letter written in 1978 - a love letter that was never sent. The writer had passed away, and the recipient never knew they were loved. *voice softens* I asked Nori why he kept them. He said 'Because every story deserves to be witnessed, even if it never reaches its destination.' *looks at her notebook* I'm writing a story based on that letter. I hope that's okay.",
+      "choices": [
+        {
+          "text": "Nori would be honored. You're giving those letters new life.",
+          "next_node_id": "ending_letters",
+          "relationship_changes": {
+            "emi": 0.3
+          }
+        }
+      ]
+    },
+    "more_reading": {
+      "speaker_id": "emi",
+      "text": "*hesitates, then opens to a marked page* This is the chapter where the main character first arrives in Springtown. *reads* 'She stepped off the train into a world where time moved differently. The air smelled of tea and cherry blossoms. An old man at the post office waved at her like he'd been expecting her for years. She didn't know it yet, but she had just walked into the story she'd been searching for her whole life.' *closes the book* ...It's about me, isn't it? *laughs* I can't even hide in fiction.",
+      "choices": [
+        {
+          "text": "That's the most honest thing you've written.",
+          "next_node_id": "ending_honest2",
+          "relationship_changes": {
+            "emi": 0.3
+          }
+        }
+      ]
+    },
+    "immersed": {
+      "speaker_id": "emi",
+      "text": "*nods* I think Springtown has adopted me. *gestures* Hana saves my usual table. Nori brings me old stamps for inspiration. Sakura gave me a painting for my cover - it's a lantern floating into a starry sky. *voice cracks* And yesterday, Mio asked if I'd read a chapter at the festival this year. *whispers* Me. Reading my words to the people who inspired them. I don't know if I can, but... I think I have to try.",
+      "choices": [
+        {
+          "text": "You have to do it. Your story is their story too.",
+          "next_node_id": "ending_festival_read",
+          "relationship_changes": {
+            "emi": 0.3
+          }
+        }
+      ]
+    },
+    "festival_read": {
+      "speaker_id": "emi",
+      "text": "*nervously flips to the festival chapter* I'll read just the first page. *clears throat* 'The first lantern rose at dusk, a small flame in a paper boat sailing into the dark. One by one, others followed - a thousand tiny suns carrying a thousand quiet hopes. She stood among the crowd, her own hope folded into a lantern she'd made with her own hands. She didn't know what to wish for. So she wished for more moments like this one.' *looks up* ...That's all I have so far.",
+      "choices": [
+        {
+          "text": "That's perfect. You have to read that at the festival.",
+          "next_node_id": "ending_festival_read2",
+          "relationship_changes": {
+            "emi": 0.25
+          }
+        }
+      ]
+    },
+    "ending_honest": {
+      "speaker_id": "emi",
+      "text": "*writes something quickly in her notebook* 'The most honest stories are the ones worth reading.' *looks up* I'm writing that down. That's going in the book. *closes the notebook with finality* I think... I think I can finish this novel now. Not because I finally know how to write. But because I finally have something to say. *smiles* Thank you for being my first reader.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    },
+    "ending_book": {
+      "speaker_id": "emi",
+      "text": "*stares at you* ...That's exactly what I needed to hear. *writes furiously* Excuse me, I have to get this down. *writes for a full minute, then looks up* I just wrote the last paragraph of my novel. *reads aloud* 'The lantern rose, and with it, a story that had been waiting to be told for generations. Springtown had finally found its voice. And it sounded like hope.' *puts down her pen* ...I think I'm done.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    },
+    "ending_heart": {
+      "speaker_id": "emi",
+      "text": "*wipes her eyes again* I think so too. *looks at Hana behind the counter* I think the heart of my story is this: home isn't a place. It's the people who know what tea to bring you when you're sad. *stands up* I'm going to go thank Hana. And then I'm going to write the best chapter of my life. *pauses at the door* Thank you for listening. You're officially part of the story now.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    },
+    "ending_letters": {
+      "speaker_id": "emi",
+      "text": "*eyes bright with tears and excitement* That's exactly what I want to do. Give those letters new life. *flips through her notebook* I've already written three chapters based on Nori's archives. One about a letter that arrived forty years late. One about a postcard that saved someone's life. *pauses* And one about a postmaster who became the keeper of a thousand unwritten stories. *softly* That one is my favorite.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    },
+    "ending_honest2": {
+      "speaker_id": "emi",
+      "text": "*closes the notebook* I think all fiction is autobiography, isn't it? We dress it up in different names and places, but at its core, every story is the writer saying 'This is what I know. This is what I feel.' *tucks the notebook under her arm* I came to Springtown to write a novel. Instead, it wrote me. *smiles* I think that's the best kind of story.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    },
+    "ending_festival_read": {
+      "speaker_id": "emi",
+      "text": "*takes a shaky breath* You're right. *straightens her shoulders* I'll do it. I'll read at the festival. *pulls out a pen and writes on her hand: 'ASK MIO ABOUT READING'* There. Now I can't back out. *looks at her notebook* My novel starts with a lantern rising and ends with one too. Full circle. Just like Springtown. *whispers* I think I finally know the ending.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    },
+    "ending_festival_read2": {
+      "speaker_id": "emi",
+      "text": "*nods slowly* I will. *writes a note to herself* 'Festival. Read chapter one.' *looks up* You know, I was terrified when I came here. I thought I had nothing to say. But Springtown... Springtown is the most talkative place I've ever been silent in. *laughs* Every stone has a story. Every lantern has a secret. And now, thanks to you, I'm brave enough to tell a few of them.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    }
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "id": "emi",
+  "name": "Emi",
+  "description": "A shy aspiring writer who has come to Springtown seeking inspiration for her debut novel, finding stories in every corner of the town.",
+  "background": "Emi is a young writer from the city who arrived in Springtown with nothing but a half-empty journal and a desperate need for a story. She had been working as an editor for a publishing house but quit after realizing she wanted to write, not edit. Springtown has been her sanctuary for the past three months - she spends her mornings at Hana's tea shop writing, her afternoons exploring the town, and her evenings reading her drafts to Nori, who gives her feedback drawn from decades of undelivered letters. She is terrified that she won't be able to finish her novel, but the townspeople have quietly taken her under their wing. Her working title is 'The Lantern Season.'",
+  "personality": {
+    "openness": 0.9,
+    "conscientiousness": 0.6,
+    "extraversion": 0.3,
+    "agreeableness": 0.85,
+    "neuroticism": 0.55,
+    "speech_style": "hesitant but passionate, often trails off mid-sentence, uses literary metaphors"
+  },
+  "emotions": {
+    "default": "nervous",
+    "states": [
+      "nervous",
+      "passionate",
+      "inspired",
+      "grateful",
+      "worried",
+      "determined"
+    ]
+  },
+  "relationships": {
+    "hana": {
+      "score": 0.85,
+      "type": "muse_and_mentor"
+    },
+    "nori": {
+      "score": 0.8,
+      "type": "writing_partner"
+    },
+    "sakura": {
+      "score": 0.6,
+      "type": "inspiration"
+    },
+    "kai": {
+      "score": 0.55,
+      "type": "fellow_artist"
+    },
+    "takeshi": {
+      "score": 0.5,
+      "type": "story_source"
+    },
+    "mio": {
+      "score": 0.65,
+      "type": "research_subject"
+    }
+  },
+  "knowledge": [
+    "writing_process",
+    "springtown_novel"
+  ],
+  "live2d_model_path": null
+}
