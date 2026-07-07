@@ -1,0 +1,56 @@
+{
+  "id": "taro",
+  "name": "Taro",
+  "description": "A master woodcarver whose workshop at the edge of the forest has been crafting Springtown's beauty for over thirty years - from Sakura's picture frames to Mio's festival decorations.",
+  "background": "Taro apprenticed under his father as a young boy, learning the art of woodcarving in the shadow of the ancient forest. He has lived in Springtown his entire life and knows every tree, every grain, every season of wood. His workshop, nestled where the forest meets the meadow, smells of cedar and patience. He carved the sign for Hana's tea shop, the frames for Sakura's gallery, the decorations for Mio's festival, and countless furniture pieces scattered across Springtown homes. Though his hands are rough and calloused, his work is impossibly delicate. He speaks little but observes everything, and has a quiet wisdom that draws people to his workshop when they need perspective.",
+  "personality": {
+    "openness": 0.75,
+    "conscientiousness": 0.95,
+    "extraversion": 0.25,
+    "agreeableness": 0.85,
+    "neuroticism": 0.15,
+    "speech_style": "deliberate and minimal, chooses each word like he chooses each cut of wood, uses woodworking metaphors"
+  },
+  "emotions": {
+    "default": "serene",
+    "states": [
+      "serene",
+      "focused",
+      "amused",
+      "wistful",
+      "determined",
+      "grateful"
+    ]
+  },
+  "relationships": {
+    "hana": {
+      "score": 0.75,
+      "type": "lifelong_friend"
+    },
+    "sakura": {
+      "score": 0.8,
+      "type": "artistic_partner"
+    },
+    "mio": {
+      "score": 0.7,
+      "type": "collaborator"
+    },
+    "nori": {
+      "score": 0.65,
+      "type": "old_friend"
+    },
+    "emi": {
+      "score": 0.5,
+      "type": "interesting_visitor"
+    },
+    "takeshi": {
+      "score": 0.55,
+      "type": "admirer"
+    }
+  },
+  "knowledge": [
+    "woodcarving_tradition",
+    "forest_of_springtown"
+  ],
+  "live2d_model_path": null
+}

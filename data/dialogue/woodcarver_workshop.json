@@ -1,0 +1,215 @@
+{
+  "id": "woodcarver_workshop",
+  "title": "The Woodcarver's Hands",
+  "description": "Visit Taro's workshop and discover the stories hidden in the grain of Springtown's wood.",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "speaker_id": "taro",
+      "text": "*runs a hand over a half-carved piece of wood, not looking up* The cedar remembers. Every ring is a year of rain, a season of sun. *looks up slowly* I've been reading these rings for thirty-three years. This one here... *points with a calloused finger* ...this thin ring was the year of the great drought. The tree almost died. But it kept growing. *meets your eyes* Like Springtown. Like all of us.",
+      "choices": [
+        {
+          "text": "Thirty-three years? You must know every inch of this wood.",
+          "next_node_id": "dedication",
+          "relationship_changes": {
+            "taro": 0.1
+          }
+        },
+        {
+          "text": "That's beautiful. What are you carving?",
+          "next_node_id": "current_project",
+          "relationship_changes": {
+            "taro": 0.15
+          }
+        },
+        {
+          "text": "Your workshop feels so peaceful. How did you find this place?",
+          "next_node_id": "workshop_story",
+          "relationship_changes": {
+            "taro": 0.12
+          }
+        }
+      ]
+    },
+    "dedication": {
+      "speaker_id": "taro",
+      "text": "*picks up a chisel* Thirty-three years, three months, and... *counts chisel marks on his workbench* ...twelve days. My father taught me. His father taught him. *holds up a weathered tool* This chisel belonged to my grandfather. See how the handle is worn to the shape of his hand? *closes his fingers around it* Fits me the same way. Some things pass through blood and wood.",
+      "choices": [
+        {
+          "text": "Your family has been carving for generations.",
+          "next_node_id": "family_legacy",
+          "relationship_changes": {
+            "taro": 0.15
+          }
+        },
+        {
+          "text": "What was the first thing you ever carved?",
+          "next_node_id": "first_carving",
+          "relationship_changes": {
+            "taro": 0.2
+          }
+        }
+      ]
+    },
+    "current_project": {
+      "speaker_id": "taro",
+      "text": "*picks up the carving carefully* A cherry blossom. For Sakura's new gallery. She's opening a new room, and she wanted something that captures the moment a blossom falls. *traces the delicate curve* I've been working on this for three weeks. Trying to make wood feel as light as a petal. *chuckles* Wood wants to be heavy. You have to convince it to be gentle.",
+      "choices": [
+        {
+          "text": "Can I watch you work?",
+          "next_node_id": "watch_work",
+          "relationship_changes": {
+            "taro": 0.15
+          }
+        },
+        {
+          "text": "You and Sakura have a special partnership.",
+          "next_node_id": "sakura_partnership",
+          "relationship_changes": {
+            "taro": 0.2
+          }
+        }
+      ]
+    },
+    "workshop_story": {
+      "speaker_id": "taro",
+      "text": "*looks around the workshop* This was my grandfather's workshop. He built it when he first came to Springtown. *points to a beam* See that joist? He carved his name into it the day he finished. *you look and see 'Taro - 1948' in elegant script* My father added his name beneath it when he took over. *gestures* I added mine thirty-three years ago. *quietly* One day, someone else will add theirs. The workshop outlives the woodcarver.",
+      "choices": [
+        {
+          "text": "That's a beautiful tradition.",
+          "next_node_id": "tradition",
+          "relationship_changes": {
+            "taro": 0.15
+          }
+        },
+        {
+          "text": "Do you have an apprentice?",
+          "next_node_id": "apprentice",
+          "relationship_changes": {
+            "taro": 0.2
+          }
+        }
+      ]
+    },
+    "family_legacy": {
+      "speaker_id": "taro",
+      "text": "*nods slowly* My father used to say woodcarving isn't a skill - it's a conversation. You talk to the wood, and the wood talks back. *holds up a piece of oak* This oak wants to become a table. Strong, simple, useful. But this cedar... *touches a softer piece* ...cedar wants to become something beautiful. A frame. A sculpture. A memory. *looks at you* The wood tells me what it wants to be. I just help it get there.",
+      "choices": [
+        {
+          "text": "You listen to the wood. That's a rare gift.",
+          "next_node_id": "ending_listen",
+          "relationship_changes": {
+            "taro": 0.25
+          }
+        }
+      ]
+    },
+    "first_carving": {
+      "speaker_id": "taro",
+      "text": "*laughs quietly* A boat. I was six years old. My father gave me a scrap of pine and a blunt knife. I carved something that barely floated, but he kept it on his shelf for forty years. *eyes distant* When he passed, I found it in his workshop, still on that shelf. *picks up a small, worn wooden boat from a shelf* This is it. See how clumsy the lines are? A child's hands. *holds it gently* But my father saw something in it. He always saw what things could become, not what they were.",
+      "choices": [
+        {
+          "text": "He sounds like he was a wonderful father.",
+          "next_node_id": "ending_father",
+          "relationship_changes": {
+            "taro": 0.3
+          }
+        }
+      ]
+    },
+    "watch_work": {
+      "speaker_id": "taro",
+      "text": "*nods and pulls up a stool* Watch closely. *picks up a small chisel and makes a single, precise cut. A curl of wood falls away* See how the grain guides the blade? If you fight the wood, you lose. *makes another cut* The trick is to find the line that was already there - hidden in the grain - and follow it. *hands you a scrap piece and a blunt tool* Here. Try.",
+      "choices": [
+        {
+          "text": "*makes a clumsy cut* I think I'll leave this to you.",
+          "next_node_id": "ending_clumsy",
+          "relationship_changes": {
+            "taro": 0.1
+          }
+        }
+      ]
+    },
+    "sakura_partnership": {
+      "speaker_id": "taro",
+      "text": "*smiles* She paints the blossoms. I carve the branches. We've been doing this dance for fifteen years. *pulls out a small frame* This was the first frame I made for her. See the cherry blossoms carved into the corners? She cried when I gave it to her. *puts it back carefully* She doesn't know, but every frame I make for her has a hidden blossom somewhere. A reminder that art and craft are the same thing - just different ways of paying attention.",
+      "choices": [
+        {
+          "text": "That's one of the most thoughtful things I've ever heard.",
+          "next_node_id": "ending_frame",
+          "relationship_changes": {
+            "taro": 0.3
+          }
+        }
+      ]
+    },
+    "tradition": {
+      "speaker_id": "taro",
+      "text": "*nods* Tradition is just a promise we keep making. *runs a hand over the carved beam* My grandfather promised to build well. My father promised to build truly. I promise to build... *pauses* ...kindly. Every piece I make, I think about who will use it. Hana's tea counter - I made it low enough for her to see over when she was a girl helping her grandmother. *smiles* She doesn't know that. But the wood remembers.",
+      "choices": [
+        {
+          "text": "You put pieces of your heart into everything you make.",
+          "next_node_id": "ending_heartwood",
+          "relationship_changes": {
+            "taro": 0.25
+          }
+        }
+      ]
+    },
+    "apprentice": {
+      "speaker_id": "taro",
+      "text": "*shakes his head slowly* Not yet. I've had a few young folks come by, but... *picks up a chisel* ...woodcarving isn't something you learn in a season. It takes years to understand the grain. Decades to understand yourself in the grain. *looks at you* Maybe that's why I haven't found the right person yet. Or maybe the right person hasn't found me. *small smile* The wood teaches patience. Even in this.",
+      "choices": [
+        {
+          "text": "Maybe they'll find you when the time is right.",
+          "next_node_id": "ending_patience",
+          "relationship_changes": {
+            "taro": 0.2
+          }
+        }
+      ]
+    },
+    "ending_listen": {
+      "speaker_id": "taro",
+      "text": "*nods, a rare full smile crossing his face* Listening... that's all it is. The wood speaks. The trees speak. This town speaks. *taps his ear* Most people hear only noise. But if you quiet yourself enough... *closes his eyes* ...you can hear the grain of the world. *opens his eyes and hands you a small carved leaf* Here. A gingko leaf. From the tree outside my workshop. It fell the day you arrived. I knew you were coming.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    },
+    "ending_father": {
+      "speaker_id": "taro",
+      "text": "*places the small boat back on the shelf* He taught me that every piece of wood has a story, and every story deserves to be told with care. *picks up a new piece of wood* You know, I think I'll carve a boat today. For old times. *looks at you* Would you like to take it when it's done? To remember that even clumsy beginnings can become something cherished.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    },
+    "ending_clumsy": {
+      "speaker_id": "taro",
+      "text": "*laughs quietly* That's exactly how my first cut looked. *takes the scrap and makes a few quick cuts, transforming it into a small bird* Here. Your first carving. A sparrow. *hands it to you* See? Even a clumsy hand can make something, with guidance. That's what this town does. It guides. *nods* You'll find your way.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    },
+    "ending_frame": {
+      "speaker_id": "taro",
+      "text": "*looks at his hands* These hands have made hundreds of frames, dozens of tables, countless small things. But the hidden blossoms - those are my favorite. *picks up a new piece of wood* I think I'll carve one for you. A cherry blossom that hasn't fallen yet. *begins to carve* Because some beauty is meant to stay.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    },
+    "ending_heartwood": {
+      "speaker_id": "taro",
+      "text": "*touches his chest* Heartwood. That's the center of the tree. The oldest part. The strongest. *looks at you* Every piece I make includes a bit of my heartwood. Not because I'm generous, but because I can't help it. *hands you a small carved heart* This is for you. To remind you that the best things we make come from the deepest parts of ourselves.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    },
+    "ending_patience": {
+      "speaker_id": "taro",
+      "text": "*nods slowly* The right person, at the right time. That's how all good things happen. *looks around his workshop* This place has been waiting for an apprentice for ten years. It can wait a little longer. *picks up a chisel* In the meantime, there's always more wood to carve, more grain to follow, more stories to uncover. *gestures* The workshop is always open if you want to visit again. The wood and I will be here.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    }
+  }
+}
