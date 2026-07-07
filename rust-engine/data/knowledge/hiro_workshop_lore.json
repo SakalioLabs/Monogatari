@@ -1,0 +1,13 @@
+{
+  "id": "hiro_workshop_lore",
+  "title": "The Inventor's Workshop",
+  "content": "Beneath the Springtown observatory lies Hiro's workshop, a sprawling underground space filled with mechanical wonders. Gears of every size hang from the ceiling, blueprints cover every wall, and the gentle ticking of clocks provides a constant rhythm. Hiro's most ambitious project is the Starlight Condenser, a device designed to capture and store the energy of starlight. The workshop is connected to the observatory above through a network of pneumatic tubes and optical cables that Hiro built himself.",
+  "category": "location",
+  "tags": [
+    "workshop",
+    "hiro",
+    "invention",
+    "observatory",
+    "springtown"
+  ]
+}

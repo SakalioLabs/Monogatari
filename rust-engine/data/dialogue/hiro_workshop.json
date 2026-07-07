@@ -1,0 +1,159 @@
+{
+  "id": "hiro_workshop",
+  "title": "The Inventor's Workshop",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "speaker_id": "hiro",
+      "text": "Oh hey! Watch your step there - I just finished laying out the gear tracks. *pushes goggles up* You're just in time! I'm about to test my latest invention!",
+      "choices": [
+        {
+          "text": "What are you building?",
+          "next_node_id": "invention",
+          "relationship_changes": {
+            "hiro": 0.15
+          }
+        },
+        {
+          "text": "This workshop is incredible!",
+          "next_node_id": "workshop",
+          "relationship_changes": {
+            "hiro": 0.1
+          }
+        },
+        {
+          "text": "Sorry, I think I'm lost.",
+          "next_node_id": "lost"
+        }
+      ]
+    },
+    "invention": {
+      "speaker_id": "hiro",
+      "text": "*eyes light up* It's a starlight condenser! See, the observatory captures light from distant stars, and my device - oh wait, I need to explain the theory first. Basically, photons carry energy, and if we can... *trails off, scribbling on a blueprint*",
+      "choices": [
+        {
+          "text": "That sounds amazing! Can I help?",
+          "next_node_id": "help",
+          "relationship_changes": {
+            "hiro": 0.25
+          }
+        },
+        {
+          "text": "Slow down! I didn't follow any of that.",
+          "next_node_id": "simplify"
+        }
+      ]
+    },
+    "workshop": {
+      "speaker_id": "hiro",
+      "text": "Thanks! I've been building it up since I was twelve. *gestures proudly* See that automaton in the corner? That was my first creation. She doesn't walk anymore, but I keep her around for inspiration.",
+      "choices": [
+        {
+          "text": "You built that as a kid? That's incredible!",
+          "next_node_id": "proud",
+          "relationship_changes": {
+            "hiro": 0.2
+          }
+        },
+        {
+          "text": "What's your favorite invention?",
+          "next_node_id": "favorite"
+        }
+      ]
+    },
+    "lost": {
+      "speaker_id": "hiro",
+      "text": "Lost? No way - nobody finds this workshop by accident! The path only reveals itself to people with curiosity. *grins* Since you're here, want to see what I'm working on?",
+      "choices": [
+        {
+          "text": "Alright, show me what you've got!",
+          "next_node_id": "invention",
+          "relationship_changes": {
+            "hiro": 0.1
+          }
+        }
+      ]
+    },
+    "help": {
+      "speaker_id": "hiro",
+      "text": "Really?! *jumps excitedly* Okay okay, I need someone to hold this lens steady while I calibrate the crystal array. It's delicate work but I'll guide you through it. Ready?",
+      "choices": [
+        {
+          "text": "Let's do it!",
+          "next_node_id": "end_teamwork",
+          "relationship_changes": {
+            "hiro": 0.3
+          }
+        },
+        {
+          "text": "Maybe I should watch first.",
+          "next_node_id": "end_watch"
+        }
+      ]
+    },
+    "simplify": {
+      "speaker_id": "hiro",
+      "text": "Haha, sorry! I get carried away. *takes a breath* Basically, I want to bottle starlight so we can use it for energy. Clean, infinite, beautiful energy. The observatory gives me the raw material.",
+      "choices": [
+        {
+          "text": "Now that I understand. That could change everything!",
+          "next_node_id": "end_inspired",
+          "relationship_changes": {
+            "hiro": 0.15
+          }
+        }
+      ]
+    },
+    "proud": {
+      "speaker_id": "hiro",
+      "text": "*blushes slightly* Yeah... she took me three months. Lots of trial and error. But every failure taught me something new. That's what invention is about - learning from what doesn't work.",
+      "choices": [
+        {
+          "text": "That's a great philosophy. Keep inventing!",
+          "next_node_id": "end_encouraged",
+          "relationship_changes": {
+            "hiro": 0.15
+          }
+        }
+      ]
+    },
+    "favorite": {
+      "speaker_id": "hiro",
+      "text": "Hmm... probably my starlight compass. It doesn't point north - it points toward whatever you desire most. *chuckles* It's not very practical, but it's my most personal creation.",
+      "choices": [
+        {
+          "text": "That's beautiful. What does it point to for you?",
+          "next_node_id": "end_personal",
+          "relationship_changes": {
+            "hiro": 0.2
+          }
+        }
+      ]
+    },
+    "end_teamwork": {
+      "speaker_id": "hiro",
+      "text": "Yes! Okay, gently now... *adjusts the lens with care* Perfect! You're a natural at this. Come back anytime - I always need a good assistant!",
+      "choices": []
+    },
+    "end_watch": {
+      "speaker_id": "hiro",
+      "text": "No worries! Watch closely... *begins the calibration with intense focus* See? It's all about patience and precision.",
+      "choices": []
+    },
+    "end_inspired": {
+      "speaker_id": "hiro",
+      "text": "Right?! That's the dream! *looks up toward the observatory* One day, every home in Springtown will run on starlight. I just need to keep trying.",
+      "choices": []
+    },
+    "end_encouraged": {
+      "speaker_id": "hiro",
+      "text": "Thanks! That means a lot. *picks up a wrench* Now, back to work. This starlight condenser isn't going to build itself! Well... actually, maybe it could if I add an AI module...",
+      "choices": []
+    },
+    "end_personal": {
+      "speaker_id": "hiro",
+      "text": "*looks at the compass, then smiles softly* Right now? It's pointing at this workshop. *laughs* I guess I'm exactly where I need to be.",
+      "choices": []
+    }
+  }
+}
