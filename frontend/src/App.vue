@@ -32,20 +32,34 @@
       </router-view>
         </ErrorBoundary>
     </main>
+    <KeyboardShortcutsHelp :visible="showShortcuts" @close="showShortcuts = false" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import ToastNotification from './components/ToastNotification.vue'
 import ErrorBoundary from './components/ErrorBoundary.vue'
+import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp.vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from './lib/i18n'
 
 const { t } = useI18n()
 const route = useRoute()
 const sidebarCollapsed = ref(false)
+const showShortcuts = ref(false)
 const showSidebar = computed(() => route.name !== 'game' && route.name !== 'title')
+
+// Global keyboard handler
+function handleGlobalKeydown(e: KeyboardEvent) {
+  if (e.key === '?' && !e.ctrlKey && !e.metaKey && !showShortcuts.value) {
+    e.preventDefault()
+    showShortcuts.value = true
+  }
+  if (e.key === 'Escape' && showShortcuts.value) {
+    showShortcuts.value = false
+  }
+}
 
 const navItems = computed(() => [
   { path: '/', label: t('nav.dashboard', 'Dashboard'), icon: '&#9632;' },
