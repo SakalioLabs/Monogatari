@@ -192,11 +192,12 @@ cargo tauri build
 
 ### Example Characters and Content
 
-- **Sakura** (cheerful): Nature-loving artist. Park walk dialogue with branching paths.
+- **Sakura** (cheerful):: Nature-loving artist. Park walk dialogue with branching paths.
 - **Luna** (thoughtful): Poetic stargazer. Stargazing dialogue with constellation lore.
 - **Kenji** (honorable): Martial artist poet. Dojo visit dialogue with training themes.
 - **Yuki** (mysterious): Ancient library guardian who speaks in riddles. Library encounter with branching paths.
 - **Hiro** (enthusiastic): Young inventor beneath the observatory. Workshop dialogue with invention themes.
+- **Aoi** (gentle): Village healer and herbal medicine expert. Clinic visit dialogue with 3 branching paths, herb lore knowledge.
 - **Springtown**: Shared world with cherry blossom park, observatory, dojo, the Great Library, and the Inventor's Workshop.
 
 ### Character
@@ -268,7 +269,7 @@ cargo tauri build
 - [x] Frontend streaming chat integration via Tauri events
 - [x] Streaming evaluation and event notifications (`chat-evaluation`, `chat-events`)
 - [x] Chat session lock optimization for slower LLM requests
-- [x] Commercial workbench UI refresh with 14-item sidebar navigation (dashboard/chat/story/workflow/analytics/marketplace/plugins)
+- [x] Commercial workbench UI refresh with 14-item sidebar navigation navigation (dashboard/chat/story/workflow/analytics/marketplace/plugins)
 - [x] Browser preview fallback for non-Tauri UI review
 - [x] Frontend supply-chain audit remediation (Vite 8 + Live2D transitive override)
 - [x] Rust lockfile policy for reproducible Tauri builds
