@@ -127,6 +127,12 @@ import { useI18n } from '../lib/i18n'
 
 const { t } = useI18n()
 
+function trackView(name: string, id: string, type: string) {
+  if (typeof (window as any).__monogatari_track === 'function') {
+    (window as any).__monogatari_track({ icon: '&#9786;', name, type, path: '/characters' })
+  }
+}
+
 interface Character {
   id: string
   name: string

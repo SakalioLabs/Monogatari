@@ -114,6 +114,20 @@
         <span><b>Status</b><span :class="status?.initialized ? 'ok-text' : 'bad-text'">{{ status?.initialized ? 'Online' : 'Idle' }}</span></span>
       </div>
     </section>
+    <section class="recent-activity" v-if="recentItems.length > 0" style="margin-top:16px">
+      <div class="panel-head">
+        <span class="eyebrow">Recent</span>
+        <strong>Activity</strong>
+      </div>
+      <div class="recent-grid">
+        <div v-for="(item, i) in recentItems.slice(0, 4)" :key="i" class="recent-card" @click="$router.push(item.path)">
+          <span class="recent-icon">{{ item.icon }}</span>
+          <span class="recent-name">{{ item.name }}</span>
+          <span class="recent-meta">{{ item.type }}</span>
+        </div>
+      </div>
+    </section>
+
 
     <section class="getting-started" v-if="!status?.initialized">
       <div class="panel-head">
@@ -155,6 +169,7 @@ interface EngineStatus {
 
 const status = ref<EngineStatus | null>(null)
 const sceneCount = ref(0)
+const recentItems = ref<any[]>([])
 const loading = ref(true)
 
 const statusLabel = computed(() => {
@@ -232,7 +247,30 @@ async function refreshStatus() {
   
 }
 
-onMounted(refreshStatus)
+
+function loadRecent() {
+  try {
+    const stored = localStorage.getItem('monogatari-recent')
+    if (stored) recentItems.value = JSON.parse(stored)
+  } catch {}
+}
+
+// Track recent items globally
+if (typeof window !== 'undefined') {
+  (window as any).__monogatari_track = (item: { icon: string; name: string; type: string; path: string }) => {
+    let items: any[] = []
+    try {
+      const stored = localStorage.getItem('monogatari-recent')
+      if (stored) items = JSON.parse(stored)
+    } catch {}
+    items = items.filter(i => i.name !== item.name)
+    items.unshift(item)
+    if (items.length > 10) items = items.slice(0, 10)
+    localStorage.setItem('monogatari-recent', JSON.stringify(items))
+    recentItems.value = items
+  }
+}
+onMounted(() => { refreshStatus(); loadRecent() })
 </script>
 
 <style scoped>
@@ -291,5 +329,12 @@ onMounted(refreshStatus)
 .btn-secondary { background: var(--surface-2); }
 .btn-sm { min-height: 30px; padding: 4px 12px; font-size: 12px; }
 @media (max-width: 1060px) { .action-row { grid-template-columns: repeat(3, minmax(0, 1fr)); } .status-strip, .ops-grid { grid-template-columns: 1fr; } .desk-grid, .status-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.recent-meta { color: var(--text-tertiary); font-size: 11px; text-transform: uppercase; }
+.recent-name { color: var(--text-primary); font-size: 13px; font-weight: 700; }
+.recent-icon { font-size: 18px; }
+.recent-card:hover { border-color: var(--brand); background: var(--surface-2); }
+.recent-card { display: grid; gap: 4px; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); cursor: pointer; transition: all 0.15s; }
+.recent-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.recent-activity { margin-bottom: 16px; }
 @media (max-width: 640px) { .dashboard { padding: 22px; } .dash-header { display: grid; } .action-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } .desk-grid, .status-metrics { grid-template-columns: 1fr; } }
 </style>
