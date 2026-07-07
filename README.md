@@ -196,7 +196,8 @@ cargo tauri build
 - **Luna** (thoughtful): Poetic stargazer. Stargazing dialogue with constellation lore.
 - **Kenji** (honorable): Martial artist poet. Dojo visit dialogue with training themes.
 - **Yuki** (mysterious): Ancient library guardian who speaks in riddles. Library encounter with branching paths.
-- **Springtown**: Shared world with cherry blossom park, observatory, dojo, and the Great Library.
+- **Hiro** (enthusiastic): Young inventor beneath the observatory. Workshop dialogue with invention themes.
+- **Springtown**: Shared world with cherry blossom park, observatory, dojo, the Great Library, and the Inventor's Workshop.
 
 ### Character
 

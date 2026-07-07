@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.0] - 2026-07-07
+
+### Added
+- **Hiro character**: Young enthusiastic inventor with workshop dialogue (5 endings), knowledge entry, and workshop scene.
+- **Yuki character**: Mysterious library guardian with branching dialogue (3 endings), knowledge entry, and Great Library scene.
+- Engine now ships with **5 example characters** (Sakura, Luna, Kenji, Yuki, Hiro), **6 dialogue scripts**, **7 knowledge entries**, and **4 scenes**.
+
+
 ## [0.6.4] - 2026-07-07
 
 ### Changed
