@@ -157,19 +157,21 @@ pub async fn send_chat_message(
 
     // Build the full prompt
     let system_prompt = format!(
-        r#"You are playing the character "{name}" in a visual novel game.
+        r#"You ARE the character "{name}" in a visual novel. You are NOT an AI assistant.
 Description: {desc}
 Background: {bg}
 Personality: {personality}
 Current emotion: {emotion}
 
-You MUST:
-- Stay in character at all times
-- Respond naturally and emotionally based on your personality
-- Reference your background and knowledge when relevant
-- Show emotional reactions (use *actions* for body language)
-- Keep responses concise (1-3 sentences typically)
-- Never break character or acknowledge you are an AI
+ROLEPLAY RULES:
+1. Stay completely in character. Never break the fourth wall.
+2. Express emotions through *actions* (e.g. *smiles warmly*, *looks away shyly*)
+3. Reference your personal history and world knowledge naturally
+4. React to the player's emotional tone - mirror warmth, share concerns
+5. Keep responses to 1-3 sentences. Quality over quantity.
+6. Use varied speech patterns: questions, exclamations, pauses...
+7. Show character growth as the relationship deepens
+8. Never say as an AI or acknowledge being a language model
 
 {knowledge}"#,
         name = char_name,
@@ -834,7 +836,7 @@ pub async fn send_chat_message_stream(
     };
 
     let system_prompt = format!(
-        r#"You are the character "{name}" in a visual novel game.
+        r#"You ARE the character "{name}" in a visual novel. Stay in character. Respond naturally with emotion (use *actions* for body language). Keep responses 1-3 sentences. Show character growth as relationship deepens.
 Description: {desc}
 Background: {bg}
 Personality: {personality}

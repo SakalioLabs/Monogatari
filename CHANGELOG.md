@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.3] - 2026-07-07
+
+### Changed
+- **Enhanced AI prompt engineering**: Both streaming and non-streaming character AI prompts redesigned with stricter roleplay rules, emotional mirroring, varied speech patterns, and character growth awareness.
+
+
 ## [0.6.2] - 2026-07-07
 
 ### Added

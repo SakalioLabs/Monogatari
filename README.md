@@ -1,4 +1,4 @@
-# Monogatari v0.6.1
+# Monogatari v0.6.3
 
 An LLM-powered v0.5 visual novel / galgame engine. Build interactive story experiences where AI-driven characters respond dynamically to player conversations, with automatic conversation scoring that triggers special plot events.
 
@@ -305,6 +305,7 @@ cargo tauri build
 - [x] Multi-language locale files (zh-CN, ja-JP, ko-KR)
 - [x] Enhanced group chat with streaming and emotion display
 - [x] Audio manager view with BGM/SFX mixer
+- [x] Enhanced prompt engineering for character AI roleplay quality
 - [x] GLTF/GLB 3D model loading with Three.js GLTFLoader, OrbitControls, animation playback
 - [x] i18n composable with nested key support and locale persistence
 - [x] i18n composable upgraded with nested key support and localStorage persistence
