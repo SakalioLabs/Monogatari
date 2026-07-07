@@ -240,6 +240,18 @@ const activeSceneStorageKey = 'monogatari.activeScene'
 
 const sceneBackdropStyle = computed(() => {
   if (!activeScene.value) return {}
+  
+  // Try to load scene background image if available
+  const bgPath = activeScene.value.background_path
+  if (bgPath) {
+    // Remove leading assets/ and add public prefix
+    const cleanPath = bgPath.replace(/^assets\//, '').replace(/^\//, '')
+    return {
+      background: `url('/` + cleanPath + `') center / cover no-repeat`,
+    }
+  }
+  
+  // Fallback: generated gradient based on scene id
   const seed = Array.from(activeScene.value.id).reduce((sum, char) => sum + char.charCodeAt(0), 0)
   const hueA = (seed * 17) % 360
   const hueB = (hueA + 44) % 360
