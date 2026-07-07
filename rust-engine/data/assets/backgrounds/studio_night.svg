@@ -1,32 +1,27 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-label="Studio night background">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">
   <defs>
-    <linearGradient id="room" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#172033"/>
-      <stop offset="0.58" stop-color="#101522"/>
-      <stop offset="1" stop-color="#090b10"/>
+    <linearGradient id="nightsky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0a0a2e"/>
+      <stop offset="100%" stop-color="#1a1a3e"/>
     </linearGradient>
-    <radialGradient id="lamp" cx="68%" cy="18%" r="34%">
-      <stop offset="0" stop-color="#f59e0b" stop-opacity="0.55"/>
-      <stop offset="1" stop-color="#f59e0b" stop-opacity="0"/>
+    <radialGradient id="moon" cx="0.2" cy="0.15" r="0.08">
+      <stop offset="0%" stop-color="#F5F5DC"/>
+      <stop offset="80%" stop-color="#F5F5DC" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="transparent"/>
     </radialGradient>
   </defs>
-  <rect width="1600" height="900" fill="url(#room)"/>
-  <rect width="1600" height="900" fill="url(#lamp)"/>
-  <rect x="110" y="120" width="430" height="320" rx="10" fill="#0f172a" stroke="#334155" stroke-width="8"/>
-  <rect x="145" y="155" width="360" height="250" fill="#111827"/>
-  <path d="M145 385 L505 180 L505 405 L145 405 Z" fill="#1e293b" opacity="0.75"/>
-  <rect x="730" y="210" width="640" height="360" rx="14" fill="#111827" stroke="#374151" stroke-width="8"/>
-  <rect x="770" y="250" width="560" height="280" fill="#020617"/>
-  <path d="M790 470 C930 360 1060 390 1220 305" stroke="#2dd4bf" stroke-width="8" fill="none" opacity="0.7"/>
-  <path d="M760 650 L1380 650 L1510 900 L610 900 Z" fill="#1f2937"/>
-  <rect x="845" y="590" width="420" height="56" rx="8" fill="#0f172a"/>
-  <rect x="930" y="650" width="250" height="250" fill="#111827"/>
-  <g fill="#2dd4bf" opacity="0.66">
-    <circle cx="180" cy="520" r="5"/>
-    <circle cx="224" cy="560" r="4"/>
-    <circle cx="312" cy="530" r="6"/>
-    <circle cx="430" cy="575" r="5"/>
-    <circle cx="1490" cy="210" r="5"/>
-    <circle cx="1450" cy="275" r="4"/>
-  </g>
+  <rect width="1920" height="1080" fill="url(#nightsky)"/>
+  <circle cx="384" cy="162" r="150" fill="url(#moon)"/>
+  <circle cx="200" cy="100" r="2" fill="white"/><circle cx="500" cy="200" r="1.5" fill="white"/>
+  <circle cx="800" cy="80" r="2" fill="white"/><circle cx="1100" cy="150" r="1.5" fill="white"/>
+  <circle cx="1400" cy="100" r="2" fill="white"/><circle cx="1600" cy="250" r="1.5" fill="white"/>
+  <circle cx="300" cy="300" r="1" fill="white"/><circle cx="700" cy="250" r="2" fill="white"/>
+  <circle cx="1200" cy="200" r="1" fill="white"/><circle cx="900" cy="300" r="1.5" fill="white"/>
+  <rect x="0" y="700" width="1920" height="380" fill="#1a1a2e"/>
+  <rect x="100" y="400" width="600" height="300" fill="#2a2a4e" rx="10"/>
+  <rect x="150" y="430" width="120" height="100" fill="#3a3a5e" rx="5"/>
+  <rect x="320" y="430" width="120" height="100" fill="#3a3a5e" rx="5"/>
+  <rect x="490" y="430" width="120" height="100" fill="#3a3a5e" rx="5"/>
+  <rect x="150" y="560" width="500" height="8" fill="#FFD700" opacity="0.3"/>
+  <text x="960" y="900" text-anchor="middle" fill="#4a4a6e" font-size="48" font-family="serif">Studio Night</text>
 </svg>
