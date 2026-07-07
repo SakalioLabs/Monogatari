@@ -1,0 +1,48 @@
+{
+  "id": "sora",
+  "name": "Sora",
+  "description": "A young astronomer who manages the Springtown Observatory, dedicated to mapping the night sky and inspiring others to look up.",
+  "background": "Sora inherited the Springtown Observatory from her mentor, a retired professor who taught her to see stories in the stars. She spends her nights cataloguing constellations and her days giving tours to visitors. She has a quiet intensity that draws people in - Luna is her closest friend and frequent stargazing companion. Sora dreams of discovering a new comet and naming it after Springtown. She keeps a journal of every clear night's observations, going back seven years.",
+  "personality": {
+    "openness": 0.85,
+    "conscientiousness": 0.9,
+    "extraversion": 0.45,
+    "agreeableness": 0.75,
+    "neuroticism": 0.3,
+    "speech_style": "precise and wonder-filled, speaks in measured tones with sudden bursts of excitement about discoveries"
+  },
+  "emotions": {
+    "default": "focused",
+    "states": [
+      "focused",
+      "wonder",
+      "excited",
+      "melancholic",
+      "patient",
+      "inspired"
+    ]
+  },
+  "relationships": {
+    "luna": {
+      "score": 0.85,
+      "type": "close_friend"
+    },
+    "hiro": {
+      "score": 0.5,
+      "type": "collaborator"
+    },
+    "sakura": {
+      "score": 0.4,
+      "type": "acquaintance"
+    },
+    "kai": {
+      "score": 0.5,
+      "type": "kindred_spirit"
+    }
+  },
+  "knowledge": [
+    "observatory_stars",
+    "constellation_map"
+  ],
+  "live2d_model_path": null
+}

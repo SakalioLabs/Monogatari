@@ -1,0 +1,290 @@
+{
+  "id": "observatory_night",
+  "title": "Stars Over Springtown",
+  "description": "Visit Sora at the observatory on a clear night and discover the stories written in the sky.",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "speaker_id": "sora",
+      "text": "*adjusts telescope, doesn't look up* You're just in time. Tonight's sky is extraordinary - low humidity, no cloud cover, and Jupiter is at opposition. *finally glances over* Oh. A visitor. I'm Sora. I map the sky. Would you like to see what I see?",
+      "choices": [
+        {
+          "text": "I'd love to look through the telescope!",
+          "next_node_id": "telescope",
+          "relationship_changes": {
+            "sora": 0.15
+          }
+        },
+        {
+          "text": "You map the sky? That sounds incredible.",
+          "next_node_id": "mapping",
+          "relationship_changes": {
+            "sora": 0.1
+          }
+        },
+        {
+          "text": "I'm just wandering. This place caught my eye.",
+          "next_node_id": "wandering",
+          "relationship_changes": {
+            "sora": 0.05
+          }
+        }
+      ]
+    },
+    "telescope": {
+      "speaker_id": "sora",
+      "text": "*steps aside and gestures* Look through here. *you see a brilliant disc with faint bands and four tiny dots* That's Jupiter and its four Galilean moons - Io, Europa, Ganymede, and Callisto. Galileo saw them four hundred years ago with a telescope much worse than this one. *quiet pride* I check on them every night they're visible. They're like old friends.",
+      "choices": [
+        {
+          "text": "They're beautiful. How long have you been doing this?",
+          "next_node_id": "years",
+          "relationship_changes": {
+            "sora": 0.1
+          }
+        },
+        {
+          "text": "Can you show me something else?",
+          "next_node_id": "more_objects",
+          "relationship_changes": {
+            "sora": 0.15
+          }
+        }
+      ]
+    },
+    "mapping": {
+      "speaker_id": "sora",
+      "text": "*nods seriously* Every clear night, I log what I see. Position, magnitude, any changes. *pulls out a worn journal* Seven years of observations. My mentor started this journal before I was born. *opens to a page covered in careful handwriting* She taught me that the sky is the oldest story ever told. Every constellation is a chapter. Every planet is a character.",
+      "choices": [
+        {
+          "text": "Your mentor sounds like she changed your life.",
+          "next_node_id": "mentor",
+          "relationship_changes": {
+            "sora": 0.2
+          }
+        },
+        {
+          "text": "What's your favorite constellation?",
+          "next_node_id": "favorite_constellation",
+          "relationship_changes": {
+            "sora": 0.1
+          }
+        }
+      ]
+    },
+    "wandering": {
+      "speaker_id": "sora",
+      "text": "*slight smile* Most people who wander here at night are looking for something. Quiet, maybe. Or perspective. *gestures at the dome above* The observatory has a way of giving both. *pause* I'm Sora. I've been watching this sky for seven years. If you want to stay, there's a meteor shower starting in about twenty minutes.",
+      "choices": [
+        {
+          "text": "A meteor shower? I'm definitely staying!",
+          "next_node_id": "meteor_shower",
+          "relationship_changes": {
+            "sora": 0.15
+          }
+        },
+        {
+          "text": "Seven years. What keeps you coming back?",
+          "next_node_id": "dedication",
+          "relationship_changes": {
+            "sora": 0.2
+          }
+        }
+      ]
+    },
+    "years": {
+      "speaker_id": "sora",
+      "text": "Seven years, two months, and... *counts on fingers* fourteen days. I started when my mentor got too ill to climb the dome stairs. She'd sit in her wheelchair below and I'd call down descriptions. *voice softens* The last thing she said to me was 'Don't stop looking up, Sora. The sky doesn't care about our small problems.' So I haven't stopped.",
+      "choices": [
+        {
+          "text": "She'd be proud of what you've built here.",
+          "next_node_id": "ending_proud",
+          "relationship_changes": {
+            "sora": 0.25
+          }
+        },
+        {
+          "text": "That's beautiful. Do you ever get lonely up here?",
+          "next_node_id": "lonely",
+          "relationship_changes": {
+            "sora": 0.2
+          }
+        }
+      ]
+    },
+    "more_objects": {
+      "speaker_id": "sora",
+      "text": "*adjusts the telescope with practiced hands* Here - the Orion Nebula. *you see a swirl of purple and blue light* That's a stellar nursery. New stars being born right now, two thousand light-years away. The light you're seeing started its journey when the Roman Empire still stood. *wonder in her voice* Every time I look at it, I think - somewhere in that cloud, a new sun is waking up for the first time.",
+      "choices": [
+        {
+          "text": "You make the universe feel alive.",
+          "next_node_id": "ending_alive",
+          "relationship_changes": {
+            "sora": 0.2
+          }
+        },
+        {
+          "text": "Is there anything you haven't found yet?",
+          "next_node_id": "comet_quest",
+          "relationship_changes": {
+            "sora": 0.15
+          }
+        }
+      ]
+    },
+    "mentor": {
+      "speaker_id": "sora",
+      "text": "*traces the handwriting with her finger* Professor Tanaka. She came to Springtown fifty years ago because the skies here are the clearest in the region. No light pollution, no tall buildings. Just... sky. *closes the journal gently* She gave me this telescope, this observatory, and the most important lesson - patience. The sky reveals its secrets to those who wait.",
+      "choices": [
+        {
+          "text": "You're continuing her legacy beautifully.",
+          "next_node_id": "ending_legacy",
+          "relationship_changes": {
+            "sora": 0.25
+          }
+        },
+        {
+          "text": "Have you made any discoveries of your own?",
+          "next_node_id": "comet_quest",
+          "relationship_changes": {
+            "sora": 0.15
+          }
+        }
+      ]
+    },
+    "favorite_constellation": {
+      "speaker_id": "sora",
+      "text": "*points upward* Cassiopeia. See that W shape? *traces it with her finger* In the old stories, she was a queen who boasted too much and was chained to her throne in the sky as punishment. But I see it differently. *smiles* I think she's not punished - she's free. Sitting in the stars forever, watching the world turn below her. That's not a curse. That's a gift.",
+      "choices": [
+        {
+          "text": "You see beauty in everything, don't you?",
+          "next_node_id": "ending_beauty",
+          "relationship_changes": {
+            "sora": 0.2
+          }
+        },
+        {
+          "text": "What would your constellation be, if you could make one?",
+          "next_node_id": "ending_constellation",
+          "relationship_changes": {
+            "sora": 0.25
+          }
+        }
+      ]
+    },
+    "meteor_shower": {
+      "speaker_id": "sora",
+      "text": "*smiles wider than before* The Perseids! They peak tonight. *sets out two chairs on the observation deck* The trick is to look slightly away from the radiant point - that way you catch the long trails. *lies back* My mentor and I used to count them. Our record was sixty-three in one hour. *quietly* I still count. For both of us.",
+      "choices": [
+        {
+          "text": "Let's count together tonight. For both of you.",
+          "next_node_id": "ending_together",
+          "relationship_changes": {
+            "sora": 0.3
+          }
+        }
+      ]
+    },
+    "dedication": {
+      "speaker_id": "sora",
+      "text": "*long pause* Because every night is different. The sky never repeats itself exactly. *looks up* Tonight, Jupiter is here. Tomorrow, it moves a fraction. In a month, a comet might appear that no human has ever seen. *turns to you* I stay because I might be the first person in history to see something. That chance - however small - is worth every cold night.",
+      "choices": [
+        {
+          "text": "That kind of dedication is rare. The sky is lucky to have you.",
+          "next_node_id": "ending_dedication",
+          "relationship_changes": {
+            "sora": 0.25
+          }
+        }
+      ]
+    },
+    "lonely": {
+      "speaker_id": "sora",
+      "text": "*considers* Sometimes. The dome gets cold, and the silence can be... heavy. *pause* But then I'll spot a variable star changing brightness, or a satellite crossing Jupiter's face, and I forget everything else. *smiles softly* Luna comes sometimes. She sees poetry in the stars the way I see science. Together, we see the whole picture.",
+      "choices": [
+        {
+          "text": "Maybe I could visit sometimes too.",
+          "next_node_id": "ending_visit",
+          "relationship_changes": {
+            "sora": 0.25
+          }
+        }
+      ]
+    },
+    "comet_quest": {
+      "speaker_id": "sora",
+      "text": "*leans forward, eyes bright* I'm searching for a comet. My own comet. Every night I survey the same patches of sky, looking for something that wasn't there before - a faint smudge, a new tail. *excited* If I find one, I get to name it. And I've already decided: 'Comet Springtown.' *laughs* The whole town would see their name in the sky.",
+      "choices": [
+        {
+          "text": "I hope you find it. And when you do, I'll be watching.",
+          "next_node_id": "ending_comet",
+          "relationship_changes": {
+            "sora": 0.3
+          }
+        }
+      ]
+    },
+    "ending_proud": {
+      "speaker_id": "sora",
+      "text": "*eyes glisten* ...Thank you. *turns back to the telescope* You know, she once told me that the best astronomers aren't the ones with the biggest telescopes. They're the ones who keep looking, night after night, even when the clouds come. *adjusts the focus* I've never missed a clear night in seven years. Not one. *quietly* For her.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    },
+    "ending_alive": {
+      "speaker_id": "sora",
+      "text": "*turns to you with genuine surprise* ...That's exactly what it is. Alive. *looks back at the nebula* People think space is empty and cold. But it's the opposite - it's where everything begins. Every atom in your body was forged in a star like that one. *smiles* We're not just looking at the sky. We're looking at our origin story.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    },
+    "ending_legacy": {
+      "speaker_id": "sora",
+      "text": "*clutches the journal* ...I try. Every entry I write, I think - would she approve? *smiles through the emotion* She would have liked you. She always said the best visitors are the ones who ask good questions. *opens to a fresh page* I'm going to write about tonight. 'Clear sky. Jupiter at opposition. Good conversation.'",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    },
+    "ending_beauty": {
+      "speaker_id": "sora",
+      "text": "*blushes slightly* I... suppose I do. *looks up* It's hard not to when you spend your life looking at the sky. Every sunset is a painting. Every star is a furnace the size of a world. *turns to you* And every person who walks into this observatory at night is looking for something beautiful. I just help them find it.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    },
+    "ending_constellation": {
+      "speaker_id": "sora",
+      "text": "*pauses, then draws shapes in the air* A telescope. And a journal. Connected by a line of small stars - one for each year I've been here. *laughs at herself* It would be the most boring constellation in history. But it would be mine. *quietly* And maybe someday, someone would look up and see it, and know that someone spent their life mapping the dark.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    },
+    "ending_together": {
+      "speaker_id": "sora",
+      "text": "*looks at you with soft eyes* ...Together. *lies back and points* There's one! And another! *starts counting, voice warm* Five... six... seven... *quietly* My mentor always said the best way to watch a meteor shower is with someone you trust. *another streak of light* She was right about everything. *pause* Thank you for staying.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    },
+    "ending_dedication": {
+      "speaker_id": "sora",
+      "text": "*looks at you for a long moment* ...That might be the nicest thing anyone has said to me up here. *turns back to the sky* You know, most people think astronomy is about looking down - through lenses, at data. But it's really about looking up. And not just with your eyes. With your whole self. *quietly* Stay as long as you like. The sky has room for everyone.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    },
+    "ending_visit": {
+      "speaker_id": "sora",
+      "text": "*surprised, then genuinely pleased* You... would do that? *adjusts her glasses* The observatory is open every clear night. I'm always here. *pause* It would be nice to have someone to share the silence with. *looks up* The sky is beautiful alone, but... I think it might be more beautiful with company. *small smile* I'll save you a chair.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    },
+    "ending_comet": {
+      "speaker_id": "sora",
+      "text": "*stares at you, then at the sky, then back* ...You mean that? *voice barely above a whisper* I've been searching for three years. Some nights I think it's hopeless. But then I remember - comets don't care about our timelines. They come when they're ready. *looks through the telescope again* And when Comet Springtown finally appears... I'll know exactly who to tell first. *points at you*",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    }
+  }
+}
