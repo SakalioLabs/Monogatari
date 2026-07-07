@@ -12,13 +12,15 @@
   "app": {
     "windows": [
       {
-        "title": "Monogatari",
+        "title": "Monogatari v0.6.3",
         "width": 1280,
         "height": 720,
         "resizable": true,
         "fullscreen": false,
         "decorations": true,
-        "transparent": false
+        "transparent": false,
+        "minWidth": 360,
+        "minHeight": 640
       }
     ],
     "security": {

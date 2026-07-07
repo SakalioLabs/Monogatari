@@ -124,3 +124,58 @@ textarea.input { resize: vertical; min-height: 60px; }
   opacity: 0; pointer-events: none; transition: opacity var(--transition-fast);
 }
 .tooltip:hover::after { opacity: 1; }
+
+/* === Mobile-responsive enhancements === */
+@media (max-width: 480px) {
+  :root {
+    --sidebar-width: 0px;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  .app-sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 56px;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    z-index: 50;
+    flex-direction: row;
+  }
+  .sidebar-header,
+  .sidebar-footer { display: none; }
+  .sidebar-nav {
+    flex: 1;
+    flex-direction: row;
+    justify-content: space-around;
+    padding: 4px 8px;
+    gap: 0;
+    overflow-x: auto;
+  }
+  .nav-item {
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+  .nav-icon { font-size: 18px; }
+  .nav-label { font-size: 9px; }
+  .nav-badge { display: none; }
+  .nav-item.active::before { display: none; }
+
+  .app-main {
+    padding-bottom: 64px;
+  }
+
+  .btn { padding: 6px 12px; font-size: 12px; }
+  .btn-lg { padding: 8px 16px; font-size: 13px; }
+  .btn-sm { padding: 4px 8px; font-size: 11px; }
+  .input { padding: 8px 10px; font-size: 14px; }
+  h1 { font-size: 22px; }
+  h2 { font-size: 18px; }
+  h3 { font-size: 15px; }
+}
