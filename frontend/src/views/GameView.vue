@@ -5,15 +5,16 @@
     </div>
 
     <header class="game-topbar">
-      <button class="control-btn" title="Dashboard" @click="$router.push('/')">Home</button>
+      <button class="control-btn" title="Dashboard" @click="$router.push('/')">{{ t('game.home', 'Home') }}</button>
       <div class="scene-meta">
-        <span class="eyebrow">Story Mode</span>
+        <span class="eyebrow">{{ t('game.story-mode', 'Story Mode') }}</span>
         <strong>{{ dialogueState?.speaker || currentCharacter?.name || activeScene?.name || 'Demo Scene' }}</strong>
       </div>
       <div class="top-actions">
-        <button class="control-btn" title="Save" @click="saveGame">Save</button>
-        <button class="control-btn" title="Load" @click="openLoadDialog">Load</button>
-        <button class="control-btn" title="Settings" @click="toggleSettings">Tune</button>
+        <button class="control-btn" title="Save" @click="saveGame">{{ t('game.save', 'Save') }}</button>
+        <button class="control-btn" title="Load" @click="openLoadDialog">{{ t('game.load', 'Load') }}</button>
+        <button class="control-btn" title="Backlog" @click="$router.push('/backlog')">{{ t('nav.backlog', 'Backlog') }}</button>
+        <button class="control-btn" title="Settings" @click="toggleSettings">{{ t('game.tune', 'Tune') }}</button>
       </div>
     </header>
 
@@ -27,8 +28,8 @@
         />
         <div v-else class="model-placeholder">
           <span class="empty-mark">VN</span>
-          <strong>No character on stage</strong>
-          <span>Scene runtime is waiting.</span>
+          <strong>{{ t('game.no-character', 'No character on stage') }}</strong>
+          <span>{{ t('game.waiting', 'Scene runtime is waiting.') }}</span>
         </div>
       </section>
 
@@ -58,17 +59,17 @@
           </div>
 
           <button v-else class="advance-hint" @click="advanceDialogue">
-            {{ isTyping ? 'Complete line' : 'Continue' }}
+            {{ isTyping ? t('game.complete-line', 'Complete line') : t('game.continue-text', 'Continue') }}
           </button>
         </div>
 
         <div v-else class="scene-empty">
           <span class="empty-mark">M</span>
           <h1>Monogatari Runtime</h1>
-          <p>{{ activeScene ? activeScene.background_path || 'Active scene is ready.' : 'AI-ready visual novel playback with dialogue state, Live2D staging, and saves.' }}</p>
+          <p>{{ activeScene ? activeScene.background_path || 'Active scene is ready.' : t('game.runtime-desc', 'AI-ready visual novel playback with dialogue state, Live2D staging, and saves.') }}</p>
           <button class="btn btn-primary btn-lg" :disabled="isLoading" @click="startDemoDialogue">
             <span v-if="isLoading" class="loading-spinner"></span>
-            <span>{{ isLoading ? 'Loading' : 'Start Demo' }}</span>
+            <span>{{ isLoading ? t('game.loading', 'Loading') : t('game.start-demo', 'Start Demo') }}</span>
           </button>
         </div>
       </section>
@@ -86,15 +87,15 @@
       <div v-if="showLoadDialog" class="modal-overlay" @click.self="showLoadDialog = false">
         <div class="modal">
           <div class="modal-head">
-            <span class="eyebrow">Saves</span>
-            <button class="close-btn" @click="showLoadDialog = false">Close</button>
+            <span class="eyebrow">{{ t('game.saves', 'Saves') }}</span>
+            <button class="close-btn" @click="showLoadDialog = false">{{ t('common.close', 'Close') }}</button>
           </div>
           <div class="save-list">
             <button v-for="save in saves" :key="save.save_id" class="save-item" @click="loadGame(save.save_id)">
               <span class="save-name">{{ save.save_name }}</span>
               <span class="save-time">{{ formatTime(save.timestamp) }}</span>
             </button>
-            <p v-if="saves.length === 0" class="no-saves">No saves yet.</p>
+            <p v-if="saves.length === 0" class="no-saves">{{ t('game.no-saves', 'No saves yet.') }}</p>
           </div>
         </div>
       </div>
@@ -104,33 +105,33 @@
       <aside v-if="showSettings" class="settings-panel">
         <div class="settings-header">
           <div>
-            <span class="eyebrow">Playback</span>
-            <h3>Settings</h3>
+            <span class="eyebrow">{{ t('game.playback', 'Playback') }}</span>
+            <h3>{{ t('game.settings', 'Settings') }}</h3>
           </div>
-          <button class="close-btn" @click="showSettings = false">Close</button>
+          <button class="close-btn" @click="showSettings = false">{{ t('common.close', 'Close') }}</button>
         </div>
         <div class="settings-content">
           <label class="setting-group">
-            <span>Text speed</span>
+            <span>{{ t('game.text-speed', 'Text speed') }}</span>
             <input type="range" v-model="settings.textSpeed" min="10" max="100" />
             <b>{{ settings.textSpeed }}ms</b>
           </label>
           <label class="setting-line">
-            <span>Auto play</span>
+            <span>{{ t('game.auto-play', 'Auto play') }}</span>
             <input type="checkbox" v-model="settings.autoPlay" />
           </label>
           <label class="setting-group">
-            <span>BGM volume</span>
+            <span>{{ t('game.bgm-volume', 'BGM volume') }}</span>
             <input type="range" v-model="settings.bgmVolume" min="0" max="100" />
             <b>{{ settings.bgmVolume }}%</b>
           </label>
           <label class="setting-group">
-            <span>SFX volume</span>
+            <span>{{ t('game.sfx-volume', 'SFX volume') }}</span>
             <input type="range" v-model="settings.sfxVolume" min="0" max="100" />
             <b>{{ settings.sfxVolume }}%</b>
           </label>
           <label class="setting-group">
-            <span>Voice volume</span>
+            <span>{{ t('game.voice-volume', 'Voice volume') }}</span>
             <input type="range" v-model="settings.voiceVolume" min="0" max="100" />
             <b>{{ settings.voiceVolume }}%</b>
           </label>
@@ -144,6 +145,9 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import Live2DCanvas from '../components/Live2DCanvas.vue'
 import { invokeCommand } from '../lib/tauri'
+import { useI18n } from '../lib/i18n'
+
+const { t } = useI18n()
 
 interface DialogueState {
   is_active: boolean

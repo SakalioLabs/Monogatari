@@ -2,25 +2,25 @@
   <div class="settings-page">
     <header class="page-header">
       <div>
-        <span class="eyebrow">Project Control</span>
-        <h1>Settings</h1>
+        <span class="eyebrow">{{ t('settings.title', 'Project Control') }}</span>
+        <h1>{{ t('settings.title', 'Settings') }}</h1>
         <p>{{ projectState?.project_path || projectPath }}</p>
       </div>
       <div class="header-actions">
-        <button class="btn btn-secondary btn-sm" @click="refreshAll">Refresh</button>
+        <button class="btn btn-secondary btn-sm" @click="refreshAll">{{ t('chat.refresh', 'Refresh') }}</button>
         <button class="btn btn-primary btn-sm" :disabled="savingProject" @click="saveProject">
-          {{ savingProject ? 'Saving' : 'Save Project' }}
+          {{ savingProject ? t('common.loading', 'Saving') : t('settings.save-btn', 'Save Project') }}
         </button>
       </div>
     </header>
 
     <section class="status-strip">
       <div class="status-cell" :class="{ ok: projectState?.settings_exists }">
-        <span>Settings</span>
+        <span>{{ t('settings.title', 'Settings') }}</span>
         <strong>{{ projectState?.settings_exists ? 'Saved' : 'Default' }}</strong>
       </div>
       <div class="status-cell" :class="{ ok: projectState?.valid, danger: projectState && !projectState.valid }">
-        <span>Project</span>
+        <span>{{ t('settings.project', 'Project') }}</span>
         <strong>{{ projectState?.valid ? 'Ready' : 'Review' }}</strong>
       </div>
       <div class="status-cell" :class="{ ok: engineStatus?.initialized }">
@@ -39,16 +39,16 @@
           <div class="panel-head">
             <div>
 
-              <span class="eyebrow">Project</span>
+              <span class="eyebrow">{{ t('settings.project', 'Project') }}</span>
               <strong>Workspace</strong>
             </div>
             <button class="btn btn-secondary btn-sm" :disabled="initializing" @click="initEngine">
-              {{ initializing ? 'Initializing' : 'Initialize' }}
+              {{ initializing ? 'Initializing...' : 'Initialize' }}
             </button>
           </div>
           <div class="form-grid two">
             <label class="form-field wide">
-              <span>Project Data Path</span>
+              <span>{{ t('settings.project-path', 'Project Data Path') }}</span>
               <input v-model="projectPath" class="input" placeholder="./data" @change="loadProjectConfig" />
             </label>
             <label class="form-field">
@@ -83,31 +83,31 @@
         <div class="panel">
           <div class="panel-head">
             <div>
-              <span class="eyebrow">AI Backend</span>
+              <span class="eyebrow">{{ t('settings.ai-backend', 'AI Backend') }}</span>
               <strong>{{ providerLabel }}</strong>
             </div>
             <button class="btn btn-primary btn-sm" :disabled="savingAI" @click="saveAI">
-              {{ savingAI ? 'Connecting' : 'Connect' }}
+              {{ savingAI ? 'Connecting...' : 'Connect' }}
             </button>
           </div>
           <div class="form-grid two">
             <label class="form-field">
-              <span>Provider</span>
+              <span>{{ t('settings.provider', 'Provider') }}</span>
               <select v-model="provider" class="input">
                 <option value="api">OpenAI-compatible API</option>
                 <option value="onnx">Local ONNX Model</option>
               </select>
             </label>
             <label v-if="provider === 'api'" class="form-field">
-              <span>Model</span>
+              <span>{{ t('settings.model', 'Model') }}</span>
               <input v-model="apiModel" class="input" placeholder="gpt-4o-mini" />
             </label>
             <label v-if="provider === 'api'" class="form-field wide">
-              <span>Base URL</span>
+              <span>{{ t('settings.base-url', 'Base URL') }}</span>
               <input v-model="apiBaseUrl" class="input" placeholder="https://api.openai.com/v1" />
             </label>
             <label v-if="provider === 'api'" class="form-field wide">
-              <span>API Key</span>
+              <span>{{ t('settings.api-key', 'API Key') }}</span>
               <input v-model="apiKey" type="password" class="input" placeholder="sk-..." />
             </label>
 
@@ -126,7 +126,7 @@
           </div>
         </div>
     <section class="panel">
-      <span class="eyebrow">Voice / TTS</span>
+      <span class="eyebrow">{{ t('settings.tts', 'Voice / TTS') }}</span>
       <p class="muted">Configure text-to-speech for character voices. Select a provider and set language, speed, and pitch defaults.</p>
       <div class="field-grid">
         <div class="field">
@@ -166,7 +166,7 @@
           <div class="panel-head">
             <div>
               <span class="eyebrow">Sync</span>
-              <strong>Cloud Sync</strong>
+              <strong>{{ t('settings.cloud-sync', 'Cloud Sync') }}</strong>
             </div>
             <div style="display:flex;gap:6px">
               <button class="btn btn-secondary btn-sm" :disabled="syncLoading" @click="checkSyncStatus">Check</button>
@@ -212,9 +212,9 @@
             </div>
           </div>
           <div class="metric-grid">
-            <div><span>Characters</span><strong>{{ engineStatus?.character_count ?? 0 }}</strong></div>
-            <div><span>Dialogues</span><strong>{{ engineStatus?.dialogue_count ?? 0 }}</strong></div>
-            <div><span>Knowledge</span><strong>{{ engineStatus?.knowledge_count ?? 0 }}</strong></div>
+            <div><span>{{ t('home.stats.characters', 'Characters') }}</span><strong>{{ engineStatus?.character_count ?? 0 }}</strong></div>
+            <div><span>{{ t('home.stats.dialogues', 'Dialogues') }}</span><strong>{{ engineStatus?.dialogue_count ?? 0 }}</strong></div>
+            <div><span>{{ t('home.stats.knowledge', 'Knowledge') }}</span><strong>{{ engineStatus?.knowledge_count ?? 0 }}</strong></div>
             <div><span>Engines</span><strong>{{ engineStatus?.ai_engines.length ?? 0 }}</strong></div>
           </div>
         </section>
@@ -254,7 +254,9 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { invokeCommand } from '../lib/tauri'
-import { loadI18n } from '../lib/i18n'
+import { loadI18n, useI18n } from '../lib/i18n'
+
+const { t } = useI18n()
 
 interface EngineStatus {
   initialized: boolean
