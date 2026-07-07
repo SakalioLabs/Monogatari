@@ -12,7 +12,8 @@
       </div>
     </header>
 
-    <section class="status-strip">
+    <LoadingSpinner v-if="loading" text="Loading engine status..." />
+    <section v-else class="status-strip">
       <div class="status-copy">
         <span class="eyebrow">Runtime</span>
         <strong>{{ statusLabel }}</strong>
@@ -124,6 +125,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { invokeCommand } from '../lib/tauri'
 import { useI18n } from '../lib/i18n'
+import LoadingSpinner from '../components/LoadingSpinner.vue'
 
 const { t } = useI18n()
 
@@ -138,6 +140,7 @@ interface EngineStatus {
 
 const status = ref<EngineStatus | null>(null)
 const sceneCount = ref(0)
+const loading = ref(true)
 
 const statusLabel = computed(() => {
   if (!status.value) return 'Checking engine'
@@ -209,7 +212,9 @@ async function refreshStatus() {
       const scenes = await invokeCommand<any[]>('list_scene_assets', undefined, [])
       sceneCount.value = scenes.length
     } catch { sceneCount.value = 0 }
-  } catch (e) { console.error(e) }
+      } catch (e) { console.error(e) }
+  
+  
 }
 
 onMounted(refreshStatus)

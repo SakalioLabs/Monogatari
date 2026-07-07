@@ -24,7 +24,8 @@
           </span>
         </button>
 
-        <div v-if="characters.length === 0" class="empty-rail">
+        
+    <div v-if="characters.length === 0" class="empty-rail">
           <span class="empty-mark">--</span>
           <span>{{ t('chat.no-characters', 'No characters loaded') }}</span>
         </div>
@@ -33,7 +34,7 @@
 
     <section class="conversation-panel">
       <header class="conversation-header">
-        <button class="icon-btn" title="Back to dashboard" @click="$router.push('/')">‹</button>
+        <button class="icon-btn" title="Back to dashboard" @click="$router.push('/')">{{ t('chat.back', 'Back to dashboard') }}</button>
         <div class="conversation-title">
           <span class="eyebrow">{{ selectedCharacter ? t('chat.session', 'Session') : t('chat.ready', 'Ready') }}</span>
           <h2>{{ selectedCharacter?.name || t('chat.select-character', 'Select a character') }}</h2>
@@ -170,6 +171,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { invokeCommand } from '../lib/tauri'
 import { useI18n } from '../lib/i18n'
+import LoadingSpinner from '../components/LoadingSpinner.vue'
 
 const { t } = useI18n()
 
@@ -214,6 +216,7 @@ const relationshipScore = ref(0)
 const evaluation = ref<ConversationEvaluation | null>(null)
 const activeEvent = ref<TriggeredEvent | null>(null)
 const errorMessage = ref<string | null>(null)
+const charactersLoading = ref(true)
 const messagesRef = ref<HTMLDivElement>()
 const inputRef = ref<HTMLTextAreaElement>()
 
