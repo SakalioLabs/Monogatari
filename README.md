@@ -1,4 +1,4 @@
-# Monogatari v0.6
+# Monogatari v0.6.1
 
 An LLM-powered v0.5 visual novel / galgame engine. Build interactive story experiences where AI-driven characters respond dynamically to player conversations, with automatic conversation scoring that triggers special plot events.
 
@@ -21,6 +21,7 @@ Monogatari is a development engine for creating LLM-driven text adventure games.
 - **Live2D Support** - Animated character models via PixiJS + pixi-live2d-display.
 - **Save/Load System** - Full game state persistence including character states, flags, variables, and chat history.
 - **Rhai Scripting** - Embedded scripting engine for custom game logic, conditions, and triggers.
+- **Audio Manager** - Manage background music, ambient sounds, and sound effects with per-track volume control and master mixer.
 - **Plugin System** - Register and manage custom workflow node types, event triggers, and action handlers through a dedicated management UI.
 - **Cloud Save Sync** - Push/pull save data to remote endpoints with conflict detection and sync status tracking.
 - **Multi-Language Support** - i18n scaffold with zh-CN, ja-JP, and ko-KR locale files for international deployment.
@@ -303,6 +304,8 @@ cargo tauri build
 - [x] Cloud sync settings integration with push/pull/status
 - [x] Multi-language locale files (zh-CN, ja-JP, ko-KR)
 - [x] Enhanced group chat with streaming and emotion display
+- [x] Audio manager view with BGM/SFX mixer
+- [x] i18n composable upgraded with nested key support and localStorage persistence
 - [x] Sidebar navigation expanded to 12 items with Analytics, Marketplace, Plugins
 - [ ] Mobile deployment (Tauri mobile)
 

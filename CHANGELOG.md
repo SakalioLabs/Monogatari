@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.1] - 2026-07-07
+
+### Added
+- **Audio Manager** (AudioView.vue): Full BGM/SFX management with track listing, per-track volume control, play/pause, and master mixer panel with BGM/SFX/Voice channels.
+- **Audio route and nav**: Added /audio route and sidebar navigation item for audio management.
+- **i18n nested key support**: i18n.ts composable now supports dot-notation nested keys with localStorage locale persistence and local JSON fallback.
+- **Enhanced prompt engineering**: Character AI system prompt redesigned with clearer roleplay instructions.
+
+
 ## [0.6.0] - 2026-07-07
 
 ### Added

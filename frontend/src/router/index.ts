@@ -64,6 +64,11 @@ const router = createRouter({
       name: 'plugins',
       component: () => import('../views/PluginView.vue'),
     },
+    {
+      path: '/audio',
+      name: 'audio',
+      component: () => import('../views/AudioView.vue'),
+    },
   ],
 })
 
