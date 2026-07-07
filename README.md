@@ -1,4 +1,4 @@
-# Monogatari v0.9.0
+# Monogatari v0.9.1
 
 An LLM-powered v0.5 visual novel / galgame engine. Build interactive story experiences where AI-driven characters respond dynamically to player conversations, with automatic conversation scoring that triggers special plot events.
 
@@ -35,6 +35,7 @@ Monogatari is a development engine for creating LLM-driven text adventure games.
 - **Backlog Viewer** - Full conversation history replay with character selector, role-based filtering (player/character/system), emotion badges, and jump-to-latest.
 - **Full i18n Internationalization** - 280+ translation keys covering all views and UI strings. Complete Simplified Chinese (zh-CN), Japanese (ja-JP), and Korean (ko-KR) locale files for international deployment.
 - **i18n-Integrated Sidebar** - All 18 navigation labels render through the `t()` translation function with automatic locale switching.
+- **Achievement System** - 15 unlockable milestones tracking social, relationship, creation, and gameplay progress with progress bars and category filtering.
 - **Commercial Workbench UI** - Desktop-first dashboard, streaming chat desk, story runtime, workflow authoring surface, and settings panels designed for repeated production use.
 
 ## Current Development Status
@@ -305,6 +306,7 @@ cargo tauri build
 ### In Progress
 
 - [ ] Installer signing and distribution channel configuration
+- [x] Achievement system with 15 milestones, progress tracking, and localStorage persistence
 - [ ] Mobile deployment (Tauri mobile)
 
 ### Planned
@@ -332,6 +334,7 @@ cargo tauri build
 - [x] Sidebar navigation expanded to 12 items with Analytics, Marketplace, Plugins
 - [x] Title Screen, CG Gallery, Backlog viewer views
 - [x] Full i18n with 280+ keys and 4 locale files (en, zh-CN, ja-JP, ko-KR)
+- [x] Achievement system with 15 milestones, progress tracking, and localStorage persistence
 - [ ] Mobile deployment (Tauri mobile)
 
 ## Tech Stack

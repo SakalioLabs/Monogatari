@@ -1,3 +1,40 @@
+## [0.9.1] - 2026-07-07
+
+### Added
+- **AchievementsView**: Gamification system with 15 unlockable achievements across Social, Relationships, Creation, and Gameplay categories. Features progress bars, category filtering, stats strip (unlocked/total/complete/playtime), and localStorage persistence. Achievements track first chat, message milestones, relationship scores, evaluation scores, workflow creation, knowledge entries, and more.
+- **Batch i18n integration**: All remaining views now have `useI18n` imports and key `t()` string replacements: WorkflowEditor, AudioView, SceneEditorView, GroupChatView, AnalyticsView, MarketplaceView, PluginView, SceneAssetsView, CharacterEditorView, DialogueEditorView.
+- **Achievements route** (`/achievements`) added to router and sidebar navigation (19 nav items total).
+
+### Changed
+- **Router** expanded to 20 routes with achievements entry.
+- **Sidebar navigation** expanded to 19 items with Achievements entry.
+- **Total frontend views**: 20 (up from 19).
+- **i18n coverage**: All 20 views now import `useI18n` and use `t()` for at least header/title strings.
+
+## [0.9.0] - 2026-07-07
+
+### Added
+- **TitleScreenView**: Cinematic title screen with animated particle effects, glowing logo, menu navigation, version badge, and MIT license footer.
+- **CGGalleryView**: Scene and character art collection gallery with grid layout, locked/unlocked states, scene preview modal, tag pills, and color-coded thumbnails.
+- **BacklogView**: Full conversation history viewer with character selector chips, role-based filtering, avatar color coding, emotion badges, timestamps, and jump-to-latest.
+- **Comprehensive i18n locale system**: Expanded from 13 keys to 280+ keys covering all views.
+- **Chinese locale (zh-CN)**: 280 translation keys for full Simplified Chinese support.
+- **Japanese locale (ja-JP)**: 187 translation keys for Japanese market readiness.
+- **Korean locale (ko-KR)**: 159 translation keys for Korean market support.
+- **i18n integration in App.vue**: All 18 sidebar navigation labels use `t()` function.
+- **i18n in core views**: HomeView, ChatView, GameView, SettingsView with full `t()` integration.
+- **Mio character**: Festival organizer with Starlight Festival dialogue (15 nodes, 4 endings) and festival lore knowledge entry.
+- **festival_night scene**: Summer night festival setting with weather/time metadata.
+
+### Changed
+- Router expanded to 19 routes.
+- Sidebar navigation expanded to 18 items with CG Gallery and Backlog entries.
+- App.vue now imports `useI18n` composable and uses computed nav items.
+- Total frontend views: 19 (up from 16).
+- Version badge updated from v0.8 to v0.9 in sidebar.
+- Tauri config version bumped to 0.9.0, window title updated to "Monogatari v0.9.0".
+- README updated with v0.9.0 content counts: 10 characters, 10 dialogues, 12 knowledge entries.
+
 # Changelog
 
 ## [0.9.0] - 2026-07-07
