@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.2] - 2026-07-07
+
+### Changed
+- **README comprehensive update**: Version bumped to v0.7.2, architecture docs updated with all 13 views and 4 components, features section expanded with Audio Manager, GLTF 3D, and i18n.
+- **CHANGELOG synchronized** with all changes since v0.6.0.
+
+
 ## [0.7.0] - 2026-07-07
 
 ### Added
