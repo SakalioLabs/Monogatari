@@ -1,3 +1,14 @@
+## [0.9.4] - 2026-07-08
+
+### Added
+- **Takeshi character**: Traveling photographer with 12-node through_the_lens dialogue (7 endings), cross-character connections to Sakura, Hana, Sora, Kai, Mio, and Nori. Springtown photographic archive knowledge entry.
+- **ConfirmDialog component**: Polished confirmation dialog with backdrop blur for delete/destructive action confirmations. Supports custom title, message, and button labels via `v-model:visible` binding.
+- **System info panel**: HomeView dashboard now shows engine version (v0.9.4), character/dialogue/knowledge/scene counts, AI engine status, and runtime state with color-coded Online/Idle indicator.
+
+### Changed
+- Content inventory expanded to 15 characters, 15 dialogues, 17 knowledge entries.
+- HomeView ops-grid now includes a third panel for system information between the pipeline and getting-started sections.
+
 ## [0.9.3] - 2026-07-08
 
 ### Added
