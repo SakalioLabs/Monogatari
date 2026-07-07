@@ -100,6 +100,21 @@
       </div>
     </section>
 
+    <section class="ops-panel" style="margin-bottom:16px">
+      <div class="panel-head">
+        <span class="eyebrow">System</span>
+        <strong>Monogatari v0.9.3</strong>
+      </div>
+      <div class="pipeline-list">
+        <span><b>Characters</b>{{ status?.character_count ?? '-' }}</span>
+        <span><b>Dialogues</b>{{ status?.dialogue_count ?? '-' }}</span>
+        <span><b>Knowledge</b>{{ status?.knowledge_count ?? '-' }}</span>
+        <span><b>Scenes</b>{{ sceneCount }}</span>
+        <span><b>AI Engine</b>{{ status?.active_ai_engine || 'Not set' }}</span>
+        <span><b>Status</b><span :class="status?.initialized ? 'ok-text' : 'bad-text'">{{ status?.initialized ? 'Online' : 'Idle' }}</span></span>
+      </div>
+    </section>
+
     <section class="getting-started" v-if="!status?.initialized">
       <div class="panel-head">
         <span class="eyebrow">{{ t('home.setup-guide', 'Getting Started') }}</span>
