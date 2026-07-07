@@ -1,27 +1,51 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">
-  <rect width="1920" height="1080" fill="#2d2d3d"/>
-  <rect x="0" y="0" width="1920" height="60" fill="#3d3d4d"/>
-  <rect x="100" y="200" width="300" height="400" fill="#4a4a5a" rx="8"/>
-  <rect x="120" y="220" width="100" height="80" fill="#3a3a4a" rx="4"/>
-  <circle cx="300" cy="350" r="60" fill="none" stroke="#FFD700" stroke-width="3" opacity="0.6"/>
-  <circle cx="300" cy="350" r="40" fill="none" stroke="#FFD700" stroke-width="2" opacity="0.4"/>
-  <rect x="500" y="300" width="250" height="200" fill="#3a3a4a" rx="5"/>
-  <rect x="520" y="320" width="80" height="60" fill="#2a2a3a"/>
-  <rect x="620" y="320" width="80" height="60" fill="#2a2a3a"/>
-  <rect x="520" y="400" width="180" height="8" fill="#FFD700" opacity="0.3"/>
-  <rect x="900" y="150" width="400" height="600" fill="#4a4a5a" rx="10"/>
-  <rect x="920" y="180" width="160" height="120" fill="#3a3a4a" rx="4"/>
-  <rect x="1100" y="180" width="160" height="120" fill="#3a3a4a" rx="4"/>
-  <rect x="920" y="320" width="340" height="8" fill="#64B5F6" opacity="0.4"/>
-  <circle cx="1100" cy="500" r="80" fill="none" stroke="#FF9800" stroke-width="4" opacity="0.5"/>
-  <line x1="1100" y1="420" x2="1100" y2="580" stroke="#FF9800" stroke-width="2" opacity="0.3"/>
-  <line x1="1020" y1="500" x2="1180" y2="500" stroke="#FF9800" stroke-width="2" opacity="0.3"/>
-  <rect x="1400" y="250" width="350" height="500" fill="#4a4a5a" rx="8"/>
-  <rect x="1420" y="280" width="100" height="40" fill="#3a3a4a"/>
-  <rect x="1540" y="280" width="100" height="40" fill="#3a3a4a"/>
-  <rect x="1420" y="340" width="310" height="6" fill="#4CAF50" opacity="0.4"/>
-  <rect x="0" y="800" width="1920" height="280" fill="#252535"/>
-  <circle cx="200" cy="900" r="30" fill="#FFD700" opacity="0.2"/>
-  <circle cx="600" cy="850" r="20" fill="#64B5F6" opacity="0.3"/>
-  <text x="960" y="960" text-anchor="middle" fill="#5a5a6a" font-size="48" font-family="serif">Inventor Workshop</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="wk" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2C1810"/>
+      <stop offset="100%" stop-color="#1A0E08"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#wk)"/>
+  <rect x="0" y="0" width="1280" height="200" fill="#3E2723"/>
+  <g fill="#5D4037">
+    <rect x="100" y="60" width="80" height="140" rx="2"/><rect x="200" y="80" width="60" height="120" rx="2"/>
+    <rect x="1020" y="50" width="90" height="150" rx="2"/><rect x="1130" y="70" width="70" height="130" rx="2"/>
+  </g>
+  <g fill="#4CAF50" opacity="0.3">
+    <circle cx="140" cy="120" r="15"/><circle cx="230" cy="130" r="12"/>
+    <circle cx="1060" cy="110" r="18"/><circle cx="1160" cy="125" r="14"/>
+  </g>
+  <rect x="300" y="300" width="300" height="200" rx="4" fill="#4E342E"/>
+  <rect x="320" y="320" width="260" height="160" rx="2" fill="#3E2723"/>
+  <g fill="#8D6E63">
+    <rect x="340" y="340" width="40" height="120" rx="2"/>
+    <rect x="400" y="360" width="50" height="100" rx="2"/>
+    <rect x="470" y="340" width="35" height="120" rx="2"/>
+    <rect x="520" y="350" width="45" height="110" rx="2"/>
+  </g>
+  <rect x="680" y="280" width="350" height="250" rx="4" fill="#5D4037"/>
+  <rect x="700" y="300" width="310" height="210" rx="2" fill="#4E342E"/>
+  <g fill="#FF9800" opacity="0.4">
+    <circle cx="750" cy="380" r="20"/>
+    <circle cx="830" cy="360" r="15"/>
+    <circle cx="920" cy="390" r="18"/>
+  </g>
+  <g fill="#78909C">
+    <rect x="720" y="420" width="60" height="30" rx="4"/>
+    <rect x="800" y="410" width="80" height="40" rx="4"/>
+    <rect x="900" y="425" width="50" height="25" rx="4"/>
+  </g>
+  <circle cx="640" cy="140" r="35" fill="#FFD54F" opacity="0.15"/>
+  <circle cx="640" cy="140" r="20" fill="#FFD54F" opacity="0.1"/>
+  <rect x="0" y="550" width="1280" height="170" fill="#2C1810"/>
+  <g fill="#3E2723">
+    <rect x="50" y="580" width="200" height="80" rx="4"/>
+    <rect x="1030" y="570" width="200" height="90" rx="4"/>
+  </g>
+  <rect x="500" y="600" width="280" height="50" rx="4" fill="#5D4037"/>
+  <g fill="#FF9800" opacity="0.2">
+    <circle cx="640" cy="625" r="10"/>
+    <circle cx="610" cy="625" r="8"/>
+    <circle cx="670" cy="625" r="8"/>
+  </g>
 </svg>
