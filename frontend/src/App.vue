@@ -9,7 +9,7 @@
         </div>
       </div>
       <nav class="sidebar-nav">
-        <router-link v-for="item in navItems" :key="item.path" :to="item.path" class="nav-item" :class="{ active: $route.path === item.path }">
+        <router-link v-for="item in navItems" :key="item.path" :to="item.path" class="nav-item" :class="{ active: $route.path === item.path }" :title="item.label">
           <span class="nav-icon" v-html="item.icon"></span>
           <span class="nav-label" v-show="!sidebarCollapsed">{{ item.label }}</span>
           <span v-if="item.badge && !sidebarCollapsed" class="nav-badge">{{ item.badge }}</span>
@@ -19,7 +19,7 @@
         <GlobalSearch />
       </div>
     <div class="sidebar-footer">
-        <button class="nav-item" @click="sidebarCollapsed = !sidebarCollapsed">
+        <button class="nav-item" @click="sidebarCollapsed = !sidebarCollapsed" :title="t('app.compact', 'Compact')">
           <span class="nav-icon" v-html="sidebarCollapsed ? '&rsaquo;' : '&lsaquo;'"></span>
           <span class="nav-label" v-show="!sidebarCollapsed">{{ t('app.compact', 'Compact') }}</span>
         </button>
