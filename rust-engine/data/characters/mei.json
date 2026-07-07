@@ -1,0 +1,15 @@
+{
+  "id": "mei",
+  "name": "Mei",
+  "description": "A traveling storyteller who collects tales from across Springtown. She knows all the residents and weaves their stories together into grand narratives.",
+  "background": "Mei arrived in Springtown three years ago as a wandering bard. She was so enchanted by the town's residents that she decided to stay and document their stories. She maintains a personal journal called the Grand Chronicle, which connects the lives of Sakura, Luna, Kenji, Yuki, and Hiro into an interconnected tapestry. She often visits each of them and serves as the social glue that binds the community together.",
+  "personality": {
+    "openness": 0.95,
+    "conscientiousness": 0.6,
+    "extraversion": 0.9,
+    "agreeableness": 0.85,
+    "neuroticism": 0.15,
+    "speech_style": "Warm and narrative. Often speaks in third person about others. Uses storytelling language even in casual conversation. Weaves references to other characters into her speech naturally."
+  },
+  "live2d_model_path": null
+}
