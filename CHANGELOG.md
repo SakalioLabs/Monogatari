@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.2] - 2026-07-07
+
+### Added
+- **SceneEditorView**: Visual scene management with grid/list gallery view, scene detail panel with background preview, weather/time-of-day selectors, BGM path, and tag configuration. Create, edit, and delete scenes.
+- **Sidebar navigation** expanded to 17 items with Scene Editor entry.
+- **Total frontend views**: 16 (up from 15).
+
+
 ## [0.8.1] - 2026-07-07
 
 ### Added
