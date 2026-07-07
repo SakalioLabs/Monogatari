@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.4] - 2026-07-07
+
+### Changed
+- **Tauri config version bumped** to 0.6.3 to match application version.
+- **Release checklist** added at docs/RELEASE_CHECKLIST.md covering frontend, Rust backend, content, AI integration, workflow editor, audio, i18n, cloud sync, and distribution verification.
+
+
 ## [0.6.3] - 2026-07-07
 
 ### Changed

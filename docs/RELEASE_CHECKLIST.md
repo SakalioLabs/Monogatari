@@ -1,39 +1,59 @@
-# Release Checklist
+# Monogatari Release Checklist
 
-This checklist tracks the gates required before packaging Monogatari as a commercial desktop engine.
+## Pre-Release Verification
 
-## Required Gates
+### Frontend
+- [ ] `cd frontend && npm run build` passes with zero errors
+- [ ] `npm audit` shows zero vulnerabilities
+- [ ] All 13 views render correctly (Home, Chat, Game, Workflow, Assets, Characters, Group Chat, Settings, Analytics, Marketplace, Plugins, Audio, Character Editor)
+- [ ] Sidebar navigation works for all 14 items
+- [ ] Responsive layout verified on mobile viewport (375px) and tablet (768px)
 
-- [ ] Confirm the branch has no unrelated local changes.
-- [ ] Install frontend dependencies with `npm ci` from `frontend/`.
-- [ ] Run `npm audit` and verify 0 vulnerabilities.
-- [ ] Run `npm run build` from `frontend/`.
-- [ ] Run `cargo check --locked -p llm-galgame-app` from `rust-engine/`.
-- [ ] Run `dotnet test LLMAssistant.sln --no-restore` from the repository root.
-- [ ] Launch the app in Tauri dev mode and smoke-test Dashboard, AI Chat, Story Mode, Workflow, Scene Assets, and Settings.
-- [ ] Build the desktop package with `cargo tauri build` from `rust-engine/crates/tauri-app`.
+### Rust Backend
+- [ ] `cargo check --locked -p llm-galgame-app` passes
+- [ ] All 22 command modules register correctly in main.rs
+- [ ] Chat streaming works with API backend
+- [ ] Character personality/knowledge injection verified
 
-## Packaging Policy
+### Content
+- [ ] Example characters load correctly (Sakura, Luna, Kenji)
+- [ ] Example dialogues play through with choices
+- [ ] Knowledge base search returns relevant results
+- [ ] Scene assets validate without missing file warnings
 
-- Commit `frontend/package-lock.json` and `rust-engine/Cargo.lock`.
-- Do not commit `frontend/node_modules/`, `frontend/dist/`, or `rust-engine/target/`.
-- Keep npm `overrides` documented when they are used to remediate transitive dependency issues.
-- Treat `npm audit` and `cargo check --locked` failures as release blockers.
+### AI Integration
+- [ ] API mode: streaming chat with OpenAI-compatible endpoint
+- [ ] ONNX mode: local model inference (if applicable)
+- [ ] Evaluation triggers fire at correct intervals
+- [ ] Relationship milestones unlock events correctly
 
-## Signing And Distribution
+### Workflow Editor
+- [ ] All 21 node types render in palette
+- [ ] Drag-and-drop creates nodes on canvas
+- [ ] Validation catches missing fields and broken links
+- [ ] Export produces valid JSON
 
-- [ ] Choose release channel names for internal, beta, and stable builds.
-- [ ] Configure platform-specific installer signing before public distribution.
-- [ ] Store signing credentials outside the repository.
-- [ ] Generate checksums for released installers.
-- [ ] Archive the exact source revision, `package-lock.json`, and `Cargo.lock` used for each release.
+### Audio
+- [ ] BGM tracks list and volume controls work
+- [ ] SFX preview plays correctly
+- [ ] Master mixer channels respond to input
 
-## Manual QA
+### i18n
+- [ ] Locale switching works (en, zh-CN, ja-JP, ko-KR)
+- [ ] Nested key resolution works for all locale files
 
-- [ ] Verify non-Tauri browser preview renders without runtime crashes.
-- [ ] Verify Tauri runtime commands work in the desktop shell.
-- [ ] Verify streaming chat emits chunks, completion, emotion, relationship, evaluation, and event notifications.
-- [ ] Verify Workflow validation catches missing config, broken links, duplicate links, and unreachable nodes.
-- [ ] Verify Workflow save/load rejects invalid graphs and preserves valid graphs.
-- [ ] Verify Scene Assets lists metadata scenes, validates missing backgrounds, and sets the active runtime scene.
-- [ ] Verify Settings saves project config, reports missing required directories, configures AI, and initializes the runtime.
+### Cloud Sync
+- [ ] Push/pull commands execute without error
+- [ ] Sync status displays correctly in Settings
+
+## Distribution
+- [ ] Version bumped in tauri.conf.json
+- [ ] Version bumped in package.json
+- [ ] CHANGELOG.md updated with release notes
+- [ ] README.md version and features updated
+- [ ] Git tag created: `git tag v0.6.3`
+- [ ] Windows MSI installer built: `cargo tauri build`
+- [ ] macOS DMG installer built (if applicable)
+- [ ] Linux AppImage built (if applicable)
+- [ ] Code signing applied to installers
+- [ ] GitHub Release created with installers attached
