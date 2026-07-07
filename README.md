@@ -195,7 +195,8 @@ cargo tauri build
 - **Sakura** (cheerful): Nature-loving artist. Park walk dialogue with branching paths.
 - **Luna** (thoughtful): Poetic stargazer. Stargazing dialogue with constellation lore.
 - **Kenji** (honorable): Martial artist poet. Dojo visit dialogue with training themes.
-- **Springtown**: Shared world with cherry blossom park, observatory, and dojo.
+- **Yuki** (mysterious): Ancient library guardian who speaks in riddles. Library encounter with branching paths.
+- **Springtown**: Shared world with cherry blossom park, observatory, dojo, and the Great Library.
 
 ### Character
 
