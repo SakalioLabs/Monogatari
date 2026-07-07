@@ -32,6 +32,11 @@
       </router-view>
         </ErrorBoundary>
     </main>
+    <Transition name="fade">
+      <div v-if="achievementToastVisible" class="achievement-toast" @click="achievementToastVisible = false">
+        &#127942; {{ achievementToast }}
+      </div>
+    </Transition>
     <KeyboardShortcutsHelp :visible="showShortcuts" @close="showShortcuts = false" />
   </div>
 </template>
@@ -48,6 +53,22 @@ const { t } = useI18n()
 const route = useRoute()
 const sidebarCollapsed = ref(false)
 const showShortcuts = ref(false)
+const achievementToast = ref('')
+const achievementToastVisible = ref(false)
+let achievementToastTimer: number | null = null
+
+// Listen for achievement unlock events
+if (typeof window !== 'undefined') {
+  window.addEventListener('achievement-unlock', ((e: CustomEvent) => {
+    const { id, name } = e.detail
+    achievementToast.value = `Achievement unlocked: ${name || id}`
+    achievementToastVisible.value = true
+    if (achievementToastTimer) clearTimeout(achievementToastTimer)
+    achievementToastTimer = window.setTimeout(() => {
+      achievementToastVisible.value = false
+    }, 4000)
+  }) as EventListener)
+}
 const showSidebar = computed(() => route.name !== 'game' && route.name !== 'title')
 
 // Global keyboard handler
@@ -133,6 +154,12 @@ const navItems = computed(() => [
 .app-main { flex: 1; overflow: auto; min-width: 0; }
 .page-enter-active { animation: fadeIn 0.2s ease; }
 .page-leave-active { animation: fadeIn 0.15s ease reverse; }
+.achievement-toast {
+  position: fixed; top: 18px; left: 50%; transform: translateX(-50%); z-index: 200;
+  padding: 14px 24px; border: 1px solid rgba(45,212,191,0.4); border-radius: var(--radius);
+  background: rgba(15,118,110,0.96); color: white; font-weight: 700; font-size: 14px;
+  box-shadow: var(--shadow-lg); cursor: pointer;
+}
 
 @media (max-width: 720px) {
   #app { flex-direction: column; }

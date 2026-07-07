@@ -163,6 +163,10 @@ function checkAchievements() {
 }
 
 function unlockAchievement(id: string) {
+  // Dispatch event for toast notification
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('achievement-unlock', { detail: { id } }))
+  }
   const ach = achievements.value.find(a => a.id === id)
   if (!ach || ach.unlocked) return
   ach.unlocked = true
