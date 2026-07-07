@@ -15,7 +15,10 @@
           <span v-if="item.badge && !sidebarCollapsed" class="nav-badge">{{ item.badge }}</span>
         </router-link>
       </nav>
-      <div class="sidebar-footer">
+            <div class="sidebar-search">
+        <GlobalSearch />
+      </div>
+    <div class="sidebar-footer">
         <button class="nav-item" @click="sidebarCollapsed = !sidebarCollapsed">
           <span class="nav-icon" v-html="sidebarCollapsed ? '&rsaquo;' : '&lsaquo;'"></span>
           <span class="nav-label" v-show="!sidebarCollapsed">{{ t('app.compact', 'Compact') }}</span>
@@ -48,6 +51,7 @@ import ToastNotification from './components/ToastNotification.vue'
 import ErrorBoundary from './components/ErrorBoundary.vue'
 import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp.vue'
 import WhatsNew from './components/WhatsNew.vue'
+import GlobalSearch from './components/GlobalSearch.vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from './lib/i18n'
 
@@ -152,6 +156,7 @@ const navItems = computed(() => [
   margin-left: auto; padding: 1px 6px; border-radius: 100px;
   font-size: 10px; font-weight: 700; background: rgba(45,212,191,0.16); color: var(--brand-light);
 }
+.sidebar-search { padding: 4px 8px; display: flex; justify-content: center; }
 .sidebar-footer { padding: 8px; border-top: 1px solid var(--border); }
 .app-main { flex: 1; overflow: auto; min-width: 0; }
 .page-enter-active { animation: fadeIn 0.2s ease; }
