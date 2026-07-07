@@ -1,3 +1,13 @@
+## [0.9.3] - 2026-07-08
+
+### Added
+- **GlobalSearch component**: Ctrl+K quick-search across characters, knowledge entries, and dialogues from any view. Features expandable search panel, real-time filtering, keyboard shortcut support, and integrated into App.vue sidebar.
+- **LoadingSpinner component**: Reusable loading indicator with customizable size, thickness, text, and inline mode. Integrated into HomeView dashboard for async status loading.
+- **GameView SVG background loading**: Scene backgrounds now display actual SVG image files instead of generated gradients.
+
+### Fixed
+- **ChatView.vue encoding corruption**: Fixed a corrupted template expression at line 37 that caused "Element is missing end tag" build error.
+
 ## [0.9.2] - 2026-07-07
 
 ### Added
