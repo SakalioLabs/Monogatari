@@ -1,4 +1,4 @@
-# Monogatari v0.8.0
+# Monogatari v0.8.1
 
 An LLM-powered v0.5 visual novel / galgame engine. Build interactive story experiences where AI-driven characters respond dynamically to player conversations, with automatic conversation scoring that triggers special plot events.
 
@@ -11,6 +11,7 @@ Monogatari is a development engine for creating LLM-driven text adventure games.
 - **AI Chat Mode** - Players talk freely with LLM-driven characters. The AI stays in character using personality, background, world knowledge, streaming response events, and streamed evaluation/event notifications.
 - **Conversation Scoring** - The LLM evaluates every conversation on friendliness, engagement, and creativity. Cumulative scores unlock special events.
 - **Event Trigger System** - Relationship milestones, dialogue achievements, and cumulative progress trigger plot events, scene changes, and special dialogues.
+- **Dialogue Editor** - Visual branching dialogue editor with node tree, inline choice editing, speaker assignment, validation, and JSON import/export.
 - **Visual Workflow Editor** - Drag-and-drop node-based editor for designing dialogue flows, branching conditions, LLM generation nodes, evaluation triggers, and scene transitions.
 - **Workflow Validation** - Import/export and save paths validate node ids, start/end structure, missing config fields, broken links, duplicate links, and unreachable nodes.
 - **Scene Asset Library** - Project scene metadata and background files are scanned, validated, listed, and selectable as the active runtime scene.
@@ -27,6 +28,7 @@ Monogatari is a development engine for creating LLM-driven text adventure games.
 - **Multi-Language Support** - i18n scaffold with zh-CN, ja-JP, and ko-KR locale files for international deployment.
 - **Template Marketplace** - Browse, import, and export community-created templates, characters, and story modules.
 
+- **Project Export** - Export project as distributable JSON manifest with content inventory for packaging.
 - **Multiple AI Backends** - OpenAI-compatible API (GPT, Claude, etc.) and local ONNX models with DirectML.
 - **Commercial Workbench UI** - Desktop-first dashboard, streaming chat desk, story runtime, workflow authoring surface, and settings panels designed for repeated production use.
 
@@ -269,7 +271,7 @@ cargo tauri build
 - [x] Frontend streaming chat integration via Tauri events
 - [x] Streaming evaluation and event notifications (`chat-evaluation`, `chat-events`)
 - [x] Chat session lock optimization for slower LLM requests
-- [x] Commercial workbench UI refresh with 14-item sidebar navigation navigation (dashboard/chat/story/workflow/analytics/marketplace/plugins)
+- [x] Commercial workbench UI refresh with 16-item sidebar navigation navigation (dashboard/chat/story/workflow/analytics/marketplace/plugins)
 - [x] Browser preview fallback for non-Tauri UI review
 - [x] Frontend supply-chain audit remediation (Vite 8 + Live2D transitive override)
 - [x] Rust lockfile policy for reproducible Tauri builds
@@ -302,6 +304,8 @@ cargo tauri build
 - [x] Plugin system for custom node types (scaffold with register/list/remove)
 - [x] Cloud save sync with local manifest and checksum tracking
 - [x] Analytics dashboard with engagement metrics and JSON export
+- [x] Dialogue Editor view with visual branching node tree and inline editing
+- [x] Project export command for distributable packaging
 - [x] Knowledge Base Manager view with CRUD and filtering\n- [x] Professional Character Editor with 5 tabs and radar chart\n- [x] Frontend data sync with rust-engine content\n- [x] Template marketplace scaffold (Rust backend + MarketplaceView frontend)
 - [x] Plugin management frontend UI with register/list/remove
 - [x] Cloud sync settings integration with push/pull/status
