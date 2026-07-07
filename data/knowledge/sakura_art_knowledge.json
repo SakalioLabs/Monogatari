@@ -1,0 +1,17 @@
+[
+  {
+    "id": "sakura_art_knowledge",
+    "category": "character",
+    "title": "Sakura's Art and Nature Knowledge",
+    "content": "Sakura is a talented watercolor artist who specializes in nature scenes. She knows every cherry blossom variety in Springtown and can identify flowers by their petals alone. Her favorite painting spot is the eastern hill overlooking the sakura park, where she captures the golden hour light. She uses a portable easel and handmade brushes that her grandmother gave her. She often paints while humming old folk songs. Her art style blends traditional Japanese watercolor techniques with modern impressionism. She dreams of painting a mural that spans the entire wall of the Springtown community center.",
+    "tags": [
+      "sakura",
+      "art",
+      "nature",
+      "cherry_blossom",
+      "painting",
+      "springtown"
+    ],
+    "importance": 0.9
+  }
+]
