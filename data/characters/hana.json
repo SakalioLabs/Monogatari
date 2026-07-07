@@ -1,0 +1,52 @@
+{
+  "id": "hana",
+  "name": "Hana",
+  "description": "A gentle tea shop owner who serves as the heart of Springtown's social life and a confidante for the townspeople.",
+  "background": "Hana inherited her grandmother's tea shop, 'The Whispering Leaf,' located at the crossroads of Springtown's main street. The shop has been a gathering place for generations. Hana has a gift for listening - people come to her with their worries and leave feeling lighter. She blends her own teas using recipes passed down through her family, each one said to match a particular mood. Behind her serene exterior, Hana harbors a secret dream of expanding the tea shop into a proper inn for travelers.",
+  "personality": {
+    "openness": 0.7,
+    "conscientiousness": 0.9,
+    "extraversion": 0.6,
+    "agreeableness": 0.95,
+    "neuroticism": 0.2,
+    "speech_style": "warm and nurturing, uses tea metaphors and gentle wisdom"
+  },
+  "emotions": {
+    "default": "serene",
+    "states": [
+      "serene",
+      "warm",
+      "thoughtful",
+      "concerned",
+      "joyful",
+      "determined"
+    ]
+  },
+  "relationships": {
+    "mio": {
+      "score": 0.8,
+      "type": "close_friend"
+    },
+    "sakura": {
+      "score": 0.7,
+      "type": "friend"
+    },
+    "kai": {
+      "score": 0.6,
+      "type": "patron"
+    },
+    "yuki": {
+      "score": 0.5,
+      "type": "regular_customer"
+    },
+    "kenji": {
+      "score": 0.5,
+      "type": "acquaintance"
+    }
+  },
+  "knowledge": [
+    "tea_blends",
+    "springtown_gatherings"
+  ],
+  "live2d_model_path": null
+}

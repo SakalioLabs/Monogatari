@@ -1,0 +1,263 @@
+{
+  "id": "whispering_leaf",
+  "title": "The Whispering Leaf",
+  "description": "Visit Hana's tea shop and discover the warmth of Springtown's gathering place.",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "speaker_id": "hana",
+      "text": "Welcome to The Whispering Leaf. *sets down a steaming cup* I had a feeling you'd come today. The jasmine bloomed this morning - it only does that when someone new is about to walk through my door. Please, sit. The tea is already steeping.",
+      "choices": [
+        {
+          "text": "You were expecting me?",
+          "next_node_id": "expecting",
+          "relationship_changes": {
+            "hana": 0.1
+          }
+        },
+        {
+          "text": "This place is beautiful. How long has it been here?",
+          "next_node_id": "history",
+          "relationship_changes": {
+            "hana": 0.15
+          }
+        },
+        {
+          "text": "What kind of tea is this?",
+          "next_node_id": "tea_blend",
+          "relationship_changes": {
+            "hana": 0.1
+          }
+        }
+      ]
+    },
+    "expecting": {
+      "speaker_id": "hana",
+      "text": "*smiles mysteriously* The tea tells me things. Not fortunes, exactly - more like... feelings. When the jasmine blooms, it means someone carrying something heavy on their heart is nearby. *pours tea carefully* I don't need to know what it is. Just know that this cup was made with care, specifically for you.",
+      "choices": [
+        {
+          "text": "That's... surprisingly comforting.",
+          "next_node_id": "comfort",
+          "relationship_changes": {
+            "hana": 0.15
+          }
+        },
+        {
+          "text": "Can the tea really sense emotions?",
+          "next_node_id": "tea_magic",
+          "relationship_changes": {
+            "hana": 0.1
+          }
+        }
+      ]
+    },
+    "history": {
+      "speaker_id": "hana",
+      "text": "Four generations. My great-grandmother built this shop with her own hands after coming to Springtown as a young bride. *touches the wooden counter lovingly* Every scratch in this counter tells a story. Mio's grandmother used to plan the very first festivals right at this table. *looks out the window* Some places aren't just buildings. They're memories made solid.",
+      "choices": [
+        {
+          "text": "You can feel the history here.",
+          "next_node_id": "legacy",
+          "relationship_changes": {
+            "hana": 0.15
+          }
+        },
+        {
+          "text": "Do you ever think about changing it?",
+          "next_node_id": "dream",
+          "relationship_changes": {
+            "hana": 0.2
+          }
+        }
+      ]
+    },
+    "tea_blend": {
+      "speaker_id": "hana",
+      "text": "*eyes brighten* Ah, you noticed! This is my 'Sunset Calm' blend - chamomile, lavender, and a hint of honey from Sakura's garden bees. I create each blend for a different feeling. There's 'Morning Courage' for when you need strength, 'Starlight Dreams' for peaceful nights, and 'Heart's Ease' for... well, for moments when the heart needs tending.",
+      "choices": [
+        {
+          "text": "Do you have one for finding direction?",
+          "next_node_id": "direction_tea",
+          "relationship_changes": {
+            "hana": 0.2
+          }
+        },
+        {
+          "text": "You put so much care into this.",
+          "next_node_id": "care",
+          "relationship_changes": {
+            "hana": 0.1
+          }
+        }
+      ]
+    },
+    "comfort": {
+      "speaker_id": "hana",
+      "text": "*nods gently* That's what this place is for. Everyone in Springtown carries something - Mio carries the festival, Sakura carries her art, Kenji carries his discipline. *slides a small dish of mochi toward you* And sometimes, the bravest thing you can do is sit down, drink tea, and let someone else carry the conversation for a while.",
+      "choices": [
+        {
+          "text": "What do you carry, Hana?",
+          "next_node_id": "hana_burden",
+          "relationship_changes": {
+            "hana": 0.25
+          }
+        },
+        {
+          "text": "You're very kind.",
+          "next_node_id": "ending_kindness",
+          "relationship_changes": {
+            "hana": 0.15
+          }
+        }
+      ]
+    },
+    "tea_magic": {
+      "speaker_id": "hana",
+      "text": "*laughs softly* Magic? No, nothing so dramatic. But tea is patient. It listens to the water, responds to the temperature, unfolds at its own pace. *watches the leaves swirl* I think people are the same. Given the right warmth and patience, they unfold beautifully. The 'magic' is simply... paying attention.",
+      "choices": [
+        {
+          "text": "That's a beautiful way to see the world.",
+          "next_node_id": "ending_wisdom",
+          "relationship_changes": {
+            "hana": 0.2
+          }
+        }
+      ]
+    },
+    "legacy": {
+      "speaker_id": "hana",
+      "text": "Every cup I pour connects me to them. *traces a pattern on the counter* My grandmother's recipe book is right here - faded ink on yellowed pages. She wrote notes in the margins: 'Add more honey for the Tanaka boy, he's going through a rough patch.' *smiles* She knew everyone's story. I try to carry that forward.",
+      "choices": [
+        {
+          "text": "You're continuing her legacy beautifully.",
+          "next_node_id": "ending_legacy",
+          "relationship_changes": {
+            "hana": 0.25
+          }
+        }
+      ]
+    },
+    "dream": {
+      "speaker_id": "hana",
+      "text": "*leans in, voice dropping to a whisper* Can I tell you something? *glances around* I dream of turning the back room into an inn. A proper one, for travelers like Kai. Springtown deserves a place where wanderers can rest. *blushes* I've been saving for years. I even have plans drawn up. But... change is frightening when you're the keeper of something old.",
+      "choices": [
+        {
+          "text": "Your grandmother would want you to grow, not just preserve.",
+          "next_node_id": "ending_growth",
+          "relationship_changes": {
+            "hana": 0.3
+          }
+        },
+        {
+          "text": "Maybe start small - one room at a time?",
+          "next_node_id": "ending_practical",
+          "relationship_changes": {
+            "hana": 0.2
+          }
+        }
+      ]
+    },
+    "direction_tea": {
+      "speaker_id": "hana",
+      "text": "*rises with purpose* I have just the thing. *disappears behind the counter and returns with a small, ornate tin* 'Pathfinder's Blend.' Green tea with mint and a whisper of ginger. My grandmother created it the year she decided to stay in Springtown. *pours carefully* Drink this when you're ready to choose your next step. Not when you're lost - when you're ready.",
+      "choices": [
+        {
+          "text": "Thank you, Hana. This means more than you know.",
+          "next_node_id": "ending_pathfinder",
+          "relationship_changes": {
+            "hana": 0.25
+          }
+        }
+      ]
+    },
+    "care": {
+      "speaker_id": "hana",
+      "text": "How could I not? *looks around the shop* Every person who walks through that door is carrying a story. The least I can do is make sure their cup is full while they tell it. *adjusts a flower arrangement* Even the flowers matter. Sakura brings fresh ones every Tuesday. It's our little tradition.",
+      "choices": [
+        {
+          "text": "This town is lucky to have you.",
+          "next_node_id": "ending_lucky",
+          "relationship_changes": {
+            "hana": 0.2
+          }
+        }
+      ]
+    },
+    "hana_burden": {
+      "speaker_id": "hana",
+      "text": "*pauses, the teacup stilling in her hands* ...This shop. This beautiful, fragile, irreplaceable shop. *voice softens* Every day I wonder if I'm doing enough. If grandmother would be proud. If the recipes taste the same. If the counter remembers her hands better than mine. *takes a breath* But then someone walks in, takes that first sip, and smiles. And I know. I know I'm exactly where I'm meant to be.",
+      "choices": [
+        {
+          "text": "She would be incredibly proud of you.",
+          "next_node_id": "ending_proud",
+          "relationship_changes": {
+            "hana": 0.3
+          }
+        },
+        {
+          "text": "The shop is alive because of you, not despite you.",
+          "next_node_id": "ending_alive",
+          "relationship_changes": {
+            "hana": 0.25
+          }
+        }
+      ]
+    },
+    "ending_kindness": {
+      "speaker_id": "hana",
+      "text": "*warm smile* Kindness is just attention made visible. *refills your cup* Come back anytime. The Whispering Leaf is always here, and so am I. In Springtown, no one should ever have to drink tea alone.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    },
+    "ending_wisdom": {
+      "speaker_id": "hana",
+      "text": "The world has enough noise. What it needs is more steeping. *finishes her tea* Come back whenever you need a quiet moment. The Whispering Leaf has been here for four generations, and if I have my way... *smiles* ...it'll be here for four more. Now, shall I pack some tea for the road?",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    },
+    "ending_legacy": {
+      "speaker_id": "hana",
+      "text": "*eyes shining* Thank you. That means more than you know. *carefully closes the recipe book* Every generation adds their own page. My page... I think it's about opening the door wider. Letting more people in. *straightens up* Maybe it's time this old shop learned some new tricks.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    },
+    "ending_growth": {
+      "speaker_id": "hana",
+      "text": "*takes a sharp breath* ...You're right. *looks at the back room with new eyes* She wouldn't want me to turn this place into a museum. She'd want it to grow. To welcome the next generation of travelers and dreamers. *picks up her pen* I'm going to revise those plans tonight. Bigger windows. More rooms. And always... always good tea.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    },
+    "ending_practical": {
+      "speaker_id": "hana",
+      "text": "*nods thoughtfully* One room at a time. I like that. *starts sketching on a napkin* Maybe the back room first - it gets the morning light. And if that works... *smiles growing* ...then the garden could become a courtyard. Oh! And Kai could play music for the guests! *catches herself* See what you've started?",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    },
+    "ending_pathfinder": {
+      "speaker_id": "hana",
+      "text": "*watches you drink* ...How does it taste? *leans forward* My grandmother always said the Pathfinder's Blend tastes different to everyone. Like it knows what you need. *smiles* Whatever you're looking for - I think you're closer than you realize. Come back anytime. The door is always open.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    },
+    "ending_lucky": {
+      "speaker_id": "hana",
+      "text": "*blushes* Oh, I'm just... *trails off, then straightens* Actually, no. You're right. I am good at this. *laughs* Sorry, I'm not used to accepting compliments. My grandmother always said 'the tea speaks for itself.' But I suppose the tea-maker matters too. *refills your cup* Stay as long as you like.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    },
+    "ending_proud": {
+      "speaker_id": "hana",
+      "text": "*wipes her eyes quickly* I... *composes herself* Thank you. I don't hear that enough. Not because people don't care, but because... *smiles through the tears* ...because I never ask. Maybe I should start. *lifts her cup* To grandmother. And to the next chapter. Whatever it holds.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    }
+  }
+}
