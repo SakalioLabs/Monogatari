@@ -3,8 +3,8 @@
     <aside class="character-rail">
       <div class="rail-header">
         <div>
-          <span class="eyebrow">Cast</span>
-          <h1>AI Chat</h1>
+          <span class="eyebrow">{{ t('chat.cast', 'Cast') }}</span>
+          <h1>{{ t('chat.title', 'AI Chat') }}</h1>
         </div>
         <span class="status-dot" :class="{ online: characters.length > 0 }"></span>
       </div>
@@ -26,7 +26,7 @@
 
         <div v-if="characters.length === 0" class="empty-rail">
           <span class="empty-mark">--</span>
-          <span>No characters loaded</span>
+          <span>{{ t('chat.no-characters', 'No characters loaded') }}</span>
         </div>
       </div>
     </aside>
@@ -35,16 +35,16 @@
       <header class="conversation-header">
         <button class="icon-btn" title="Back to dashboard" @click="$router.push('/')">‹</button>
         <div class="conversation-title">
-          <span class="eyebrow">{{ selectedCharacter ? 'Session' : 'Ready' }}</span>
-          <h2>{{ selectedCharacter?.name || 'Select a character' }}</h2>
+          <span class="eyebrow">{{ selectedCharacter ? t('chat.session', 'Session') : t('chat.ready', 'Ready') }}</span>
+          <h2>{{ selectedCharacter?.name || t('chat.select-character', 'Select a character') }}</h2>
         </div>
         <div class="session-metrics" v-if="selectedCharacter">
           <span class="metric-pill">{{ currentEmotion }}</span>
           <span class="metric-pill" :class="relationshipClass">Rel {{ relationshipScore.toFixed(2) }}</span>
         </div>
         <div class="header-actions">
-          <button class="btn btn-secondary btn-sm" :disabled="!selectedCharacter || isLoading" @click="refreshEvaluation">Score</button>
-          <button class="btn btn-secondary btn-sm" :disabled="!selectedCharacter || isLoading" @click="clearChat">Clear</button>
+          <button class="btn btn-secondary btn-sm" :disabled="!selectedCharacter || isLoading" @click="refreshEvaluation">{{ t('chat.score', 'Score') }}</button>
+          <button class="btn btn-secondary btn-sm" :disabled="!selectedCharacter || isLoading" @click="clearChat">{{ t('chat.clear', 'Clear') }}</button>
         </div>
       </header>
 
@@ -78,8 +78,8 @@
       <main v-else class="select-state">
         <div class="select-state-inner">
           <span class="empty-mark">M</span>
-          <h2>Character session desk</h2>
-          <p>Profiles, relationship state, streaming replies, and scoring stay in one focused surface.</p>
+          <h2>{{ t('chat.session-desk', 'Character session desk') }}</h2>
+          <p>{{ t('chat.session-desc', 'Profiles, relationship state, streaming replies, and scoring stay in one focused surface.') }}</p>
         </div>
       </main>
 
@@ -88,51 +88,51 @@
           ref="inputRef"
           v-model="inputText"
           :disabled="isLoading"
-          placeholder="Message"
+          :placeholder="t('chat.placeholder', 'Message')"
           rows="1"
           @input="resizeInput"
           @keydown.enter.exact.prevent="sendMessage"
         ></textarea>
         <button class="send-btn" :disabled="!inputText.trim() || isLoading" title="Send" @click="sendMessage">
           <span v-if="isLoading" class="spinner"></span>
-          <span v-else>Send</span>
+          <span v-else>{{ t('chat.send', 'Send') }}</span>
         </button>
       </footer>
     </section>
 
     <aside class="insight-panel">
       <section class="insight-section">
-        <span class="eyebrow">Signal</span>
+        <span class="eyebrow">{{ t('chat.signal', 'Signal') }}</span>
         <div class="insight-grid">
           <div class="insight-item">
             <span class="insight-value">{{ messageCount }}</span>
-            <span class="insight-label">Messages</span>
+            <span class="insight-label">{{ t('chat.messages', 'Messages') }}</span>
           </div>
           <div class="insight-item">
             <span class="insight-value">{{ playerMessageCount }}</span>
-            <span class="insight-label">Player</span>
+            <span class="insight-label">{{ t('chat.player', 'Player') }}</span>
           </div>
         </div>
       </section>
 
       <section class="insight-section">
         <div class="section-head">
-          <span class="eyebrow">Evaluation</span>
-          <button class="link-btn" :disabled="!selectedCharacter || isLoading" @click="refreshEvaluation">Refresh</button>
+          <span class="eyebrow">{{ t('chat.evaluation', 'Evaluation') }}</span>
+          <button class="link-btn" :disabled="!selectedCharacter || isLoading" @click="refreshEvaluation">{{ t('chat.refresh', 'Refresh') }}</button>
         </div>
         <div v-if="evaluation" class="score-stack">
           <div class="score-row">
-            <span>Friendliness</span>
+            <span>{{ t('chat.friendliness', 'Friendliness') }}</span>
             <strong>{{ percent(evaluation.friendliness) }}</strong>
             <div class="bar-track"><div class="bar-fill" :style="{ width: percent(evaluation.friendliness) }"></div></div>
           </div>
           <div class="score-row">
-            <span>Engagement</span>
+            <span>{{ t('chat.engagement', 'Engagement') }}</span>
             <strong>{{ percent(evaluation.engagement) }}</strong>
             <div class="bar-track"><div class="bar-fill engagement" :style="{ width: percent(evaluation.engagement) }"></div></div>
           </div>
           <div class="score-row">
-            <span>Creativity</span>
+            <span>{{ t('chat.creativity', 'Creativity') }}</span>
             <strong>{{ percent(evaluation.creativity) }}</strong>
             <div class="bar-track"><div class="bar-fill creativity" :style="{ width: percent(evaluation.creativity) }"></div></div>
           </div>
@@ -142,11 +142,11 @@
       </section>
 
       <section class="insight-section">
-        <span class="eyebrow">Runtime</span>
+        <span class="eyebrow">{{ t('chat.runtime', 'Runtime') }}</span>
         <div class="runtime-list">
-          <span><b>Mode</b>{{ isStreaming ? 'Streaming' : 'Idle' }}</span>
-          <span><b>Emotion</b>{{ currentEmotion }}</span>
-          <span><b>Relation</b>{{ relationshipScore.toFixed(2) }}</span>
+          <span><b>{{ t('chat.mode', 'Mode') }}</b>{{ isStreaming ? 'Streaming' : 'Idle' }}</span>
+          <span><b>{{ t('chat.emotion', 'Emotion') }}</b>{{ currentEmotion }}</span>
+          <span><b>{{ t('chat.relation', 'Relation') }}</b>{{ relationshipScore.toFixed(2) }}</span>
         </div>
       </section>
     </aside>
@@ -154,8 +154,8 @@
     <Transition name="fade">
       <div v-if="activeEvent" class="event-toast" @click="activeEvent = null">
         <strong>{{ activeEvent.description }}</strong>
-        <span v-if="activeEvent.data.unlock_scene">Scene unlocked</span>
-        <span v-if="activeEvent.data.dialogue_id">Dialogue available</span>
+        <span v-if="activeEvent.data.unlock_scene">{{ t('chat.scene-unlocked', 'Scene unlocked') }}</span>
+        <span v-if="activeEvent.data.dialogue_id">{{ t('chat.dialogue-available', 'Dialogue available') }}</span>
       </div>
     </Transition>
 
@@ -169,6 +169,9 @@
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { invokeCommand } from '../lib/tauri'
+import { useI18n } from '../lib/i18n'
+
+const { t } = useI18n()
 
 interface ChatMessage {
   role: string
