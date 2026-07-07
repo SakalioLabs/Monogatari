@@ -15,6 +15,7 @@
         <button class="control-btn" title="Load" @click="openLoadDialog">{{ t('game.load', 'Load') }}</button>
         <button class="control-btn" title="Backlog" @click="$router.push('/backlog')">{{ t('nav.backlog', 'Backlog') }}</button>
         <button class="control-btn" title="Settings" @click="toggleSettings">{{ t('game.tune', 'Tune') }}</button>
+        <span v-if="dialogueState?.is_active" class="auto-save-badge" title="Auto-save active">&#128190;</span>
       </div>
     </header>
 
@@ -217,6 +218,7 @@ const settings = ref({
 
 let typingTimer: number | null = null
 let autoPlayTimer: number | null = null
+let autoSaveTimer: number | null = null
 const activeSceneStorageKey = 'monogatari.activeScene'
 
 const sceneBackdropStyle = computed(() => {
@@ -411,6 +413,16 @@ onMounted(async () => {
   await updateDialogueState()
   await loadSaves()
   window.addEventListener('keydown', handleKeydown)
+  
+  // Auto-save every 2 minutes during active dialogue
+  autoSaveTimer = window.setInterval(async () => {
+    if (dialogueState.value?.is_active) {
+      try {
+        const name = 'Auto-save ' + new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+        await invokeCommand<string>('save_game', { saveName: name })
+      } catch (e) { console.error('Auto-save failed:', e) }
+    }
+  }, 120000)
 })
 
 onUnmounted(() => {

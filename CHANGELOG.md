@@ -1,3 +1,14 @@
+## [0.9.2] - 2026-07-07
+
+### Added
+- **Kai character**: Wandering musician with 12-node cafe_encounter dialogue (5 endings), cross-character connections to Mio, Sakura, Luna, and Yuki. Traveler songs knowledge entry.
+- **Hana character**: Tea shop owner with 13-node whispering_leaf dialogue (8 endings), tea blends knowledge. Richest dialogue in the collection with deep emotional arcs.
+- **Auto-save in GameView**: Automatic save every 2 minutes during active dialogue with auto-save indicator badge.
+
+### Changed
+- Content inventory expanded to 12 characters, 12 dialogues, 14 knowledge entries.
+- All new characters include personality Big Five traits, emotion states, relationship networks, and knowledge references.
+
 ## [0.9.1] - 2026-07-07
 
 ### Added
