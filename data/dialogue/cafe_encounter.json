@@ -1,0 +1,242 @@
+{
+  "id": "cafe_encounter",
+  "title": "The Musician at the Cafe",
+  "description": "Meet Kai at the Springtown cafe and discover his story through music.",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "speaker_id": "kai",
+      "text": "*strums guitar softly* Hey there. The coffee here is something special, isn't it? I've been to dozens of towns, and Springtown's cafe has this warmth that's hard to describe in words. Maybe that's why I keep writing songs about it instead.",
+      "choices": [
+        {
+          "text": "You're a musician? That's amazing!",
+          "next_node_id": "musician",
+          "relationship_changes": {
+            "kai": 0.1
+          }
+        },
+        {
+          "text": "You've traveled a lot? Tell me about it.",
+          "next_node_id": "traveler",
+          "relationship_changes": {
+            "kai": 0.15
+          }
+        },
+        {
+          "text": "What kind of songs do you write?",
+          "next_node_id": "songs",
+          "relationship_changes": {
+            "kai": 0.1
+          }
+        }
+      ]
+    },
+    "musician": {
+      "speaker_id": "kai",
+      "text": "*smiles* Guilty as charged. I picked up the guitar when I was twelve and never put it down. My mother used to say I spoke better through music than words. She wasn't wrong. *plays a gentle chord* Music doesn't lie. It can't. That's what I love about it.",
+      "choices": [
+        {
+          "text": "Your mother sounds wise.",
+          "next_node_id": "mother",
+          "relationship_changes": {
+            "kai": 0.15
+          }
+        },
+        {
+          "text": "Play me something?",
+          "next_node_id": "play_song",
+          "relationship_changes": {
+            "kai": 0.2
+          }
+        }
+      ]
+    },
+    "traveler": {
+      "speaker_id": "kai",
+      "text": "*leans back* Where do I start? I've seen the northern lights dance over mountain towns. Watched sunsets paint the ocean in a fishing village called Hoshikage. Slept under ancient trees in a forest shrine. *eyes soften* Every place has its own melody. You just have to listen for it.",
+      "choices": [
+        {
+          "text": "Which place was your favorite?",
+          "next_node_id": "favorite_place",
+          "relationship_changes": {
+            "kai": 0.1
+          }
+        },
+        {
+          "text": "Don't you ever miss having a home?",
+          "next_node_id": "home_question",
+          "relationship_changes": {
+            "kai": 0.2
+          }
+        }
+      ]
+    },
+    "songs": {
+      "speaker_id": "kai",
+      "text": "*thinks* Stories, mostly. Every song is a place I've been or a person I've met. This one here - *taps his guitar case* - I wrote it about a girl who paints cherry blossoms. Met her right here in Springtown. And this one... *pulls out a worn sheet* ...this is about an old library guardian who speaks in riddles.",
+      "choices": [
+        {
+          "text": "You know Yuki?",
+          "next_node_id": "yuki_connection",
+          "relationship_changes": {
+            "kai": 0.15
+          }
+        },
+        {
+          "text": "A song about cherry blossoms... that must be Sakura.",
+          "next_node_id": "sakura_connection",
+          "relationship_changes": {
+            "kai": 0.15
+          }
+        }
+      ]
+    },
+    "mother": {
+      "speaker_id": "kai",
+      "text": "*nods slowly* She was. She passed when I was fifteen. The guitar was her parting gift. *touches the instrument gently* Every time I play, I feel like she's listening. That's why I keep moving - because every new place is a new audience for the songs she gave me the courage to write.",
+      "choices": [
+        {
+          "text": "She'd be proud of you.",
+          "next_node_id": "ending_proud",
+          "relationship_changes": {
+            "kai": 0.25
+          }
+        },
+        {
+          "text": "Is that why you keep traveling?",
+          "next_node_id": "home_question",
+          "relationship_changes": {
+            "kai": 0.15
+          }
+        }
+      ]
+    },
+    "play_song": {
+      "speaker_id": "kai",
+      "text": "*laughs softly* For you? Sure. *closes eyes and plays a gentle, flowing melody. The notes seem to capture the warmth of the cafe, the scent of cherry blossoms outside, and something deeper - a feeling of being exactly where you're meant to be.* ...I call it 'Springtown Lullaby.' Wrote it last week.",
+      "choices": [
+        {
+          "text": "That was beautiful. It felt like... coming home.",
+          "next_node_id": "ending_home",
+          "relationship_changes": {
+            "kai": 0.3
+          }
+        },
+        {
+          "text": "You're incredibly talented. Do you perform anywhere?",
+          "next_node_id": "performance",
+          "relationship_changes": {
+            "kai": 0.15
+          }
+        }
+      ]
+    },
+    "favorite_place": {
+      "speaker_id": "kai",
+      "text": "*long pause* ...Springtown. *laughs at your surprised expression* I know, I know. It's not exotic or dramatic. But there's something about this town. The way the light falls through the cherry blossoms. The way Mio's festival makes everyone glow. The way Luna stargazes as if the sky is an old friend. I've never stayed anywhere this long before.",
+      "choices": [
+        {
+          "text": "Maybe that means you've found your place.",
+          "next_node_id": "ending_home",
+          "relationship_changes": {
+            "kai": 0.25
+          }
+        }
+      ]
+    },
+    "home_question": {
+      "speaker_id": "kai",
+      "text": "*guitar goes quiet* ...Every day. *looks out the window* But then I think - what is home? Is it a place? A person? A feeling? *strums a minor chord* I think home is wherever the music takes me. And right now... *smiles softly* ...the music keeps bringing me back here.",
+      "choices": [
+        {
+          "text": "Maybe home is both a place and a journey.",
+          "next_node_id": "ending_wisdom",
+          "relationship_changes": {
+            "kai": 0.2
+          }
+        },
+        {
+          "text": "Springtown would be lucky to have you stay.",
+          "next_node_id": "ending_stay",
+          "relationship_changes": {
+            "kai": 0.25
+          }
+        }
+      ]
+    },
+    "yuki_connection": {
+      "speaker_id": "kai",
+      "text": "Yuki! *grins* She's remarkable. I wandered into the Great Library looking for shelter from rain, and she started speaking in these ancient proverbs. I thought she was putting me on, but then she showed me texts that made my songs feel like nursery rhymes. *laughs* I wrote three songs that night just trying to capture her voice.",
+      "choices": [
+        {
+          "text": "She has that effect on people.",
+          "next_node_id": "ending_wisdom",
+          "relationship_changes": {
+            "kai": 0.15
+          }
+        }
+      ]
+    },
+    "sakura_connection": {
+      "speaker_id": "kai",
+      "text": "You know Sakura? *eyes light up* She paints these cherry blossoms that look like they're breathing. I watched her work for an hour once - she didn't even notice me. The way she blends colors... it's like watching music being born. *pulls out a small canvas* She gave me this. Said it was 'payment' for the song I wrote about her art.",
+      "choices": [
+        {
+          "text": "That's a beautiful exchange - art for art.",
+          "next_node_id": "ending_wisdom",
+          "relationship_changes": {
+            "kai": 0.2
+          }
+        }
+      ]
+    },
+    "performance": {
+      "speaker_id": "kai",
+      "text": "Mio asked me to play at the Starlight Festival! *excited* Can you imagine? A thousand lanterns floating into the sky while I play under the stars. I'm composing something special for it - a song that captures Springtown's heartbeat. Want to hear a preview?",
+      "choices": [
+        {
+          "text": "Absolutely! Play it for me!",
+          "next_node_id": "ending_festival",
+          "relationship_changes": {
+            "kai": 0.2
+          }
+        }
+      ]
+    },
+    "ending_proud": {
+      "speaker_id": "kai",
+      "text": "*eyes glisten* ...Thank you. *clears throat* You know, I don't usually open up like this to people I just met. But there's something about you - and about this town - that makes it easy to be honest. *picks up guitar* I think I'll write a song about this conversation. Every good story deserves to be sung.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    },
+    "ending_home": {
+      "speaker_id": "kai",
+      "text": "*strums softly, then stops* Coming home... *whispers the words as if tasting them* I've been chasing that feeling across mountains and oceans. And here I find it in a little cafe in Springtown. *smiles* Maybe I'll stay a while longer. There are still songs to write and stories to hear. And... I think I'd like to hear yours too.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    },
+    "ending_wisdom": {
+      "speaker_id": "kai",
+      "text": "*nods thoughtfully* You know what? You're right. The journey and the destination aren't opposites - they're harmonies. *plays a chord that resolves beautifully* Like this. The tension and the resolution, the wandering and the arriving. They need each other. *stands up* Thank you for this. I have a new song to write.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    },
+    "ending_stay": {
+      "speaker_id": "kai",
+      "text": "*blinks* ...You really mean that? *looks around the cafe* You know, for the first time in ten years of traveling, I don't feel the urge to pack my bags. *touches the guitar* Maybe some songs are meant to be played in one place. Maybe some stories are meant to have roots. *smiles* I think Springtown might be my next chapter.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    },
+    "ending_festival": {
+      "speaker_id": "kai",
+      "text": "*takes a deep breath and plays. The melody is like starlight made sound - gentle, hopeful, and full of quiet wonder. It captures the lanterns, the cherry blossoms, the warmth of the town, and something more - the feeling of finding where you belong.* ...That's 'Starlight Over Springtown.' For Mio's festival. And for everyone who makes this place feel like home.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    }
+  }
+}

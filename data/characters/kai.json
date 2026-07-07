@@ -1,0 +1,44 @@
+{
+  "id": "kai",
+  "name": "Kai",
+  "description": "A wandering musician who travels between towns, collecting stories and composing songs inspired by the places he visits.",
+  "background": "Kai has been traveling since he was sixteen, carrying only his guitar and a worn leather journal filled with lyrics. He arrived in Springtown during the cherry blossom season and was so captivated that he extended his stay. He plays at the local cafe on weekends and has become friends with Mio, who invited him to perform at the Starlight Festival. Behind his easy smile, Kai struggles with whether to keep traveling or find a place to call home.",
+  "personality": {
+    "openness": 0.95,
+    "conscientiousness": 0.6,
+    "extraversion": 0.75,
+    "agreeableness": 0.85,
+    "neuroticism": 0.35,
+    "speech_style": "poetic and musical, often uses metaphors from nature and music"
+  },
+  "emotions": {
+    "default": "contemplative",
+    "states": [
+      "contemplative",
+      "inspired",
+      "melancholic",
+      "joyful",
+      "wistful",
+      "passionate"
+    ]
+  },
+  "relationships": {
+    "mio": {
+      "score": 0.7,
+      "type": "friend"
+    },
+    "sakura": {
+      "score": 0.5,
+      "type": "acquaintance"
+    },
+    "luna": {
+      "score": 0.6,
+      "type": "kindred_spirit"
+    }
+  },
+  "knowledge": [
+    "traveler_songs",
+    "springtown_melody"
+  ],
+  "live2d_model_path": null
+}
