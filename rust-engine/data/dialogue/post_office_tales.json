@@ -1,0 +1,282 @@
+{
+  "id": "post_office_tales",
+  "title": "The Postmaster's Tales",
+  "description": "Visit Nori at the Springtown post office and discover the stories hidden in forty years of undelivered letters.",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "speaker_id": "nori",
+      "text": "*adjusts spectacles, peers over them* Ah, a visitor! The bell above my door always knows when someone interesting is about to walk through. *gestures to a worn wooden chair* Sit, sit. I was just sorting through some letters from 1983. Nothing urgent - just the kind of mail that waits patiently for the right reader. What brings you to Springtown's smallest post office?",
+      "choices": [
+        {
+          "text": "I heard you've been the postmaster for forty years. That's incredible.",
+          "next_node_id": "forty_years",
+          "relationship_changes": {
+            "nori": 0.1
+          }
+        },
+        {
+          "text": "Letters from 1983? Who still has those?",
+          "next_node_id": "old_letters",
+          "relationship_changes": {
+            "nori": 0.15
+          }
+        },
+        {
+          "text": "You seem to know everyone in town. Tell me about them.",
+          "next_node_id": "town_stories",
+          "relationship_changes": {
+            "nori": 0.12
+          }
+        }
+      ]
+    },
+    "forty_years": {
+      "speaker_id": "nori",
+      "text": "*chuckles softly* Forty-two years, three months, and... *counts on his fingers* ...about a week. I started when I was twenty-three. The old postmaster, Mr. Yamamoto, said I had 'honest hands.' *looks at his hands* I suppose handling other people's letters teaches you to be careful with what doesn't belong to you. *smiles* Springtown's mail has been my life's work. Every envelope is a story waiting to be delivered.",
+      "choices": [
+        {
+          "text": "What was Springtown like forty years ago?",
+          "next_node_id": "old_springtown",
+          "relationship_changes": {
+            "nori": 0.15
+          }
+        },
+        {
+          "text": "Have you ever opened a letter by mistake?",
+          "next_node_id": "trust",
+          "relationship_changes": {
+            "nori": 0.1
+          }
+        }
+      ]
+    },
+    "old_letters": {
+      "speaker_id": "nori",
+      "text": "*lifts a yellowed envelope carefully* This one was written by a young woman to her mother, apologizing for moving away. She never sent it. *places it gently in a wooden box* I keep them. The letters people wrote but couldn't bring themselves to send. Love letters. Apologies. Confessions. *looks at you meaningfully* Sometimes the most important messages are the ones we never deliver. I keep them safe until the world is ready.",
+      "choices": [
+        {
+          "text": "That's beautiful. Can I see one?",
+          "next_node_id": "show_letter",
+          "relationship_changes": {
+            "nori": 0.2
+          }
+        },
+        {
+          "text": "Do you ever deliver them after all these years?",
+          "next_node_id": "deliver_later",
+          "relationship_changes": {
+            "nori": 0.18
+          }
+        }
+      ]
+    },
+    "town_stories": {
+      "speaker_id": "nori",
+      "text": "*laughs wheezily* Where to begin! *settles back* Hana - she was a shy girl who used to hide behind her grandmother's counter. Now she runs the whole tea shop and dreams of opening an inn. *pulls out a letter* Sakura sends a painting every month to an art gallery in the city. *another letter* Sora writes to observatories around the world - she's searching for a comet, you know. *looks at you* Everyone in Springtown is writing their own story. I just provide the paper and stamps.",
+      "choices": [
+        {
+          "text": "What about your story, Nori?",
+          "next_node_id": "noris_story",
+          "relationship_changes": {
+            "nori": 0.2
+          }
+        },
+        {
+          "text": "You really know everyone here.",
+          "next_node_id": "heart_of_town",
+          "relationship_changes": {
+            "nori": 0.1
+          }
+        }
+      ]
+    },
+    "old_springtown": {
+      "speaker_id": "nori",
+      "text": "*gazes out the window* It was smaller. The cherry blossom park was just a grove that Mio's grandmother planted. The observatory was Professor Tanaka's private project - people thought she was eccentric. *chuckles* The tea shop was a tiny storefront with three tables. And the post office... *looks around proudly* it looked exactly the same. Some things don't need to change. They just need to last.",
+      "choices": [
+        {
+          "text": "What's the biggest change you've seen?",
+          "next_node_id": "biggest_change",
+          "relationship_changes": {
+            "nori": 0.15
+          }
+        },
+        {
+          "text": "Did you ever think about leaving Springtown?",
+          "next_node_id": "why_stay",
+          "relationship_changes": {
+            "nori": 0.2
+          }
+        }
+      ]
+    },
+    "trust": {
+      "speaker_id": "nori",
+      "text": "*pretends to be offended* Never! *then grins* Well, there was one time in 1997 when an envelope came unsealed in the rain. I saw a single line before I could look away: 'I still think of you every morning.' *carefully tapes the envelope* I resealed it and delivered it without another glance. A postmaster's first duty is to the privacy of the heart. *winks* But I'll admit, I wondered about that one for years.",
+      "choices": [
+        {
+          "text": "Did they ever reply?",
+          "next_node_id": "mystery_letter",
+          "relationship_changes": {
+            "nori": 0.15
+          }
+        }
+      ]
+    },
+    "show_letter": {
+      "speaker_id": "nori",
+      "text": "*hesitates, then selects a letter with trembling hands* This one... *clears throat* This one was written by Professor Tanaka to her sister, the year before she passed. She wrote: 'I have spent my life among the stars. But Springtown is my home among people. If I go, bury me under the observatory hill, where I can still see the sky.' *gently puts it away* I deliver it every year on her birthday. To the sky. To the stars she loved. *quietly* She would have liked you.",
+      "choices": [
+        {
+          "text": "That's one of the most beautiful things I've ever heard.",
+          "next_node_id": "ending_letter",
+          "relationship_changes": {
+            "nori": 0.3
+          }
+        }
+      ]
+    },
+    "deliver_later": {
+      "speaker_id": "nori",
+      "text": "*nods slowly* Sometimes. When the time is right. There was a letter from a young man to his father - angry words written in haste. I held it for twelve years. Then one day, the father walked in, looking old and tired, and asked if any mail had come for him. I gave him the letter. He read it on the spot, wept, and thanked me. *looks at the box* Some letters just need to ripen, like fruit on a tree.",
+      "choices": [
+        {
+          "text": "You're not just a postmaster. You're a keeper of hearts.",
+          "next_node_id": "ending_keeper",
+          "relationship_changes": {
+            "nori": 0.25
+          }
+        }
+      ]
+    },
+    "noris_story": {
+      "speaker_id": "nori",
+      "text": "*long pause* ...I was in love once. She was a traveling musician who passed through Springtown every spring for three years. I'd save letters from the post office for her - mail from her family that she'd pick up when she arrived. *smiles sadly* The third year, I wrote her a letter telling her how I felt. But I never gave it to her. *taps the box* It's in there. She stopped coming the next year. I heard she settled in a town by the sea. *fingers a letter* Some things are too precious to risk losing. So you keep them safe in a box instead.",
+      "choices": [
+        {
+          "text": "Maybe it's not too late to send it.",
+          "next_node_id": "ending_send_letter",
+          "relationship_changes": {
+            "nori": 0.3
+          }
+        },
+        {
+          "text": "I think she knew, somehow. Letters travel in mysterious ways.",
+          "next_node_id": "ending_knew",
+          "relationship_changes": {
+            "nori": 0.25
+          }
+        }
+      ]
+    },
+    "heart_of_town": {
+      "speaker_id": "nori",
+      "text": "*adjusts his glasses* When you deliver people's mail for forty years, you learn their rhythms. Mio sends festival invitations in July. Sakura's art supplies arrive every third Tuesday. Sora's astronomy journals come from three different countries. *pats a stack of letters* I know when someone's expecting good news by the way they walk through that door. And I know when they're avoiding bad news by the way they hesitate before asking. *smiles gently* The post office sees everything. It just doesn't tell.",
+      "choices": [
+        {
+          "text": "You're the heart of this town, Nori.",
+          "next_node_id": "ending_heart",
+          "relationship_changes": {
+            "nori": 0.2
+          }
+        }
+      ]
+    },
+    "biggest_change": {
+      "speaker_id": "nori",
+      "text": "*removes his glasses, polishes them* The silences. People used to write long letters - four, five pages - about their lives. Now they send short messages. Efficient but... *searches for the word* ...hollow. *puts his glasses back on* I'm not against progress. But a letter you can hold in your hands, read again years later, smell the paper... that's a different kind of communication. That's a piece of someone's soul. *looks at you* You write letters?",
+      "choices": [
+        {
+          "text": "I will start, after today.",
+          "next_node_id": "ending_write",
+          "relationship_changes": {
+            "nori": 0.2
+          }
+        }
+      ]
+    },
+    "why_stay": {
+      "speaker_id": "nori",
+      "text": "*looks around the small post office* Every morning, I unlock this door, and the light falls across the floor in the same pattern it has for forty-two years. Every afternoon, the bell rings, and someone walks in with a story. *pauses* I stayed because this town needed someone to remember. To keep the letters safe. To know who loved whom, who left, who came back. *quietly* I stayed because I realized my story was already here. I just had to live it.",
+      "choices": [
+        {
+          "text": "And what a beautiful story it is.",
+          "next_node_id": "ending_beautiful",
+          "relationship_changes": {
+            "nori": 0.25
+          }
+        }
+      ]
+    },
+    "mystery_letter": {
+      "speaker_id": "nori",
+      "text": "*taps his nose* They did. A month later, a letter arrived with no return address. Just a single sentence: 'Every morning, I think of you too.' *smiles* I delivered it to the address on the envelope. A few months after that, I saw them walking through the cherry blossoms together. *chuckles* The post office doesn't just deliver letters. Sometimes, it delivers second chances.",
+      "choices": [
+        {
+          "text": "You're a matchmaker as well as a postmaster!",
+          "next_node_id": "ending_matchmaker",
+          "relationship_changes": {
+            "nori": 0.15
+          }
+        }
+      ]
+    },
+    "ending_letter": {
+      "speaker_id": "nori",
+      "text": "*eyes glistening* Thank you, my dear. *carefully places the letter back* Some people think this is just a job. Sorting mail, delivering packages. But every envelope contains a piece of someone's life. *offers you a stamp* Here. For when you write your first letter. It's a Springtown stamp - the only design we've ever had. Cherry blossoms and a postmark. *smiles* When you're ready to send something important, you know where to find me.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    },
+    "ending_keeper": {
+      "speaker_id": "nori",
+      "text": "*removes his glasses, wipes his eyes* ...That might be the kindest thing anyone has ever said to me. *puts his glasses back on, clears throat* You know, I've spent my whole life holding other people's stories. I never expected anyone to notice. *offers a small envelope* Here. A blank page and a stamped envelope. Write someone you care about. Tell them something true. *smiles* That's all any of us can do.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    },
+    "ending_send_letter": {
+      "speaker_id": "nori",
+      "text": "*stares at the box of undelivered letters* ...Maybe you're right. *pulls out a faded envelope* I wrote this thirty-seven years ago. I've carried it through every spring, every autumn. *holds it to the light* You know what? Today might be the day it finally gets a stamp. *writes an address with steady hands* Thank you. For reminding me that letters are meant to be sent. *smiles* Even the ones that scare us.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    },
+    "ending_knew": {
+      "speaker_id": "nori",
+      "text": "*eyes glisten as he smiles* ...You think so? *touches the letter box* I'd like to think that. That somehow, across the miles and years, she felt it. Every spring when the cherry blossoms bloomed, I'd imagine her reading my words. *looks at you* Perhaps love doesn't always need to be delivered to exist. Sometimes, it's enough that it was written. *small laugh* You're wise beyond your years, my friend.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    },
+    "ending_heart": {
+      "speaker_id": "nori",
+      "text": "*blushes* Oh, I'm just an old postman who talks too much. *straightens his cap* But if I am the heart, then this town has given me plenty to pump. Every letter, every story, every face that walks through that door. *extends his hand* Thank you for visiting. And remember - if you ever need to send a letter but can't find the courage, I'll hold it for you. Until the world is ready.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    },
+    "ending_write": {
+      "speaker_id": "nori",
+      "text": "*beams* That's the best thing I've heard all month! *reaches under his counter and produces a simple leather journal* Here. I keep extras for people who look like they have stories to write. The first page is the hardest - just start with 'Dear Someone' and let the words find their way. *hands it over* Springtown's post office believes in you. And so do I.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    },
+    "ending_beautiful": {
+      "speaker_id": "nori",
+      "text": "*looks at you with gentle eyes* ...You know, forty-two years of delivering mail, and nobody has ever said that to me. *wipes a corner of his eye* Perhaps the most important letters aren't the ones we deliver - they're the ones we receive when we least expect them. *places a hand on his heart* I'll remember this conversation for the rest of my days. Forever is not too long for the kind words of a friend.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "best"
+    },
+    "ending_matchmaker": {
+      "speaker_id": "nori",
+      "text": "*laughs heartily* Matchmaker! I like that. *chuckles* I prefer to think of myself as a... facilitator of fate. The letters do all the real work. I just make sure they arrive on time. *winks* Though I have been known to hold a letter an extra day if the recipient needs a little suspense. Don't tell anyone. *extends his hand* Come back anytime. The post office is always open. And so is my ear.",
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
+    }
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "id": "nori",
+  "name": "Nori",
+  "description": "The elderly postmaster of Springtown who has delivered letters and stories for over forty years, connecting everyone in town.",
+  "background": "Nori has been Springtown's postmaster for four decades. He knows every resident, every street, and most of the secrets that pass through his mail. His small post office, nestled between Hana's tea shop and the main square, is a repository of town history. He keeps a collection of undelivered letters - some decades old - that people wrote but never sent. He is the unofficial historian of Springtown and a trusted confidante to everyone from Mio to Professor Tanaka. He has a habit of knowing what people need before they ask for it.\n\nNori's own story is one of quiet devotion: he fell in love with a woman who left Springtown years ago, but he stayed, tending to the town's letters and memories. He never married, but he often says 'every letter I deliver carries a little piece of my heart with it.'",
+  "personality": {
+    "openness": 0.7,
+    "conscientiousness": 0.95,
+    "extraversion": 0.55,
+    "agreeableness": 0.9,
+    "neuroticism": 0.15,
+    "speech_style": "warm and unhurried, speaks with the patience of someone who has seen seasons change, uses postal metaphors"
+  },
+  "emotions": {
+    "default": "serene",
+    "states": [
+      "serene",
+      "warm",
+      "melancholic",
+      "amused",
+      "wise",
+      "surprised"
+    ]
+  },
+  "relationships": {
+    "hana": {
+      "score": 0.85,
+      "type": "lifelong_friend"
+    },
+    "mio": {
+      "score": 0.75,
+      "type": "mentor"
+    },
+    "sora": {
+      "score": 0.6,
+      "type": "pen_pal_supporter"
+    },
+    "sakura": {
+      "score": 0.65,
+      "type": "regular"
+    },
+    "kai": {
+      "score": 0.55,
+      "type": "correspondent"
+    },
+    "yuki": {
+      "score": 0.5,
+      "type": "old_friend"
+    },
+    "luna": {
+      "score": 0.7,
+      "type": "pen_pal"
+    },
+    "kenji": {
+      "score": 0.5,
+      "type": "acquaintance"
+    }
+  },
+  "knowledge": [
+    "springtown_history",
+    "undelivered_letters"
+  ],
+  "live2d_model_path": null
+}
