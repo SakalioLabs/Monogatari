@@ -5,6 +5,7 @@ use std::path::{Component, Path, PathBuf};
 
 use serde::Serialize;
 use serde_json::{json, Value};
+use chrono;
 use tauri::State;
 
 use crate::state::AppState;
@@ -485,6 +486,36 @@ fn push_issue(
         path,
         message: message.into(),
     });
+}
+
+/// Export project as a distributable package manifest.
+/// Returns a JSON manifest of all project content for packaging.
+#[tauri::command]
+pub async fn export_project(
+    state: State<'_, AppState>,
+    project_path: Option<String>,
+) -> Result<Value, String> {
+    let root = resolve_project_root(&state, project_path).await?;
+
+    let cm = state.character_manager.read().await;
+    let dm = state.dialogue_manager.read().await;
+    let kb = state.knowledge_base.read().await;
+    let sm = state.scene_manager.read().await;
+
+    let manifest = json!({
+        "format": "monogatari-project",
+        "version": "1.0",
+        "exported_at": chrono::Utc::now().to_rfc3339(),
+        "project_path": root.to_string_lossy(),
+        "content": {
+            "characters": cm.get_character_ids(),
+            "dialogues": dm.list_dialogue_ids(),
+            "knowledge_count": kb.len(),
+            "scenes": sm.list_scene_ids(),
+        }
+    });
+
+    Ok(manifest)
 }
 
 #[cfg(test)]

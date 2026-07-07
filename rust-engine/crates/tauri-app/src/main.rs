@@ -27,6 +27,7 @@ fn main() {
             commands::engine::get_engine_status,
             commands::project::get_project_config,
             commands::project::save_project_config,
+            commands::project::export_project,
             commands::characters::get_characters,
             commands::characters::get_character,
             commands::characters::load_characters,
