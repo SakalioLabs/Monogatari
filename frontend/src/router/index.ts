@@ -79,6 +79,11 @@ const router = createRouter({
       name: 'dialogue-editor',
       component: () => import('../views/DialogueEditorView.vue'),
     },
+    {
+      path: '/scene-editor',
+      name: 'scene-editor',
+      component: () => import('../views/SceneEditorView.vue'),
+    },
   ],
 })
 
