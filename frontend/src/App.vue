@@ -15,10 +15,10 @@
           <span v-if="item.badge && !sidebarCollapsed" class="nav-badge">{{ item.badge }}</span>
         </router-link>
       </nav>
-            <div class="sidebar-search">
+      <div class="sidebar-search">
         <GlobalSearch />
       </div>
-    <div class="sidebar-footer">
+      <div class="sidebar-footer">
         <button class="nav-item" @click="sidebarCollapsed = !sidebarCollapsed" :title="t('app.compact', 'Compact')">
           <span class="nav-icon" v-html="sidebarCollapsed ? '&rsaquo;' : '&lsaquo;'"></span>
           <span class="nav-label" v-show="!sidebarCollapsed">{{ t('app.compact', 'Compact') }}</span>
@@ -27,13 +27,13 @@
     </aside>
     <main class="app-main">
       <ToastNotification />
-    <ErrorBoundary>
-    <router-view v-slot="{ Component }">
-        <transition name="page" mode="out-in">
-          <component :is="Component" />
-        </transition>
-      </router-view>
-        </ErrorBoundary>
+      <ErrorBoundary>
+        <router-view v-slot="{ Component }">
+          <transition name="page" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
+      </ErrorBoundary>
     </main>
     <Transition name="fade">
       <div v-if="achievementToastVisible" class="achievement-toast" @click="achievementToastVisible = false">
@@ -118,7 +118,7 @@ const navItems = computed(() => [
 </script>
 
 <style scoped>
-#app { display: flex; min-height: 100vh; }
+#app { display: flex; min-height: 100vh; min-height: 100svh; }
 .app-sidebar {
   width: var(--sidebar-width); min-width: var(--sidebar-width);
   background: rgba(21,25,34,0.96); border-right: 1px solid var(--border);
@@ -164,7 +164,7 @@ const navItems = computed(() => [
 }
 .sidebar-search { padding: 4px 8px; display: flex; justify-content: center; }
 .sidebar-footer { padding: 8px; border-top: 1px solid var(--border); }
-.app-main { flex: 1; overflow: auto; min-width: 0; }
+.app-main { flex: 1; overflow: auto; min-width: 0; min-height: 0; }
 .page-enter-active { animation: fadeIn 0.2s ease; }
 .page-leave-active { animation: fadeIn 0.15s ease reverse; }
 .achievement-toast {
@@ -189,6 +189,6 @@ const navItems = computed(() => [
   .nav-badge { display: none; }
   .nav-item.active::before { left: 8px; right: 8px; top: auto; bottom: 0; width: auto; height: 3px; border-radius: 3px 3px 0 0; }
   .sidebar-footer { display: none; }
-  .app-main { width: 100%; }
+  .app-main { width: 100%; min-height: 0; }
 }
 </style>

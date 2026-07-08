@@ -1209,6 +1209,7 @@ async function verifyFrontendSourceInvariants() {
   const pwaSource = await readFile(path.join(frontendDir, 'src', 'lib', 'pwa.ts'), 'utf8')
   const rendererAssetsSource = await readFile(path.join(frontendDir, 'src', 'lib', 'rendererAssets.ts'), 'utf8')
   const mobileReadinessSource = await readFile(path.join(frontendDir, 'scripts', 'verify-mobile-readiness.mjs'), 'utf8')
+  const responsiveShellSource = await readFile(path.join(frontendDir, 'scripts', 'verify-responsive-shell.mjs'), 'utf8')
   const gameViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'GameView.vue'), 'utf8')
   const chatViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'ChatView.vue'), 'utf8')
   const groupChatViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'GroupChatView.vue'), 'utf8')
@@ -1252,6 +1253,24 @@ async function verifyFrontendSourceInvariants() {
   for (const [source, needle, description] of mobileShellRequirements) {
     if (!source.includes(needle)) {
       issues.push(`Mobile shell readiness must ${description}`)
+    }
+  }
+
+  const responsiveShellRequirements = [
+    [frontendPackageSource, 'verify:responsive-shell', 'expose a responsive shell verifier npm script'],
+    [frontendPackageSource, 'verify-responsive-shell.mjs', 'run responsive shell verification from production builds'],
+    [responsiveShellSource, '375', 'verify the 375px mobile shell profile'],
+    [responsiveShellSource, '768', 'verify the 768px tablet shell profile'],
+    [responsiveShellSource, 'dist/index.html', 'verify built root HTML shell metadata'],
+    [responsiveShellSource, 'dist/404.html', 'verify built static-hosting fallback shell metadata'],
+    [responsiveShellSource, '@media (width<=480px)', 'verify built mobile CSS media output'],
+    [responsiveShellSource, '@media (max-width: 720px)', 'verify the compact App shell breakpoint'],
+    [responsiveShellSource, 'min-height: 100svh', 'verify small viewport height shell rules'],
+    [responsiveShellSource, 'min-width: var(--sidebar-width)', 'verify tablet sidebar width stability'],
+  ]
+  for (const [source, needle, description] of responsiveShellRequirements) {
+    if (!source.includes(needle)) {
+      issues.push(`Responsive shell readiness must ${description}`)
     }
   }
 

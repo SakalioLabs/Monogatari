@@ -218,6 +218,7 @@ const readinessItems = computed(() => [
   { name: 'Cloud save sync', done: true },
   { name: 'Distribution channel policy', done: true },
   { name: 'Mobile Web/PWA shell readiness', done: true },
+  { name: 'Responsive Web/PWA shell verification', done: true },
   { name: 'Production installer signing', done: false },
   { name: 'Mobile deployment (Tauri mobile)', done: false },
 ])

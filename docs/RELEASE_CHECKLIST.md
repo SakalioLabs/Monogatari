@@ -10,11 +10,12 @@
 - [ ] `cd frontend && npm run build:web` emits manifest, service worker, offline fallback, `404.html`, and `.nojekyll` assets
 - [ ] Web/PWA manifest includes dedicated install and maskable icons, and `sw.js` precaches those icon assets for offline install surfaces
 - [ ] `cd frontend && npm run verify:mobile-readiness` passes, proving safe-area viewport metadata, iOS/PWA install metadata, bottom navigation safe-area padding, and compact Tauri shell limits
+- [ ] `cd frontend && npm run verify:responsive-shell` passes after `npm run build:web`, proving built 375px mobile and 768px tablet Web/PWA shell layout signals
 - [ ] `cd frontend && npm run verify:web-budget` passes with entry JS/CSS and lazy renderer chunks inside budget
 - [ ] `npm audit` shows zero vulnerabilities
 - [ ] All 21 views render correctly (Dashboard, Title, Story Mode, AI Chat, Workflow, Character Editor, Scene Assets, Settings, Characters, Group Chat, Analytics, Quality, Marketplace, Plugins, Audio, Knowledge, Dialogue Editor, Scene Editor, CG Gallery, Backlog, Achievements)
 - [ ] Sidebar navigation works for all 20 items
-- [ ] Responsive layout verified on mobile viewport (375px) and tablet (768px)
+- [ ] Responsive layout verified on mobile viewport (375px) and tablet (768px), with the build-time responsive shell verifier attached as release evidence
 
 ### Rust Backend
 - [ ] `cargo check --locked -p llm-galgame-app` passes

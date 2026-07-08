@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build && node scripts/prepare-web-dist.mjs && node scripts/verify-bundle-budget.mjs",
-    "build:web": "vue-tsc --noEmit && vite build && node scripts/prepare-web-dist.mjs && node scripts/verify-bundle-budget.mjs",
+    "build": "vue-tsc --noEmit && vite build && node scripts/prepare-web-dist.mjs && node scripts/verify-bundle-budget.mjs && node scripts/verify-responsive-shell.mjs",
+    "build:web": "vue-tsc --noEmit && vite build && node scripts/prepare-web-dist.mjs && node scripts/verify-bundle-budget.mjs && node scripts/verify-responsive-shell.mjs",
     "verify:mobile-readiness": "node scripts/verify-mobile-readiness.mjs",
+    "verify:responsive-shell": "node scripts/verify-responsive-shell.mjs",
     "verify:renderer-assets": "node scripts/verify-renderer-assets.mjs",
     "verify:web-budget": "node scripts/verify-bundle-budget.mjs",
     "preview:web": "vite preview --host 127.0.0.1",

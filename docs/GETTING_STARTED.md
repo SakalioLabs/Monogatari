@@ -90,16 +90,17 @@ Before cutting a release, run the automated gate from the repository root:
 node scripts/verify-release.mjs
 ```
 
-This validates JSON assets, checked-in workflow files, all quality suite files, workflow branch coverage snapshots, locale coverage, frontend UI text artifacts, frontend source invariants, mobile shell readiness, release-critical Rust checks/tests, frontend audit, the Web/PWA build, generated dist assets, release artifact manifest checks, and legacy C# tests.
+This validates JSON assets, checked-in workflow files, all quality suite files, workflow branch coverage snapshots, locale coverage, frontend UI text artifacts, frontend source invariants, mobile shell readiness, release-critical Rust checks/tests, frontend audit, the Web/PWA build, generated dist assets, responsive shell layout signals, release artifact manifest checks, and legacy C# tests.
 
 ```bash
 cd frontend
 npm run verify:mobile-readiness
 npm run build:web
+npm run verify:responsive-shell
 npm run preview:web
 ```
 
-The mobile readiness check verifies safe-area viewport metadata, iOS/PWA install metadata, compact Tauri shell limits, and bottom navigation safe-area padding. The web build emits `manifest.webmanifest`, `sw.js`, an offline fallback page, `404.html`, and `.nojekyll` for static hosting. It also runs the bundle budget verifier so entry assets stay small while renderer-heavy Three.js and Live2D chunks remain lazy-loaded. The service worker registers only in production browser builds and is disabled inside Tauri.
+The mobile readiness check verifies safe-area viewport metadata, iOS/PWA install metadata, compact Tauri shell limits, and bottom navigation safe-area padding. The web build emits `manifest.webmanifest`, `sw.js`, an offline fallback page, `404.html`, and `.nojekyll` for static hosting. It also runs the bundle budget verifier and responsive shell verifier so entry assets stay small while 375px mobile and 768px tablet layout signals stay present in the built Web/PWA shell. The service worker registers only in production browser builds and is disabled inside Tauri.
 
 For GitHub Pages or any subpath deployment, set the base path before building:
 
