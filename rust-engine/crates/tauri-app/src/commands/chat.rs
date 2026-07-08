@@ -102,6 +102,8 @@ pub struct ChatResponse {
     pub evaluation: Option<ConversationEvaluation>,
     pub triggered_events: Vec<TriggeredEvent>,
     #[serde(default)]
+    pub event_trigger_decisions: Vec<EventTriggerDecision>,
+    #[serde(default)]
     pub safety_trace: ChatSafetyTrace,
 }
 
@@ -401,6 +403,7 @@ ROLEPLAY RULES:
     // Periodic evaluation (every 5 player messages)
     let mut evaluation = None;
     let mut triggered_events = Vec::new();
+    let mut event_trigger_decisions = Vec::new();
 
     if should_evaluate {
         let eval_result = evaluate_conversation_internal(
@@ -417,8 +420,8 @@ ROLEPLAY RULES:
             let next_evaluation_count = evaluation_count + 1;
             evaluation = Some(eval.clone());
 
-            // Check for triggered events
-            let events = check_event_triggers(
+            // Check for triggered events and keep the full decision audit.
+            let decisions = check_event_trigger_decisions(
                 &state,
                 &character_id,
                 &eval,
@@ -427,6 +430,7 @@ ROLEPLAY RULES:
                 &already_triggered,
             )
             .await;
+            let events = triggered_events_from_decisions(&decisions);
 
             {
                 let mut sessions = state.chat_sessions.write().await;
@@ -442,6 +446,7 @@ ROLEPLAY RULES:
                     }
                 }
             }
+            event_trigger_decisions = decisions;
             triggered_events = events;
         }
     }
@@ -452,6 +457,7 @@ ROLEPLAY RULES:
         relationship_delta,
         evaluation,
         triggered_events,
+        event_trigger_decisions,
         safety_trace,
     })
 }
@@ -919,35 +925,57 @@ fn stream_remaining(buffer: &str, emitted_chars: usize) -> Option<String> {
     Some(buffer[start..].to_string())
 }
 
-/// Check if any special events should be triggered.
-async fn check_event_triggers(
+/// Explain every special event trigger decision for runtime chat audits.
+async fn check_event_trigger_decisions(
     state: &State<'_, AppState>,
     character_id: &str,
     eval: &ConversationEvaluation,
     _cumulative_score: f32,
     eval_count: u32,
     already_triggered: &[String],
-) -> Vec<TriggeredEvent> {
-    let mut events = Vec::new();
-    let definitions = get_event_definitions();
+) -> Vec<EventTriggerDecision> {
     let relationship = player_relationship(state, character_id).await;
+    build_event_trigger_decisions(relationship, eval, eval_count, already_triggered)
+}
 
-    for def in definitions {
-        let decision = explain_event_trigger(
-            &def,
-            relationship,
-            eval,
-            eval_count,
-            already_triggered.contains(&def.event_id),
-        );
+pub(super) fn build_event_trigger_decisions(
+    relationship: f32,
+    eval: &ConversationEvaluation,
+    eval_count: u32,
+    already_triggered: &[String],
+) -> Vec<EventTriggerDecision> {
+    get_event_definitions()
+        .into_iter()
+        .map(|def| {
+            explain_event_trigger(
+                &def,
+                relationship,
+                eval,
+                eval_count,
+                already_triggered.contains(&def.event_id),
+            )
+        })
+        .collect()
+}
 
-        if decision.triggered {
-            debug!("Triggered event: {}", def.event_id);
-            events.push(def);
-        }
-    }
+fn triggered_events_from_decisions(decisions: &[EventTriggerDecision]) -> Vec<TriggeredEvent> {
+    let triggered_ids: HashSet<&str> = decisions
+        .iter()
+        .filter(|decision| decision.triggered)
+        .map(|decision| decision.event_id.as_str())
+        .collect();
 
-    events
+    get_event_definitions()
+        .into_iter()
+        .filter(|def| {
+            if triggered_ids.contains(def.event_id.as_str()) {
+                debug!("Triggered event: {}", def.event_id);
+                true
+            } else {
+                false
+            }
+        })
+        .collect()
 }
 
 pub(super) fn explain_event_trigger(
@@ -1558,6 +1586,7 @@ Stay in character. Respond naturally with emotion (use *actions* for body langua
 
         let mut evaluation = None;
         let mut triggered_events = Vec::new();
+        let mut event_trigger_decisions = Vec::new();
 
         if should_evaluate {
             let eval_result = evaluate_conversation_internal(
@@ -1572,7 +1601,7 @@ Stay in character. Respond naturally with emotion (use *actions* for body langua
             if let Ok(eval) = eval_result {
                 let next_cumulative_score = cumulative_score + eval.overall_score;
                 let next_evaluation_count = evaluation_count + 1;
-                let events = check_event_triggers(
+                let decisions = check_event_trigger_decisions(
                     &state,
                     &character_id,
                     &eval,
@@ -1581,6 +1610,7 @@ Stay in character. Respond naturally with emotion (use *actions* for body langua
                     &already_triggered,
                 )
                 .await;
+                let events = triggered_events_from_decisions(&decisions);
 
                 {
                     let mut sessions = state.chat_sessions.write().await;
@@ -1598,6 +1628,7 @@ Stay in character. Respond naturally with emotion (use *actions* for body langua
                 }
 
                 evaluation = Some(eval);
+                event_trigger_decisions = decisions;
                 triggered_events = events;
             }
         }
@@ -1607,6 +1638,9 @@ Stay in character. Respond naturally with emotion (use *actions* for body langua
         let _ = window.emit("chat-safety-trace", &safety_trace);
         if let Some(eval) = evaluation {
             let _ = window.emit("chat-evaluation", &eval);
+        }
+        if !event_trigger_decisions.is_empty() {
+            let _ = window.emit("chat-event-decisions", &event_trigger_decisions);
         }
         if !triggered_events.is_empty() {
             let _ = window.emit("chat-events", &triggered_events);
@@ -1975,5 +2009,47 @@ mod tests {
             .blocked_reasons
             .iter()
             .any(|reason| reason.contains("already triggered")));
+    }
+
+    #[test]
+    fn event_trigger_decisions_drive_triggered_event_list() {
+        let eval = evaluation(0.7, 0.85, 0.2);
+        let decisions = build_event_trigger_decisions(0.35, &eval, 2, &[]);
+
+        let first_friend = decisions
+            .iter()
+            .find(|decision| decision.event_id == "first_friend")
+            .expect("first_friend decision");
+        assert!(first_friend.triggered);
+        assert_eq!(first_friend.actual_relationship, 0.35);
+
+        let high_engagement = decisions
+            .iter()
+            .find(|decision| decision.event_id == "high_engagement")
+            .expect("high_engagement decision");
+        assert!(high_engagement.triggered);
+        assert_eq!(
+            high_engagement.actual_score_metric.as_deref(),
+            Some("engagement")
+        );
+        assert_eq!(high_engagement.actual_score, Some(0.85));
+
+        let best_friend = decisions
+            .iter()
+            .find(|decision| decision.event_id == "best_friend")
+            .expect("best_friend decision");
+        assert!(!best_friend.triggered);
+        assert!(best_friend
+            .blocked_reasons
+            .iter()
+            .any(|reason| reason.contains("relationship")));
+
+        let triggered: Vec<String> = triggered_events_from_decisions(&decisions)
+            .into_iter()
+            .map(|event| event.event_id)
+            .collect();
+        assert!(triggered.contains(&"first_friend".to_string()));
+        assert!(triggered.contains(&"high_engagement".to_string()));
+        assert!(!triggered.contains(&"best_friend".to_string()));
     }
 }

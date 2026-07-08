@@ -69,6 +69,7 @@ Verified on 2026-07-08:
 - Workflow LLM nodes wrap runtime inputs as untrusted data and guard generated output before it can enter story node results.
 - Workflow output safety now covers tool-role/function-call shaped text so generated node output cannot masquerade as a runtime event command.
 - Checked-in score-gate workflow fixtures prove conversation evaluation can drive visual workflow branches and score-aware story-event unlocks.
+- Chat runtime responses emit story-event trigger decisions with actual relationship values, score metrics, evaluation counts, and blocker reasons.
 - Workflow Run traces expose evaluation metrics, thresholds, score sources, event trigger state, and blocker reasons for author debugging.
 - Workflow canvas nodes show compact run badges for executed, pass/fail, blocked, completed, and waiting-choice states.
 - Workflow Run preview context lets authors simulate scores, relationship values, evaluation counts, and already-triggered events without live chat/model calls.
@@ -372,7 +373,7 @@ The web build emits `dist/404.html` for SPA fallback, `dist/.nojekyll` for GitHu
 - [x] Event trigger system (relationship milestones, achievements)
 - [x] Visual workflow editor (drag-and-drop)
 - [x] Frontend streaming chat integration via Tauri events
-- [x] Streaming evaluation and event notifications (`chat-evaluation`, `chat-events`)
+- [x] Streaming evaluation and event notifications (`chat-evaluation`, `chat-event-decisions`, `chat-events`)
 - [x] Chat session lock optimization for slower LLM requests
 - [x] Commercial workbench UI refresh with 18-item sidebar navigation navigation (dashboard/chat/story/workflow/analytics/marketplace/plugins)
 - [x] Browser preview fallback for non-Tauri UI review

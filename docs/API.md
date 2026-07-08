@@ -38,6 +38,7 @@ All Tauri commands are invoked from the frontend via `invokeCommand(commandName,
 - `chat-emotion` - Detected emotion
 - `chat-relationship` - Relationship delta
 - `chat-evaluation` - Conversation scores
+- `chat-event-decisions` - Explainable story-event trigger decisions
 - `chat-events` - Triggered special events
 
 ## Dialogue

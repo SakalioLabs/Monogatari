@@ -1460,6 +1460,10 @@ async function verifyFrontendSourceInvariants() {
     ['pinned_knowledge_ref_ids', 'surface pinned knowledge ref id trace evidence'],
     ['response_guard_applied', 'surface guarded character response evidence'],
     ['relationship_delta_blocked', 'surface relationship side-channel containment evidence'],
+    ['EventTriggerDecision', 'type runtime event trigger decisions'],
+    ['chat-event-decisions', 'listen for runtime event trigger decisions'],
+    ['eventDecisionSummary', 'surface story event trigger decision summaries'],
+    ['event-decision-panel', 'keep a stable style hook for story event trigger diagnostics'],
     ['safety-trace-panel', 'keep a stable style hook for chat safety trace diagnostics'],
   ]
   for (const [needle, description] of chatSafetyTraceRequirements) {
@@ -1769,6 +1773,10 @@ async function verifyTauriPackagingConfig() {
     ['knowledge_context_pinned', 'prove creator-pinned knowledge context was applied'],
     ['pinned_knowledge_ref_count', 'report resolved pinned knowledge reference counts'],
     ['pinned_knowledge_ref_ids', 'report resolved pinned knowledge reference ids'],
+    ['event_trigger_decisions', 'return explainable story event trigger decisions'],
+    ['build_event_trigger_decisions', 'centralize explainable story event trigger decisions'],
+    ['triggered_events_from_decisions', 'derive triggered story events from the decision audit'],
+    ['chat-event-decisions', 'emit story event trigger decisions for streaming chat'],
     ['character_mind_contract_applied', 'emit runtime trace evidence for the character mind contract'],
     ['pinned_knowledge_context_applied', 'emit runtime trace evidence for pinned knowledge context'],
   ]

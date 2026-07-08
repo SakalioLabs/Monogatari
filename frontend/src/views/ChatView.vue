@@ -155,6 +155,23 @@
         <p class="trace-note">{{ safetyTraceSummary }}</p>
       </section>
 
+      <section class="insight-section event-decision-panel">
+        <span class="eyebrow">{{ t('chat.story-events', 'Story Events') }}</span>
+        <div v-if="eventDecisionSummary.length" class="event-decision-list">
+          <div
+            v-for="decision in eventDecisionSummary"
+            :key="decision.event_id"
+            class="event-decision-row"
+            :class="{ triggered: decision.triggered }"
+          >
+            <span>{{ decision.event_id }}</span>
+            <strong>{{ decision.triggered ? 'Ready' : 'Blocked' }}</strong>
+            <small>{{ eventDecisionReason(decision) }}</small>
+          </div>
+        </div>
+        <p v-else class="muted-copy">No event decision yet.</p>
+      </section>
+
       <section class="insight-section">
         <span class="eyebrow">{{ t('chat.runtime', 'Runtime') }}</span>
         <div class="runtime-list">
@@ -210,6 +227,29 @@ interface TriggeredEvent {
   data: Record<string, unknown>
 }
 
+interface EventTriggerRule {
+  event_id: string
+  event_type: string
+  min_relationship?: number | null
+  score_metric?: string | null
+  min_score?: number | null
+  min_evaluation_count?: number | null
+}
+
+interface EventTriggerDecision {
+  event_id: string
+  event_type: string
+  description: string
+  triggered: boolean
+  already_triggered: boolean
+  actual_relationship: number
+  actual_evaluation_count: number
+  actual_score_metric?: string | null
+  actual_score?: number | null
+  rule?: EventTriggerRule | null
+  blocked_reasons: string[]
+}
+
 interface ChatSafetyTrace {
   input_wrapped_as_untrusted: boolean
   mind_contract_applied?: boolean
@@ -246,6 +286,7 @@ const currentEmotion = ref('neutral')
 const relationshipScore = ref(0)
 const evaluation = ref<ConversationEvaluation | null>(null)
 const safetyTrace = ref<ChatSafetyTrace | null>(null)
+const eventDecisions = ref<EventTriggerDecision[]>([])
 const activeEvent = ref<TriggeredEvent | null>(null)
 const errorMessage = ref<string | null>(null)
 const charactersLoading = ref(true)
@@ -288,6 +329,13 @@ const safetyTraceSummary = computed(() => {
   return [...notes.map(formatSafetyNote), refSummary].filter(Boolean).join(' / ')
 })
 
+const eventDecisionSummary = computed(() => {
+  return eventDecisions.value
+    .slice()
+    .sort((a, b) => Number(b.triggered) - Number(a.triggered))
+    .slice(0, 5)
+})
+
 function initials(name: string): string {
   return name.trim().slice(0, 2).toUpperCase() || 'AI'
 }
@@ -316,6 +364,16 @@ function formatSafetyNote(note: string) {
     .replace(/\b\w/g, (ch) => ch.toUpperCase())
 }
 
+function eventDecisionReason(decision: EventTriggerDecision): string {
+  if (decision.triggered) {
+    const metric = decision.actual_score_metric && decision.actual_score !== null && decision.actual_score !== undefined
+      ? `${decision.actual_score_metric} ${percent(decision.actual_score)}`
+      : `Rel ${decision.actual_relationship.toFixed(2)}`
+    return `${metric} / Eval ${decision.actual_evaluation_count}`
+  }
+  return decision.blocked_reasons[0] || 'Waiting for trigger rule'
+}
+
 function resizeInput() {
   nextTick(() => {
     if (!inputRef.value) return
@@ -329,6 +387,7 @@ async function selectCharacter(char: CharacterInfo) {
   currentEmotion.value = char.emotion || 'neutral'
   evaluation.value = null
   safetyTrace.value = null
+  eventDecisions.value = []
   errorMessage.value = null
   try {
     messages.value = await invokeCommand<ChatMessage[]>('get_chat_history', { characterId: char.id }, [])
@@ -371,6 +430,9 @@ async function attachStreamListeners(assistantMessage: ChatMessage) {
     listen<ChatSafetyTrace>('chat-safety-trace', (event) => {
       safetyTrace.value = event.payload
     }),
+    listen<EventTriggerDecision[]>('chat-event-decisions', (event) => {
+      eventDecisions.value = event.payload || []
+    }),
     listen<TriggeredEvent[]>('chat-events', (event) => {
       if (event.payload.length > 0) activeEvent.value = event.payload[0]
     }),
@@ -396,6 +458,7 @@ async function sendMessage() {
   resizeInput()
   errorMessage.value = null
   safetyTrace.value = null
+  eventDecisions.value = []
 
   messages.value.push({ role: 'player', content: text, emotion: null, timestamp: new Date().toISOString() })
     
@@ -483,6 +546,7 @@ async function clearChat() {
     messages.value = []
     evaluation.value = null
     safetyTrace.value = null
+    eventDecisions.value = []
     await refreshRelationship()
   } catch (e) {
     errorMessage.value = String(e)
@@ -932,6 +996,56 @@ onUnmounted(cleanupStreamListeners)
   font-size: 12px;
   line-height: 1.5;
   overflow-wrap: anywhere;
+}
+
+.event-decision-list {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.event-decision-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 8px;
+  padding: 8px 10px;
+  border: 1px solid rgba(239,68,68,0.22);
+  border-radius: var(--radius-sm);
+  background: rgba(239,68,68,0.08);
+}
+
+.event-decision-row.triggered {
+  border-color: rgba(34,197,94,0.24);
+  background: rgba(34,197,94,0.08);
+}
+
+.event-decision-row span,
+.event-decision-row small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.event-decision-row span {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.event-decision-row strong {
+  color: var(--danger);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.event-decision-row.triggered strong {
+  color: var(--success);
+}
+
+.event-decision-row small {
+  grid-column: 1 / -1;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  line-height: 1.35;
 }
 
 .link-btn {
