@@ -67,6 +67,8 @@ Character responses use a structured prompt system:
 
 Prompt and response guardrails are shared by single-character chat, group chat, workflow LLM nodes, quality suites, and fallback scoring. Player-authored text is wrapped as untrusted dialogue data, creator-authored character mind and safety contracts stay in the system channel, and English, Chinese, Japanese, Korean, fullwidth, and zero-width-obfuscated prompt-control phrases are detected before they can influence memory writes, relationship deltas, scoring, or hidden prompt boundaries.
 
+When live evaluator output is unavailable, deterministic fallback scoring uses only trusted, normalized player messages. The fallback recognizes English, Chinese, Japanese, and Korean friendly sentiment, questions, and creative-story intent so international builds keep stable relationship and story-event previews without live model calls.
+
 ## Workflow System
 
 The visual workflow editor supports 21 node types across 5 categories:

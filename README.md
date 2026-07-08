@@ -67,6 +67,7 @@ Verified on 2026-07-08:
 - Chat sessions now expose a restorable audit report with the latest safety trace, evaluation, story-event decisions, and triggerable events so author diagnostics survive character switching.
 - Quality Suites now export runtime safety trace evidence and include a group chat prompt-injection scenario that requires concrete guard notes for input wrapping, response guarding, memory guarding, and relationship side-channel containment.
 - Local fallback scoring ignores prompt-injection text for engagement and creativity boosts, so long meta-instructions cannot unlock score-gated story events when model evaluation is unavailable.
+- Local fallback scoring now recognizes Chinese, Japanese, and Korean friendly, question, and creative-story signals so offline scoring remains useful when model evaluation is unavailable in international builds.
 - Evaluation score parsing clamps overrange, above-scale, and negative model scores before quality reports or event triggers consume them.
 - Workflow LLM nodes wrap runtime inputs as untrusted data and guard generated output before it can enter story node results.
 - Workflow output safety now covers tool-role/function-call shaped text so generated node output cannot masquerade as a runtime event command.

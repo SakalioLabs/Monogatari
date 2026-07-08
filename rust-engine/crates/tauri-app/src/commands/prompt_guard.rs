@@ -153,7 +153,7 @@ pub fn sanitize_label(label: &str) -> String {
     }
 }
 
-fn normalize_security_text(content: &str) -> String {
+pub(crate) fn normalize_security_text(content: &str) -> String {
     let mut normalized = String::with_capacity(content.len());
     let mut previous_was_whitespace = false;
 

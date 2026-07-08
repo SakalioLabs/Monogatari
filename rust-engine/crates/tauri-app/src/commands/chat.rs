@@ -862,13 +862,17 @@ pub(super) fn fallback_conversation_evaluation(
     }
     let scoring_count = trusted_player_messages.len() as f32;
 
-    let total_chars: usize = trusted_player_messages
+    let trusted_scoring_texts: Vec<String> = trusted_player_messages
         .iter()
-        .map(|message| message.len())
+        .map(|message| prompt_guard::normalize_security_text(message))
+        .collect();
+    let total_chars: usize = trusted_scoring_texts
+        .iter()
+        .map(|message| message.chars().filter(|ch| !ch.is_whitespace()).count())
         .sum();
-    let question_count = trusted_player_messages
+    let question_count = trusted_scoring_texts
         .iter()
-        .filter(|message| message.contains('?') || message.contains('？'))
+        .filter(|message| message.contains('?'))
         .count() as f32;
     let avg_len = total_chars as f32 / scoring_count;
     let engagement = (0.35
@@ -877,10 +881,48 @@ pub(super) fn fallback_conversation_evaluation(
         + (scoring_count.min(6.0) * 0.02))
         .clamp(0.0, 1.0);
 
-    let joined = trusted_player_messages.join(" ").to_lowercase();
+    let joined = trusted_scoring_texts.join(" ");
     let creative_markers = [
-        "imagine", "what if", "story", "dream", "create", "invent", "poem", "secret", "maybe",
-        "如果", "假如", "故事", "梦", "创作", "秘密",
+        "imagine",
+        "what if",
+        "story",
+        "dream",
+        "create",
+        "invent",
+        "poem",
+        "secret",
+        "maybe",
+        "想象",
+        "如果",
+        "假如",
+        "故事",
+        "梦想",
+        "梦",
+        "创作",
+        "发明",
+        "诗",
+        "秘密",
+        "也许",
+        "设定",
+        "想像",
+        "もし",
+        "物語",
+        "夢",
+        "創作",
+        "発明",
+        "詩",
+        "秘密",
+        "たぶん",
+        "設定",
+        "상상",
+        "만약",
+        "이야기",
+        "꿈",
+        "창작",
+        "발명",
+        "비밀",
+        "어쩌면",
+        "설정",
     ];
     let creative_hits = creative_markers
         .iter()
@@ -1418,7 +1460,7 @@ pub(crate) fn relationship_delta_for_player_message(message: &str) -> f32 {
 }
 
 fn estimate_sentiment(message: &str) -> f32 {
-    let lower = message.to_lowercase();
+    let lower = prompt_guard::normalize_security_text(message);
     let mut score: f32 = 0.0;
 
     // Positive words
@@ -1442,6 +1484,40 @@ fn estimate_sentiment(message: &str) -> f32 {
         "awesome",
         "cool",
         "friend",
+        "谢谢",
+        "感谢",
+        "喜欢",
+        "开心",
+        "高兴",
+        "温柔",
+        "可爱",
+        "美丽",
+        "朋友",
+        "很棒",
+        "真好",
+        "有趣",
+        "爱",
+        "ありがとう",
+        "好き",
+        "楽しい",
+        "嬉しい",
+        "優しい",
+        "かわいい",
+        "美しい",
+        "友達",
+        "素敵",
+        "すごい",
+        "大好き",
+        "고마워",
+        "감사",
+        "좋아",
+        "행복",
+        "즐거",
+        "다정",
+        "예쁘",
+        "친구",
+        "멋져",
+        "사랑",
     ] {
         if lower.contains(word) {
             score += 0.15;
@@ -1462,6 +1538,27 @@ fn estimate_sentiment(message: &str) -> f32 {
         "horrible",
         "disgusting",
         "idiot",
+        "讨厌",
+        "糟糕",
+        "无聊",
+        "愚蠢",
+        "最差",
+        "恶心",
+        "坏",
+        "嫌い",
+        "退屈",
+        "ひどい",
+        "馬鹿",
+        "最悪",
+        "気持ち悪い",
+        "つまらない",
+        "싫어",
+        "지루",
+        "나빠",
+        "멍청",
+        "최악",
+        "끔찍",
+        "역겨",
     ] {
         if lower.contains(word) {
             score -= 0.2;
@@ -1469,12 +1566,12 @@ fn estimate_sentiment(message: &str) -> f32 {
     }
 
     // Questions show engagement
-    if message.contains('?') {
+    if lower.contains('?') {
         score += 0.05;
     }
 
     // Longer messages show more engagement
-    if message.len() > 50 {
+    if lower.chars().filter(|ch| !ch.is_whitespace()).count() > 50 {
         score += 0.05;
     }
 
@@ -1916,6 +2013,26 @@ mod tests {
     }
 
     #[test]
+    fn fallback_evaluation_scores_multilingual_player_behavior() {
+        let messages = vec![
+            player_message("谢谢你愿意相信我。我们能一起创作一个河岸的秘密故事吗？"),
+            character_message("That sounds lovely."),
+            player_message("ありがとう。もし春の夢を物語にできたら、とても素敵ですね？"),
+            player_message("고마워. 우리 둘만의 비밀 이야기를 상상해 볼까요?"),
+        ];
+
+        let eval = fallback_conversation_evaluation(&messages, "model unavailable");
+
+        assert!(eval.friendliness > 0.6, "{eval:?}");
+        assert!(eval.engagement > 0.55, "{eval:?}");
+        assert!(eval.creativity > 0.55, "{eval:?}");
+        assert!(
+            relationship_delta_for_player_message("ありがとう。あなたの優しい物語が好きです。")
+                > 0.0
+        );
+    }
+
+    #[test]
     fn fallback_evaluation_penalizes_hostile_player_messages() {
         let messages = vec![player_message("You are boring, stupid, and the worst.")];
 
@@ -1923,6 +2040,13 @@ mod tests {
 
         assert!(eval.friendliness < 0.5, "{eval:?}");
         assert!(eval.overall_score < 0.55, "{eval:?}");
+    }
+
+    #[test]
+    fn relationship_sentiment_handles_multilingual_hostility() {
+        assert!(relationship_delta_for_player_message("这个故事很糟糕又无聊。") < 0.0);
+        assert!(relationship_delta_for_player_message("この物語は退屈で最悪です。") < 0.0);
+        assert!(relationship_delta_for_player_message("이 장면은 지루하고 최악이야.") < 0.0);
     }
 
     #[test]

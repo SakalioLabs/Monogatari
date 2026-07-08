@@ -31,6 +31,7 @@ const textExtensions = new Set([
 
 const requiredQualityScenarios = [
   'warm-creative-conversation',
+  'multilingual-warm-creative-conversation',
   'prompt-injection-score-request',
   'fallback-injection-score-contained',
   'tool-role-injection-contained',
@@ -923,6 +924,29 @@ function verifyDefaultQualitySuite(suite) {
   const workflowScenario = suite.scenarios?.find((scenario) => scenario.id === 'workflow-output-sanitized')
   if (workflowScenario?.expect?.workflow_output_leak_detected !== false) {
     issues.push('Workflow output scenario must expect workflow_output_leak_detected=false')
+  }
+
+  const multilingualWarmScenario = suite.scenarios?.find((scenario) => scenario.id === 'multilingual-warm-creative-conversation')
+  if (multilingualWarmScenario?.category !== 'scoring') {
+    issues.push('Multilingual warm conversation scenario must use category scoring')
+  }
+  if (multilingualWarmScenario?.expect?.prompt_injection_detected !== false) {
+    issues.push('Multilingual warm conversation scenario must expect prompt_injection_detected=false')
+  }
+  if ((multilingualWarmScenario?.expect?.min_friendliness ?? 0) < 0.6) {
+    issues.push('Multilingual warm conversation scenario must require min_friendliness >= 0.6')
+  }
+  if ((multilingualWarmScenario?.expect?.min_engagement ?? 0) < 0.55) {
+    issues.push('Multilingual warm conversation scenario must require min_engagement >= 0.55')
+  }
+  if ((multilingualWarmScenario?.expect?.min_creativity ?? 0) < 0.55) {
+    issues.push('Multilingual warm conversation scenario must require min_creativity >= 0.55')
+  }
+  const multilingualWarmInput = (multilingualWarmScenario?.messages ?? []).map((message) => message?.content ?? '').join('\n')
+  for (const marker of ['谢谢', 'ありがとう', '고마워', '创作', '物語', '상상']) {
+    if (!multilingualWarmInput.includes(marker)) {
+      issues.push(`Multilingual warm conversation scenario must include localized scoring marker ${marker}`)
+    }
   }
 
   const workflowToolScenario = suite.scenarios?.find((scenario) => scenario.id === 'workflow-tool-output-sanitized')
@@ -1911,6 +1935,22 @@ async function verifyTauriPackagingConfig() {
   for (const [needle, description] of multilingualPromptGuardRequirements) {
     if (!tauriPromptGuardSource.includes(needle)) {
       issues.push(`Prompt guard multilingual coverage must ${description}`)
+    }
+  }
+
+  const multilingualFallbackScoringRequirements = [
+    ['prompt_guard::normalize_security_text', 'reuse guard normalization before local fallback scoring'],
+    ['谢谢', 'score Chinese positive sentiment in local fallback'],
+    ['ありがとう', 'score Japanese positive sentiment in local fallback'],
+    ['고마워', 'score Korean positive sentiment in local fallback'],
+    ['创作', 'score Chinese creative intent in local fallback'],
+    ['物語', 'score Japanese creative intent in local fallback'],
+    ['이야기', 'score Korean creative intent in local fallback'],
+    ['trusted_scoring_texts', 'score only trusted normalized player messages'],
+  ]
+  for (const [needle, description] of multilingualFallbackScoringRequirements) {
+    if (!tauriChatSource.includes(needle)) {
+      issues.push(`Fallback scoring multilingual coverage must ${description}`)
     }
   }
 

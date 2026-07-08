@@ -61,6 +61,7 @@
 - Added Quality Suite runtime safety trace evidence and a checked-in group chat scenario proving multi-character prompt-injection attempts produce auditable guard notes.
 - Added multilingual prompt-injection detection and a checked-in quality scenario for Chinese, Japanese, and Korean prompt-control attempts against score, relationship, memory, and hidden-prompt boundaries.
 - Added Unicode-obfuscated prompt-injection normalization and a checked-in quality scenario for fullwidth role markers and zero-width character splitting.
+- Added multilingual local fallback scoring signals and a checked-in quality scenario for friendly creative Chinese, Japanese, and Korean player text.
 - Added a release artifact manifest generator with SHA-256 checksums, channel metadata, installer expectations, and code-signing readiness evidence.
 - Added a checked-in release channel policy and manifest enforcement for stable/beta installer requirements, preflight exceptions, and verified installer signing evidence sidecars.
 - Added release-gate validation that checked-in character pinned knowledge refs resolve to project knowledge entries across both data roots.
