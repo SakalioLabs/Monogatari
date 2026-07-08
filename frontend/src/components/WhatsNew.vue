@@ -30,9 +30,19 @@
 import { onMounted, ref } from 'vue'
 
 const show = ref(false)
-const currentVersion = '0.9.2'
+const currentVersion = '0.9.5'
 
 const releases = [
+  {
+    version: '0.9.5', date: '2026-07-08',
+    items: [
+      'Tauri desktop build restored with locked Rust dependencies',
+      'Locale JSON repaired for en, zh-CN, ja-JP, and ko-KR with browser fallback files',
+      'i18n loader now supports Tauri locale payloads and non-Tauri public locale files',
+      'TTS configuration now feeds system, Azure, and ElevenLabs synthesis paths',
+      'Project export manifest scans project content inventory for distributable packaging',
+    ]
+  },
   {
     version: '0.9.2', date: '2026-07-07',
     items: [

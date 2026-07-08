@@ -1350,6 +1350,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
+name = "hostname"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "617aaa3557aef3810a6369d0a99fac8a080891b68bd9f9812a1eeda0c0730cbd"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "windows-link 0.2.1",
+]
+
+[[package]]
 name = "html5ever"
 version = "0.38.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1870,7 +1881,7 @@ checksum = "92daf443525c4cce67b150400bc2316076100ce0b3686209eb8cf3c31612e6f0"
 
 [[package]]
 name = "llm-ai"
-version = "0.1.0"
+version = "0.9.5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1887,7 +1898,7 @@ dependencies = [
 
 [[package]]
 name = "llm-assets"
-version = "0.1.0"
+version = "0.9.5"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1902,7 +1913,7 @@ dependencies = [
 
 [[package]]
 name = "llm-core"
-version = "0.1.0"
+version = "0.9.5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1917,15 +1928,20 @@ dependencies = [
 
 [[package]]
 name = "llm-galgame-app"
-version = "0.1.0"
+version = "0.9.5"
 dependencies = [
  "anyhow",
+ "chrono",
  "futures",
+ "hostname",
  "llm-ai",
  "llm-assets",
  "llm-core",
  "llm-game",
  "llm-scripting",
+ "md5",
+ "once_cell",
+ "rand",
  "reqwest 0.12.28",
  "rhai",
  "serde",
@@ -1940,7 +1956,7 @@ dependencies = [
 
 [[package]]
 name = "llm-game"
-version = "0.1.0"
+version = "0.9.5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1959,7 +1975,7 @@ dependencies = [
 
 [[package]]
 name = "llm-scripting"
-version = "0.1.0"
+version = "0.9.5"
 dependencies = [
  "llm-core",
  "rand",
@@ -2003,6 +2019,12 @@ checksum = "d1525a2a28c7f4fa0fc98bb91ae755d1e2d1505079e05539e35bc876b5d65ae9"
 dependencies = [
  "regex-automata",
 ]
+
+[[package]]
+name = "md5"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "490cc448043f947bae3cbee9c203358d62dbee0db12107a74be5c30ccfd09771"
 
 [[package]]
 name = "memchr"

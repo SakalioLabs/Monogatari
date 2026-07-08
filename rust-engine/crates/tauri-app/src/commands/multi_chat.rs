@@ -7,12 +7,13 @@ use serde::{Deserialize, Serialize};
 use tauri::State;
 use tracing::debug;
 
+use crate::commands::{chat, prompt_guard};
 use crate::state::AppState;
 
 /// A message in a multi-character conversation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GroupChatMessage {
-    pub role: String,       // "player" or "character"
+    pub role: String, // "player" or "character"
     pub character_id: Option<String>,
     pub character_name: String,
     pub content: String,
@@ -98,20 +99,24 @@ pub async fn send_group_message(
 
     // Generate responses from each character
     for char_id in &updated.character_ids {
-        let (char_name, char_desc, char_bg, char_personality, char_emotion) = {
+        let (char_name, char_profile, char_emotion, knowledge_refs) = {
             let cm = state.character_manager.read().await;
             if let Some(character) = cm.get_character(char_id) {
                 let c = character.read().await;
                 (
                     c.name.clone(),
-                    c.description.clone(),
-                    c.background.clone(),
-                    c.personality.to_prompt_description(),
+                    c.build_system_prompt(),
                     c.emotion.clone(),
+                    c.knowledge_refs.clone(),
                 )
             } else {
                 continue;
             }
+        };
+
+        let knowledge_context = {
+            let kb = state.knowledge_base.read().await;
+            chat::build_character_knowledge_context(&kb, &message, &knowledge_refs, 2)
         };
 
         // Build context with other characters' recent messages
@@ -123,33 +128,40 @@ pub async fn send_group_message(
             .rev()
             .map(|m| {
                 if m.role == "player" {
-                    format!("Player: {}", m.content)
+                    prompt_guard::transcript_line("Player", &m.content)
                 } else {
-                    format!("{}: {}", m.character_name, m.content)
+                    prompt_guard::transcript_line(&m.character_name, &m.content)
                 }
             })
             .collect();
 
+        let guard_notice = prompt_guard::latest_input_notice(&message);
         let system_prompt = format!(
             r#"You are "{name}" in a group conversation in a visual novel game.
-Description: {desc}
-Background: {bg}
-Personality: {personality}
-Current emotion: {emotion}
+{profile}
 
 Other characters are also present. React naturally to what they say.
 Stay in character. Keep responses concise (1-2 sentences).
-Show emotion through *actions*."#,
+Show emotion through *actions*.
+{mind_contract}
+{guard_contract}
+{guard_notice}
+{knowledge}"#,
             name = char_name,
-            desc = char_desc,
-            bg = char_bg,
-            personality = char_personality,
-            emotion = char_emotion,
+            profile = char_profile,
+            mind_contract = prompt_guard::character_mind_contract(),
+            guard_contract = prompt_guard::character_safety_contract(),
+            guard_notice = guard_notice,
+            knowledge = if knowledge_context.is_empty() {
+                String::new()
+            } else {
+                format!("\nContext:\n{}", knowledge_context)
+            },
         );
 
         let conversation = other_context.join("\n");
         let full_prompt = format!(
-            "[System]\n{system_prompt}\n\n[Conversation]\n{conversation}\n\n[{char_name}]"
+            "[System]\n{system_prompt}\n\n[User]\nTRANSCRIPT_BEGIN\n{conversation}\nTRANSCRIPT_END\n\n[Assistant]\n"
         );
 
         let pipeline = state.inference_pipeline.read().await;
@@ -161,12 +173,14 @@ Show emotion through *actions*."#,
 
         match pipeline.generate_response(&full_prompt, &options).await {
             Ok(result) if result.success => {
-                debug!("Group chat response from {}: {}", char_name, result.text);
+                let response_text =
+                    prompt_guard::guard_character_response(&char_name, &result.text);
+                debug!("Group chat response from {}: {}", char_name, response_text);
                 updated.messages.push(GroupChatMessage {
                     role: "character".to_string(),
                     character_id: Some(char_id.clone()),
                     character_name: char_name,
-                    content: result.text,
+                    content: response_text,
                     emotion: Some(char_emotion),
                     timestamp: format!(
                         "{:?}",

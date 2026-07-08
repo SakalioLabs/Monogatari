@@ -11,4 +11,4 @@ pub mod script;
 pub use characters::{Character, CharacterManager, CharacterMemory, Personality};
 pub use dialogue::{DialogueManager, DialogueNode, DialogueScript};
 pub use knowledge::{ContextBuilder, KnowledgeBase, KnowledgeEntry};
-pub use scenes::{GameScene, SceneManager, Scene, TitleScene};
+pub use scenes::{GameScene, Scene, SceneManager, TitleScene};

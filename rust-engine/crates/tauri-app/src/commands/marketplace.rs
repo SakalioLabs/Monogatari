@@ -1,7 +1,7 @@
 //! Template marketplace scaffold.
+use crate::state::AppState;
 use serde::{Deserialize, Serialize};
 use tauri::State;
-use crate::state::AppState;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MarketplaceEntry {
@@ -36,22 +36,33 @@ pub async fn list_marketplace_entries(
         MarketplaceEntry {
             id: "sakura_demo".to_string(),
             name: "Sakura Park Demo".to_string(),
-            description: "A complete demo with Sakura character, park scene, and cherry blossom dialogue".to_string(),
+            description:
+                "A complete demo with Sakura character, park scene, and cherry blossom dialogue"
+                    .to_string(),
             author: "Monogatari".to_string(),
             version: "1.0.0".to_string(),
             entry_type: "full_project".to_string(),
-            tags: vec!["demo".to_string(), "romance".to_string(), "nature".to_string()],
+            tags: vec![
+                "demo".to_string(),
+                "romance".to_string(),
+                "nature".to_string(),
+            ],
             download_count: 0,
             rating: 5.0,
         },
         MarketplaceEntry {
             id: "luna_stargazing".to_string(),
             name: "Luna Stargazing".to_string(),
-            description: "Luna character with observatory scene and constellation dialogue".to_string(),
+            description: "Luna character with observatory scene and constellation dialogue"
+                .to_string(),
             author: "Monogatari".to_string(),
             version: "1.0.0".to_string(),
             entry_type: "character".to_string(),
-            tags: vec!["sci-fi".to_string(), "poetic".to_string(), "night".to_string()],
+            tags: vec![
+                "sci-fi".to_string(),
+                "poetic".to_string(),
+                "night".to_string(),
+            ],
             download_count: 0,
             rating: 4.5,
         },

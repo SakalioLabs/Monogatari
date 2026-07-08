@@ -17,15 +17,15 @@ pub struct LocaleData {
 
 /// Load a locale file from the project locales directory.
 #[tauri::command]
-pub async fn load_locale(
-    state: State<'_, AppState>,
-    locale: String,
-) -> Result<LocaleData, String> {
+pub async fn load_locale(state: State<'_, AppState>, locale: String) -> Result<LocaleData, String> {
     let project = state.project_path.read().await;
     let base = project.as_ref().ok_or("No project path")?;
     let path = base.join("locales").join(format!("{locale}.json"));
     if !path.exists() {
-        return Ok(LocaleData { locale, strings: HashMap::new() });
+        return Ok(LocaleData {
+            locale,
+            strings: HashMap::new(),
+        });
     }
     let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
     serde_json::from_str(&content).map_err(|e| e.to_string())
@@ -37,7 +37,9 @@ pub async fn list_locales(state: State<'_, AppState>) -> Result<Vec<String>, Str
     let project = state.project_path.read().await;
     let base = project.as_ref().ok_or("No project path")?;
     let dir = base.join("locales");
-    if !dir.exists() { return Ok(vec!["en".into()]); }
+    if !dir.exists() {
+        return Ok(vec!["en".into()]);
+    }
     let mut locales = Vec::new();
     for entry in std::fs::read_dir(&dir).map_err(|e| e.to_string())? {
         let entry = entry.map_err(|e| e.to_string())?;
@@ -45,7 +47,9 @@ pub async fn list_locales(state: State<'_, AppState>) -> Result<Vec<String>, Str
             locales.push(name.to_string());
         }
     }
-    if locales.is_empty() { locales.push("en".into()); }
+    if locales.is_empty() {
+        locales.push("en".into());
+    }
     Ok(locales)
 }
 
@@ -60,7 +64,9 @@ pub async fn translate(
     let project = state.project_path.read().await;
     let base = project.as_ref().ok_or("No project path")?;
     let path = base.join("locales").join(format!("{loc}.json"));
-    if !path.exists() { return Ok(key); }
+    if !path.exists() {
+        return Ok(key);
+    }
     let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
     let data: LocaleData = serde_json::from_str(&content).map_err(|e| e.to_string())?;
     Ok(data.strings.get(&key).cloned().unwrap_or(key))

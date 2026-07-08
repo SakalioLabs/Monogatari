@@ -32,6 +32,23 @@ Create a JSON file in `rust-engine/data/characters/`:
 }
 ```
 
+Optional renderer fields can be added to the same character file:
+
+```json
+{
+  "live2d_model_path": "assets/live2d/hero/hero.model3.json",
+  "model_3d_path": "assets/models/hero.glb",
+  "sprite_path": "assets/sprites/hero_neutral.png",
+  "sprite_paths": {
+    "happy": "assets/sprites/hero_happy.png",
+    "neutral": "assets/sprites/hero_neutral.png"
+  },
+  "portrait_path": "assets/portraits/hero.png"
+}
+```
+
+Story Mode uses the first available renderer in this order: Live2D, GLB/GLTF 3D, emotion sprite, portrait, generated 3D placeholder.
+
 ## Creating a Dialogue
 
 Create a JSON file in `rust-engine/data/dialogue/`:
@@ -61,9 +78,38 @@ Create a JSON file in `rust-engine/data/dialogue/`:
 ## Building for Production
 
 ```bash
-cd frontend && npm run build
+cd frontend && npm run build:web
 cd rust-engine/crates/tauri-app && cargo tauri build
 ```
+
+## Web Preview / PWA Build
+
+Before cutting a release, run the automated gate from the repository root:
+
+```bash
+node scripts/verify-release.mjs
+```
+
+This validates JSON assets, checked-in workflow files, all quality suite files, workflow branch coverage snapshots, locale coverage, frontend UI text artifacts, frontend source invariants, release-critical Rust checks/tests, frontend audit, the Web/PWA build, generated dist assets, and legacy C# tests.
+
+```bash
+cd frontend
+npm run build:web
+npm run preview:web
+```
+
+The web build emits `manifest.webmanifest`, `sw.js`, an offline fallback page, `404.html`, and `.nojekyll` for static hosting. It also runs the bundle budget verifier so entry assets stay small while renderer-heavy Three.js and Live2D chunks remain lazy-loaded. The service worker registers only in production browser builds and is disabled inside Tauri.
+
+For GitHub Pages or any subpath deployment, set the base path before building:
+
+```powershell
+cd frontend
+$env:VITE_BASE_PATH='/Monogatari/'
+npm run build:web
+Remove-Item Env:VITE_BASE_PATH
+```
+
+Use the generated `dist/` directory as the deploy root. The service worker scope, manifest link, and asset URLs follow `VITE_BASE_PATH`.
 
 ## Available Views
 
@@ -77,6 +123,7 @@ cd rust-engine/crates/tauri-app && cargo tauri build
 | Group Chat | `/group-chat` | Multi-character conversations |
 | Settings | `/settings` | Project and AI configuration |
 | Analytics | `/analytics` | Engagement metrics |
+| Quality | `/quality` | Character stability, knowledge-reference anchoring, workflow output, scoring, event rules, and release-gate checks |
 | Marketplace | `/marketplace` | Template browsing |
 | Plugins | `/plugins` | Plugin management |
 | Audio | `/audio` | BGM/SFX management |

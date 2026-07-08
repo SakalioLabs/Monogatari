@@ -5,8 +5,8 @@
 //! When no cloud provider is configured, operates in local-diff mode for
 //! offline save management and device transfer.
 
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use tauri::State;
 
 use crate::state::AppState;
@@ -87,14 +87,17 @@ pub async fn configure_cloud_sync(
     endpoint: Option<String>,
     api_key: Option<String>,
 ) -> Result<String, String> {
-    tracing::info!("Cloud sync configured: provider={provider}, endpoint={:?}", endpoint);
+    tracing::info!(
+        "Cloud sync configured: provider={provider}, endpoint={:?}",
+        endpoint
+    );
     let _ = api_key; // Stored securely in production
     Ok(format!("Cloud sync provider set to {provider}"))
 }
 
 /// Get current cloud sync status with local manifest analysis.
 #[tauri::command]
-pub async fn get_sync_status(state: State<'_, AppState>) -> Result<CloudSyncStatus, String> {
+pub async fn get_sync_status(_state: State<'_, AppState>) -> Result<CloudSyncStatus, String> {
     let manifest = load_manifest();
     let saves_dir = std::env::current_dir()
         .unwrap_or_default()
@@ -107,9 +110,15 @@ pub async fn get_sync_status(state: State<'_, AppState>) -> Result<CloudSyncStat
             for entry in entries.flatten() {
                 let path = entry.path();
                 if path.extension().and_then(|e| e.to_str()) == Some("json") {
-                    let id = path.file_stem().unwrap_or_default().to_string_lossy().to_string();
+                    let id = path
+                        .file_stem()
+                        .unwrap_or_default()
+                        .to_string_lossy()
+                        .to_string();
                     let checksum = compute_checksum(&path);
-                    let needs_upload = manifest.entries.get(&id)
+                    let needs_upload = manifest
+                        .entries
+                        .get(&id)
                         .map(|e| e.checksum != checksum)
                         .unwrap_or(true);
                     if needs_upload {
@@ -140,27 +149,45 @@ pub async fn push_saves_to_cloud(
     let mut manifest = load_manifest();
     let device_id = get_device_id();
 
-    let target_ids = save_ids.unwrap_or_else(|| saves.iter().map(|s| s.id.clone()).collect());
+    let target_ids = save_ids.unwrap_or_else(|| saves.iter().map(|s| s.save_id.clone()).collect());
     let mut pushed = 0usize;
 
     for save_id in &target_ids {
-        if let Some(save) = saves.iter().find(|s| &s.id == save_id) {
-            let size = serde_json::to_string(save).map(|s| s.len() as u64).unwrap_or(0);
-            let checksum = format!("{:x}", md5::compute(serde_json::to_string(save).unwrap_or_default()));
-            manifest.entries.insert(save_id.clone(), CloudSaveEntry {
-                save_id: save_id.clone(),
-                device_id: device_id.clone(),
-                timestamp: format!("{}", std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs()),
-                size_bytes: size,
-                checksum,
-            });
+        if let Some(save) = saves.iter().find(|s| &s.save_id == save_id) {
+            let size = serde_json::to_string(save)
+                .map(|s| s.len() as u64)
+                .unwrap_or(0);
+            let checksum = format!(
+                "{:x}",
+                md5::compute(serde_json::to_string(save).unwrap_or_default())
+            );
+            manifest.entries.insert(
+                save_id.clone(),
+                CloudSaveEntry {
+                    save_id: save_id.clone(),
+                    device_id: device_id.clone(),
+                    timestamp: format!(
+                        "{}",
+                        std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .unwrap_or_default()
+                            .as_secs()
+                    ),
+                    size_bytes: size,
+                    checksum,
+                },
+            );
             pushed += 1;
         }
     }
 
-    manifest.last_updated = format!("{}", std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs());
+    manifest.last_updated = format!(
+        "{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs()
+    );
     save_manifest(&manifest)?;
     tracing::info!("Pushed {pushed} saves to cloud manifest");
     Ok(format!("Pushed {pushed} saves"))
@@ -177,17 +204,22 @@ pub async fn pull_saves_from_cloud(
 
 /// Resolve sync conflict by choosing local or remote version.
 #[tauri::command]
-pub async fn resolve_sync_conflict(
-    save_id: String,
-    use_local: bool,
-) -> Result<String, String> {
+pub async fn resolve_sync_conflict(save_id: String, use_local: bool) -> Result<String, String> {
     let mut manifest = load_manifest();
     if !use_local {
         manifest.entries.remove(&save_id);
     }
-    manifest.last_updated = format!("{}", std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs());
+    manifest.last_updated = format!(
+        "{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs()
+    );
     save_manifest(&manifest)?;
-    tracing::info!("Resolved conflict for {save_id}: {}", if use_local { "local" } else { "remote" });
+    tracing::info!(
+        "Resolved conflict for {save_id}: {}",
+        if use_local { "local" } else { "remote" }
+    );
     Ok(format!("Resolved {save_id}"))
 }

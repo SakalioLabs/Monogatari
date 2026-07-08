@@ -1,0 +1,91 @@
+{
+  "id": "score_gate_demo",
+  "name": "Score Gate Demo",
+  "start_node_id": "start",
+  "nodes": [
+    {
+      "id": "start",
+      "node_type": "start",
+      "label": "Begin",
+      "x": 120,
+      "y": 160,
+      "config": {},
+      "connections": ["engagement_gate"]
+    },
+    {
+      "id": "engagement_gate",
+      "node_type": "evaluation",
+      "label": "Check Engagement",
+      "x": 360,
+      "y": 160,
+      "config": {
+        "character_id": "sakura",
+        "criteria": "engagement",
+        "threshold": 0.8,
+        "variable_name": "sakura_engagement_gate"
+      },
+      "connections": ["trigger_high_engagement", "encouragement"]
+    },
+    {
+      "id": "trigger_high_engagement",
+      "node_type": "trigger_event",
+      "label": "Trigger High Engagement",
+      "x": 620,
+      "y": 90,
+      "config": {
+        "character_id": "sakura",
+        "event_id": "high_engagement",
+        "event_type": "special_dialogue"
+      },
+      "connections": ["unlocked_dialogue", "blocked_dialogue"]
+    },
+    {
+      "id": "unlocked_dialogue",
+      "node_type": "dialogue",
+      "label": "Unlocked Dialogue",
+      "x": 880,
+      "y": 70,
+      "config": {
+        "speaker": "sakura",
+        "text": "You listened so closely that I want to show you the hidden path by the river.",
+        "emotion": "happy"
+      },
+      "connections": ["end"]
+    },
+    {
+      "id": "blocked_dialogue",
+      "node_type": "dialogue",
+      "label": "Event Blocked",
+      "x": 880,
+      "y": 190,
+      "config": {
+        "speaker": "sakura",
+        "text": "Let's talk a little longer before I share that secret place.",
+        "emotion": "neutral"
+      },
+      "connections": ["end"]
+    },
+    {
+      "id": "encouragement",
+      "node_type": "dialogue",
+      "label": "Encourage Player",
+      "x": 620,
+      "y": 290,
+      "config": {
+        "speaker": "sakura",
+        "text": "I can feel you're trying. Tell me what caught your heart about the blossoms.",
+        "emotion": "gentle"
+      },
+      "connections": ["end"]
+    },
+    {
+      "id": "end",
+      "node_type": "end",
+      "label": "End",
+      "x": 1120,
+      "y": 160,
+      "config": {},
+      "connections": []
+    }
+  ]
+}

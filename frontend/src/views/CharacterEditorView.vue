@@ -92,22 +92,68 @@
                   <option v-for="e in emotions" :key="e" :value="e">{{ e }}</option>
                 </select>
               </label>
-              <label class="form-field">
+              <label class="form-field" :class="{ invalid: assetFieldIssue('live2d_model_path') }">
                 <span>Live2D Model Path</span>
                 <input class="input" v-model="form.live2d_model_path" placeholder="live2d/model.model3.json" />
+                <small v-if="assetFieldIssue('live2d_model_path')" class="field-warning">{{ assetFieldIssue('live2d_model_path')?.message }}</small>
               </label>
-              <label class="form-field">
+              <label class="form-field" :class="{ invalid: assetFieldIssue('model_3d_path') }">
                 <span>3D Model Path (GLB/GLTF)</span>
                 <input class="input" v-model="form.model_3d_path" placeholder="models/character.glb" />
+                <small v-if="assetFieldIssue('model_3d_path')" class="field-warning">{{ assetFieldIssue('model_3d_path')?.message }}</small>
               </label>
-              <label class="form-field">
+              <label class="form-field" :class="{ invalid: assetFieldIssue('portrait_path') }">
                 <span>Portrait Image</span>
                 <input class="input" v-model="form.portrait_path" placeholder="assets/portraits/char.png" />
+                <small v-if="assetFieldIssue('portrait_path')" class="field-warning">{{ assetFieldIssue('portrait_path')?.message }}</small>
               </label>
-              <label class="form-field">
-                <span>Sprite Sheet</span>
+              <label class="form-field" :class="{ invalid: assetFieldIssue('sprite_path') }">
+                <span>Fallback Sprite</span>
                 <input class="input" v-model="form.sprite_path" placeholder="assets/sprites/char.png" />
+                <small v-if="assetFieldIssue('sprite_path')" class="field-warning">{{ assetFieldIssue('sprite_path')?.message }}</small>
               </label>
+            </div>
+            <div class="asset-diagnostics" :class="{ warning: assetIssueCount > 0 }">
+              <div class="asset-diag-head">
+                <span>Asset Contract</span>
+                <strong :class="{ warning: assetIssueCount > 0 }">{{ rendererAssetSummary }}</strong>
+              </div>
+              <div v-if="assetDiagnostics.length > 0" class="asset-diag-list">
+                <span v-for="diag in assetDiagnostics" :key="diag.key" class="asset-diag-row" :class="diag.state">
+                  <b>{{ diag.label }}</b>
+                  <span>{{ diag.message }}</span>
+                </span>
+              </div>
+              <div v-else class="asset-diag-empty">Generated 3D fallback</div>
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-heading">
+              <span class="section-title">Renderer Preview</span>
+              <span class="preview-mode">{{ rendererPreviewMode }}</span>
+            </div>
+            <div class="renderer-preview-stage">
+              <Live2DCanvas
+                v-if="previewLive2dPath"
+                :model-path="previewLive2dPath"
+                :expression="previewExpression"
+                motion="idle"
+              />
+              <CharacterModelView
+                v-else-if="previewModel3dPath"
+                :model-path="previewModel3dPath"
+                :expression="previewExpression"
+                motion="idle"
+              />
+              <div v-else-if="previewSpritePath" class="sprite-preview">
+                <img :src="previewSpritePath" :alt="form.name || 'Character sprite preview'" />
+              </div>
+              <CharacterModelView
+                v-else
+                :model-path="null"
+                :expression="previewExpression"
+                motion="idle"
+              />
             </div>
           </div>
         </div>
@@ -164,6 +210,24 @@
               </div>
             </div>
           </div>
+          <div class="section">
+            <div class="section-heading">
+              <span class="section-title">Expression Sprites</span>
+              <button class="btn btn-secondary btn-sm" :disabled="!form.sprite_path.trim()" @click="fillDefaultSpritePaths">Copy Fallback</button>
+            </div>
+            <div class="sprite-path-grid">
+              <label
+                v-for="emotion in emotions"
+                :key="emotion"
+                class="form-field sprite-path-row"
+                :class="{ invalid: spritePathIssue(emotion) }"
+              >
+                <span>{{ emotion }}</span>
+                <input class="input" v-model="form.sprite_paths[emotion]" :placeholder="spritePlaceholder(emotion)" />
+                <small v-if="spritePathIssue(emotion)" class="field-warning">{{ spritePathIssue(emotion)?.message }}</small>
+              </label>
+            </div>
+          </div>
         </div>
 
         <!-- Relationships Tab -->
@@ -188,6 +252,10 @@
           <div class="section">
             <span class="section-title">Character Knowledge</span>
             <p class="section-desc">Define what this character knows. These entries are injected into the LLM context during conversations.</p>
+            <label class="form-field full">
+              <span>Pinned Knowledge Refs</span>
+              <input class="input" v-model="form.knowledge_refs" placeholder="sakura_nature, sakura_art_knowledge" />
+            </label>
             <div class="knowledge-editor">
               <div v-for="(entry, i) in form.knowledge_entries" :key="i" class="knowledge-item">
                 <label class="form-field">
@@ -228,6 +296,16 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, onMounted } from 'vue'
+import Live2DCanvas from '../components/Live2DCanvas.vue'
+import CharacterModelView from '../components/CharacterModelView.vue'
+import {
+  cleanRendererPathMap,
+  imageAssetExtensions,
+  rendererAssetSpecs,
+  rendererAssetValidationMessage,
+  selectCharacterRendererAsset,
+  type RendererAssetSpec,
+} from '../lib/rendererAssets'
 import { invokeCommand } from '../lib/tauri'
 import { useI18n } from '../lib/i18n'
 
@@ -249,6 +327,7 @@ interface CharForm {
   model_3d_path: string
   portrait_path: string
   sprite_path: string
+  sprite_paths: Record<string, string>
   openness: number
   conscientiousness: number
   extraversion: number
@@ -256,6 +335,7 @@ interface CharForm {
   neuroticism: number
   relationships: Record<string, number>
   knowledge_entries: KnowledgeEntry[]
+  knowledge_refs: string
   emotion_modifiers: Record<string, string>
   [key: string]: any
 }
@@ -266,6 +346,13 @@ interface CharacterSummary {
   description: string
   emotion: string
   live2d_model_path: string | null
+}
+
+interface AssetDiagnostic {
+  key: string
+  label: string
+  message: string
+  state: 'ready' | 'warning'
 }
 
 const emotions = ['neutral', 'happy', 'sad', 'angry', 'surprised', 'love', 'embarrassed', 'thoughtful', 'excited', 'anxious']
@@ -307,9 +394,9 @@ const statusOk = ref(true)
 const defaultForm = (): CharForm => ({
   id: '', name: '', description: '', background: '', speech_style: '',
   default_emotion: 'neutral', live2d_model_path: '', model_3d_path: '',
-  portrait_path: '', sprite_path: '',
+  portrait_path: '', sprite_path: '', sprite_paths: {},
   openness: 0.5, conscientiousness: 0.5, extraversion: 0.5, agreeableness: 0.5, neuroticism: 0.5,
-  relationships: {}, knowledge_entries: [], emotion_modifiers: {},
+  relationships: {}, knowledge_entries: [], knowledge_refs: '', emotion_modifiers: {},
 })
 
 const form = reactive<CharForm>(defaultForm())
@@ -317,6 +404,85 @@ const form = reactive<CharForm>(defaultForm())
 const otherCharacters = computed(() =>
   characterList.value.filter(c => c.id !== form.id)
 )
+
+const assetDiagnostics = computed<AssetDiagnostic[]>(() => {
+  const diagnostics: AssetDiagnostic[] = []
+
+  for (const spec of rendererAssetSpecs) {
+    const path = form[spec.key]
+    const message = rendererAssetValidationMessage(path, spec.extensions)
+    if (message) {
+      diagnostics.push({ key: spec.key, label: spec.label, message, state: 'warning' })
+    } else if (path.trim()) {
+      diagnostics.push({ key: spec.key, label: spec.label, message: 'Ready', state: 'ready' })
+    }
+  }
+
+  for (const [emotion, path] of Object.entries(cleanSpritePaths(form.sprite_paths))) {
+    const key = `sprite_paths.${emotion}`
+    const message = rendererAssetValidationMessage(path, imageAssetExtensions)
+    diagnostics.push({
+      key,
+      label: `${emotion} sprite`,
+      message: message || 'Ready',
+      state: message ? 'warning' : 'ready',
+    })
+  }
+
+  return diagnostics
+})
+
+const assetIssueCount = computed(() =>
+  assetDiagnostics.value.filter(diag => diag.state === 'warning').length
+)
+
+const rendererAssetSummary = computed(() => {
+  if (assetIssueCount.value > 0) return `${assetIssueCount.value} warning${assetIssueCount.value === 1 ? '' : 's'}`
+  const declaredCount = assetDiagnostics.value.length
+  return declaredCount > 0 ? `${declaredCount} ready` : 'Fallback ready'
+})
+
+const assetIssueMap = computed(() => {
+  const entries = assetDiagnostics.value
+    .filter(diag => diag.state === 'warning')
+    .map(diag => [diag.key, diag] as const)
+  return Object.fromEntries(entries) as Record<string, AssetDiagnostic>
+})
+
+const previewExpression = computed(() => form.default_emotion || 'neutral')
+
+const rendererPreviewAsset = computed(() =>
+  selectCharacterRendererAsset(
+    {
+      live2d_model_path: form.live2d_model_path,
+      model_3d_path: form.model_3d_path,
+      portrait_path: form.portrait_path,
+      sprite_path: form.sprite_path,
+      sprite_paths: form.sprite_paths,
+      emotion: form.default_emotion,
+    },
+    { expression: previewExpression.value, validatePaths: true },
+  )
+)
+
+const previewLive2dPath = computed(() =>
+  rendererPreviewAsset.value.mode === 'live2d' ? rendererPreviewAsset.value.resolvedUrl : null
+)
+
+const previewModel3dPath = computed(() =>
+  rendererPreviewAsset.value.mode === 'model3d' ? rendererPreviewAsset.value.resolvedUrl : null
+)
+
+const previewSpritePath = computed(() =>
+  rendererPreviewAsset.value.mode === 'sprite' ? rendererPreviewAsset.value.resolvedUrl : null
+)
+
+const rendererPreviewMode = computed(() => {
+  if (rendererPreviewAsset.value.mode === 'live2d') return 'Live2D'
+  if (rendererPreviewAsset.value.mode === 'model3d') return '3D'
+  if (rendererPreviewAsset.value.mode === 'sprite') return 'Sprite'
+  return 'Generated 3D'
+})
 
 const radarTraits = computed(() => [
   form.openness, form.agreeableness, form.extraversion, form.neuroticism, form.conscientiousness
@@ -357,6 +523,38 @@ function initials(name: string): string {
   return name.trim().slice(0, 2).toUpperCase() || '??'
 }
 
+function normalizeSpritePaths(value: unknown): Record<string, string> {
+  return cleanRendererPathMap(value)
+}
+
+function cleanSpritePaths(paths: Record<string, string>): Record<string, string> {
+  return cleanRendererPathMap(paths)
+}
+
+function spritePlaceholder(emotion: string): string {
+  if (form.sprite_path.trim()) return form.sprite_path.trim()
+  const base = form.id.trim() || 'character'
+  return 'assets/sprites/' + base + '_' + emotion + '.png'
+}
+
+function fillDefaultSpritePaths() {
+  const fallback = form.sprite_path.trim()
+  if (!fallback) return
+  for (const emotion of emotions) {
+    if (!form.sprite_paths[emotion]?.trim()) {
+      form.sprite_paths[emotion] = fallback
+    }
+  }
+}
+
+function assetFieldIssue(key: RendererAssetSpec['key']): AssetDiagnostic | undefined {
+  return assetIssueMap.value[key]
+}
+
+function spritePathIssue(emotion: string): AssetDiagnostic | undefined {
+  return assetIssueMap.value[`sprite_paths.${emotion}`]
+}
+
 function resetForm() {
   Object.assign(form, defaultForm())
 }
@@ -395,6 +593,7 @@ async function selectChar(id: string) {
       default_emotion: c.emotion || 'neutral',
       live2d_model_path: c.live2d_model_path || '', model_3d_path: c.model_3d_path || '',
       portrait_path: c.portrait_path || '', sprite_path: c.sprite_path || '',
+      sprite_paths: normalizeSpritePaths(c.sprite_paths),
       openness: c.personality?.openness ?? 0.5,
       conscientiousness: c.personality?.conscientiousness ?? 0.5,
       extraversion: c.personality?.extraversion ?? 0.5,
@@ -402,6 +601,7 @@ async function selectChar(id: string) {
       neuroticism: c.personality?.neuroticism ?? 0.5,
       relationships: c.relationships || {},
       knowledge_entries: c.knowledge_entries || [],
+      knowledge_refs: (c.knowledge_refs || c.knowledge || []).join(', '),
       emotion_modifiers: c.emotion_modifiers || {},
     })
     editing.value = true
@@ -434,11 +634,22 @@ async function save() {
           neuroticism: form.neuroticism,
           speech_style: form.speech_style,
         },
+        default_emotion: form.default_emotion,
         live2d_model_path: form.live2d_model_path || null,
+        model_3d_path: form.model_3d_path || null,
+        portrait_path: form.portrait_path || null,
+        sprite_path: form.sprite_path || null,
+        sprite_paths: cleanSpritePaths(form.sprite_paths),
+        relationships: form.relationships,
+        knowledge_entries: form.knowledge_entries,
+        knowledge_refs: splitKnowledgeRefs(form.knowledge_refs),
+        emotion_modifiers: form.emotion_modifiers,
       }
     })
-    statusMsg.value = 'Character "' + form.name + '" saved'
-    statusOk.value = true
+    statusMsg.value = assetIssueCount.value > 0
+      ? 'Character "' + form.name + '" saved with ' + assetIssueCount.value + ' asset warning(s)'
+      : 'Character "' + form.name + '" saved'
+    statusOk.value = assetIssueCount.value === 0
     editing.value = false
     isNew.value = false
     await loadList()
@@ -461,8 +672,14 @@ function exportChar() {
     },
     emotion: form.default_emotion,
     live2d_model_path: form.live2d_model_path || null,
+    model_3d_path: form.model_3d_path || null,
+    portrait_path: form.portrait_path || null,
+    sprite_path: form.sprite_path || null,
+    sprite_paths: cleanSpritePaths(form.sprite_paths),
     relationships: form.relationships,
     knowledge_entries: form.knowledge_entries,
+    knowledge_refs: splitKnowledgeRefs(form.knowledge_refs),
+    emotion_modifiers: form.emotion_modifiers,
   }
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
@@ -471,6 +688,10 @@ function exportChar() {
   a.download = (form.id || 'character') + '.json'
   a.click()
   URL.revokeObjectURL(url)
+  statusMsg.value = assetIssueCount.value > 0
+    ? 'Exported with ' + assetIssueCount.value + ' asset warning(s)'
+    : 'Character JSON exported'
+  statusOk.value = assetIssueCount.value === 0
 }
 
 function addKnowledge() {
@@ -479,6 +700,12 @@ function addKnowledge() {
 
 function removeKnowledge(i: number) {
   form.knowledge_entries.splice(i, 1)
+}
+
+function splitKnowledgeRefs(value: string): string[] {
+  return value.split(',')
+    .map(ref => ref.trim())
+    .filter(Boolean)
 }
 
 onMounted(loadList)
@@ -704,6 +931,59 @@ onMounted(loadList)
   line-height: 1.5;
 }
 
+.section-heading {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.section-heading .section-title {
+  margin-bottom: 0;
+}
+
+.preview-mode {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--brand-light);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.renderer-preview-stage {
+  position: relative;
+  height: 360px;
+  min-height: 360px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, rgba(45,212,191,0.08), transparent 52%),
+    var(--surface-0);
+}
+
+.sprite-preview {
+  display: grid;
+  place-items: end center;
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+}
+
+.sprite-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 28px rgba(0,0,0,0.34));
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -723,6 +1003,91 @@ onMounted(loadList)
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 700;
+}
+
+.form-field.invalid .input {
+  border-color: var(--warning);
+}
+
+.field-warning {
+  color: var(--warning);
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.asset-diagnostics {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+}
+
+.asset-diagnostics.warning {
+  border-color: rgba(245,158,11,0.42);
+}
+
+.asset-diag-head,
+.asset-diag-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.asset-diag-head span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.asset-diag-head strong {
+  color: var(--success);
+  font-size: 12px;
+}
+
+.asset-diag-head strong.warning {
+  color: var(--warning);
+}
+
+.asset-diag-list {
+  display: grid;
+  gap: 6px;
+}
+
+.asset-diag-row {
+  min-height: 28px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.asset-diag-row b {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.asset-diag-row span {
+  min-width: 0;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.asset-diag-row.warning b,
+.asset-diag-row.warning span {
+  color: var(--warning);
+}
+
+.asset-diag-empty {
+  color: var(--text-tertiary);
+  font-size: 12px;
 }
 
 .trait-columns {
@@ -817,6 +1182,19 @@ onMounted(loadList)
 
 .emotion-header strong {
   font-size: 13px;
+}
+
+.sprite-path-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.sprite-path-row {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
 }
 
 .rel-list {
@@ -985,8 +1363,20 @@ onMounted(loadList)
   .trait-columns {
     grid-template-columns: 1fr;
   }
+  .renderer-preview-stage {
+    height: 300px;
+    min-height: 300px;
+  }
   .knowledge-item {
     grid-template-columns: 1fr;
+  }
+  .asset-diag-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .asset-diag-row span {
+    text-align: left;
   }
 }
 </style>

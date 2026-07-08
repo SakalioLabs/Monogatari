@@ -31,6 +31,8 @@ let camera: any = null
 let animationId: number | null = null
 let mixer: any = null
 let controls: any = null
+let activeModel: any = null
+let resizeObserver: ResizeObserver | null = null
 
 async function initScene() {
   if (!containerRef.value) return
@@ -51,7 +53,10 @@ async function initScene() {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.toneMapping = THREE.ACESFilmicToneMapping
   renderer.toneMappingExposure = 1.2
+  renderer.domElement.className = 'character-model-canvas'
   containerRef.value.appendChild(renderer.domElement)
+  resizeObserver = new ResizeObserver(handleResize)
+  resizeObserver.observe(containerRef.value)
 
   const ambient = new THREE.AmbientLight(0xffffff, 0.6)
   scene.add(ambient)
@@ -73,6 +78,7 @@ async function initScene() {
     animationId = requestAnimationFrame(animate)
     controls.update()
     if (mixer) mixer.update(0.016)
+    if (activeModel && !mixer) activeModel.rotation.y += 0.004
     renderer.render(scene, camera)
   }
   animate()
@@ -89,10 +95,12 @@ async function loadModel(path: string, THREE: any, GLTFLoader: any) {
   modelLoaded.value = false
   const loader = new GLTFLoader()
   try {
+    clearActiveModel()
     const gltf = await loader.loadAsync(path)
     const model = gltf.scene
     model.scale.set(1, 1, 1)
     scene.add(model)
+    activeModel = model
     if (gltf.animations.length > 0) {
       mixer = new THREE.AnimationMixer(model)
       const action = mixer.clipAction(gltf.animations[0])
@@ -106,22 +114,41 @@ async function loadModel(path: string, THREE: any, GLTFLoader: any) {
 }
 
 function showPlaceholder(THREE: any) {
+  clearActiveModel()
+  const group = new THREE.Group()
   const geo = new THREE.BoxGeometry(0.8, 1.6, 0.4)
   const mat = new THREE.MeshStandardMaterial({ color: 0x2dd4bf, transparent: true, opacity: 0.7 })
   const cube = new THREE.Mesh(geo, mat)
   cube.position.set(0, 0.8, 0)
-  scene.add(cube)
+  group.add(cube)
   const edges = new THREE.EdgesGeometry(geo)
   const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x2dd4bf }))
   line.position.copy(cube.position)
-  scene.add(line)
+  group.add(line)
+  scene.add(group)
+  activeModel = group
   modelLoaded.value = true
+}
+
+function clearActiveModel() {
+  if (!activeModel || !scene) return
+  scene.remove(activeModel)
+  activeModel.traverse?.((object: any) => {
+    object.geometry?.dispose?.()
+    if (Array.isArray(object.material)) {
+      object.material.forEach((material: any) => material.dispose?.())
+    } else {
+      object.material?.dispose?.()
+    }
+  })
+  activeModel = null
+  mixer = null
 }
 
 function handleResize() {
   if (!containerRef.value || !renderer || !camera) return
-  const w = containerRef.value.clientWidth
-  const h = containerRef.value.clientHeight
+  const w = Math.max(containerRef.value.clientWidth, 1)
+  const h = Math.max(containerRef.value.clientHeight, 1)
   camera.aspect = w / h
   camera.updateProjectionMatrix()
   renderer.setSize(w, h)
@@ -129,12 +156,12 @@ function handleResize() {
 
 onMounted(() => {
   initScene()
-  window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
+  resizeObserver?.disconnect()
   if (animationId) cancelAnimationFrame(animationId)
+  clearActiveModel()
   if (renderer) {
     renderer.dispose()
     renderer.domElement?.remove()
@@ -142,11 +169,14 @@ onUnmounted(() => {
 })
 
 watch(() => props.modelPath, (newPath) => {
-  if (newPath && scene) {
+  if (scene) {
     import('three').then(THREE => {
-      import('three/addons/loaders/GLTFLoader.js').then(({ GLTFLoader }) => {
-        loadModel(newPath, THREE, GLTFLoader)
-      })
+      if (!newPath) {
+        modelError.value = null
+        showPlaceholder(THREE)
+        return
+      }
+      import('three/addons/loaders/GLTFLoader.js').then(({ GLTFLoader }) => loadModel(newPath, THREE, GLTFLoader))
     })
   }
 })
@@ -157,6 +187,12 @@ watch(() => props.modelPath, (newPath) => {
   position: relative; width: 100%; height: 100%;
   min-height: 300px; background: var(--surface-0);
   border-radius: var(--radius); overflow: hidden;
+}
+
+:deep(.character-model-canvas) {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 .model-loading, .model-error {
   position: absolute; inset: 0;

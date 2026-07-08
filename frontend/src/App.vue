@@ -5,7 +5,7 @@
         <div class="logo-mark">M</div>
         <div class="logo-text" v-show="!sidebarCollapsed">
           <span class="logo-name">Monogatari</span>
-          <span class="logo-badge">{{ t('app.version', 'Engine v0.9') }}</span>
+          <span class="logo-badge">{{ t('app.version', 'Engine v0.9.5') }}</span>
         </div>
       </div>
       <nav class="sidebar-nav">
@@ -95,7 +95,7 @@ function handleGlobalKeydown(e: KeyboardEvent) {
 
 const navItems = computed(() => [
   { path: '/', label: t('nav.dashboard', 'Dashboard'), icon: '&#9632;' },
-  { path: '/chat', label: t('nav.chat', 'AI Chat'), icon: '&#9670;', badge: 'Live' },
+  { path: '/chat', label: t('nav.chat', 'AI Chat'), icon: '&#9670;', badge: t('badge.live', 'Live') },
   { path: '/game', label: t('nav.story', 'Story Mode'), icon: '&#9654;' },
   { path: '/editor', label: t('nav.workflow', 'Workflow'), icon: '&#8942;' },
   { path: '/assets', label: t('nav.assets', 'Scene Assets'), icon: '&#9638;' },
@@ -104,12 +104,13 @@ const navItems = computed(() => [
   { path: '/group-chat', label: t('nav.group', 'Group Chat'), icon: '&#9733;' },
   { path: '/settings', label: t('nav.settings', 'Settings'), icon: '&#9881;' },
   { path: '/analytics', label: t('nav.analytics', 'Analytics'), icon: '&#9636;' },
+  { path: '/quality', label: t('nav.quality', 'Quality'), icon: '&#10003;', badge: t('badge.gate', 'Gate') },
   { path: '/plugins', label: t('nav.plugins', 'Plugins'), icon: '&#128295;' },
   { path: '/scene-editor', label: t('nav.scenes', 'Scenes'), icon: '&#127912;' },
   { path: '/dialogue-editor', label: t('nav.dialogues', 'Dialogues'), icon: '&#128172;' },
   { path: '/knowledge', label: t('nav.knowledge', 'Knowledge'), icon: '&#128218;' },
   { path: '/audio', label: t('nav.audio', 'Audio'), icon: '&#9835;' },
-  { path: '/marketplace', label: t('nav.marketplace', 'Marketplace'), icon: '&#9733;', badge: 'New' },
+  { path: '/marketplace', label: t('nav.marketplace', 'Marketplace'), icon: '&#9733;', badge: t('badge.new', 'New') },
   { path: '/cg-gallery', label: t('nav.cg-gallery', 'CG Gallery'), icon: '&#127912;' },
   { path: '/backlog', label: t('nav.backlog', 'Backlog'), icon: '&#128214;' },
   { path: '/achievements', label: t('nav.achievements', 'Achievements'), icon: '&#127942;' },

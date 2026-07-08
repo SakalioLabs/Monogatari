@@ -91,9 +91,7 @@ pub async fn get_knowledge_entry(
 
 /// Get all unique tags in the knowledge base.
 #[tauri::command]
-pub async fn list_knowledge_tags(
-    state: State<'_, AppState>,
-) -> Result<Vec<String>, String> {
+pub async fn list_knowledge_tags(state: State<'_, AppState>) -> Result<Vec<String>, String> {
     let kb = state.knowledge_base.read().await;
     Ok(kb.all_tags())
 }

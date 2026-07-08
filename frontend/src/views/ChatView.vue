@@ -283,6 +283,11 @@ async function attachStreamListeners(assistantMessage: ChatMessage) {
       isStreaming.value = true
       scrollToBottom()
     }),
+    listen<string>('chat-replace', (event) => {
+      assistantMessage.content = event.payload || ''
+      isStreaming.value = true
+      scrollToBottom()
+    }),
     listen<string>('chat-complete', (event) => {
       if (event.payload) assistantMessage.content = event.payload
       isStreaming.value = false

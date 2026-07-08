@@ -23,6 +23,7 @@ const loading = ref(false)
 // Live2D model state
 let app: any = null
 let model: any = null
+let resizeObserver: ResizeObserver | null = null
 
 async function initPixi() {
   if (!canvasRef.value || !containerRef.value) return
@@ -43,6 +44,8 @@ async function initPixi() {
       backgroundAlpha: 0,
       antialias: true,
     })
+    resizeObserver = new ResizeObserver(resizeCanvas)
+    resizeObserver.observe(containerRef.value)
 
     if (props.modelPath) {
       await loadModel(props.modelPath)
@@ -88,12 +91,31 @@ async function loadModel(path: string) {
     })
 
     app.stage.addChild(model)
+    fitModelToStage()
     console.log('Live2D model loaded:', path)
   } catch (e) {
     console.error('Failed to load Live2D model:', e)
   } finally {
     loading.value = false
   }
+}
+
+function fitModelToStage() {
+  if (!app || !model) return
+  const scale = Math.min(
+    (app.screen.width * 0.8) / model.width,
+    (app.screen.height * 0.8) / model.height
+  )
+  model.scale.set(scale)
+  model.x = (app.screen.width - model.width * scale) / 2
+  model.y = app.screen.height - model.height * scale
+}
+
+function resizeCanvas() {
+  if (!app || !containerRef.value) return
+  const rect = containerRef.value.getBoundingClientRect()
+  app.renderer.resize(Math.max(rect.width, 1), Math.max(rect.height, 1))
+  fitModelToStage()
 }
 
 function setExpression(expression: string) {
@@ -126,6 +148,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  resizeObserver?.disconnect()
   if (model) {
     model.destroy()
   }

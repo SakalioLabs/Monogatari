@@ -90,7 +90,7 @@
           </div>
           <div v-if="catalog?.issues.length" class="issue-list">
             <div v-for="(issue, index) in catalog.issues" :key="`${issue.code}-${index}`" class="issue-item" :class="issue.severity">
-              <span>{{ issue.severity }} 路 {{ issue.code }}</span>
+              <span>{{ issue.severity }} - {{ issue.code }}</span>
               <strong>{{ issue.scene_id || issue.path || 'catalog' }}</strong>
               <p>{{ issue.message }}</p>
             </div>
@@ -106,7 +106,7 @@
           <div class="background-list">
             <div v-for="asset in catalog?.backgrounds" :key="asset.relative_path" class="background-row">
               <span>{{ asset.file_name }}</span>
-              <small>{{ formatBytes(asset.file_size) }} 路 {{ asset.linked_scene_id || 'unlinked' }}</small>
+              <small>{{ formatBytes(asset.file_size) }} - {{ asset.linked_scene_id || 'unlinked' }}</small>
             </div>
           </div>
         </section>

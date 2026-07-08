@@ -60,6 +60,11 @@ const router = createRouter({
       component: () => import('../views/AnalyticsView.vue'),
     },
     {
+      path: '/quality',
+      name: 'quality',
+      component: () => import('../views/QualitySuiteView.vue'),
+    },
+    {
       path: '/marketplace',
       name: 'marketplace',
       component: () => import('../views/MarketplaceView.vue'),

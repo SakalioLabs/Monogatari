@@ -1,0 +1,53 @@
+{
+  "name": "Monogatari Engine",
+  "short_name": "Monogatari",
+  "description": "LLM-powered visual novel engine for AI-driven interactive story production.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f1115",
+  "theme_color": "#2dd4bf",
+  "categories": ["games", "productivity", "entertainment"],
+  "lang": "en",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "64x64",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/maskable-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "AI Chat",
+      "short_name": "Chat",
+      "description": "Open character chat sessions.",
+      "url": "./chat"
+    },
+    {
+      "name": "Workflow",
+      "short_name": "Flow",
+      "description": "Open the visual workflow editor.",
+      "url": "./editor"
+    },
+    {
+      "name": "Quality Suites",
+      "short_name": "Quality",
+      "description": "Run release-gate quality checks.",
+      "url": "./quality"
+    }
+  ]
+}

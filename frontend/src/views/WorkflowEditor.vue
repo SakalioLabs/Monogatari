@@ -9,6 +9,9 @@
       <div class="toolbar-right">
         <button class="btn btn-secondary btn-sm" @click="newWorkflow">New</button>
         <button class="btn btn-secondary btn-sm" @click="loadWorkflow">Open</button>
+        <button class="btn btn-secondary btn-sm" @click="runCurrentWorkflow" :disabled="runningWorkflow">
+          {{ runningWorkflow ? 'Running' : 'Run' }}
+        </button>
         <button class="btn btn-secondary btn-sm" @click="validateCurrentWorkflow">Validate</button>
         <button class="btn btn-primary btn-sm" @click="saveWorkflow">Save</button>
         <button class="btn btn-primary btn-sm" @click="exportJSON">Export</button>
@@ -71,7 +74,7 @@
           v-for="node in nodes"
           :key="node.id"
           class="workflow-node"
-          :class="[{ selected: selectedNode?.id === node.id }, 'node-type-' + node.node_type]"
+          :class="[{ selected: selectedNode?.id === node.id }, nodeRunClass(node), 'node-type-' + node.node_type]"
           :style="{ left: node.x + 'px', top: node.y + 'px' }"
           @mousedown.stop="onNodeMouseDown($event, node)"
           @click.stop="selectNode(node)"
@@ -79,9 +82,18 @@
           <header class="node-header">
             <span class="node-icon">{{ getNodeIcon(node.node_type) }}</span>
             <strong>{{ node.label }}</strong>
+            <span
+              v-if="nodeRunBadge(node)"
+              class="node-run-badge"
+              :class="nodeRunOutcome(node)"
+              :title="nodeRunTooltip(node)"
+            >
+              {{ nodeRunBadge(node) }}
+            </span>
           </header>
           <div class="node-body">
             <span>{{ node.node_type }}</span>
+            <small v-if="nodeRunDetail(node)" class="node-run-detail">{{ nodeRunDetail(node) }}</small>
             <button class="node-port output" title="Connect" @mousedown.stop="startConnection($event, node)"></button>
           </div>
         </article>
@@ -141,7 +153,7 @@
 
           <div v-if="validationResult" class="validation-summary" :class="{ invalid: !validationResult.valid }">
             <strong>{{ validationResult.valid ? 'Ready to export' : 'Needs attention' }}</strong>
-            <span>{{ validationResult.error_count }} errors · {{ validationResult.warning_count }} warnings</span>
+            <span>{{ validationResult.error_count }} errors - {{ validationResult.warning_count }} warnings</span>
           </div>
 
           <div v-if="validationMessage" class="validation-message">{{ validationMessage }}</div>
@@ -155,6 +167,180 @@
           </div>
 
           <p v-else-if="!validationResult" class="muted-copy">Run validation before saving or exporting workflows.</p>
+        </section>
+
+        <section class="execution-panel">
+          <div class="panel-title">
+            <span class="eyebrow">Execution</span>
+            <button class="link-btn" @click="runCurrentWorkflow" :disabled="runningWorkflow">
+              {{ runningWorkflow ? 'Running' : 'Run' }}
+            </button>
+          </div>
+
+          <div class="run-context-panel" :class="{ enabled: runContext.enabled }">
+            <label class="run-context-toggle">
+              <input v-model="runContext.enabled" type="checkbox" />
+              <span>Preview Context</span>
+            </label>
+            <div class="run-context-presets">
+              <button
+                v-for="preset in runContextPresets"
+                :key="preset.id"
+                class="context-preset-btn"
+                type="button"
+                @click="applyRunContextPreset(preset)"
+              >
+                {{ preset.label }}
+              </button>
+              <button
+                class="context-preset-btn matrix"
+                type="button"
+                :disabled="runningWorkflow"
+                @click="runPresetMatrix"
+              >
+                Run Matrix
+              </button>
+            </div>
+            <div class="run-context-grid">
+              <label>
+                <span>Character</span>
+                <input class="input" v-model="runContext.character_id" />
+              </label>
+              <label>
+                <span>Eval Count</span>
+                <input class="input" v-model.number="runContext.evaluation_count" type="number" min="0" step="1" />
+              </label>
+              <label>
+                <span>Relationship</span>
+                <input class="input" v-model.number="runContext.relationship" type="number" min="-1" max="1" step="0.05" />
+              </label>
+              <label>
+                <span>Friendliness</span>
+                <input class="input" v-model.number="runContext.friendliness" type="number" min="0" max="1" step="0.05" />
+              </label>
+              <label>
+                <span>Engagement</span>
+                <input class="input" v-model.number="runContext.engagement" type="number" min="0" max="1" step="0.05" />
+              </label>
+              <label>
+                <span>Creativity</span>
+                <input class="input" v-model.number="runContext.creativity" type="number" min="0" max="1" step="0.05" />
+              </label>
+              <label>
+                <span>Overall</span>
+                <input class="input" v-model.number="runContext.overall_score" type="number" min="0" max="1" step="0.05" />
+              </label>
+              <label class="run-context-wide">
+                <span>Already Triggered</span>
+                <input class="input" v-model="runContext.already_triggered_events" placeholder="high_engagement" />
+              </label>
+            </div>
+          </div>
+
+          <div v-if="executionReport" class="execution-summary" :class="{ complete: executionReport.completed }">
+            <strong>{{ executionReport.completed ? 'Completed' : 'Stopped' }}</strong>
+            <span>{{ executionReport.steps.length }} steps - {{ executionReport.stopped_reason || 'ready' }}</span>
+            <div class="coverage-row">
+              <span>Coverage</span>
+              <strong>{{ formatCoverage(executionReport.coverage_percent) }}</strong>
+              <small>{{ executionReport.executed_node_count }}/{{ executionReport.node_count }} nodes</small>
+            </div>
+            <div v-if="executionReport.unvisited_node_ids.length" class="unvisited-node-list">
+              <span v-for="nodeId in executionReport.unvisited_node_ids" :key="nodeId">{{ nodeId }}</span>
+            </div>
+          </div>
+
+          <div v-if="presetMatrixReport" class="matrix-coverage-panel" :class="{ complete: presetMatrixReport.unvisited_node_ids.length === 0 }">
+            <strong>Preset Matrix</strong>
+            <span>{{ formatCoverage(presetMatrixReport.coverage_percent) }} - {{ presetMatrixReport.executed_node_count }}/{{ presetMatrixReport.node_count }} nodes</span>
+            <div class="matrix-run-list">
+              <span v-for="run in presetMatrixReport.runs" :key="run.preset_id">
+                {{ run.label }} {{ formatCoverage(run.coverage_percent) }}
+              </span>
+            </div>
+            <div v-if="presetMatrixReport.unvisited_node_ids.length" class="unvisited-node-list">
+              <span v-for="nodeId in presetMatrixReport.unvisited_node_ids" :key="nodeId">{{ nodeId }}</span>
+            </div>
+          </div>
+
+          <div v-if="executionMessage" class="validation-message">{{ executionMessage }}</div>
+
+          <div v-if="executionReport?.steps.length" class="trace-list">
+            <div
+              v-for="step in executionReport.steps"
+              :key="`${step.step_index}-${step.node_id}`"
+              class="trace-item"
+              :class="{
+                'trace-score': isEvaluationStep(step),
+                'trace-event': isTriggerEventStep(step),
+                triggered: isTriggerEventTriggered(step),
+              }"
+            >
+              <span>{{ step.step_index + 1 }}</span>
+              <strong>{{ step.label || step.node_id }}</strong>
+              <small>{{ step.node_type }}{{ step.next_node_id ? ` -> ${step.next_node_id}` : '' }}</small>
+              <em v-if="step.stopped_reason">{{ step.stopped_reason }}</em>
+              <div v-if="isEvaluationStep(step)" class="trace-diagnostics score-diagnostics">
+                <div class="diagnostic-row">
+                  <span>Metric</span>
+                  <strong>{{ stringValue(step.output.metric, 'overall') }}</strong>
+                </div>
+                <div class="diagnostic-row">
+                  <span>Score</span>
+                  <strong>{{ formatScore(step.output.score) }}</strong>
+                </div>
+                <div class="score-meter" aria-hidden="true">
+                  <i :style="{ width: scorePercent(step.output.score) }"></i>
+                </div>
+                <div class="diagnostic-row">
+                  <span>Threshold</span>
+                  <strong>{{ formatThreshold(step.output.threshold) }}</strong>
+                </div>
+                <div class="diagnostic-row">
+                  <span>Source</span>
+                  <strong>{{ stringValue(step.output.source, 'unknown') }}</strong>
+                </div>
+                <span class="gate-pill" :class="{ pass: step.output.passed === true, fail: step.output.passed === false }">
+                  {{ step.output.passed === true ? 'Pass' : step.output.passed === false ? 'Fail' : 'No threshold' }}
+                </span>
+              </div>
+              <div v-if="isTriggerEventStep(step)" class="trace-diagnostics event-diagnostics">
+                <div class="event-state-row">
+                  <span class="event-status" :class="{ active: isTriggerEventTriggered(step) }">
+                    {{ isTriggerEventTriggered(step) ? 'Triggered' : 'Blocked' }}
+                  </span>
+                  <strong>{{ stringValue(step.output.event_id, 'event') }}</strong>
+                </div>
+                <div class="diagnostic-row">
+                  <span>Type</span>
+                  <strong>{{ stringValue(step.output.event_type, 'story_event') }}</strong>
+                </div>
+                <div class="diagnostic-row">
+                  <span>Metric</span>
+                  <strong>{{ eventMetric(step) }}</strong>
+                </div>
+                <div class="diagnostic-row">
+                  <span>Actual</span>
+                  <strong>{{ formatScore(eventActualScore(step)) }}</strong>
+                </div>
+                <div v-if="eventBlockers(step).length" class="blocker-list">
+                  <span v-for="reason in eventBlockers(step)" :key="reason">{{ reason }}</span>
+                </div>
+              </div>
+              <div v-if="canChooseStep(step)" class="choice-debug">
+                <button
+                  v-for="(choice, index) in choiceOptionsFor(step)"
+                  :key="`${step.node_id}-${index}`"
+                  class="choice-debug-btn"
+                  @click="chooseWorkflowOption(step.node_id, index)"
+                >
+                  {{ choice }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <p v-else class="muted-copy">Run workflow to inspect node trace.</p>
         </section>
       </aside>
     </main>
@@ -207,6 +393,78 @@ interface WorkflowValidationResult {
   issues: WorkflowValidationIssue[]
 }
 
+interface WorkflowExecutionStep {
+  step_index: number
+  node_id: string
+  node_type: string
+  label: string
+  output: Record<string, any>
+  next_node_id: string | null
+  stopped_reason: string | null
+}
+
+interface WorkflowExecutionReport {
+  workflow_id: string
+  workflow_name: string
+  completed: boolean
+  stopped_reason: string | null
+  node_count: number
+  executed_node_count: number
+  coverage_percent: number
+  executed_node_ids: string[]
+  unvisited_node_ids: string[]
+  steps: WorkflowExecutionStep[]
+  validation: WorkflowValidationResult
+}
+
+interface WorkflowRunContextForm {
+  enabled: boolean
+  character_id: string
+  friendliness: number
+  engagement: number
+  creativity: number
+  overall_score: number
+  relationship: number
+  evaluation_count: number
+  already_triggered_events: string
+}
+
+interface WorkflowRunContextPayload {
+  enabled: boolean
+  character_id: string | null
+  relationship: number
+  evaluation_count: number
+  already_triggered_events: string[]
+  evaluation: {
+    friendliness: number
+    engagement: number
+    creativity: number
+    overall_score: number
+    summary: string
+  }
+}
+
+interface WorkflowRunContextPreset {
+  id: string
+  label: string
+  values: Omit<WorkflowRunContextForm, 'enabled'>
+}
+
+interface WorkflowPresetMatrixReport {
+  node_count: number
+  executed_node_count: number
+  coverage_percent: number
+  executed_node_ids: string[]
+  unvisited_node_ids: string[]
+  runs: {
+    preset_id: string
+    label: string
+    coverage_percent: number
+    executed_node_count: number
+    unvisited_node_ids: string[]
+  }[]
+}
+
 const NODE_WIDTH = 214
 const NODE_HEIGHT = 92
 
@@ -217,16 +475,89 @@ const nodeTypes = ref<NodeTypeInfo[]>([])
 const canvasRef = ref<HTMLDivElement>()
 const validationResult = ref<WorkflowValidationResult | null>(null)
 const validationMessage = ref('')
+const executionReport = ref<WorkflowExecutionReport | null>(null)
+const executionMessage = ref('')
+const runningWorkflow = ref(false)
+const choiceSelections = ref<Record<string, number>>({})
+const presetMatrixReport = ref<WorkflowPresetMatrixReport | null>(null)
+const runContext = ref<WorkflowRunContextForm>({
+  enabled: false,
+  character_id: 'sakura',
+  friendliness: 0.65,
+  engagement: 0.85,
+  creativity: 0.6,
+  overall_score: 0.7,
+  relationship: 0,
+  evaluation_count: 2,
+  already_triggered_events: '',
+})
+
+const runContextPresets: WorkflowRunContextPreset[] = [
+  {
+    id: 'unlock',
+    label: 'Unlock',
+    values: {
+      character_id: 'sakura',
+      friendliness: 0.72,
+      engagement: 0.9,
+      creativity: 0.62,
+      overall_score: 0.75,
+      relationship: 0.2,
+      evaluation_count: 2,
+      already_triggered_events: '',
+    },
+  },
+  {
+    id: 'low-score',
+    label: 'Low Score',
+    values: {
+      character_id: 'sakura',
+      friendliness: 0.45,
+      engagement: 0.45,
+      creativity: 0.35,
+      overall_score: 0.42,
+      relationship: 0,
+      evaluation_count: 2,
+      already_triggered_events: '',
+    },
+  },
+  {
+    id: 'repeat-block',
+    label: 'Repeat Block',
+    values: {
+      character_id: 'sakura',
+      friendliness: 0.72,
+      engagement: 0.92,
+      creativity: 0.65,
+      overall_score: 0.76,
+      relationship: 0.2,
+      evaluation_count: 2,
+      already_triggered_events: 'high_engagement',
+    },
+  },
+]
 
 const previewNodeTypes: NodeTypeInfo[] = [
   { node_type: 'start', label: 'Start', description: 'Workflow entry point', category: 'flow', configurable_fields: [] },
   { node_type: 'dialogue', label: 'Dialogue', description: 'Show character dialogue', category: 'content', configurable_fields: ['speaker_id', 'text'] },
   { node_type: 'choice', label: 'Choice', description: 'Present player choices', category: 'content', configurable_fields: ['choices'] },
   { node_type: 'condition', label: 'Condition', description: 'Branch by expression', category: 'flow', configurable_fields: ['condition'] },
+  { node_type: 'set_variable', label: 'Set Variable', description: 'Set a game variable', category: 'logic', configurable_fields: ['variable_name', 'value'] },
+  { node_type: 'set_flag', label: 'Set Flag', description: 'Set a game flag', category: 'logic', configurable_fields: ['flag_name', 'value'] },
   { node_type: 'llm_generate', label: 'LLM Generate', description: 'Generate text with the active model', category: 'ai', configurable_fields: ['prompt', 'system_prompt'] },
-  { node_type: 'evaluation', label: 'Evaluation', description: 'Score conversation quality', category: 'ai', configurable_fields: ['criteria'] },
+  { node_type: 'evaluation', label: 'Evaluation', description: 'Read latest conversation score', category: 'ai', configurable_fields: ['character_id', 'criteria', 'threshold', 'variable_name'] },
+  { node_type: 'trigger_event', label: 'Trigger Event', description: 'Trigger score-aware story event', category: 'flow', configurable_fields: ['character_id', 'event_id', 'event_type'] },
   { node_type: 'scene_change', label: 'Scene Change', description: 'Switch background scene', category: 'content', configurable_fields: ['scene_id'] },
+  { node_type: 'emotion_change', label: 'Change Emotion', description: 'Change character emotion', category: 'character', configurable_fields: ['character_id', 'emotion'] },
   { node_type: 'relationship', label: 'Relationship', description: 'Modify relationship score', category: 'character', configurable_fields: ['character_id', 'delta'] },
+  { node_type: 'narration', label: 'Narration', description: 'Display narrator text', category: 'content', configurable_fields: ['text', 'speaker'] },
+  { node_type: 'bgm', label: 'BGM', description: 'Control background music', category: 'media', configurable_fields: ['track_path', 'action', 'volume'] },
+  { node_type: 'sfx', label: 'SFX', description: 'Play a sound effect', category: 'media', configurable_fields: ['sound_path', 'volume'] },
+  { node_type: 'wait', label: 'Wait', description: 'Pause workflow execution', category: 'flow', configurable_fields: ['duration_ms'] },
+  { node_type: 'random_branch', label: 'Random Branch', description: 'Randomly pick a branch', category: 'flow', configurable_fields: ['weights'] },
+  { node_type: 'sub_workflow', label: 'Sub Workflow', description: 'Delegate to another workflow', category: 'flow', configurable_fields: ['workflow_id', 'workflow_path'] },
+  { node_type: 'camera', label: 'Camera', description: 'Control camera motion', category: 'media', configurable_fields: ['action', 'target_x', 'target_y', 'zoom', 'duration_ms'] },
+  { node_type: 'shake', label: 'Shake', description: 'Screen shake effect', category: 'media', configurable_fields: ['intensity', 'duration_ms'] },
   { node_type: 'end', label: 'End', description: 'Workflow exit', category: 'flow', configurable_fields: [] },
 ]
 
@@ -263,6 +594,19 @@ const connections = computed(() => {
     }
   }
   return conns
+})
+
+const executionStepsByNode = computed(() => {
+  const map = new Map<string, WorkflowExecutionStep>()
+  for (const step of executionReport.value?.steps || []) {
+    map.set(step.node_id, step)
+  }
+  return map
+})
+
+const lastExecutionStep = computed(() => {
+  const steps = executionReport.value?.steps || []
+  return steps.length ? steps[steps.length - 1] : null
 })
 
 const validationStatusLabel = computed(() => {
@@ -327,6 +671,10 @@ function updateConfig(field: string, value: any) {
 function markWorkflowDirty() {
   validationResult.value = null
   validationMessage.value = ''
+  executionReport.value = null
+  executionMessage.value = ''
+  presetMatrixReport.value = null
+  choiceSelections.value = {}
 }
 
 function syncWorkflowFromCanvas(): Workflow | null {
@@ -366,11 +714,300 @@ async function ensureWorkflowIsValid(): Promise<boolean> {
   return true
 }
 
+async function runCurrentWorkflow() {
+  choiceSelections.value = {}
+  await executeWorkflowWithSelections()
+}
+
+async function chooseWorkflowOption(nodeId: string, index: number) {
+  choiceSelections.value = { ...choiceSelections.value, [nodeId]: index }
+  await executeWorkflowWithSelections()
+}
+
+async function executeWorkflowWithSelections() {
+  const currentWorkflow = syncWorkflowFromCanvas()
+  if (!currentWorkflow) return
+
+  executionMessage.value = ''
+  const validation = await validateCurrentWorkflow()
+  if (!validation?.valid) {
+    executionMessage.value = 'Fix validation errors before running.'
+    return
+  }
+
+  runningWorkflow.value = true
+  try {
+    const runContextPayload = workflowRunContextPayload()
+    executionReport.value = await invokeCommand<WorkflowExecutionReport>(
+      'execute_workflow',
+      { workflow: currentWorkflow, maxSteps: 64, choiceSelections: choiceSelections.value, runContext: runContextPayload },
+      () => runWorkflowLocally(currentWorkflow, 64, choiceSelections.value, runContextPayload)
+    )
+  } catch (e) {
+    executionMessage.value = String(e)
+  } finally {
+    runningWorkflow.value = false
+  }
+}
+
+async function runPresetMatrix() {
+  const currentWorkflow = syncWorkflowFromCanvas()
+  if (!currentWorkflow) return
+
+  choiceSelections.value = {}
+  executionMessage.value = ''
+  const validation = await validateCurrentWorkflow()
+  if (!validation?.valid) {
+    executionMessage.value = 'Fix validation errors before running.'
+    return
+  }
+
+  runningWorkflow.value = true
+  try {
+    const matrixRuns = []
+    for (const preset of runContextPresets) {
+      const runContextPayload = workflowRunContextPayloadFromValues(preset.values)
+      const report = await invokeCommand<WorkflowExecutionReport>(
+        'execute_workflow',
+        { workflow: currentWorkflow, maxSteps: 64, choiceSelections: {}, runContext: runContextPayload },
+        () => runWorkflowLocally(currentWorkflow, 64, {}, runContextPayload)
+      )
+      matrixRuns.push({ preset, report })
+    }
+    executionReport.value = matrixRuns[matrixRuns.length - 1]?.report || null
+    presetMatrixReport.value = aggregatePresetMatrixCoverage(currentWorkflow, matrixRuns)
+  } catch (e) {
+    executionMessage.value = String(e)
+  } finally {
+    runningWorkflow.value = false
+  }
+}
+
+function canChooseStep(step: WorkflowExecutionStep): boolean {
+  return step.node_type === 'choice' && step.stopped_reason === 'awaiting_choice' && choiceOptionsFor(step).length > 0
+}
+
+function choiceOptionsFor(step: WorkflowExecutionStep): string[] {
+  const choices = step.output?.choices
+  return Array.isArray(choices) ? choices.map(String) : []
+}
+
+function isEvaluationStep(step: WorkflowExecutionStep): boolean {
+  return step.node_type === 'evaluation'
+}
+
+function isTriggerEventStep(step: WorkflowExecutionStep): boolean {
+  return step.node_type === 'trigger_event'
+}
+
+function isTriggerEventTriggered(step: WorkflowExecutionStep): boolean {
+  return isTriggerEventStep(step) && step.output?.triggered === true
+}
+
+function stringValue(value: any, fallback = '-'): string {
+  if (value === null || value === undefined) return fallback
+  const text = String(value).trim()
+  return text || fallback
+}
+
+function numericValue(value: any): number | null {
+  const number = Number(value)
+  return Number.isFinite(number) ? number : null
+}
+
+function formatScore(value: any): string {
+  const number = numericValue(value)
+  return number === null ? '-' : number.toFixed(2)
+}
+
+function formatThreshold(value: any): string {
+  if (value === null || value === undefined) return 'None'
+  return formatScore(value)
+}
+
+function formatCoverage(value: any): string {
+  const number = numericValue(value)
+  return number === null ? '0%' : `${number.toFixed(0)}%`
+}
+
+function scorePercent(value: any): string {
+  const number = numericValue(value)
+  if (number === null) return '0%'
+  return `${Math.round(Math.min(1, Math.max(0, number)) * 100)}%`
+}
+
+function eventDecision(step: WorkflowExecutionStep): Record<string, any> {
+  const decision = step.output?.decision
+  return decision && typeof decision === 'object' && !Array.isArray(decision) ? decision : {}
+}
+
+function eventBlockers(step: WorkflowExecutionStep): string[] {
+  const reasons = eventDecision(step).blocked_reasons
+  return Array.isArray(reasons) ? reasons.map(String).filter(Boolean) : []
+}
+
+function eventMetric(step: WorkflowExecutionStep): string {
+  const decision = eventDecision(step)
+  return stringValue(decision.actual_score_metric ?? decision.rule?.score_metric, '-')
+}
+
+function eventActualScore(step: WorkflowExecutionStep): number | null {
+  return numericValue(eventDecision(step).actual_score)
+}
+
+function clampScore(value: any): number {
+  const number = numericValue(value)
+  return number === null ? 0 : Math.min(1, Math.max(0, number))
+}
+
+function clampRelationship(value: any): number {
+  const number = numericValue(value)
+  return number === null ? 0 : Math.min(1, Math.max(-1, number))
+}
+
+function workflowRunContextPayload(): WorkflowRunContextPayload | null {
+  if (!runContext.value.enabled) return null
+  return workflowRunContextPayloadFromValues(runContext.value)
+}
+
+function workflowRunContextPayloadFromValues(values: Omit<WorkflowRunContextForm, 'enabled'> | WorkflowRunContextForm): WorkflowRunContextPayload {
+  return {
+    enabled: true,
+    character_id: values.character_id.trim() || null,
+    relationship: clampRelationship(values.relationship),
+    evaluation_count: Math.max(0, Math.round(numericValue(values.evaluation_count) ?? 0)),
+    already_triggered_events: values.already_triggered_events
+      .split(/[,\n]/)
+      .map((eventId) => eventId.trim())
+      .filter(Boolean),
+    evaluation: {
+      friendliness: clampScore(values.friendliness),
+      engagement: clampScore(values.engagement),
+      creativity: clampScore(values.creativity),
+      overall_score: clampScore(values.overall_score),
+      summary: 'Workflow author preview context.',
+    },
+  }
+}
+
+function aggregatePresetMatrixCoverage(
+  currentWorkflow: Workflow,
+  matrixRuns: { preset: WorkflowRunContextPreset; report: WorkflowExecutionReport }[]
+): WorkflowPresetMatrixReport {
+  const seen = new Set<string>()
+  for (const { report } of matrixRuns) {
+    for (const nodeId of report.executed_node_ids) seen.add(nodeId)
+  }
+  const executed_node_ids = currentWorkflow.nodes
+    .map((node) => node.id)
+    .filter((nodeId) => seen.has(nodeId))
+  const unvisited_node_ids = currentWorkflow.nodes
+    .map((node) => node.id)
+    .filter((nodeId) => !seen.has(nodeId))
+  const node_count = currentWorkflow.nodes.length
+  const executed_node_count = executed_node_ids.length
+  const coverage_percent = node_count > 0 ? (executed_node_count / node_count) * 100 : 0
+  return {
+    node_count,
+    executed_node_count,
+    coverage_percent,
+    executed_node_ids,
+    unvisited_node_ids,
+    runs: matrixRuns.map(({ preset, report }) => ({
+      preset_id: preset.id,
+      label: preset.label,
+      coverage_percent: report.coverage_percent,
+      executed_node_count: report.executed_node_count,
+      unvisited_node_ids: report.unvisited_node_ids,
+    })),
+  }
+}
+
+function applyRunContextPreset(preset: WorkflowRunContextPreset) {
+  runContext.value = {
+    enabled: true,
+    ...preset.values,
+  }
+}
+
+function nodeExecutionStep(node: WorkflowNode): WorkflowExecutionStep | null {
+  return executionStepsByNode.value.get(node.id) || null
+}
+
+function nodeRunOutcome(node: WorkflowNode): string {
+  const step = nodeExecutionStep(node)
+  if (!step) return ''
+  if (step.stopped_reason === 'awaiting_choice') return 'wait'
+  if (step.node_type === 'end') return 'done'
+  if (isEvaluationStep(step)) {
+    if (step.output?.passed === true) return 'pass'
+    if (step.output?.passed === false) return 'fail'
+    return 'score'
+  }
+  if (isTriggerEventStep(step)) {
+    return isTriggerEventTriggered(step) ? 'triggered' : 'blocked'
+  }
+  if (step.stopped_reason && step.stopped_reason !== 'completed') return 'blocked'
+  return 'ran'
+}
+
+function nodeRunClass(node: WorkflowNode): Record<string, boolean> {
+  const step = nodeExecutionStep(node)
+  const outcome = nodeRunOutcome(node)
+  return {
+    'run-executed': Boolean(step),
+    'run-current': lastExecutionStep.value?.node_id === node.id,
+    'run-pass': outcome === 'pass' || outcome === 'triggered' || outcome === 'done',
+    'run-fail': outcome === 'fail' || outcome === 'blocked',
+    'run-wait': outcome === 'wait',
+    'run-score': outcome === 'score',
+  }
+}
+
+function nodeRunBadge(node: WorkflowNode): string {
+  const outcome = nodeRunOutcome(node)
+  const labels: Record<string, string> = {
+    pass: 'Pass',
+    fail: 'Fail',
+    score: 'Score',
+    triggered: 'Event',
+    blocked: 'Blocked',
+    wait: 'Choice',
+    done: 'Done',
+    ran: 'Ran',
+  }
+  return labels[outcome] || ''
+}
+
+function nodeRunDetail(node: WorkflowNode): string {
+  const step = nodeExecutionStep(node)
+  if (!step) return ''
+  if (isEvaluationStep(step)) {
+    const metric = stringValue(step.output?.metric, 'overall')
+    const threshold = step.output?.threshold === null || step.output?.threshold === undefined
+      ? ''
+      : `/${formatThreshold(step.output.threshold)}`
+    return `${metric} ${formatScore(step.output?.score)}${threshold}`
+  }
+  if (isTriggerEventStep(step)) {
+    const blockers = eventBlockers(step)
+    return blockers[0] || stringValue(step.output?.event_id, 'event')
+  }
+  if (step.stopped_reason && step.stopped_reason !== 'completed') return step.stopped_reason
+  return step.next_node_id ? `next ${step.next_node_id}` : ''
+}
+
+function nodeRunTooltip(node: WorkflowNode): string {
+  const badge = nodeRunBadge(node)
+  const detail = nodeRunDetail(node)
+  return detail ? `${badge}: ${detail}` : badge
+}
+
 function validateWorkflowLocally(currentWorkflow: Workflow): WorkflowValidationResult {
   const issues: WorkflowValidationIssue[] = []
   const ids = new Set<string>()
   const lookup = new Map<string, WorkflowNode>()
-  const knownTypes = new Set(previewNodeTypes.map((type) => type.node_type).concat(['set_variable', 'set_flag', 'emotion_change', 'trigger_event']))
+  const knownTypes = new Set(previewNodeTypes.map((type) => type.node_type))
   const requiredFields: Record<string, string[]> = {
     dialogue: ['text'],
     choice: ['choices'],
@@ -383,6 +1020,12 @@ function validateWorkflowLocally(currentWorkflow: Workflow): WorkflowValidationR
     trigger_event: ['event_id'],
     emotion_change: ['character_id', 'emotion'],
     relationship: ['character_id', 'delta'],
+    narration: ['text'],
+    bgm: ['track_path'],
+    sfx: ['sound_path'],
+    wait: ['duration_ms'],
+    sub_workflow: ['workflow_id'],
+    shake: ['duration_ms'],
   }
 
   const addIssue = (severity: string, code: string, node_id: string | null, message: string) => {
@@ -420,7 +1063,7 @@ function validateWorkflowLocally(currentWorkflow: Workflow): WorkflowValidationR
     }
 
     for (const field of requiredFields[node.node_type] || []) {
-      if (!isConfigFieldPresent(node.config, field)) addIssue('error', 'node_config_missing', node.id, `Required field \`${field}\` is missing.`)
+      if (!isConfigFieldPresentForNode(node.node_type, node.config, field)) addIssue('error', 'node_config_missing', node.id, `Required field \`${field}\` is missing.`)
     }
 
     const localTargets = new Set<string>()
@@ -467,6 +1110,313 @@ function isConfigFieldPresent(config: Record<string, any>, field: string): boole
   if (Array.isArray(value)) return value.length > 0
   if (typeof value === 'object') return Object.keys(value).length > 0
   return true
+}
+
+function isConfigFieldPresentForNode(nodeType: string, config: Record<string, any>, field: string): boolean {
+  const aliases: Record<string, string[]> = {
+    'bgm:track_path': ['track_path', 'track'],
+    'sfx:sound_path': ['sound_path', 'sound'],
+    'wait:duration_ms': ['duration_ms', 'duration'],
+    'shake:duration_ms': ['duration_ms', 'duration'],
+  }
+  return (aliases[`${nodeType}:${field}`] || [field]).some((alias) => isConfigFieldPresent(config, alias))
+}
+
+function runWorkflowLocally(
+  currentWorkflow: Workflow,
+  maxSteps: number,
+  selections: Record<string, number> = {},
+  context: WorkflowRunContextPayload | null = null
+): WorkflowExecutionReport {
+  const validation = validateWorkflowLocally(currentWorkflow)
+  if (!validation.valid) {
+    return {
+      workflow_id: currentWorkflow.id,
+      workflow_name: currentWorkflow.name,
+      completed: false,
+      stopped_reason: 'validation_failed',
+      ...workflowCoverage(currentWorkflow, []),
+      steps: [],
+      validation,
+    }
+  }
+
+  const lookup = new Map(currentWorkflow.nodes.map((node) => [node.id, node]))
+  const steps: WorkflowExecutionStep[] = []
+  let currentNodeId = currentWorkflow.start_node_id
+  let completed = false
+  let stopped_reason: string | null = null
+
+  for (let stepIndex = 0; stepIndex < Math.max(1, Math.min(maxSteps, 256)); stepIndex += 1) {
+    const node = lookup.get(currentNodeId)
+    if (!node) {
+      stopped_reason = `missing_node:${currentNodeId}`
+      break
+    }
+    const output = localNodeOutput(node, context)
+    const next = localNextNode(node, output, selections)
+    if (node.node_type === 'end') completed = true
+
+    steps.push({
+      step_index: stepIndex,
+      node_id: node.id,
+      node_type: node.node_type,
+      label: node.label,
+      output,
+      next_node_id: next.nextNodeId,
+      stopped_reason: next.stoppedReason,
+    })
+
+    if (completed) {
+      stopped_reason = 'completed'
+      break
+    }
+    if (next.stoppedReason) {
+      stopped_reason = next.stoppedReason
+      break
+    }
+    if (!next.nextNodeId) {
+      stopped_reason = 'no_next_node'
+      break
+    }
+    currentNodeId = next.nextNodeId
+  }
+
+  if (!completed && !stopped_reason && steps.length >= Math.max(1, Math.min(maxSteps, 256))) {
+    stopped_reason = 'max_steps_reached'
+  }
+
+  const coverage = workflowCoverage(currentWorkflow, steps)
+
+  return {
+    workflow_id: currentWorkflow.id,
+    workflow_name: currentWorkflow.name,
+    completed,
+    stopped_reason,
+    ...coverage,
+    steps,
+    validation,
+  }
+}
+
+function workflowCoverage(currentWorkflow: Workflow, steps: WorkflowExecutionStep[]) {
+  const executed_node_ids: string[] = []
+  const seen = new Set<string>()
+  for (const step of steps) {
+    if (!seen.has(step.node_id)) {
+      seen.add(step.node_id)
+      executed_node_ids.push(step.node_id)
+    }
+  }
+  const unvisited_node_ids = currentWorkflow.nodes
+    .filter((node) => !seen.has(node.id))
+    .map((node) => node.id)
+  const node_count = currentWorkflow.nodes.length
+  const executed_node_count = executed_node_ids.length
+  const coverage_percent = node_count > 0 ? (executed_node_count / node_count) * 100 : 0
+  return {
+    node_count,
+    executed_node_count,
+    coverage_percent,
+    executed_node_ids,
+    unvisited_node_ids,
+  }
+}
+
+function localNodeOutput(node: WorkflowNode, context: WorkflowRunContextPayload | null = null): Record<string, any> {
+  switch (node.node_type) {
+    case 'start':
+      return { action: 'start', node_id: node.id, next_connections: node.connections }
+    case 'end':
+      return { action: 'end', node_id: node.id, complete: true }
+    case 'dialogue':
+      return {
+        action: 'dialogue',
+        speaker: node.config.speaker_id || node.config.speaker || 'Narrator',
+        text: node.config.text || '',
+        emotion: node.config.emotion || null,
+      }
+    case 'choice':
+      return { action: 'choice', choices: arrayConfig(node.config.choices), connection_count: node.connections.length }
+    case 'condition':
+      return { result: String(node.config.condition || 'true').trim() === 'true' }
+    case 'evaluation': {
+      const metric = normalizeMetric(node.config.criteria || node.config.metric || 'overall')
+      const score = workflowMetricScore(context?.evaluation, metric) ?? 0
+      const threshold = Number(node.config.threshold)
+      return {
+        action: 'evaluation',
+        character_id: node.config.character_id || context?.character_id || null,
+        metric,
+        score,
+        threshold: Number.isFinite(threshold) ? threshold : null,
+        passed: Number.isFinite(threshold) ? score >= threshold : null,
+        source: context?.enabled ? 'run_context_evaluation' : 'local_preview',
+        evaluation: context?.evaluation || null,
+      }
+    }
+    case 'trigger_event':
+      return {
+        action: 'trigger_event',
+        event_id: node.config.event_id || '',
+        event_type: node.config.event_type || '',
+        triggered: localEventDecision(node, context).triggered,
+        evaluation_source: context?.enabled ? 'run_context_evaluation' : 'local_preview',
+        decision: localEventDecision(node, context),
+      }
+    case 'bgm':
+      return {
+        action: 'bgm',
+        track: node.config.track_path || node.config.track || '',
+        play_action: node.config.action || 'play',
+        volume: numericConfig(node.config.volume) ?? 1,
+      }
+    case 'sfx':
+      return {
+        action: 'sfx',
+        sound: node.config.sound_path || node.config.sound || '',
+        volume: numericConfig(node.config.volume) ?? 1,
+      }
+    case 'wait':
+      return { action: 'wait', duration_ms: durationMsConfig(node.config, 1000) }
+    case 'random_branch': {
+      const chosen = node.connections[0] || ''
+      return { action: 'random_branch', chosen_connection: chosen, index: 0 }
+    }
+    case 'sub_workflow':
+      return {
+        action: 'sub_workflow',
+        workflow_id: node.config.workflow_id || '',
+        workflow_path: node.config.workflow_path || null,
+        status: 'delegated',
+      }
+    case 'camera':
+      return {
+        action: 'camera',
+        camera_action: node.config.action || 'move',
+        x: numericConfig(node.config.target_x) ?? 0,
+        y: numericConfig(node.config.target_y) ?? 0,
+        zoom: numericConfig(node.config.zoom) ?? 1,
+        duration_ms: durationMsConfig(node.config, 500),
+      }
+    case 'shake':
+      return {
+        action: 'shake',
+        intensity: numericConfig(node.config.intensity) ?? 5,
+        duration_ms: durationMsConfig(node.config, 300),
+      }
+    default:
+      return { action: node.node_type }
+  }
+}
+
+function localNextNode(node: WorkflowNode, output: Record<string, any>, selections: Record<string, number>) {
+  if (node.node_type === 'end') return { nextNodeId: null, stoppedReason: 'completed' }
+  if (node.node_type === 'choice') {
+    const index = selections[node.id] ?? numericConfig(node.config.selected_index ?? node.config.default_choice_index)
+    if (index !== null) return { nextNodeId: node.connections[index] || null, stoppedReason: node.connections[index] ? null : 'choice_index_out_of_range' }
+    return { nextNodeId: null, stoppedReason: 'awaiting_choice' }
+  }
+  if (node.node_type === 'condition') return branchByBool(node.connections, Boolean(output.result), 'condition_result_missing')
+  if (node.node_type === 'evaluation') return branchByBool(node.connections, typeof output.passed === 'boolean' ? output.passed : null, 'evaluation_threshold_missing')
+  if (node.node_type === 'trigger_event') return branchByBool(node.connections, Boolean(output.triggered), 'event_trigger_result_missing')
+  if (node.node_type === 'random_branch') return { nextNodeId: String(output.chosen_connection || '') || null, stoppedReason: output.chosen_connection ? null : 'random_branch_has_no_choice' }
+  return { nextNodeId: node.connections[0] || null, stoppedReason: node.connections[0] ? null : 'no_next_node' }
+}
+
+function branchByBool(connections: string[], value: boolean | null, missingReason: string) {
+  if (value === true) return { nextNodeId: connections[0] || null, stoppedReason: connections[0] ? null : 'true_branch_missing' }
+  if (value === false) return { nextNodeId: connections[1] || null, stoppedReason: connections[1] ? null : 'false_branch_missing' }
+  return { nextNodeId: connections[0] || null, stoppedReason: connections[0] ? null : missingReason }
+}
+
+function arrayConfig(value: any): string[] {
+  if (Array.isArray(value)) return value.map(String).filter(Boolean)
+  if (typeof value === 'string') return value.split('\n').map((item) => item.trim()).filter(Boolean)
+  return []
+}
+
+function numericConfig(value: any): number | null {
+  const number = Number(value)
+  return Number.isFinite(number) && number >= 0 ? number : null
+}
+
+function durationMsConfig(config: Record<string, any>, fallback: number): number {
+  const durationMs = numericConfig(config.duration_ms)
+  if (durationMs !== null) return Math.round(durationMs)
+  const duration = numericConfig(config.duration)
+  if (duration !== null) return Math.round(duration * 1000)
+  return fallback
+}
+
+function normalizeMetric(metric: any): string {
+  const value = String(metric || '').trim().toLowerCase()
+  if (!value || value === 'overall_score' || value === 'overall score' || value === 'total') return 'overall'
+  if (value === 'friendliness_score' || value === 'friendliness score' || value === 'friendly') return 'friendliness'
+  if (value === 'engagement_score' || value === 'engagement score' || value === 'engaged') return 'engagement'
+  if (value === 'creativity_score' || value === 'creativity score' || value === 'creative') return 'creativity'
+  return value
+}
+
+function workflowMetricScore(evaluation: WorkflowRunContextPayload['evaluation'] | null | undefined, metric: string): number | null {
+  if (!evaluation) return null
+  if (metric === 'friendliness') return evaluation.friendliness
+  if (metric === 'engagement') return evaluation.engagement
+  if (metric === 'creativity') return evaluation.creativity
+  if (metric === 'overall') return evaluation.overall_score
+  return null
+}
+
+function localEventRule(eventId: string) {
+  const rules: Record<string, Record<string, any>> = {
+    first_friend: { event_id: 'first_friend', event_type: 'relationship_milestone', min_relationship: 0.3 },
+    close_friend: { event_id: 'close_friend', event_type: 'relationship_milestone', min_relationship: 0.6 },
+    best_friend: { event_id: 'best_friend', event_type: 'relationship_milestone', min_relationship: 0.8 },
+    high_engagement: { event_id: 'high_engagement', event_type: 'special_dialogue', score_metric: 'engagement', min_score: 0.8, min_evaluation_count: 2 },
+    creative_talk: { event_id: 'creative_talk', event_type: 'special_dialogue', score_metric: 'creativity', min_score: 0.8, min_evaluation_count: 2 },
+    dedicated_player: { event_id: 'dedicated_player', event_type: 'cumulative_achievement', min_evaluation_count: 5 },
+    super_dedicated: { event_id: 'super_dedicated', event_type: 'cumulative_achievement', min_evaluation_count: 10 },
+  }
+  return rules[eventId] || null
+}
+
+function localEventDecision(node: WorkflowNode, context: WorkflowRunContextPayload | null) {
+  const eventId = String(node.config.event_id || '')
+  const configuredType = String(node.config.event_type || '')
+  const rule = localEventRule(eventId)
+  const relationship = context?.enabled ? context.relationship : 0
+  const evaluationCount = context?.enabled ? context.evaluation_count : 0
+  const alreadyTriggered = Boolean(context?.already_triggered_events.includes(eventId))
+  const actualMetric = rule?.score_metric || null
+  const actualScore = actualMetric ? workflowMetricScore(context?.evaluation, actualMetric) : null
+  const blocked_reasons: string[] = []
+
+  if (!context?.enabled) blocked_reasons.push('local_preview_no_chat_session')
+  if (!rule) blocked_reasons.push('event_rule_missing')
+  if (alreadyTriggered) blocked_reasons.push('already_triggered')
+  if (rule?.min_relationship !== undefined && relationship < rule.min_relationship) {
+    blocked_reasons.push(`relationship ${relationship.toFixed(2)} < ${Number(rule.min_relationship).toFixed(2)}`)
+  }
+  if (rule?.min_evaluation_count !== undefined && evaluationCount < rule.min_evaluation_count) {
+    blocked_reasons.push(`evaluation_count ${evaluationCount} < ${rule.min_evaluation_count}`)
+  }
+  if (rule?.min_score !== undefined && (actualScore === null || actualScore < rule.min_score)) {
+    blocked_reasons.push(`${actualMetric || 'score'} ${formatScore(actualScore)} < ${Number(rule.min_score).toFixed(2)}`)
+  }
+
+  return {
+    event_id: eventId,
+    event_type: configuredType || rule?.event_type || '',
+    description: eventId,
+    triggered: blocked_reasons.length === 0,
+    already_triggered: alreadyTriggered,
+    actual_relationship: relationship,
+    actual_evaluation_count: evaluationCount,
+    actual_score_metric: actualMetric,
+    actual_score: actualScore,
+    rule,
+    blocked_reasons,
+  }
 }
 
 function createNode(type: NodeTypeInfo, x: number, y: number): WorkflowNode {
@@ -854,6 +1804,30 @@ onMounted(async () => {
   box-shadow: var(--shadow-brand), var(--shadow);
 }
 
+.workflow-node.run-executed {
+  border-color: rgba(96,165,250,0.32);
+}
+
+.workflow-node.run-current {
+  box-shadow: 0 0 0 2px rgba(96,165,250,0.2), var(--shadow);
+}
+
+.workflow-node.run-pass {
+  border-color: rgba(34,197,94,0.42);
+}
+
+.workflow-node.run-fail {
+  border-color: rgba(239,68,68,0.42);
+}
+
+.workflow-node.run-wait {
+  border-color: rgba(245,158,11,0.45);
+}
+
+.workflow-node.run-score {
+  border-color: rgba(96,165,250,0.38);
+}
+
 .node-header {
   display: flex;
   gap: 9px;
@@ -871,15 +1845,70 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
+.node-run-badge {
+  flex-shrink: 0;
+  max-width: 72px;
+  margin-left: auto;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: rgba(148,163,184,0.14);
+  color: var(--text-tertiary);
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.node-run-badge.pass,
+.node-run-badge.triggered,
+.node-run-badge.done {
+  background: rgba(34,197,94,0.14);
+  color: var(--success);
+}
+
+.node-run-badge.fail,
+.node-run-badge.blocked {
+  background: rgba(239,68,68,0.14);
+  color: var(--danger);
+}
+
+.node-run-badge.wait {
+  background: rgba(245,158,11,0.14);
+  color: var(--warning);
+}
+
+.node-run-badge.score {
+  background: rgba(96,165,250,0.14);
+  color: var(--info);
+}
+
 .node-body {
   position: relative;
-  display: flex;
-  align-items: center;
+  display: grid;
+  align-content: center;
+  gap: 2px;
   height: 47px;
-  padding: 0 12px;
+  padding: 0 30px 0 12px;
   color: var(--text-tertiary);
   font-size: 11px;
   font-family: var(--font-mono);
+}
+
+.node-body span,
+.node-run-detail {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.node-run-detail {
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-style: normal;
 }
 
 .node-port {
@@ -939,7 +1968,8 @@ onMounted(async () => {
   font-weight: 900;
 }
 
-.validation-panel {
+.validation-panel,
+.execution-panel {
   margin-top: 18px;
   padding-top: 14px;
   border-top: 1px solid var(--border);
@@ -955,7 +1985,8 @@ onMounted(async () => {
   font-weight: 800;
 }
 
-.validation-summary {
+.validation-summary,
+.execution-summary {
   display: grid;
   gap: 3px;
   padding: 12px;
@@ -964,26 +1995,217 @@ onMounted(async () => {
   background: rgba(34,197,94,0.08);
 }
 
-.validation-summary.invalid {
+.validation-summary.invalid,
+.execution-summary:not(.complete) {
   border-color: rgba(239,68,68,0.35);
   background: rgba(239,68,68,0.08);
 }
 
-.validation-summary strong {
+.validation-summary strong,
+.execution-summary strong {
   color: var(--text-primary);
   font-size: 13px;
 }
 
 .validation-summary span,
+.execution-summary span,
 .muted-copy,
 .validation-message {
   color: var(--text-tertiary);
   font-size: 12px;
 }
 
+.coverage-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 8px;
+  align-items: center;
+  min-width: 0;
+  padding-top: 4px;
+  border-top: 1px solid rgba(148,163,184,0.14);
+}
+
+.coverage-row span,
+.coverage-row small {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.coverage-row strong {
+  color: var(--brand-light);
+  font-size: 12px;
+}
+
+.coverage-row small {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unvisited-node-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
+}
+
+.unvisited-node-list span {
+  max-width: 100%;
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
+  background: rgba(148,163,184,0.14);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.run-context-panel {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.run-context-panel.enabled {
+  border-color: rgba(96,165,250,0.32);
+}
+
+.run-context-toggle {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.run-context-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.context-preset-btn {
+  min-width: 0;
+  max-width: 100%;
+  padding: 5px 7px;
+  border: 1px solid rgba(96,165,250,0.28);
+  border-radius: 999px;
+  background: rgba(96,165,250,0.1);
+  color: var(--brand-light);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.context-preset-btn:hover {
+  border-color: rgba(96,165,250,0.5);
+  background: rgba(96,165,250,0.16);
+}
+
+.context-preset-btn.matrix {
+  border-color: rgba(34,197,94,0.3);
+  background: rgba(34,197,94,0.1);
+  color: var(--success);
+}
+
+.context-preset-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.run-context-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.run-context-grid label {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.run-context-grid span {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.run-context-grid .input {
+  min-width: 0;
+  height: 30px;
+  padding: 5px 7px;
+  font-size: 11px;
+}
+
+.run-context-wide {
+  grid-column: 1 / -1;
+}
+
 .validation-message {
   margin-top: 10px;
   color: var(--warning);
+}
+
+.matrix-coverage-panel {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid rgba(245,158,11,0.3);
+  border-radius: var(--radius);
+  background: rgba(245,158,11,0.08);
+}
+
+.matrix-coverage-panel.complete {
+  border-color: rgba(34,197,94,0.32);
+  background: rgba(34,197,94,0.08);
+}
+
+.matrix-coverage-panel strong {
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.matrix-coverage-panel > span {
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.matrix-run-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
+}
+
+.matrix-run-list span {
+  max-width: 100%;
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
+  background: rgba(96,165,250,0.12);
+  color: var(--brand-light);
+  font-size: 10px;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .issue-list {
@@ -1025,6 +2247,214 @@ onMounted(async () => {
   color: var(--text-secondary);
   font-size: 12px;
   line-height: 1.35;
+}
+
+.trace-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.trace-item {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 4px 8px;
+  align-items: center;
+  padding: 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.trace-item.trace-score {
+  border-color: rgba(96,165,250,0.28);
+}
+
+.trace-item.trace-event {
+  border-color: rgba(245,158,11,0.3);
+}
+
+.trace-item.trace-event.triggered {
+  border-color: rgba(34,197,94,0.36);
+}
+
+.trace-item span {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.trace-item strong,
+.trace-item small,
+.trace-item em {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trace-item strong {
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.trace-item small,
+.trace-item em {
+  grid-column: 2;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.trace-diagnostics {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  min-width: 0;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  background: rgba(15,23,42,0.24);
+}
+
+.diagnostic-row {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.diagnostic-row span {
+  width: auto;
+  height: auto;
+  display: block;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.diagnostic-row strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.score-meter {
+  grid-column: 1 / -1;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-3);
+}
+
+.score-meter i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--info);
+}
+
+.gate-pill,
+.event-status {
+  width: auto;
+  height: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(148,163,184,0.14);
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.gate-pill.pass,
+.event-status.active {
+  background: rgba(34,197,94,0.14);
+  color: var(--success);
+}
+
+.gate-pill.fail {
+  background: rgba(239,68,68,0.14);
+  color: var(--danger);
+}
+
+.event-state-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+  min-width: 0;
+}
+
+.event-state-row strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.blocker-list {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
+}
+
+.blocker-list span {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  display: inline-flex;
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
+  background: rgba(239,68,68,0.12);
+  color: var(--danger);
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.choice-debug {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.choice-debug-btn {
+  min-width: 0;
+  max-width: 100%;
+  padding: 5px 8px;
+  border: 1px solid rgba(96,165,250,0.35);
+  border-radius: var(--radius-sm);
+  background: rgba(96,165,250,0.12);
+  color: var(--brand-light);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .node-type-start .node-icon { color: var(--success); }

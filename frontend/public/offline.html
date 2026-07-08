@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#2dd4bf" />
+    <title>Monogatari Offline</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        background: #0f1115;
+        color: #e5e7eb;
+        font-family: Inter, "Segoe UI", system-ui, sans-serif;
+      }
+      main {
+        width: min(520px, calc(100vw - 32px));
+        display: grid;
+        gap: 18px;
+        padding: 28px;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 8px;
+        background: #151922;
+      }
+      .mark {
+        width: 48px;
+        height: 48px;
+        display: grid;
+        place-items: center;
+        border-radius: 8px;
+        background: #2dd4bf;
+        color: #0f1115;
+        font-size: 24px;
+        font-weight: 900;
+      }
+      h1 { margin: 0; font-size: 24px; line-height: 1.2; }
+      p { margin: 0; color: #94a3b8; line-height: 1.55; }
+      a {
+        width: fit-content;
+        color: #5eead4;
+        font-weight: 800;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="mark">M</div>
+      <h1>Monogatari is offline</h1>
+      <p>The web workbench shell is cached, but this page needs a network connection or a previously cached route.</p>
+      <a href=".">Return to the workbench</a>
+    </main>
+  </body>
+</html>

@@ -1,11 +1,15 @@
 {
   "name": "llm-galgame-frontend",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.9.5",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
+    "build": "vue-tsc --noEmit && vite build && node scripts/prepare-web-dist.mjs && node scripts/verify-bundle-budget.mjs",
+    "build:web": "vue-tsc --noEmit && vite build && node scripts/prepare-web-dist.mjs && node scripts/verify-bundle-budget.mjs",
+    "verify:renderer-assets": "node scripts/verify-renderer-assets.mjs",
+    "verify:web-budget": "node scripts/verify-bundle-budget.mjs",
+    "preview:web": "vite preview --host 127.0.0.1",
     "preview": "vite preview"
   },
   "dependencies": {

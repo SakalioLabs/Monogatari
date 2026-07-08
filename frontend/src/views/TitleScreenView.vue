@@ -9,7 +9,7 @@
         <div class="title-logo">M</div>
         <h1 class="title-name">Monogatari</h1>
         <p class="title-tagline">LLM-Powered Visual Novel Engine</p>
-        <span class="title-ver">v0.9.0</span>
+        <span class="title-ver">v0.9.5</span>
       </div>
 
       <nav class="title-menu">
@@ -38,7 +38,7 @@
       <footer class="title-footer">
         <span>{{ t('title.credits', 'Credits') }}</span>
         <span class="sep">|</span>
-        <span>{{ t('title.version', 'Version') }} 0.9.0</span>
+        <span>{{ t('title.version', 'Version') }} 0.9.5</span>
         <span class="sep">|</span>
         <span>MIT License</span>
       </footer>

@@ -3,11 +3,11 @@
 //! Collects anonymized gameplay metrics in memory with file persistence
 //! to help creators understand player engagement and conversation patterns.
 
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::RwLock;
-use serde::{Deserialize, Serialize};
 use tauri::State;
+use tokio::sync::RwLock;
 
 use crate::state::AppState;
 
@@ -70,24 +70,29 @@ pub async fn record_analytics_event(
 ) -> Result<String, String> {
     let event = AnalyticsEvent {
         event_type: event_type.clone(),
-        timestamp: format!("{}", std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs()),
+        timestamp: format!(
+            "{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs()
+        ),
         data,
     };
     let mut store = ANALYTICS_STORE.write().await;
     store.push(event);
-    tracing::debug!("Analytics event recorded: {} (total: {})", event_type, store.len());
+    tracing::debug!(
+        "Analytics event recorded: {} (total: {})",
+        event_type,
+        store.len()
+    );
     persist_events(&store).await;
     Ok("recorded".to_string())
 }
 
 /// Get analytics summary from recorded events.
 #[tauri::command]
-pub async fn get_analytics_summary(
-    state: State<'_, AppState>,
-) -> Result<AnalyticsSummary, String> {
+pub async fn get_analytics_summary(state: State<'_, AppState>) -> Result<AnalyticsSummary, String> {
     let mut store = ANALYTICS_STORE.write().await;
     if store.is_empty() {
         *store = load_events_from_disk().await;
@@ -134,7 +139,7 @@ pub async fn get_analytics_summary(
     // Get relationship score
     let avg_rel = {
         let cm = state.character_manager.read().await;
-        let chars = cm.list_character_ids();
+        let chars = cm.character_ids();
         if chars.is_empty() {
             0.0
         } else {
@@ -149,7 +154,11 @@ pub async fn get_analytics_summary(
                     }
                 }
             }
-            if count > 0 { total_rel / count as f32 } else { 0.0 }
+            if count > 0 {
+                total_rel / count as f32
+            } else {
+                0.0
+            }
         }
     };
 
@@ -166,9 +175,7 @@ pub async fn get_analytics_summary(
 
 /// Export analytics data as JSON.
 #[tauri::command]
-pub async fn export_analytics(
-    _format: Option<String>,
-) -> Result<String, String> {
+pub async fn export_analytics(_format: Option<String>) -> Result<String, String> {
     let store = ANALYTICS_STORE.read().await;
     serde_json::to_string_pretty(&*store).map_err(|e| e.to_string())
 }

@@ -8,49 +8,76 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Personality {
     /// Openness to experience (curious vs. cautious).
+    #[serde(default = "default_trait_score")]
     pub openness: f32,
     /// Conscientiousness (organized vs. careless).
+    #[serde(default = "default_trait_score")]
     pub conscientiousness: f32,
     /// Extraversion (outgoing vs. reserved).
+    #[serde(default = "default_trait_score")]
     pub extraversion: f32,
     /// Agreeableness (friendly vs. challenging).
+    #[serde(default = "default_trait_score")]
     pub agreeableness: f32,
     /// Neuroticism (sensitive vs. confident).
+    #[serde(default = "default_trait_score")]
     pub neuroticism: f32,
     /// Things this character likes.
+    #[serde(default)]
     pub likes: Vec<String>,
     /// Things this character dislikes.
+    #[serde(default)]
     pub dislikes: Vec<String>,
     /// How this character speaks (e.g., "formal", "casual", "shy").
+    #[serde(default = "default_speech_style")]
     pub speech_style: String,
     /// Current emotional state.
+    #[serde(default = "default_current_emotion")]
     pub current_emotion: String,
     /// Intensity of current emotion (0.0 to 1.0).
+    #[serde(default = "default_emotion_intensity")]
     pub emotion_intensity: f32,
     /// Map of emotion names to available sprite/model states.
+    #[serde(default = "default_emotion_states")]
     pub emotion_states: HashMap<String, Vec<String>>,
+}
+
+fn default_trait_score() -> f32 {
+    0.5
+}
+
+fn default_speech_style() -> String {
+    "casual".to_string()
+}
+
+fn default_current_emotion() -> String {
+    "neutral".to_string()
+}
+
+fn default_emotion_intensity() -> f32 {
+    0.5
+}
+
+fn default_emotion_states() -> HashMap<String, Vec<String>> {
+    let mut emotion_states = HashMap::new();
+    emotion_states.insert("neutral".to_string(), vec!["default".to_string()]);
+    emotion_states
 }
 
 impl Default for Personality {
     fn default() -> Self {
-        let mut emotion_states = HashMap::new();
-        emotion_states.insert(
-            "neutral".to_string(),
-            vec!["default".to_string()],
-        );
-
         Self {
-            openness: 0.5,
-            conscientiousness: 0.5,
-            extraversion: 0.5,
-            agreeableness: 0.5,
-            neuroticism: 0.5,
+            openness: default_trait_score(),
+            conscientiousness: default_trait_score(),
+            extraversion: default_trait_score(),
+            agreeableness: default_trait_score(),
+            neuroticism: default_trait_score(),
             likes: Vec::new(),
             dislikes: Vec::new(),
-            speech_style: "casual".to_string(),
-            current_emotion: "neutral".to_string(),
-            emotion_intensity: 0.5,
-            emotion_states,
+            speech_style: default_speech_style(),
+            current_emotion: default_current_emotion(),
+            emotion_intensity: default_emotion_intensity(),
+            emotion_states: default_emotion_states(),
         }
     }
 }
@@ -60,7 +87,10 @@ impl Personality {
     pub fn to_prompt_description(&self) -> String {
         let mut parts = vec![
             format!("Speech style: {}", self.speech_style),
-            format!("Current emotion: {} (intensity: {:.1})", self.current_emotion, self.emotion_intensity),
+            format!(
+                "Current emotion: {} (intensity: {:.1})",
+                self.current_emotion, self.emotion_intensity
+            ),
         ];
 
         if !self.likes.is_empty() {

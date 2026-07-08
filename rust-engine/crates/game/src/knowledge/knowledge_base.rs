@@ -12,7 +12,7 @@ use super::knowledge_entry::{KnowledgeCategory, KnowledgeEntry};
 /// Knowledge base that stores and indexes knowledge entries.
 pub struct KnowledgeBase {
     entries: HashMap<String, KnowledgeEntry>,
-    tag_index: HashMap<String, Vec<String>>,        // tag -> entry IDs
+    tag_index: HashMap<String, Vec<String>>, // tag -> entry IDs
     category_index: HashMap<KnowledgeCategory, Vec<String>>, // category -> entry IDs
 }
 
@@ -128,7 +128,15 @@ impl KnowledgeBase {
     /// Load entries from a JSON file.
     pub async fn load_from_file(&mut self, path: &Path) -> Result<usize> {
         let content = tokio::fs::read_to_string(path).await?;
-        let entries: Vec<KnowledgeEntry> = serde_json::from_str(&content)?;
+        let value: serde_json::Value = serde_json::from_str(&content)?;
+        let entries: Vec<KnowledgeEntry> = match value {
+            serde_json::Value::Array(items) => items
+                .into_iter()
+                .map(serde_json::from_value)
+                .collect::<std::result::Result<Vec<_>, _>>()?,
+            serde_json::Value::Object(_) => vec![serde_json::from_value(value)?],
+            _ => Vec::new(),
+        };
         let count = entries.len();
         for entry in entries {
             self.add_entry(entry);
@@ -149,7 +157,6 @@ impl KnowledgeBase {
         }
         Ok(total)
     }
-
 
     /// Get all entries as a vector.
     pub fn all_entries(&self) -> Vec<&KnowledgeEntry> {
@@ -180,5 +187,38 @@ impl KnowledgeBase {
 impl Default for KnowledgeBase {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn loads_single_knowledge_object_from_file() {
+        let file_path = std::env::temp_dir().join(format!(
+            "monogatari-knowledge-{}-{}.json",
+            std::process::id(),
+            chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+        ));
+        std::fs::write(
+            &file_path,
+            r#"{
+              "id": "sakura_nature",
+              "category": "world_lore",
+              "title": "Sakura's Nature Diary",
+              "content": "A pressed flower from the Springtown riverbank is tucked inside the diary.",
+              "tags": ["sakura", "diary"]
+            }"#,
+        )
+        .unwrap();
+
+        let mut knowledge = KnowledgeBase::new();
+        let loaded = knowledge.load_from_file(&file_path).await.unwrap();
+        let _ = std::fs::remove_file(&file_path);
+
+        assert_eq!(loaded, 1);
+        let entry = knowledge.get_entry("sakura_nature").unwrap();
+        assert_eq!(entry.category, KnowledgeCategory::Lore);
     }
 }

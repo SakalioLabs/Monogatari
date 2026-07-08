@@ -1,7 +1,86 @@
+## [0.9.5] - 2026-07-08
+
+### Added
+- Added a configurable offline quality suite for character stability, prompt-injection resistance, relationship and fallback scoring side-channel containment, memory-poisoning resistance, memory prompt replay safety, tool-role injection containment, identity drift, style drift, real knowledge-reference anchoring, evaluation-summary safety, workflow output safety, workflow tool-call containment, workflow branch coverage, private reasoning leakage, fallback scoring, overrange score clamping, story-event trigger/idempotence regression, and event-rule snapshot checks.
+- Added a Quality Suites workbench view and sidebar entry for running release-gate checks from the desktop UI.
+- Added Web/PWA distribution baseline with manifest metadata, offline fallback page, service worker runtime caching, and `npm run build:web`.
+- Added dedicated Web/PWA install and maskable icons and release-gate checks that keep them in the manifest, app shell cache, and static-hosting dist.
+- Added static-hosting preparation for Web/PWA builds, including GitHub Pages fallback assets and `VITE_BASE_PATH` subpath deployment support.
+- Added an explicit Web bundle budget verifier that keeps entry assets small while allowing bounded lazy renderer chunks for Three.js and Live2D.
+- Added a renderer asset contract for characters with Live2D, GLB/GLTF, sprite, portrait, and generated 3D fallback support in Story Mode.
+- Added a one-command release verification script covering JSON validation, all quality suite files, locale coverage, sensitive token pattern scanning, frontend UI text artifact scanning, frontend source invariants, Rust checks/tests, Web/PWA build, Web/PWA dist asset checks, frontend audit, and legacy C# tests.
+- Added explainable event-trigger decisions for author tooling and quality reports, including actual relationship values, score metrics, evaluation counts, idempotence state, and blocker reasons.
+- Added executable Workflow `evaluation` and `trigger_event` nodes so visual story graphs can read LLM conversation scores and drive score-aware event unlocks.
+- Added executable Workflow runtime behavior for core authoring nodes: start, end, dialogue, choice, scene change, emotion change, relationship updates, and sub-workflow delegation.
+- Added a guarded Workflow graph runner with execution traces, choice stop points, branch routing for conditions/scores/events, and a Run panel in the workflow editor.
+- Added interactive choice selection for Workflow Run traces so authors can continue through choice branches during debugging.
+- Added release-gate validation for checked-in workflow files across root and Rust data directories.
+- Added a checked-in score-gate workflow fixture plus backend execution regression tests proving conversation scores can branch into score-aware story-event unlocks.
+- Added score and event diagnostics to Workflow Run traces so authors can inspect evaluation metrics, thresholds, score sources, trigger decisions, and blocker reasons.
+- Added Workflow canvas run badges that mark executed nodes, score pass/fail, blocked events, completed nodes, and waiting choices directly on the visual graph.
+- Added a Workflow Run preview context so authors can simulate character scores, relationship values, evaluation counts, and already-triggered events while debugging score-gated story branches.
+- Added frontend and Rust-side clamping for Workflow Run preview context scores/relationships before score-gated story branches consume author-simulated values.
+- Added one-click Workflow preview context presets for unlock, low-score block, and repeat-trigger block scenarios.
+- Added Workflow Run graph coverage summaries with executed node counts and unvisited node chips for branch QA.
+- Added a Workflow Run preset matrix that executes all score-gate preview presets and merges graph coverage for branch QA.
+- Added Quality Suite workflow coverage snapshots so release checks can prove score-gated story fixtures still cover unlock, low-score, and repeat-trigger branches.
+- Added Quality Suite audit summary UI and JSON export with a stable schema marker for release QA evidence handoff.
+- Added Quality Suite schema validation for score-bound ranges and contradictory expected/forbidden markers before release QA reports run.
+- Added tool-role/function-call injection detection and a checked-in quality scenario proving spoofed runtime instructions cannot unlock events or alter character identity.
+- Added relationship sentiment side-channel containment so prompt-injection text with positive words cannot advance relationship milestone events.
+- Added fallback scoring side-channel containment so prompt-injection text cannot inflate engagement or creativity when model evaluation is unavailable.
+- Added workflow tool-output containment checks proving generated node text shaped like a tool/function call is withheld before downstream story nodes consume it.
+- Added memory-poisoning detection and a quality scenario proving player-authored "official canon" memory writes cannot replace creator-authored Sakura knowledge anchors.
+- Added guarded character memory writes and a memory prompt replay quality scenario so stored prompt-injection text cannot re-enter future character prompts through recent memories.
+- Added overrange score clamping regression coverage for above-100%, above-scale, and negative evaluator outputs before event decisions consume them.
+- Added release-gate validation for frontend route, sidebar navigation, view component, and navigation locale coverage.
+- Added release-gate subpath Web/PWA builds to verify static-hosting assets under `/Monogatari/` before restoring the default root-path dist output.
+- Added release-gate Web/PWA preview smoke checks that start Vite preview and verify every app route returns the production SPA shell on root and subpath builds.
+- Added a knowledge-boundary quality scenario and report flag to catch player-induced retcons or invented canon before they erode character knowledge stability.
+- Added release-gate renderer asset contract checks for checked-in scene backgrounds and character Live2D/3D/sprite/portrait paths.
+- Added Character Editor controls for emotion-specific sprite paths so creators can author Galgame expression art without editing character JSON by hand.
+- Added Character Editor renderer asset diagnostics for unsupported extensions, absolute paths, external URLs, and parent traversal before assets reach the release gate.
+- Added an in-editor renderer preview that mirrors Story Mode priority across Live2D, GLB/GLTF, sprite/portrait, and generated 3D fallback states.
+- Added a shared frontend renderer asset selector so Story Mode and Character Editor previews use one source of truth for Live2D, 3D, sprite, portrait, and generated fallback priority.
+- Added a renderer asset selector contract test to the release gate, covering fallback priority, path validation, and expression sprite resolution.
+- Added real Audio Manager playback controls for BGM, ambient loops, and SFX previews with persisted track lists, path resolution across Web/Tauri builds, per-track gain, and master/channel mixer state.
+- Added release-gate frontend source invariants that keep the Audio Manager tied to real audio elements, persistent mixer state, and BGM/ambient/SFX transport controls.
+- Added release-gate validation that checked-in character pinned knowledge refs resolve to project knowledge entries across both data roots.
+- Added missing Springtown lore anchors for character pinned knowledge refs so creator-declared identity and world context remain stable.
+- Added short retry handling for the release-gate frontend audit step so transient registry TLS failures do not abort otherwise passing release checks.
+
+### Fixed
+- Restored `cargo check --locked -p llm-galgame-app` by aligning Tauri command dependencies and current core APIs.
+- Rebuilt corrupted zh-CN, ja-JP, and ko-KR locale JSON files with the full 280-key i18n surface.
+- Fixed frontend i18n loading so Tauri `{ locale, strings }` payloads and browser `/locales/*.json` fallback files both resolve correctly.
+- Fixed guarded chat streaming so private-reasoning leak replacements overwrite the visible reply instead of appending to partial streamed text.
+- Fixed workflow LLM generation so guarded outputs replace prompt-control/internal text before node results enter the story flow.
+- Fixed knowledge loading and chat context assembly so single-object knowledge files and creator-declared character knowledge references are pinned into prompts.
+- Fixed event triggering so runtime checks and release-gate snapshots share the same serializable rule metadata.
+- Fixed Quality Suite data-root discovery so release-gate runs can find project quality suites and knowledge anchors from nested desktop/dev working directories.
+- Fixed Quality Suite runtime parsing so malformed suite metadata, duplicate scenario ids, and blank event-rule fields are rejected before execution.
+- Fixed Quality Suites workbench error feedback so suite load and run failures show actionable validation messages instead of failing silently.
+- Fixed visible separator artifacts in the Scene Assets and Quality Suites workbench metadata rows.
+- Fixed browser locale fallback loading so Web/PWA deployments under `VITE_BASE_PATH` subpaths fetch locale JSON from the correct base URL.
+- Fixed release verification coverage for Web/PWA subpath deployments by enforcing service worker base-path source invariants.
+- Fixed evaluation score parsing so explanatory model strings such as `Score: 8/10`, `80% friendly`, and normalized decimal text still produce stable event-trigger scores.
+- Fixed event availability previews so author tooling uses the same score-aware trigger decisions as runtime event firing instead of broad event-type approximations.
+- Fixed the Sakura example workflow to demonstrate a score node feeding a story-event unlock node instead of ending immediately after scoring.
+- Fixed workflow runtime and validation compatibility for legacy media fields such as `track`, `sound`, and second-based `duration`.
+- Moved `synthesize_speech` onto the registered Tauri command path and connected saved TTS configuration to system, Azure, and ElevenLabs synthesis.
+- Cleared stale example character sprite paths that pointed at missing files so browser Story Mode falls back cleanly to the generated 3D placeholder.
+
+### Changed
+- Project export manifests now scan project JSON content directories for characters, dialogues, knowledge, and scenes, making exports useful before runtime managers are initialized.
+- Character loading now accepts one-character JSON files, legacy sprite field names, and partial personality definitions with stable defaults.
+- Single-character and group chat prompts now share the character mind contract and guarded response path for stronger role stability, including AI/ChatGPT identity drift and customer-support/tool-style drift replacement.
+- Version metadata synchronized to v0.9.5 across frontend, Rust workspace, Tauri config, and title screen UI.
+
 ## [0.9.4] - 2026-07-08
 
 ### Added
-- **BackToTop component**: Scroll-to-top button with smooth scroll animation. Appears after 300px of scroll offset, integrated globally in App.vue.\n- **Takeshi character**: Traveling photographer with 12-node through_the_lens dialogue (7 endings), cross-character connections to Sakura, Hana, Sora, Kai, Mio, and Nori. Springtown photographic archive knowledge entry.
+- **BackToTop component**: Scroll-to-top button with smooth scroll animation. Appears after 300px of scroll offset, integrated globally in App.vue.
+- **Takeshi character**: Traveling photographer with 12-node through_the_lens dialogue (7 endings), cross-character connections to Sakura, Hana, Sora, Kai, Mio, and Nori. Springtown photographic archive knowledge entry.
 - **ConfirmDialog component**: Polished confirmation dialog with backdrop blur for delete/destructive action confirmations. Supports custom title, message, and button labels via `v-model:visible` binding.
 - **System info panel**: HomeView dashboard now shows engine version (v0.9.4), character/dialogue/knowledge/scene counts, AI engine status, and runtime state with color-coded Online/Idle indicator.
 

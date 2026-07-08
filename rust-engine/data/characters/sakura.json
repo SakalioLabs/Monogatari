@@ -12,5 +12,9 @@
     "speech_style": "cheerful, warm, uses nature metaphors, occasionally poetic"
   },
   "emotion": "happy",
+  "knowledge_refs": [
+    "sakura_nature",
+    "sakura_art_knowledge"
+  ],
   "live2d_model_path": null
 }

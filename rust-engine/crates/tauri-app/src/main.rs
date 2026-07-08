@@ -8,7 +8,6 @@
 mod commands;
 mod state;
 
-
 use state::AppState;
 use tracing_subscriber::EnvFilter;
 
@@ -53,6 +52,7 @@ fn main() {
             commands::chat::evaluate_conversation,
             commands::chat::get_relationship_score,
             commands::chat::get_available_events,
+            commands::chat::preview_event_triggers,
             commands::multi_chat::start_group_chat,
             commands::multi_chat::send_group_message,
             commands::multi_chat::get_group_chat_characters,
@@ -64,10 +64,13 @@ fn main() {
             commands::scenes::get_current_scene,
             commands::scenes::set_scene,
             commands::workflow::get_workflow_nodes,
+            commands::workflow::execute_workflow,
             commands::workflow::execute_workflow_node,
             commands::workflow::validate_workflow,
             commands::workflow::save_workflow,
             commands::workflow::load_workflow,
+            commands::quality_suite::list_quality_suites,
+            commands::quality_suite::run_quality_suite,
             commands::script::execute_script,
             commands::script::evaluate_condition,
             commands::script::parse_script,

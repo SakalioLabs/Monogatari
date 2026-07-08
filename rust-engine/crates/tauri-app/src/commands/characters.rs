@@ -1,17 +1,50 @@
 //! Character management commands.
 
+use std::collections::HashMap;
+
 use serde::Serialize;
 use tauri::State;
 
 use crate::state::AppState;
+use llm_game::characters::{Character, CharacterKnowledgeEntry, Personality};
 
 #[derive(Serialize)]
 pub struct CharacterInfo {
     pub id: String,
     pub name: String,
     pub description: String,
+    pub background: String,
+    pub personality: Personality,
     pub emotion: String,
+    pub relationships: HashMap<String, f32>,
+    pub sprite_paths: HashMap<String, String>,
+    pub sprite_path: Option<String>,
     pub live2d_model_path: Option<String>,
+    pub model_3d_path: Option<String>,
+    pub portrait_path: Option<String>,
+    pub knowledge_entries: Vec<CharacterKnowledgeEntry>,
+    pub knowledge_refs: Vec<String>,
+    pub emotion_modifiers: HashMap<String, String>,
+}
+
+fn character_info(id: String, character: &Character) -> CharacterInfo {
+    CharacterInfo {
+        id,
+        name: character.name.clone(),
+        description: character.description.clone(),
+        background: character.background.clone(),
+        personality: character.personality.clone(),
+        emotion: character.emotion.clone(),
+        relationships: character.relationships.clone(),
+        sprite_paths: character.sprite_paths.clone(),
+        sprite_path: character.sprite_path.clone(),
+        live2d_model_path: character.live2d_model_path.clone(),
+        model_3d_path: character.model_3d_path.clone(),
+        portrait_path: character.portrait_path.clone(),
+        knowledge_entries: character.knowledge_entries.clone(),
+        knowledge_refs: character.knowledge_refs.clone(),
+        emotion_modifiers: character.emotion_modifiers.clone(),
+    }
 }
 
 /// Get all characters.
@@ -22,13 +55,7 @@ pub async fn get_characters(state: State<'_, AppState>) -> Result<Vec<CharacterI
 
     for (id, character) in cm.all_characters() {
         let character = character.read().await;
-        characters.push(CharacterInfo {
-            id: id.clone(),
-            name: character.name.clone(),
-            description: character.description.clone(),
-            emotion: character.emotion.clone(),
-            live2d_model_path: character.live2d_model_path.clone(),
-        });
+        characters.push(character_info(id.clone(), &character));
     }
 
     Ok(characters)
@@ -46,13 +73,7 @@ pub async fn get_character(
         .ok_or_else(|| format!("Character not found: {character_id}"))?;
 
     let character = character.read().await;
-    Ok(CharacterInfo {
-        id: character.id.clone(),
-        name: character.name.clone(),
-        description: character.description.clone(),
-        emotion: character.emotion.clone(),
-        live2d_model_path: character.live2d_model_path.clone(),
-    })
+    Ok(character_info(character.id.clone(), &character))
 }
 
 /// Load characters from a directory.
@@ -66,4 +87,31 @@ pub async fn load_characters(
     cm.load_from_directory(&path)
         .await
         .map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn character_info_keeps_fallback_sprite_separate_from_expression_sprites() {
+        let mut character = Character::new("sakura", "Sakura");
+        character.emotion = "happy".to_string();
+        character.sprite_path = Some("assets/sprites/sakura_base.png".to_string());
+        character.sprite_paths.insert(
+            "happy".to_string(),
+            "assets/sprites/sakura_happy.png".to_string(),
+        );
+
+        let info = character_info(character.id.clone(), &character);
+
+        assert_eq!(
+            info.sprite_path.as_deref(),
+            Some("assets/sprites/sakura_base.png")
+        );
+        assert_eq!(
+            info.sprite_paths.get("happy").map(String::as_str),
+            Some("assets/sprites/sakura_happy.png")
+        );
+    }
 }

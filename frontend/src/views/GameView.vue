@@ -22,8 +22,23 @@
     <main class="stage">
       <section class="model-area">
         <Live2DCanvas
-          v-if="currentCharacter"
-          :model-path="currentCharacter.live2d_model_path"
+          v-if="currentLive2dPath"
+          :model-path="currentLive2dPath"
+          :expression="currentExpression"
+          :motion="currentMotion"
+        />
+        <CharacterModelView
+          v-else-if="currentModel3dPath"
+          :model-path="currentModel3dPath"
+          :expression="currentExpression"
+          :motion="currentMotion"
+        />
+        <div v-else-if="currentSpritePath" class="sprite-stage">
+          <img :src="currentSpritePath" :alt="currentCharacter?.name || 'Character sprite'" />
+        </div>
+        <CharacterModelView
+          v-else-if="currentCharacter"
+          :model-path="null"
           :expression="currentExpression"
           :motion="currentMotion"
         />
@@ -161,8 +176,11 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import Live2DCanvas from '../components/Live2DCanvas.vue'
+import CharacterModelView from '../components/CharacterModelView.vue'
 import { invokeCommand } from '../lib/tauri'
 import { useI18n } from '../lib/i18n'
+import { resolveAssetUrl } from '../lib/assets'
+import { selectCharacterRendererAsset } from '../lib/rendererAssets'
 
 const { t } = useI18n()
 
@@ -181,6 +199,10 @@ interface CharacterInfo {
   description: string
   emotion: string
   live2d_model_path: string | null
+  model_3d_path: string | null
+  portrait_path: string | null
+  sprite_path: string | null
+  sprite_paths?: Record<string, string>
 }
 
 interface SaveInfo {
@@ -240,18 +262,21 @@ const activeSceneStorageKey = 'monogatari.activeScene'
 
 const sceneBackdropStyle = computed(() => {
   if (!activeScene.value) return {}
-  
-  // Try to load scene background image if available
-  const bgPath = activeScene.value.background_path
-  if (bgPath) {
-    // Remove leading assets/ and add public prefix
-    const cleanPath = bgPath.replace(/^assets\//, '').replace(/^\//, '')
+
+  const bgPath = activeScene.value.absolute_background_path || activeScene.value.background_path
+  const bgUrl = resolveAssetUrl(bgPath)
+  if (bgUrl) {
     return {
-      background: `url('/` + cleanPath + `') center / cover no-repeat`,
+      background: `url("${bgUrl}") center / cover no-repeat`,
     }
   }
-  
-  // Fallback: generated gradient based on scene id
+
+  if (bgPath) {
+    return {
+      background: 'linear-gradient(180deg, hsl(210 28% 18%), hsl(225 32% 10%))',
+    }
+  }
+
   const seed = Array.from(activeScene.value.id).reduce((sum, char) => sum + char.charCodeAt(0), 0)
   const hueA = (seed * 17) % 360
   const hueB = (hueA + 44) % 360
@@ -262,6 +287,19 @@ const sceneBackdropStyle = computed(() => {
       `radial-gradient(circle at 50% 72%, hsl(${hueC} 62% 36% / 0.36), transparent 38%)`,
   }
 })
+
+const currentRendererAsset = computed(() =>
+  selectCharacterRendererAsset(currentCharacter.value, { expression: currentExpression.value })
+)
+const currentLive2dPath = computed(() =>
+  currentRendererAsset.value.mode === 'live2d' ? currentRendererAsset.value.resolvedUrl : null
+)
+const currentModel3dPath = computed(() =>
+  currentRendererAsset.value.mode === 'model3d' ? currentRendererAsset.value.resolvedUrl : null
+)
+const currentSpritePath = computed(() =>
+  currentRendererAsset.value.mode === 'sprite' ? currentRendererAsset.value.resolvedUrl : null
+)
 
 function formatTime(timestamp: string): string {
   try {
@@ -294,10 +332,30 @@ function previewActiveScene(): ActiveScene {
 
 async function loadCharacters() {
   try {
-    characters.value = await invokeCommand<CharacterInfo[]>('get_characters', undefined, [])
+    characters.value = await invokeCommand<CharacterInfo[]>('get_characters', undefined, previewCharacters)
+    if (!currentCharacter.value && characters.value.length > 0) {
+      currentCharacter.value = characters.value[0]
+      currentExpression.value = currentCharacter.value.emotion || 'neutral'
+    }
   } catch (e) {
     console.error(e)
   }
+}
+
+function previewCharacters(): CharacterInfo[] {
+  return [
+    {
+      id: 'sakura',
+      name: 'Sakura',
+      description: 'Browser preview character for renderer fallback checks.',
+      emotion: 'happy',
+      live2d_model_path: null,
+      model_3d_path: null,
+      portrait_path: null,
+      sprite_path: null,
+      sprite_paths: {},
+    },
+  ]
 }
 
 function syncCurrentCharacter() {
@@ -494,6 +552,7 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
   if (typingTimer) clearInterval(typingTimer)
   if (autoPlayTimer) clearTimeout(autoPlayTimer)
+  if (autoSaveTimer) clearInterval(autoSaveTimer)
 })
 </script>
 
@@ -606,6 +665,21 @@ onUnmounted(() => {
 
 .model-placeholder strong {
   color: var(--text-primary);
+}
+
+.sprite-stage {
+  width: min(460px, 76vw);
+  height: min(680px, 62vh);
+  display: grid;
+  place-items: end center;
+}
+
+.sprite-stage img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 28px 36px rgba(0,0,0,0.46));
 }
 
 .dialogue-area {

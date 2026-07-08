@@ -52,7 +52,13 @@ impl CharacterMemory {
     }
 
     /// Add a new memory. If at capacity, evicts the least important memory.
-    pub fn add_memory(&mut self, content: String, memory_type: MemoryType, importance: f32, tags: Vec<String>) {
+    pub fn add_memory(
+        &mut self,
+        content: String,
+        memory_type: MemoryType,
+        importance: f32,
+        tags: Vec<String>,
+    ) {
         let entry = MemoryEntry {
             content,
             memory_type,
@@ -113,7 +119,8 @@ impl CharacterMemory {
 
     /// Forget memories below the given importance threshold.
     pub fn forget_old(&mut self, importance_threshold: f32) {
-        self.memories.retain(|m| m.importance >= importance_threshold);
+        self.memories
+            .retain(|m| m.importance >= importance_threshold);
     }
 
     /// Get the current number of stored memories.

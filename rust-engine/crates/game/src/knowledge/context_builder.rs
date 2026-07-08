@@ -46,10 +46,7 @@ impl ContextBuilder {
         // Add recent memories
         let recent = character.memory.get_recent(self.max_memory_entries);
         if !recent.is_empty() {
-            let mem_str: Vec<String> = recent
-                .iter()
-                .map(|m| format!("- {}", m.content))
-                .collect();
+            let mem_str: Vec<String> = recent.iter().map(|m| format!("- {}", m.content)).collect();
             parts.push(format!("Recent memories:\n{}", mem_str.join("\n")));
         }
 
@@ -65,7 +62,14 @@ impl ContextBuilder {
 
         let parts: Vec<String> = entries
             .iter()
-            .map(|e| format!("[{}] {}: {}", format!("{:?}", e.category).to_lowercase(), e.title, e.content))
+            .map(|e| {
+                format!(
+                    "[{}] {}: {}",
+                    format!("{:?}", e.category).to_lowercase(),
+                    e.title,
+                    e.content
+                )
+            })
             .collect();
 
         format!("Relevant knowledge:\n{}", parts.join("\n"))

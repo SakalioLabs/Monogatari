@@ -2,7 +2,7 @@
   <div class="dashboard">
     <header class="dash-header">
       <div>
-        <span class="eyebrow">Monogatari Engine v0.9</span>
+        <span class="eyebrow">Monogatari Engine v0.9.5</span>
         <h1>{{ t('home.welcome', 'Production Desk') }}</h1>
         <p>{{ t('home.subtitle', 'LLM-driven visual novel engine. Create characters, build stories, and let AI drive the narrative.') }}</p>
       </div>
@@ -192,6 +192,7 @@ const features = [
   { title: t('home.tile.knowledge', 'Knowledge'), desc: 'World lore, character backgrounds, and AI context entries.', path: '/knowledge', icon: 'K', color: 'rgba(34,197,94,0.2)' },
   { title: t('home.tile.assets', 'Scene Assets'), desc: 'Background catalog, scene metadata, and runtime selection.', path: '/assets', icon: 'A', color: 'rgba(244,114,182,0.2)' },
   { title: t('home.tile.analytics', 'Analytics'), desc: 'Player engagement metrics and conversation patterns.', path: '/analytics', icon: 'D', color: 'rgba(56,189,248,0.2)' },
+  { title: t('nav.quality', 'Quality'), desc: 'Offline gates for character stability, scoring, and event triggers.', path: '/quality', icon: 'Q', color: 'rgba(34,197,94,0.2)' },
   { title: t('nav.cg-gallery', 'CG Gallery'), desc: 'Scene art collection with unlock tracking and previews.', path: '/cg-gallery', icon: 'G', color: 'rgba(244,63,94,0.2)' },
   { title: t('nav.backlog', 'Backlog'), desc: 'Conversation history replay with filtering and search.', path: '/backlog', icon: 'B', color: 'rgba(253,186,116,0.2)' },
   { title: t('home.tile.marketplace', 'Marketplace'), desc: 'Community templates, characters, and story modules.', path: '/marketplace', icon: 'M', color: 'rgba(253,186,116,0.2)' },

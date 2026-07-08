@@ -25,6 +25,7 @@ futures = { workspace = true }
 # Serialization
 serde = { workspace = true }
 serde_json = { workspace = true }
+chrono = { workspace = true }
 
 # Error handling & logging
 anyhow = { workspace = true }
@@ -36,3 +37,9 @@ reqwest = { workspace = true }
 
 # Scripting
 rhai = { workspace = true }
+rand = { workspace = true }
+
+# Command helpers
+once_cell = { workspace = true }
+hostname = { workspace = true }
+md5 = { workspace = true }

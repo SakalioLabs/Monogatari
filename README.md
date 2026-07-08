@@ -1,6 +1,6 @@
-# Monogatari v0.9.1
+# Monogatari v0.9.5
 
-An LLM-powered v0.5 visual novel / galgame engine. Build interactive story experiences where AI-driven characters respond dynamically to player conversations, with automatic conversation scoring that triggers special plot events.
+An LLM-powered visual novel / galgame engine. Build interactive story experiences where AI-driven characters respond dynamically to player conversations, with automatic conversation scoring that triggers special plot events.
 
 ## What It Is
 
@@ -11,18 +11,24 @@ Monogatari is a development engine for creating LLM-driven text adventure games.
 - **AI Chat Mode** - Players talk freely with LLM-driven characters. The AI stays in character using personality, background, world knowledge, streaming response events, and streamed evaluation/event notifications.
 - **Conversation Scoring** - The LLM evaluates every conversation on friendliness, engagement, and creativity. Cumulative scores unlock special events.
 - **Event Trigger System** - Relationship milestones, dialogue achievements, and cumulative progress trigger plot events, scene changes, and special dialogues.
+- **Quality Suites** - Offline regression scenarios validate character stability, prompt-injection resistance, relationship and fallback scoring side-channel containment, memory-poisoning resistance, memory prompt replay safety, tool-role injection containment, identity drift, style drift, real knowledge-reference anchoring, knowledge-boundary stability against player-supplied retcons, evaluation-summary safety, workflow output safety, workflow tool-call containment, workflow branch coverage, private reasoning leakage, fallback scoring, overrange score clamping, story-event trigger thresholds/idempotence, and event-rule snapshots without requiring live model calls.
+- **Web/PWA Distribution** - Browser builds include a web app manifest, dedicated install/maskable icons, offline fallback page, and service worker cache for installable cross-platform previews outside Tauri.
+- **Web Bundle Budgets** - Production builds verify small entry assets while allowing bounded lazy chunks for Three.js, GLTF loading, OrbitControls, and Live2D.
 - **Dialogue Editor** - Visual branching dialogue editor with node tree, inline choice editing, speaker assignment, validation, and JSON import/export.
 - **Visual Workflow Editor** - Drag-and-drop node-based editor for designing dialogue flows, branching conditions, LLM generation nodes, evaluation triggers, and scene transitions.
 - **Workflow Validation** - Import/export and save paths validate node ids, start/end structure, missing config fields, broken links, duplicate links, and unreachable nodes.
 - **Scene Asset Library** - Project scene metadata and background files are scanned, validated, listed, and selectable as the active runtime scene.
+- **Renderer Fallback Pipeline** - Story Mode resolves project assets across Tauri and Web builds, preferring Live2D, then GLB/GLTF 3D models, then 2D sprites or portraits, with a generated 3D stage placeholder when no art is available.
 - **Project Control Panel** - Project settings, path readiness, AI backend selection, and runtime initialization are managed from one production-oriented console.
 - **Character System** - Full personality model (Big Five traits), memory system, emotion tracking, and relationship scores per character.
-- **Knowledge Base** - Keyword-indexed world lore and context system that feeds into AI prompts for consistent storytelling.
+- **Knowledge Base** - Keyword-indexed world lore, pinned character references, and release-verified context anchors that feed into AI prompts for consistent storytelling.
 - **Branching Dialogue** - Pre-scripted dialogue trees with choices, relationship changes, and flag-based conditional branching.
 - **Live2D Support** - Animated character models via PixiJS + pixi-live2d-display.
 - **Save/Load System** - Full game state persistence including character states, flags, variables, and chat history.
 - **Rhai Scripting** - Embedded scripting engine for custom game logic, conditions, and triggers.
-- **Knowledge Base Manager** - Full CRUD interface for world lore, character backgrounds, and AI context entries with category filtering, tag cloud, and keyword search.\n- **Professional Character Editor** - 5-tab editor with Big Five personality sliders, radar chart visualization, emotion configuration, relationship management, and knowledge entries with JSON export.\n- **Audio Manager** - Manage background music, ambient sounds, and sound effects with per-track volume control and master mixer.
+- **Knowledge Base Manager** - Full CRUD interface for world lore, character backgrounds, and AI context entries with category filtering, tag cloud, and keyword search.
+- **Professional Character Editor** - 5-tab editor with Big Five personality sliders, radar chart visualization, emotion configuration, relationship management, knowledge entries, renderer asset diagnostics, Story Mode-style preview, emotion sprite mapping, and JSON export.
+- **Audio Manager** - Manage background music, ambient sounds, and sound effects with per-track volume control and master mixer.
 - **Plugin System** - Register and manage custom workflow node types, event triggers, and action handlers through a dedicated management UI.
 - **Cloud Save Sync** - Push/pull save data to remote endpoints with conflict detection and sync status tracking.
 - **Multi-Language Support** - i18n scaffold with zh-CN, ja-JP, and ko-KR locale files for international deployment.
@@ -34,20 +40,46 @@ Monogatari is a development engine for creating LLM-driven text adventure games.
 - **CG Gallery** - Scene and character art collection viewer with grid layout, locked/unlocked states, preview modal with weather/time metadata, and color-coded thumbnails.
 - **Backlog Viewer** - Full conversation history replay with character selector, role-based filtering (player/character/system), emotion badges, and jump-to-latest.
 - **Full i18n Internationalization** - 280+ translation keys covering all views and UI strings. Complete Simplified Chinese (zh-CN), Japanese (ja-JP), and Korean (ko-KR) locale files for international deployment.
-- **i18n-Integrated Sidebar** - All 18 navigation labels render through the `t()` translation function with automatic locale switching.
+- **i18n-Integrated Sidebar** - All 20 navigation labels render through the `t()` translation function with automatic locale switching.
 - **Achievement System** - 15 unlockable milestones tracking social, relationship, creation, and gameplay progress with progress bars and category filtering.
 - **Commercial Workbench UI** - Desktop-first dashboard, streaming chat desk, story runtime, workflow authoring surface, and settings panels designed for repeated production use.
 
 ## Current Development Status
 
-Verified on 2026-07-06 (updated):
+Verified on 2026-07-08:
 
 - Frontend production build passes with `npm run build`.
+- Web/PWA production build passes with `npm run build:web`, including static-hosting SPA fallback assets, dedicated install/maskable icons, and bundle-budget verification.
 - Full frontend dependency audit passes with `npm audit`.
 - Rust Tauri app crate passes `cargo check --locked -p llm-galgame-app`.
+- Character quality suite regression tests pass inside `cargo test --locked -p llm-galgame-app`.
+- Single-character and group chat prompts use the shared character mind contract and guarded response path for private reasoning leaks, identity drift, and tool-style response drift.
+- Prompt-injection detection covers player-authored memory writes such as "remember this as official canon" so long-term character knowledge cannot be casually poisoned by dialogue text.
+- Player-authored meta-instructions are omitted from character memory writes, and legacy unsafe recent memories are replaced with guarded prompt placeholders before they can influence future replies.
+- Prompt-injection text cannot advance local relationship sentiment deltas, so positive words inside meta-instructions cannot silently unlock relationship milestone events.
+- Local fallback scoring ignores prompt-injection text for engagement and creativity boosts, so long meta-instructions cannot unlock score-gated story events when model evaluation is unavailable.
+- Evaluation score parsing clamps overrange, above-scale, and negative model scores before quality reports or event triggers consume them.
+- Workflow LLM nodes wrap runtime inputs as untrusted data and guard generated output before it can enter story node results.
+- Workflow output safety now covers tool-role/function-call shaped text so generated node output cannot masquerade as a runtime event command.
+- Checked-in score-gate workflow fixtures prove conversation evaluation can drive visual workflow branches and score-aware story-event unlocks.
+- Workflow Run traces expose evaluation metrics, thresholds, score sources, event trigger state, and blocker reasons for author debugging.
+- Workflow canvas nodes show compact run badges for executed, pass/fail, blocked, completed, and waiting-choice states.
+- Workflow Run preview context lets authors simulate scores, relationship values, evaluation counts, and already-triggered events without live chat/model calls.
+- Workflow Run preview context clamps author-provided scores and relationship values in both the editor payload and Rust execution path before score-gated branches consume them.
+- Workflow Run preview presets cover unlock, low-score block, and repeat-trigger block branches for quick score-gate QA.
+- Workflow Run reports graph coverage and unvisited nodes so authors can see which score/story branches still need testing.
+- Workflow Run preset matrix executes all score-gate preview presets and merges graph coverage to confirm branch coverage quickly.
+- Quality Suites can now pin workflow branch coverage snapshots, including the checked-in score-gate fixture's unlock, low-score, and repeat-trigger branches.
+- Quality Suite reports show and export versioned audit evidence with failed-scenario ids, category summaries, safety-signal counts, and workflow coverage summaries for release QA, customer review, and branch-coverage audits.
+- Quality suite schema validation rejects contradictory expectations such as out-of-range score bounds or events marked both expected and forbidden.
+- Character prompts pin creator-declared knowledge references before keyword search results so core lore stays stable.
+- Character content loading accepts single-object JSON files, legacy sprite field names, and optional renderer asset fields.
+- Audio Manager now controls real browser/Tauri audio elements for BGM, ambient loops, and SFX previews, with persisted track lists, per-track gain, and master/channel mixer state.
 - C# legacy solution exits successfully with `dotnet test LLMAssistant.sln --no-restore`.
+- Locale JSON files validate across project data and frontend fallback directories, including key coverage and Web/PWA fallback parity.
 - Live2D remains on `pixi-live2d-display@0.4.0`; its transitive `gh-pages` dependency is pinned to the safe `6.3.0` line through npm overrides.
 - Rust desktop dependencies are pinned through `rust-engine/Cargo.lock` for reproducible Tauri builds.
+- One-command release verification passes with `node scripts/verify-release.mjs`, including all quality suite files, renderer asset contract checks, pinned knowledge-ref checks, locale coverage, frontend UI text artifact scanning, frontend source invariants, frontend route/sidebar coverage, root and subpath Web/PWA builds, Web/PWA dist asset checks, and preview route smoke checks.
 - Commercial release gates are tracked in `docs/RELEASE_CHECKLIST.md`.
 
 ## Architecture
@@ -65,8 +97,8 @@ monogatari/
 |   +-- data/              # Example characters, dialogues, knowledge, scenes, assets
 +-- frontend/              # Vue 3 + Vite + Pinia
 |   +-- src/
-|   |   +-- views/         # HomeView, ChatView, GameView, WorkflowEditor, SceneAssetsView, SettingsView
-|   |   +-- components/    # Live2DCanvas
+|   |   +-- views/         # 21 production views including chat, story runtime, editors, galleries, analytics, and quality gates
+|   |   +-- components/    # Live2DCanvas, search, toasts, progress, dialogs, and shared UI
 |   |   +-- stores/        # Pinia game store
 |   |   +-- styles/        # Design system (CSS variables, components)
 +-- src/                   # C# implementation (legacy, SDL2-based)
@@ -100,10 +132,32 @@ cargo tauri dev
 
 ### Production Build
 
+Run the automated pre-release gate first:
+
 ```bash
+node scripts/verify-release.mjs
+```
+
+This verifies JSON assets, checked-in workflow files, renderer asset contracts for characters and scenes, pinned character knowledge refs, all quality suite files, workflow branch coverage snapshots, locale coverage, sensitive token patterns, frontend UI text artifacts, frontend source invariants, frontend route/sidebar coverage, Rust checks/tests, root and subpath Web/PWA builds with bundle budgets, Web/PWA dist assets, preview route smoke checks, frontend audit, and legacy C# tests.
+
+```bash
+cd frontend
+npm run build:web
+
 cd rust-engine/crates/tauri-app
 cargo tauri build
 ```
+
+For static hosting under a subpath, set `VITE_BASE_PATH` before building:
+
+```powershell
+cd frontend
+$env:VITE_BASE_PATH='/Monogatari/'
+npm run build:web
+Remove-Item Env:VITE_BASE_PATH
+```
+
+The web build emits `dist/404.html` for SPA fallback, `dist/.nojekyll` for GitHub Pages, and PWA assets, including install and maskable icons, scoped to the configured base path.
 
 ## Usage
 
@@ -309,7 +363,18 @@ cargo tauri build
 - [x] Backlog viewer with conversation history replay and role-based filtering
 - [x] Comprehensive i18n system with 280+ translation keys across all views
 - [x] Full Simplified Chinese (zh-CN), Japanese (ja-JP), Korean (ko-KR) locale support
-- [x] i18n-integrated sidebar with 18 navigation items using t() function
+- [x] i18n-integrated sidebar with 20 navigation items using t() function
+- [x] Quality Suites workbench for offline character stability and prompt-injection regression checks
+- [x] Quality Suite workflow branch coverage snapshots for score-gated story QA
+- [x] Quality Suite workbench and JSON export with stable audit summaries for QA evidence handoff
+- [x] Web/PWA distribution baseline with manifest, service worker, and offline fallback
+- [x] Checked-in score-gate workflow fixture with backend execution regression for evaluation-driven story unlocks
+- [x] Workflow Run score/event diagnostics for author-visible trigger debugging
+- [x] Workflow canvas run badges for score-gated graph debugging
+- [x] Workflow Run preview context for model-free score-gate branch testing
+- [x] Workflow Run preview presets for unlock, low-score block, and repeat-trigger block QA
+- [x] Workflow Run graph coverage summary with unvisited node reporting
+- [x] Workflow Run preset matrix for merged score-gate branch coverage
 
 ### In Progress
 
@@ -320,26 +385,29 @@ cargo tauri build
 ### Planned
 
 - [x] Voice synthesis integration (Windows SAPI TTS with emotion-based speech rate)
-- [ ] Music/ambient sound management
+- [x] Music/ambient sound management
 - [x] Multi-language support (i18n scaffold with locale loading and translation)
 - [x] Plugin system for custom node types (scaffold with register/list/remove)
 - [x] Cloud save sync with local manifest and checksum tracking
 - [x] Analytics dashboard with engagement metrics and JSON export
 - [x] Dialogue Editor view with visual branching node tree and inline editing
 - [x] Project export command for distributable packaging
-- [x] Knowledge Base Manager view with CRUD and filtering\n- [x] Professional Character Editor with 5 tabs and radar chart\n- [x] Frontend data sync with rust-engine content\n- [x] Template marketplace scaffold (Rust backend + MarketplaceView frontend)
+- [x] Knowledge Base Manager view with CRUD and filtering
+- [x] Professional Character Editor with 5 tabs and radar chart
+- [x] Frontend data sync with rust-engine content
+- [x] Template marketplace scaffold (Rust backend + MarketplaceView frontend)
 - [x] Plugin management frontend UI with register/list/remove
 - [x] Cloud sync settings integration with push/pull/status
 - [x] Multi-language locale files (zh-CN, ja-JP, ko-KR)
 - [x] Enhanced group chat with streaming and emotion display
 - [x] Release checklist document for packaging and QA gates
 - [x] Mobile-responsive CSS with bottom tab navigation
-- [x] Audio manager view with BGM/SFX mixer
+- [x] Audio manager playback controls with BGM/ambient/SFX tracks, persisted lists, and master/channel mixer
 - [x] Enhanced prompt engineering for character AI roleplay quality
 - [x] GLTF/GLB 3D model loading with Three.js GLTFLoader, OrbitControls, animation playback
 - [x] i18n composable with nested key support and locale persistence
 - [x] i18n composable upgraded with nested key support and localStorage persistence
-- [x] Sidebar navigation expanded to 12 items with Analytics, Marketplace, Plugins
+- [x] Sidebar navigation expanded to 20 items with Quality, Analytics, Marketplace, Plugins, galleries, backlog, and achievements
 - [x] Title Screen, CG Gallery, Backlog viewer views
 - [x] Full i18n with 280+ keys and 4 locale files (en, zh-CN, ja-JP, ko-KR)
 - [x] Achievement system with 15 milestones, progress tracking, and localStorage persistence

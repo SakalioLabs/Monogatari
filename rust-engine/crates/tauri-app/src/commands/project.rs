@@ -3,9 +3,9 @@
 use std::collections::HashSet;
 use std::path::{Component, Path, PathBuf};
 
+use chrono::Utc;
 use serde::Serialize;
 use serde_json::{json, Value};
-use chrono;
 use tauri::State;
 
 use crate::state::AppState;
@@ -85,6 +85,12 @@ const PROJECT_PATHS: &[PathDefinition] = &[
         key: "saves",
         label: "Saves",
         fallback: "saves",
+        required: false,
+    },
+    PathDefinition {
+        key: "quality_suites",
+        label: "Quality Suites",
+        fallback: "quality_suites",
         required: false,
     },
 ];
@@ -502,20 +508,81 @@ pub async fn export_project(
     let kb = state.knowledge_base.read().await;
     let sm = state.scene_manager.read().await;
 
+    let file_characters = collect_json_ids(&root.join("characters"));
+    let file_dialogues = collect_json_ids(&root.join("dialogue"));
+    let file_knowledge = collect_json_ids(&root.join("knowledge"));
+    let file_scenes = collect_json_ids(&root.join("scenes"));
+
+    let loaded_characters = cm.character_ids();
+    let loaded_dialogues = dm.script_ids();
+    let current_scene = sm.current_scene_name().map(str::to_string);
+
     let manifest = json!({
         "format": "monogatari-project",
         "version": "1.0",
-        "exported_at": chrono::Utc::now().to_rfc3339(),
+        "exported_at": Utc::now().to_rfc3339(),
         "project_path": root.to_string_lossy(),
         "content": {
-            "characters": cm.get_character_ids(),
-            "dialogues": dm.list_dialogue_ids(),
-            "knowledge_count": kb.len(),
-            "scenes": sm.list_scene_ids(),
+            "characters": if file_characters.is_empty() { loaded_characters } else { file_characters },
+            "dialogues": if file_dialogues.is_empty() { loaded_dialogues } else { file_dialogues },
+            "knowledge": file_knowledge,
+            "knowledge_count": kb.len().max(count_json_files(&root.join("knowledge"))),
+            "scenes": file_scenes,
+            "current_scene": current_scene,
         }
     });
 
     Ok(manifest)
+}
+
+fn collect_json_ids(dir: &Path) -> Vec<String> {
+    let mut ids = Vec::new();
+    if !dir.is_dir() {
+        return ids;
+    }
+
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return ids;
+    };
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|e| e.to_str()) != Some("json") {
+            continue;
+        }
+
+        let parsed_id = std::fs::read_to_string(&path)
+            .ok()
+            .and_then(|content| serde_json::from_str::<Value>(&content).ok())
+            .and_then(|value| value.get("id").and_then(Value::as_str).map(str::to_string));
+
+        let fallback_id = path
+            .file_stem()
+            .and_then(|stem| stem.to_str())
+            .map(str::to_string);
+
+        if let Some(id) = parsed_id.or(fallback_id) {
+            ids.push(id);
+        }
+    }
+
+    ids.sort();
+    ids
+}
+
+fn count_json_files(dir: &Path) -> usize {
+    if !dir.is_dir() {
+        return 0;
+    }
+
+    std::fs::read_dir(dir)
+        .map(|entries| {
+            entries
+                .filter_map(Result::ok)
+                .filter(|entry| entry.path().extension().and_then(|e| e.to_str()) == Some("json"))
+                .count()
+        })
+        .unwrap_or(0)
 }
 
 #[cfg(test)]

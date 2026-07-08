@@ -9,7 +9,7 @@ Monogatari is a desktop application built with Rust (Tauri 2.x) for the backend 
 ```
 +--------------------------------------------------+
 |                  Frontend (Vue 3)                  |
-|  Views (13) | Components (4) | Stores (Pinia)     |
+|  Views (21) | PWA shell | Stores (Pinia)          |
 +--------------------------------------------------+
 |            Tauri IPC Bridge (invokeCommand)        |
 +--------------------------------------------------+
@@ -46,10 +46,12 @@ Monogatari is a desktop application built with Rust (Tauri 2.x) for the backend 
 
 ## Frontend Architecture
 
-- **Router**: 13 routes with lazy-loaded views
+- **Router**: 21 routes with lazy-loaded views
 - **State**: Pinia store for game state (saves, scenes, relationships)
 - **i18n**: Nested key resolution with localStorage persistence (zh-CN, ja-JP, ko-KR)
 - **Tauri Bridge**: Browser-compatible `invokeCommand()` with fallback for non-Tauri environments
+- **Web Distribution**: Production browser builds register a service worker, manifest, and offline fallback; Tauri runtime disables service worker registration.
+- **Renderer Asset Pipeline**: Story Mode resolves scene and character assets through a shared frontend resolver. Character staging prefers Live2D models, then GLB/GLTF 3D models, then 2D sprites or portraits, and falls back to a generated Three.js placeholder for assetless characters.
 
 ## AI Pipeline
 
