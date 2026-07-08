@@ -221,6 +221,7 @@ const readinessItems = computed(() => [
   { name: 'Mobile Web/PWA shell readiness', done: true },
   { name: 'Responsive Web/PWA shell verification', done: true },
   { name: 'Tauri mobile deployment preflight', done: true },
+  { name: 'Pinned knowledge ref trace IDs', done: true },
   { name: 'Production installer signing', done: false },
   { name: 'Mobile deployment (Tauri mobile)', done: false },
 ])

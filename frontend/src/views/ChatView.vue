@@ -215,6 +215,7 @@ interface ChatSafetyTrace {
   mind_contract_applied?: boolean
   knowledge_context_pinned?: boolean
   pinned_knowledge_ref_count?: number
+  pinned_knowledge_ref_ids?: string[]
   input_prompt_injection_detected: boolean
   input_private_reasoning_request_detected: boolean
   response_guard_applied: boolean
@@ -278,8 +279,13 @@ const safetyTraceSummary = computed(() => {
   const trace = safetyTrace.value
   if (!trace) return 'No runtime trace yet.'
   const notes = trace.guard_notes || []
-  if (!notes.length || notes.includes('no_runtime_safety_interventions')) return 'No runtime safety interventions.'
-  return notes.map(formatSafetyNote).join(' / ')
+  const refSummary = trace.pinned_knowledge_ref_ids?.length
+    ? `Refs ${trace.pinned_knowledge_ref_ids.join(', ')}`
+    : ''
+  if (!notes.length || notes.includes('no_runtime_safety_interventions')) {
+    return refSummary ? `No runtime safety interventions. ${refSummary}` : 'No runtime safety interventions.'
+  }
+  return [...notes.map(formatSafetyNote), refSummary].filter(Boolean).join(' / ')
 })
 
 function initials(name: string): string {

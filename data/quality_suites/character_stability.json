@@ -343,7 +343,7 @@
     {
       "id": "mind-contract-runtime-trace",
       "category": "cognition",
-      "description": "Runtime safety traces should prove that the character mind contract and creator-pinned knowledge context were applied before a reply is accepted.",
+      "description": "Runtime safety traces should prove that the character mind contract and creator-pinned knowledge context, including resolved pinned ref IDs, were applied before a reply is accepted.",
       "character_id": "sakura",
       "character_name": "Sakura",
       "relationship": 0.2,

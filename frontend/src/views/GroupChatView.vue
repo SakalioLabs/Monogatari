@@ -77,6 +77,7 @@ interface ChatSafetyTrace {
   mind_contract_applied?: boolean
   knowledge_context_pinned?: boolean
   pinned_knowledge_ref_count?: number
+  pinned_knowledge_ref_ids?: string[]
   input_prompt_injection_detected: boolean
   input_private_reasoning_request_detected: boolean
   response_guard_applied: boolean
@@ -165,8 +166,13 @@ function groupSafetyFlags(trace: ChatSafetyTrace) {
 
 function groupSafetySummary(trace: ChatSafetyTrace) {
   const notes = trace.guard_notes || []
-  if (!notes.length || notes.includes('no_runtime_safety_interventions')) return 'No interventions'
-  return notes.map(formatSafetyNote).join(' / ')
+  const refSummary = trace.pinned_knowledge_ref_ids?.length
+    ? `Refs ${trace.pinned_knowledge_ref_ids.join(', ')}`
+    : ''
+  if (!notes.length || notes.includes('no_runtime_safety_interventions')) {
+    return refSummary ? `No interventions / ${refSummary}` : 'No interventions'
+  }
+  return [...notes.map(formatSafetyNote), refSummary].filter(Boolean).join(' / ')
 }
 
 function formatSafetyNote(note: string) {

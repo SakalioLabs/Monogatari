@@ -1402,6 +1402,7 @@ async function verifyFrontendSourceInvariants() {
     ['runtime_safety_trace', 'surface runtime safety trace evidence in quality scenarios'],
     ['mind_contract_applied', 'type character mind contract trace evidence'],
     ['knowledge_context_pinned', 'type pinned knowledge context trace evidence'],
+    ['pinned_knowledge_ref_ids', 'type pinned knowledge ref id trace evidence'],
     ['runtimeTraceSummary', 'summarize quality runtime safety traces'],
     ['runtimeInterventionNotes', 'separate positive trace evidence from runtime interventions'],
     ['runtime_guard_interventions', 'count runtime guard interventions in quality audits'],
@@ -1456,6 +1457,7 @@ async function verifyFrontendSourceInvariants() {
     ['runtimeSafetyFlags', 'surface runtime guard flags in the chat insight panel'],
     ['mind_contract_applied', 'surface character mind contract trace evidence'],
     ['knowledge_context_pinned', 'surface pinned knowledge context trace evidence'],
+    ['pinned_knowledge_ref_ids', 'surface pinned knowledge ref id trace evidence'],
     ['response_guard_applied', 'surface guarded character response evidence'],
     ['relationship_delta_blocked', 'surface relationship side-channel containment evidence'],
     ['safety-trace-panel', 'keep a stable style hook for chat safety trace diagnostics'],
@@ -1473,6 +1475,7 @@ async function verifyFrontendSourceInvariants() {
     ['groupSafetySummary', 'summarize group chat guard interventions'],
     ['mind_contract_applied', 'surface group chat character mind contract trace evidence'],
     ['knowledge_context_pinned', 'surface group chat pinned knowledge context trace evidence'],
+    ['pinned_knowledge_ref_ids', 'surface group chat pinned knowledge ref id trace evidence'],
     ['group-safety-trace', 'keep a stable style hook for group chat safety trace diagnostics'],
     ['relationship_delta_blocked', 'surface group chat relationship side-channel containment evidence'],
   ]
@@ -1765,6 +1768,7 @@ async function verifyTauriPackagingConfig() {
     ['mind_contract_applied', 'prove the character mind contract was applied'],
     ['knowledge_context_pinned', 'prove creator-pinned knowledge context was applied'],
     ['pinned_knowledge_ref_count', 'report resolved pinned knowledge reference counts'],
+    ['pinned_knowledge_ref_ids', 'report resolved pinned knowledge reference ids'],
     ['character_mind_contract_applied', 'emit runtime trace evidence for the character mind contract'],
     ['pinned_knowledge_context_applied', 'emit runtime trace evidence for pinned knowledge context'],
   ]
@@ -1796,6 +1800,7 @@ async function verifyTauriPackagingConfig() {
     ['scenario_runtime_safety_trace', 'centralize quality runtime trace construction'],
     ['chat::build_chat_safety_trace', 'reuse the chat safety trace contract in quality reports'],
     ['pinned_knowledge_ref_count', 'carry pinned knowledge evidence into quality runtime traces'],
+    ['pinned_knowledge_ref_ids', 'carry pinned knowledge ref ids into quality runtime traces'],
   ]
   for (const [needle, description] of qualityRuntimeTraceRequirements) {
     if (!tauriQualitySuiteSource.includes(needle)) {

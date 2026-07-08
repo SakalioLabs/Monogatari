@@ -30,16 +30,7 @@ const STREAM_SAFETY_WINDOW_CHARS: usize = 240;
 pub(crate) struct CharacterKnowledgeContext {
     pub content: String,
     pub pinned_ref_count: usize,
-}
-
-pub(crate) fn build_character_knowledge_context(
-    knowledge_base: &llm_game::knowledge::KnowledgeBase,
-    query: &str,
-    knowledge_refs: &[String],
-    search_limit: usize,
-) -> String {
-    build_character_knowledge_context_details(knowledge_base, query, knowledge_refs, search_limit)
-        .content
+    pub pinned_ref_ids: Vec<String>,
 }
 
 pub(crate) fn build_character_knowledge_context_details(
@@ -51,6 +42,7 @@ pub(crate) fn build_character_knowledge_context_details(
     let mut sections = Vec::new();
     let mut seen_ids = HashSet::new();
 
+    let mut pinned_ref_ids = Vec::new();
     let pinned: Vec<String> = knowledge_refs
         .iter()
         .map(|id| id.trim())
@@ -58,6 +50,7 @@ pub(crate) fn build_character_knowledge_context_details(
         .filter_map(|id| {
             knowledge_base.get_entry(id).map(|entry| {
                 seen_ids.insert(entry.id.clone());
+                pinned_ref_ids.push(entry.id.clone());
                 format!("{}: {}", entry.title, entry.content)
             })
         })
@@ -86,7 +79,8 @@ pub(crate) fn build_character_knowledge_context_details(
 
     CharacterKnowledgeContext {
         content: sections.join("\n\n"),
-        pinned_ref_count: pinned.len(),
+        pinned_ref_count: pinned_ref_ids.len(),
+        pinned_ref_ids,
     }
 }
 
@@ -121,6 +115,8 @@ pub struct ChatSafetyTrace {
     pub knowledge_context_pinned: bool,
     #[serde(default)]
     pub pinned_knowledge_ref_count: usize,
+    #[serde(default)]
+    pub pinned_knowledge_ref_ids: Vec<String>,
     pub input_prompt_injection_detected: bool,
     pub input_private_reasoning_request_detected: bool,
     pub response_guard_applied: bool,
@@ -354,7 +350,7 @@ ROLEPLAY RULES:
         &response_text,
         relationship_delta,
         false,
-        knowledge_context.pinned_ref_count,
+        &knowledge_context.pinned_ref_ids,
     );
 
     // Update character emotion
@@ -811,7 +807,7 @@ pub(crate) fn build_chat_safety_trace(
     guarded_response: &str,
     relationship_delta: f32,
     stream_guard_applied: bool,
-    pinned_knowledge_ref_count: usize,
+    pinned_knowledge_ref_ids: &[String],
 ) -> ChatSafetyTrace {
     let sanitized_response = prompt_guard::sanitize_prompt_content(raw_response);
     let input_prompt_injection_detected =
@@ -826,6 +822,15 @@ pub(crate) fn build_chat_safety_trace(
     let memory_guard_applied =
         input_prompt_injection_detected || input_private_reasoning_request_detected;
     let relationship_delta_blocked = input_prompt_injection_detected && relationship_delta == 0.0;
+    let mut seen_pinned_refs = HashSet::new();
+    let pinned_knowledge_ref_ids: Vec<String> = pinned_knowledge_ref_ids
+        .iter()
+        .map(|id| id.trim())
+        .filter(|id| !id.is_empty())
+        .filter(|id| seen_pinned_refs.insert((*id).to_string()))
+        .map(ToString::to_string)
+        .collect();
+    let pinned_knowledge_ref_count = pinned_knowledge_ref_ids.len();
     let knowledge_context_pinned = pinned_knowledge_ref_count > 0;
 
     let mut evidence_notes = vec!["character_mind_contract_applied".to_string()];
@@ -867,6 +872,7 @@ pub(crate) fn build_chat_safety_trace(
         mind_contract_applied: true,
         knowledge_context_pinned,
         pinned_knowledge_ref_count,
+        pinned_knowledge_ref_ids,
         input_prompt_injection_detected,
         input_private_reasoning_request_detected,
         response_guard_applied,
@@ -1499,7 +1505,7 @@ Stay in character. Respond naturally with emotion (use *actions* for body langua
             &response_text,
             relationship_delta,
             leaked,
-            knowledge_context.pinned_ref_count,
+            &knowledge_context.pinned_ref_ids,
         );
 
         let (
@@ -1682,17 +1688,19 @@ mod tests {
             "Springtown was founded around a lantern festival.",
         ));
 
-        let context = build_character_knowledge_context(
+        let context = build_character_knowledge_context_details(
             &knowledge,
             "Tell me about Springtown",
             &["sakura_nature".to_string()],
             3,
         );
 
-        assert!(context.starts_with("Pinned character knowledge:"));
-        assert!(context.contains("Sakura's Nature Diary"));
-        assert!(context.contains("Relevant world knowledge:"));
-        assert_eq!(context.matches("Sakura's Nature Diary").count(), 1);
+        assert_eq!(context.pinned_ref_count, 1);
+        assert_eq!(context.pinned_ref_ids, vec!["sakura_nature".to_string()]);
+        assert!(context.content.starts_with("Pinned character knowledge:"));
+        assert!(context.content.contains("Sakura's Nature Diary"));
+        assert!(context.content.contains("Relevant world knowledge:"));
+        assert_eq!(context.content.matches("Sakura's Nature Diary").count(), 1);
     }
 
     #[test]
@@ -1801,13 +1809,23 @@ mod tests {
             &guarded_response,
             relationship_delta,
             true,
-            2,
+            &[
+                "sakura_nature".to_string(),
+                "sakura_art_knowledge".to_string(),
+            ],
         );
 
         assert!(trace.input_wrapped_as_untrusted);
         assert!(trace.mind_contract_applied);
         assert!(trace.knowledge_context_pinned);
         assert_eq!(trace.pinned_knowledge_ref_count, 2);
+        assert_eq!(
+            trace.pinned_knowledge_ref_ids,
+            vec![
+                "sakura_nature".to_string(),
+                "sakura_art_knowledge".to_string()
+            ]
+        );
         assert!(trace.input_prompt_injection_detected);
         assert!(trace.input_private_reasoning_request_detected);
         assert!(trace.response_guard_applied);
@@ -1841,13 +1859,14 @@ mod tests {
             &guarded_response,
             relationship_delta,
             false,
-            0,
+            &[],
         );
 
         assert!(trace.input_wrapped_as_untrusted);
         assert!(trace.mind_contract_applied);
         assert!(!trace.knowledge_context_pinned);
         assert_eq!(trace.pinned_knowledge_ref_count, 0);
+        assert!(trace.pinned_knowledge_ref_ids.is_empty());
         assert!(!trace.input_prompt_injection_detected);
         assert!(!trace.response_guard_applied);
         assert!(!trace.relationship_delta_blocked);

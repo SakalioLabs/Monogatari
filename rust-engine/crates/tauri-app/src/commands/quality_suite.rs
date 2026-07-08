@@ -842,7 +842,7 @@ fn scenario_runtime_safety_trace(
         .rev()
         .find(|message| message.role == "player")?;
     let relationship_delta = chat::relationship_delta_for_player_message(&player_message.content);
-    let pinned_knowledge_ref_count = scenario.expect.required_knowledge_refs.len();
+    let pinned_knowledge_ref_ids = scenario.expect.required_knowledge_refs.clone();
     Some(chat::build_chat_safety_trace(
         &player_message.content,
         scenario.character_name.as_deref().unwrap_or("Sakura"),
@@ -850,7 +850,7 @@ fn scenario_runtime_safety_trace(
         guarded_response,
         relationship_delta,
         false,
-        pinned_knowledge_ref_count,
+        &pinned_knowledge_ref_ids,
     ))
 }
 
@@ -1565,6 +1565,13 @@ fn validate_scenario_expectations(
                 ));
             }
         }
+        for required_ref in &expect.required_knowledge_refs {
+            if !trace.pinned_knowledge_ref_ids.contains(required_ref) {
+                issues.push(format!(
+                    "runtime_safety_trace missing pinned knowledge ref `{required_ref}`"
+                ));
+            }
+        }
     }
 
     issues.extend(workflow_issues.iter().cloned());
@@ -1918,6 +1925,21 @@ mod tests {
         assert!(!group_trace
             .guard_notes
             .contains(&"no_runtime_safety_interventions".to_string()));
+        let mind_trace = report
+            .scenarios
+            .iter()
+            .find(|scenario| scenario.id == "mind-contract-runtime-trace")
+            .and_then(|scenario| scenario.runtime_safety_trace.as_ref())
+            .expect("mind contract runtime safety trace");
+        assert!(mind_trace.mind_contract_applied);
+        assert!(mind_trace.knowledge_context_pinned);
+        assert_eq!(mind_trace.pinned_knowledge_ref_count, 2);
+        assert!(mind_trace
+            .pinned_knowledge_ref_ids
+            .contains(&"sakura_nature".to_string()));
+        assert!(mind_trace
+            .pinned_knowledge_ref_ids
+            .contains(&"sakura_art_knowledge".to_string()));
         let coverage = report
             .scenarios
             .iter()

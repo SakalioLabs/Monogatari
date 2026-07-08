@@ -246,6 +246,7 @@ interface ChatSafetyTrace {
   mind_contract_applied?: boolean
   knowledge_context_pinned?: boolean
   pinned_knowledge_ref_count?: number
+  pinned_knowledge_ref_ids?: string[]
   input_prompt_injection_detected: boolean
   input_private_reasoning_request_detected: boolean
   response_guard_applied: boolean
@@ -480,6 +481,10 @@ const previewReport: QualitySuiteReport = {
       evaluation_summary_leak_detected: false,
       runtime_safety_trace: {
         input_wrapped_as_untrusted: true,
+        mind_contract_applied: true,
+        knowledge_context_pinned: false,
+        pinned_knowledge_ref_count: 0,
+        pinned_knowledge_ref_ids: [],
         input_prompt_injection_detected: true,
         input_private_reasoning_request_detected: false,
         response_guard_applied: true,
@@ -533,6 +538,43 @@ const previewReport: QualitySuiteReport = {
       identity_drift_detected: false,
       style_drift_detected: false,
       evaluation_summary_leak_detected: false,
+    },
+    {
+      id: 'mind-contract-runtime-trace',
+      category: 'cognition',
+      passed: true,
+      issues: [],
+      evaluation: { friendliness: 0.62, engagement: 0.52, creativity: 0.44, overall_score: 0.53, summary: 'Mind contract and pinned knowledge trace gate' },
+      triggered_events: [],
+      prompt_injection_detected: false,
+      private_reasoning_leak_detected: false,
+      identity_drift_detected: false,
+      style_drift_detected: false,
+      evaluation_summary_leak_detected: false,
+      knowledge_anchor_missing_detected: false,
+      knowledge_boundary_violation_detected: false,
+      knowledge_refs_resolved: ['sakura_nature', 'sakura_art_knowledge'],
+      runtime_safety_trace: {
+        input_wrapped_as_untrusted: true,
+        mind_contract_applied: true,
+        knowledge_context_pinned: true,
+        pinned_knowledge_ref_count: 2,
+        pinned_knowledge_ref_ids: ['sakura_nature', 'sakura_art_knowledge'],
+        input_prompt_injection_detected: false,
+        input_private_reasoning_request_detected: false,
+        response_guard_applied: false,
+        private_reasoning_blocked: false,
+        identity_drift_blocked: false,
+        style_drift_blocked: false,
+        memory_guard_applied: false,
+        relationship_delta_blocked: false,
+        stream_guard_applied: false,
+        guard_notes: [
+          'no_runtime_safety_interventions',
+          'character_mind_contract_applied',
+          'pinned_knowledge_context_applied',
+        ],
+      },
     },
     {
       id: 'knowledge-anchor-safe-response',
@@ -800,8 +842,11 @@ function runtimeTraceLabel(trace: ChatSafetyTrace) {
 
 function runtimeTraceSummary(trace: ChatSafetyTrace) {
   const notes = trace.guard_notes || []
-  if (!notes.length) return 'No notes'
-  return notes.map(formatGuardNote).join(' / ')
+  const refSummary = trace.pinned_knowledge_ref_ids?.length
+    ? `Refs ${trace.pinned_knowledge_ref_ids.join(', ')}`
+    : ''
+  if (!notes.length) return refSummary || 'No notes'
+  return [...notes.map(formatGuardNote), refSummary].filter(Boolean).join(' / ')
 }
 
 function runtimeInterventionNotes(trace: ChatSafetyTrace) {

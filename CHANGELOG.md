@@ -9,7 +9,7 @@
 - Added mobile shell readiness verification for viewport safe-area support, iOS/PWA metadata, compact Tauri shell dimensions, and mobile navigation padding.
 - Added responsive Web/PWA shell verification for built 375px mobile and 768px tablet layout signals.
 - Added Tauri mobile deployment preflight verification for Android/iOS command readiness, Vite mobile host binding, and mobile release documentation.
-- Added runtime trace evidence for character mind contract application and creator-pinned knowledge context anchoring.
+- Added runtime trace evidence for character mind contract application and creator-pinned knowledge context anchoring, including resolved pinned knowledge ref IDs for QA audit.
 - Added an explicit Web bundle budget verifier that keeps entry assets small while allowing bounded lazy renderer chunks for Three.js and Live2D.
 - Added a renderer asset contract for characters with Live2D, GLB/GLTF, sprite, portrait, and generated 3D fallback support in Story Mode.
 - Added a one-command release verification script covering JSON validation, all quality suite files, locale coverage, sensitive token pattern scanning, frontend UI text artifact scanning, frontend source invariants, Rust checks/tests, Web/PWA build, Web/PWA dist asset checks, frontend audit, and legacy C# tests.
