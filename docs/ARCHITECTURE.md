@@ -65,6 +65,8 @@ Character responses use a structured prompt system:
 - Conversation history (last 10 messages)
 - Evaluation prompt every 5 messages for scoring
 
+Prompt and response guardrails are shared by single-character chat, group chat, workflow LLM nodes, quality suites, and fallback scoring. Player-authored text is wrapped as untrusted dialogue data, creator-authored character mind and safety contracts stay in the system channel, and English, Chinese, Japanese, and Korean prompt-control phrases are detected before they can influence memory writes, relationship deltas, scoring, or hidden prompt boundaries.
+
 ## Workflow System
 
 The visual workflow editor supports 21 node types across 5 categories:

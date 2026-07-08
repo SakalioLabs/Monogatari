@@ -47,13 +47,14 @@
 - [ ] Workflow LLM nodes guard generated output before it is used by downstream story nodes
 - [ ] Character prompts include creator-declared pinned knowledge references before keyword search results
 - [ ] Chat runtime emits author-visible safety trace evidence for input wrapping, prompt-injection detection, guarded responses, memory guards, stream replacements, and relationship side-channel containment
+- [ ] Prompt-injection detection covers English, Chinese, Japanese, and Korean prompt-control attempts before scoring, memory writes, relationship deltas, and hidden prompt boundaries consume player text
 - [ ] Chat session audit restores the latest safety trace, evaluation, story-event trigger decisions, and triggerable events after character switching
 - [ ] Chat runtime traces prove character mind contract application and creator-pinned knowledge context anchoring, including resolved pinned knowledge ref IDs
 - [ ] Chat runtime emits story-event trigger decisions with actual relationship values, score metrics, evaluation counts, and blocker reasons
 - [ ] Manual Chat scoring returns an atomic evaluation report with matching story-event trigger decisions and triggerable events for author score-gate debugging
 - [ ] Quality Suite story-event reports reuse the same trigger decision contract as live chat runtime responses
 - [ ] Group chat runtime emits author-visible safety trace evidence per character response, reusing the single-character guard contract
-- [ ] Quality Suites panel runs character stability, prompt-injection, group chat runtime trace, relationship and fallback scoring side-channel containment, memory-poisoning containment, memory prompt replay containment, tool-role injection containment, identity drift, style drift, real knowledge-reference anchoring, knowledge-boundary stability, evaluation-summary safety, workflow output safety, workflow tool-call containment, workflow branch coverage, private reasoning leakage, fallback scoring, overrange score clamping, event-idempotence, and event-rule snapshot regression checks
+- [ ] Quality Suites panel runs character stability, multilingual prompt-injection, group chat runtime trace, relationship and fallback scoring side-channel containment, memory-poisoning containment, memory prompt replay containment, tool-role injection containment, identity drift, style drift, real knowledge-reference anchoring, knowledge-boundary stability, evaluation-summary safety, workflow output safety, workflow tool-call containment, workflow branch coverage, private reasoning leakage, fallback scoring, overrange score clamping, event-idempotence, and event-rule snapshot regression checks
 - [ ] Quality suite files reject out-of-range score expectations and contradictory expected/forbidden events, markers, or workflow nodes before release reports run
 - [ ] Quality Suites panel shows and exports versioned audit evidence with failed-scenario ids, category summaries, safety-signal counts, runtime safety trace guard notes, and workflow coverage summaries
 
