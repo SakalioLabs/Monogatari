@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
+const mobileDevHost = process.env.TAURI_DEV_HOST
+
 function normalizeBasePath(value: string | undefined) {
   if (!value) return '/'
   if (value === './' || value.startsWith('http://') || value.startsWith('https://')) return value
@@ -14,8 +16,16 @@ export default defineConfig({
   plugins: [vue()],
   clearScreen: false,
   server: {
+    host: mobileDevHost || false,
     port: 5173,
     strictPort: true,
+    hmr: mobileDevHost
+      ? {
+          protocol: 'ws',
+          host: mobileDevHost,
+          port: 5174,
+        }
+      : undefined,
   },
   envPrefix: ['VITE_', 'TAURI_'],
   build: {

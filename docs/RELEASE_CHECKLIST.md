@@ -12,6 +12,7 @@
 - [ ] `cd frontend && npm run verify:mobile-readiness` passes, proving safe-area viewport metadata, iOS/PWA install metadata, bottom navigation safe-area padding, and compact Tauri shell limits
 - [ ] `cd frontend && npm run verify:responsive-shell` passes after `npm run build:web`, proving built 375px mobile and 768px tablet Web/PWA shell layout signals
 - [ ] `cd frontend && npm run verify:web-budget` passes with entry JS/CSS and lazy renderer chunks inside budget
+- [ ] `node scripts/verify-tauri-mobile-preflight.mjs` passes, proving Android/iOS command readiness, Vite mobile host binding, compact Tauri shell config, and mobile deployment documentation
 - [ ] `npm audit` shows zero vulnerabilities
 - [ ] All 21 views render correctly (Dashboard, Title, Story Mode, AI Chat, Workflow, Character Editor, Scene Assets, Settings, Characters, Group Chat, Analytics, Quality, Marketplace, Plugins, Audio, Knowledge, Dialogue Editor, Scene Editor, CG Gallery, Backlog, Achievements)
 - [ ] Sidebar navigation works for all 20 items
@@ -92,6 +93,7 @@
 - [ ] Project export manifest includes a versioned schema marker, file inventory, per-file checksums, generated assets, and redacted sensitive settings
 - [ ] Release artifact manifest generated with SHA-256 checksums, checked-in release channel policy metadata, installer expectations, and signing evidence
 - [ ] `scripts/release-channel-policy.json` confirms stable/beta releases require Windows MSI/NSIS installers and verified signing evidence, with missing-installer preflight exceptions explicitly policy-gated
+- [ ] `docs/MOBILE_DEPLOYMENT.md` reviewed before Android/iOS project generation
 - [ ] Git tag created: `git tag v0.9.5`
 - [ ] Web/PWA preview verified with `npm run preview:web`
 - [ ] Subpath web deployment verified with `VITE_BASE_PATH` when publishing to GitHub Pages or another non-root path

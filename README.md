@@ -52,6 +52,7 @@ Verified on 2026-07-08:
 - Web/PWA production build passes with `npm run build:web`, including static-hosting SPA fallback assets, dedicated install/maskable icons, and bundle-budget verification.
 - Mobile shell readiness passes with `npm run verify:mobile-readiness`, covering viewport safe-area support, iOS/PWA metadata, compact Tauri shell limits, and bottom navigation safe-area padding.
 - Responsive shell verification runs during `npm run build:web`, covering built 375px mobile and 768px tablet Web/PWA layout signals.
+- Tauri mobile deployment preflight passes with `node scripts/verify-tauri-mobile-preflight.mjs`, covering Android/iOS command readiness, Vite `TAURI_DEV_HOST` binding, Tauri shell config, and mobile release documentation.
 - Full frontend dependency audit passes with `npm audit`.
 - Rust Tauri app crate passes `cargo check --locked -p llm-galgame-app`.
 - Character quality suite regression tests pass inside `cargo test --locked -p llm-galgame-app`.
@@ -148,7 +149,7 @@ Run the automated pre-release gate first:
 node scripts/verify-release.mjs
 ```
 
-This verifies JSON assets, checked-in workflow files, renderer asset contracts for characters and scenes, pinned character knowledge refs, all quality suite files, workflow branch coverage snapshots, locale coverage, sensitive token patterns, frontend UI text artifacts, frontend source invariants, frontend route/sidebar coverage, Tauri desktop packaging configuration, Rust checks/tests, root and subpath Web/PWA builds with bundle budgets, Web/PWA dist assets, release artifact manifest checks, preview route smoke checks, frontend audit, and legacy C# tests.
+This verifies JSON assets, checked-in workflow files, renderer asset contracts for characters and scenes, pinned character knowledge refs, all quality suite files, workflow branch coverage snapshots, locale coverage, sensitive token patterns, frontend UI text artifacts, frontend source invariants, frontend route/sidebar coverage, Tauri desktop packaging configuration, Tauri mobile deployment preflight, Rust checks/tests, root and subpath Web/PWA builds with bundle budgets, Web/PWA dist assets, release artifact manifest checks, preview route smoke checks, frontend audit, and legacy C# tests.
 
 ```bash
 cd frontend
@@ -402,6 +403,7 @@ The web build emits `dist/404.html` for SPA fallback, `dist/.nojekyll` for GitHu
 - [x] Web/PWA distribution baseline with manifest, service worker, and offline fallback
 - [x] Mobile Web/PWA shell readiness gate for safe-area viewport, install metadata, and compact Tauri shell limits
 - [x] Responsive Web/PWA shell verification for built 375px mobile and 768px tablet layout signals
+- [x] Tauri mobile deployment preflight gate for Android/iOS command readiness and Vite mobile dev host binding
 - [x] Checked-in score-gate workflow fixture with backend execution regression for evaluation-driven story unlocks
 - [x] Workflow Run score/event diagnostics for author-visible trigger debugging
 - [x] Workflow canvas run badges for score-gated graph debugging

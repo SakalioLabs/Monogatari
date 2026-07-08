@@ -188,6 +188,7 @@ async function main() {
   await run('git diff whitespace check', 'git', ['diff', '--check'], root)
   await run('Frontend renderer asset selector contract', 'npm', ['run', 'verify:renderer-assets'], frontendDir)
   await run('Frontend mobile shell readiness', 'npm', ['run', 'verify:mobile-readiness'], frontendDir)
+  await run('Tauri mobile deployment preflight', 'node', ['scripts/verify-tauri-mobile-preflight.mjs'], root)
   await run('Release-critical Rust format check', 'rustfmt', ['--edition', '2021', '--check', ...releaseCriticalRustFiles], rustDir)
   await run('Rust game tests', 'cargo', ['test', '--locked', '-p', 'llm-game'], rustDir)
   await run('Rust Tauri command tests', 'cargo', ['test', '--locked', '-p', 'llm-galgame-app'], rustDir)
@@ -1569,7 +1570,11 @@ async function verifyTauriPackagingConfig() {
   const configPath = path.join(tauriAppDir, 'tauri.conf.json')
   const config = JSON.parse(await readFile(configPath, 'utf8'))
   const frontendPackage = JSON.parse(await readFile(path.join(frontendDir, 'package.json'), 'utf8'))
+  const viteConfigSource = await readFile(path.join(frontendDir, 'vite.config.ts'), 'utf8')
   const cargoWorkspace = await readFile(path.join(rustDir, 'Cargo.toml'), 'utf8')
+  const tauriCargoSource = await readFile(path.join(tauriAppDir, 'Cargo.toml'), 'utf8')
+  const mobilePreflightSource = await readFile(path.join(root, 'scripts', 'verify-tauri-mobile-preflight.mjs'), 'utf8')
+  const mobileDeploymentDocs = await readFile(path.join(root, 'docs', 'MOBILE_DEPLOYMENT.md'), 'utf8')
   const tauriMainSource = await readFile(path.join(tauriAppDir, 'src', 'main.rs'), 'utf8')
   const tauriStateSource = await readFile(path.join(tauriAppDir, 'src', 'state.rs'), 'utf8')
   const tauriEngineSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'engine.rs'), 'utf8')
@@ -1600,6 +1605,27 @@ async function verifyTauriPackagingConfig() {
   }
   if (!String(config.build?.beforeBuildCommand ?? '').includes('npm run build')) {
     issues.push('tauri.conf.json build.beforeBuildCommand must run the production frontend build before desktop packaging')
+  }
+
+  const mobileDeploymentRequirements = [
+    [viteConfigSource, 'const mobileDevHost = process.env.TAURI_DEV_HOST', 'let Tauri mobile commands select the Vite dev host'],
+    [viteConfigSource, 'host: mobileDevHost || false', 'bind Vite to the Tauri-selected mobile host'],
+    [viteConfigSource, 'hmr: mobileDevHost', 'configure mobile HMR when a Tauri host is provided'],
+    [tauriCargoSource, 'tauri = { version = "2"', 'stay on the Tauri v2 mobile-capable line'],
+    [tauriCargoSource, 'tauri-plugin-shell = "2"', 'stay on the v2 shell plugin line'],
+    [mobilePreflightSource, 'cargo tauri android init', 'verify Android init documentation'],
+    [mobilePreflightSource, 'cargo tauri ios init', 'verify iOS init documentation'],
+    [mobilePreflightSource, 'ANDROID_HOME', 'verify Android SDK environment documentation'],
+    [mobilePreflightSource, 'iOS commands require a macOS host', 'verify the iOS host constraint'],
+    [mobileDeploymentDocs, 'cargo tauri android build', 'document Android release builds'],
+    [mobileDeploymentDocs, 'cargo tauri ios build', 'document iOS release builds'],
+    [mobileDeploymentDocs, 'TAURI_DEV_HOST', 'document the mobile dev host contract'],
+    [mobileDeploymentDocs, 'node scripts/verify-tauri-mobile-preflight.mjs', 'document the mobile preflight evidence command'],
+  ]
+  for (const [source, needle, description] of mobileDeploymentRequirements) {
+    if (!source.includes(needle)) {
+      issues.push(`Tauri mobile preflight must ${description}`)
+    }
   }
 
   const bundle = config.bundle ?? {}
