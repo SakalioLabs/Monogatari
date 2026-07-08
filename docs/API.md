@@ -11,11 +11,13 @@ All Tauri commands are invoked from the frontend via `invokeCommand(commandName,
 
 ## Characters
 
+Content loader `directory` values are project content references, not arbitrary filesystem paths. `characters` resolves to the active project `characters/` directory; nested references resolve under that same content root. Absolute paths, URI-like prefixes, empty path segments, and `.`/`..` traversal are rejected before load.
+
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
 | `get_characters` | - | `CharacterInfo[]` | List all loaded characters |
 | `get_character` | `{ characterId: string }` | `CharacterInfo` | Get single character |
-| `load_characters` | - | `void` | Reload characters from disk |
+| `load_characters` | `{ directory }` | `usize` | Reload characters from project `characters/` |
 | `create_character` | `{ character: object }` | `void` | Create new character |
 | `delete_character` | `{ characterId: string }` | `void` | Delete character |
 | `get_character_summaries` | - | `CharacterSummary[]` | Lightweight character list |
@@ -46,20 +48,24 @@ All Tauri commands are invoked from the frontend via `invokeCommand(commandName,
 
 ## Dialogue
 
+Dialogue loader `directory` values resolve under the active project `dialogue/` directory. `dialogue` reloads the canonical dialogue folder, and nested references remain inside that root.
+
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
 | `start_dialogue` | `{ dialogueId }` | `void` | Begin dialogue tree |
 | `advance_dialogue` | - | `void` | Next dialogue node |
 | `select_choice` | `{ choiceIndex }` | `void` | Player picks choice |
 | `get_dialogue_state` | - | `DialogueState` | Current dialogue state |
-| `load_dialogues` | - | `void` | Reload dialogues |
+| `load_dialogues` | `{ directory }` | `usize` | Reload dialogues from project `dialogue/` |
 
 ## Knowledge
+
+Knowledge loader `directory` values resolve under the active project `knowledge/` directory. `knowledge` reloads the canonical knowledge folder, and nested references remain inside that root.
 
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
 | `search_knowledge` | `{ query, limit }` | `KnowledgeEntry[]` | Search knowledge base |
-| `load_knowledge` | - | `void` | Reload knowledge |
+| `load_knowledge` | `{ directory }` | `usize` | Reload knowledge from project `knowledge/` |
 
 ## AI Backend
 

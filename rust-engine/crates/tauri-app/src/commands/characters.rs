@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use serde::Serialize;
 use tauri::State;
 
+use crate::commands::content_paths::resolve_project_content_dir;
 use crate::state::AppState;
 use llm_game::characters::{Character, CharacterKnowledgeEntry, Personality};
 
@@ -82,7 +83,7 @@ pub async fn load_characters(
     state: State<'_, AppState>,
     directory: String,
 ) -> Result<usize, String> {
-    let path = std::path::PathBuf::from(&directory);
+    let path = resolve_project_content_dir(&state, &directory, "characters").await?;
     let mut cm = state.character_manager.write().await;
     cm.load_from_directory(&path)
         .await

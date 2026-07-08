@@ -6,6 +6,7 @@ pub mod character_manager;
 pub mod characters;
 pub mod chat;
 pub mod cloud_sync;
+pub(crate) mod content_paths;
 pub mod dialogue;
 pub mod engine;
 pub mod i18n;

@@ -3,6 +3,7 @@
 use serde::Serialize;
 use tauri::State;
 
+use crate::commands::content_paths::resolve_project_content_dir;
 use crate::state::AppState;
 
 #[derive(Serialize)]
@@ -68,7 +69,7 @@ pub async fn load_dialogues(
     state: State<'_, AppState>,
     directory: String,
 ) -> Result<usize, String> {
-    let path = std::path::PathBuf::from(&directory);
+    let path = resolve_project_content_dir(&state, &directory, "dialogue").await?;
     let mut dm = state.dialogue_manager.write().await;
     dm.load_from_directory(&path)
         .await

@@ -161,6 +161,9 @@ const releaseCriticalRustFiles = [
   'crates/tauri-app/src/commands/characters.rs',
   'crates/tauri-app/src/commands/chat.rs',
   'crates/tauri-app/src/commands/multi_chat.rs',
+  'crates/tauri-app/src/commands/content_paths.rs',
+  'crates/tauri-app/src/commands/dialogue.rs',
+  'crates/tauri-app/src/commands/knowledge.rs',
   'crates/tauri-app/src/commands/prompt_guard.rs',
   'crates/tauri-app/src/commands/quality_suite.rs',
   'crates/tauri-app/src/commands/workflow.rs',
@@ -197,6 +200,7 @@ async function main() {
   await verifyAssetManagerInvariants()
   await verifySaveManagerInvariants()
   await verifyWorkflowCommandInvariants()
+  await verifyContentLoaderPathInvariants()
   await verifyTtsOutputInvariants()
   await verifyFrontendRouteCoverage()
   await verifyTauriPackagingConfig()
@@ -1968,6 +1972,51 @@ async function verifyWorkflowCommandInvariants() {
   }
 
   console.log('[release] Workflow command path invariants OK')
+}
+
+async function verifyContentLoaderPathInvariants() {
+  const issues = []
+  const contentPathsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'content_paths.rs'), 'utf8')
+  const characterCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'characters.rs'), 'utf8')
+  const knowledgeCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'knowledge.rs'), 'utf8')
+  const dialogueCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'dialogue.rs'), 'utf8')
+
+  const contentPathRequirements = [
+    ['resolve_project_content_dir', 'centralize content loader directory resolution'],
+    ['state.current_project_data_root().await', 'resolve content loader commands against the active project root'],
+    ['project_content_dir', 'resolve content directories through a project-scoped path helper'],
+    ['project_root.join(canonical_dir)', 'scope content loaders to their canonical project content directories'],
+    ['Content paths cannot contain drive prefixes or URI schemes', 'reject URI-like and drive-prefixed content paths'],
+    ['Content paths cannot contain empty, current, or parent directory segments', 'reject traversal-shaped content paths'],
+    ['path.starts_with(&root)', 'defensively prove content paths stay under the canonical content root'],
+    ['content_dirs_resolve_canonical_and_nested_project_paths', 'test compatible project content path resolution'],
+    ['content_dirs_reject_escape_attempts', 'test content directory traversal and absolute path rejection'],
+  ]
+  for (const [needle, description] of contentPathRequirements) {
+    if (!contentPathsSource.includes(needle)) {
+      issues.push(`Content loader path handling must ${description}`)
+    }
+  }
+
+  const commandRequirements = [
+    [characterCommandsSource, 'resolve_project_content_dir(&state, &directory, "characters")', 'scope character loading to project characters'],
+    [knowledgeCommandsSource, 'resolve_project_content_dir(&state, &directory, "knowledge")', 'scope knowledge loading to project knowledge'],
+    [dialogueCommandsSource, 'resolve_project_content_dir(&state, &directory, "dialogue")', 'scope dialogue loading to project dialogue'],
+  ]
+  for (const [source, needle, description] of commandRequirements) {
+    if (!source.includes(needle)) {
+      issues.push(`Content loader commands must ${description}`)
+    }
+    if (source.includes('PathBuf::from(&directory)')) {
+      issues.push('Content loader commands must not turn frontend directory strings directly into filesystem paths')
+    }
+  }
+
+  if (issues.length > 0) {
+    throw new Error(`Content loader path verification failed:\n${issues.join('\n')}`)
+  }
+
+  console.log('[release] Content loader path invariants OK')
 }
 
 async function verifyTtsOutputInvariants() {
