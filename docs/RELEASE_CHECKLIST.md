@@ -3,7 +3,7 @@
 ## Pre-Release Verification
 
 ### Automated Gate
-- [ ] `node scripts/verify-release.mjs` passes from the repository root, covering JSON assets, workflow files, score-gate workflow execution regressions, renderer asset contracts, pinned knowledge-ref contracts, all quality suites, workflow branch coverage snapshots, locale coverage, sensitive token scans, frontend UI text artifact scans, frontend source invariants, frontend route/sidebar coverage, release-critical Rust checks/tests, frontend audit, root and subpath Web/PWA builds, Web/PWA dist assets, preview route smoke checks, and legacy C# tests
+- [ ] `node scripts/verify-release.mjs` passes from the repository root, covering JSON assets, workflow files, score-gate workflow execution regressions, renderer asset contracts, pinned knowledge-ref contracts, all quality suites, workflow branch coverage snapshots, locale coverage, sensitive token scans, frontend UI text artifact scans, frontend source invariants, frontend route/sidebar coverage, Tauri desktop packaging configuration, release-critical Rust checks/tests, frontend audit, root and subpath Web/PWA builds, Web/PWA dist assets, preview route smoke checks, and legacy C# tests
 
 ### Frontend
 - [ ] `cd frontend && npm run build` passes with zero errors
@@ -82,6 +82,7 @@
 - [ ] Version bumped in rust-engine/Cargo.toml
 - [ ] CHANGELOG.md updated with release notes
 - [ ] README.md version and features updated
+- [ ] Tauri bundle config declares installer metadata, Windows MSI/NSIS targets, icon assets, WebView2 install mode, and bundled sample `data/` resources
 - [ ] Git tag created: `git tag v0.9.5`
 - [ ] Web/PWA preview verified with `npm run preview:web`
 - [ ] Subpath web deployment verified with `VITE_BASE_PATH` when publishing to GitHub Pages or another non-root path

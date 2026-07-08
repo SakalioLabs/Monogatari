@@ -4,7 +4,7 @@
   "version": "0.9.5",
   "identifier": "com.sakaliolabs.monogatari",
   "build": {
-    "frontendDist": "../../frontend/dist",
+    "frontendDist": "../../../frontend/dist",
     "devUrl": "http://localhost:5173",
     "beforeDevCommand": "cd ../../frontend && npm run dev",
     "beforeBuildCommand": "cd ../../frontend && npm run build"
@@ -25,6 +25,35 @@
     ],
     "security": {
       "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "msi",
+      "nsis"
+    ],
+    "publisher": "SakalioLabs",
+    "category": "Game",
+    "shortDescription": "LLM-driven Galgame engine and authoring workbench.",
+    "longDescription": "Monogatari is an LLM-driven visual novel and text-adventure engine with character knowledge, scoring, workflow authoring, renderer asset pipelines, and Web/PWA distribution.",
+    "copyright": "Copyright 2026 SakalioLabs",
+    "icon": [
+      "icons/icon_32x32.png",
+      "icons/icon_128x128.png",
+      "icons/icon_256x256.png",
+      "icons/icon_512x512.png",
+      "icons/icon.ico"
+    ],
+    "resources": {
+      "../../../data": "data"
+    },
+    "windows": {
+      "allowDowngrades": false,
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      }
     }
   },
   "plugins": {}

@@ -45,6 +45,8 @@
 - Added a renderer asset selector contract test to the release gate, covering fallback priority, path validation, and expression sprite resolution.
 - Added real Audio Manager playback controls for BGM, ambient loops, and SFX previews with persisted track lists, path resolution across Web/Tauri builds, per-track gain, and master/channel mixer state.
 - Added release-gate frontend source invariants that keep the Audio Manager tied to real audio elements, persistent mixer state, and BGM/ambient/SFX transport controls.
+- Added Tauri desktop packaging metadata for Windows MSI/NSIS targets, installer icons, publisher/category descriptions, WebView2 bootstrap behavior, and bundled sample `data/` resources.
+- Added release-gate validation for Tauri packaging configuration so desktop installer metadata, icons, bundled sample data, and Windows downgrade/WebView2 policy cannot drift silently.
 - Added release-gate validation that checked-in character pinned knowledge refs resolve to project knowledge entries across both data roots.
 - Added missing Springtown lore anchors for character pinned knowledge refs so creator-declared identity and world context remain stable.
 - Added short retry handling for the release-gate frontend audit step so transient registry TLS failures do not abort otherwise passing release checks.

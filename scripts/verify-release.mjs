@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const frontendDir = path.join(root, 'frontend')
 const rustDir = path.join(root, 'rust-engine')
+const tauriAppDir = path.join(rustDir, 'crates', 'tauri-app')
 
 const skipDirs = new Set(['.git', 'node_modules', 'target', 'dist', 'bin', 'obj'])
 const textExtensions = new Set([
@@ -171,6 +172,7 @@ async function main() {
   await verifyLocaleCoverage()
   await verifyFrontendSourceInvariants()
   await verifyFrontendRouteCoverage()
+  await verifyTauriPackagingConfig()
 
   await run('git diff whitespace check', 'git', ['diff', '--check'], root)
   await run('Frontend renderer asset selector contract', 'npm', ['run', 'verify:renderer-assets'], frontendDir)
@@ -1433,6 +1435,108 @@ async function verifyFrontendRouteCoverage() {
   console.log(`[release] Frontend route coverage OK (${routes.length} routes, ${navItems.length} sidebar nav item(s))`)
 }
 
+async function verifyTauriPackagingConfig() {
+  const issues = []
+  const configPath = path.join(tauriAppDir, 'tauri.conf.json')
+  const config = JSON.parse(await readFile(configPath, 'utf8'))
+  const frontendPackage = JSON.parse(await readFile(path.join(frontendDir, 'package.json'), 'utf8'))
+  const cargoWorkspace = await readFile(path.join(rustDir, 'Cargo.toml'), 'utf8')
+  const workspaceVersion = cargoWorkspace.match(/\[workspace\.package\][\s\S]*?\nversion\s*=\s*"([^"]+)"/)?.[1]
+
+  if (config.productName !== 'Monogatari') {
+    issues.push('tauri.conf.json productName must stay Monogatari for installer identity')
+  }
+  if (config.identifier !== 'com.sakaliolabs.monogatari') {
+    issues.push('tauri.conf.json identifier must stay com.sakaliolabs.monogatari')
+  }
+  if (config.version !== frontendPackage.version) {
+    issues.push(`tauri.conf.json version ${config.version} must match frontend/package.json ${frontendPackage.version}`)
+  }
+  if (workspaceVersion && config.version !== workspaceVersion) {
+    issues.push(`tauri.conf.json version ${config.version} must match rust-engine/Cargo.toml workspace version ${workspaceVersion}`)
+  }
+  if (path.resolve(tauriAppDir, config.build?.frontendDist ?? '') !== path.join(frontendDir, 'dist')) {
+    issues.push('tauri.conf.json build.frontendDist must resolve to the repository frontend/dist directory')
+  }
+  if (!String(config.build?.beforeBuildCommand ?? '').includes('npm run build')) {
+    issues.push('tauri.conf.json build.beforeBuildCommand must run the production frontend build before desktop packaging')
+  }
+
+  const bundle = config.bundle ?? {}
+  if (bundle.active !== true) {
+    issues.push('tauri.conf.json bundle.active must be true for release packaging')
+  }
+
+  const targets = bundle.targets === 'all' ? ['all'] : Array.isArray(bundle.targets) ? bundle.targets : []
+  for (const target of ['msi', 'nsis']) {
+    if (!targets.includes(target) && !targets.includes('all')) {
+      issues.push(`tauri.conf.json bundle.targets must include ${target} for Windows installer coverage`)
+    }
+  }
+
+  for (const [field, description] of [
+    ['publisher', 'publisher/manufacturer metadata'],
+    ['category', 'application category metadata'],
+    ['shortDescription', 'short store/installer description'],
+    ['longDescription', 'long store/installer description'],
+    ['copyright', 'copyright metadata'],
+  ]) {
+    if (!nonEmptyString(bundle[field])) {
+      issues.push(`tauri.conf.json bundle.${field} must define ${description}`)
+    }
+  }
+
+  const icons = Array.isArray(bundle.icon) ? bundle.icon : []
+  for (const icon of ['icons/icon_32x32.png', 'icons/icon_128x128.png', 'icons/icon_256x256.png', 'icons/icon_512x512.png', 'icons/icon.ico']) {
+    if (!icons.includes(icon)) {
+      issues.push(`tauri.conf.json bundle.icon must include ${icon}`)
+    } else if (!(await fileExists(path.join(tauriAppDir, icon)))) {
+      issues.push(`tauri.conf.json bundle.icon references a missing file: ${icon}`)
+    }
+  }
+
+  const resourceEntries = Array.isArray(bundle.resources)
+    ? bundle.resources.map((entry) => [entry, null])
+    : bundle.resources && typeof bundle.resources === 'object'
+      ? Object.entries(bundle.resources)
+      : []
+  const bundledRootData = resourceEntries.find(([source]) => path.resolve(tauriAppDir, source) === path.join(root, 'data'))
+  if (!bundledRootData) {
+    issues.push('tauri.conf.json bundle.resources must include ../../../data so installed builds carry sample project content')
+  } else {
+    const [source, target] = bundledRootData
+    if (target !== 'data') {
+      issues.push('tauri.conf.json bundle.resources must map ../../../data to clean data/ resource output')
+    }
+    const dataRoot = path.resolve(tauriAppDir, source)
+    for (const dir of ['assets', 'characters', 'dialogue', 'knowledge', 'locales', 'quality_suites', 'scenes', 'workflows']) {
+      if (!(await directoryExists(path.join(dataRoot, dir)))) {
+        issues.push(`bundled data resource is missing ${dir}/`)
+      }
+    }
+    if (!(await fileExists(path.join(dataRoot, 'settings.json')))) {
+      issues.push('bundled data resource is missing settings.json')
+    }
+  }
+
+  const windows = bundle.windows ?? {}
+  if (windows.allowDowngrades !== false) {
+    issues.push('tauri.conf.json bundle.windows.allowDowngrades must be false for commercial release safety')
+  }
+  if (windows.webviewInstallMode?.type !== 'downloadBootstrapper') {
+    issues.push('tauri.conf.json bundle.windows.webviewInstallMode.type must be downloadBootstrapper for normal public Windows installers')
+  }
+  if (windows.webviewInstallMode?.silent !== true) {
+    issues.push('tauri.conf.json bundle.windows.webviewInstallMode.silent must be true')
+  }
+
+  if (issues.length > 0) {
+    throw new Error(`Tauri packaging config verification failed:\n${issues.join('\n')}`)
+  }
+
+  console.log(`[release] Tauri packaging config OK (${targets.join(', ')} target(s), ${icons.length} icon(s))`)
+}
+
 function parseFrontendRoutes(source) {
   const directImports = new Map()
   const importPattern = /import\s+([A-Za-z]\w*)\s+from\s+['"]\.\.\/views\/([^'"]+\.vue)['"]/g
@@ -1787,6 +1891,15 @@ async function fileExists(filePath) {
   try {
     const info = await stat(filePath)
     return info.isFile()
+  } catch {
+    return false
+  }
+}
+
+async function directoryExists(filePath) {
+  try {
+    const info = await stat(filePath)
+    return info.isDirectory()
   } catch {
     return false
   }
