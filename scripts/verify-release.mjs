@@ -144,6 +144,7 @@ const expectedFrontendRoutes = [
 const releaseCriticalRustFiles = [
   'crates/ai/src/api_engine.rs',
   'crates/ai/src/prompt_builder.rs',
+  'crates/assets/src/asset_manager.rs',
   'crates/assets/src/save_manager.rs',
   'crates/tauri-app/src/main.rs',
   'crates/tauri-app/src/state.rs',
@@ -193,6 +194,7 @@ async function main() {
   await verifyLocaleCoverage()
   await verifyFrontendSourceInvariants()
   await verifyLegacyPromptBuilderInvariants()
+  await verifyAssetManagerInvariants()
   await verifySaveManagerInvariants()
   await verifyFrontendRouteCoverage()
   await verifyTauriPackagingConfig()
@@ -204,7 +206,7 @@ async function main() {
   await run('Tauri mobile deployment preflight', 'node', ['scripts/verify-tauri-mobile-preflight.mjs'], root)
   await run('Release-critical Rust format check', 'rustfmt', ['--edition', '2021', '--check', ...releaseCriticalRustFiles], rustDir)
   await run('Rust AI prompt and pipeline tests', 'cargo', ['test', '--locked', '-p', 'llm-ai'], rustDir)
-  await run('Rust asset save tests', 'cargo', ['test', '--locked', '-p', 'llm-assets'], rustDir)
+  await run('Rust asset management tests', 'cargo', ['test', '--locked', '-p', 'llm-assets'], rustDir)
   await run('Rust game tests', 'cargo', ['test', '--locked', '-p', 'llm-game'], rustDir)
   await run('Rust Tauri command tests', 'cargo', ['test', '--locked', '-p', 'llm-galgame-app'], rustDir)
   await run('Rust Tauri app check', 'cargo', ['check', '--locked', '-p', 'llm-galgame-app'], rustDir)
@@ -1820,6 +1822,64 @@ async function verifyLegacyPromptBuilderInvariants() {
   }
 
   console.log('[release] Legacy C# AI invariants OK')
+}
+
+async function verifyAssetManagerInvariants() {
+  const issues = []
+  const rustAssetManagerSource = await readFile(path.join(rustDir, 'crates', 'assets', 'src', 'asset_manager.rs'), 'utf8')
+  const csharpAssetManagerSource = await readFile(path.join(root, 'src', 'LLMAssistant.Assets', 'AssetManager.cs'), 'utf8')
+  const csharpAssetManagerTests = await readFile(path.join(root, 'tests', 'LLMAssistant.Tests', 'AssetManagerTests.cs'), 'utf8')
+
+  const rustRequirements = [
+    ['safe_asset_path', 'resolve asset paths through a guarded path helper'],
+    ['normalize_asset_relative_path', 'normalize and validate project-relative asset paths before file access'],
+    ['Asset paths must be relative to the asset root', 'reject absolute asset paths'],
+    ['Asset paths cannot contain empty, current, or parent directory segments', 'reject traversal-shaped asset paths'],
+    ['path.starts_with(&root)', 'defensively prove asset paths stay under the asset root'],
+    ['load_text_rejects_paths_that_escape_asset_root', 'test text asset traversal rejection'],
+    ['load_bytes_rejects_absolute_asset_paths', 'test absolute binary asset rejection'],
+    ['list_directory_rejects_parent_traversal', 'test directory listing traversal rejection'],
+    ['loads_nested_project_asset_paths', 'test valid nested project asset loading'],
+    ['exists_returns_false_for_invalid_asset_paths', 'test invalid paths do not resolve through exists checks'],
+  ]
+  for (const [needle, description] of rustRequirements) {
+    if (!rustAssetManagerSource.includes(needle)) {
+      issues.push(`Rust AssetManager must ${description}`)
+    }
+  }
+
+  const csharpSourceRequirements = [
+    ['SafeAssetPath', 'resolve asset paths through a guarded path helper'],
+    ['NormalizeAssetRelativePath', 'normalize and validate project-relative asset paths before file access'],
+    ['Path.GetFullPath', 'normalize asset paths before boundary checks'],
+    ['Path.IsPathRooted', 'reject rooted asset paths'],
+    ['Asset path must stay inside the asset root', 'defensively prove asset paths stay under the asset root'],
+    ['TryResolvePath', 'return null instead of reading invalid asset paths from load helpers'],
+  ]
+  for (const [needle, description] of csharpSourceRequirements) {
+    if (!csharpAssetManagerSource.includes(needle)) {
+      issues.push(`Legacy C# AssetManager must ${description}`)
+    }
+  }
+
+  const csharpTestRequirements = [
+    ['ResolvePath_RejectsTraversalAssetPaths', 'test direct traversal path rejection'],
+    ['LoadText_ReturnsNullForEscapingAssetPaths', 'test text asset traversal containment'],
+    ['LoadBytes_ReturnsNullForAbsoluteAssetPaths', 'test absolute binary path containment'],
+    ['LoadJsonAsync_ReturnsNullForUriLikeAssetPaths', 'test URI-like JSON path containment'],
+    ['LoadText_AllowsNestedProjectAssetPaths', 'test valid nested project asset loading'],
+  ]
+  for (const [needle, description] of csharpTestRequirements) {
+    if (!csharpAssetManagerTests.includes(needle)) {
+      issues.push(`Legacy C# AssetManager tests must ${description}`)
+    }
+  }
+
+  if (issues.length > 0) {
+    throw new Error(`Asset manager path verification failed:\n${issues.join('\n')}`)
+  }
+
+  console.log('[release] Asset manager path invariants OK')
 }
 
 async function verifySaveManagerInvariants() {

@@ -93,6 +93,10 @@ Three TTS provider types:
 
 Character voice assignments persist in the AppState and can be configured per-character.
 
+## Asset Data Boundaries
+
+Project asset files are scoped to the active project data root. The Rust assets `AssetManager` and the retained legacy C# `AssetManager` normalize asset references, reject absolute paths, drive/URI-style prefixes, empty path segments, `.`/`..` traversal, and control characters, then verify the resolved path still lives under the configured asset root before reading text, JSON, binary assets, or directory listings.
+
 ## Save Data Boundaries
 
 Save files are scoped to the active project `saves/` directory. The Rust assets `SaveManager` and the retained legacy C# `SaveManager` both validate save IDs before constructing paths, allow only portable filename characters, reject traversal-shaped IDs, and filter listed save files whose embedded save ID does not match the filename. Tauri load/delete commands should consume save IDs returned by `save_game` or `list_saves`, not arbitrary filesystem paths.

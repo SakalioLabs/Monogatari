@@ -102,6 +102,8 @@ All Tauri commands are invoked from the frontend via `invokeCommand(commandName,
 
 ## Scenes
 
+Scene and renderer asset paths are project-relative asset references. Runtime asset managers reject absolute paths, URI-like prefixes, empty path segments, control characters, and `.`/`..` traversal before reading text, JSON, binary assets, or directory listings.
+
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
 | `list_scene_assets` | - | `SceneInfo[]` | List all scenes |
