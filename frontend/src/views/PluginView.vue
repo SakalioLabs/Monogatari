@@ -13,7 +13,7 @@
     </header>
 
     <section class="plugin-grid" v-if="plugins.length > 0">
-      <div v-for="plugin in plugins" :key="plugin.name" class="plugin-card">
+      <div v-for="plugin in plugins" :key="plugin.id" class="plugin-card">
         <div class="plugin-head">
           <span class="plugin-icon">P</span>
           <div class="plugin-meta">
@@ -24,8 +24,8 @@
         </div>
         <p class="plugin-desc">{{ plugin.description || 'No description provided.' }}</p>
         <div class="plugin-footer">
-          <span class="plugin-type">{{ plugin.plugin_type || 'node' }}</span>
-          <button class="btn btn-danger btn-sm" @click="removePlugin(plugin.name)">Remove</button>
+          <span class="plugin-type">{{ plugin.category || plugin.node_type || 'node' }}</span>
+          <button class="btn btn-danger btn-sm" @click="removePlugin(plugin.id, plugin.name)">Remove</button>
         </div>
       </div>
     </section>
@@ -79,15 +79,28 @@ import { useI18n } from '../lib/i18n'
 
 const { t } = useI18n()
 
-interface PluginInfo {
+interface PluginField {
+  name: string
+  field_type: string
+  label: string
+  default_value: unknown
+  required: boolean
+}
+
+interface PluginManifest {
+  id: string
   name: string
   version: string
+  author: string
   description: string
-  plugin_type: string
+  node_type: string
+  category: string
+  configurable_fields: PluginField[]
+  script_path: string | null
   enabled: boolean
 }
 
-const plugins = ref<PluginInfo[]>([])
+const plugins = ref<PluginManifest[]>([])
 const showRegister = ref(false)
 const registerName = ref('')
 const registerType = ref('node')
@@ -97,21 +110,42 @@ const statusOk = ref(true)
 
 async function refreshPlugins() {
   try {
-    plugins.value = await invokeCommand<PluginInfo[]>('list_plugins', undefined, [])
+    plugins.value = await invokeCommand<PluginManifest[]>('list_plugins', undefined, [])
   } catch (e) {
     statusMessage.value = String(e)
     statusOk.value = false
   }
 }
 
+function pluginIdFromName(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '_')
+    .replace(/^[-_]+|[-_]+$/g, '')
+    .slice(0, 64)
+}
+
+function pluginManifestPayload(): PluginManifest {
+  const id = pluginIdFromName(registerName.value) || 'custom_plugin'
+  return {
+    id,
+    name: registerName.value.trim(),
+    version: '1.0.0',
+    author: 'Local Creator',
+    description: registerDesc.value.trim(),
+    node_type: id,
+    category: registerType.value,
+    configurable_fields: [],
+    script_path: null,
+    enabled: true,
+  }
+}
+
 async function doRegister() {
   if (!registerName.value.trim()) return
   try {
-    await invokeCommand<void>('register_plugin', {
-      name: registerName.value.trim(),
-      pluginType: registerType.value,
-      description: registerDesc.value.trim(),
-    })
+    await invokeCommand<void>('register_plugin', { manifest: pluginManifestPayload() })
     statusMessage.value = `Plugin "${registerName.value}" registered`
     statusOk.value = true
     showRegister.value = false
@@ -124,9 +158,9 @@ async function doRegister() {
   }
 }
 
-async function removePlugin(name: string) {
+async function removePlugin(id: string, name: string) {
   try {
-    await invokeCommand<void>('remove_plugin', { name })
+    await invokeCommand<void>('remove_plugin', { pluginId: id })
     statusMessage.value = `Plugin "${name}" removed`
     statusOk.value = true
     await refreshPlugins()

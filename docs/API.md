@@ -141,11 +141,13 @@ Generated system, Azure, and ElevenLabs speech files are written under the activ
 
 ## Plugin System
 
+Plugin manifest IDs are portable slugs, not filenames or paths. `register_plugin.manifest.id` and `remove_plugin.pluginId` may contain only ASCII letters, numbers, underscores, or hyphens; the backend writes or deletes only `<id>.json` directly under the active project `plugins/` directory.
+
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
-| `list_plugins` | - | `PluginInfo[]` | List installed plugins |
-| `register_plugin` | `{ name, type, desc }` | `void` | Register new plugin |
-| `remove_plugin` | `{ name }` | `void` | Remove plugin |
+| `list_plugins` | - | `PluginManifest[]` | List installed plugins |
+| `register_plugin` | `{ manifest }` | `string` | Register plugin manifest under project `plugins/` |
+| `remove_plugin` | `{ pluginId }` | `string` | Remove plugin manifest by safe ID |
 
 ## Cloud Sync
 

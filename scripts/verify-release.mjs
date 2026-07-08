@@ -164,6 +164,7 @@ const releaseCriticalRustFiles = [
   'crates/tauri-app/src/commands/content_paths.rs',
   'crates/tauri-app/src/commands/dialogue.rs',
   'crates/tauri-app/src/commands/knowledge.rs',
+  'crates/tauri-app/src/commands/plugin.rs',
   'crates/tauri-app/src/commands/prompt_guard.rs',
   'crates/tauri-app/src/commands/quality_suite.rs',
   'crates/tauri-app/src/commands/workflow.rs',
@@ -202,6 +203,7 @@ async function main() {
   await verifyWorkflowCommandInvariants()
   await verifyContentLoaderPathInvariants()
   await verifyCharacterManagerPathInvariants()
+  await verifyPluginManagerPathInvariants()
   await verifyTtsOutputInvariants()
   await verifyFrontendRouteCoverage()
   await verifyTauriPackagingConfig()
@@ -2054,6 +2056,53 @@ async function verifyCharacterManagerPathInvariants() {
   }
 
   console.log('[release] Character manager path invariants OK')
+}
+
+async function verifyPluginManagerPathInvariants() {
+  const issues = []
+  const pluginSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'plugin.rs'), 'utf8')
+  const pluginViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'PluginView.vue'), 'utf8')
+
+  const pluginRequirements = [
+    ['plugin_file_path', 'centralize plugin JSON file path construction'],
+    ['normalize_plugin_id', 'validate plugin ids before path construction'],
+    ['normalize_plugin_manifest', 'normalize plugin manifests before writing them'],
+    ['project_root.join("plugins")', 'scope plugin JSON files to the project plugins directory'],
+    ['Plugin ids can contain only ASCII letters, numbers, underscores, or hyphens', 'reject path-shaped and non-portable plugin ids'],
+    ['path.parent() != Some(root.as_path())', 'prove plugin JSON files stay directly under project plugins'],
+    ['manifest.id == file_id', 'skip listed plugin manifests that do not match their file name'],
+    ['plugin_file_paths_stay_inside_project_plugins', 'test compatible plugin file path resolution'],
+    ['plugin_file_paths_reject_escape_attempts', 'test traversal and absolute plugin id rejection'],
+    ['plugin_manifest_normalization_fills_defaults_and_safe_ids', 'test plugin manifest normalization defaults'],
+  ]
+  for (const [needle, description] of pluginRequirements) {
+    if (!pluginSource.includes(needle)) {
+      issues.push(`Plugin manager path handling must ${description}`)
+    }
+  }
+
+  if (pluginSource.includes('dir.join(format!("{}.json", manifest.id))') || pluginSource.includes('dir.join(format!("{plugin_id}.json"))')) {
+    issues.push('Plugin manager commands must not build plugin JSON paths directly from raw command input')
+  }
+
+  const pluginViewRequirements = [
+    ['interface PluginManifest', 'type plugin manifests with the backend contract'],
+    ['pluginManifestPayload()', 'send a complete plugin manifest payload when registering'],
+    ["invokeCommand<void>('register_plugin', { manifest: pluginManifestPayload() })", 'wrap plugin registration args with manifest'],
+    ["invokeCommand<void>('remove_plugin', { pluginId: id })", 'use pluginId when removing plugins'],
+    ['removePlugin(plugin.id, plugin.name)', 'remove plugins by id rather than display name'],
+  ]
+  for (const [needle, description] of pluginViewRequirements) {
+    if (!pluginViewSource.includes(needle)) {
+      issues.push(`Plugin workbench must ${description}`)
+    }
+  }
+
+  if (issues.length > 0) {
+    throw new Error(`Plugin manager path verification failed:\n${issues.join('\n')}`)
+  }
+
+  console.log('[release] Plugin manager path invariants OK')
 }
 
 async function verifyTtsOutputInvariants() {

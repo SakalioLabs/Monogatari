@@ -103,6 +103,10 @@ Project asset files are scoped to the active project data root. The Rust assets 
 
 Character create/delete commands treat character IDs as portable slugs rather than filenames. IDs are validated before path construction, character JSON files are written or removed only as direct children of the active project `characters/` directory, and deletion also removes the character from the in-memory runtime manager.
 
+## Plugin Authoring Boundaries
+
+Plugin registration/removal commands treat plugin IDs as portable slugs rather than filenames. Plugin manifests are normalized before writing, manifest files are written or removed only as direct children of the active project `plugins/` directory, and the Plugin workbench sends the backend `{ manifest }` and `{ pluginId }` command contracts directly.
+
 ## Content Loader Boundaries
 
 Character, dialogue, and knowledge reload commands accept project content references rather than raw filesystem paths. `characters`, `dialogue`, and `knowledge` resolve to their canonical folders under the active project data root, while nested references stay under the same canonical folder. Absolute paths, drive/URI-style prefixes, empty segments, and `.`/`..` traversal are rejected before directory loading begins.
