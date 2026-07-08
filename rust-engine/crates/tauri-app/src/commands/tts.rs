@@ -1,5 +1,6 @@
 //! Text-to-Speech integration with Windows SAPI and API providers.
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -58,6 +59,10 @@ pub struct TtsResult {
 static TTS_CONFIG: Lazy<RwLock<TtsConfig>> = Lazy::new(|| RwLock::new(TtsConfig::default()));
 static CHARACTER_VOICES: Lazy<RwLock<HashMap<String, CharacterVoice>>> =
     Lazy::new(|| RwLock::new(HashMap::new()));
+
+fn tts_output_dir(project_root: &Path) -> PathBuf {
+    project_root.join("assets").join("tts")
+}
 
 #[tauri::command]
 pub async fn configure_tts(config: TtsConfig) -> Result<String, String> {
@@ -151,7 +156,7 @@ async fn elevenlabs_tts(text: &str, api_key: &str, voice_id: &str) -> Result<Str
 
 #[tauri::command]
 pub async fn synthesize_speech(
-    _state: State<'_, AppState>,
+    state: State<'_, AppState>,
     character_id: String,
     text: String,
     emotion: Option<String>,
@@ -194,11 +199,8 @@ pub async fn synthesize_speech(
         _ => {}
     }
 
-    let output_dir = std::env::current_dir()
-        .unwrap_or_default()
-        .join("data")
-        .join("assets")
-        .join("tts");
+    let project_root = state.current_project_data_root().await;
+    let output_dir = tts_output_dir(&project_root);
     let _ = std::fs::create_dir_all(&output_dir);
     let ts = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -307,4 +309,15 @@ pub async fn get_available_voices(
         pitch: 1.0,
         emotion_enabled: false,
     }])
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tts_output_dir_stays_inside_project_assets() {
+        let root = PathBuf::from("project-data");
+        assert_eq!(tts_output_dir(&root), root.join("assets").join("tts"));
+    }
 }

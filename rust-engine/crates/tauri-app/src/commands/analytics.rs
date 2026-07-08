@@ -5,6 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tauri::State;
 use tokio::sync::RwLock;
@@ -29,19 +30,16 @@ pub struct AnalyticsSummary {
     pub avg_relationship_score: f32,
 }
 
-/// Global analytics event store (in-memory, persisted to disk).
-static ANALYTICS_STORE: once_cell::sync::Lazy<Arc<RwLock<Vec<AnalyticsEvent>>>> =
-    once_cell::sync::Lazy::new(|| Arc::new(RwLock::new(Vec::new())));
+/// Project-scoped analytics event stores (in-memory, persisted to disk).
+static ANALYTICS_STORE: once_cell::sync::Lazy<Arc<RwLock<HashMap<PathBuf, Vec<AnalyticsEvent>>>>> =
+    once_cell::sync::Lazy::new(|| Arc::new(RwLock::new(HashMap::new())));
 
-fn analytics_file_path() -> std::path::PathBuf {
-    std::env::current_dir()
-        .unwrap_or_default()
-        .join("data")
-        .join("analytics.json")
+fn analytics_file_path(project_root: &Path) -> PathBuf {
+    project_root.join("analytics.json")
 }
 
-async fn load_events_from_disk() -> Vec<AnalyticsEvent> {
-    let path = analytics_file_path();
+async fn load_events_from_disk(project_root: &Path) -> Vec<AnalyticsEvent> {
+    let path = analytics_file_path(project_root);
     if path.exists() {
         if let Ok(content) = tokio::fs::read_to_string(&path).await {
             if let Ok(events) = serde_json::from_str::<Vec<AnalyticsEvent>>(&content) {
@@ -52,8 +50,8 @@ async fn load_events_from_disk() -> Vec<AnalyticsEvent> {
     Vec::new()
 }
 
-async fn persist_events(events: &[AnalyticsEvent]) {
-    let path = analytics_file_path();
+async fn persist_events(project_root: &Path, events: &[AnalyticsEvent]) {
+    let path = analytics_file_path(project_root);
     if let Some(parent) = path.parent() {
         let _ = tokio::fs::create_dir_all(parent).await;
     }
@@ -65,9 +63,11 @@ async fn persist_events(events: &[AnalyticsEvent]) {
 /// Record an analytics event with persistence.
 #[tauri::command]
 pub async fn record_analytics_event(
+    state: State<'_, AppState>,
     event_type: String,
     data: serde_json::Value,
 ) -> Result<String, String> {
+    let project_root = state.current_project_data_root().await;
     let event = AnalyticsEvent {
         event_type: event_type.clone(),
         timestamp: format!(
@@ -80,24 +80,33 @@ pub async fn record_analytics_event(
         data,
     };
     let mut store = ANALYTICS_STORE.write().await;
-    store.push(event);
+    if !store.contains_key(&project_root) {
+        let events = load_events_from_disk(&project_root).await;
+        store.insert(project_root.clone(), events);
+    }
+    let events = store.get_mut(&project_root).expect("analytics store entry");
+    events.push(event);
     tracing::debug!(
         "Analytics event recorded: {} (total: {})",
         event_type,
-        store.len()
+        events.len()
     );
-    persist_events(&store).await;
+    persist_events(&project_root, events).await;
     Ok("recorded".to_string())
 }
 
 /// Get analytics summary from recorded events.
 #[tauri::command]
 pub async fn get_analytics_summary(state: State<'_, AppState>) -> Result<AnalyticsSummary, String> {
+    let project_root = state.current_project_data_root().await;
     let mut store = ANALYTICS_STORE.write().await;
-    if store.is_empty() {
-        *store = load_events_from_disk().await;
+    if !store.contains_key(&project_root) {
+        let events = load_events_from_disk(&project_root).await;
+        store.insert(project_root.clone(), events);
     }
-    let total = store.len();
+    let events = store.get(&project_root).cloned().unwrap_or_default();
+    drop(store);
+    let total = events.len();
 
     // Count characters
     let mut char_counts: HashMap<String, u32> = HashMap::new();
@@ -105,7 +114,7 @@ pub async fn get_analytics_summary(state: State<'_, AppState>) -> Result<Analyti
     let mut session_ids: HashMap<String, u64> = HashMap::new();
     let mut conv_count: u32 = 0;
 
-    for event in store.iter() {
+    for event in events.iter() {
         match event.event_type.as_str() {
             "chat_message" => {
                 if let Some(cid) = event.data.get("character_id").and_then(|v| v.as_str()) {
@@ -175,7 +184,27 @@ pub async fn get_analytics_summary(state: State<'_, AppState>) -> Result<Analyti
 
 /// Export analytics data as JSON.
 #[tauri::command]
-pub async fn export_analytics(_format: Option<String>) -> Result<String, String> {
-    let store = ANALYTICS_STORE.read().await;
-    serde_json::to_string_pretty(&*store).map_err(|e| e.to_string())
+pub async fn export_analytics(
+    state: State<'_, AppState>,
+    _format: Option<String>,
+) -> Result<String, String> {
+    let project_root = state.current_project_data_root().await;
+    let mut store = ANALYTICS_STORE.write().await;
+    if !store.contains_key(&project_root) {
+        let events = load_events_from_disk(&project_root).await;
+        store.insert(project_root.clone(), events);
+    }
+    let events = store.get(&project_root).cloned().unwrap_or_default();
+    serde_json::to_string_pretty(&events).map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn analytics_file_stays_inside_project_root() {
+        let root = PathBuf::from("project-data");
+        assert_eq!(analytics_file_path(&root), root.join("analytics.json"));
+    }
 }

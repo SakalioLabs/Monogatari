@@ -7,6 +7,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use tauri::State;
 
 use crate::state::AppState;
@@ -36,12 +37,12 @@ struct SyncManifest {
     last_updated: String,
 }
 
-fn manifest_path() -> std::path::PathBuf {
-    std::env::current_dir()
-        .unwrap_or_default()
-        .join("data")
-        .join("saves")
-        .join(".sync_manifest.json")
+fn saves_dir(project_root: &Path) -> PathBuf {
+    project_root.join("saves")
+}
+
+fn manifest_path(project_root: &Path) -> PathBuf {
+    saves_dir(project_root).join(".sync_manifest.json")
 }
 
 fn get_device_id() -> String {
@@ -50,8 +51,8 @@ fn get_device_id() -> String {
         .unwrap_or_else(|_| "unknown".to_string())
 }
 
-fn load_manifest() -> SyncManifest {
-    let path = manifest_path();
+fn load_manifest(project_root: &Path) -> SyncManifest {
+    let path = manifest_path(project_root);
     if path.exists() {
         if let Ok(content) = std::fs::read_to_string(&path) {
             if let Ok(m) = serde_json::from_str::<SyncManifest>(&content) {
@@ -66,8 +67,8 @@ fn load_manifest() -> SyncManifest {
     }
 }
 
-fn save_manifest(manifest: &SyncManifest) -> Result<(), String> {
-    let path = manifest_path();
+fn save_manifest(project_root: &Path, manifest: &SyncManifest) -> Result<(), String> {
+    let path = manifest_path(project_root);
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
     }
@@ -97,12 +98,10 @@ pub async fn configure_cloud_sync(
 
 /// Get current cloud sync status with local manifest analysis.
 #[tauri::command]
-pub async fn get_sync_status(_state: State<'_, AppState>) -> Result<CloudSyncStatus, String> {
-    let manifest = load_manifest();
-    let saves_dir = std::env::current_dir()
-        .unwrap_or_default()
-        .join("data")
-        .join("saves");
+pub async fn get_sync_status(state: State<'_, AppState>) -> Result<CloudSyncStatus, String> {
+    let project_root = state.current_project_data_root().await;
+    let manifest = load_manifest(&project_root);
+    let saves_dir = saves_dir(&project_root);
 
     let mut pending_uploads = 0usize;
     if saves_dir.exists() {
@@ -146,7 +145,8 @@ pub async fn push_saves_to_cloud(
 ) -> Result<String, String> {
     let sm = state.save_manager.read().await;
     let saves = sm.list_saves().await.map_err(|e| e.to_string())?;
-    let mut manifest = load_manifest();
+    let project_root = state.current_project_data_root().await;
+    let mut manifest = load_manifest(&project_root);
     let device_id = get_device_id();
 
     let target_ids = save_ids.unwrap_or_else(|| saves.iter().map(|s| s.save_id.clone()).collect());
@@ -188,7 +188,7 @@ pub async fn push_saves_to_cloud(
             .unwrap_or_default()
             .as_secs()
     );
-    save_manifest(&manifest)?;
+    save_manifest(&project_root, &manifest)?;
     tracing::info!("Pushed {pushed} saves to cloud manifest");
     Ok(format!("Pushed {pushed} saves"))
 }
@@ -196,16 +196,22 @@ pub async fn push_saves_to_cloud(
 /// Pull saves from cloud manifest.
 #[tauri::command]
 pub async fn pull_saves_from_cloud(
-    _state: State<'_, AppState>,
+    state: State<'_, AppState>,
 ) -> Result<Vec<CloudSaveEntry>, String> {
-    let manifest = load_manifest();
+    let project_root = state.current_project_data_root().await;
+    let manifest = load_manifest(&project_root);
     Ok(manifest.entries.values().cloned().collect())
 }
 
 /// Resolve sync conflict by choosing local or remote version.
 #[tauri::command]
-pub async fn resolve_sync_conflict(save_id: String, use_local: bool) -> Result<String, String> {
-    let mut manifest = load_manifest();
+pub async fn resolve_sync_conflict(
+    state: State<'_, AppState>,
+    save_id: String,
+    use_local: bool,
+) -> Result<String, String> {
+    let project_root = state.current_project_data_root().await;
+    let mut manifest = load_manifest(&project_root);
     if !use_local {
         manifest.entries.remove(&save_id);
     }
@@ -216,10 +222,25 @@ pub async fn resolve_sync_conflict(save_id: String, use_local: bool) -> Result<S
             .unwrap_or_default()
             .as_secs()
     );
-    save_manifest(&manifest)?;
+    save_manifest(&project_root, &manifest)?;
     tracing::info!(
         "Resolved conflict for {save_id}: {}",
         if use_local { "local" } else { "remote" }
     );
     Ok(format!("Resolved {save_id}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sync_manifest_stays_inside_project_saves_dir() {
+        let root = PathBuf::from("project-data");
+        assert_eq!(saves_dir(&root), root.join("saves"));
+        assert_eq!(
+            manifest_path(&root),
+            root.join("saves").join(".sync_manifest.json")
+        );
+    }
 }

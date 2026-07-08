@@ -137,6 +137,9 @@ const releaseCriticalRustFiles = [
   'crates/tauri-app/src/commands/engine.rs',
   'crates/tauri-app/src/commands/project.rs',
   'crates/tauri-app/src/commands/scenes.rs',
+  'crates/tauri-app/src/commands/analytics.rs',
+  'crates/tauri-app/src/commands/cloud_sync.rs',
+  'crates/tauri-app/src/commands/tts.rs',
   'crates/game/src/characters/character.rs',
   'crates/game/src/knowledge/knowledge_base.rs',
   'crates/game/src/knowledge/knowledge_entry.rs',
@@ -1451,6 +1454,9 @@ async function verifyTauriPackagingConfig() {
   const tauriEngineSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'engine.rs'), 'utf8')
   const tauriProjectSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'project.rs'), 'utf8')
   const tauriScenesSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'scenes.rs'), 'utf8')
+  const tauriAnalyticsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'analytics.rs'), 'utf8')
+  const tauriCloudSyncSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'cloud_sync.rs'), 'utf8')
+  const tauriTtsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'tts.rs'), 'utf8')
   const workspaceVersion = cargoWorkspace.match(/\[workspace\.package\][\s\S]*?\nversion\s*=\s*"([^"]+)"/)?.[1]
 
   if (config.productName !== 'Monogatari') {
@@ -1553,10 +1559,26 @@ async function verifyTauriPackagingConfig() {
     [tauriEngineSource, 'state.set_project_data_root(path).await', 'rebind project managers after engine initialization'],
     [tauriProjectSource, 'state.set_project_data_root(root.clone()).await', 'rebind project managers after saving project config'],
     [tauriScenesSource, 'Ok(default_project_data_root())', 'scan scene assets from the discovered default root before explicit initialization'],
+    [tauriAnalyticsSource, 'state.current_project_data_root().await', 'persist analytics under the active project root'],
+    [tauriAnalyticsSource, 'project_root.join("analytics.json")', 'keep analytics files project-scoped'],
+    [tauriAnalyticsSource, 'HashMap<PathBuf, Vec<AnalyticsEvent>>', 'keep in-memory analytics stores project-scoped'],
+    [tauriCloudSyncSource, 'state.current_project_data_root().await', 'persist cloud sync manifests under the active project root'],
+    [tauriCloudSyncSource, 'saves_dir(project_root).join(".sync_manifest.json")', 'keep sync manifests in the active project saves directory'],
+    [tauriTtsSource, 'state.current_project_data_root().await', 'write generated TTS assets under the active project root'],
+    [tauriTtsSource, 'project_root.join("assets").join("tts")', 'keep generated TTS files project-scoped'],
   ]
   for (const [source, needle, description] of runtimeDataRootRequirements) {
     if (!source.includes(needle)) {
       issues.push(`Tauri runtime data-root handling must ${description}`)
+    }
+  }
+  for (const [source, file] of [
+    [tauriAnalyticsSource, 'analytics.rs'],
+    [tauriCloudSyncSource, 'cloud_sync.rs'],
+    [tauriTtsSource, 'tts.rs'],
+  ]) {
+    if (source.includes('current_dir()')) {
+      issues.push(`Tauri project-scoped command ${file} must not derive data paths from current_dir()`)
     }
   }
 

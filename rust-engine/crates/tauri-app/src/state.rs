@@ -64,6 +64,15 @@ impl AppState {
         *self.save_manager.write().await = SaveManager::new(data_path.join("saves"));
         *self.project_path.write().await = Some(data_path);
     }
+
+    /// Resolve the active project data root for project-scoped commands.
+    pub async fn current_project_data_root(&self) -> PathBuf {
+        self.project_path
+            .read()
+            .await
+            .clone()
+            .unwrap_or_else(default_project_data_root)
+    }
 }
 
 impl Default for AppState {

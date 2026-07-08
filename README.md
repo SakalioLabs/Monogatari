@@ -81,6 +81,7 @@ Verified on 2026-07-08:
 - Rust desktop dependencies are pinned through `rust-engine/Cargo.lock` for reproducible Tauri builds.
 - Tauri desktop packaging configuration declares Windows MSI/NSIS targets, installer metadata, icons, WebView2 bootstrap behavior, and bundled sample project data, all checked by the release verifier.
 - Installed Tauri builds discover bundled sample `data/` resources at startup and bind them as the default project root when no development data root is available.
+- Analytics logs, cloud-sync manifests, and generated local TTS assets are written under the active project data root for portable installed desktop builds.
 - One-command release verification passes with `node scripts/verify-release.mjs`, including all quality suite files, renderer asset contract checks, pinned knowledge-ref checks, locale coverage, frontend UI text artifact scanning, frontend source invariants, frontend route/sidebar coverage, Tauri packaging preflight, root and subpath Web/PWA builds, Web/PWA dist asset checks, and preview route smoke checks.
 - Commercial release gates are tracked in `docs/RELEASE_CHECKLIST.md`.
 
