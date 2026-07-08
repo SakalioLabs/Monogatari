@@ -209,6 +209,7 @@ const readinessItems = computed(() => [
   { name: 'Multi-character group chat', done: true },
   { name: 'Knowledge base management', done: true },
   { name: 'Professional character editor', done: true },
+  { name: 'Mind contract trace evidence', done: true },
   { name: 'Title screen and CG gallery', done: true },
   { name: 'Backlog conversation replay', done: true },
   { name: '21 workflow node types', done: true },

@@ -842,6 +842,7 @@ fn scenario_runtime_safety_trace(
         .rev()
         .find(|message| message.role == "player")?;
     let relationship_delta = chat::relationship_delta_for_player_message(&player_message.content);
+    let pinned_knowledge_ref_count = scenario.expect.required_knowledge_refs.len();
     Some(chat::build_chat_safety_trace(
         &player_message.content,
         scenario.character_name.as_deref().unwrap_or("Sakura"),
@@ -849,6 +850,7 @@ fn scenario_runtime_safety_trace(
         guarded_response,
         relationship_delta,
         false,
+        pinned_knowledge_ref_count,
     ))
 }
 
@@ -1812,7 +1814,7 @@ mod tests {
         let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../data");
         let report = run_quality_suite_inner_for_test(&suite, Some(&project_root));
 
-        assert_eq!(report.total, 22);
+        assert_eq!(report.total, 23);
         assert_eq!(report.failed, 0, "{:#?}", report.scenarios);
         assert!(report.audit_summary.failed_scenario_ids.is_empty());
         assert!(report
@@ -1820,6 +1822,14 @@ mod tests {
             .category_summary
             .iter()
             .any(|category| category.category == "scoring"
+                && category.total == 4
+                && category.passed == 4
+                && category.failed == 0));
+        assert!(report
+            .audit_summary
+            .category_summary
+            .iter()
+            .any(|category| category.category == "cognition"
                 && category.total == 4
                 && category.passed == 4
                 && category.failed == 0));

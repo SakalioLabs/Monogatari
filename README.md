@@ -57,6 +57,7 @@ Verified on 2026-07-08:
 - Rust Tauri app crate passes `cargo check --locked -p llm-galgame-app`.
 - Character quality suite regression tests pass inside `cargo test --locked -p llm-galgame-app`.
 - Single-character and group chat prompts use the shared character mind contract and guarded response path for private reasoning leaks, identity drift, and tool-style response drift.
+- Chat, group chat, and quality-suite runtime traces now prove when the character mind contract and creator-pinned knowledge context were applied.
 - Prompt-injection detection covers player-authored memory writes such as "remember this as official canon" so long-term character knowledge cannot be casually poisoned by dialogue text.
 - Player-authored meta-instructions are omitted from character memory writes, and legacy unsafe recent memories are replaced with guarded prompt placeholders before they can influence future replies.
 - Prompt-injection text cannot advance local relationship sentiment deltas, so positive words inside meta-instructions cannot silently unlock relationship milestone events.
@@ -400,6 +401,7 @@ The web build emits `dist/404.html` for SPA fallback, `dist/.nojekyll` for GitHu
 - [x] Quality Suites workbench for offline character stability and prompt-injection regression checks
 - [x] Quality Suite workflow branch coverage snapshots for score-gated story QA
 - [x] Quality Suite workbench and JSON export with stable audit summaries for QA evidence handoff
+- [x] Runtime trace evidence for character mind contract and pinned knowledge context anchoring
 - [x] Web/PWA distribution baseline with manifest, service worker, and offline fallback
 - [x] Mobile Web/PWA shell readiness gate for safe-area viewport, install metadata, and compact Tauri shell limits
 - [x] Responsive Web/PWA shell verification for built 375px mobile and 768px tablet layout signals

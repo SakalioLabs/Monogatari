@@ -212,6 +212,9 @@ interface TriggeredEvent {
 
 interface ChatSafetyTrace {
   input_wrapped_as_untrusted: boolean
+  mind_contract_applied?: boolean
+  knowledge_context_pinned?: boolean
+  pinned_knowledge_ref_count?: number
   input_prompt_injection_detected: boolean
   input_private_reasoning_request_detected: boolean
   response_guard_applied: boolean
@@ -261,6 +264,8 @@ const relationshipClass = computed(() => {
 const runtimeSafetyFlags = computed(() => {
   const trace = safetyTrace.value
   return [
+    { key: 'mind', label: 'Mind', active: !!trace?.mind_contract_applied },
+    { key: 'knowledge', label: 'Knowledge', active: !!trace?.knowledge_context_pinned },
     { key: 'input', label: 'Input', active: !!trace?.input_prompt_injection_detected || !!trace?.input_private_reasoning_request_detected },
     { key: 'response', label: 'Response', active: !!trace?.response_guard_applied },
     { key: 'memory', label: 'Memory', active: !!trace?.memory_guard_applied },

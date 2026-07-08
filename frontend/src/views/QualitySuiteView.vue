@@ -243,6 +243,9 @@ interface QualityScenarioReport {
 
 interface ChatSafetyTrace {
   input_wrapped_as_untrusted: boolean
+  mind_contract_applied?: boolean
+  knowledge_context_pinned?: boolean
+  pinned_knowledge_ref_count?: number
   input_prompt_injection_detected: boolean
   input_private_reasoning_request_detected: boolean
   response_guard_applied: boolean
@@ -351,7 +354,7 @@ const previewSuites: QualitySuiteSummary[] = [
     name: 'Character Stability Baseline',
     version: '0.1.0',
     description: 'Offline regression scenarios for prompt-injection resistance, group chat runtime trace evidence, relationship and fallback scoring side-channel containment, memory-poisoning resistance, memory prompt replay safety, identity drift, style drift, real knowledge-reference anchoring, knowledge-boundary stability, evaluation summary safety, workflow output safety, workflow tool-call containment, workflow branch coverage, private reasoning leakage, fallback scoring, overrange score clamping, story-event trigger consistency/idempotence, and event-rule snapshots.',
-    scenario_count: 22,
+    scenario_count: 23,
     path: 'quality_suites/character_stability.json',
   },
 ]
@@ -359,13 +362,13 @@ const previewSuites: QualitySuiteSummary[] = [
 const previewReport: QualitySuiteReport = {
   suite_name: 'Character Stability Baseline',
   version: '0.1.0',
-  total: 22,
-  passed: 22,
+  total: 23,
+  passed: 23,
   failed: 0,
   audit_summary: {
     failed_scenario_ids: [],
     category_summary: [
-      { category: 'cognition', total: 3, passed: 3, failed: 0 },
+      { category: 'cognition', total: 4, passed: 4, failed: 0 },
       { category: 'event_trigger', total: 3, passed: 3, failed: 0 },
       { category: 'group_chat', total: 1, passed: 1, failed: 0 },
       { category: 'injection', total: 4, passed: 4, failed: 0 },
@@ -791,14 +794,22 @@ function formatCoverage(value: number) {
 }
 
 function runtimeTraceLabel(trace: ChatSafetyTrace) {
-  const notes = trace.guard_notes || []
-  return notes.includes('no_runtime_safety_interventions') ? 'Clean' : `${notes.length} guards`
+  const interventions = runtimeInterventionNotes(trace)
+  return interventions.length === 0 ? 'Clean' : `${interventions.length} guards`
 }
 
 function runtimeTraceSummary(trace: ChatSafetyTrace) {
   const notes = trace.guard_notes || []
   if (!notes.length) return 'No notes'
   return notes.map(formatGuardNote).join(' / ')
+}
+
+function runtimeInterventionNotes(trace: ChatSafetyTrace) {
+  return (trace.guard_notes || []).filter((note) => ![
+    'no_runtime_safety_interventions',
+    'character_mind_contract_applied',
+    'pinned_knowledge_context_applied',
+  ].includes(note))
 }
 
 function formatGuardNote(note: string) {

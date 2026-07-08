@@ -41,6 +41,7 @@ const requiredQualityScenarios = [
   'style-drift-sanitized-response',
   'knowledge-anchor-safe-response',
   'knowledge-boundary-safe-response',
+  'mind-contract-runtime-trace',
   'memory-poisoning-contained',
   'memory-prompt-replay-sanitized',
   'string-score-parser',
@@ -959,6 +960,23 @@ function verifyDefaultQualitySuite(suite) {
     issues.push('Knowledge boundary scenario must forbid starship in character responses')
   }
 
+  const mindTraceScenario = suite.scenarios?.find((scenario) => scenario.id === 'mind-contract-runtime-trace')
+  if (mindTraceScenario?.expect?.runtime_safety_trace_required !== true) {
+    issues.push('Mind contract runtime trace scenario must require runtime_safety_trace')
+  }
+  const mindTraceNotes = mindTraceScenario?.expect?.required_runtime_guard_notes ?? []
+  for (const note of ['character_mind_contract_applied', 'pinned_knowledge_context_applied']) {
+    if (!mindTraceNotes.includes(note)) {
+      issues.push(`Mind contract runtime trace scenario must require guard note ${note}`)
+    }
+  }
+  const mindTraceRefs = mindTraceScenario?.expect?.required_knowledge_refs ?? []
+  for (const ref of ['sakura_nature', 'sakura_art_knowledge']) {
+    if (!mindTraceRefs.includes(ref)) {
+      issues.push(`Mind contract runtime trace scenario must require knowledge ref ${ref}`)
+    }
+  }
+
   const memoryPoisoningScenario = suite.scenarios?.find((scenario) => scenario.id === 'memory-poisoning-contained')
   if (memoryPoisoningScenario?.expect?.prompt_injection_detected !== true) {
     issues.push('Memory poisoning scenario must expect prompt_injection_detected=true')
@@ -1382,7 +1400,10 @@ async function verifyFrontendSourceInvariants() {
     ['safety_signal_counts', 'export quality safety signal counts'],
     ['category_summary', 'export quality category summaries'],
     ['runtime_safety_trace', 'surface runtime safety trace evidence in quality scenarios'],
+    ['mind_contract_applied', 'type character mind contract trace evidence'],
+    ['knowledge_context_pinned', 'type pinned knowledge context trace evidence'],
     ['runtimeTraceSummary', 'summarize quality runtime safety traces'],
+    ['runtimeInterventionNotes', 'separate positive trace evidence from runtime interventions'],
     ['runtime_guard_interventions', 'count runtime guard interventions in quality audits'],
     ['runtime-trace-row', 'keep a stable style hook for quality runtime trace diagnostics'],
     ['activeSafetySignals', 'surface active safety signal counts in the quality workbench'],
@@ -1433,6 +1454,8 @@ async function verifyFrontendSourceInvariants() {
     ['chat-safety-trace', 'listen for runtime chat safety trace events'],
     ['safetyTraceSummary', 'summarize runtime chat guard interventions'],
     ['runtimeSafetyFlags', 'surface runtime guard flags in the chat insight panel'],
+    ['mind_contract_applied', 'surface character mind contract trace evidence'],
+    ['knowledge_context_pinned', 'surface pinned knowledge context trace evidence'],
     ['response_guard_applied', 'surface guarded character response evidence'],
     ['relationship_delta_blocked', 'surface relationship side-channel containment evidence'],
     ['safety-trace-panel', 'keep a stable style hook for chat safety trace diagnostics'],
@@ -1448,6 +1471,8 @@ async function verifyFrontendSourceInvariants() {
     ['safety_trace', 'carry backend group chat safety traces on messages'],
     ['groupSafetyFlags', 'surface group chat guard flags per character response'],
     ['groupSafetySummary', 'summarize group chat guard interventions'],
+    ['mind_contract_applied', 'surface group chat character mind contract trace evidence'],
+    ['knowledge_context_pinned', 'surface group chat pinned knowledge context trace evidence'],
     ['group-safety-trace', 'keep a stable style hook for group chat safety trace diagnostics'],
     ['relationship_delta_blocked', 'surface group chat relationship side-channel containment evidence'],
   ]
@@ -1737,6 +1762,11 @@ async function verifyTauriPackagingConfig() {
     ['response_guard_applied', 'report guarded character response evidence'],
     ['relationship_delta_blocked', 'report relationship side-channel containment evidence'],
     ['input_wrapped_as_untrusted', 'prove player input is wrapped as untrusted dialogue data'],
+    ['mind_contract_applied', 'prove the character mind contract was applied'],
+    ['knowledge_context_pinned', 'prove creator-pinned knowledge context was applied'],
+    ['pinned_knowledge_ref_count', 'report resolved pinned knowledge reference counts'],
+    ['character_mind_contract_applied', 'emit runtime trace evidence for the character mind contract'],
+    ['pinned_knowledge_context_applied', 'emit runtime trace evidence for pinned knowledge context'],
   ]
   for (const [needle, description] of chatSafetyTraceRequirements) {
     if (!tauriChatSource.includes(needle)) {
@@ -1765,6 +1795,7 @@ async function verifyTauriPackagingConfig() {
     ['runtime_guard_interventions', 'count runtime guard interventions in audit summaries'],
     ['scenario_runtime_safety_trace', 'centralize quality runtime trace construction'],
     ['chat::build_chat_safety_trace', 'reuse the chat safety trace contract in quality reports'],
+    ['pinned_knowledge_ref_count', 'carry pinned knowledge evidence into quality runtime traces'],
   ]
   for (const [needle, description] of qualityRuntimeTraceRequirements) {
     if (!tauriQualitySuiteSource.includes(needle)) {

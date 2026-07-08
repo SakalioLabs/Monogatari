@@ -26,12 +26,28 @@ const DEDICATED_PLAYER_EVAL_COUNT: u32 = 5;
 const SUPER_DEDICATED_EVAL_COUNT: u32 = 10;
 const STREAM_SAFETY_WINDOW_CHARS: usize = 240;
 
+#[derive(Debug, Clone, Default)]
+pub(crate) struct CharacterKnowledgeContext {
+    pub content: String,
+    pub pinned_ref_count: usize,
+}
+
 pub(crate) fn build_character_knowledge_context(
     knowledge_base: &llm_game::knowledge::KnowledgeBase,
     query: &str,
     knowledge_refs: &[String],
     search_limit: usize,
 ) -> String {
+    build_character_knowledge_context_details(knowledge_base, query, knowledge_refs, search_limit)
+        .content
+}
+
+pub(crate) fn build_character_knowledge_context_details(
+    knowledge_base: &llm_game::knowledge::KnowledgeBase,
+    query: &str,
+    knowledge_refs: &[String],
+    search_limit: usize,
+) -> CharacterKnowledgeContext {
     let mut sections = Vec::new();
     let mut seen_ids = HashSet::new();
 
@@ -68,7 +84,10 @@ pub(crate) fn build_character_knowledge_context(
         ));
     }
 
-    sections.join("\n\n")
+    CharacterKnowledgeContext {
+        content: sections.join("\n\n"),
+        pinned_ref_count: pinned.len(),
+    }
 }
 
 /// A single chat message in the conversation history.
@@ -96,6 +115,12 @@ pub struct ChatResponse {
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct ChatSafetyTrace {
     pub input_wrapped_as_untrusted: bool,
+    #[serde(default)]
+    pub mind_contract_applied: bool,
+    #[serde(default)]
+    pub knowledge_context_pinned: bool,
+    #[serde(default)]
+    pub pinned_knowledge_ref_count: usize,
     pub input_prompt_injection_detected: bool,
     pub input_private_reasoning_request_detected: bool,
     pub response_guard_applied: bool,
@@ -233,7 +258,7 @@ pub async fn send_chat_message(
     // Get knowledge context
     let knowledge_context = {
         let kb = state.knowledge_base.read().await;
-        build_character_knowledge_context(&kb, &message, &knowledge_refs, 3)
+        build_character_knowledge_context_details(&kb, &message, &knowledge_refs, 3)
     };
 
     // Add player message and snapshot recent history without holding the
@@ -287,10 +312,10 @@ ROLEPLAY RULES:
         mind_contract = prompt_guard::character_mind_contract(),
         guard_contract = prompt_guard::character_safety_contract(),
         guard_notice = guard_notice,
-        knowledge = if knowledge_context.is_empty() {
+        knowledge = if knowledge_context.content.is_empty() {
             String::new()
         } else {
-            format!("\nContext:\n{}", knowledge_context)
+            format!("\nContext:\n{}", knowledge_context.content)
         }
     );
 
@@ -329,6 +354,7 @@ ROLEPLAY RULES:
         &response_text,
         relationship_delta,
         false,
+        knowledge_context.pinned_ref_count,
     );
 
     // Update character emotion
@@ -785,6 +811,7 @@ pub(crate) fn build_chat_safety_trace(
     guarded_response: &str,
     relationship_delta: f32,
     stream_guard_applied: bool,
+    pinned_knowledge_ref_count: usize,
 ) -> ChatSafetyTrace {
     let sanitized_response = prompt_guard::sanitize_prompt_content(raw_response);
     let input_prompt_injection_detected =
@@ -799,7 +826,12 @@ pub(crate) fn build_chat_safety_trace(
     let memory_guard_applied =
         input_prompt_injection_detected || input_private_reasoning_request_detected;
     let relationship_delta_blocked = input_prompt_injection_detected && relationship_delta == 0.0;
+    let knowledge_context_pinned = pinned_knowledge_ref_count > 0;
 
+    let mut evidence_notes = vec!["character_mind_contract_applied".to_string()];
+    if knowledge_context_pinned {
+        evidence_notes.push("pinned_knowledge_context_applied".to_string());
+    }
     let mut guard_notes = Vec::new();
     if input_prompt_injection_detected {
         guard_notes.push("input_prompt_injection_detected".to_string());
@@ -828,9 +860,13 @@ pub(crate) fn build_chat_safety_trace(
     if guard_notes.is_empty() {
         guard_notes.push("no_runtime_safety_interventions".to_string());
     }
+    guard_notes.extend(evidence_notes);
 
     ChatSafetyTrace {
         input_wrapped_as_untrusted: true,
+        mind_contract_applied: true,
+        knowledge_context_pinned,
+        pinned_knowledge_ref_count,
         input_prompt_injection_detected,
         input_private_reasoning_request_detected,
         response_guard_applied,
@@ -1329,7 +1365,7 @@ pub async fn send_chat_message_stream(
 
     let knowledge_context = {
         let kb = state.knowledge_base.read().await;
-        build_character_knowledge_context(&kb, &message, &knowledge_refs, 3)
+        build_character_knowledge_context_details(&kb, &message, &knowledge_refs, 3)
     };
 
     let now = format!(
@@ -1375,10 +1411,10 @@ Stay in character. Respond naturally with emotion (use *actions* for body langua
         mind_contract = prompt_guard::character_mind_contract(),
         guard_contract = prompt_guard::character_safety_contract(),
         guard_notice = guard_notice,
-        knowledge = if knowledge_context.is_empty() {
+        knowledge = if knowledge_context.content.is_empty() {
             String::new()
         } else {
-            format!("\nContext:\n{}", knowledge_context)
+            format!("\nContext:\n{}", knowledge_context.content)
         }
     );
 
@@ -1463,6 +1499,7 @@ Stay in character. Respond naturally with emotion (use *actions* for body langua
             &response_text,
             relationship_delta,
             leaked,
+            knowledge_context.pinned_ref_count,
         );
 
         let (
@@ -1764,9 +1801,13 @@ mod tests {
             &guarded_response,
             relationship_delta,
             true,
+            2,
         );
 
         assert!(trace.input_wrapped_as_untrusted);
+        assert!(trace.mind_contract_applied);
+        assert!(trace.knowledge_context_pinned);
+        assert_eq!(trace.pinned_knowledge_ref_count, 2);
         assert!(trace.input_prompt_injection_detected);
         assert!(trace.input_private_reasoning_request_detected);
         assert!(trace.response_guard_applied);
@@ -1777,6 +1818,12 @@ mod tests {
         assert!(trace
             .guard_notes
             .contains(&"private_reasoning_blocked".to_string()));
+        assert!(trace
+            .guard_notes
+            .contains(&"character_mind_contract_applied".to_string()));
+        assert!(trace
+            .guard_notes
+            .contains(&"pinned_knowledge_context_applied".to_string()));
         assert!(!guarded_response.contains("scoring rubric"));
     }
 
@@ -1794,15 +1841,22 @@ mod tests {
             &guarded_response,
             relationship_delta,
             false,
+            0,
         );
 
         assert!(trace.input_wrapped_as_untrusted);
+        assert!(trace.mind_contract_applied);
+        assert!(!trace.knowledge_context_pinned);
+        assert_eq!(trace.pinned_knowledge_ref_count, 0);
         assert!(!trace.input_prompt_injection_detected);
         assert!(!trace.response_guard_applied);
         assert!(!trace.relationship_delta_blocked);
         assert_eq!(
             trace.guard_notes,
-            vec!["no_runtime_safety_interventions".to_string()]
+            vec![
+                "no_runtime_safety_interventions".to_string(),
+                "character_mind_contract_applied".to_string(),
+            ]
         );
     }
 
