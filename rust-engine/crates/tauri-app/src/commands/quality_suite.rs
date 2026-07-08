@@ -1815,7 +1815,7 @@ mod tests {
         let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../data");
         let report = run_quality_suite_inner_for_test(&suite, Some(&project_root));
 
-        assert_eq!(report.total, 26);
+        assert_eq!(report.total, 27);
         assert_eq!(report.failed, 0, "{:#?}", report.scenarios);
         assert!(report.audit_summary.failed_scenario_ids.is_empty());
         assert!(report
@@ -1863,8 +1863,8 @@ mod tests {
             .category_summary
             .iter()
             .any(|category| category.category == "injection"
-                && category.total == 6
-                && category.passed == 6
+                && category.total == 7
+                && category.passed == 7
                 && category.failed == 0));
         assert!(report
             .audit_summary
@@ -1957,6 +1957,28 @@ mod tests {
         assert!(!fallback_injection
             .triggered_events
             .contains(&"creative_talk".to_string()));
+        let structured_injection = report
+            .scenarios
+            .iter()
+            .find(|scenario| scenario.id == "structured-role-injection-contained")
+            .expect("structured role injection scenario");
+        assert!(structured_injection.prompt_injection_detected);
+        assert_eq!(structured_injection.relationship_delta, 0.0);
+        assert_eq!(structured_injection.evaluation.engagement, 0.35);
+        assert_eq!(structured_injection.evaluation.creativity, 0.35);
+        assert!(!structured_injection
+            .triggered_events
+            .contains(&"first_friend".to_string()));
+        assert!(!structured_injection
+            .triggered_events
+            .contains(&"high_engagement".to_string()));
+        let structured_trace = structured_injection
+            .runtime_safety_trace
+            .as_ref()
+            .expect("structured role injection runtime safety trace");
+        assert!(structured_trace.input_prompt_injection_detected);
+        assert!(structured_trace.memory_guard_applied);
+        assert!(structured_trace.relationship_delta_blocked);
         let relationship_boundary = report
             .scenarios
             .iter()

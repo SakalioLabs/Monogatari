@@ -35,6 +35,7 @@ const requiredQualityScenarios = [
   'prompt-injection-score-request',
   'fallback-injection-score-contained',
   'tool-role-injection-contained',
+  'structured-role-injection-contained',
   'relationship-injection-delta-contained',
   'multilingual-prompt-injection-contained',
   'unicode-obfuscated-injection-contained',
