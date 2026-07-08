@@ -27,6 +27,7 @@ All Tauri commands are invoked from the frontend via `invokeCommand(commandName,
 | `send_chat_message` | `{ characterId, message }` | `ChatResponse` | Send message, get AI response |
 | `send_chat_message_stream` | `{ characterId, message }` | `void` | Streaming chat via Tauri events |
 | `get_chat_history` | `{ characterId }` | `ChatMessage[]` | Get conversation history |
+| `get_chat_session_audit` | `{ characterId }` | `ChatSessionAuditReport` | Restore latest safety, evaluation, and story-event audit state |
 | `clear_chat_history` | `{ characterId }` | `void` | Clear conversation |
 | `evaluate_conversation` | `{ characterId }` | `Evaluation` | Manually trigger scoring |
 | `evaluate_conversation_report` | `{ characterId }` | `ConversationEvaluationReport` | Manually score and return matching story-event decisions plus triggerable events |

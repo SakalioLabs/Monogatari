@@ -274,6 +274,20 @@ interface ChatSafetyTrace {
   guard_notes: string[]
 }
 
+interface ChatSessionAuditReport {
+  character_id: string
+  message_count: number
+  player_message_count: number
+  cumulative_score: number
+  evaluation_count: number
+  relationship_score: number
+  triggered_event_ids: string[]
+  last_evaluation?: ConversationEvaluation | null
+  last_safety_trace?: ChatSafetyTrace | null
+  event_trigger_decisions: EventTriggerDecision[]
+  triggerable_events: TriggeredEvent[]
+}
+
 interface CharacterInfo {
   id: string
   name: string
@@ -396,8 +410,15 @@ async function selectCharacter(char: CharacterInfo) {
   eventDecisions.value = []
   errorMessage.value = null
   try {
-    messages.value = await invokeCommand<ChatMessage[]>('get_chat_history', { characterId: char.id }, [])
-    relationshipScore.value = await invokeCommand<number>('get_relationship_score', { characterId: char.id }, 0)
+    const [history, audit] = await Promise.all([
+      invokeCommand<ChatMessage[]>('get_chat_history', { characterId: char.id }, []),
+      invokeCommand<ChatSessionAuditReport>('get_chat_session_audit', { characterId: char.id }),
+    ])
+    messages.value = history
+    relationshipScore.value = audit.relationship_score
+    evaluation.value = audit.last_evaluation || null
+    safetyTrace.value = audit.last_safety_trace || null
+    eventDecisions.value = audit.event_trigger_decisions || []
   } catch (e) {
     errorMessage.value = String(e)
   }

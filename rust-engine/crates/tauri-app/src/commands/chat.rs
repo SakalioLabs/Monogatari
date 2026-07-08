@@ -189,6 +189,27 @@ pub struct ConversationEvaluationReport {
     pub triggerable_events: Vec<TriggeredEvent>,
 }
 
+/// Restorable chat session audit state for author tooling.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatSessionAuditReport {
+    pub character_id: String,
+    pub message_count: usize,
+    pub player_message_count: usize,
+    pub cumulative_score: f32,
+    pub evaluation_count: u32,
+    pub relationship_score: f32,
+    #[serde(default)]
+    pub triggered_event_ids: Vec<String>,
+    #[serde(default)]
+    pub last_evaluation: Option<ConversationEvaluation>,
+    #[serde(default)]
+    pub last_safety_trace: Option<ChatSafetyTrace>,
+    #[serde(default)]
+    pub event_trigger_decisions: Vec<EventTriggerDecision>,
+    #[serde(default)]
+    pub triggerable_events: Vec<TriggeredEvent>,
+}
+
 /// Chat session state for a character.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatSession {
@@ -199,6 +220,8 @@ pub struct ChatSession {
     pub triggered_event_ids: Vec<String>,
     #[serde(default)]
     pub last_evaluation: Option<ConversationEvaluation>,
+    #[serde(default)]
+    pub last_safety_trace: Option<ChatSafetyTrace>,
 }
 
 impl ChatSession {
@@ -210,6 +233,7 @@ impl ChatSession {
             evaluation_count: 0,
             triggered_event_ids: Vec::new(),
             last_evaluation: None,
+            last_safety_trace: None,
         }
     }
 }
@@ -393,6 +417,7 @@ ROLEPLAY RULES:
                     .as_secs()
             ),
         });
+        session.last_safety_trace = Some(safety_trace.clone());
 
         let player_msg_count = session
             .messages
@@ -481,6 +506,15 @@ pub async fn get_chat_history(
         .get(&character_id)
         .map(|s| s.messages.clone())
         .unwrap_or_default())
+}
+
+/// Get restorable safety/evaluation/event audit state for a chat session.
+#[tauri::command]
+pub async fn get_chat_session_audit(
+    state: State<'_, AppState>,
+    character_id: String,
+) -> Result<ChatSessionAuditReport, String> {
+    build_chat_session_audit_report(&state, &character_id).await
 }
 
 /// Clear the chat history for a character.
@@ -630,6 +664,65 @@ pub async fn preview_event_triggers(
             )
         })
         .collect())
+}
+
+async fn build_chat_session_audit_report(
+    state: &State<'_, AppState>,
+    character_id: &str,
+) -> Result<ChatSessionAuditReport, String> {
+    let (
+        message_count,
+        player_message_count,
+        cumulative_score,
+        evaluation_count,
+        triggered_event_ids,
+        last_evaluation,
+        last_safety_trace,
+    ) = {
+        let sessions = state.chat_sessions.read().await;
+        match sessions.get(character_id) {
+            Some(session) => (
+                session.messages.len(),
+                session
+                    .messages
+                    .iter()
+                    .filter(|message| message.role == "player")
+                    .count(),
+                session.cumulative_score,
+                session.evaluation_count,
+                session.triggered_event_ids.clone(),
+                session.last_evaluation.clone(),
+                session.last_safety_trace.clone(),
+            ),
+            None => (0, 0, 0.0, 0, Vec::new(), None, None),
+        }
+    };
+
+    let relationship_score = player_relationship(state, character_id).await;
+    let evaluation = last_evaluation
+        .clone()
+        .unwrap_or_else(neutral_conversation_evaluation);
+    let event_trigger_decisions = build_event_trigger_decisions(
+        relationship_score,
+        &evaluation,
+        evaluation_count,
+        &triggered_event_ids,
+    );
+    let triggerable_events = triggered_events_from_decisions(&event_trigger_decisions);
+
+    Ok(ChatSessionAuditReport {
+        character_id: character_id.to_string(),
+        message_count,
+        player_message_count,
+        cumulative_score,
+        evaluation_count,
+        relationship_score,
+        triggered_event_ids,
+        last_evaluation,
+        last_safety_trace,
+        event_trigger_decisions,
+        triggerable_events,
+    })
 }
 
 // === Internal helper functions ===
@@ -1591,6 +1684,7 @@ Stay in character. Respond naturally with emotion (use *actions* for body langua
                         .as_secs()
                 ),
             });
+            session.last_safety_trace = Some(safety_trace.clone());
 
             let player_msg_count = session
                 .messages
@@ -2105,5 +2199,47 @@ mod tests {
             .is_some_and(|events| events
                 .iter()
                 .any(|event| event["event_id"] == "first_friend")));
+    }
+
+    #[test]
+    fn chat_session_audit_report_serializes_restorable_safety_state() {
+        let eval = evaluation(0.7, 0.85, 0.2);
+        let decisions = build_event_trigger_decisions(0.35, &eval, 2, &[]);
+        let safety_trace = build_chat_safety_trace(
+            "hello",
+            "Sakura",
+            "hello",
+            "hello",
+            0.0,
+            false,
+            &["sakura_nature".to_string()],
+        );
+        let report = ChatSessionAuditReport {
+            character_id: "sakura".to_string(),
+            message_count: 4,
+            player_message_count: 2,
+            cumulative_score: 0.85,
+            evaluation_count: 2,
+            relationship_score: 0.35,
+            triggered_event_ids: vec!["first_friend".to_string()],
+            last_evaluation: Some(eval),
+            last_safety_trace: Some(safety_trace),
+            triggerable_events: triggered_events_from_decisions(&decisions),
+            event_trigger_decisions: decisions,
+        };
+
+        let payload = serde_json::to_value(report).unwrap();
+        assert_eq!(payload["character_id"], "sakura");
+        assert_eq!(payload["message_count"], 4);
+        assert!(payload["last_safety_trace"]["mind_contract_applied"]
+            .as_bool()
+            .unwrap_or(false));
+        assert_eq!(
+            payload["last_safety_trace"]["pinned_knowledge_ref_ids"][0],
+            "sakura_nature"
+        );
+        assert!(payload["event_trigger_decisions"]
+            .as_array()
+            .is_some_and(|decisions| !decisions.is_empty()));
     }
 }

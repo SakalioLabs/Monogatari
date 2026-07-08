@@ -45,6 +45,7 @@
 - [ ] Workflow LLM nodes guard generated output before it is used by downstream story nodes
 - [ ] Character prompts include creator-declared pinned knowledge references before keyword search results
 - [ ] Chat runtime emits author-visible safety trace evidence for input wrapping, prompt-injection detection, guarded responses, memory guards, stream replacements, and relationship side-channel containment
+- [ ] Chat session audit restores the latest safety trace, evaluation, story-event trigger decisions, and triggerable events after character switching
 - [ ] Chat runtime traces prove character mind contract application and creator-pinned knowledge context anchoring, including resolved pinned knowledge ref IDs
 - [ ] Chat runtime emits story-event trigger decisions with actual relationship values, score metrics, evaluation counts, and blocker reasons
 - [ ] Manual Chat scoring returns an atomic evaluation report with matching story-event trigger decisions and triggerable events for author score-gate debugging

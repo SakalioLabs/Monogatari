@@ -81,6 +81,7 @@ fn main() {
             commands::chat::send_chat_message,
             commands::chat::send_chat_message_stream,
             commands::chat::get_chat_history,
+            commands::chat::get_chat_session_audit,
             commands::chat::clear_chat_history,
             commands::chat::evaluate_conversation,
             commands::chat::evaluate_conversation_report,

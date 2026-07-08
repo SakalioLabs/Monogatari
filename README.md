@@ -63,6 +63,7 @@ Verified on 2026-07-08:
 - Prompt-injection text cannot advance local relationship sentiment deltas, so positive words inside meta-instructions cannot silently unlock relationship milestone events.
 - Chat runtime responses emit safety trace evidence for player input wrapping, prompt-injection detection, memory guarding, response guarding, stream replacement, and relationship side-channel containment.
 - Group chat character responses reuse the same runtime safety trace contract so multi-character scenes expose prompt-injection, response guard, memory guard, and relationship side-channel evidence per reply.
+- Chat sessions now expose a restorable audit report with the latest safety trace, evaluation, story-event decisions, and triggerable events so author diagnostics survive character switching.
 - Quality Suites now export runtime safety trace evidence and include a group chat prompt-injection scenario that requires concrete guard notes for input wrapping, response guarding, memory guarding, and relationship side-channel containment.
 - Local fallback scoring ignores prompt-injection text for engagement and creativity boosts, so long meta-instructions cannot unlock score-gated story events when model evaluation is unavailable.
 - Evaluation score parsing clamps overrange, above-scale, and negative model scores before quality reports or event triggers consume them.
