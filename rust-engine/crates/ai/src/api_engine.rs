@@ -1,6 +1,7 @@
 //! OpenAI-compatible API inference engine.
 
 use std::collections::HashMap;
+use std::fmt;
 use std::time::Instant;
 
 use async_trait::async_trait;
@@ -14,7 +15,7 @@ use llm_core::Result;
 use crate::inference::{InferenceEngine, InferenceOptions, InferenceResult};
 
 /// Configuration for the API inference engine.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct APIConfig {
     /// Base URL of the API (e.g., "https://api.openai.com/v1").
     pub base_url: String,
@@ -32,6 +33,21 @@ pub struct APIConfig {
     pub timeout_seconds: u64,
     /// Additional headers to send with requests.
     pub headers: HashMap<String, String>,
+}
+
+impl fmt::Debug for APIConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("APIConfig")
+            .field("base_url", &redact_sensitive_text(&self.base_url))
+            .field("api_key", &redacted_secret(&self.api_key))
+            .field("model", &self.model)
+            .field("max_tokens", &self.max_tokens)
+            .field("temperature", &self.temperature)
+            .field("top_p", &self.top_p)
+            .field("timeout_seconds", &self.timeout_seconds)
+            .field("headers", &redacted_headers(&self.headers))
+            .finish()
+    }
 }
 
 impl Default for APIConfig {
@@ -132,18 +148,18 @@ impl InferenceEngine for APIEngine {
     async fn initialize(&mut self) -> Result<()> {
         info!("Initializing API engine with model: {}", self.config.model);
 
-        let mut client_builder = Client::builder()
-            .timeout(std::time::Duration::from_secs(self.config.timeout_seconds));
+        let mut client_builder =
+            Client::builder().timeout(std::time::Duration::from_secs(self.config.timeout_seconds));
 
         // Add custom headers
         let mut headers = reqwest::header::HeaderMap::new();
         headers.insert(
             "Authorization",
-            format!("Bearer {}", self.config.api_key)
-                .parse()
-                .map_err(|e: reqwest::header::InvalidHeaderValue| {
+            format!("Bearer {}", self.config.api_key).parse().map_err(
+                |e: reqwest::header::InvalidHeaderValue| {
                     llm_core::EngineError::config("api_key", format!("Invalid API key: {e}"))
-                })?,
+                },
+            )?,
         );
         for (key, value) in &self.config.headers {
             if let (Ok(name), Ok(val)) = (
@@ -156,7 +172,10 @@ impl InferenceEngine for APIEngine {
         client_builder = client_builder.default_headers(headers);
 
         self.client = Some(client_builder.build().map_err(|e| {
-            llm_core::EngineError::config("http_client", format!("Failed to create HTTP client: {e}"))
+            llm_core::EngineError::config(
+                "http_client",
+                format!("Failed to create HTTP client: {e}"),
+            )
         })?);
         self.initialized = true;
 
@@ -165,9 +184,10 @@ impl InferenceEngine for APIEngine {
     }
 
     async fn infer(&self, prompt: &str, options: &InferenceOptions) -> Result<InferenceResult> {
-        let client = self.client.as_ref().ok_or_else(|| {
-            llm_core::EngineError::inference("API", "Engine not initialized")
-        })?;
+        let client = self
+            .client
+            .as_ref()
+            .ok_or_else(|| llm_core::EngineError::inference("API", "Engine not initialized"))?;
 
         let start = Instant::now();
         debug!("Sending inference request to API");
@@ -186,21 +206,22 @@ impl InferenceEngine for APIEngine {
         };
 
         let url = format!("{}/chat/completions", self.config.base_url);
-        let response = client
-            .post(&url)
-            .json(&request)
-            .send()
-            .await
-            .map_err(|e| llm_core::EngineError::inference("API", format!("Request failed: {e}")))?;
+        let response = client.post(&url).json(&request).send().await.map_err(|e| {
+            llm_core::EngineError::inference(
+                "API",
+                redact_sensitive_text(&format!("Request failed: {e}")),
+            )
+        })?;
 
         let status = response.status();
         if !status.is_success() {
             let body = response.text().await.unwrap_or_default();
-            error!("API returned status {}: {}", status, body);
+            let safe_body = redact_sensitive_text(&body);
+            error!("API returned status {}: {}", status, safe_body);
             return Ok(InferenceResult {
                 text: String::new(),
                 success: false,
-                error: Some(format!("API error {status}: {body}")),
+                error: Some(format!("API error {status}: {safe_body}")),
                 duration_ms: start.elapsed().as_millis() as u64,
                 tokens_generated: 0,
             });
@@ -234,9 +255,10 @@ impl InferenceEngine for APIEngine {
         options: &InferenceOptions,
         on_chunk: Box<dyn Fn(String) + Send + 'static>,
     ) -> Result<InferenceResult> {
-        let client = self.client.as_ref().ok_or_else(|| {
-            llm_core::EngineError::inference("API", "Engine not initialized")
-        })?;
+        let client = self
+            .client
+            .as_ref()
+            .ok_or_else(|| llm_core::EngineError::inference("API", "Engine not initialized"))?;
 
         let start = Instant::now();
         debug!("Sending streaming inference request to API");
@@ -254,20 +276,21 @@ impl InferenceEngine for APIEngine {
         };
 
         let url = format!("{}/chat/completions", self.config.base_url);
-        let response = client
-            .post(&url)
-            .json(&request)
-            .send()
-            .await
-            .map_err(|e| llm_core::EngineError::inference("API", format!("Request failed: {e}")))?;
+        let response = client.post(&url).json(&request).send().await.map_err(|e| {
+            llm_core::EngineError::inference(
+                "API",
+                redact_sensitive_text(&format!("Request failed: {e}")),
+            )
+        })?;
 
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
+            let safe_body = redact_sensitive_text(&body);
             return Ok(InferenceResult {
                 text: String::new(),
                 success: false,
-                error: Some(format!("API error {status}: {body}")),
+                error: Some(format!("API error {status}: {safe_body}")),
                 duration_ms: start.elapsed().as_millis() as u64,
                 tokens_generated: 0,
             });
@@ -317,6 +340,208 @@ impl InferenceEngine for APIEngine {
         info!("API engine shut down");
         Ok(())
     }
+}
+
+fn redacted_secret(value: &str) -> String {
+    if value.trim().is_empty() {
+        String::new()
+    } else {
+        "<redacted>".to_string()
+    }
+}
+
+fn redacted_headers(headers: &HashMap<String, String>) -> HashMap<String, String> {
+    headers
+        .iter()
+        .map(|(key, value)| {
+            let redacted = if is_sensitive_header_name(key) {
+                redacted_secret(value)
+            } else {
+                redact_sensitive_text(value)
+            };
+            (key.clone(), redacted)
+        })
+        .collect()
+}
+
+fn is_sensitive_header_name(name: &str) -> bool {
+    let normalized = name.trim().to_ascii_lowercase();
+    normalized == "authorization"
+        || normalized == "proxy-authorization"
+        || normalized == "x-api-key"
+        || normalized == "api-key"
+        || normalized == "xi-api-key"
+        || normalized == "ocp-apim-subscription-key"
+        || normalized.contains("token")
+        || normalized.contains("secret")
+        || normalized.contains("password")
+}
+
+fn redact_sensitive_text(text: &str) -> String {
+    let token_redacted = redact_token_like_values(text);
+    redact_secret_assignments(&token_redacted)
+}
+
+fn redact_token_like_values(text: &str) -> String {
+    let mut redacted = String::with_capacity(text.len());
+    let mut cursor = 0;
+    while cursor < text.len() {
+        if let Some((prefix, min_len)) = token_prefix_at(text, cursor) {
+            let token_end = token_end(text, cursor);
+            let body_len = text[cursor + prefix.len()..token_end]
+                .chars()
+                .filter(|ch| is_token_char(*ch))
+                .count();
+            if body_len >= min_len {
+                redacted.push_str("<redacted>");
+                cursor = token_end;
+                continue;
+            }
+        }
+
+        let ch = text[cursor..]
+            .chars()
+            .next()
+            .expect("cursor at char boundary");
+        redacted.push(ch);
+        cursor += ch.len_utf8();
+    }
+
+    redacted
+}
+
+fn token_prefix_at(text: &str, cursor: usize) -> Option<(&'static str, usize)> {
+    let rest = &text[cursor..];
+    for (prefix, min_len) in [("github_pat_", 20), ("ghp_", 20), ("sk-", 20)] {
+        if rest.starts_with(prefix) {
+            return Some((prefix, min_len));
+        }
+    }
+    None
+}
+
+fn token_end(text: &str, cursor: usize) -> usize {
+    text[cursor..]
+        .char_indices()
+        .find_map(|(offset, ch)| (!is_token_char(ch)).then_some(cursor + offset))
+        .unwrap_or(text.len())
+}
+
+fn is_token_char(ch: char) -> bool {
+    ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-')
+}
+
+fn redact_secret_assignments(text: &str) -> String {
+    let mut redacted = text.to_string();
+    for key in [
+        "api_key",
+        "apiKey",
+        "access_token",
+        "accessToken",
+        "token",
+        "secret",
+        "password",
+        "authorization",
+    ] {
+        redacted = redact_assignment_values(&redacted, key);
+    }
+    redacted
+}
+
+fn redact_assignment_values(text: &str, key: &str) -> String {
+    let mut result = String::with_capacity(text.len());
+    let mut cursor = 0;
+
+    while let Some(relative) = text[cursor..].find(key) {
+        let key_start = cursor + relative;
+        let key_end = key_start + key.len();
+        if !is_key_boundary(text, key_start, key_end) {
+            result.push_str(&text[cursor..key_end]);
+            cursor = key_end;
+            continue;
+        }
+
+        let Some((value_start, value_end)) = assignment_value_span(text, key_start, key_end) else {
+            result.push_str(&text[cursor..key_end]);
+            cursor = key_end;
+            continue;
+        };
+
+        result.push_str(&text[cursor..value_start]);
+        result.push_str("<redacted>");
+        cursor = value_end;
+    }
+
+    result.push_str(&text[cursor..]);
+    result
+}
+
+fn is_key_boundary(text: &str, start: usize, end: usize) -> bool {
+    let before = text[..start].chars().next_back();
+    let after = text[end..].chars().next();
+    !before.is_some_and(|ch| ch.is_ascii_alphanumeric() || ch == '_')
+        && !after.is_some_and(|ch| ch.is_ascii_alphanumeric() || ch == '_')
+}
+
+fn assignment_value_span(text: &str, key_start: usize, key_end: usize) -> Option<(usize, usize)> {
+    let mut idx = skip_ws(text, key_end);
+
+    if let Some(quote) = text[..key_start]
+        .chars()
+        .next_back()
+        .filter(|ch| matches!(ch, '"' | '\''))
+    {
+        if text[idx..].starts_with(quote) {
+            idx += quote.len_utf8();
+            idx = skip_ws(text, idx);
+        }
+    }
+
+    if let Some(quote) = text[idx..]
+        .chars()
+        .next()
+        .filter(|ch| matches!(ch, '"' | '\''))
+    {
+        idx += quote.len_utf8();
+        idx = skip_ws(text, idx);
+    }
+
+    let separator = text[idx..].chars().next()?;
+    if !matches!(separator, ':' | '=') {
+        return None;
+    }
+    idx += separator.len_utf8();
+    idx = skip_ws(text, idx);
+
+    if let Some(quote) = text[idx..]
+        .chars()
+        .next()
+        .filter(|ch| matches!(ch, '"' | '\''))
+    {
+        let value_start = idx + quote.len_utf8();
+        let value_end = text[value_start..]
+            .char_indices()
+            .find_map(|(offset, ch)| (ch == quote).then_some(value_start + offset))
+            .unwrap_or(text.len());
+        return Some((value_start, value_end));
+    }
+
+    let value_start = idx;
+    let value_end = text[value_start..]
+        .char_indices()
+        .find_map(|(offset, ch)| {
+            (ch.is_whitespace() || matches!(ch, '&' | ',' | '}' | ']' | ';'))
+                .then_some(value_start + offset)
+        })
+        .unwrap_or(text.len());
+    (value_start < value_end).then_some((value_start, value_end))
+}
+
+fn skip_ws(text: &str, start: usize) -> usize {
+    text[start..]
+        .char_indices()
+        .find_map(|(offset, ch)| (!ch.is_whitespace()).then_some(start + offset))
+        .unwrap_or(text.len())
 }
 
 /// Parse a prompt string into chat messages.
@@ -370,4 +595,53 @@ fn parse_prompt_to_messages(prompt: &str) -> Vec<ChatMessage> {
     }
 
     messages
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn api_config_debug_redacts_api_key_and_sensitive_headers() {
+        let api_key = format!("sk-{}", "A".repeat(24));
+        let header_token = format!("Bearer {}", api_key);
+        let mut headers = HashMap::new();
+        headers.insert("Authorization".to_string(), header_token.clone());
+        headers.insert("X-Trace-Id".to_string(), "trace-123".to_string());
+
+        let config = APIConfig {
+            base_url: format!("https://example.test/v1?api_key={api_key}"),
+            api_key: api_key.clone(),
+            model: "test-model".to_string(),
+            headers,
+            ..Default::default()
+        };
+
+        let debug = format!("{config:?}");
+
+        assert!(!debug.contains(&api_key));
+        assert!(!debug.contains(&header_token));
+        assert!(debug.contains("<redacted>"));
+        assert!(debug.contains("trace-123"));
+        assert!(debug.contains("test-model"));
+    }
+
+    #[test]
+    fn api_error_redaction_handles_token_like_values_and_secret_assignments() {
+        let openai_key = format!("sk-{}", "B".repeat(24));
+        let github_key = format!("github_pat_{}", "C".repeat(24));
+        let plain_secret = "plain-secret-value";
+        let body = format!(
+            r#"{{"error":"bad key","api_key":"{plain_secret}","url":"https://example.test?access_token={github_key}","authorization":"Bearer {openai_key}"}}"#
+        );
+
+        let redacted = redact_sensitive_text(&body);
+
+        assert!(!redacted.contains(&openai_key));
+        assert!(!redacted.contains(&github_key));
+        assert!(!redacted.contains(plain_secret));
+        assert!(redacted.contains("<redacted>"));
+        assert!(redacted.contains("bad key"));
+        assert!(redacted.contains("https://example.test?access_token=<redacted>"));
+    }
 }

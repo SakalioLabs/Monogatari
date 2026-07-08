@@ -25,6 +25,7 @@
 - [ ] Chat streaming works with API backend
 - [ ] Character personality/knowledge injection verified
 - [ ] Shared Rust AI prompt builder sanitizes embedded role-boundary markers in message history and context sections before OpenAI-compatible role parsing
+- [ ] Rust API engine debug output and API error surfaces redact API keys, bearer tokens, and sensitive custom headers before logs or frontend error reports expose them
 
 ### Content
 - [ ] Example characters load correctly (Sakura, Luna, Kenji)

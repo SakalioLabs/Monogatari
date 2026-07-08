@@ -142,6 +142,7 @@ const expectedFrontendRoutes = [
 ]
 
 const releaseCriticalRustFiles = [
+  'crates/ai/src/api_engine.rs',
   'crates/ai/src/prompt_builder.rs',
   'crates/tauri-app/src/main.rs',
   'crates/tauri-app/src/state.rs',

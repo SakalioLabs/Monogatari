@@ -58,6 +58,7 @@ Verified on 2026-07-08:
 - Character quality suite regression tests pass inside `cargo test --locked -p llm-galgame-app`.
 - Single-character and group chat prompts use the shared character mind contract and guarded response path for private reasoning leaks, identity drift, and tool-style response drift.
 - The shared Rust AI prompt builder sanitizes embedded role-boundary markers in message history and context sections so reusable integrations cannot accidentally reintroduce `[System]`/`[User]`/`[Assistant]` prompt-boundary injection.
+- OpenAI-compatible API configuration debug output and API error surfaces redact API keys, bearer tokens, and sensitive custom headers before logs or frontend error reports can expose them.
 - Prompt-injection detection now covers structured role-control blocks, English, Chinese, Japanese, Korean, fullwidth, and zero-width-obfuscated prompt-control phrases before scoring, memory writes, relationship deltas, and runtime safety traces consume player text.
 - Chat, group chat, and quality-suite runtime traces now prove when the character mind contract and creator-pinned knowledge context were applied, including resolved pinned knowledge ref IDs for audit.
 - Prompt-injection detection covers player-authored memory writes such as "remember this as official canon" so long-term character knowledge cannot be casually poisoned by dialogue text.
@@ -99,7 +100,7 @@ Verified on 2026-07-08:
 - Analytics logs, cloud-sync manifests, and generated local TTS assets are written under the active project data root for portable installed desktop builds.
 - Project export emits a versioned manifest with file inventory, per-file MD5 checksums, generated asset coverage, and redacted sensitive settings for package handoff.
 - Release artifact manifests can be generated with `node scripts/create-release-manifest.mjs` to capture Web/PWA and desktop installer artifact paths, SHA-256 checksums, checked-in release channel policy metadata, missing installer expectations, and verified installer signing evidence.
-- One-command release verification passes with `node scripts/verify-release.mjs`, including all quality suite files, Rust AI prompt/pipeline tests, structured role-block prompt-injection regressions, renderer asset contract checks, pinned knowledge-ref checks, locale coverage, frontend UI text artifact scanning, frontend source invariants, frontend route/sidebar coverage, Tauri packaging preflight, root and subpath Web/PWA builds, Web/PWA dist asset checks, release artifact manifest checks, and preview route smoke checks.
+- One-command release verification passes with `node scripts/verify-release.mjs`, including all quality suite files, Rust AI prompt/API/pipeline tests, structured role-block prompt-injection regressions, renderer asset contract checks, pinned knowledge-ref checks, locale coverage, frontend UI text artifact scanning, frontend source invariants, frontend route/sidebar coverage, Tauri packaging preflight, root and subpath Web/PWA builds, Web/PWA dist asset checks, release artifact manifest checks, and preview route smoke checks.
 - Commercial release gates are tracked in `docs/RELEASE_CHECKLIST.md`.
 
 ## Architecture

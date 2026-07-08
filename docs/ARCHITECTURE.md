@@ -69,6 +69,8 @@ Prompt and response guardrails are shared by single-character chat, group chat, 
 
 When live evaluator output is unavailable, deterministic fallback scoring uses only trusted, normalized player messages. The fallback recognizes English, Chinese, Japanese, and Korean friendly sentiment, questions, and creative-story intent so international builds keep stable relationship and story-event previews without live model calls.
 
+API backend configuration treats provider credentials as runtime-only secrets. The Rust API engine redacts API keys, bearer tokens, sensitive custom headers, and echoed secret assignments from debug output and API error surfaces before they can reach logs or frontend error reports.
+
 ## Workflow System
 
 The visual workflow editor supports 21 node types across 5 categories:
