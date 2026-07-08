@@ -84,7 +84,8 @@ Verified on 2026-07-08:
 - Installed Tauri builds discover bundled sample `data/` resources at startup and bind them as the default project root when no development data root is available.
 - Analytics logs, cloud-sync manifests, and generated local TTS assets are written under the active project data root for portable installed desktop builds.
 - Project export emits a versioned manifest with file inventory, per-file MD5 checksums, generated asset coverage, and redacted sensitive settings for package handoff.
-- One-command release verification passes with `node scripts/verify-release.mjs`, including all quality suite files, renderer asset contract checks, pinned knowledge-ref checks, locale coverage, frontend UI text artifact scanning, frontend source invariants, frontend route/sidebar coverage, Tauri packaging preflight, root and subpath Web/PWA builds, Web/PWA dist asset checks, and preview route smoke checks.
+- Release artifact manifests can be generated with `node scripts/create-release-manifest.mjs` to capture Web/PWA and desktop installer artifact paths, SHA-256 checksums, release channel metadata, missing installer expectations, and signing readiness evidence.
+- One-command release verification passes with `node scripts/verify-release.mjs`, including all quality suite files, renderer asset contract checks, pinned knowledge-ref checks, locale coverage, frontend UI text artifact scanning, frontend source invariants, frontend route/sidebar coverage, Tauri packaging preflight, root and subpath Web/PWA builds, Web/PWA dist asset checks, release artifact manifest checks, and preview route smoke checks.
 - Commercial release gates are tracked in `docs/RELEASE_CHECKLIST.md`.
 
 ## Architecture
@@ -143,7 +144,7 @@ Run the automated pre-release gate first:
 node scripts/verify-release.mjs
 ```
 
-This verifies JSON assets, checked-in workflow files, renderer asset contracts for characters and scenes, pinned character knowledge refs, all quality suite files, workflow branch coverage snapshots, locale coverage, sensitive token patterns, frontend UI text artifacts, frontend source invariants, frontend route/sidebar coverage, Tauri desktop packaging configuration, Rust checks/tests, root and subpath Web/PWA builds with bundle budgets, Web/PWA dist assets, preview route smoke checks, frontend audit, and legacy C# tests.
+This verifies JSON assets, checked-in workflow files, renderer asset contracts for characters and scenes, pinned character knowledge refs, all quality suite files, workflow branch coverage snapshots, locale coverage, sensitive token patterns, frontend UI text artifacts, frontend source invariants, frontend route/sidebar coverage, Tauri desktop packaging configuration, Rust checks/tests, root and subpath Web/PWA builds with bundle budgets, Web/PWA dist assets, release artifact manifest checks, preview route smoke checks, frontend audit, and legacy C# tests.
 
 ```bash
 cd frontend
@@ -152,6 +153,14 @@ npm run build:web
 cd rust-engine/crates/tauri-app
 cargo tauri build
 ```
+
+After Web/PWA and installer builds are available, generate the distributable checksum manifest:
+
+```bash
+node scripts/create-release-manifest.mjs --channel=stable
+```
+
+The manifest is written under `release/` and records artifact SHA-256 hashes, expected Windows MSI/NSIS installer presence, and signing readiness for GitHub Release handoff.
 
 For static hosting under a subpath, set `VITE_BASE_PATH` before building:
 

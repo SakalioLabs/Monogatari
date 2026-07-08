@@ -3,7 +3,7 @@
 ## Pre-Release Verification
 
 ### Automated Gate
-- [ ] `node scripts/verify-release.mjs` passes from the repository root, covering JSON assets, workflow files, score-gate workflow execution regressions, renderer asset contracts, pinned knowledge-ref contracts, all quality suites, workflow branch coverage snapshots, locale coverage, sensitive token scans, frontend UI text artifact scans, frontend source invariants, frontend route/sidebar coverage, Tauri desktop packaging configuration, release-critical Rust checks/tests, frontend audit, root and subpath Web/PWA builds, Web/PWA dist assets, preview route smoke checks, and legacy C# tests
+- [ ] `node scripts/verify-release.mjs` passes from the repository root, covering JSON assets, workflow files, score-gate workflow execution regressions, renderer asset contracts, pinned knowledge-ref contracts, all quality suites, workflow branch coverage snapshots, locale coverage, sensitive token scans, frontend UI text artifact scans, frontend source invariants, frontend route/sidebar coverage, Tauri desktop packaging configuration, release-critical Rust checks/tests, frontend audit, root and subpath Web/PWA builds, Web/PWA dist assets, release artifact manifest checks, preview route smoke checks, and legacy C# tests
 
 ### Frontend
 - [ ] `cd frontend && npm run build` passes with zero errors
@@ -87,6 +87,7 @@
 - [ ] Installed Tauri build resolves bundled sample `data/` resources at startup when no development project data root is available
 - [ ] Installed Tauri build writes analytics, sync manifests, saves, and generated TTS assets under the active project data root
 - [ ] Project export manifest includes a versioned schema marker, file inventory, per-file checksums, generated assets, and redacted sensitive settings
+- [ ] Release artifact manifest generated with SHA-256 checksums, release channel metadata, installer expectations, and signing readiness evidence
 - [ ] Git tag created: `git tag v0.9.5`
 - [ ] Web/PWA preview verified with `npm run preview:web`
 - [ ] Subpath web deployment verified with `VITE_BASE_PATH` when publishing to GitHub Pages or another non-root path

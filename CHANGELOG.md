@@ -49,6 +49,7 @@
 - Added release-gate validation for Tauri packaging configuration so desktop installer metadata, icons, bundled sample data, and Windows downgrade/WebView2 policy cannot drift silently.
 - Added a versioned project export manifest with file inventory, per-file checksums, exportable directory coverage, and settings secret redaction for commercial package handoff.
 - Added runtime chat safety trace evidence for prompt-injection detection, guarded character responses, memory guards, stream replacements, and relationship side-channel containment.
+- Added a release artifact manifest generator with SHA-256 checksums, channel metadata, installer expectations, and code-signing readiness evidence.
 - Added release-gate validation that checked-in character pinned knowledge refs resolve to project knowledge entries across both data roots.
 - Added missing Springtown lore anchors for character pinned knowledge refs so creator-declared identity and world context remain stable.
 - Added short retry handling for the release-gate frontend audit step so transient registry TLS failures do not abort otherwise passing release checks.

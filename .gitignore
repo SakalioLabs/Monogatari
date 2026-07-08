@@ -21,6 +21,7 @@ Thumbs.db
 *.dll
 *.so
 *.dylib
+release/
 
 # Data
 *.log

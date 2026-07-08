@@ -10,7 +10,7 @@ const frontendDir = path.join(root, 'frontend')
 const rustDir = path.join(root, 'rust-engine')
 const tauriAppDir = path.join(rustDir, 'crates', 'tauri-app')
 
-const skipDirs = new Set(['.git', 'node_modules', 'target', 'dist', 'bin', 'obj'])
+const skipDirs = new Set(['.git', 'node_modules', 'target', 'dist', 'release', 'bin', 'obj'])
 const textExtensions = new Set([
   '.cs',
   '.css',
@@ -206,6 +206,7 @@ async function main() {
   await run('Frontend Web/PWA build', 'npm', ['run', 'build:web'], frontendDir)
   await verifyWebDist({ basePath: '/' })
   await verifyWebPreview({ basePath: '/' })
+  await run('Release artifact manifest check', 'node', ['scripts/create-release-manifest.mjs', '--check', '--allow-missing-installers'], root)
   await run('Legacy C# tests', 'dotnet', ['test', 'LLMAssistant.sln', '--no-restore'], root)
 
   const elapsed = ((Date.now() - started) / 1000).toFixed(1)

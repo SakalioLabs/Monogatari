@@ -90,7 +90,7 @@ Before cutting a release, run the automated gate from the repository root:
 node scripts/verify-release.mjs
 ```
 
-This validates JSON assets, checked-in workflow files, all quality suite files, workflow branch coverage snapshots, locale coverage, frontend UI text artifacts, frontend source invariants, release-critical Rust checks/tests, frontend audit, the Web/PWA build, generated dist assets, and legacy C# tests.
+This validates JSON assets, checked-in workflow files, all quality suite files, workflow branch coverage snapshots, locale coverage, frontend UI text artifacts, frontend source invariants, release-critical Rust checks/tests, frontend audit, the Web/PWA build, generated dist assets, release artifact manifest checks, and legacy C# tests.
 
 ```bash
 cd frontend
