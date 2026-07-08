@@ -142,6 +142,7 @@ const expectedFrontendRoutes = [
 ]
 
 const releaseCriticalRustFiles = [
+  'crates/ai/src/prompt_builder.rs',
   'crates/tauri-app/src/main.rs',
   'crates/tauri-app/src/state.rs',
   'crates/tauri-app/src/commands/engine.rs',
@@ -198,6 +199,7 @@ async function main() {
   await run('Frontend mobile shell readiness', 'npm', ['run', 'verify:mobile-readiness'], frontendDir)
   await run('Tauri mobile deployment preflight', 'node', ['scripts/verify-tauri-mobile-preflight.mjs'], root)
   await run('Release-critical Rust format check', 'rustfmt', ['--edition', '2021', '--check', ...releaseCriticalRustFiles], rustDir)
+  await run('Rust AI prompt and pipeline tests', 'cargo', ['test', '--locked', '-p', 'llm-ai'], rustDir)
   await run('Rust game tests', 'cargo', ['test', '--locked', '-p', 'llm-game'], rustDir)
   await run('Rust Tauri command tests', 'cargo', ['test', '--locked', '-p', 'llm-galgame-app'], rustDir)
   await run('Rust Tauri app check', 'cargo', ['check', '--locked', '-p', 'llm-galgame-app'], rustDir)

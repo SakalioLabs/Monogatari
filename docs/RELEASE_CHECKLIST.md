@@ -3,7 +3,7 @@
 ## Pre-Release Verification
 
 ### Automated Gate
-- [ ] `node scripts/verify-release.mjs` passes from the repository root, covering JSON assets, workflow files, score-gate workflow execution regressions, renderer asset contracts, pinned knowledge-ref contracts, all quality suites, workflow branch coverage snapshots, locale coverage, sensitive token scans, frontend UI text artifact scans, frontend source invariants, frontend route/sidebar coverage, Tauri desktop packaging configuration, release-critical Rust checks/tests, frontend audit, root and subpath Web/PWA builds, Web/PWA dist assets, release artifact manifest checks, preview route smoke checks, and legacy C# tests
+- [ ] `node scripts/verify-release.mjs` passes from the repository root, covering JSON assets, workflow files, score-gate workflow execution regressions, renderer asset contracts, pinned knowledge-ref contracts, all quality suites, workflow branch coverage snapshots, locale coverage, sensitive token scans, frontend UI text artifact scans, frontend source invariants, frontend route/sidebar coverage, Tauri desktop packaging configuration, Rust AI/game/Tauri checks/tests, frontend audit, root and subpath Web/PWA builds, Web/PWA dist assets, release artifact manifest checks, preview route smoke checks, and legacy C# tests
 
 ### Frontend
 - [ ] `cd frontend && npm run build` passes with zero errors
@@ -24,6 +24,7 @@
 - [ ] All 22 command modules register correctly in main.rs
 - [ ] Chat streaming works with API backend
 - [ ] Character personality/knowledge injection verified
+- [ ] Shared Rust AI prompt builder sanitizes embedded role-boundary markers in message history and context sections before OpenAI-compatible role parsing
 
 ### Content
 - [ ] Example characters load correctly (Sakura, Luna, Kenji)
