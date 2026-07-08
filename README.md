@@ -198,7 +198,7 @@ npm run build:web
 Remove-Item Env:VITE_BASE_PATH
 ```
 
-The web build emits `dist/404.html` for SPA fallback, `dist/.nojekyll` for GitHub Pages, PWA assets, install/maskable icons, and copied `data/assets` project sample assets scoped to the configured base path.
+The web build emits `dist/404.html` for SPA fallback, `dist/.nojekyll` for GitHub Pages, PWA assets, install/maskable icons, copied `data/assets` project sample assets, and `project-assets.json` so the service worker can precache sample renderer assets under the configured base path.
 
 ## Usage
 

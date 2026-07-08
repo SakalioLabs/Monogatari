@@ -75,6 +75,7 @@ const requiredWebDistFiles = [
   'manifest.webmanifest',
   'sw.js',
   'offline.html',
+  'project-assets.json',
   'favicon.svg',
   'icons/app-icon.svg',
   'icons/maskable-icon.svg',
@@ -1406,6 +1407,10 @@ async function verifyFrontendSourceInvariants() {
     ['APP_SHELL_PATHS.map(withBase)', 'apply withBase to app shell paths'],
     ['/icons/app-icon.svg', 'precache the dedicated PWA app icon'],
     ['/icons/maskable-icon.svg', 'precache the dedicated maskable PWA icon'],
+    ['PROJECT_ASSET_MANIFEST_PATH', 'declare the generated project asset manifest path'],
+    ['/project-assets.json', 'precache the generated project asset manifest'],
+    ['cacheProjectAssets()', 'cache generated project assets during service worker install'],
+    ['monogatari-web-project-assets/v1', 'validate the project asset manifest schema before caching'],
     ['function withBase', 'define withBase helper'],
     ['function routePath', 'define routePath helper'],
     ['routePath(url.pathname)', 'normalize incoming requests through routePath'],
@@ -1421,8 +1426,11 @@ async function verifyFrontendSourceInvariants() {
   const webDistPackagingRequirements = [
     ["'data', 'assets'", 'copy checked-in project assets from data/assets'],
     ['distProjectAssetsDir', 'target copied project assets into dist/assets'],
+    ['projectAssetManifestPath', 'write a generated project asset manifest into dist'],
+    ['monogatari-web-project-assets/v1', 'version the generated project asset manifest schema'],
+    ['walkFiles(projectAssetsDir', 'inventory copied project assets for offline PWA caching'],
     ['cp(projectAssetsDir, distProjectAssetsDir', 'merge project assets into the Web/PWA dist asset tree'],
-    ['project assets', 'report project assets in the Web/PWA preparation output'],
+    ['project asset manifest', 'report the generated project asset manifest in the Web/PWA preparation output'],
   ]
   for (const [needle, description] of webDistPackagingRequirements) {
     if (!prepareWebDistSource.includes(needle)) {
@@ -2131,6 +2139,7 @@ async function verifyWebDist({ basePath = '/' } = {}) {
   const indexHtml = await readMaybe(path.join(distDir, 'index.html'))
   const fallbackHtml = await readMaybe(path.join(distDir, '404.html'))
   const manifest = await readJsonMaybe(path.join(distDir, 'manifest.webmanifest'))
+  const projectAssetManifest = await readJsonMaybe(path.join(distDir, 'project-assets.json'))
   const serviceWorker = await readMaybe(path.join(distDir, 'sw.js'))
 
   if (indexHtml && fallbackHtml && indexHtml !== fallbackHtml) {
@@ -2182,7 +2191,7 @@ async function verifyWebDist({ basePath = '/' } = {}) {
       issues.push(`Missing Web/PWA locale fallback: ${locale}`)
     }
   }
-  await verifyWebProjectAssets(distDir, issues)
+  await verifyWebProjectAssets(distDir, projectAssetManifest, issues)
 
   if (serviceWorker) {
     const packageJson = JSON.parse(await readFile(path.join(frontendDir, 'package.json'), 'utf8'))
@@ -2199,6 +2208,12 @@ async function verifyWebDist({ basePath = '/' } = {}) {
         issues.push(`sw.js app shell must include /${iconPath}`)
       }
     }
+    if (!serviceWorker.includes('/project-assets.json')) {
+      issues.push('sw.js app shell must include /project-assets.json')
+    }
+    if (!serviceWorker.includes('cacheProjectAssets()')) {
+      issues.push('sw.js install flow must cache project assets from the generated manifest')
+    }
   }
 
   if (issues.length > 0) {
@@ -2208,7 +2223,7 @@ async function verifyWebDist({ basePath = '/' } = {}) {
   console.log(`[release] Web/PWA dist assets OK (${normalizedBase} base)`)
 }
 
-async function verifyWebProjectAssets(distDir, issues) {
+async function verifyWebProjectAssets(distDir, projectAssetManifest, issues) {
   const sourceAssetsDir = path.join(root, 'data', 'assets')
   if (!(await directoryExists(sourceAssetsDir))) {
     issues.push('data/assets must exist for Web/PWA project asset packaging')
@@ -2221,11 +2236,42 @@ async function verifyWebProjectAssets(distDir, issues) {
     return
   }
 
+  if (!projectAssetManifest) {
+    issues.push('Missing Web/PWA project asset manifest: project-assets.json')
+    return
+  }
+  if (projectAssetManifest.schema !== 'monogatari-web-project-assets/v1') {
+    issues.push('project-assets.json must use schema monogatari-web-project-assets/v1')
+  }
+  if (!Array.isArray(projectAssetManifest.assets)) {
+    issues.push('project-assets.json assets must be an array')
+    return
+  }
+
+  const manifestAssets = new Set(projectAssetManifest.assets)
+  if (manifestAssets.size !== projectAssetManifest.assets.length) {
+    issues.push('project-assets.json assets must not contain duplicates')
+  }
+
   for (const sourceAsset of sourceAssets) {
     const relativeAssetPath = path.relative(sourceAssetsDir, sourceAsset)
+    const manifestAssetPath = `/assets/${relativeAssetPath.replaceAll(path.sep, '/')}`
     const distAssetPath = path.join(distDir, 'assets', relativeAssetPath)
     if (!(await fileExists(distAssetPath))) {
       issues.push(`Missing Web/PWA project asset: assets/${relativeAssetPath.replaceAll(path.sep, '/')}`)
+    }
+    if (!manifestAssets.has(manifestAssetPath)) {
+      issues.push(`project-assets.json must include ${manifestAssetPath}`)
+    }
+  }
+
+  for (const assetPath of projectAssetManifest.assets) {
+    if (typeof assetPath !== 'string' || !assetPath.startsWith('/assets/')) {
+      issues.push(`project-assets.json asset paths must be root-relative /assets entries: ${assetPath}`)
+      continue
+    }
+    if (!(await fileExists(path.join(distDir, assetPath.slice(1))))) {
+      issues.push(`project-assets.json references missing dist asset: ${assetPath}`)
     }
   }
 }

@@ -1,6 +1,7 @@
 const CACHE_NAME = "monogatari-web-v0.9.5";
 const SCOPE_PATH = new URL(self.registration.scope).pathname;
 const BASE_PATH = SCOPE_PATH.endsWith("/") ? SCOPE_PATH.slice(0, -1) : SCOPE_PATH;
+const PROJECT_ASSET_MANIFEST_PATH = "/project-assets.json";
 const APP_SHELL_PATHS = [
   "/",
   "/index.html",
@@ -9,6 +10,7 @@ const APP_SHELL_PATHS = [
   "/icons/app-icon.svg",
   "/icons/maskable-icon.svg",
   "/manifest.webmanifest",
+  PROJECT_ASSET_MANIFEST_PATH,
   "/locales/en.json",
   "/locales/zh-CN.json",
   "/locales/zh.json",
@@ -38,6 +40,7 @@ self.addEventListener("install", (event) => {
     caches
       .open(CACHE_NAME)
       .then((cache) => cache.addAll(APP_SHELL))
+      .then(() => cacheProjectAssets())
       .then(() => self.skipWaiting())
   );
 });
@@ -73,6 +76,26 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(staleWhileRevalidate(request));
   }
 });
+
+async function cacheProjectAssets() {
+  try {
+    const manifestResponse = await fetch(withBase(PROJECT_ASSET_MANIFEST_PATH), { cache: "no-cache" });
+    if (!manifestResponse.ok) return;
+
+    const manifest = await manifestResponse.json();
+    if (manifest.schema !== "monogatari-web-project-assets/v1" || !Array.isArray(manifest.assets)) return;
+
+    const projectAssets = manifest.assets
+      .filter((assetPath) => typeof assetPath === "string" && assetPath.startsWith("/assets/"))
+      .map(withBase);
+    if (projectAssets.length === 0) return;
+
+    const cache = await caches.open(CACHE_NAME);
+    await cache.addAll(projectAssets);
+  } catch {
+    // Project assets still use cache-first runtime caching when the manifest is unavailable.
+  }
+}
 
 async function networkFirstNavigation(request) {
   try {
