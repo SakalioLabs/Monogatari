@@ -101,7 +101,7 @@ npm run verify:responsive-shell
 npm run preview:web
 ```
 
-The Tauri mobile preflight verifies Android/iOS command readiness, Vite `TAURI_DEV_HOST` binding, compact Tauri shell config, and `docs/MOBILE_DEPLOYMENT.md`. The mobile readiness check verifies safe-area viewport metadata, iOS/PWA install metadata, compact Tauri shell limits, and bottom navigation safe-area padding. The web build emits `manifest.webmanifest`, `sw.js`, an offline fallback page, `404.html`, and `.nojekyll` for static hosting. It also runs the bundle budget verifier and responsive shell verifier so entry assets stay small while 375px mobile and 768px tablet layout signals stay present in the built Web/PWA shell. The service worker registers only in production browser builds and is disabled inside Tauri.
+The Tauri mobile preflight verifies Android/iOS command readiness, Vite `TAURI_DEV_HOST` binding, compact Tauri shell config, and `docs/MOBILE_DEPLOYMENT.md`. The mobile readiness check verifies safe-area viewport metadata, iOS/PWA install metadata, compact Tauri shell limits, and bottom navigation safe-area padding. The web build emits `manifest.webmanifest`, `sw.js`, an offline fallback page, `404.html`, `.nojekyll`, and copied `data/assets` project sample assets for static hosting. It also runs the bundle budget verifier and responsive shell verifier so entry assets stay small while 375px mobile and 768px tablet layout signals stay present in the built Web/PWA shell. The service worker registers only in production browser builds and is disabled inside Tauri.
 
 For GitHub Pages or any subpath deployment, set the base path before building:
 

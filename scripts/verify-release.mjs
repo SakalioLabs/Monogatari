@@ -1240,6 +1240,7 @@ async function verifyFrontendSourceInvariants() {
   const i18nSource = await readFile(path.join(frontendDir, 'src', 'lib', 'i18n.ts'), 'utf8')
   const pwaSource = await readFile(path.join(frontendDir, 'src', 'lib', 'pwa.ts'), 'utf8')
   const rendererAssetsSource = await readFile(path.join(frontendDir, 'src', 'lib', 'rendererAssets.ts'), 'utf8')
+  const prepareWebDistSource = await readFile(path.join(frontendDir, 'scripts', 'prepare-web-dist.mjs'), 'utf8')
   const mobileReadinessSource = await readFile(path.join(frontendDir, 'scripts', 'verify-mobile-readiness.mjs'), 'utf8')
   const responsiveShellSource = await readFile(path.join(frontendDir, 'scripts', 'verify-responsive-shell.mjs'), 'utf8')
   const gameViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'GameView.vue'), 'utf8')
@@ -1321,6 +1322,18 @@ async function verifyFrontendSourceInvariants() {
   for (const [needle, description] of serviceWorkerRequirements) {
     if (!serviceWorkerSource.includes(needle)) {
       issues.push(`frontend/public/sw.js must ${description}`)
+    }
+  }
+
+  const webDistPackagingRequirements = [
+    ["'data', 'assets'", 'copy checked-in project assets from data/assets'],
+    ['distProjectAssetsDir', 'target copied project assets into dist/assets'],
+    ['cp(projectAssetsDir, distProjectAssetsDir', 'merge project assets into the Web/PWA dist asset tree'],
+    ['project assets', 'report project assets in the Web/PWA preparation output'],
+  ]
+  for (const [needle, description] of webDistPackagingRequirements) {
+    if (!prepareWebDistSource.includes(needle)) {
+      issues.push(`frontend/scripts/prepare-web-dist.mjs must ${description}`)
     }
   }
 
@@ -2040,6 +2053,7 @@ async function verifyWebDist({ basePath = '/' } = {}) {
       issues.push(`Missing Web/PWA locale fallback: ${locale}`)
     }
   }
+  await verifyWebProjectAssets(distDir, issues)
 
   if (serviceWorker) {
     const packageJson = JSON.parse(await readFile(path.join(frontendDir, 'package.json'), 'utf8'))
@@ -2063,6 +2077,28 @@ async function verifyWebDist({ basePath = '/' } = {}) {
   }
 
   console.log(`[release] Web/PWA dist assets OK (${normalizedBase} base)`)
+}
+
+async function verifyWebProjectAssets(distDir, issues) {
+  const sourceAssetsDir = path.join(root, 'data', 'assets')
+  if (!(await directoryExists(sourceAssetsDir))) {
+    issues.push('data/assets must exist for Web/PWA project asset packaging')
+    return
+  }
+
+  const sourceAssets = await walkFiles(sourceAssetsDir, [])
+  if (sourceAssets.length === 0) {
+    issues.push('data/assets must contain project assets for Web/PWA packaging')
+    return
+  }
+
+  for (const sourceAsset of sourceAssets) {
+    const relativeAssetPath = path.relative(sourceAssetsDir, sourceAsset)
+    const distAssetPath = path.join(distDir, 'assets', relativeAssetPath)
+    if (!(await fileExists(distAssetPath))) {
+      issues.push(`Missing Web/PWA project asset: assets/${relativeAssetPath.replaceAll(path.sep, '/')}`)
+    }
+  }
 }
 
 function normalizeWebBasePath(value) {

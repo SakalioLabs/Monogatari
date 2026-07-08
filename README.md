@@ -49,7 +49,7 @@ Monogatari is a development engine for creating LLM-driven text adventure games.
 Verified on 2026-07-08:
 
 - Frontend production build passes with `npm run build`.
-- Web/PWA production build passes with `npm run build:web`, including static-hosting SPA fallback assets, dedicated install/maskable icons, and bundle-budget verification.
+- Web/PWA production build passes with `npm run build:web`, including static-hosting SPA fallback assets, dedicated install/maskable icons, copied project sample assets, and bundle-budget verification.
 - Mobile shell readiness passes with `npm run verify:mobile-readiness`, covering viewport safe-area support, iOS/PWA metadata, compact Tauri shell limits, and bottom navigation safe-area padding.
 - Responsive shell verification runs during `npm run build:web`, covering built 375px mobile and 768px tablet Web/PWA layout signals.
 - Tauri mobile deployment preflight passes with `node scripts/verify-tauri-mobile-preflight.mjs`, covering Android/iOS command readiness, Vite `TAURI_DEV_HOST` binding, Tauri shell config, and mobile release documentation.
@@ -196,7 +196,7 @@ npm run build:web
 Remove-Item Env:VITE_BASE_PATH
 ```
 
-The web build emits `dist/404.html` for SPA fallback, `dist/.nojekyll` for GitHub Pages, and PWA assets, including install and maskable icons, scoped to the configured base path.
+The web build emits `dist/404.html` for SPA fallback, `dist/.nojekyll` for GitHub Pages, PWA assets, install/maskable icons, and copied `data/assets` project sample assets scoped to the configured base path.
 
 ## Usage
 

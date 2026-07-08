@@ -1,9 +1,12 @@
-import { copyFile, stat, writeFile } from 'node:fs/promises'
+import { copyFile, cp, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
+const rootDir = path.resolve(scriptDir, '..', '..')
 const distDir = path.resolve(scriptDir, '..', 'dist')
+const projectAssetsDir = path.join(rootDir, 'data', 'assets')
+const distProjectAssetsDir = path.join(distDir, 'assets')
 const requiredFiles = [
   'index.html',
   'manifest.webmanifest',
@@ -36,5 +39,6 @@ if (missing.length > 0) {
 
 await copyFile(path.join(distDir, 'index.html'), path.join(distDir, '404.html'))
 await writeFile(path.join(distDir, '.nojekyll'), '')
+await cp(projectAssetsDir, distProjectAssetsDir, { recursive: true, force: true })
 
-console.log('[web-dist] Static hosting assets ready: 404.html, .nojekyll, manifest.webmanifest, sw.js, offline.html, PWA icons')
+console.log('[web-dist] Static hosting assets ready: 404.html, .nojekyll, manifest.webmanifest, sw.js, offline.html, PWA icons, project assets')

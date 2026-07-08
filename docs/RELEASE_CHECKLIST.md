@@ -8,6 +8,7 @@
 ### Frontend
 - [ ] `cd frontend && npm run build` passes with zero errors
 - [ ] `cd frontend && npm run build:web` emits manifest, service worker, offline fallback, `404.html`, and `.nojekyll` assets
+- [ ] Web/PWA dist includes copied `data/assets` project sample backgrounds and character sprites under `dist/assets`
 - [ ] Web/PWA manifest includes dedicated install and maskable icons, and `sw.js` precaches those icon assets for offline install surfaces
 - [ ] `cd frontend && npm run verify:mobile-readiness` passes, proving safe-area viewport metadata, iOS/PWA install metadata, bottom navigation safe-area padding, and compact Tauri shell limits
 - [ ] `cd frontend && npm run verify:responsive-shell` passes after `npm run build:web`, proving built 375px mobile and 768px tablet Web/PWA shell layout signals
