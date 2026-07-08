@@ -187,6 +187,7 @@ async function main() {
 
   await run('git diff whitespace check', 'git', ['diff', '--check'], root)
   await run('Frontend renderer asset selector contract', 'npm', ['run', 'verify:renderer-assets'], frontendDir)
+  await run('Frontend mobile shell readiness', 'npm', ['run', 'verify:mobile-readiness'], frontendDir)
   await run('Release-critical Rust format check', 'rustfmt', ['--edition', '2021', '--check', ...releaseCriticalRustFiles], rustDir)
   await run('Rust game tests', 'cargo', ['test', '--locked', '-p', 'llm-game'], rustDir)
   await run('Rust Tauri command tests', 'cargo', ['test', '--locked', '-p', 'llm-galgame-app'], rustDir)
@@ -1201,9 +1202,13 @@ async function verifyLocaleCoverage() {
 
 async function verifyFrontendSourceInvariants() {
   const issues = []
+  const frontendPackageSource = await readFile(path.join(frontendDir, 'package.json'), 'utf8')
+  const indexSource = await readFile(path.join(frontendDir, 'index.html'), 'utf8')
+  const globalStyleSource = await readFile(path.join(frontendDir, 'src', 'styles', 'main.css'), 'utf8')
   const i18nSource = await readFile(path.join(frontendDir, 'src', 'lib', 'i18n.ts'), 'utf8')
   const pwaSource = await readFile(path.join(frontendDir, 'src', 'lib', 'pwa.ts'), 'utf8')
   const rendererAssetsSource = await readFile(path.join(frontendDir, 'src', 'lib', 'rendererAssets.ts'), 'utf8')
+  const mobileReadinessSource = await readFile(path.join(frontendDir, 'scripts', 'verify-mobile-readiness.mjs'), 'utf8')
   const gameViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'GameView.vue'), 'utf8')
   const chatViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'ChatView.vue'), 'utf8')
   const groupChatViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'GroupChatView.vue'), 'utf8')
@@ -1229,6 +1234,25 @@ async function verifyFrontendSourceInvariants() {
   }
   if (!pwaSource.includes('hasTauriRuntime()')) {
     issues.push('frontend/src/lib/pwa.ts must keep service worker registration disabled inside Tauri')
+  }
+
+  const mobileShellRequirements = [
+    [frontendPackageSource, 'verify:mobile-readiness', 'expose a mobile readiness verifier npm script'],
+    [indexSource, 'viewport-fit=cover', 'enable safe-area viewport layout for mobile shells'],
+    [indexSource, 'apple-mobile-web-app-capable', 'include iOS standalone PWA metadata'],
+    [indexSource, 'apple-touch-icon', 'include an Apple touch icon'],
+    [globalStyleSource, '100svh', 'use small viewport height units for mobile WebViews'],
+    [globalStyleSource, 'env(safe-area-inset-bottom', 'protect bottom UI from mobile safe areas'],
+    [globalStyleSource, 'touch-action: manipulation', 'use mobile-friendly touch handling'],
+    [mobileReadinessSource, 'viewport-fit=cover', 'verify safe-area viewport metadata'],
+    [mobileReadinessSource, 'manifest.webmanifest display must be standalone', 'verify standalone PWA display mode'],
+    [mobileReadinessSource, 'minWidth must be <= 390', 'verify compact Tauri shell width limits'],
+    [mobileReadinessSource, 'minHeight must be <= 640', 'verify compact Tauri shell height limits'],
+  ]
+  for (const [source, needle, description] of mobileShellRequirements) {
+    if (!source.includes(needle)) {
+      issues.push(`Mobile shell readiness must ${description}`)
+    }
   }
 
   const serviceWorkerRequirements = [

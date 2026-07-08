@@ -9,6 +9,7 @@
 - [ ] `cd frontend && npm run build` passes with zero errors
 - [ ] `cd frontend && npm run build:web` emits manifest, service worker, offline fallback, `404.html`, and `.nojekyll` assets
 - [ ] Web/PWA manifest includes dedicated install and maskable icons, and `sw.js` precaches those icon assets for offline install surfaces
+- [ ] `cd frontend && npm run verify:mobile-readiness` passes, proving safe-area viewport metadata, iOS/PWA install metadata, bottom navigation safe-area padding, and compact Tauri shell limits
 - [ ] `cd frontend && npm run verify:web-budget` passes with entry JS/CSS and lazy renderer chunks inside budget
 - [ ] `npm audit` shows zero vulnerabilities
 - [ ] All 21 views render correctly (Dashboard, Title, Story Mode, AI Chat, Workflow, Character Editor, Scene Assets, Settings, Characters, Group Chat, Analytics, Quality, Marketplace, Plugins, Audio, Knowledge, Dialogue Editor, Scene Editor, CG Gallery, Backlog, Achievements)

@@ -216,7 +216,9 @@ const readinessItems = computed(() => [
   { name: 'Full i18n (280+ keys, 4 locales)', done: true },
   { name: 'Plugin system for custom nodes', done: true },
   { name: 'Cloud save sync', done: true },
-  { name: 'Installer signing and distribution', done: false },
+  { name: 'Distribution channel policy', done: true },
+  { name: 'Mobile Web/PWA shell readiness', done: true },
+  { name: 'Production installer signing', done: false },
   { name: 'Mobile deployment (Tauri mobile)', done: false },
 ])
 

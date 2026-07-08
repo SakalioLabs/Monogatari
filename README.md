@@ -50,6 +50,7 @@ Verified on 2026-07-08:
 
 - Frontend production build passes with `npm run build`.
 - Web/PWA production build passes with `npm run build:web`, including static-hosting SPA fallback assets, dedicated install/maskable icons, and bundle-budget verification.
+- Mobile shell readiness passes with `npm run verify:mobile-readiness`, covering viewport safe-area support, iOS/PWA metadata, compact Tauri shell limits, and bottom navigation safe-area padding.
 - Full frontend dependency audit passes with `npm audit`.
 - Rust Tauri app crate passes `cargo check --locked -p llm-galgame-app`.
 - Character quality suite regression tests pass inside `cargo test --locked -p llm-galgame-app`.
@@ -398,6 +399,7 @@ The web build emits `dist/404.html` for SPA fallback, `dist/.nojekyll` for GitHu
 - [x] Quality Suite workflow branch coverage snapshots for score-gated story QA
 - [x] Quality Suite workbench and JSON export with stable audit summaries for QA evidence handoff
 - [x] Web/PWA distribution baseline with manifest, service worker, and offline fallback
+- [x] Mobile Web/PWA shell readiness gate for safe-area viewport, install metadata, and compact Tauri shell limits
 - [x] Checked-in score-gate workflow fixture with backend execution regression for evaluation-driven story unlocks
 - [x] Workflow Run score/event diagnostics for author-visible trigger debugging
 - [x] Workflow canvas run badges for score-gated graph debugging
