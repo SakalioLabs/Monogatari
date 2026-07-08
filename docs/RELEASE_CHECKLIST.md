@@ -88,12 +88,13 @@
 - [ ] Installed Tauri build resolves bundled sample `data/` resources at startup when no development project data root is available
 - [ ] Installed Tauri build writes analytics, sync manifests, saves, and generated TTS assets under the active project data root
 - [ ] Project export manifest includes a versioned schema marker, file inventory, per-file checksums, generated assets, and redacted sensitive settings
-- [ ] Release artifact manifest generated with SHA-256 checksums, release channel metadata, installer expectations, and signing readiness evidence
+- [ ] Release artifact manifest generated with SHA-256 checksums, checked-in release channel policy metadata, installer expectations, and signing evidence
+- [ ] `scripts/release-channel-policy.json` confirms stable/beta releases require Windows MSI/NSIS installers and verified signing evidence, with missing-installer preflight exceptions explicitly policy-gated
 - [ ] Git tag created: `git tag v0.9.5`
 - [ ] Web/PWA preview verified with `npm run preview:web`
 - [ ] Subpath web deployment verified with `VITE_BASE_PATH` when publishing to GitHub Pages or another non-root path
 - [ ] Windows MSI installer built: `cargo tauri build`
 - [ ] macOS DMG installer built (if applicable)
 - [ ] Linux AppImage built (if applicable)
-- [ ] Code signing applied to installers
+- [ ] Code signing applied to installers and recorded with `monogatari-signature-evidence/v1` sidecar evidence before final stable/beta manifest generation
 - [ ] GitHub Release created with installers attached

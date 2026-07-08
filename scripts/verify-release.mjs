@@ -9,6 +9,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const frontendDir = path.join(root, 'frontend')
 const rustDir = path.join(root, 'rust-engine')
 const tauriAppDir = path.join(rustDir, 'crates', 'tauri-app')
+const releasePolicyPath = path.join(root, 'scripts', 'release-channel-policy.json')
 
 const skipDirs = new Set(['.git', 'node_modules', 'target', 'dist', 'release', 'bin', 'obj'])
 const textExtensions = new Set([
@@ -182,6 +183,7 @@ async function main() {
   await verifyFrontendSourceInvariants()
   await verifyFrontendRouteCoverage()
   await verifyTauriPackagingConfig()
+  await verifyReleaseChannelPolicy()
 
   await run('git diff whitespace check', 'git', ['diff', '--check'], root)
   await run('Frontend renderer asset selector contract', 'npm', ['run', 'verify:renderer-assets'], frontendDir)
@@ -1716,6 +1718,67 @@ async function verifyTauriPackagingConfig() {
   }
 
   console.log(`[release] Tauri packaging config OK (${targets.join(', ')} target(s), ${icons.length} icon(s))`)
+}
+
+async function verifyReleaseChannelPolicy() {
+  const issues = []
+  const policy = JSON.parse(await readFile(releasePolicyPath, 'utf8'))
+  const manifestScript = await readFile(path.join(root, 'scripts', 'create-release-manifest.mjs'), 'utf8')
+
+  if (policy.schema !== 'monogatari-release-channel-policy/v1') {
+    issues.push('release-channel-policy.json must use schema monogatari-release-channel-policy/v1')
+  }
+  const channels = policy.channels ?? {}
+  for (const channel of ['stable', 'beta', 'alpha', 'nightly', 'internal']) {
+    if (!channels[channel]) {
+      issues.push(`release-channel-policy.json must define ${channel}`)
+    }
+  }
+
+  const stable = channels.stable ?? {}
+  if (stable.audience !== 'public') {
+    issues.push('stable release channel must target public audience')
+  }
+  if (stable.github?.prerelease !== false || stable.github?.make_latest !== true) {
+    issues.push('stable release channel must publish as latest non-prerelease GitHub Release')
+  }
+  for (const kind of ['msi-installer', 'nsis-installer']) {
+    if (!(stable.required_desktop_installers ?? []).includes(kind)) {
+      issues.push(`stable release channel must require ${kind}`)
+    }
+  }
+  if (stable.code_signing?.required !== true || stable.code_signing?.minimum_status !== 'verified') {
+    issues.push('stable release channel must require verified code signing')
+  }
+  if (stable.preflight?.allow_missing_installers !== true) {
+    issues.push('stable release channel must explicitly allow missing installers only for release-gate preflight')
+  }
+  if (stable.preflight?.allow_unsigned_installers !== false) {
+    issues.push('stable release channel must not allow unsigned installers')
+  }
+
+  const manifestPolicyRequirements = [
+    ['release-channel-policy.json', 'load the checked-in release channel policy'],
+    ['distributionSummary', 'emit channel distribution policy evidence into release manifests'],
+    ['signatureEvidenceFor', 'read installer signing evidence sidecars'],
+    ['monogatari-signature-evidence/v1', 'validate stable signature evidence schema'],
+    ['artifact_sha256', 'bind signature evidence to installer checksums'],
+    ['installerPreflightAllowed', 'gate missing-installer preflight exceptions through policy'],
+    ['allow_unsigned_installers', 'gate unsigned installer exceptions through policy'],
+    ['missing_evidence', 'surface missing installer signature evidence'],
+    ['invalid_evidence', 'surface invalid installer signature evidence'],
+  ]
+  for (const [needle, description] of manifestPolicyRequirements) {
+    if (!manifestScript.includes(needle)) {
+      issues.push(`create-release-manifest.mjs must ${description}`)
+    }
+  }
+
+  if (issues.length > 0) {
+    throw new Error(`Release channel policy verification failed:\n${issues.join('\n')}`)
+  }
+
+  console.log('[release] Release channel policy OK')
 }
 
 function parseFrontendRoutes(source) {

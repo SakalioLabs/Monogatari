@@ -1,0 +1,113 @@
+{
+  "schema": "monogatari-release-channel-policy/v1",
+  "channels": {
+    "stable": {
+      "audience": "public",
+      "github": {
+        "prerelease": false,
+        "make_latest": true
+      },
+      "required_artifact_categories": [
+        "web",
+        "desktop-installer"
+      ],
+      "required_desktop_installers": [
+        "msi-installer",
+        "nsis-installer"
+      ],
+      "code_signing": {
+        "required": true,
+        "minimum_status": "verified"
+      },
+      "preflight": {
+        "allow_missing_installers": true,
+        "allow_unsigned_installers": false,
+        "reason": "Release verification may run before platform-specific installer jobs. Final stable manifest generation without --allow-missing-installers must block missing installers and unsigned installers."
+      }
+    },
+    "beta": {
+      "audience": "public-preview",
+      "github": {
+        "prerelease": true,
+        "make_latest": false
+      },
+      "required_artifact_categories": [
+        "web",
+        "desktop-installer"
+      ],
+      "required_desktop_installers": [
+        "msi-installer",
+        "nsis-installer"
+      ],
+      "code_signing": {
+        "required": true,
+        "minimum_status": "verified"
+      },
+      "preflight": {
+        "allow_missing_installers": true,
+        "allow_unsigned_installers": false,
+        "reason": "Beta preflight can run before installer jobs, but public beta installers must still ship with verified signing evidence."
+      }
+    },
+    "alpha": {
+      "audience": "limited-preview",
+      "github": {
+        "prerelease": true,
+        "make_latest": false
+      },
+      "required_artifact_categories": [
+        "web"
+      ],
+      "required_desktop_installers": [],
+      "code_signing": {
+        "required": false,
+        "minimum_status": "missing-evidence"
+      },
+      "preflight": {
+        "allow_missing_installers": true,
+        "allow_unsigned_installers": true,
+        "reason": "Alpha builds may be web-only or internal QA builds before installer signing is available."
+      }
+    },
+    "nightly": {
+      "audience": "internal-automation",
+      "github": {
+        "prerelease": true,
+        "make_latest": false
+      },
+      "required_artifact_categories": [
+        "web"
+      ],
+      "required_desktop_installers": [],
+      "code_signing": {
+        "required": false,
+        "minimum_status": "missing-evidence"
+      },
+      "preflight": {
+        "allow_missing_installers": true,
+        "allow_unsigned_installers": true,
+        "reason": "Nightly builds prioritize regression evidence and may omit platform installers."
+      }
+    },
+    "internal": {
+      "audience": "internal",
+      "github": {
+        "prerelease": true,
+        "make_latest": false
+      },
+      "required_artifact_categories": [
+        "web"
+      ],
+      "required_desktop_installers": [],
+      "code_signing": {
+        "required": false,
+        "minimum_status": "missing-evidence"
+      },
+      "preflight": {
+        "allow_missing_installers": true,
+        "allow_unsigned_installers": true,
+        "reason": "Internal builds can be used for developer QA before public installer signing."
+      }
+    }
+  }
+}

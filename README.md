@@ -86,7 +86,7 @@ Verified on 2026-07-08:
 - Installed Tauri builds discover bundled sample `data/` resources at startup and bind them as the default project root when no development data root is available.
 - Analytics logs, cloud-sync manifests, and generated local TTS assets are written under the active project data root for portable installed desktop builds.
 - Project export emits a versioned manifest with file inventory, per-file MD5 checksums, generated asset coverage, and redacted sensitive settings for package handoff.
-- Release artifact manifests can be generated with `node scripts/create-release-manifest.mjs` to capture Web/PWA and desktop installer artifact paths, SHA-256 checksums, release channel metadata, missing installer expectations, and signing readiness evidence.
+- Release artifact manifests can be generated with `node scripts/create-release-manifest.mjs` to capture Web/PWA and desktop installer artifact paths, SHA-256 checksums, checked-in release channel policy metadata, missing installer expectations, and verified installer signing evidence.
 - One-command release verification passes with `node scripts/verify-release.mjs`, including all quality suite files, renderer asset contract checks, pinned knowledge-ref checks, locale coverage, frontend UI text artifact scanning, frontend source invariants, frontend route/sidebar coverage, Tauri packaging preflight, root and subpath Web/PWA builds, Web/PWA dist asset checks, release artifact manifest checks, and preview route smoke checks.
 - Commercial release gates are tracked in `docs/RELEASE_CHECKLIST.md`.
 
@@ -162,7 +162,21 @@ After Web/PWA and installer builds are available, generate the distributable che
 node scripts/create-release-manifest.mjs --channel=stable
 ```
 
-The manifest is written under `release/` and records artifact SHA-256 hashes, expected Windows MSI/NSIS installer presence, and signing readiness for GitHub Release handoff.
+The manifest is written under `release/` and records artifact SHA-256 hashes, expected Windows MSI/NSIS installer presence, release channel policy, and installer signing evidence for GitHub Release handoff. Stable and beta final manifests require Windows MSI/NSIS installers plus verified signing evidence; `--allow-missing-installers` is only a policy-gated release-preflight exception.
+
+Installer signing evidence is stored next to each installer as `<installer>.sig.json`:
+
+```json
+{
+  "schema": "monogatari-signature-evidence/v1",
+  "artifact_sha256": "<installer sha256>",
+  "status": "verified",
+  "subject": "SakalioLabs",
+  "verifier": "signtool verify /pa",
+  "signed_at": "2026-07-08T00:00:00.000Z",
+  "verified_at": "2026-07-08T00:00:00.000Z"
+}
+```
 
 For static hosting under a subpath, set `VITE_BASE_PATH` before building:
 
@@ -394,7 +408,8 @@ The web build emits `dist/404.html` for SPA fallback, `dist/.nojekyll` for GitHu
 
 ### In Progress
 
-- [ ] Installer signing and distribution channel configuration
+- [x] Distribution channel policy and installer signing evidence gates
+- [ ] Production installer code-signing credentials and final signed installer publication
 - [x] Achievement system with 15 milestones, progress tracking, and localStorage persistence
 - [ ] Mobile deployment (Tauri mobile)
 

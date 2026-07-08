@@ -11,6 +11,7 @@ const tauriAppDir = path.join(rustDir, 'crates', 'tauri-app')
 const webDistDir = path.join(frontendDir, 'dist')
 const tauriBundleDir = path.join(rustDir, 'target', 'release', 'bundle')
 const defaultOutPath = path.join(root, 'release', 'monogatari-release-manifest.json')
+const releasePolicyPath = path.join(root, 'scripts', 'release-channel-policy.json')
 
 const args = process.argv.slice(2)
 const argSet = new Set(args)
@@ -19,7 +20,6 @@ const allowMissingInstallers = argSet.has('--allow-missing-installers')
 const channel = readArg('channel') ?? process.env.MONOGATARI_RELEASE_CHANNEL ?? 'stable'
 const outPath = path.resolve(root, readArg('out') ?? defaultOutPath)
 
-const validChannels = new Set(['stable', 'beta', 'alpha', 'nightly', 'internal'])
 const expectedWebArtifacts = [
   'index.html',
   '404.html',
@@ -47,8 +47,10 @@ main().catch((error) => {
 
 async function main() {
   const issues = []
-  if (!validChannels.has(channel)) {
-    issues.push(`Release channel must be one of: ${Array.from(validChannels).join(', ')}`)
+  const releasePolicy = await readReleasePolicy(issues)
+  const channelPolicy = releasePolicy?.channels?.[channel] ?? null
+  if (!channelPolicy) {
+    issues.push(`Release channel must be one of: ${Object.keys(releasePolicy?.channels ?? {}).join(', ')}`)
   }
 
   const versions = await readVersions()
@@ -60,7 +62,7 @@ async function main() {
   const artifacts = []
   const missingExpectedArtifacts = []
   await collectWebArtifacts(artifacts, missingExpectedArtifacts)
-  await collectDesktopInstallers(artifacts, missingExpectedArtifacts)
+  await collectDesktopInstallers(artifacts, missingExpectedArtifacts, issues, channelPolicy)
 
   if (artifacts.length === 0) {
     issues.push('No release artifacts found. Build Web/PWA or desktop bundles before creating a manifest.')
@@ -71,9 +73,10 @@ async function main() {
     issues.push(`Missing required Web/PWA artifacts: ${missingWeb.map((artifact) => artifact.path).join(', ')}`)
   }
   const missingInstallers = missingExpectedArtifacts.filter((artifact) => artifact.category === 'desktop-installer')
-  if (missingInstallers.length > 0 && !allowMissingInstallers) {
+  if (missingInstallers.length > 0 && !channelPolicy && !allowMissingInstallers) {
     issues.push(`Missing desktop installer artifacts: ${missingInstallers.map((artifact) => artifact.id).join(', ')}`)
   }
+  enforceChannelPolicy(channelPolicy, artifacts, missingExpectedArtifacts, issues)
 
   if (issues.length > 0) {
     throw new Error(`Release manifest validation failed:\n${issues.join('\n')}`)
@@ -87,9 +90,10 @@ async function main() {
     generated_at: new Date().toISOString(),
     git_commit: gitCommit(),
     sources: versions,
-    expected_artifacts: expectedArtifactContracts(),
+    distribution: distributionSummary(releasePolicy, channelPolicy, missingInstallers),
+    expected_artifacts: expectedArtifactContracts(channelPolicy),
     missing_expected_artifacts: missingExpectedArtifacts,
-    signing: signingSummary(artifacts),
+    signing: signingSummary(artifacts, channelPolicy),
     artifacts: artifacts.sort((a, b) => a.path.localeCompare(b.path)),
   }
 
@@ -112,6 +116,81 @@ function readArg(name) {
   const prefix = `--${name}=`
   const value = args.find((arg) => arg.startsWith(prefix))
   return value ? value.slice(prefix.length) : null
+}
+
+async function readReleasePolicy(issues) {
+  try {
+    const policy = JSON.parse(await readFile(releasePolicyPath, 'utf8'))
+    issues.push(...validateReleasePolicy(policy))
+    return policy
+  } catch (error) {
+    issues.push(`Release channel policy could not be read: ${error.message}`)
+    return null
+  }
+}
+
+function validateReleasePolicy(policy) {
+  const issues = []
+  if (policy?.schema !== 'monogatari-release-channel-policy/v1') {
+    issues.push('Release channel policy schema must be monogatari-release-channel-policy/v1')
+  }
+  if (!policy?.channels || typeof policy.channels !== 'object') {
+    issues.push('Release channel policy must define channels')
+    return issues
+  }
+
+  for (const [name, channelPolicy] of Object.entries(policy.channels)) {
+    const label = `channel ${name}`
+    if (!nonEmptyString(channelPolicy.audience)) {
+      issues.push(`${label}: audience is required`)
+    }
+    if (!Array.isArray(channelPolicy.required_artifact_categories)) {
+      issues.push(`${label}: required_artifact_categories must be an array`)
+    }
+    if (!Array.isArray(channelPolicy.required_desktop_installers)) {
+      issues.push(`${label}: required_desktop_installers must be an array`)
+    }
+    if (typeof channelPolicy.github?.prerelease !== 'boolean') {
+      issues.push(`${label}: github.prerelease must be boolean`)
+    }
+    if (typeof channelPolicy.github?.make_latest !== 'boolean') {
+      issues.push(`${label}: github.make_latest must be boolean`)
+    }
+    if (typeof channelPolicy.code_signing?.required !== 'boolean') {
+      issues.push(`${label}: code_signing.required must be boolean`)
+    }
+    if (!nonEmptyString(channelPolicy.code_signing?.minimum_status)) {
+      issues.push(`${label}: code_signing.minimum_status is required`)
+    }
+    if (typeof channelPolicy.preflight?.allow_missing_installers !== 'boolean') {
+      issues.push(`${label}: preflight.allow_missing_installers must be boolean`)
+    }
+    if (typeof channelPolicy.preflight?.allow_unsigned_installers !== 'boolean') {
+      issues.push(`${label}: preflight.allow_unsigned_installers must be boolean`)
+    }
+    if (!nonEmptyString(channelPolicy.preflight?.reason)) {
+      issues.push(`${label}: preflight.reason is required`)
+    }
+  }
+
+  const stable = policy.channels.stable
+  if (!stable) {
+    issues.push('Release channel policy must define stable')
+  } else {
+    if (stable.github?.prerelease !== false || stable.github?.make_latest !== true) {
+      issues.push('stable channel must publish as latest non-prerelease GitHub Release')
+    }
+    if (stable.code_signing?.required !== true || stable.code_signing?.minimum_status !== 'verified') {
+      issues.push('stable channel must require verified code signing')
+    }
+    for (const kind of ['msi-installer', 'nsis-installer']) {
+      if (!stable.required_desktop_installers?.includes(kind)) {
+        issues.push(`stable channel must require ${kind}`)
+      }
+    }
+  }
+
+  return issues
 }
 
 async function readVersions() {
@@ -150,26 +229,35 @@ async function collectWebArtifacts(artifacts, missingExpectedArtifacts) {
   }
 }
 
-async function collectDesktopInstallers(artifacts, missingExpectedArtifacts) {
+async function collectDesktopInstallers(artifacts, missingExpectedArtifacts, issues, channelPolicy) {
   const files = await walkFiles(tauriBundleDir)
   const installers = files.filter((file) => desktopInstallerExtensions.has(path.extname(file).toLowerCase()))
   const installerKinds = new Set()
   for (const file of installers) {
     const contract = desktopInstallerExtensions.get(path.extname(file).toLowerCase())
     installerKinds.add(contract.kind)
+    const digest = await sha256(file)
+    const signature = await signatureEvidenceFor(file, digest)
+    issues.push(...signature.issues.map((issue) => `${relative(file)}: ${issue}`))
     artifacts.push(await artifactEntry(file, {
       category: 'desktop-installer',
       platform: contract.platform,
       kind: contract.kind,
-      signed: false,
-      signature_status: 'unchecked',
-    }))
+      signed: signature.signed,
+      signature_status: signature.status,
+      signature_evidence: signature.evidence_path,
+      signature_subject: signature.subject,
+      signature_verifier: signature.verifier,
+      signed_at: signature.signed_at,
+      verified_at: signature.verified_at,
+    }, digest))
   }
 
-  for (const expected of [
+  const expectedInstallers = [
     { id: 'desktop:windows-msi', platform: 'windows', kind: 'msi-installer' },
     { id: 'desktop:windows-nsis', platform: 'windows', kind: 'nsis-installer' },
-  ]) {
+  ].filter((expected) => (channelPolicy?.required_desktop_installers ?? ['msi-installer', 'nsis-installer']).includes(expected.kind))
+  for (const expected of expectedInstallers) {
     if (!installerKinds.has(expected.kind)) {
       missingExpectedArtifacts.push({
         ...expected,
@@ -180,14 +268,76 @@ async function collectDesktopInstallers(artifacts, missingExpectedArtifacts) {
   }
 }
 
-async function artifactEntry(file, metadata) {
+async function artifactEntry(file, metadata, knownSha256 = null) {
   const info = await stat(file)
   return {
     id: artifactId(file),
     ...metadata,
     path: relative(file),
     size_bytes: info.size,
-    sha256: await sha256(file),
+    sha256: knownSha256 ?? await sha256(file),
+  }
+}
+
+async function signatureEvidenceFor(file, artifactSha256) {
+  const evidencePath = `${file}.sig.json`
+  try {
+    await stat(evidencePath)
+  } catch {
+    return {
+      signed: false,
+      status: 'missing-evidence',
+      evidence_path: null,
+      subject: null,
+      verifier: null,
+      signed_at: null,
+      verified_at: null,
+      issues: [],
+    }
+  }
+
+  const issues = []
+  let evidence
+  try {
+    evidence = JSON.parse(await readFile(evidencePath, 'utf8'))
+  } catch (error) {
+    return {
+      signed: false,
+      status: 'invalid-evidence',
+      evidence_path: relative(evidencePath),
+      subject: null,
+      verifier: null,
+      signed_at: null,
+      verified_at: null,
+      issues: [`signature evidence is not valid JSON: ${error.message}`],
+    }
+  }
+
+  if (evidence.schema !== 'monogatari-signature-evidence/v1') {
+    issues.push('signature evidence schema must be monogatari-signature-evidence/v1')
+  }
+  if (evidence.artifact_sha256 !== artifactSha256) {
+    issues.push('signature evidence artifact_sha256 must match installer SHA-256')
+  }
+  if (evidence.status !== 'verified') {
+    issues.push('signature evidence status must be verified')
+  }
+  for (const field of ['subject', 'verifier', 'verified_at']) {
+    if (!nonEmptyString(evidence[field])) {
+      issues.push(`signature evidence ${field} is required`)
+    }
+  }
+
+  const signed = issues.length === 0
+  return {
+    signed,
+    status: signed ? 'verified' : 'invalid-evidence',
+    evidence_path: relative(evidencePath),
+    subject: evidence.subject ?? null,
+    verifier: evidence.verifier ?? null,
+    signed_at: evidence.signed_at ?? null,
+    verified_at: evidence.verified_at ?? null,
+    issues,
   }
 }
 
@@ -195,40 +345,101 @@ function artifactId(file) {
   return relative(file).replace(/[^a-zA-Z0-9._-]+/g, ':')
 }
 
-function expectedArtifactContracts() {
+function expectedArtifactContracts(channelPolicy) {
+  const requiredCategories = new Set(channelPolicy?.required_artifact_categories ?? ['web', 'desktop-installer'])
+  const requiredInstallers = new Set(channelPolicy?.required_desktop_installers ?? ['msi-installer', 'nsis-installer'])
   return [
     ...expectedWebArtifacts.map((artifactPath) => ({
       id: `web:${artifactPath}`,
       category: 'web',
       platform: 'web',
       path: `frontend/dist/${artifactPath}`,
-      required_for_release: true,
+      required_for_release: requiredCategories.has('web'),
     })),
     {
       id: 'desktop:windows-msi',
       category: 'desktop-installer',
       platform: 'windows',
       kind: 'msi-installer',
-      required_for_release: true,
-      signing_required: true,
+      required_for_release: requiredCategories.has('desktop-installer') && requiredInstallers.has('msi-installer'),
+      signing_required: channelPolicy?.code_signing?.required === true,
     },
     {
       id: 'desktop:windows-nsis',
       category: 'desktop-installer',
       platform: 'windows',
       kind: 'nsis-installer',
-      required_for_release: true,
-      signing_required: true,
+      required_for_release: requiredCategories.has('desktop-installer') && requiredInstallers.has('nsis-installer'),
+      signing_required: channelPolicy?.code_signing?.required === true,
     },
   ]
 }
 
-function signingSummary(artifacts) {
+function installerPreflightAllowed(channelPolicy) {
+  return allowMissingInstallers && channelPolicy?.preflight?.allow_missing_installers === true
+}
+
+function enforceChannelPolicy(channelPolicy, artifacts, missingExpectedArtifacts, issues) {
+  if (!channelPolicy) return
+
+  const categories = new Set(artifacts.map((artifact) => artifact.category))
+  for (const category of channelPolicy.required_artifact_categories ?? []) {
+    if (!categories.has(category)) {
+      const categoryMissing = missingExpectedArtifacts.some((artifact) => artifact.category === category)
+      if (category !== 'desktop-installer' || !categoryMissing || !installerPreflightAllowed(channelPolicy)) {
+        issues.push(`Release channel ${channel} requires artifact category ${category}`)
+      }
+    }
+  }
+
+  const missingInstallers = missingExpectedArtifacts
+    .filter((artifact) => artifact.category === 'desktop-installer')
+    .filter((artifact) => (channelPolicy.required_desktop_installers ?? []).includes(artifact.kind))
+  if (missingInstallers.length > 0 && !installerPreflightAllowed(channelPolicy)) {
+    issues.push(`Release channel ${channel} requires desktop installers: ${missingInstallers.map((artifact) => artifact.kind).join(', ')}`)
+  }
+
+  const desktopArtifacts = artifacts.filter((artifact) => artifact.category === 'desktop-installer')
+  const signingRequired = channelPolicy.code_signing?.required === true
+  if (signingRequired) {
+    const unsigned = desktopArtifacts.filter((artifact) => artifact.signed !== true)
+    if (unsigned.length > 0 && !(allowMissingInstallers && channelPolicy.preflight?.allow_unsigned_installers === true)) {
+      issues.push(`Release channel ${channel} requires verified signatures for installers: ${unsigned.map((artifact) => artifact.path).join(', ')}`)
+    }
+  }
+}
+
+function distributionSummary(releasePolicy, channelPolicy, missingInstallers) {
+  return {
+    policy_schema: releasePolicy?.schema ?? null,
+    policy_path: relative(releasePolicyPath),
+    channel,
+    audience: channelPolicy?.audience ?? null,
+    github: channelPolicy?.github ?? null,
+    required_artifact_categories: channelPolicy?.required_artifact_categories ?? [],
+    required_desktop_installers: channelPolicy?.required_desktop_installers ?? [],
+    preflight: {
+      allow_missing_installers_requested: allowMissingInstallers,
+      allow_missing_installers_used: missingInstallers.length > 0 && installerPreflightAllowed(channelPolicy),
+      allow_missing_installers_allowed_by_policy: channelPolicy?.preflight?.allow_missing_installers === true,
+      reason: channelPolicy?.preflight?.reason ?? null,
+    },
+  }
+}
+
+function signingSummary(artifacts, channelPolicy) {
   const desktopArtifacts = artifacts.filter((artifact) => artifact.category === 'desktop-installer')
   return {
-    code_signing_required: true,
+    code_signing_required: channelPolicy?.code_signing?.required === true,
+    minimum_status: channelPolicy?.code_signing?.minimum_status ?? 'verified',
     policy: 'Desktop installer signatures must be applied and verified before public GitHub Release publication.',
     signed_artifact_count: desktopArtifacts.filter((artifact) => artifact.signed === true).length,
+    missing_evidence: desktopArtifacts
+      .filter((artifact) => artifact.signature_status === 'missing-evidence')
+      .map((artifact) => artifact.path),
+    invalid_evidence: desktopArtifacts
+      .filter((artifact) => artifact.signature_status === 'invalid-evidence')
+      .map((artifact) => artifact.path),
     unsigned_artifacts: desktopArtifacts
       .filter((artifact) => artifact.signed !== true)
       .map((artifact) => artifact.path),
@@ -288,4 +499,8 @@ function relative(file) {
 
 function relativeTo(file, base) {
   return path.relative(base, file).replaceAll(path.sep, '/')
+}
+
+function nonEmptyString(value) {
+  return typeof value === 'string' && value.trim().length > 0
 }
