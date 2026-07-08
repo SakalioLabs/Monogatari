@@ -191,6 +191,7 @@ async function main() {
   await verifyUiTextArtifacts()
   await verifyLocaleCoverage()
   await verifyFrontendSourceInvariants()
+  await verifyLegacyPromptBuilderInvariants()
   await verifyFrontendRouteCoverage()
   await verifyTauriPackagingConfig()
   await verifyReleaseChannelPolicy()
@@ -1732,6 +1733,46 @@ async function verifyFrontendRouteCoverage() {
   }
 
   console.log(`[release] Frontend route coverage OK (${routes.length} routes, ${navItems.length} sidebar nav item(s))`)
+}
+
+async function verifyLegacyPromptBuilderInvariants() {
+  const issues = []
+  const promptBuilderSource = await readFile(path.join(root, 'src', 'LLMAssistant.AI', 'PromptBuilder.cs'), 'utf8')
+  const promptBuilderTests = await readFile(path.join(root, 'tests', 'LLMAssistant.Tests', 'PromptBuilderTests.cs'), 'utf8')
+
+  const sourceRequirements = [
+    ['SanitizePromptContent', 'sanitize prompt content before legacy C# prompt assembly'],
+    ['NormalizeSecurityText', 'normalize security-sensitive Unicode before legacy C# prompt checks'],
+    ['IsStructuralRoleControlLine', 'detect XML/header/JSON-shaped role spoofing'],
+    ['SafeRoleHeader', 'prevent arbitrary AddMessage role labels from creating prompt sections'],
+    ['Guarded prompt-control marker omitted.', 'omit structural prompt-control marker lines'],
+    ['\\uFF01', 'normalize fullwidth ASCII ranges'],
+    ['\\u200B', 'remove zero-width obfuscation ranges'],
+  ]
+
+  for (const [needle, description] of sourceRequirements) {
+    if (!promptBuilderSource.includes(needle)) {
+      issues.push(`Legacy C# PromptBuilder must ${description}`)
+    }
+  }
+
+  const testRequirements = [
+    ['Build_SanitizesRoleMarkersInsidePromptContent', 'test bracket/header/XML role marker sanitization'],
+    ['Build_SanitizesFullwidthAndJsonRoleSpoofing', 'test fullwidth and JSON role spoofing sanitization'],
+    ['Build_DefaultsUnexpectedMessageRolesToUser', 'test arbitrary message roles cannot create prompt sections'],
+  ]
+
+  for (const [needle, description] of testRequirements) {
+    if (!promptBuilderTests.includes(needle)) {
+      issues.push(`Legacy C# PromptBuilder tests must ${description}`)
+    }
+  }
+
+  if (issues.length > 0) {
+    throw new Error(`Legacy C# PromptBuilder verification failed:\n${issues.join('\n')}`)
+  }
+
+  console.log('[release] Legacy C# PromptBuilder invariants OK')
 }
 
 async function verifyTauriPackagingConfig() {

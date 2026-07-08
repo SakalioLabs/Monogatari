@@ -38,6 +38,7 @@
 - Added structured role-block prompt-injection detection for XML, header, and JSON-shaped role spoofing before fallback scoring, memory, relationship, or story-event logic consumes player text.
 - Added reusable Rust AI prompt-builder boundary sanitization and release-gate `llm-ai` tests so downstream integrations cannot reintroduce role-marker prompt injection through shared prompt history or context assembly.
 - Added Rust API engine secret redaction for debug output, bearer tokens, sensitive custom headers, and API error surfaces before provider credentials can leak into logs or frontend reports.
+- Added legacy C# prompt-builder boundary sanitization and release-gate invariants so the retained legacy AI path cannot reintroduce role-marker prompt injection.
 - Added relationship sentiment side-channel containment so prompt-injection text with positive words cannot advance relationship milestone events.
 - Added fallback scoring side-channel containment so prompt-injection text cannot inflate engagement or creativity when model evaluation is unavailable.
 - Added workflow tool-output containment checks proving generated node text shaped like a tool/function call is withheld before downstream story nodes consume it.
