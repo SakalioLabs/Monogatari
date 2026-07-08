@@ -7,6 +7,9 @@
         <p>{{ projectState?.project_path || projectPath }}</p>
       </div>
       <div class="header-actions">
+        <button class="btn btn-secondary btn-sm" :disabled="exportingProject" @click="exportProjectManifest">
+          {{ exportingProject ? 'Exporting...' : 'Export Manifest' }}
+        </button>
         <button class="btn btn-secondary btn-sm" @click="refreshAll">{{ t('chat.refresh', 'Refresh') }}</button>
         <button class="btn btn-primary btn-sm" :disabled="savingProject" @click="saveProject">
           {{ savingProject ? t('common.loading', 'Saving') : t('settings.save-btn', 'Save Project') }}
@@ -301,6 +304,7 @@ const projectState = ref<ProjectConfigState | null>(null)
 const engineStatus = ref<EngineStatus | null>(null)
 const savingProject = ref(false)
 const savingAI = ref(false)
+const exportingProject = ref(false)
 const initializing = ref(false)
 const statusMessage = ref('')
 const statusOk = ref(true)
@@ -517,6 +521,33 @@ async function initEngine() {
   }
 }
 
+async function exportProjectManifest() {
+  exportingProject.value = true
+  try {
+    const manifest = await invokeCommand<Record<string, any>>(
+      'export_project',
+      { projectPath: projectPath.value },
+      () => ({
+        format: 'monogatari-project',
+        schema: 'monogatari-project-export@1',
+        exported_at: new Date().toISOString(),
+        project_path: projectState.value?.project_path || projectPath.value,
+        settings: sanitizeManifestSettings(buildConfigForSave(projectState.value?.config || previewState.config)),
+        content: {},
+        package: { file_count: 0, total_bytes: 0, files: [] },
+      })
+    )
+    downloadJson(`${safeFileName(projectTitle.value || 'monogatari-project')}-manifest.json`, manifest)
+    statusMessage.value = 'Project manifest exported'
+    statusOk.value = true
+  } catch (e) {
+    statusMessage.value = String(e)
+    statusOk.value = false
+  } finally {
+    exportingProject.value = false
+  }
+}
+
 async function refreshStatus() {
   try {
     engineStatus.value = await invokeCommand<EngineStatus>('get_engine_status', undefined, {
@@ -558,6 +589,31 @@ function setConfigValue(config: Record<string, any>, path: string[], value: any)
     current = current[key]
   }
   current[path[path.length - 1]] = value
+}
+
+function downloadJson(filename: string, value: unknown) {
+  const blob = new Blob([JSON.stringify(value, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
+function safeFileName(value: string) {
+  return value.trim().replace(/[^a-z0-9._-]+/gi, '-').replace(/^-+|-+$/g, '') || 'monogatari-project'
+}
+
+function sanitizeManifestSettings(value: any): any {
+  if (Array.isArray(value)) return value.map(sanitizeManifestSettings)
+  if (!value || typeof value !== 'object') return value
+  return Object.fromEntries(Object.entries(value).map(([key, entry]) => {
+    if (['api_key', 'apiKey', 'token', 'access_token', 'accessToken', 'secret', 'password'].includes(key)) {
+      return [key, '<redacted>']
+    }
+    return [key, sanitizeManifestSettings(entry)]
+  }))
 }
 
 onMounted(() => { applyTheme(); refreshAll() })

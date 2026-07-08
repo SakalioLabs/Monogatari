@@ -85,6 +85,7 @@
 - [ ] Tauri bundle config declares installer metadata, Windows MSI/NSIS targets, icon assets, WebView2 install mode, and bundled sample `data/` resources
 - [ ] Installed Tauri build resolves bundled sample `data/` resources at startup when no development project data root is available
 - [ ] Installed Tauri build writes analytics, sync manifests, saves, and generated TTS assets under the active project data root
+- [ ] Project export manifest includes a versioned schema marker, file inventory, per-file checksums, generated assets, and redacted sensitive settings
 - [ ] Git tag created: `git tag v0.9.5`
 - [ ] Web/PWA preview verified with `npm run preview:web`
 - [ ] Subpath web deployment verified with `VITE_BASE_PATH` when publishing to GitHub Pages or another non-root path

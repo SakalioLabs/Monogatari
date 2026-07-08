@@ -95,6 +95,27 @@ const PROJECT_PATHS: &[PathDefinition] = &[
     },
 ];
 
+const EXPORT_DIRECTORIES: &[(&str, &str)] = &[
+    ("characters", "characters"),
+    ("dialogue", "dialogue"),
+    ("knowledge", "knowledge"),
+    ("scenes", "scenes"),
+    ("assets", "assets"),
+    ("locales", "locales"),
+    ("quality_suites", "quality_suites"),
+    ("workflows", "workflows"),
+];
+
+const SECRET_CONFIG_KEYS: &[&str] = &[
+    "api_key",
+    "apiKey",
+    "token",
+    "access_token",
+    "accessToken",
+    "secret",
+    "password",
+];
+
 /// Load project settings and readiness diagnostics.
 #[tauri::command]
 pub async fn get_project_config(
@@ -502,37 +523,181 @@ pub async fn export_project(
     project_path: Option<String>,
 ) -> Result<Value, String> {
     let root = resolve_project_root(&state, project_path).await?;
+    let loaded_characters = state.character_manager.read().await.character_ids();
+    let loaded_dialogues = state.dialogue_manager.read().await.script_ids();
+    let loaded_knowledge_count = state.knowledge_base.read().await.len();
+    let current_scene = state
+        .scene_manager
+        .read()
+        .await
+        .current_scene_name()
+        .map(str::to_string);
 
-    let cm = state.character_manager.read().await;
-    let dm = state.dialogue_manager.read().await;
-    let kb = state.knowledge_base.read().await;
-    let sm = state.scene_manager.read().await;
+    build_project_export_manifest(
+        &root,
+        loaded_characters,
+        loaded_dialogues,
+        loaded_knowledge_count,
+        current_scene,
+    )
+}
 
-    let file_characters = collect_json_ids(&root.join("characters"));
-    let file_dialogues = collect_json_ids(&root.join("dialogue"));
-    let file_knowledge = collect_json_ids(&root.join("knowledge"));
-    let file_scenes = collect_json_ids(&root.join("scenes"));
+fn build_project_export_manifest(
+    project_root: &Path,
+    loaded_characters: Vec<String>,
+    loaded_dialogues: Vec<String>,
+    loaded_knowledge_count: usize,
+    current_scene: Option<String>,
+) -> Result<Value, String> {
+    let config_state = build_project_config_state(project_root)?;
+    let config = config_state.config;
+    let characters_path =
+        configured_project_path(project_root, &config, "characters", "characters")?;
+    let dialogue_path = configured_project_path(project_root, &config, "dialogue", "dialogue")?;
+    let knowledge_path = configured_project_path(project_root, &config, "knowledge", "knowledge")?;
+    let scenes_path = configured_project_path(project_root, &config, "scenes", "scenes")?;
 
-    let loaded_characters = cm.character_ids();
-    let loaded_dialogues = dm.script_ids();
-    let current_scene = sm.current_scene_name().map(str::to_string);
+    let file_characters = collect_json_ids(&characters_path);
+    let file_dialogues = collect_json_ids(&dialogue_path);
+    let file_knowledge = collect_json_ids(&knowledge_path);
+    let file_scenes = collect_json_ids(&scenes_path);
+    let files = collect_project_file_inventory(project_root, &config)?;
+    let total_bytes: u64 = files
+        .iter()
+        .filter_map(|file| file.get("size_bytes").and_then(Value::as_u64))
+        .sum();
 
-    let manifest = json!({
+    Ok(json!({
         "format": "monogatari-project",
+        "schema": "monogatari-project-export@1",
         "version": "1.0",
         "exported_at": Utc::now().to_rfc3339(),
-        "project_path": root.to_string_lossy(),
+        "project_path": project_root.to_string_lossy(),
+        "settings": sanitize_export_config(&config),
         "content": {
             "characters": if file_characters.is_empty() { loaded_characters } else { file_characters },
             "dialogues": if file_dialogues.is_empty() { loaded_dialogues } else { file_dialogues },
             "knowledge": file_knowledge,
-            "knowledge_count": kb.len().max(count_json_files(&root.join("knowledge"))),
+            "knowledge_count": loaded_knowledge_count.max(count_json_files(&knowledge_path)),
             "scenes": file_scenes,
             "current_scene": current_scene,
+        },
+        "package": {
+            "file_count": files.len(),
+            "total_bytes": total_bytes,
+            "files": files,
+            "excluded": ["saves", "analytics.json", ".sync_manifest.json"]
         }
-    });
+    }))
+}
 
-    Ok(manifest)
+fn configured_project_path(
+    project_root: &Path,
+    config: &Value,
+    key: &str,
+    fallback: &str,
+) -> Result<PathBuf, String> {
+    let relative_path = path_from_config(config, key).unwrap_or_else(|| fallback.to_string());
+    resolve_project_relative(project_root, &relative_path)
+}
+
+fn collect_project_file_inventory(
+    project_root: &Path,
+    config: &Value,
+) -> Result<Vec<Value>, String> {
+    let mut files = Vec::new();
+    let mut seen_paths = HashSet::new();
+
+    let settings_path = project_root.join("settings.json");
+    if settings_path.is_file() {
+        push_export_file(
+            project_root,
+            "settings",
+            &settings_path,
+            &mut seen_paths,
+            &mut files,
+        )?;
+    }
+
+    for (key, fallback) in EXPORT_DIRECTORIES {
+        let dir = configured_project_path(project_root, config, key, fallback)?;
+        if dir.is_dir() {
+            collect_export_files(project_root, key, &dir, &mut seen_paths, &mut files)?;
+        }
+    }
+
+    files.sort_by(|a, b| {
+        a.get("path")
+            .and_then(Value::as_str)
+            .cmp(&b.get("path").and_then(Value::as_str))
+    });
+    Ok(files)
+}
+
+fn collect_export_files(
+    project_root: &Path,
+    category: &str,
+    dir: &Path,
+    seen_paths: &mut HashSet<String>,
+    files: &mut Vec<Value>,
+) -> Result<(), String> {
+    for entry in std::fs::read_dir(dir).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let path = entry.path();
+        if path.is_dir() {
+            collect_export_files(project_root, category, &path, seen_paths, files)?;
+        } else if path.is_file() {
+            push_export_file(project_root, category, &path, seen_paths, files)?;
+        }
+    }
+    Ok(())
+}
+
+fn push_export_file(
+    project_root: &Path,
+    category: &str,
+    path: &Path,
+    seen_paths: &mut HashSet<String>,
+    files: &mut Vec<Value>,
+) -> Result<(), String> {
+    let relative = project_relative_path(project_root, path);
+    if !seen_paths.insert(relative.clone()) {
+        return Ok(());
+    }
+    let metadata = std::fs::metadata(path).map_err(|e| e.to_string())?;
+    let bytes = std::fs::read(path).map_err(|e| e.to_string())?;
+    files.push(json!({
+        "category": category,
+        "path": relative,
+        "size_bytes": metadata.len(),
+        "checksum_md5": format!("{:x}", md5::compute(bytes)),
+    }));
+    Ok(())
+}
+
+fn project_relative_path(project_root: &Path, path: &Path) -> String {
+    path.strip_prefix(project_root)
+        .unwrap_or(path)
+        .to_string_lossy()
+        .replace('\\', "/")
+}
+
+fn sanitize_export_config(config: &Value) -> Value {
+    match config {
+        Value::Object(map) => Value::Object(
+            map.iter()
+                .map(|(key, value)| {
+                    if SECRET_CONFIG_KEYS.contains(&key.as_str()) {
+                        (key.clone(), Value::String("<redacted>".to_string()))
+                    } else {
+                        (key.clone(), sanitize_export_config(value))
+                    }
+                })
+                .collect(),
+        ),
+        Value::Array(items) => Value::Array(items.iter().map(sanitize_export_config).collect()),
+        _ => config.clone(),
+    }
 }
 
 fn collect_json_ids(dir: &Path) -> Vec<String> {
@@ -640,6 +805,84 @@ mod tests {
         assert!(state.valid, "{:?}", state.issues);
         assert_eq!(state.paths.len(), PROJECT_PATHS.len());
         assert!(state.paths.iter().any(|path| path.key == "characters"));
+
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn export_manifest_inventories_files_and_redacts_secrets() {
+        let root = std::env::temp_dir().join(format!(
+            "monogatari_project_export_{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        for dir in [
+            "characters",
+            "dialogue",
+            "knowledge",
+            "scenes",
+            "assets/tts",
+            "workflows",
+            "quality_suites",
+            "locales",
+            "saves",
+        ] {
+            std::fs::create_dir_all(root.join(dir)).unwrap();
+        }
+        std::fs::write(
+            root.join("settings.json"),
+            json!({
+                "ai": {
+                    "provider": "api",
+                    "api": {
+                        "api_key": "secret-key",
+                        "model": "test-model"
+                    }
+                },
+                "paths": {
+                    "characters": "characters",
+                    "dialogue": "dialogue",
+                    "knowledge": "knowledge",
+                    "scenes": "scenes",
+                    "assets": "assets"
+                }
+            })
+            .to_string(),
+        )
+        .unwrap();
+        std::fs::write(
+            root.join("characters").join("sakura.json"),
+            r#"{"id":"sakura"}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            root.join("dialogue").join("intro.json"),
+            r#"{"id":"intro"}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            root.join("knowledge").join("world.json"),
+            r#"{"id":"world"}"#,
+        )
+        .unwrap();
+        std::fs::write(root.join("assets").join("tts").join("line.wav"), b"voice").unwrap();
+        std::fs::write(root.join("saves").join("slot.json"), b"private save").unwrap();
+        std::fs::write(root.join("analytics.json"), b"[]").unwrap();
+
+        let manifest =
+            build_project_export_manifest(&root, Vec::new(), Vec::new(), 0, None).unwrap();
+        assert_eq!(manifest["schema"], "monogatari-project-export@1");
+        assert_eq!(manifest["settings"]["ai"]["api"]["api_key"], "<redacted>");
+        let files = manifest["package"]["files"].as_array().unwrap();
+        assert!(files
+            .iter()
+            .any(|file| file["path"] == "assets/tts/line.wav"
+                && file["checksum_md5"].as_str().is_some()));
+        assert!(files.iter().any(|file| file["path"] == "settings.json"));
+        assert!(!files.iter().any(|file| file["path"] == "saves/slot.json"));
+        assert!(!files.iter().any(|file| file["path"] == "analytics.json"));
 
         std::fs::remove_dir_all(root).unwrap();
     }

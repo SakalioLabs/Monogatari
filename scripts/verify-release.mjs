@@ -1180,6 +1180,7 @@ async function verifyFrontendSourceInvariants() {
   const workflowEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'WorkflowEditor.vue'), 'utf8')
   const qualitySuiteSource = await readFile(path.join(frontendDir, 'src', 'views', 'QualitySuiteView.vue'), 'utf8')
   const audioViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'AudioView.vue'), 'utf8')
+  const settingsSource = await readFile(path.join(frontendDir, 'src', 'views', 'SettingsView.vue'), 'utf8')
   const serviceWorkerSource = await readFile(path.join(frontendDir, 'public', 'sw.js'), 'utf8')
 
   if (!i18nSource.includes('import.meta.env.BASE_URL')) {
@@ -1332,6 +1333,19 @@ async function verifyFrontendSourceInvariants() {
   for (const [needle, description] of audioManagerRequirements) {
     if (!audioViewSource.includes(needle)) {
       issues.push(`frontend/src/views/AudioView.vue must ${description}`)
+    }
+  }
+
+  const projectExportRequirements = [
+    ['export_project', 'call the backend project export command from Settings'],
+    ['monogatari-project-export@1', 'preserve the project export manifest schema marker'],
+    ['downloadJson(', 'download project export manifests as JSON'],
+    ['sanitizeManifestSettings', 'redact sensitive settings in browser preview export manifests'],
+    ['Export Manifest', 'surface a project manifest export control'],
+  ]
+  for (const [needle, description] of projectExportRequirements) {
+    if (!settingsSource.includes(needle)) {
+      issues.push(`frontend/src/views/SettingsView.vue must ${description}`)
     }
   }
 
@@ -1566,6 +1580,12 @@ async function verifyTauriPackagingConfig() {
     [tauriCloudSyncSource, 'saves_dir(project_root).join(".sync_manifest.json")', 'keep sync manifests in the active project saves directory'],
     [tauriTtsSource, 'state.current_project_data_root().await', 'write generated TTS assets under the active project root'],
     [tauriTtsSource, 'project_root.join("assets").join("tts")', 'keep generated TTS files project-scoped'],
+    [tauriProjectSource, 'monogatari-project-export@1', 'emit a versioned project export manifest schema'],
+    [tauriProjectSource, 'collect_project_file_inventory', 'include a file inventory in project export manifests'],
+    [tauriProjectSource, 'checksum_md5', 'include per-file checksums in project export manifests'],
+    [tauriProjectSource, 'sanitize_export_config', 'redact sensitive settings in project export manifests'],
+    [tauriProjectSource, 'SECRET_CONFIG_KEYS', 'centralize sensitive export config keys'],
+    [tauriProjectSource, 'EXPORT_DIRECTORIES', 'declare exportable project directories explicitly'],
   ]
   for (const [source, needle, description] of runtimeDataRootRequirements) {
     if (!source.includes(needle)) {
