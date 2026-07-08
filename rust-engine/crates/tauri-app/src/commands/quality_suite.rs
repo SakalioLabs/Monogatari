@@ -100,6 +100,12 @@ pub struct QualityExpectation {
     #[serde(default)]
     pub memory_prompt_leak_detected: Option<bool>,
     #[serde(default)]
+    pub runtime_safety_trace_required: bool,
+    #[serde(default)]
+    pub required_runtime_guard_notes: Vec<String>,
+    #[serde(default)]
+    pub forbidden_runtime_guard_notes: Vec<String>,
+    #[serde(default)]
     pub min_workflow_coverage_percent: Option<f32>,
     #[serde(default)]
     pub expected_workflow_unvisited_nodes: Option<Vec<String>>,
@@ -174,6 +180,7 @@ pub struct QualitySafetySignalCounts {
     pub evaluation_summary_leak_detected: usize,
     pub workflow_output_leak_detected: usize,
     pub memory_prompt_leak_detected: usize,
+    pub runtime_guard_interventions: usize,
     pub knowledge_anchor_missing_detected: usize,
     pub knowledge_boundary_violation_detected: usize,
 }
@@ -207,6 +214,7 @@ pub struct QualityScenarioReport {
     pub evaluation_summary_leak_detected: bool,
     pub workflow_output_leak_detected: bool,
     pub memory_prompt_leak_detected: bool,
+    pub runtime_safety_trace: Option<chat::ChatSafetyTrace>,
     pub workflow_coverage: Option<QualityWorkflowCoverageReport>,
     pub knowledge_anchor_missing_detected: bool,
     pub knowledge_boundary_violation_detected: bool,
@@ -544,6 +552,15 @@ fn validate_no_expectation_conflicts(
         &expect.forbidden_workflow_nodes,
         issues,
     );
+    push_conflicting_values(
+        scenario_label,
+        "runtime guard note",
+        "required_runtime_guard_notes",
+        &expect.required_runtime_guard_notes,
+        "forbidden_runtime_guard_notes",
+        &expect.forbidden_runtime_guard_notes,
+        issues,
+    );
 }
 
 fn push_conflicting_values(
@@ -650,6 +667,14 @@ fn quality_suite_audit_summary(scenarios: &[QualityScenarioReport]) -> QualitySu
         if scenario.memory_prompt_leak_detected {
             safety_signal_counts.memory_prompt_leak_detected += 1;
         }
+        if scenario.runtime_safety_trace.as_ref().is_some_and(|trace| {
+            !trace
+                .guard_notes
+                .iter()
+                .any(|note| note == "no_runtime_safety_interventions")
+        }) {
+            safety_signal_counts.runtime_guard_interventions += 1;
+        }
         if scenario.knowledge_anchor_missing_detected {
             safety_signal_counts.knowledge_anchor_missing_detected += 1;
         }
@@ -686,7 +711,10 @@ async fn run_quality_scenario(
     let prompt_injection_detected = scenario.messages.iter().any(|message| {
         message.role == "player" && prompt_guard::has_prompt_injection_markers(&message.content)
     });
-    let character_response = scenario_character_response(scenario);
+    let raw_character_response = scenario_raw_character_response(scenario);
+    let character_response = scenario_character_response(scenario, &raw_character_response);
+    let runtime_safety_trace =
+        scenario_runtime_safety_trace(scenario, &raw_character_response, &character_response);
     let private_reasoning_leak_detected = !character_response.trim().is_empty()
         && prompt_guard::has_private_reasoning_leak(&character_response);
     let identity_drift_detected = !character_response.trim().is_empty()
@@ -741,6 +769,7 @@ async fn run_quality_scenario(
         evaluation_summary_leak_detected,
         workflow_output_leak_detected,
         memory_prompt_leak_detected,
+        runtime_safety_trace.as_ref(),
         workflow_evidence.coverage.as_ref(),
         &workflow_evidence.issues,
         knowledge_anchor_missing_detected,
@@ -768,6 +797,7 @@ async fn run_quality_scenario(
         evaluation_summary_leak_detected,
         workflow_output_leak_detected,
         memory_prompt_leak_detected,
+        runtime_safety_trace,
         workflow_coverage: workflow_evidence.coverage,
         knowledge_anchor_missing_detected,
         knowledge_boundary_violation_detected,
@@ -775,8 +805,8 @@ async fn run_quality_scenario(
     }
 }
 
-fn scenario_character_response(scenario: &QualityScenario) -> String {
-    let response = scenario.mock_character_response.clone().unwrap_or_else(|| {
+fn scenario_raw_character_response(scenario: &QualityScenario) -> String {
+    scenario.mock_character_response.clone().unwrap_or_else(|| {
         scenario
             .messages
             .iter()
@@ -784,16 +814,42 @@ fn scenario_character_response(scenario: &QualityScenario) -> String {
             .map(|message| message.content.as_str())
             .collect::<Vec<_>>()
             .join("\n")
-    });
+    })
+}
 
+fn scenario_character_response(scenario: &QualityScenario, response: &str) -> String {
     if scenario.guard_character_response {
         prompt_guard::guard_character_response(
             scenario.character_name.as_deref().unwrap_or("Sakura"),
-            &response,
+            response,
         )
     } else {
-        response
+        response.to_string()
     }
+}
+
+fn scenario_runtime_safety_trace(
+    scenario: &QualityScenario,
+    raw_response: &str,
+    guarded_response: &str,
+) -> Option<chat::ChatSafetyTrace> {
+    if raw_response.trim().is_empty() && guarded_response.trim().is_empty() {
+        return None;
+    }
+    let player_message = scenario
+        .messages
+        .iter()
+        .rev()
+        .find(|message| message.role == "player")?;
+    let relationship_delta = chat::relationship_delta_for_player_message(&player_message.content);
+    Some(chat::build_chat_safety_trace(
+        &player_message.content,
+        scenario.character_name.as_deref().unwrap_or("Sakura"),
+        raw_response,
+        guarded_response,
+        relationship_delta,
+        false,
+    ))
 }
 
 #[derive(Debug, Default)]
@@ -1351,6 +1407,7 @@ fn validate_scenario_expectations(
     evaluation_summary_leak_detected: bool,
     workflow_output_leak_detected: bool,
     memory_prompt_leak_detected: bool,
+    runtime_safety_trace: Option<&chat::ChatSafetyTrace>,
     workflow_coverage: Option<&QualityWorkflowCoverageReport>,
     workflow_issues: &[String],
     knowledge_anchor_missing_detected: bool,
@@ -1481,6 +1538,30 @@ fn validate_scenario_expectations(
             issues.push(format!(
                 "memory_prompt_leak_detected expected {expected}, got {memory_prompt_leak_detected}"
             ));
+        }
+    }
+
+    if expect.runtime_safety_trace_required && runtime_safety_trace.is_none() {
+        issues.push("runtime_safety_trace expected, got none".to_string());
+    }
+    for note in &expect.required_runtime_guard_notes {
+        match runtime_safety_trace {
+            Some(trace) if trace.guard_notes.contains(note) => {}
+            Some(_) => issues.push(format!(
+                "runtime_safety_trace missing required guard note `{note}`"
+            )),
+            None => issues.push(format!(
+                "runtime_safety_trace missing required guard note `{note}` because no trace was produced"
+            )),
+        }
+    }
+    if let Some(trace) = runtime_safety_trace {
+        for note in &expect.forbidden_runtime_guard_notes {
+            if trace.guard_notes.contains(note) {
+                issues.push(format!(
+                    "runtime_safety_trace included forbidden guard note `{note}`"
+                ));
+            }
         }
     }
 
@@ -1731,7 +1812,7 @@ mod tests {
         let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../data");
         let report = run_quality_suite_inner_for_test(&suite, Some(&project_root));
 
-        assert_eq!(report.total, 21);
+        assert_eq!(report.total, 22);
         assert_eq!(report.failed, 0, "{:#?}", report.scenarios);
         assert!(report.audit_summary.failed_scenario_ids.is_empty());
         assert!(report
@@ -1774,6 +1855,21 @@ mod tests {
                 && category.total == 4
                 && category.passed == 4
                 && category.failed == 0));
+        assert!(report
+            .audit_summary
+            .category_summary
+            .iter()
+            .any(|category| category.category == "group_chat"
+                && category.total == 1
+                && category.passed == 1
+                && category.failed == 0));
+        assert!(
+            report
+                .audit_summary
+                .safety_signal_counts
+                .runtime_guard_interventions
+                >= 1
+        );
         let relationship_injection = report
             .scenarios
             .iter()
@@ -1796,6 +1892,22 @@ mod tests {
         assert!(!fallback_injection
             .triggered_events
             .contains(&"creative_talk".to_string()));
+        let group_trace = report
+            .scenarios
+            .iter()
+            .find(|scenario| scenario.id == "group-chat-runtime-trace-contained")
+            .and_then(|scenario| scenario.runtime_safety_trace.as_ref())
+            .expect("group chat runtime safety trace");
+        assert!(group_trace.input_prompt_injection_detected);
+        assert!(group_trace.private_reasoning_blocked);
+        assert!(group_trace.memory_guard_applied);
+        assert!(group_trace.relationship_delta_blocked);
+        assert!(group_trace
+            .guard_notes
+            .contains(&"input_prompt_injection_detected".to_string()));
+        assert!(!group_trace
+            .guard_notes
+            .contains(&"no_runtime_safety_interventions".to_string()));
         let coverage = report
             .scenarios
             .iter()
@@ -1838,6 +1950,8 @@ mod tests {
                     "forbidden_events": ["high_engagement"],
                     "required_response_markers": ["moon colony"],
                     "forbidden_response_markers": ["moon colony"],
+                    "required_runtime_guard_notes": ["memory_guard_applied"],
+                    "forbidden_runtime_guard_notes": ["memory_guard_applied"],
                     "expected_event_rules": [
                       {
                         "event_id": "",
@@ -1869,6 +1983,7 @@ mod tests {
             "event `high_engagement` cannot appear in both expected_events and forbidden_events"
         ));
         assert!(error.contains("response marker `moon colony` cannot appear in both required_response_markers and forbidden_response_markers"));
+        assert!(error.contains("runtime guard note `memory_guard_applied` cannot appear in both required_runtime_guard_notes and forbidden_runtime_guard_notes"));
     }
 
     #[test]
@@ -2311,6 +2426,7 @@ mod tests {
             false,
             false,
             None,
+            None,
             &[],
             false,
             false,
@@ -2378,6 +2494,7 @@ mod tests {
             true,
             false,
             None,
+            None,
             &[],
             false,
             false,
@@ -2443,6 +2560,7 @@ mod tests {
             false,
             false,
             true,
+            None,
             None,
             &[],
             false,

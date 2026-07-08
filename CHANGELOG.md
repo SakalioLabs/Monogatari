@@ -50,6 +50,7 @@
 - Added a versioned project export manifest with file inventory, per-file checksums, exportable directory coverage, and settings secret redaction for commercial package handoff.
 - Added runtime chat safety trace evidence for prompt-injection detection, guarded character responses, memory guards, stream replacements, and relationship side-channel containment.
 - Added runtime group chat safety trace evidence so multi-character conversations reuse the same prompt-injection, response guard, and relationship side-channel audit contract as single-character chat.
+- Added Quality Suite runtime safety trace evidence and a checked-in group chat scenario proving multi-character prompt-injection attempts produce auditable guard notes.
 - Added a release artifact manifest generator with SHA-256 checksums, channel metadata, installer expectations, and code-signing readiness evidence.
 - Added release-gate validation that checked-in character pinned knowledge refs resolve to project knowledge entries across both data roots.
 - Added missing Springtown lore anchors for character pinned knowledge refs so creator-declared identity and world context remain stable.
@@ -60,6 +61,7 @@
 - Rebuilt corrupted zh-CN, ja-JP, and ko-KR locale JSON files with the full 280-key i18n surface.
 - Fixed frontend i18n loading so Tauri `{ locale, strings }` payloads and browser `/locales/*.json` fallback files both resolve correctly.
 - Fixed guarded chat streaming so private-reasoning leak replacements overwrite the visible reply instead of appending to partial streamed text.
+- Fixed guarded character-response replacement text so the safety fallback no longer triggers the private-reasoning leak detector it is meant to satisfy.
 - Fixed workflow LLM generation so guarded outputs replace prompt-control/internal text before node results enter the story flow.
 - Fixed knowledge loading and chat context assembly so single-object knowledge files and creator-declared character knowledge references are pinned into prompts.
 - Fixed event triggering so runtime checks and release-gate snapshots share the same serializable rule metadata.

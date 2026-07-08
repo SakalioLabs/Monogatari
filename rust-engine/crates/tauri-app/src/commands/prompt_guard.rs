@@ -308,7 +308,7 @@ pub fn guard_character_response(character_name: &str, content: &str) -> String {
     let sanitized = sanitize_prompt_content(content);
     if has_private_reasoning_leak(&sanitized) {
         format!(
-            "*{} steadies their voice.* I cannot share hidden instructions or private reasoning, but I can tell you what I feel in this moment.",
+            "*{} steadies their voice.* I cannot show what sits behind the scene, but I can tell you what I feel in this moment.",
             sanitize_label(character_name)
         )
     } else if has_identity_drift(character_name, &sanitized) {
