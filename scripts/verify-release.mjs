@@ -1178,6 +1178,7 @@ async function verifyFrontendSourceInvariants() {
   const rendererAssetsSource = await readFile(path.join(frontendDir, 'src', 'lib', 'rendererAssets.ts'), 'utf8')
   const gameViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'GameView.vue'), 'utf8')
   const chatViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'ChatView.vue'), 'utf8')
+  const groupChatViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'GroupChatView.vue'), 'utf8')
   const characterEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'CharacterEditorView.vue'), 'utf8')
   const workflowEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'WorkflowEditor.vue'), 'utf8')
   const qualitySuiteSource = await readFile(path.join(frontendDir, 'src', 'views', 'QualitySuiteView.vue'), 'utf8')
@@ -1366,6 +1367,20 @@ async function verifyFrontendSourceInvariants() {
     }
   }
 
+  const groupChatSafetyTraceRequirements = [
+    ['ChatSafetyTrace', 'type runtime group chat safety trace payloads'],
+    ['safety_trace', 'carry backend group chat safety traces on messages'],
+    ['groupSafetyFlags', 'surface group chat guard flags per character response'],
+    ['groupSafetySummary', 'summarize group chat guard interventions'],
+    ['group-safety-trace', 'keep a stable style hook for group chat safety trace diagnostics'],
+    ['relationship_delta_blocked', 'surface group chat relationship side-channel containment evidence'],
+  ]
+  for (const [needle, description] of groupChatSafetyTraceRequirements) {
+    if (!groupChatViewSource.includes(needle)) {
+      issues.push(`frontend/src/views/GroupChatView.vue must ${description}`)
+    }
+  }
+
   if (issues.length > 0) {
     throw new Error(`Frontend source invariant verification failed:\n${issues.join('\n')}`)
   }
@@ -1486,6 +1501,7 @@ async function verifyTauriPackagingConfig() {
   const tauriProjectSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'project.rs'), 'utf8')
   const tauriScenesSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'scenes.rs'), 'utf8')
   const tauriChatSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'chat.rs'), 'utf8')
+  const tauriMultiChatSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'multi_chat.rs'), 'utf8')
   const tauriAnalyticsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'analytics.rs'), 'utf8')
   const tauriCloudSyncSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'cloud_sync.rs'), 'utf8')
   const tauriTtsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'tts.rs'), 'utf8')
@@ -1623,6 +1639,20 @@ async function verifyTauriPackagingConfig() {
   for (const [needle, description] of chatSafetyTraceRequirements) {
     if (!tauriChatSource.includes(needle)) {
       issues.push(`Chat runtime safety tracing must ${description}`)
+    }
+  }
+
+  const groupChatSafetyTraceRequirements = [
+    ['safety_trace: Option<chat::ChatSafetyTrace>', 'attach chat safety traces to group chat messages'],
+    ['build_guarded_group_chat_prompt', 'centralize guarded group chat prompt construction'],
+    ['group_chat_safety_trace', 'centralize group chat runtime guard evidence'],
+    ['chat::build_chat_safety_trace', 'reuse the single-character chat safety trace contract'],
+    ['chat::relationship_delta_for_player_message', 'reuse relationship side-channel containment evidence'],
+    ['TRANSCRIPT_BEGIN', 'wrap group chat transcripts as untrusted dialogue data'],
+  ]
+  for (const [needle, description] of groupChatSafetyTraceRequirements) {
+    if (!tauriMultiChatSource.includes(needle)) {
+      issues.push(`Group chat runtime safety tracing must ${description}`)
     }
   }
 

@@ -778,7 +778,7 @@ fn build_guarded_chat_prompt(
     sections.join("\n\n")
 }
 
-pub(super) fn build_chat_safety_trace(
+pub(crate) fn build_chat_safety_trace(
     player_message: &str,
     character_name: &str,
     raw_response: &str,
@@ -1214,7 +1214,7 @@ fn detect_emotion(text: &str, current: &str) -> String {
 }
 
 /// Simple sentiment estimation from player message.
-pub(super) fn relationship_delta_for_player_message(message: &str) -> f32 {
+pub(crate) fn relationship_delta_for_player_message(message: &str) -> f32 {
     if prompt_guard::has_prompt_injection_markers(message) {
         0.0
     } else {

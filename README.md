@@ -58,6 +58,7 @@ Verified on 2026-07-08:
 - Player-authored meta-instructions are omitted from character memory writes, and legacy unsafe recent memories are replaced with guarded prompt placeholders before they can influence future replies.
 - Prompt-injection text cannot advance local relationship sentiment deltas, so positive words inside meta-instructions cannot silently unlock relationship milestone events.
 - Chat runtime responses emit safety trace evidence for player input wrapping, prompt-injection detection, memory guarding, response guarding, stream replacement, and relationship side-channel containment.
+- Group chat character responses reuse the same runtime safety trace contract so multi-character scenes expose prompt-injection, response guard, memory guard, and relationship side-channel evidence per reply.
 - Local fallback scoring ignores prompt-injection text for engagement and creativity boosts, so long meta-instructions cannot unlock score-gated story events when model evaluation is unavailable.
 - Evaluation score parsing clamps overrange, above-scale, and negative model scores before quality reports or event triggers consume them.
 - Workflow LLM nodes wrap runtime inputs as untrusted data and guard generated output before it can enter story node results.
