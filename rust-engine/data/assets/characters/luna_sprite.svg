@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 720" role="img" aria-label="Luna sprite">
+  <rect width="360" height="720" fill="none"/>
+  <path d="M87 704c13-165 53-286 93-286s80 121 93 286z" fill="#4b3f8f"/>
+  <path d="M118 448h124l30 256H88z" fill="#6352a8"/>
+  <circle cx="180" cy="216" r="92" fill="#d9c5ff"/>
+  <path d="M90 279c8-126 59-191 121-178 55 12 82 68 70 166-40-35-91-42-191 12z" fill="#2d2459"/>
+  <circle cx="149" cy="208" r="10" fill="#1b1539"/>
+  <circle cx="217" cy="208" r="10" fill="#1b1539"/>
+  <path d="M155 249c17 13 37 13 54 0" fill="none" stroke="#6f5d98" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="288" cy="112" r="31" fill="#dce7ff"/>
+  <path d="M275 92c16 8 24 27 18 43 16-5 28-20 28-38-12-10-27-12-46-5z" fill="#101827"/>
+</svg>

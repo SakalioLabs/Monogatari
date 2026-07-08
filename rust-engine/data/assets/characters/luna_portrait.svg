@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 640" role="img" aria-label="Luna portrait">
+  <rect width="480" height="640" fill="#101827"/>
+  <circle cx="365" cy="100" r="58" fill="#dce7ff"/>
+  <path d="M336 62c32 12 49 48 37 80 33-9 58-38 58-73-21-18-53-24-95-7z" fill="#101827"/>
+  <circle cx="119" cy="118" r="4" fill="#ffffff"/>
+  <circle cx="184" cy="76" r="3" fill="#ffffff"/>
+  <circle cx="263" cy="135" r="5" fill="#ffffff"/>
+  <circle cx="240" cy="186" r="112" fill="#d9c5ff"/>
+  <path d="M126 284c16-124 64-191 129-176 62 14 95 79 85 181-49-51-105-58-214-5z" fill="#2d2459"/>
+  <circle cx="197" cy="228" r="12" fill="#1b1539"/>
+  <circle cx="282" cy="228" r="12" fill="#1b1539"/>
+  <path d="M212 277c20 14 43 14 63 0" fill="none" stroke="#6f5d98" stroke-width="9" stroke-linecap="round"/>
+  <path d="M115 640c19-150 82-229 125-229s106 79 125 229z" fill="#4b3f8f"/>
+  <text x="240" y="584" text-anchor="middle" font-family="serif" font-size="42" fill="#dce7ff">Luna</text>
+</svg>

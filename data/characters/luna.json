@@ -11,5 +11,7 @@
     "neuroticism": 0.4,
     "speech_style": "thoughtful and poetic"
   },
+  "portrait_path": "assets/characters/luna_portrait.svg",
+  "sprite_path": "assets/characters/luna_sprite.svg",
   "live2d_model_path": null
 }

@@ -63,6 +63,7 @@
 - Added a checked-in release channel policy and manifest enforcement for stable/beta installer requirements, preflight exceptions, and verified installer signing evidence sidecars.
 - Added release-gate validation that checked-in character pinned knowledge refs resolve to project knowledge entries across both data roots.
 - Added missing Springtown lore anchors for character pinned knowledge refs so creator-declared identity and world context remain stable.
+- Added checked-in portrait and sprite SVG assets for Sakura, Luna, and Kenji across Web and bundled Tauri data roots, with release-gate enforcement for core sample character renderer assets.
 - Added a restorable Chat session audit report so the latest safety trace, evaluation, story-event decisions, and triggerable events survive character switching in the author workbench.
 - Added short retry handling for the release-gate frontend audit step so transient registry TLS failures do not abort otherwise passing release checks.
 

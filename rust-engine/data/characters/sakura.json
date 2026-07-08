@@ -16,5 +16,7 @@
     "sakura_nature",
     "sakura_art_knowledge"
   ],
+  "portrait_path": "assets/characters/sakura_portrait.svg",
+  "sprite_path": "assets/characters/sakura_sprite.svg",
   "live2d_model_path": null
 }

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 640" role="img" aria-label="Sakura portrait">
+  <rect width="480" height="640" fill="#f7fbf4"/>
+  <circle cx="240" cy="176" r="118" fill="#ffd6d6"/>
+  <path d="M118 640c20-152 84-232 122-232s102 80 122 232z" fill="#f08ab0"/>
+  <path d="M120 286c25-123 75-184 151-169 60 12 93 67 91 165-54-47-112-55-242 4z" fill="#5b3b2c"/>
+  <circle cx="194" cy="224" r="13" fill="#40302d"/>
+  <circle cx="286" cy="224" r="13" fill="#40302d"/>
+  <path d="M207 274c24 22 51 22 76 0" fill="none" stroke="#9f4d58" stroke-width="10" stroke-linecap="round"/>
+  <g fill="#f7a7bd">
+    <path d="M373 112l23 31 37-12-22 32 23 31-38-11-22 32-1-39-37-12 37-13z"/>
+    <path d="M79 186l18 24 29-9-18 25 18 25-29-9-18 24v-30l-29-10 29-10z"/>
+  </g>
+  <text x="240" y="584" text-anchor="middle" font-family="serif" font-size="42" fill="#85465f">Sakura</text>
+</svg>

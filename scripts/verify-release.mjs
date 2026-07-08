@@ -83,6 +83,8 @@ const rendererDataRoots = [
   { label: 'rust-engine/data', dir: path.join(rustDir, 'data') },
 ]
 
+const requiredRendererAssetCharacterIds = ['sakura', 'luna', 'kenji']
+
 const rendererAssetFields = [
   {
     names: ['live2d_model_path', 'live2dModelPath'],
@@ -338,18 +340,29 @@ async function verifyRendererAssets() {
   for (const dataRoot of rendererDataRoots) {
     const charactersDir = path.join(dataRoot.dir, 'characters')
     const scenesDir = path.join(dataRoot.dir, 'scenes')
+    const coreCharactersWithRendererAssets = new Set()
 
     for (const file of await jsonFilesInDir(charactersDir, issues)) {
       const value = JSON.parse(await readFile(file, 'utf8'))
       const characters = Array.isArray(value) ? value : [value]
       for (const character of characters) {
         characterCount += 1
-        declaredCharacterAssetCount += verifyCharacterRendererAssets(
+        const assetCount = verifyCharacterRendererAssets(
           character,
           dataRoot,
           relative(file),
           issues,
         )
+        declaredCharacterAssetCount += assetCount
+        if (assetCount > 0 && requiredRendererAssetCharacterIds.includes(character?.id)) {
+          coreCharactersWithRendererAssets.add(character.id)
+        }
+      }
+    }
+
+    for (const characterId of requiredRendererAssetCharacterIds) {
+      if (!coreCharactersWithRendererAssets.has(characterId)) {
+        issues.push(`${dataRoot.label}: core sample character ${characterId} must declare a checked-in renderer asset`)
       }
     }
 

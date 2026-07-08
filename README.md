@@ -85,6 +85,7 @@ Verified on 2026-07-08:
 - Quality suite schema validation rejects contradictory expectations such as out-of-range score bounds or events marked both expected and forbidden.
 - Character prompts pin creator-declared knowledge references before keyword search results so core lore stays stable.
 - Character content loading accepts single-object JSON files, legacy sprite field names, and optional renderer asset fields.
+- Core sample characters Sakura, Luna, and Kenji ship with checked-in portrait and sprite SVG assets in both Web and bundled Tauri data roots.
 - Audio Manager now controls real browser/Tauri audio elements for BGM, ambient loops, and SFX previews, with persisted track lists, per-track gain, and master/channel mixer state.
 - C# legacy solution exits successfully with `dotnet test LLMAssistant.sln --no-restore`.
 - Locale JSON files validate across project data and frontend fallback directories, including key coverage and Web/PWA fallback parity.

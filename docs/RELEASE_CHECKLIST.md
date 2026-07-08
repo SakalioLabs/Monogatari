@@ -30,6 +30,7 @@
 - [ ] Knowledge base search returns relevant results
 - [ ] Scene assets validate without missing file warnings
 - [ ] Checked-in character renderer asset fields resolve to supported project-relative files or intentionally fall back to the generated 3D placeholder
+- [ ] Core sample characters Sakura, Luna, and Kenji declare checked-in portrait/sprite renderer assets in both data roots
 - [ ] Character Editor renderer asset diagnostics flag unsupported extensions, absolute paths, external URLs, and parent traversal before saving/exporting character JSON
 - [ ] Character Editor renderer preview follows Story Mode priority for Live2D, GLB/GLTF, sprite/portrait, and generated 3D fallback states
 - [ ] Story Mode and Character Editor preview both derive renderer priority from the shared frontend renderer asset selector

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 720" role="img" aria-label="Kenji sprite">
+  <rect width="360" height="720" fill="none"/>
+  <path d="M84 704c12-156 55-284 96-284s84 128 96 284z" fill="#334155"/>
+  <path d="M112 444h136v260H112z" fill="#f8fafc"/>
+  <path d="M112 444l68 62 68-62v260H112z" fill="#334155"/>
+  <circle cx="180" cy="216" r="91" fill="#f0c19a"/>
+  <path d="M92 255c15-98 62-155 123-148 54 7 79 47 74 129-41-20-96-23-197 19z" fill="#25201c"/>
+  <circle cx="148" cy="209" r="10" fill="#221b16"/>
+  <circle cx="215" cy="209" r="10" fill="#221b16"/>
+  <path d="M153 252c18 12 38 12 57 0" fill="none" stroke="#87533a" stroke-width="8" stroke-linecap="round"/>
+  <path d="M260 122h51v18h-51z" fill="#b91c1c"/>
+  <path d="M286 98v66" stroke="#b91c1c" stroke-width="16" stroke-linecap="round"/>
+</svg>

@@ -18,9 +18,17 @@ Characters are stored as JSON files in `rust-engine/data/characters/`.
     "neuroticism": 0.2,
     "speech_style": "Description of how the character speaks"
   },
+  "portrait_path": "assets/characters/hero_portrait.svg",
+  "sprite_path": "assets/characters/hero_sprite.svg",
+  "sprite_paths": {
+    "happy": "assets/characters/hero_happy.svg",
+    "neutral": "assets/characters/hero_sprite.svg"
+  },
   "live2d_model_path": null
 }
 ```
+
+Renderer paths must be project-relative, stay inside the active data root, and use supported extensions. Story Mode and Character Editor resolve Live2D first, then GLB/GLTF 3D models, emotion-specific sprites, fallback sprites, portraits, and finally the generated placeholder.
 
 ### Personality Traits (0.0 - 1.0)
 - **openness**: Curiosity, creativity, willingness to try new things
