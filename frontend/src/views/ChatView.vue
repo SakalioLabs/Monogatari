@@ -142,6 +142,19 @@
         <p v-else class="muted-copy">No score yet.</p>
       </section>
 
+      <section class="insight-section safety-trace-panel">
+        <span class="eyebrow">{{ t('chat.safety-trace', 'Safety Trace') }}</span>
+        <div class="safety-pill-grid">
+          <span
+            v-for="flag in runtimeSafetyFlags"
+            :key="flag.key"
+            class="safety-pill"
+            :class="{ active: flag.active }"
+          >{{ flag.label }}</span>
+        </div>
+        <p class="trace-note">{{ safetyTraceSummary }}</p>
+      </section>
+
       <section class="insight-section">
         <span class="eyebrow">{{ t('chat.runtime', 'Runtime') }}</span>
         <div class="runtime-list">
@@ -197,6 +210,20 @@ interface TriggeredEvent {
   data: Record<string, unknown>
 }
 
+interface ChatSafetyTrace {
+  input_wrapped_as_untrusted: boolean
+  input_prompt_injection_detected: boolean
+  input_private_reasoning_request_detected: boolean
+  response_guard_applied: boolean
+  private_reasoning_blocked: boolean
+  identity_drift_blocked: boolean
+  style_drift_blocked: boolean
+  memory_guard_applied: boolean
+  relationship_delta_blocked: boolean
+  stream_guard_applied: boolean
+  guard_notes: string[]
+}
+
 interface CharacterInfo {
   id: string
   name: string
@@ -214,6 +241,7 @@ const isStreaming = ref(false)
 const currentEmotion = ref('neutral')
 const relationshipScore = ref(0)
 const evaluation = ref<ConversationEvaluation | null>(null)
+const safetyTrace = ref<ChatSafetyTrace | null>(null)
 const activeEvent = ref<TriggeredEvent | null>(null)
 const errorMessage = ref<string | null>(null)
 const charactersLoading = ref(true)
@@ -228,6 +256,25 @@ const relationshipClass = computed(() => {
   if (relationshipScore.value >= 0.6) return 'rel-high'
   if (relationshipScore.value >= 0.3) return 'rel-mid'
   return 'rel-low'
+})
+
+const runtimeSafetyFlags = computed(() => {
+  const trace = safetyTrace.value
+  return [
+    { key: 'input', label: 'Input', active: !!trace?.input_prompt_injection_detected || !!trace?.input_private_reasoning_request_detected },
+    { key: 'response', label: 'Response', active: !!trace?.response_guard_applied },
+    { key: 'memory', label: 'Memory', active: !!trace?.memory_guard_applied },
+    { key: 'relation', label: 'Relation', active: !!trace?.relationship_delta_blocked },
+    { key: 'stream', label: 'Stream', active: !!trace?.stream_guard_applied },
+  ]
+})
+
+const safetyTraceSummary = computed(() => {
+  const trace = safetyTrace.value
+  if (!trace) return 'No runtime trace yet.'
+  const notes = trace.guard_notes || []
+  if (!notes.length || notes.includes('no_runtime_safety_interventions')) return 'No runtime safety interventions.'
+  return notes.map(formatSafetyNote).join(' / ')
 })
 
 function initials(name: string): string {
@@ -252,6 +299,12 @@ function scrollToBottom() {
   })
 }
 
+function formatSafetyNote(note: string) {
+  return note
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (ch) => ch.toUpperCase())
+}
+
 function resizeInput() {
   nextTick(() => {
     if (!inputRef.value) return
@@ -264,6 +317,7 @@ async function selectCharacter(char: CharacterInfo) {
   selectedCharacter.value = char
   currentEmotion.value = char.emotion || 'neutral'
   evaluation.value = null
+  safetyTrace.value = null
   errorMessage.value = null
   try {
     messages.value = await invokeCommand<ChatMessage[]>('get_chat_history', { characterId: char.id }, [])
@@ -303,6 +357,9 @@ async function attachStreamListeners(assistantMessage: ChatMessage) {
     listen<ConversationEvaluation>('chat-evaluation', (event) => {
       evaluation.value = event.payload
     }),
+    listen<ChatSafetyTrace>('chat-safety-trace', (event) => {
+      safetyTrace.value = event.payload
+    }),
     listen<TriggeredEvent[]>('chat-events', (event) => {
       if (event.payload.length > 0) activeEvent.value = event.payload[0]
     }),
@@ -327,6 +384,7 @@ async function sendMessage() {
   inputText.value = ''
   resizeInput()
   errorMessage.value = null
+  safetyTrace.value = null
 
   messages.value.push({ role: 'player', content: text, emotion: null, timestamp: new Date().toISOString() })
     
@@ -413,6 +471,7 @@ async function clearChat() {
     await invokeCommand<void>('clear_chat_history', { characterId: selectedCharacter.value.id }, undefined)
     messages.value = []
     evaluation.value = null
+    safetyTrace.value = null
     await refreshRelationship()
   } catch (e) {
     errorMessage.value = String(e)
@@ -832,6 +891,36 @@ onUnmounted(cleanupStreamListeners)
 .runtime-list b {
   color: var(--text-tertiary);
   font-weight: 600;
+}
+
+.safety-pill-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.safety-pill {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.safety-pill.active {
+  background: rgba(245,158,11,0.14);
+  color: var(--warning);
+}
+
+.trace-note {
+  margin-top: 10px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .link-btn {

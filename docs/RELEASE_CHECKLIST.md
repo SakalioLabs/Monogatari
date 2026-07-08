@@ -41,6 +41,7 @@
 - [ ] Relationship milestones unlock events correctly
 - [ ] Workflow LLM nodes guard generated output before it is used by downstream story nodes
 - [ ] Character prompts include creator-declared pinned knowledge references before keyword search results
+- [ ] Chat runtime emits author-visible safety trace evidence for input wrapping, prompt-injection detection, guarded responses, memory guards, stream replacements, and relationship side-channel containment
 - [ ] Quality Suites panel runs character stability, prompt-injection, relationship and fallback scoring side-channel containment, memory-poisoning containment, memory prompt replay containment, tool-role injection containment, identity drift, style drift, real knowledge-reference anchoring, knowledge-boundary stability, evaluation-summary safety, workflow output safety, workflow tool-call containment, workflow branch coverage, private reasoning leakage, fallback scoring, overrange score clamping, event-idempotence, and event-rule snapshot regression checks
 - [ ] Quality suite files reject out-of-range score expectations and contradictory expected/forbidden events, markers, or workflow nodes before release reports run
 - [ ] Quality Suites panel shows and exports versioned audit evidence with failed-scenario ids, category summaries, safety-signal counts, and workflow coverage summaries

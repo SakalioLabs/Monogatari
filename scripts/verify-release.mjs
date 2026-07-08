@@ -1176,6 +1176,7 @@ async function verifyFrontendSourceInvariants() {
   const pwaSource = await readFile(path.join(frontendDir, 'src', 'lib', 'pwa.ts'), 'utf8')
   const rendererAssetsSource = await readFile(path.join(frontendDir, 'src', 'lib', 'rendererAssets.ts'), 'utf8')
   const gameViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'GameView.vue'), 'utf8')
+  const chatViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'ChatView.vue'), 'utf8')
   const characterEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'CharacterEditorView.vue'), 'utf8')
   const workflowEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'WorkflowEditor.vue'), 'utf8')
   const qualitySuiteSource = await readFile(path.join(frontendDir, 'src', 'views', 'QualitySuiteView.vue'), 'utf8')
@@ -1349,6 +1350,21 @@ async function verifyFrontendSourceInvariants() {
     }
   }
 
+  const chatSafetyTraceRequirements = [
+    ['ChatSafetyTrace', 'type runtime chat safety trace payloads'],
+    ['chat-safety-trace', 'listen for runtime chat safety trace events'],
+    ['safetyTraceSummary', 'summarize runtime chat guard interventions'],
+    ['runtimeSafetyFlags', 'surface runtime guard flags in the chat insight panel'],
+    ['response_guard_applied', 'surface guarded character response evidence'],
+    ['relationship_delta_blocked', 'surface relationship side-channel containment evidence'],
+    ['safety-trace-panel', 'keep a stable style hook for chat safety trace diagnostics'],
+  ]
+  for (const [needle, description] of chatSafetyTraceRequirements) {
+    if (!chatViewSource.includes(needle)) {
+      issues.push(`frontend/src/views/ChatView.vue must ${description}`)
+    }
+  }
+
   if (issues.length > 0) {
     throw new Error(`Frontend source invariant verification failed:\n${issues.join('\n')}`)
   }
@@ -1468,6 +1484,7 @@ async function verifyTauriPackagingConfig() {
   const tauriEngineSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'engine.rs'), 'utf8')
   const tauriProjectSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'project.rs'), 'utf8')
   const tauriScenesSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'scenes.rs'), 'utf8')
+  const tauriChatSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'chat.rs'), 'utf8')
   const tauriAnalyticsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'analytics.rs'), 'utf8')
   const tauriCloudSyncSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'cloud_sync.rs'), 'utf8')
   const tauriTtsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'tts.rs'), 'utf8')
@@ -1592,6 +1609,22 @@ async function verifyTauriPackagingConfig() {
       issues.push(`Tauri runtime data-root handling must ${description}`)
     }
   }
+
+  const chatSafetyTraceRequirements = [
+    ['pub struct ChatSafetyTrace', 'define a serializable chat safety trace'],
+    ['safety_trace: ChatSafetyTrace', 'return runtime guard evidence with non-streaming chat responses'],
+    ['build_chat_safety_trace', 'centralize runtime chat guard evidence'],
+    ['chat-safety-trace', 'emit runtime guard evidence for streaming chat responses'],
+    ['response_guard_applied', 'report guarded character response evidence'],
+    ['relationship_delta_blocked', 'report relationship side-channel containment evidence'],
+    ['input_wrapped_as_untrusted', 'prove player input is wrapped as untrusted dialogue data'],
+  ]
+  for (const [needle, description] of chatSafetyTraceRequirements) {
+    if (!tauriChatSource.includes(needle)) {
+      issues.push(`Chat runtime safety tracing must ${description}`)
+    }
+  }
+
   for (const [source, file] of [
     [tauriAnalyticsSource, 'analytics.rs'],
     [tauriCloudSyncSource, 'cloud_sync.rs'],
