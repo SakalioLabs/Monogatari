@@ -1461,6 +1461,7 @@ async function verifyFrontendSourceInvariants() {
     ['response_guard_applied', 'surface guarded character response evidence'],
     ['relationship_delta_blocked', 'surface relationship side-channel containment evidence'],
     ['EventTriggerDecision', 'type runtime event trigger decisions'],
+    ['preview_event_triggers', 'refresh story event decisions after manual scoring'],
     ['chat-event-decisions', 'listen for runtime event trigger decisions'],
     ['eventDecisionSummary', 'surface story event trigger decision summaries'],
     ['event-decision-panel', 'keep a stable style hook for story event trigger diagnostics'],

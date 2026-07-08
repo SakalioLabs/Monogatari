@@ -70,6 +70,7 @@ Verified on 2026-07-08:
 - Workflow output safety now covers tool-role/function-call shaped text so generated node output cannot masquerade as a runtime event command.
 - Checked-in score-gate workflow fixtures prove conversation evaluation can drive visual workflow branches and score-aware story-event unlocks.
 - Chat runtime responses emit story-event trigger decisions with actual relationship values, score metrics, evaluation counts, and blocker reasons.
+- Manual Chat scoring refreshes the same story-event trigger decisions so authors can debug score gates without waiting for periodic evaluation.
 - Quality Suites reuse the same story-event decision contract as live chat so offline QA and runtime event audits stay aligned.
 - Workflow Run traces expose evaluation metrics, thresholds, score sources, event trigger state, and blocker reasons for author debugging.
 - Workflow canvas nodes show compact run badges for executed, pass/fail, blocked, completed, and waiting-choice states.

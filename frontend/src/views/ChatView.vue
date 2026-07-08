@@ -529,7 +529,13 @@ async function refreshRelationship() {
 async function refreshEvaluation() {
   if (!selectedCharacter.value) return
   try {
-    evaluation.value = await invokeCommand<ConversationEvaluation>('evaluate_conversation', { characterId: selectedCharacter.value.id })
+    const characterId = selectedCharacter.value.id
+    evaluation.value = await invokeCommand<ConversationEvaluation>('evaluate_conversation', { characterId })
+    eventDecisions.value = await invokeCommand<EventTriggerDecision[]>(
+      'preview_event_triggers',
+      { characterId },
+      [],
+    )
     // Check evaluation achievement
     if (evaluation.value && evaluation.value.overall_score > 0.8 && typeof (window as any).__monogatari_unlock === 'function') {
       (window as any).__monogatari_unlock('eval_high')

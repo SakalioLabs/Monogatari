@@ -11,6 +11,7 @@
 - Added Tauri mobile deployment preflight verification for Android/iOS command readiness, Vite mobile host binding, and mobile release documentation.
 - Added runtime trace evidence for character mind contract application and creator-pinned knowledge context anchoring, including resolved pinned knowledge ref IDs for QA audit.
 - Added runtime chat story-event trigger decision evidence so authors can inspect relationship values, score metrics, evaluation counts, and blocker reasons directly from live conversations.
+- Updated manual Chat scoring to refresh story-event trigger decisions for immediate author score-gate debugging.
 - Aligned Quality Suite story-event reports with the same trigger decision contract used by live chat runtime responses.
 - Added an explicit Web bundle budget verifier that keeps entry assets small while allowing bounded lazy renderer chunks for Three.js and Live2D.
 - Added a renderer asset contract for characters with Live2D, GLB/GLTF, sprite, portrait, and generated 3D fallback support in Story Mode.

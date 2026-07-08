@@ -31,6 +31,7 @@ All Tauri commands are invoked from the frontend via `invokeCommand(commandName,
 | `evaluate_conversation` | `{ characterId }` | `Evaluation` | Manually trigger scoring |
 | `get_relationship_score` | `{ characterId }` | `float` | Get relationship value |
 | `get_available_events` | `{ characterId }` | `TriggeredEvent[]` | Get unlockable events |
+| `preview_event_triggers` | `{ characterId }` | `EventTriggerDecision[]` | Explain current story-event trigger state |
 
 ### Streaming Events
 - `chat-chunk` - Token-by-token response
