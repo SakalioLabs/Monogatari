@@ -93,6 +93,10 @@ Three TTS provider types:
 
 Character voice assignments persist in the AppState and can be configured per-character.
 
+## Save Data Boundaries
+
+Save files are scoped to the active project `saves/` directory. The Rust assets `SaveManager` and the retained legacy C# `SaveManager` both validate save IDs before constructing paths, allow only portable filename characters, reject traversal-shaped IDs, and filter listed save files whose embedded save ID does not match the filename. Tauri load/delete commands should consume save IDs returned by `save_game` or `list_saves`, not arbitrary filesystem paths.
+
 ## Cloud Sync Architecture
 
 Cloud sync is project-scoped and manifest-driven. Save manifests live under the active project `saves/.sync_manifest.json`, not the process working directory, so installed builds keep user save state portable with the selected project data root. The backend status contract reports local save file counts, pending upload/download work, cross-device conflicts, provider mode, endpoint readiness, and token readiness. Sync tokens are accepted only as runtime command input and reduced to readiness booleans; token values are not written to disk or echoed into status payloads.

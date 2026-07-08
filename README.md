@@ -99,10 +99,11 @@ Verified on 2026-07-08:
 - Tauri desktop packaging configuration declares Windows MSI/NSIS targets, installer metadata, icons, WebView2 bootstrap behavior, and bundled sample project data, all checked by the release verifier.
 - Installed Tauri builds discover bundled sample `data/` resources at startup and bind them as the default project root when no development data root is available.
 - Analytics logs, cloud-sync manifests, and generated local TTS assets are written under the active project data root for portable installed desktop builds.
+- Rust and legacy C# save managers validate save IDs before file access, so load/delete/list operations cannot escape the active `saves/` directory through path traversal or mismatched embedded save IDs.
 - Settings Cloud Sync status now consumes the backend manifest contract directly, showing local save file counts, pending upload/download work, cross-device conflicts, and remote preflight readiness while keeping sync tokens runtime-only.
 - Project export emits a versioned manifest with file inventory, per-file MD5 checksums, generated asset coverage, and redacted sensitive settings for package handoff.
 - Release artifact manifests can be generated with `node scripts/create-release-manifest.mjs` to capture Web/PWA and desktop installer artifact paths, SHA-256 checksums, checked-in release channel policy metadata, missing installer expectations, and verified installer signing evidence.
-- One-command release verification passes with `node scripts/verify-release.mjs`, including all quality suite files, Rust AI prompt/API/pipeline tests, legacy C# AI prompt/API invariants, structured role-block prompt-injection regressions, renderer asset contract checks, pinned knowledge-ref checks, locale coverage, frontend UI text artifact scanning, cloud-sync status contract checks, frontend source invariants, frontend route/sidebar coverage, Tauri packaging preflight, root and subpath Web/PWA builds, Web/PWA dist asset checks, release artifact manifest checks, and preview route smoke checks.
+- One-command release verification passes with `node scripts/verify-release.mjs`, including all quality suite files, Rust AI prompt/API/pipeline tests, Rust asset save tests, legacy C# AI prompt/API invariants, save-manager path invariants, structured role-block prompt-injection regressions, renderer asset contract checks, pinned knowledge-ref checks, locale coverage, frontend UI text artifact scanning, cloud-sync status contract checks, frontend source invariants, frontend route/sidebar coverage, Tauri packaging preflight, root and subpath Web/PWA builds, Web/PWA dist asset checks, release artifact manifest checks, and preview route smoke checks.
 - Commercial release gates are tracked in `docs/RELEASE_CHECKLIST.md`.
 
 ## Architecture
@@ -161,7 +162,7 @@ Run the automated pre-release gate first:
 node scripts/verify-release.mjs
 ```
 
-This verifies JSON assets, checked-in workflow files, renderer asset contracts for characters and scenes, pinned character knowledge refs, all quality suite files, workflow branch coverage snapshots, locale coverage, sensitive token patterns, frontend UI text artifacts, frontend source invariants, legacy C# AI prompt/API invariants, frontend route/sidebar coverage, Tauri desktop packaging configuration, Tauri mobile deployment preflight, Rust AI/game/Tauri checks and tests, root and subpath Web/PWA builds with bundle budgets, Web/PWA dist assets, release artifact manifest checks, preview route smoke checks, frontend audit, and legacy C# tests.
+This verifies JSON assets, checked-in workflow files, renderer asset contracts for characters and scenes, pinned character knowledge refs, all quality suite files, workflow branch coverage snapshots, locale coverage, sensitive token patterns, frontend UI text artifacts, frontend source invariants, legacy C# AI prompt/API invariants, save-manager path invariants, frontend route/sidebar coverage, Tauri desktop packaging configuration, Tauri mobile deployment preflight, Rust AI/game/assets/Tauri checks and tests, root and subpath Web/PWA builds with bundle budgets, Web/PWA dist assets, release artifact manifest checks, preview route smoke checks, frontend audit, and legacy C# tests.
 
 ```bash
 cd frontend

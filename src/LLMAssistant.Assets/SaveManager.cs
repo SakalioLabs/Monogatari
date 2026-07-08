@@ -22,7 +22,7 @@ public class SaveManager : IGameService
     {
         Directory.CreateDirectory(_saveDirectory);
 
-        var path = Path.Combine(_saveDirectory, $"{save.SaveId}.json");
+        var path = SafeSavePath(save.SaveId);
         var json = JsonSerializer.Serialize(save, new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(path, json);
 
@@ -31,7 +31,9 @@ public class SaveManager : IGameService
 
     public GameSave? Load(string saveId)
     {
-        var path = Path.Combine(_saveDirectory, $"{saveId}.json");
+        if (!IsValidSaveId(saveId)) return null;
+
+        var path = SafeSavePath(saveId);
         if (!File.Exists(path)) return null;
 
         var json = File.ReadAllText(path);
@@ -50,12 +52,17 @@ public class SaveManager : IGameService
         if (!Directory.Exists(_saveDirectory)) return [];
 
         return Directory.GetFiles(_saveDirectory, "*.json")
+            .Where(f => IsValidSaveId(Path.GetFileNameWithoutExtension(f)))
             .Select(f =>
             {
                 try
                 {
                     var json = File.ReadAllText(f);
-                    return JsonSerializer.Deserialize<GameSave>(json, JsonOptions.Default);
+                    var save = JsonSerializer.Deserialize<GameSave>(json, JsonOptions.Default);
+                    var fileSaveId = Path.GetFileNameWithoutExtension(f);
+                    return save != null && save.SaveId == fileSaveId && IsValidSaveId(save.SaveId)
+                        ? save
+                        : null;
                 }
                 catch
                 {
@@ -70,7 +77,9 @@ public class SaveManager : IGameService
 
     public void DeleteSave(string saveId)
     {
-        var path = Path.Combine(_saveDirectory, $"{saveId}.json");
+        if (!IsValidSaveId(saveId)) return;
+
+        var path = SafeSavePath(saveId);
         if (File.Exists(path))
         {
             File.Delete(path);
@@ -115,4 +124,36 @@ public class SaveManager : IGameService
     public void Initialize() { }
     public void Update(double deltaTime) { }
     public void Shutdown() { }
+
+    private string SafeSavePath(string saveId)
+    {
+        if (!IsValidSaveId(saveId))
+        {
+            throw new ArgumentException(
+                "Save id cannot contain path separators, dots, whitespace, or control characters.",
+                nameof(saveId));
+        }
+
+        var root = Path.GetFullPath(_saveDirectory);
+        var path = Path.GetFullPath(Path.Combine(root, $"{saveId}.json"));
+        var rootPrefix = root.EndsWith(Path.DirectorySeparatorChar)
+            ? root
+            : root + Path.DirectorySeparatorChar;
+
+        if (!path.StartsWith(rootPrefix, OperatingSystem.IsWindows()
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal))
+        {
+            throw new ArgumentException("Save path must stay inside the save directory.", nameof(saveId));
+        }
+
+        return path;
+    }
+
+    private static bool IsValidSaveId(string saveId)
+    {
+        return !string.IsNullOrEmpty(saveId)
+            && saveId.Length <= 128
+            && saveId.All(ch => char.IsAsciiLetterOrDigit(ch) || ch is '-' or '_');
+    }
 }

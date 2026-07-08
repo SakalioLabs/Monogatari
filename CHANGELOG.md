@@ -77,6 +77,7 @@
 - Added a restorable Chat session audit report so the latest safety trace, evaluation, story-event decisions, and triggerable events survive character switching in the author workbench.
 - Added short retry handling for the release-gate frontend audit step so transient registry TLS failures do not abort otherwise passing release checks.
 - Added a typed Cloud Sync status contract with project-scoped manifest analysis, pending upload/download counts, cross-device conflict evidence, Settings UI wiring, and runtime-only sync token readiness.
+- Added save-manager path isolation tests and release-gate invariants so Rust and legacy C# save/load/delete flows reject traversal-shaped save IDs and filter mismatched save files.
 
 ### Fixed
 - Restored `cargo check --locked -p llm-galgame-app` by aligning Tauri command dependencies and current core APIs.

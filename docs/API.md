@@ -91,12 +91,14 @@ All Tauri commands are invoked from the frontend via `invokeCommand(commandName,
 
 ## Save/Load
 
+`saveId` values are opaque portable identifiers returned by `save_game` or `list_saves`; they are not file paths. Runtime save managers reject traversal-shaped IDs and filter mismatched save files before load/delete/list operations.
+
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
 | `save_game` | `{ saveName }` | `string` | Save game state |
-| `load_game` | `{ saveId }` | `void` | Load game state |
+| `load_game` | `{ saveId }` | `void` | Load game state by safe save ID |
 | `list_saves` | - | `SaveInfo[]` | List all saves |
-| `delete_save` | `{ saveId }` | `void` | Delete save |
+| `delete_save` | `{ saveId }` | `void` | Delete save by safe save ID |
 
 ## Scenes
 

@@ -144,6 +144,7 @@ const expectedFrontendRoutes = [
 const releaseCriticalRustFiles = [
   'crates/ai/src/api_engine.rs',
   'crates/ai/src/prompt_builder.rs',
+  'crates/assets/src/save_manager.rs',
   'crates/tauri-app/src/main.rs',
   'crates/tauri-app/src/state.rs',
   'crates/tauri-app/src/commands/engine.rs',
@@ -192,6 +193,7 @@ async function main() {
   await verifyLocaleCoverage()
   await verifyFrontendSourceInvariants()
   await verifyLegacyPromptBuilderInvariants()
+  await verifySaveManagerInvariants()
   await verifyFrontendRouteCoverage()
   await verifyTauriPackagingConfig()
   await verifyReleaseChannelPolicy()
@@ -202,6 +204,7 @@ async function main() {
   await run('Tauri mobile deployment preflight', 'node', ['scripts/verify-tauri-mobile-preflight.mjs'], root)
   await run('Release-critical Rust format check', 'rustfmt', ['--edition', '2021', '--check', ...releaseCriticalRustFiles], rustDir)
   await run('Rust AI prompt and pipeline tests', 'cargo', ['test', '--locked', '-p', 'llm-ai'], rustDir)
+  await run('Rust asset save tests', 'cargo', ['test', '--locked', '-p', 'llm-assets'], rustDir)
   await run('Rust game tests', 'cargo', ['test', '--locked', '-p', 'llm-game'], rustDir)
   await run('Rust Tauri command tests', 'cargo', ['test', '--locked', '-p', 'llm-galgame-app'], rustDir)
   await run('Rust Tauri app check', 'cargo', ['check', '--locked', '-p', 'llm-galgame-app'], rustDir)
@@ -1817,6 +1820,63 @@ async function verifyLegacyPromptBuilderInvariants() {
   }
 
   console.log('[release] Legacy C# AI invariants OK')
+}
+
+async function verifySaveManagerInvariants() {
+  const issues = []
+  const rustSaveManagerSource = await readFile(path.join(rustDir, 'crates', 'assets', 'src', 'save_manager.rs'), 'utf8')
+  const csharpSaveManagerSource = await readFile(path.join(root, 'src', 'LLMAssistant.Assets', 'SaveManager.cs'), 'utf8')
+  const csharpSaveManagerTests = await readFile(path.join(root, 'tests', 'LLMAssistant.Tests', 'SaveManagerTests.cs'), 'utf8')
+
+  const rustRequirements = [
+    ['safe_save_path', 'resolve save ids through a guarded path helper'],
+    ['is_valid_save_id', 'validate save ids before path construction'],
+    ['Save id cannot contain path separators', 'reject traversal-shaped save ids'],
+    ['path.parent() != Some(root.as_path())', 'defensively prove save paths stay under the save root'],
+    ['is_save_json_path', 'filter listed save files through the same id rules'],
+    ['save.save_id == file_save_id', 'reject listed saves whose embedded id does not match the file name'],
+    ['save_rejects_ids_that_escape_save_directory', 'test save rejection for escaping ids'],
+    ['load_rejects_ids_that_escape_save_directory', 'test load rejection for escaping ids'],
+    ['delete_rejects_ids_that_escape_save_directory', 'test delete rejection for escaping ids'],
+    ['list_saves_ignores_invalid_or_mismatched_save_ids', 'test list filtering for invalid or mismatched ids'],
+  ]
+  for (const [needle, description] of rustRequirements) {
+    if (!rustSaveManagerSource.includes(needle)) {
+      issues.push(`Rust SaveManager must ${description}`)
+    }
+  }
+
+  const csharpSourceRequirements = [
+    ['SafeSavePath', 'resolve save ids through a guarded path helper'],
+    ['IsValidSaveId', 'validate save ids before path construction'],
+    ['Path.GetFullPath', 'normalize save paths before boundary checks'],
+    ['Save id cannot contain path separators', 'reject traversal-shaped save ids'],
+    ['StartsWith(rootPrefix', 'defensively prove save paths stay under the save root'],
+    ['save.SaveId == fileSaveId', 'reject listed saves whose embedded id does not match the file name'],
+  ]
+  for (const [needle, description] of csharpSourceRequirements) {
+    if (!csharpSaveManagerSource.includes(needle)) {
+      issues.push(`Legacy C# SaveManager must ${description}`)
+    }
+  }
+
+  const csharpTestRequirements = [
+    ['Save_RejectsTraversalSaveIds', 'test save rejection for escaping ids'],
+    ['Load_ReturnsNullForTraversalSaveIds', 'test load rejection for escaping ids'],
+    ['DeleteSave_IgnoresTraversalSaveIds', 'test delete containment for escaping ids'],
+    ['GetAllSaves_IgnoresInvalidOrMismatchedSaveIds', 'test list filtering for invalid or mismatched ids'],
+  ]
+  for (const [needle, description] of csharpTestRequirements) {
+    if (!csharpSaveManagerTests.includes(needle)) {
+      issues.push(`Legacy C# SaveManager tests must ${description}`)
+    }
+  }
+
+  if (issues.length > 0) {
+    throw new Error(`Save manager path verification failed:\n${issues.join('\n')}`)
+  }
+
+  console.log('[release] Save manager path invariants OK')
 }
 
 async function verifyTauriPackagingConfig() {
