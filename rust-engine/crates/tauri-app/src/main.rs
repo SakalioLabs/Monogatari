@@ -8,7 +8,8 @@
 mod commands;
 mod state;
 
-use state::AppState;
+use state::{discover_bundled_project_data_root, is_project_data_root, AppState};
+use tauri::Manager;
 use tracing_subscriber::EnvFilter;
 
 fn main() {
@@ -21,6 +22,38 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .manage(AppState::new())
+        .setup(|app| {
+            let development_root = state::default_project_data_root();
+            let bundled_root = app
+                .path()
+                .resource_dir()
+                .map(
+                    |resource_dir| match discover_bundled_project_data_root(&resource_dir) {
+                        Some(root) => {
+                            tracing::info!("Found bundled project data at {}", root.display());
+                            Some(root)
+                        }
+                        None => None,
+                    },
+                )
+                .unwrap_or_else(|error| {
+                    tracing::warn!("Unable to resolve Tauri resource directory: {error}");
+                    None
+                });
+            let data_root = if is_project_data_root(&development_root) {
+                Some(development_root)
+            } else {
+                bundled_root
+            };
+
+            if let Some(data_root) = data_root {
+                let app_state = app.state::<AppState>();
+                tracing::info!("Using project data root: {}", data_root.display());
+                tauri::async_runtime::block_on(app_state.set_project_data_root(data_root));
+            }
+
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             commands::engine::initialize_engine,
             commands::engine::get_engine_status,

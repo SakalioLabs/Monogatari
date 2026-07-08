@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use tauri::State;
 
 use crate::commands::{chat, prompt_guard, workflow};
-use crate::state::AppState;
+use crate::state::{default_project_data_root, AppState};
 
 const DEFAULT_SUITE_JSON: &str =
     include_str!("../../../../../data/quality_suites/character_stability.json");
@@ -308,32 +308,12 @@ async fn project_root(state: &State<'_, AppState>) -> PathBuf {
         return root;
     }
 
-    let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-    find_project_data_root(&current_dir).unwrap_or_else(|| current_dir.join("data"))
+    default_project_data_root()
 }
 
+#[cfg(test)]
 fn find_project_data_root(start: &Path) -> Option<PathBuf> {
-    let mut first_valid = None;
-
-    for ancestor in start.ancestors() {
-        for candidate in [ancestor.to_path_buf(), ancestor.join("data")] {
-            if !is_project_data_root(&candidate) {
-                continue;
-            }
-            if first_valid.is_none() {
-                first_valid = Some(candidate.clone());
-            }
-            if candidate.join("quality_suites").is_dir() {
-                return Some(candidate);
-            }
-        }
-    }
-
-    first_valid
-}
-
-fn is_project_data_root(path: &Path) -> bool {
-    path.join("characters").is_dir() && path.join("knowledge").is_dir()
+    crate::state::discover_project_data_root(start)
 }
 
 fn resolve_suite_path(project_root: &Path, suite_path: &str) -> Result<PathBuf, String> {

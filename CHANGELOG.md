@@ -65,6 +65,7 @@
 - Fixed visible separator artifacts in the Scene Assets and Quality Suites workbench metadata rows.
 - Fixed browser locale fallback loading so Web/PWA deployments under `VITE_BASE_PATH` subpaths fetch locale JSON from the correct base URL.
 - Fixed release verification coverage for Web/PWA subpath deployments by enforcing service worker base-path source invariants.
+- Fixed installed desktop builds so Tauri-bundled `data/` resources are discovered at startup and rebound as the default project root when no development data root is available.
 - Fixed evaluation score parsing so explanatory model strings such as `Score: 8/10`, `80% friendly`, and normalized decimal text still produce stable event-trigger scores.
 - Fixed event availability previews so author tooling uses the same score-aware trigger decisions as runtime event firing instead of broad event-type approximations.
 - Fixed the Sakura example workflow to demonstrate a score node feeding a story-event unlock node instead of ending immediately after scoring.

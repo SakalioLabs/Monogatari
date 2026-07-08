@@ -132,6 +132,11 @@ const expectedFrontendRoutes = [
 ]
 
 const releaseCriticalRustFiles = [
+  'crates/tauri-app/src/main.rs',
+  'crates/tauri-app/src/state.rs',
+  'crates/tauri-app/src/commands/engine.rs',
+  'crates/tauri-app/src/commands/project.rs',
+  'crates/tauri-app/src/commands/scenes.rs',
   'crates/game/src/characters/character.rs',
   'crates/game/src/knowledge/knowledge_base.rs',
   'crates/game/src/knowledge/knowledge_entry.rs',
@@ -1441,6 +1446,11 @@ async function verifyTauriPackagingConfig() {
   const config = JSON.parse(await readFile(configPath, 'utf8'))
   const frontendPackage = JSON.parse(await readFile(path.join(frontendDir, 'package.json'), 'utf8'))
   const cargoWorkspace = await readFile(path.join(rustDir, 'Cargo.toml'), 'utf8')
+  const tauriMainSource = await readFile(path.join(tauriAppDir, 'src', 'main.rs'), 'utf8')
+  const tauriStateSource = await readFile(path.join(tauriAppDir, 'src', 'state.rs'), 'utf8')
+  const tauriEngineSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'engine.rs'), 'utf8')
+  const tauriProjectSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'project.rs'), 'utf8')
+  const tauriScenesSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'scenes.rs'), 'utf8')
   const workspaceVersion = cargoWorkspace.match(/\[workspace\.package\][\s\S]*?\nversion\s*=\s*"([^"]+)"/)?.[1]
 
   if (config.productName !== 'Monogatari') {
@@ -1528,6 +1538,26 @@ async function verifyTauriPackagingConfig() {
   }
   if (windows.webviewInstallMode?.silent !== true) {
     issues.push('tauri.conf.json bundle.windows.webviewInstallMode.silent must be true')
+  }
+
+  const runtimeDataRootRequirements = [
+    [tauriMainSource, 'resource_dir()', 'resolve the Tauri resource directory during setup'],
+    [tauriMainSource, 'discover_bundled_project_data_root', 'look for bundled data resources at startup'],
+    [tauriMainSource, 'set_project_data_root(data_root)', 'bind discovered project data into AppState at startup'],
+    [tauriStateSource, 'pub fn default_project_data_root()', 'centralize default project data-root discovery'],
+    [tauriStateSource, 'pub fn discover_bundled_project_data_root', 'centralize bundled Tauri data-resource discovery'],
+    [tauriStateSource, 'pub fn is_project_data_root', 'validate project data roots before binding them'],
+    [tauriStateSource, 'AssetManager::new(&data_path)', 'rebind the asset manager when project roots change'],
+    [tauriStateSource, 'SaveManager::new(data_path.join("saves"))', 'rebind the save manager when project roots change'],
+    [tauriEngineSource, 'unwrap_or_else(default_project_data_root)', 'keep empty engine initialization paths on the discovered default root'],
+    [tauriEngineSource, 'state.set_project_data_root(path).await', 'rebind project managers after engine initialization'],
+    [tauriProjectSource, 'state.set_project_data_root(root.clone()).await', 'rebind project managers after saving project config'],
+    [tauriScenesSource, 'Ok(default_project_data_root())', 'scan scene assets from the discovered default root before explicit initialization'],
+  ]
+  for (const [source, needle, description] of runtimeDataRootRequirements) {
+    if (!source.includes(needle)) {
+      issues.push(`Tauri runtime data-root handling must ${description}`)
+    }
   }
 
   if (issues.length > 0) {

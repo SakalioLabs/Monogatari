@@ -8,7 +8,7 @@ use serde::Serialize;
 use serde_json::{json, Value};
 use tauri::State;
 
-use crate::state::AppState;
+use crate::state::{default_project_data_root, AppState};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ProjectPathStatus {
@@ -132,7 +132,7 @@ pub async fn save_project_config(
         .await
         .map_err(|e| e.to_string())?;
 
-    *state.project_path.write().await = Some(root.clone());
+    state.set_project_data_root(root.clone()).await;
     build_project_config_state(&root)
 }
 
@@ -436,18 +436,18 @@ async fn resolve_project_root(
 }
 
 fn normalize_project_path(project_path: Option<String>) -> Result<PathBuf, String> {
-    let current_dir = std::env::current_dir().map_err(|e| e.to_string())?;
     let Some(path) = project_path
         .filter(|path| !path.trim().is_empty())
         .map(PathBuf::from)
     else {
-        return Ok(find_upward(&current_dir, Path::new("data")).unwrap_or(current_dir));
+        return Ok(default_project_data_root());
     };
 
     if path.is_absolute() {
         return Ok(path);
     }
 
+    let current_dir = std::env::current_dir().map_err(|e| e.to_string())?;
     let direct = current_dir.join(&path);
     if direct.exists() {
         return Ok(direct);

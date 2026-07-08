@@ -4,7 +4,7 @@ use serde::Serialize;
 use std::path::{Path, PathBuf};
 use tauri::State;
 
-use crate::state::AppState;
+use crate::state::{default_project_data_root, AppState};
 
 #[derive(Serialize)]
 pub struct EngineStatus {
@@ -22,7 +22,16 @@ pub async fn initialize_engine(
     state: State<'_, AppState>,
     project_path: String,
 ) -> Result<String, String> {
-    let path = normalize_project_path(&project_path)?;
+    let path = if project_path.trim().is_empty() {
+        state
+            .project_path
+            .read()
+            .await
+            .clone()
+            .unwrap_or_else(default_project_data_root)
+    } else {
+        normalize_project_path(&project_path)?
+    };
 
     // Load characters
     let char_path = path.join("characters");
@@ -55,7 +64,7 @@ pub async fn initialize_engine(
     let pipeline = state.inference_pipeline.read().await;
     pipeline.initialize_all().await.map_err(|e| e.to_string())?;
 
-    *state.project_path.write().await = Some(path);
+    state.set_project_data_root(path).await;
     *state.initialized.write().await = true;
 
     Ok("Engine initialized successfully".to_string())
@@ -64,7 +73,7 @@ pub async fn initialize_engine(
 fn normalize_project_path(project_path: &str) -> Result<PathBuf, String> {
     let current_dir = std::env::current_dir().map_err(|e| e.to_string())?;
     let requested = if project_path.trim().is_empty() {
-        PathBuf::from("data")
+        return Ok(default_project_data_root());
     } else {
         PathBuf::from(project_path)
     };

@@ -6,7 +6,7 @@ use std::path::{Component, Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use tauri::State;
 
-use crate::state::AppState;
+use crate::state::{default_project_data_root, AppState};
 
 const BACKGROUND_EXTENSIONS: &[&str] = &["png", "jpg", "jpeg", "webp", "bmp", "gif", "svg"];
 
@@ -431,19 +431,7 @@ async fn project_root(state: &State<'_, AppState>) -> Result<PathBuf, String> {
         return Ok(path);
     }
 
-    let current_dir = std::env::current_dir().map_err(|e| e.to_string())?;
-    if let Some(default_data) = find_upward(&current_dir, Path::new("data")) {
-        return Ok(default_data);
-    }
-
-    Ok(current_dir)
-}
-
-fn find_upward(start: &Path, relative: &Path) -> Option<PathBuf> {
-    start
-        .ancestors()
-        .map(|ancestor| ancestor.join(relative))
-        .find(|candidate| candidate.exists())
+    Ok(default_project_data_root())
 }
 
 fn relative_path(root: &Path, path: &Path) -> String {
