@@ -1807,6 +1807,7 @@ async function verifyTauriPackagingConfig() {
     ['runtime_guard_interventions', 'count runtime guard interventions in audit summaries'],
     ['scenario_runtime_safety_trace', 'centralize quality runtime trace construction'],
     ['chat::build_chat_safety_trace', 'reuse the chat safety trace contract in quality reports'],
+    ['chat::build_event_trigger_decisions', 'reuse the chat story event decision contract in quality reports'],
     ['pinned_knowledge_ref_count', 'carry pinned knowledge evidence into quality runtime traces'],
     ['pinned_knowledge_ref_ids', 'carry pinned knowledge ref ids into quality runtime traces'],
   ]

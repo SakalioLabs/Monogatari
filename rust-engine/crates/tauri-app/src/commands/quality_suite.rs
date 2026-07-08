@@ -740,18 +740,12 @@ async fn run_quality_scenario(
     let knowledge_anchor_missing_detected = !knowledge_evidence.issues.is_empty();
     let knowledge_boundary_violation_detected =
         scenario_knowledge_boundary_violation(scenario, &character_response);
-    let event_trigger_decisions: Vec<chat::EventTriggerDecision> = chat::get_event_definitions()
-        .into_iter()
-        .map(|event| {
-            chat::explain_event_trigger(
-                &event,
-                event_relationship,
-                &evaluation,
-                scenario.evaluation_count,
-                scenario.already_triggered_events.contains(&event.event_id),
-            )
-        })
-        .collect();
+    let event_trigger_decisions = chat::build_event_trigger_decisions(
+        event_relationship,
+        &evaluation,
+        scenario.evaluation_count,
+        &scenario.already_triggered_events,
+    );
     let triggered_events: Vec<String> = event_trigger_decisions
         .iter()
         .filter(|decision| decision.triggered)
@@ -1909,6 +1903,19 @@ mod tests {
         assert!(!fallback_injection
             .triggered_events
             .contains(&"creative_talk".to_string()));
+        let relationship_boundary = report
+            .scenarios
+            .iter()
+            .find(|scenario| scenario.id == "relationship-boundary-first-friend")
+            .expect("relationship boundary scenario");
+        let first_friend_decision = relationship_boundary
+            .event_trigger_decisions
+            .iter()
+            .find(|decision| decision.event_id == "first_friend")
+            .expect("first_friend event decision");
+        assert!(first_friend_decision.triggered);
+        assert!(first_friend_decision.actual_relationship >= 0.3);
+        assert!(first_friend_decision.blocked_reasons.is_empty());
         let group_trace = report
             .scenarios
             .iter()
