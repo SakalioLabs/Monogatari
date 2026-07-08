@@ -197,6 +197,7 @@ async function main() {
   await verifyAssetManagerInvariants()
   await verifySaveManagerInvariants()
   await verifyWorkflowCommandInvariants()
+  await verifyTtsOutputInvariants()
   await verifyFrontendRouteCoverage()
   await verifyTauriPackagingConfig()
   await verifyReleaseChannelPolicy()
@@ -1967,6 +1968,41 @@ async function verifyWorkflowCommandInvariants() {
   }
 
   console.log('[release] Workflow command path invariants OK')
+}
+
+async function verifyTtsOutputInvariants() {
+  const issues = []
+  const ttsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'tts.rs'), 'utf8')
+
+  const ttsRequirements = [
+    ['tts_output_path', 'centralize generated TTS output path construction'],
+    ['safe_tts_file_component', 'sanitize character/provider names before building filenames'],
+    ['path.parent() != Some(output_dir.as_path())', 'prove generated TTS files stay directly under assets/tts'],
+    ['write_tts_output_bytes', 'reuse the guarded output writer for API provider bytes'],
+    ['tts_output_path(&project_root, "azure"', 'write Azure provider output under the active project root'],
+    ['tts_output_path(&project_root, "elevenlabs"', 'write ElevenLabs provider output under the active project root'],
+    ['tts_output_path(&project_root, "system"', 'write system provider output under the active project root'],
+    ['tts_output_path_sanitizes_character_ids_and_stays_in_project_assets', 'test sanitized character ids cannot escape assets/tts'],
+    ['api_provider_tts_outputs_are_project_scoped', 'test API provider output paths are project-scoped'],
+    ['tts_output_path_rejects_unsupported_extensions', 'test unsupported generated audio extensions are rejected'],
+  ]
+  for (const [needle, description] of ttsRequirements) {
+    if (!ttsSource.includes(needle)) {
+      issues.push(`TTS output handling must ${description}`)
+    }
+  }
+  if (ttsSource.includes('std::env::temp_dir()')) {
+    issues.push('TTS output handling must not write provider audio to the process temp directory')
+  }
+  if (ttsSource.includes('monogatari_tts_')) {
+    issues.push('TTS output handling must avoid fixed global provider output filenames')
+  }
+
+  if (issues.length > 0) {
+    throw new Error(`TTS output path verification failed:\n${issues.join('\n')}`)
+  }
+
+  console.log('[release] TTS output path invariants OK')
 }
 
 async function verifyTauriPackagingConfig() {

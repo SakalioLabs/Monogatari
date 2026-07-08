@@ -78,6 +78,7 @@
 - Added a restorable Chat session audit report so the latest safety trace, evaluation, story-event decisions, and triggerable events survive character switching in the author workbench.
 - Added short retry handling for the release-gate frontend audit step so transient registry TLS failures do not abort otherwise passing release checks.
 - Added a typed Cloud Sync status contract with project-scoped manifest analysis, pending upload/download counts, cross-device conflict evidence, Settings UI wiring, and runtime-only sync token readiness.
+- Added TTS output path isolation tests and release-gate invariants so system, Azure, and ElevenLabs speech files use sanitized project `assets/tts/` filenames instead of fixed process-temp outputs.
 - Added asset-manager path isolation tests and release-gate invariants so Rust and legacy C# text/JSON/binary asset reads reject absolute, URI-like, empty, and traversal-shaped paths before touching disk.
 - Added save-manager path isolation tests and release-gate invariants so Rust and legacy C# save/load/delete flows reject traversal-shaped save IDs and filter mismatched save files.
 

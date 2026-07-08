@@ -122,6 +122,8 @@ Scene and renderer asset paths are project-relative asset references. Runtime as
 
 ## TTS
 
+Generated system, Azure, and ElevenLabs speech files are written under the active project `assets/tts/` directory with sanitized character/provider filename components.
+
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
 | `configure_tts` | `{ config }` | `void` | Set TTS provider config |

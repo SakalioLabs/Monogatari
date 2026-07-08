@@ -64,6 +64,83 @@ fn tts_output_dir(project_root: &Path) -> PathBuf {
     project_root.join("assets").join("tts")
 }
 
+fn tts_output_path(
+    project_root: &Path,
+    provider: &str,
+    character_id: &str,
+    timestamp: u64,
+    extension: &str,
+) -> Result<PathBuf, String> {
+    let extension = match extension
+        .trim_start_matches('.')
+        .to_ascii_lowercase()
+        .as_str()
+    {
+        "wav" => "wav",
+        "mp3" => "mp3",
+        _ => return Err("TTS output extension must be wav or mp3.".to_string()),
+    };
+    let output_dir = tts_output_dir(project_root);
+    let character = safe_tts_file_component(character_id);
+    let provider = safe_tts_file_component(provider);
+    let path = output_dir.join(format!("{character}_{provider}_{timestamp}.{extension}"));
+
+    if path.parent() != Some(output_dir.as_path()) {
+        return Err(
+            "TTS output path must stay inside the project assets/tts directory.".to_string(),
+        );
+    }
+
+    Ok(path)
+}
+
+fn safe_tts_file_component(value: &str) -> String {
+    let mut output = String::new();
+    let mut last_was_separator = false;
+    for ch in value.trim().chars() {
+        if ch.is_ascii_alphanumeric() {
+            output.push(ch.to_ascii_lowercase());
+            last_was_separator = false;
+        } else if ch == '-' || ch == '_' {
+            if !last_was_separator {
+                output.push(ch);
+                last_was_separator = true;
+            }
+        } else if !last_was_separator {
+            output.push('_');
+            last_was_separator = true;
+        }
+
+        if output.len() >= 64 {
+            break;
+        }
+    }
+
+    let output = output.trim_matches(|ch| ch == '_' || ch == '-').to_string();
+    if output.is_empty() {
+        "voice".to_string()
+    } else {
+        output
+    }
+}
+
+fn ensure_tts_output_parent(output_path: &Path) -> Result<(), String> {
+    let Some(parent) = output_path.parent() else {
+        return Err("TTS output path has no parent directory.".to_string());
+    };
+    std::fs::create_dir_all(parent).map_err(|e| format!("TTS output directory failed: {e}"))
+}
+
+fn write_tts_output_bytes(
+    output_path: &Path,
+    bytes: &[u8],
+    provider: &str,
+) -> Result<String, String> {
+    ensure_tts_output_parent(output_path)?;
+    std::fs::write(output_path, bytes).map_err(|e| format!("{provider} TTS write failed: {e}"))?;
+    Ok(output_path.to_string_lossy().to_string())
+}
+
 #[tauri::command]
 pub async fn configure_tts(config: TtsConfig) -> Result<String, String> {
     tracing::info!(
@@ -94,7 +171,13 @@ pub async fn set_character_voice(
 }
 
 /// Synthesize speech using Azure Cognitive Services API
-async fn azure_tts(text: &str, api_key: &str, region: &str, voice: &str) -> Result<String, String> {
+async fn azure_tts(
+    text: &str,
+    api_key: &str,
+    region: &str,
+    voice: &str,
+    output_path: &Path,
+) -> Result<String, String> {
     let url = format!(
         "https://{}.tts.speech.microsoft.com/cognitiveservices/v1",
         region
@@ -121,16 +204,19 @@ async fn azure_tts(text: &str, api_key: &str, region: &str, voice: &str) -> Resu
             .bytes()
             .await
             .map_err(|e| format!("Azure TTS read failed: {}", e))?;
-        let output = std::env::temp_dir().join("monogatari_tts_azure.mp3");
-        std::fs::write(&output, &bytes).map_err(|e| format!("Azure TTS write failed: {}", e))?;
-        Ok(output.to_string_lossy().to_string())
+        write_tts_output_bytes(output_path, &bytes, "Azure")
     } else {
         Err(format!("Azure TTS error: {}", resp.status()))
     }
 }
 
 /// Synthesize speech using ElevenLabs API
-async fn elevenlabs_tts(text: &str, api_key: &str, voice_id: &str) -> Result<String, String> {
+async fn elevenlabs_tts(
+    text: &str,
+    api_key: &str,
+    voice_id: &str,
+    output_path: &Path,
+) -> Result<String, String> {
     let url = format!("https://api.elevenlabs.io/v1/text-to-speech/{}", voice_id);
     let client = reqwest::Client::new();
     let resp = client
@@ -146,9 +232,7 @@ async fn elevenlabs_tts(text: &str, api_key: &str, voice_id: &str) -> Result<Str
             .bytes()
             .await
             .map_err(|e| format!("ElevenLabs read failed: {}", e))?;
-        let output = std::env::temp_dir().join("monogatari_tts_elevenlabs.mp3");
-        std::fs::write(&output, &bytes).map_err(|e| format!("ElevenLabs write failed: {}", e))?;
-        Ok(output.to_string_lossy().to_string())
+        write_tts_output_bytes(output_path, &bytes, "ElevenLabs")
     } else {
         Err(format!("ElevenLabs error: {}", resp.status()))
     }
@@ -174,6 +258,11 @@ pub async fn synthesize_speech(
         .map(|voice| voice.voice_id.clone())
         .or_else(|| config.api_voice_id.clone())
         .or_else(|| config.default_voice.clone());
+    let project_root = state.current_project_data_root().await;
+    let ts = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
 
     match config.provider.as_str() {
         "azure" => {
@@ -182,7 +271,9 @@ pub async fn synthesize_speech(
                 config.api_region.as_deref(),
                 voice_id.as_deref(),
             ) {
-                return match azure_tts(&text, api_key, region, voice).await {
+                let output_path =
+                    tts_output_path(&project_root, "azure", &character_id, ts, "mp3")?;
+                return match azure_tts(&text, api_key, region, voice, &output_path).await {
                     Ok(path) => Ok(tts_success(path)),
                     Err(error) => Ok(tts_failure(error)),
                 };
@@ -190,7 +281,9 @@ pub async fn synthesize_speech(
         }
         "elevenlabs" => {
             if let (Some(api_key), Some(voice)) = (config.api_key.as_deref(), voice_id.as_deref()) {
-                return match elevenlabs_tts(&text, api_key, voice).await {
+                let output_path =
+                    tts_output_path(&project_root, "elevenlabs", &character_id, ts, "mp3")?;
+                return match elevenlabs_tts(&text, api_key, voice, &output_path).await {
                     Ok(path) => Ok(tts_success(path)),
                     Err(error) => Ok(tts_failure(error)),
                 };
@@ -199,14 +292,8 @@ pub async fn synthesize_speech(
         _ => {}
     }
 
-    let project_root = state.current_project_data_root().await;
-    let output_dir = tts_output_dir(&project_root);
-    let _ = std::fs::create_dir_all(&output_dir);
-    let ts = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-    let output_path = output_dir.join(format!("{}_{}.wav", character_id, ts));
+    let output_path = tts_output_path(&project_root, "system", &character_id, ts, "wav")?;
+    ensure_tts_output_parent(&output_path)?;
 
     #[cfg(target_os = "windows")]
     {
@@ -319,5 +406,45 @@ mod tests {
     fn tts_output_dir_stays_inside_project_assets() {
         let root = PathBuf::from("project-data");
         assert_eq!(tts_output_dir(&root), root.join("assets").join("tts"));
+    }
+
+    #[test]
+    fn tts_output_path_sanitizes_character_ids_and_stays_in_project_assets() {
+        let root = PathBuf::from("project-data");
+        let path = tts_output_path(&root, "system", "../Sakura\\evil:role", 42, "wav").unwrap();
+
+        assert_eq!(
+            path,
+            root.join("assets")
+                .join("tts")
+                .join("sakura_evil_role_system_42.wav")
+        );
+        assert_eq!(path.parent(), Some(tts_output_dir(&root).as_path()));
+    }
+
+    #[test]
+    fn api_provider_tts_outputs_are_project_scoped() {
+        let root = PathBuf::from("project-data");
+        let azure = tts_output_path(&root, "azure", "Luna", 7, "mp3").unwrap();
+        let elevenlabs = tts_output_path(&root, "elevenlabs", "Kenji", 8, ".mp3").unwrap();
+
+        assert_eq!(
+            azure,
+            root.join("assets").join("tts").join("luna_azure_7.mp3")
+        );
+        assert_eq!(
+            elevenlabs,
+            root.join("assets")
+                .join("tts")
+                .join("kenji_elevenlabs_8.mp3")
+        );
+    }
+
+    #[test]
+    fn tts_output_path_rejects_unsupported_extensions() {
+        let root = PathBuf::from("project-data");
+
+        assert!(tts_output_path(&root, "system", "sakura", 1, "../wav").is_err());
+        assert!(tts_output_path(&root, "system", "sakura", 1, "txt").is_err());
     }
 }
