@@ -16,7 +16,7 @@ Monogatari is a development engine for creating LLM-driven text adventure games.
 - **Web Bundle Budgets** - Production builds verify small entry assets while allowing bounded lazy chunks for Three.js, GLTF loading, OrbitControls, and Live2D.
 - **Dialogue Editor** - Visual branching dialogue editor with node tree, inline choice editing, speaker assignment, validation, and JSON import/export.
 - **Visual Workflow Editor** - Drag-and-drop node-based editor for designing dialogue flows, branching conditions, LLM generation nodes, evaluation triggers, and scene transitions.
-- **Workflow Validation** - Import/export and save paths validate node ids, start/end structure, missing config fields, broken links, duplicate links, and unreachable nodes.
+- **Workflow Validation** - Import/export and project-scoped save/load paths validate node ids, start/end structure, missing config fields, broken links, duplicate links, and unreachable nodes.
 - **Scene Asset Library** - Project scene metadata and background files are scanned, validated, listed, and selectable as the active runtime scene.
 - **Renderer Fallback Pipeline** - Story Mode resolves project assets across Tauri and Web builds, preferring Live2D, then GLB/GLTF 3D models, then 2D sprites or portraits, with a generated 3D stage placeholder when no art is available.
 - **Project Control Panel** - Project settings, path readiness, AI backend selection, and runtime initialization are managed from one production-oriented console.
@@ -74,6 +74,7 @@ Verified on 2026-07-08:
 - Evaluation score parsing clamps overrange, above-scale, and negative model scores before quality reports or event triggers consume them.
 - Workflow LLM nodes wrap runtime inputs as untrusted data and guard generated output before it can enter story node results.
 - Workflow output safety now covers tool-role/function-call shaped text so generated node output cannot masquerade as a runtime event command.
+- Workflow save/load commands resolve JSON files under the active project `workflows/` directory and reject absolute, URI-like, and traversal-shaped paths before touching disk.
 - Checked-in score-gate workflow fixtures prove conversation evaluation can drive visual workflow branches and score-aware story-event unlocks.
 - Chat runtime responses emit story-event trigger decisions with actual relationship values, score metrics, evaluation counts, and blocker reasons.
 - Manual Chat scoring returns an atomic evaluation report with matching story-event trigger decisions and triggerable events so authors can debug score gates without waiting for periodic evaluation.
@@ -103,7 +104,7 @@ Verified on 2026-07-08:
 - Settings Cloud Sync status now consumes the backend manifest contract directly, showing local save file counts, pending upload/download work, cross-device conflicts, and remote preflight readiness while keeping sync tokens runtime-only.
 - Project export emits a versioned manifest with file inventory, per-file MD5 checksums, generated asset coverage, and redacted sensitive settings for package handoff.
 - Release artifact manifests can be generated with `node scripts/create-release-manifest.mjs` to capture Web/PWA and desktop installer artifact paths, SHA-256 checksums, checked-in release channel policy metadata, missing installer expectations, and verified installer signing evidence.
-- One-command release verification passes with `node scripts/verify-release.mjs`, including all quality suite files, Rust AI prompt/API/pipeline tests, Rust asset management tests, legacy C# AI prompt/API invariants, asset/save-manager path invariants, structured role-block prompt-injection regressions, renderer asset contract checks, pinned knowledge-ref checks, locale coverage, frontend UI text artifact scanning, cloud-sync status contract checks, frontend source invariants, frontend route/sidebar coverage, Tauri packaging preflight, root and subpath Web/PWA builds, Web/PWA dist asset checks, release artifact manifest checks, and preview route smoke checks.
+- One-command release verification passes with `node scripts/verify-release.mjs`, including all quality suite files, Rust AI prompt/API/pipeline tests, Rust asset management tests, legacy C# AI prompt/API invariants, asset/save-manager and workflow command path invariants, structured role-block prompt-injection regressions, renderer asset contract checks, pinned knowledge-ref checks, locale coverage, frontend UI text artifact scanning, cloud-sync status contract checks, frontend source invariants, frontend route/sidebar coverage, Tauri packaging preflight, root and subpath Web/PWA builds, Web/PWA dist asset checks, release artifact manifest checks, and preview route smoke checks.
 - Commercial release gates are tracked in `docs/RELEASE_CHECKLIST.md`.
 
 ## Architecture
@@ -162,7 +163,7 @@ Run the automated pre-release gate first:
 node scripts/verify-release.mjs
 ```
 
-This verifies JSON assets, checked-in workflow files, renderer asset contracts for characters and scenes, pinned character knowledge refs, all quality suite files, workflow branch coverage snapshots, locale coverage, sensitive token patterns, frontend UI text artifacts, frontend source invariants, legacy C# AI prompt/API invariants, asset/save-manager path invariants, frontend route/sidebar coverage, Tauri desktop packaging configuration, Tauri mobile deployment preflight, Rust AI/game/assets/Tauri checks and tests, root and subpath Web/PWA builds with bundle budgets, Web/PWA dist assets, release artifact manifest checks, preview route smoke checks, frontend audit, and legacy C# tests.
+This verifies JSON assets, checked-in workflow files, renderer asset contracts for characters and scenes, pinned character knowledge refs, all quality suite files, workflow branch coverage snapshots, locale coverage, sensitive token patterns, frontend UI text artifacts, frontend source invariants, legacy C# AI prompt/API invariants, asset/save-manager and workflow command path invariants, frontend route/sidebar coverage, Tauri desktop packaging configuration, Tauri mobile deployment preflight, Rust AI/game/assets/Tauri checks and tests, root and subpath Web/PWA builds with bundle budgets, Web/PWA dist assets, release artifact manifest checks, preview route smoke checks, frontend audit, and legacy C# tests.
 
 ```bash
 cd frontend

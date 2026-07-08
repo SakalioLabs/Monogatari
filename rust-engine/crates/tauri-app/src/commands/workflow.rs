@@ -1,6 +1,7 @@
 //! Workflow editor commands (Dify-style no-code workflow).
 
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::path::{Component, Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 use tauri::State;
@@ -1218,17 +1219,33 @@ fn neutral_workflow_evaluation() -> chat::ConversationEvaluation {
 /// Save a workflow to a file.
 #[tauri::command]
 pub async fn save_workflow(
-    _state: State<'_, AppState>,
+    state: State<'_, AppState>,
     workflow: Workflow,
     path: String,
 ) -> Result<String, String> {
-    let validation = validate_workflow_inner(&workflow);
+    let project_root = state.current_project_data_root().await;
+    save_workflow_to_project(&project_root, &workflow, &path).await
+}
+
+async fn save_workflow_to_project(
+    project_root: &Path,
+    workflow: &Workflow,
+    requested_path: &str,
+) -> Result<String, String> {
+    let validation = validate_workflow_inner(workflow);
     if !validation.valid {
         return Err(format_validation_errors(&validation));
     }
 
-    let json = serde_json::to_string_pretty(&workflow).map_err(|e| e.to_string())?;
-    tokio::fs::write(&path, json)
+    let path = workflow_path_in_project(project_root, requested_path)?;
+    if let Some(parent) = path.parent() {
+        tokio::fs::create_dir_all(parent)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    let json = serde_json::to_string_pretty(workflow).map_err(|e| e.to_string())?;
+    tokio::fs::write(path, json)
         .await
         .map_err(|e| e.to_string())?;
     Ok("Workflow saved".to_string())
@@ -1236,7 +1253,16 @@ pub async fn save_workflow(
 
 /// Load a workflow from a file.
 #[tauri::command]
-pub async fn load_workflow(_state: State<'_, AppState>, path: String) -> Result<Workflow, String> {
+pub async fn load_workflow(state: State<'_, AppState>, path: String) -> Result<Workflow, String> {
+    let project_root = state.current_project_data_root().await;
+    load_workflow_from_project(&project_root, &path).await
+}
+
+async fn load_workflow_from_project(
+    project_root: &Path,
+    requested_path: &str,
+) -> Result<Workflow, String> {
+    let path = workflow_path_in_project(project_root, requested_path)?;
     let content = tokio::fs::read_to_string(&path)
         .await
         .map_err(|e| e.to_string())?;
@@ -1246,6 +1272,72 @@ pub async fn load_workflow(_state: State<'_, AppState>, path: String) -> Result<
         return Err(format_validation_errors(&validation));
     }
     Ok(workflow)
+}
+
+fn workflow_path_in_project(project_root: &Path, requested_path: &str) -> Result<PathBuf, String> {
+    let relative_path = normalize_workflow_relative_path(requested_path)?;
+    let workflow_root = project_root.join("workflows");
+    let path = workflow_root.join(relative_path);
+
+    if !path.starts_with(&workflow_root) {
+        return Err("Workflow path must stay inside the project workflows directory.".to_string());
+    }
+
+    Ok(path)
+}
+
+fn normalize_workflow_relative_path(requested_path: &str) -> Result<PathBuf, String> {
+    let normalized = requested_path.trim().replace('\\', "/");
+    if normalized.is_empty() || normalized.chars().any(char::is_control) {
+        return Err(
+            "Workflow paths must be non-empty and cannot contain control characters.".to_string(),
+        );
+    }
+    if normalized.contains(':') {
+        return Err("Workflow paths cannot contain drive prefixes or URI schemes.".to_string());
+    }
+
+    let mut segments = normalized.split('/').collect::<Vec<_>>();
+    if segments
+        .iter()
+        .any(|segment| segment.is_empty() || *segment == "." || *segment == "..")
+    {
+        return Err(
+            "Workflow paths cannot contain empty, current, or parent directory segments."
+                .to_string(),
+        );
+    }
+
+    if segments.first() == Some(&"workflows") {
+        segments.remove(0);
+    }
+    if segments.is_empty() {
+        return Err("Workflow paths must name a JSON workflow file.".to_string());
+    }
+
+    let relative = segments.join("/");
+    let relative_path = Path::new(&relative);
+    if relative_path.is_absolute()
+        || relative_path.components().any(|component| {
+            matches!(
+                component,
+                Component::ParentDir | Component::Prefix(_) | Component::RootDir
+            )
+        })
+    {
+        return Err("Workflow paths must be relative to the workflows directory.".to_string());
+    }
+
+    if relative_path
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .map(|extension| extension.eq_ignore_ascii_case("json"))
+        != Some(true)
+    {
+        return Err("Workflow paths must end with .json.".to_string());
+    }
+
+    Ok(relative_path.to_path_buf())
 }
 
 fn validate_workflow_inner(workflow: &Workflow) -> WorkflowValidationResult {
@@ -1655,6 +1747,28 @@ mod tests {
         cm.add_character(llm_game::characters::Character::new(id, id));
     }
 
+    fn temp_root(label: &str) -> PathBuf {
+        std::env::temp_dir().join(format!(
+            "monogatari_workflow_{label}_{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ))
+    }
+
+    fn simple_workflow() -> Workflow {
+        Workflow {
+            id: "wf_test".to_string(),
+            name: "Test Workflow".to_string(),
+            start_node_id: "start".to_string(),
+            nodes: vec![
+                node("start", "start", vec!["end"], serde_json::json!({})),
+                node("end", "end", vec![], serde_json::json!({})),
+            ],
+        }
+    }
+
     fn load_score_gate_workflow() -> Workflow {
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../data/workflows/score_gate_demo.json");
@@ -1681,6 +1795,77 @@ mod tests {
             .write()
             .await
             .insert("sakura".to_string(), session);
+    }
+
+    #[test]
+    fn workflow_paths_resolve_under_project_workflows() {
+        let root = PathBuf::from("project-data");
+
+        assert_eq!(
+            workflow_path_in_project(&root, "workflow.json").unwrap(),
+            root.join("workflows").join("workflow.json")
+        );
+        assert_eq!(
+            workflow_path_in_project(&root, "workflows/score_gate_demo.json").unwrap(),
+            root.join("workflows").join("score_gate_demo.json")
+        );
+        assert_eq!(
+            workflow_path_in_project(&root, "nested\\branch.JSON").unwrap(),
+            root.join("workflows").join("nested").join("branch.JSON")
+        );
+    }
+
+    #[test]
+    fn workflow_paths_reject_escape_attempts() {
+        let root = PathBuf::from("project-data");
+        for path in [
+            "",
+            "../settings.json",
+            "workflows/../settings.json",
+            "workflows",
+            "nested//branch.json",
+            "nested/./branch.json",
+            "C:/Users/example/workflow.json",
+            "https://example.test/workflow.json",
+            "workflow.txt",
+        ] {
+            assert!(
+                workflow_path_in_project(&root, path).is_err(),
+                "{path} should be rejected"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn save_and_load_workflow_stay_inside_project_workflows() {
+        let root = temp_root("save_load_scope");
+        std::fs::create_dir_all(root.join("workflows")).unwrap();
+        std::fs::write(root.join("settings.json"), "keep me").unwrap();
+        let workflow = simple_workflow();
+
+        save_workflow_to_project(&root, &workflow, "nested/test.json")
+            .await
+            .unwrap();
+        let loaded = load_workflow_from_project(&root, "workflows/nested/test.json")
+            .await
+            .unwrap();
+
+        assert_eq!(loaded.id, "wf_test");
+        assert!(root
+            .join("workflows")
+            .join("nested")
+            .join("test.json")
+            .exists());
+        assert_eq!(
+            std::fs::read_to_string(root.join("settings.json")).unwrap(),
+            "keep me"
+        );
+        assert!(
+            save_workflow_to_project(&root, &workflow, "../settings.json")
+                .await
+                .is_err()
+        );
+        std::fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

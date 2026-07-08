@@ -196,6 +196,7 @@ async function main() {
   await verifyLegacyPromptBuilderInvariants()
   await verifyAssetManagerInvariants()
   await verifySaveManagerInvariants()
+  await verifyWorkflowCommandInvariants()
   await verifyFrontendRouteCoverage()
   await verifyTauriPackagingConfig()
   await verifyReleaseChannelPolicy()
@@ -1937,6 +1938,35 @@ async function verifySaveManagerInvariants() {
   }
 
   console.log('[release] Save manager path invariants OK')
+}
+
+async function verifyWorkflowCommandInvariants() {
+  const issues = []
+  const workflowSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'workflow.rs'), 'utf8')
+
+  const workflowRequirements = [
+    ['state.current_project_data_root().await', 'resolve workflow commands against the active project root'],
+    ['workflow_path_in_project', 'resolve workflow files through a project-scoped path helper'],
+    ['normalize_workflow_relative_path', 'normalize and validate workflow paths before file access'],
+    ['project_root.join("workflows")', 'scope workflow files to the project workflows directory'],
+    ['Workflow paths cannot contain empty, current, or parent directory segments', 'reject traversal-shaped workflow paths'],
+    ['Workflow paths must end with .json', 'limit workflow command file access to JSON workflow files'],
+    ['tokio::fs::create_dir_all(parent)', 'create only the validated workflow parent directory before saving'],
+    ['workflow_paths_resolve_under_project_workflows', 'test compatible project workflow path resolution'],
+    ['workflow_paths_reject_escape_attempts', 'test workflow path traversal and absolute path rejection'],
+    ['save_and_load_workflow_stay_inside_project_workflows', 'test workflow save/load containment under project workflows'],
+  ]
+  for (const [needle, description] of workflowRequirements) {
+    if (!workflowSource.includes(needle)) {
+      issues.push(`Workflow commands must ${description}`)
+    }
+  }
+
+  if (issues.length > 0) {
+    throw new Error(`Workflow command path verification failed:\n${issues.join('\n')}`)
+  }
+
+  console.log('[release] Workflow command path invariants OK')
 }
 
 async function verifyTauriPackagingConfig() {

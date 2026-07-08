@@ -82,7 +82,7 @@ The visual workflow editor supports 21 node types across 5 categories:
 - **Character**: Relationship, Emotion Change
 - **Media**: BGM, SFX, Camera, Shake
 
-Workflows are validated for: node IDs, start/end structure, missing config, broken links, duplicate connections, and unreachable nodes.
+Workflows are validated for: node IDs, start/end structure, missing config, broken links, duplicate connections, and unreachable nodes. Backend save/load commands resolve workflow JSON paths against the active project `workflows/` directory, accepting simple filenames or `workflows/...` references while rejecting absolute paths, URI/drive prefixes, empty segments, `.`/`..` traversal, and non-JSON files before disk access.
 
 ## TTS Architecture
 

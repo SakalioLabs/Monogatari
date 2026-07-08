@@ -31,6 +31,7 @@
 - Added one-click Workflow preview context presets for unlock, low-score block, and repeat-trigger block scenarios.
 - Added Workflow Run graph coverage summaries with executed node counts and unvisited node chips for branch QA.
 - Added a Workflow Run preset matrix that executes all score-gate preview presets and merges graph coverage for branch QA.
+- Added workflow command path isolation tests and release-gate invariants so backend save/load reads and writes only JSON workflows inside the active project `workflows/` directory.
 - Added Quality Suite workflow coverage snapshots so release checks can prove score-gated story fixtures still cover unlock, low-score, and repeat-trigger branches.
 - Added Quality Suite audit summary UI and JSON export with a stable schema marker for release QA evidence handoff.
 - Added Quality Suite schema validation for score-bound ranges and contradictory expected/forbidden markers before release QA reports run.

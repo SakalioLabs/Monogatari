@@ -73,13 +73,15 @@ All Tauri commands are invoked from the frontend via `invokeCommand(commandName,
 
 ## Workflow
 
+Workflow command `path` values are project workflow references, not arbitrary filesystem paths. `workflow.json` resolves to the active project `workflows/workflow.json`; `workflows/foo.json` is also accepted. Absolute paths, URI-like prefixes, empty path segments, `.`/`..` traversal, and non-JSON files are rejected before save/load.
+
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
 | `get_workflow_nodes` | - | `NodeTypeInfo[]` | Available node types |
 | `execute_workflow_node` | `{ nodeId, context }` | `NodeResult` | Execute single node |
 | `validate_workflow` | `{ workflow }` | `ValidationResult` | Validate workflow graph |
-| `save_workflow` | `{ workflow, path }` | `void` | Save workflow JSON |
-| `load_workflow` | `{ path }` | `Workflow` | Load workflow JSON |
+| `save_workflow` | `{ workflow, path }` | `void` | Save workflow JSON under project `workflows/` |
+| `load_workflow` | `{ path }` | `Workflow` | Load workflow JSON from project `workflows/` |
 
 ## Multi-Character Chat
 
