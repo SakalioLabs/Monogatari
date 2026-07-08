@@ -318,6 +318,11 @@ impl CharacterManager {
         self.characters.get(id).cloned()
     }
 
+    /// Remove a character by ID.
+    pub fn remove_character(&mut self, id: &str) -> bool {
+        self.characters.remove(id).is_some()
+    }
+
     /// Load characters from a JSON file.
     pub async fn load_from_file(&mut self, path: &Path) -> Result<usize> {
         let content = tokio::fs::read_to_string(path).await?;

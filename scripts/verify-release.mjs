@@ -201,6 +201,7 @@ async function main() {
   await verifySaveManagerInvariants()
   await verifyWorkflowCommandInvariants()
   await verifyContentLoaderPathInvariants()
+  await verifyCharacterManagerPathInvariants()
   await verifyTtsOutputInvariants()
   await verifyFrontendRouteCoverage()
   await verifyTauriPackagingConfig()
@@ -2017,6 +2018,42 @@ async function verifyContentLoaderPathInvariants() {
   }
 
   console.log('[release] Content loader path invariants OK')
+}
+
+async function verifyCharacterManagerPathInvariants() {
+  const issues = []
+  const characterManagerSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'character_manager.rs'), 'utf8')
+  const gameCharacterSource = await readFile(path.join(rustDir, 'crates', 'game', 'src', 'characters', 'character.rs'), 'utf8')
+
+  const characterManagerRequirements = [
+    ['character_file_path', 'centralize character JSON file path construction'],
+    ['normalize_character_id', 'validate character ids before path construction'],
+    ['project_root.join("characters")', 'scope character JSON files to the project characters directory'],
+    ['Character ids can contain only ASCII letters, numbers, underscores, or hyphens', 'reject path-shaped and non-portable character ids'],
+    ['path.parent() != Some(root.as_path())', 'prove character JSON files stay directly under project characters'],
+    ['cm.remove_character(&id)', 'remove deleted characters from the in-memory manager'],
+    ['character_file_paths_stay_inside_project_characters', 'test compatible character file path resolution'],
+    ['character_file_paths_reject_escape_attempts', 'test traversal and absolute character id rejection'],
+  ]
+  for (const [needle, description] of characterManagerRequirements) {
+    if (!characterManagerSource.includes(needle)) {
+      issues.push(`Character manager path handling must ${description}`)
+    }
+  }
+
+  if (!gameCharacterSource.includes('pub fn remove_character(&mut self, id: &str) -> bool')) {
+    issues.push('Game CharacterManager must support removing deleted characters from runtime state')
+  }
+
+  if (characterManagerSource.includes('dir.join(format!("{id}.json"))') || characterManagerSource.includes('dir.join(format!("{character_id}.json"))')) {
+    issues.push('Character manager commands must not build character JSON paths directly from raw command input')
+  }
+
+  if (issues.length > 0) {
+    throw new Error(`Character manager path verification failed:\n${issues.join('\n')}`)
+  }
+
+  console.log('[release] Character manager path invariants OK')
 }
 
 async function verifyTtsOutputInvariants() {

@@ -13,6 +13,8 @@ All Tauri commands are invoked from the frontend via `invokeCommand(commandName,
 
 Content loader `directory` values are project content references, not arbitrary filesystem paths. `characters` resolves to the active project `characters/` directory; nested references resolve under that same content root. Absolute paths, URI-like prefixes, empty path segments, and `.`/`..` traversal are rejected before load.
 
+Character authoring IDs are portable slugs, not filenames or paths. `create_character.id` and `delete_character.characterId` may contain only ASCII letters, numbers, underscores, or hyphens; the backend writes or deletes only `<id>.json` directly under the active project `characters/` directory.
+
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
 | `get_characters` | - | `CharacterInfo[]` | List all loaded characters |

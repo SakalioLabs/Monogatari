@@ -3,7 +3,7 @@
 ## Pre-Release Verification
 
 ### Automated Gate
-- [ ] `node scripts/verify-release.mjs` passes from the repository root, covering JSON assets, workflow files, score-gate workflow execution regressions, renderer asset contracts, pinned knowledge-ref contracts, all quality suites, workflow branch coverage snapshots, locale coverage, sensitive token scans, frontend UI text artifact scans, frontend source invariants, legacy C# AI prompt/API invariants, asset/save-manager, workflow command, content loader, and TTS output path invariants, frontend route/sidebar coverage, Tauri desktop packaging configuration, Rust AI/game/assets/Tauri checks/tests, frontend audit, root and subpath Web/PWA builds, Web/PWA dist assets, release artifact manifest checks, preview route smoke checks, and legacy C# tests
+- [ ] `node scripts/verify-release.mjs` passes from the repository root, covering JSON assets, workflow files, score-gate workflow execution regressions, renderer asset contracts, pinned knowledge-ref contracts, all quality suites, workflow branch coverage snapshots, locale coverage, sensitive token scans, frontend UI text artifact scans, frontend source invariants, legacy C# AI prompt/API invariants, asset/save-manager, workflow command, content loader, character manager, and TTS output path invariants, frontend route/sidebar coverage, Tauri desktop packaging configuration, Rust AI/game/assets/Tauri checks/tests, frontend audit, root and subpath Web/PWA builds, Web/PWA dist assets, release artifact manifest checks, preview route smoke checks, and legacy C# tests
 
 ### Frontend
 - [ ] `cd frontend && npm run build` passes with zero errors
@@ -32,6 +32,7 @@
 - [ ] Rust and legacy C# save managers reject traversal-shaped save IDs before save/load/delete and filter listed saves whose embedded IDs do not match safe filenames
 - [ ] Workflow save/load commands read and write only JSON files under the active project `workflows/` directory
 - [ ] Character, dialogue, and knowledge loader commands read only from the active project `characters/`, `dialogue/`, and `knowledge/` directories
+- [ ] Character create/delete commands validate portable character IDs and touch only direct JSON files under the active project `characters/` directory
 
 ### Content
 - [ ] Example characters load correctly (Sakura, Luna, Kenji)
