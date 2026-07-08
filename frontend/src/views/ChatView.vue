@@ -250,6 +250,12 @@ interface EventTriggerDecision {
   blocked_reasons: string[]
 }
 
+interface ConversationEvaluationReport {
+  evaluation: ConversationEvaluation
+  event_trigger_decisions: EventTriggerDecision[]
+  triggerable_events: TriggeredEvent[]
+}
+
 interface ChatSafetyTrace {
   input_wrapped_as_untrusted: boolean
   mind_contract_applied?: boolean
@@ -530,12 +536,9 @@ async function refreshEvaluation() {
   if (!selectedCharacter.value) return
   try {
     const characterId = selectedCharacter.value.id
-    evaluation.value = await invokeCommand<ConversationEvaluation>('evaluate_conversation', { characterId })
-    eventDecisions.value = await invokeCommand<EventTriggerDecision[]>(
-      'preview_event_triggers',
-      { characterId },
-      [],
-    )
+    const report = await invokeCommand<ConversationEvaluationReport>('evaluate_conversation_report', { characterId })
+    evaluation.value = report.evaluation
+    eventDecisions.value = report.event_trigger_decisions || []
     // Check evaluation achievement
     if (evaluation.value && evaluation.value.overall_score > 0.8 && typeof (window as any).__monogatari_unlock === 'function') {
       (window as any).__monogatari_unlock('eval_high')

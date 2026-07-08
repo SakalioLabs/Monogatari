@@ -83,6 +83,7 @@ fn main() {
             commands::chat::get_chat_history,
             commands::chat::clear_chat_history,
             commands::chat::evaluate_conversation,
+            commands::chat::evaluate_conversation_report,
             commands::chat::get_relationship_score,
             commands::chat::get_available_events,
             commands::chat::preview_event_triggers,

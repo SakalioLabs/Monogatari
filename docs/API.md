@@ -29,6 +29,7 @@ All Tauri commands are invoked from the frontend via `invokeCommand(commandName,
 | `get_chat_history` | `{ characterId }` | `ChatMessage[]` | Get conversation history |
 | `clear_chat_history` | `{ characterId }` | `void` | Clear conversation |
 | `evaluate_conversation` | `{ characterId }` | `Evaluation` | Manually trigger scoring |
+| `evaluate_conversation_report` | `{ characterId }` | `ConversationEvaluationReport` | Manually score and return matching story-event decisions plus triggerable events |
 | `get_relationship_score` | `{ characterId }` | `float` | Get relationship value |
 | `get_available_events` | `{ characterId }` | `TriggeredEvent[]` | Get unlockable events |
 | `preview_event_triggers` | `{ characterId }` | `EventTriggerDecision[]` | Explain current story-event trigger state |

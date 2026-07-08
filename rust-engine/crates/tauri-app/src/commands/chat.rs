@@ -29,7 +29,6 @@ const STREAM_SAFETY_WINDOW_CHARS: usize = 240;
 #[derive(Debug, Clone, Default)]
 pub(crate) struct CharacterKnowledgeContext {
     pub content: String,
-    pub pinned_ref_count: usize,
     pub pinned_ref_ids: Vec<String>,
 }
 
@@ -79,7 +78,6 @@ pub(crate) fn build_character_knowledge_context_details(
 
     CharacterKnowledgeContext {
         content: sections.join("\n\n"),
-        pinned_ref_count: pinned_ref_ids.len(),
         pinned_ref_ids,
     }
 }
@@ -179,6 +177,16 @@ pub struct EventTriggerDecision {
     pub actual_score: Option<f32>,
     pub rule: Option<EventTriggerRule>,
     pub blocked_reasons: Vec<String>,
+}
+
+/// Atomic manual scoring report for author tooling.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConversationEvaluationReport {
+    pub evaluation: ConversationEvaluation,
+    #[serde(default)]
+    pub event_trigger_decisions: Vec<EventTriggerDecision>,
+    #[serde(default)]
+    pub triggerable_events: Vec<TriggeredEvent>,
 }
 
 /// Chat session state for a character.
@@ -492,10 +500,34 @@ pub async fn evaluate_conversation(
     state: State<'_, AppState>,
     character_id: String,
 ) -> Result<ConversationEvaluation, String> {
+    evaluate_conversation_for_character(&state, &character_id).await
+}
+
+/// Manually trigger scoring and return the matching event audit in one report.
+#[tauri::command]
+pub async fn evaluate_conversation_report(
+    state: State<'_, AppState>,
+    character_id: String,
+) -> Result<ConversationEvaluationReport, String> {
+    let evaluation = evaluate_conversation_for_character(&state, &character_id).await?;
+    let event_trigger_decisions = preview_event_triggers(state, character_id).await?;
+    let triggerable_events = triggered_events_from_decisions(&event_trigger_decisions);
+
+    Ok(ConversationEvaluationReport {
+        evaluation,
+        event_trigger_decisions,
+        triggerable_events,
+    })
+}
+
+async fn evaluate_conversation_for_character(
+    state: &State<'_, AppState>,
+    character_id: &str,
+) -> Result<ConversationEvaluation, String> {
     let (messages, cumulative_score, evaluation_count) = {
         let sessions = state.chat_sessions.read().await;
         let session = sessions
-            .get(&character_id)
+            .get(character_id)
             .ok_or_else(|| format!("No chat session for {character_id}"))?;
         (
             session.messages.clone(),
@@ -506,16 +538,16 @@ pub async fn evaluate_conversation(
 
     let char_name = {
         let cm = state.character_manager.read().await;
-        if let Some(character) = cm.get_character(&character_id) {
+        if let Some(character) = cm.get_character(character_id) {
             let c = character.read().await;
             c.name.clone()
         } else {
-            character_id.clone()
+            character_id.to_string()
         }
     };
 
     let evaluation = evaluate_conversation_internal(
-        &state,
+        state,
         &char_name,
         &messages,
         cumulative_score,
@@ -524,7 +556,7 @@ pub async fn evaluate_conversation(
     .await?;
 
     let mut sessions = state.chat_sessions.write().await;
-    if let Some(session) = sessions.get_mut(&character_id) {
+    if let Some(session) = sessions.get_mut(character_id) {
         session.last_evaluation = Some(evaluation.clone());
     }
 
@@ -1729,7 +1761,7 @@ mod tests {
             3,
         );
 
-        assert_eq!(context.pinned_ref_count, 1);
+        assert_eq!(context.pinned_ref_ids.len(), 1);
         assert_eq!(context.pinned_ref_ids, vec!["sakura_nature".to_string()]);
         assert!(context.content.starts_with("Pinned character knowledge:"));
         assert!(context.content.contains("Sakura's Nature Diary"));
@@ -2051,5 +2083,27 @@ mod tests {
         assert!(triggered.contains(&"first_friend".to_string()));
         assert!(triggered.contains(&"high_engagement".to_string()));
         assert!(!triggered.contains(&"best_friend".to_string()));
+    }
+
+    #[test]
+    fn conversation_evaluation_report_serializes_event_audit() {
+        let eval = evaluation(0.7, 0.85, 0.2);
+        let decisions = build_event_trigger_decisions(0.35, &eval, 2, &[]);
+        let report = ConversationEvaluationReport {
+            evaluation: eval,
+            triggerable_events: triggered_events_from_decisions(&decisions),
+            event_trigger_decisions: decisions,
+        };
+
+        let payload = serde_json::to_value(report).unwrap();
+        assert!(payload.get("evaluation").is_some());
+        assert!(payload["event_trigger_decisions"]
+            .as_array()
+            .is_some_and(|decisions| !decisions.is_empty()));
+        assert!(payload["triggerable_events"]
+            .as_array()
+            .is_some_and(|events| events
+                .iter()
+                .any(|event| event["event_id"] == "first_friend")));
     }
 }
