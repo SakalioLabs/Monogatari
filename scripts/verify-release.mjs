@@ -1753,6 +1753,8 @@ async function verifyLegacyPromptBuilderInvariants() {
   const issues = []
   const promptBuilderSource = await readFile(path.join(root, 'src', 'LLMAssistant.AI', 'PromptBuilder.cs'), 'utf8')
   const promptBuilderTests = await readFile(path.join(root, 'tests', 'LLMAssistant.Tests', 'PromptBuilderTests.cs'), 'utf8')
+  const apiEngineSource = await readFile(path.join(root, 'src', 'LLMAssistant.AI', 'API', 'APIEngine.cs'), 'utf8')
+  const apiEngineTests = await readFile(path.join(root, 'tests', 'LLMAssistant.Tests', 'APIEngineTests.cs'), 'utf8')
 
   const sourceRequirements = [
     ['SanitizePromptContent', 'sanitize prompt content before legacy C# prompt assembly'],
@@ -1782,11 +1784,39 @@ async function verifyLegacyPromptBuilderInvariants() {
     }
   }
 
-  if (issues.length > 0) {
-    throw new Error(`Legacy C# PromptBuilder verification failed:\n${issues.join('\n')}`)
+  const apiSourceRequirements = [
+    ['RedactSensitiveText', 'centralize legacy API error/log redaction'],
+    ['TokenLikeValueRegex', 'redact token-shaped provider echoes'],
+    ['SecretJsonAssignmentRegex', 'redact JSON secret assignment echoes'],
+    ['SecretQueryAssignmentRegex', 'redact URL query secret echoes'],
+    ['SecretHeaderAssignmentRegex', 'redact header-shaped secret echoes'],
+    ['API error ({response.StatusCode}): {RedactSensitiveText(responseBody)}', 'redact non-success provider response bodies'],
+    ['API request failed: {RedactSensitiveText(ex.Message)}', 'redact request exception messages'],
+  ]
+
+  for (const [needle, description] of apiSourceRequirements) {
+    if (!apiEngineSource.includes(needle)) {
+      issues.push(`Legacy C# APIEngine must ${description}`)
+    }
   }
 
-  console.log('[release] Legacy C# PromptBuilder invariants OK')
+  const apiTestRequirements = [
+    ['RedactSensitiveText_RemovesTokenLikeValuesAndSecretAssignments', 'test direct secret redaction helpers'],
+    ['InferAsync_RedactsSensitiveProviderErrorBodies', 'test provider error body redaction'],
+    ['InferAsync_RedactsSensitiveRequestExceptions', 'test request exception redaction'],
+  ]
+
+  for (const [needle, description] of apiTestRequirements) {
+    if (!apiEngineTests.includes(needle)) {
+      issues.push(`Legacy C# APIEngine tests must ${description}`)
+    }
+  }
+
+  if (issues.length > 0) {
+    throw new Error(`Legacy C# AI verification failed:\n${issues.join('\n')}`)
+  }
+
+  console.log('[release] Legacy C# AI invariants OK')
 }
 
 async function verifyTauriPackagingConfig() {

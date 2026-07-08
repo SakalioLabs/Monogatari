@@ -135,11 +135,11 @@ All Tauri commands are invoked from the frontend via `invokeCommand(commandName,
 
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
-| `configure_cloud_sync` | `{ config }` | `void` | Set sync configuration |
-| `get_sync_status` | - | `SyncStatus` | Get sync state |
-| `push_saves_to_cloud` | - | `void` | Upload saves |
-| `pull_saves_from_cloud` | - | `void` | Download saves |
-| `resolve_sync_conflict` | `{ resolution }` | `void` | Resolve conflict |
+| `configure_cloud_sync` | `{ provider, endpoint?, apiKey? }` | `string` | Set local/remote preflight sync mode without persisting token values |
+| `get_sync_status` | - | `CloudSyncStatus` | Get manifest-backed sync state, pending work, and conflict counts |
+| `push_saves_to_cloud` | `{ saveIds? }` | `string` | Update project-scoped save manifest entries |
+| `pull_saves_from_cloud` | - | `CloudSaveEntry[]` | Read valid manifest entries for sync inspection |
+| `resolve_sync_conflict` | `{ saveId, useLocal }` | `string` | Resolve a manifest conflict |
 
 ## Analytics
 

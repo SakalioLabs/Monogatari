@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace LLMAssistant.AI.API;
 
@@ -9,6 +10,21 @@ public class APIEngine : IInferenceEngine
 {
     private HttpClient? _httpClient;
     private readonly APIConfig _config;
+    private static readonly Regex TokenLikeValueRegex = new(
+        @"\b(?:sk-[A-Za-z0-9_-]{20,}|ghp_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})\b",
+        RegexOptions.Compiled);
+    private static readonly Regex BearerTokenRegex = new(
+        @"(?i)\b(Bearer\s+)([A-Za-z0-9._~+/=-]{8,})",
+        RegexOptions.Compiled);
+    private static readonly Regex SecretJsonAssignmentRegex = new(
+        @"(?i)([""']?(?:api[_-]?key|apikey|access[_-]?token|accesstoken|token|secret|password|authorization)[""']?\s*:\s*[""'])([^""']*)([""'])",
+        RegexOptions.Compiled);
+    private static readonly Regex SecretQueryAssignmentRegex = new(
+        @"(?i)\b((?:api[_-]?key|apikey|access[_-]?token|accesstoken|token|secret|password|authorization)=)([^&\s,;}\]]+)",
+        RegexOptions.Compiled);
+    private static readonly Regex SecretHeaderAssignmentRegex = new(
+        @"(?i)\b((?:api[_-]?key|apikey|access[_-]?token|accesstoken|token|secret|password|authorization)\s*:\s*)([^\r\n,;]+)",
+        RegexOptions.Compiled);
 
     public string Name => $"API ({_config.Model})";
     public bool IsReady => _httpClient != null;
@@ -39,12 +55,12 @@ public class APIEngine : IInferenceEngine
                 _httpClient.DefaultRequestHeaders.TryAddWithoutValidation(header.Key, header.Value);
             }
 
-            Console.WriteLine($"API Engine initialized: {_config.BaseUrl}");
+            Console.WriteLine($"API Engine initialized: {RedactSensitiveText(_config.BaseUrl)}");
             return Task.FromResult(true);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"API initialization failed: {ex.Message}");
+            Console.WriteLine($"API initialization failed: {RedactSensitiveText(ex.Message)}");
             return Task.FromResult(false);
         }
     }
@@ -82,7 +98,7 @@ public class APIEngine : IInferenceEngine
 
             if (!response.IsSuccessStatusCode)
             {
-                return InferenceResult.Fail($"API error ({response.StatusCode}): {responseBody}");
+                return InferenceResult.Fail($"API error ({response.StatusCode}): {RedactSensitiveText(responseBody)}");
             }
 
             var result = JsonSerializer.Deserialize<JsonElement>(responseBody);
@@ -100,8 +116,23 @@ public class APIEngine : IInferenceEngine
         }
         catch (Exception ex)
         {
-            return InferenceResult.Fail($"API request failed: {ex.Message}");
+            return InferenceResult.Fail($"API request failed: {RedactSensitiveText(ex.Message)}");
         }
+    }
+
+    public static string RedactSensitiveText(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return text;
+        }
+
+        var redacted = SecretJsonAssignmentRegex.Replace(text, "$1<redacted>$3");
+        redacted = SecretQueryAssignmentRegex.Replace(redacted, "$1<redacted>");
+        redacted = SecretHeaderAssignmentRegex.Replace(redacted, "$1<redacted>");
+        redacted = BearerTokenRegex.Replace(redacted, "$1<redacted>");
+        redacted = TokenLikeValueRegex.Replace(redacted, "<redacted>");
+        return redacted;
     }
 
     public async IAsyncEnumerable<string> InferStreamAsync(string prompt, InferenceOptions? options = null)

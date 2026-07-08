@@ -71,7 +71,7 @@ When live evaluator output is unavailable, deterministic fallback scoring uses o
 
 API backend configuration treats provider credentials as runtime-only secrets. The Rust API engine redacts API keys, bearer tokens, sensitive custom headers, and echoed secret assignments from debug output and API error surfaces before they can reach logs or frontend error reports.
 
-The legacy C# prompt builder mirrors the same boundary-sanitization intent for bracket, fullwidth, XML/header, and JSON-shaped role spoofing while the legacy solution remains in the release gate.
+The legacy C# AI path mirrors the same boundary-sanitization intent for bracket, fullwidth, XML/header, and JSON-shaped role spoofing, and redacts token-shaped values plus JSON/header/query secret assignments from provider error bodies and request exceptions while the legacy solution remains in the release gate.
 
 ## Workflow System
 
