@@ -92,3 +92,9 @@ Three TTS provider types:
 3. **ElevenLabs**: Text-to-speech REST API
 
 Character voice assignments persist in the AppState and can be configured per-character.
+
+## Cloud Sync Architecture
+
+Cloud sync is project-scoped and manifest-driven. Save manifests live under the active project `saves/.sync_manifest.json`, not the process working directory, so installed builds keep user save state portable with the selected project data root. The backend status contract reports local save file counts, pending upload/download work, cross-device conflicts, provider mode, endpoint readiness, and token readiness. Sync tokens are accepted only as runtime command input and reduced to readiness booleans; token values are not written to disk or echoed into status payloads.
+
+The Settings panel consumes the backend `CloudSyncStatus` shape directly and exposes local manifest mode plus remote preflight mode. Until a real remote storage adapter is wired in, Push updates the local manifest evidence and Pull reports manifest entries rather than claiming completed remote file transfer.

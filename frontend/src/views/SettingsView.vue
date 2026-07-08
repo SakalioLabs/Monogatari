@@ -180,15 +180,19 @@
           <div class="sync-status">
             <div class="sync-row">
               <span>Status</span>
-              <strong>{{ syncStatus?.status || 'Not configured' }}</strong>
+              <strong>{{ syncStatusLabel }}</strong>
             </div>
             <div class="sync-row">
               <span>Last Sync</span>
-              <strong>{{ syncStatus?.last_sync || 'Never' }}</strong>
+              <strong>{{ syncLastSyncLabel }}</strong>
             </div>
             <div class="sync-row">
               <span>Files</span>
-              <strong>{{ syncStatus?.file_count ?? '-' }}</strong>
+              <strong>{{ syncStatus?.file_count ?? 0 }}</strong>
+            </div>
+            <div class="sync-row">
+              <span>Pending</span>
+              <strong>{{ syncStatus?.pending_uploads ?? 0 }} up / {{ syncStatus?.pending_downloads ?? 0 }} down</strong>
             </div>
             <div class="sync-row">
               <span>Conflicts</span>
@@ -196,12 +200,19 @@
             </div>
           </div>
           <label class="form-field" style="margin-top:12px">
+            <span>Provider</span>
+            <select v-model="syncProvider" class="input">
+              <option value="local">Local manifest</option>
+              <option value="custom">Remote preflight</option>
+            </select>
+          </label>
+          <label class="form-field" style="margin-top:12px">
             <span>Remote Endpoint</span>
-            <input v-model="syncEndpoint" class="input" placeholder="https://sync.example.com" />
+            <input v-model="syncEndpoint" :disabled="syncProvider === 'local'" class="input" placeholder="https://sync.example.com" />
           </label>
           <label class="form-field">
             <span>Sync Token</span>
-            <input v-model="syncToken" type="password" class="input" placeholder="Authentication token" />
+            <input v-model="syncToken" :disabled="syncProvider === 'local'" type="password" class="input" placeholder="Authentication token" />
           </label>
         </div>
       </section>
@@ -299,6 +310,19 @@ interface ProjectConfigState {
   issues: ProjectConfigIssue[]
 }
 
+interface CloudSyncStatus {
+  connected: boolean
+  status: string
+  last_sync: string | null
+  file_count: number
+  pending_uploads: number
+  pending_downloads: number
+  conflict_count: number
+  provider: string
+  endpoint_configured: boolean
+  token_configured: boolean
+}
+
 const projectPath = ref('./data')
 const projectState = ref<ProjectConfigState | null>(null)
 const engineStatus = ref<EngineStatus | null>(null)
@@ -327,48 +351,80 @@ function applyTheme() {
 
 const ttsConfig = ref({ provider: 'system', language: 'ja', speed: 1.0, pitch: 1.0 })
 
+const syncProvider = ref('local')
 const syncEndpoint = ref('')
 const syncToken = ref('')
 const syncLoading = ref(false)
-const syncStatus = ref<any>(null)
+const syncStatus = ref<CloudSyncStatus | null>(null)
+
+const syncFallbackStatus: CloudSyncStatus = {
+  connected: false,
+  status: 'local_clean',
+  last_sync: null,
+  file_count: 0,
+  pending_uploads: 0,
+  pending_downloads: 0,
+  conflict_count: 0,
+  provider: 'local',
+  endpoint_configured: false,
+  token_configured: false,
+}
 
 async function checkSyncStatus() {
   syncLoading.value = true
   try {
-    syncStatus.value = await invokeCommand('get_sync_status', undefined, { status: 'unknown', last_sync: 'Never', file_count: 0, conflict_count: 0 })
+    await configureSyncProvider()
+    syncStatus.value = await invokeCommand<CloudSyncStatus>('get_sync_status', undefined, syncFallbackStatus)
   } catch (e: any) {
     statusMessage.value = 'Sync check failed: ' + e
     statusOk.value = false
+  } finally {
+    syncLoading.value = false
   }
-  syncLoading.value = false
 }
 
 async function pushToCloud() {
   syncLoading.value = true
   try {
-    await invokeCommand('push_saves_to_cloud', { endpoint: syncEndpoint.value, token: syncToken.value })
-    statusMessage.value = 'Saves pushed to cloud'
+    await configureSyncProvider()
+    await invokeCommand<string>('push_saves_to_cloud', undefined, 'Pushed 0 saves')
+    statusMessage.value = syncProvider.value === 'local' ? 'Save manifest updated' : 'Remote sync preflight recorded'
     statusOk.value = true
     await checkSyncStatus()
   } catch (e: any) {
     statusMessage.value = 'Push failed: ' + e
     statusOk.value = false
+  } finally {
+    syncLoading.value = false
   }
-  syncLoading.value = false
 }
 
 async function pullFromCloud() {
   syncLoading.value = true
   try {
-    await invokeCommand('pull_saves_from_cloud', { endpoint: syncEndpoint.value, token: syncToken.value })
-    statusMessage.value = 'Saves pulled from cloud'
+    await configureSyncProvider()
+    const entries = await invokeCommand<any[]>('pull_saves_from_cloud', undefined, [])
+    statusMessage.value = `Sync manifest has ${entries.length} entr${entries.length === 1 ? 'y' : 'ies'}`
     statusOk.value = true
     await checkSyncStatus()
   } catch (e: any) {
     statusMessage.value = 'Pull failed: ' + e
     statusOk.value = false
+  } finally {
+    syncLoading.value = false
   }
-  syncLoading.value = false
+}
+
+async function configureSyncProvider() {
+  await invokeCommand<string>(
+    'configure_cloud_sync',
+    {
+      provider: syncProvider.value,
+      endpoint: syncEndpoint.value.trim() || null,
+      apiKey: syncToken.value.trim() || null,
+    },
+    `Cloud sync provider set to ${syncProvider.value}`
+  )
 }
 
 async function saveTts() {
@@ -429,9 +485,23 @@ const previewState: ProjectConfigState = {
 const providerLabel = computed(() => provider.value === 'api' ? 'OpenAI-compatible API' : 'Local ONNX Model')
 const issueCount = computed(() => (projectState.value?.error_count || 0) + (projectState.value?.warning_count || 0))
 const editablePaths = computed(() => projectState.value?.paths || previewState.paths)
+const syncStatusLabel = computed(() => {
+  const status = syncStatus.value?.status
+  const labels: Record<string, string> = {
+    conflict: 'Conflict',
+    endpoint_missing: 'Endpoint missing',
+    local_changes: 'Local changes',
+    local_clean: 'Local clean',
+    remote_pending: 'Remote pending',
+    remote_ready: 'Remote ready',
+    token_missing: 'Token missing',
+  }
+  return status ? labels[status] || status : 'Not checked'
+})
+const syncLastSyncLabel = computed(() => syncStatus.value?.last_sync || 'Never')
 
 async function refreshAll() {
-  await Promise.all([loadProjectConfig(), refreshStatus()])
+  await Promise.all([loadProjectConfig(), refreshStatus(), checkSyncStatus()])
 }
 
 async function loadProjectConfig() {

@@ -1582,6 +1582,20 @@ async function verifyFrontendSourceInvariants() {
     }
   }
 
+  const cloudSyncSettingsRequirements = [
+    ['CloudSyncStatus', 'type backend cloud sync status payloads'],
+    ['configure_cloud_sync', 'configure sync provider before status/push/pull actions'],
+    ['syncStatusLabel', 'map backend sync status codes to author-visible labels'],
+    ['pending_uploads', 'surface pending sync uploads in Settings'],
+    ['pending_downloads', 'surface pending sync downloads in Settings'],
+    ['syncProvider', 'let authors choose local manifest mode or remote preflight mode'],
+  ]
+  for (const [needle, description] of cloudSyncSettingsRequirements) {
+    if (!settingsSource.includes(needle)) {
+      issues.push(`frontend/src/views/SettingsView.vue must ${description}`)
+    }
+  }
+
   const chatSafetyTraceRequirements = [
     ['ChatSafetyTrace', 'type runtime chat safety trace payloads'],
     ['chat-safety-trace', 'listen for runtime chat safety trace events'],
@@ -1925,6 +1939,10 @@ async function verifyTauriPackagingConfig() {
     [tauriAnalyticsSource, 'HashMap<PathBuf, Vec<AnalyticsEvent>>', 'keep in-memory analytics stores project-scoped'],
     [tauriCloudSyncSource, 'state.current_project_data_root().await', 'persist cloud sync manifests under the active project root'],
     [tauriCloudSyncSource, 'saves_dir(project_root).join(".sync_manifest.json")', 'keep sync manifests in the active project saves directory'],
+    [tauriCloudSyncSource, 'analyze_sync_inventory', 'centralize local sync manifest status analysis'],
+    [tauriCloudSyncSource, 'is_save_json', 'avoid counting the sync manifest itself as a save file'],
+    [tauriCloudSyncSource, 'endpoint_configured', 'report endpoint readiness without persisting endpoint secrets'],
+    [tauriCloudSyncSource, 'token_configured', 'report token readiness without persisting token values'],
     [tauriTtsSource, 'state.current_project_data_root().await', 'write generated TTS assets under the active project root'],
     [tauriTtsSource, 'project_root.join("assets").join("tts")', 'keep generated TTS files project-scoped'],
     [tauriProjectSource, 'monogatari-project-export@1', 'emit a versioned project export manifest schema'],

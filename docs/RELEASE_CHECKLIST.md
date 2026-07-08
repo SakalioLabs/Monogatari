@@ -90,8 +90,10 @@
 - [ ] Browser fallback locale JSON loads correctly under root and `VITE_BASE_PATH` subpath deployments
 
 ### Cloud Sync
-- [ ] Push/pull commands execute without error
-- [ ] Sync status displays correctly in Settings
+- [ ] Push updates the project-scoped save manifest without counting `.sync_manifest.json` as a save file
+- [ ] Pull reports valid manifest entries without claiming remote file transfer when no remote adapter is configured
+- [ ] Sync status in Settings shows backend-provided status, file count, pending uploads/downloads, conflict count, provider mode, and last sync time
+- [ ] Remote preflight records endpoint/token readiness without writing sync token values to project files or status payloads
 
 ## Distribution
 - [ ] Version bumped in tauri.conf.json

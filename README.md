@@ -30,7 +30,7 @@ Monogatari is a development engine for creating LLM-driven text adventure games.
 - **Professional Character Editor** - 5-tab editor with Big Five personality sliders, radar chart visualization, emotion configuration, relationship management, knowledge entries, renderer asset diagnostics, Story Mode-style preview, emotion sprite mapping, and JSON export.
 - **Audio Manager** - Manage background music, ambient sounds, and sound effects with per-track volume control and master mixer.
 - **Plugin System** - Register and manage custom workflow node types, event triggers, and action handlers through a dedicated management UI.
-- **Cloud Save Sync** - Push/pull save data to remote endpoints with conflict detection and sync status tracking.
+- **Cloud Save Sync** - Project-scoped save manifests track local changes, pending uploads/downloads, cross-device conflicts, and remote preflight readiness without persisting sync tokens.
 - **Multi-Language Support** - i18n scaffold with zh-CN, ja-JP, and ko-KR locale files for international deployment.
 - **Template Marketplace** - Browse, import, and export community-created templates, characters, and story modules.
 
@@ -99,9 +99,10 @@ Verified on 2026-07-08:
 - Tauri desktop packaging configuration declares Windows MSI/NSIS targets, installer metadata, icons, WebView2 bootstrap behavior, and bundled sample project data, all checked by the release verifier.
 - Installed Tauri builds discover bundled sample `data/` resources at startup and bind them as the default project root when no development data root is available.
 - Analytics logs, cloud-sync manifests, and generated local TTS assets are written under the active project data root for portable installed desktop builds.
+- Settings Cloud Sync status now consumes the backend manifest contract directly, showing local save file counts, pending upload/download work, cross-device conflicts, and remote preflight readiness while keeping sync tokens runtime-only.
 - Project export emits a versioned manifest with file inventory, per-file MD5 checksums, generated asset coverage, and redacted sensitive settings for package handoff.
 - Release artifact manifests can be generated with `node scripts/create-release-manifest.mjs` to capture Web/PWA and desktop installer artifact paths, SHA-256 checksums, checked-in release channel policy metadata, missing installer expectations, and verified installer signing evidence.
-- One-command release verification passes with `node scripts/verify-release.mjs`, including all quality suite files, Rust AI prompt/API/pipeline tests, legacy C# prompt-builder invariants, structured role-block prompt-injection regressions, renderer asset contract checks, pinned knowledge-ref checks, locale coverage, frontend UI text artifact scanning, frontend source invariants, frontend route/sidebar coverage, Tauri packaging preflight, root and subpath Web/PWA builds, Web/PWA dist asset checks, release artifact manifest checks, and preview route smoke checks.
+- One-command release verification passes with `node scripts/verify-release.mjs`, including all quality suite files, Rust AI prompt/API/pipeline tests, legacy C# prompt-builder invariants, structured role-block prompt-injection regressions, renderer asset contract checks, pinned knowledge-ref checks, locale coverage, frontend UI text artifact scanning, cloud-sync status contract checks, frontend source invariants, frontend route/sidebar coverage, Tauri packaging preflight, root and subpath Web/PWA builds, Web/PWA dist asset checks, release artifact manifest checks, and preview route smoke checks.
 - Commercial release gates are tracked in `docs/RELEASE_CHECKLIST.md`.
 
 ## Architecture
@@ -446,7 +447,7 @@ The web build emits `dist/404.html` for SPA fallback, `dist/.nojekyll` for GitHu
 - [x] Frontend data sync with rust-engine content
 - [x] Template marketplace scaffold (Rust backend + MarketplaceView frontend)
 - [x] Plugin management frontend UI with register/list/remove
-- [x] Cloud sync settings integration with push/pull/status
+- [x] Cloud sync settings integration with project-scoped manifest status, push/pull preflight, and conflict counters
 - [x] Multi-language locale files (zh-CN, ja-JP, ko-KR)
 - [x] Enhanced group chat with streaming and emotion display
 - [x] Release checklist document for packaging and QA gates
