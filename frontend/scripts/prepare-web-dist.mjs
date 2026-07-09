@@ -9,8 +9,10 @@ const projectAssetsDir = path.join(rootDir, 'data', 'assets')
 const distProjectAssetsDir = path.join(distDir, 'assets')
 const projectAssetManifestPath = path.join(distDir, 'project-assets.json')
 const staticHostingHeadersPath = path.join(distDir, '_headers')
+const azureStaticWebAppConfigPath = path.join(distDir, 'staticwebapp.config.json')
 const webSecurityCsp =
   "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost data: blob:; media-src 'self' asset: http://asset.localhost data: blob:; font-src 'self' data:; connect-src 'self' asset: http://asset.localhost https: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-src 'none'; frame-ancestors 'none'"
+const webPermissionsPolicy = 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=()'
 const requiredFiles = [
   'index.html',
   'manifest.webmanifest',
@@ -47,9 +49,38 @@ function staticHostingHeaders() {
     `  Content-Security-Policy: ${webSecurityCsp}`,
     '  X-Content-Type-Options: nosniff',
     '  Referrer-Policy: no-referrer',
-    '  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=()',
+    `  Permissions-Policy: ${webPermissionsPolicy}`,
     '',
   ].join('\n')
+}
+
+function azureStaticWebAppConfig() {
+  return {
+    navigationFallback: {
+      rewrite: '/index.html',
+      exclude: [
+        '/assets/*',
+        '/icons/*',
+        '/locales/*',
+        '/manifest.webmanifest',
+        '/sw.js',
+        '/offline.html',
+        '/project-assets.json',
+        '/favicon.svg',
+      ],
+    },
+    responseOverrides: {
+      404: {
+        rewrite: '/404.html',
+      },
+    },
+    globalHeaders: {
+      'content-security-policy': webSecurityCsp,
+      'x-content-type-options': 'nosniff',
+      'referrer-policy': 'no-referrer',
+      'permissions-policy': webPermissionsPolicy,
+    },
+  }
 }
 
 async function projectAssetManifest() {
@@ -81,5 +112,6 @@ await writeFile(path.join(distDir, '.nojekyll'), '')
 await cp(projectAssetsDir, distProjectAssetsDir, { recursive: true, force: true })
 await writeFile(projectAssetManifestPath, `${JSON.stringify(await projectAssetManifest(), null, 2)}\n`)
 await writeFile(staticHostingHeadersPath, staticHostingHeaders())
+await writeFile(azureStaticWebAppConfigPath, `${JSON.stringify(azureStaticWebAppConfig(), null, 2)}\n`)
 
-console.log('[web-dist] Static hosting assets ready: 404.html, .nojekyll, _headers, manifest.webmanifest, sw.js, offline.html, PWA icons, project assets, project asset manifest')
+console.log('[web-dist] Static hosting assets ready: 404.html, .nojekyll, _headers, staticwebapp.config.json, manifest.webmanifest, sw.js, offline.html, PWA icons, project assets, project asset manifest')

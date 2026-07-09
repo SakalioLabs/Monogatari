@@ -73,6 +73,7 @@ const requiredWebDistFiles = [
   'index.html',
   '404.html',
   '_headers',
+  'staticwebapp.config.json',
   '.nojekyll',
   'manifest.webmanifest',
   'sw.js',
@@ -217,6 +218,16 @@ const requiredPermissionsPolicyFragments = [
   'usb=()',
   'serial=()',
   'bluetooth=()',
+]
+const requiredAzureStaticWebAppFallbackExcludes = [
+  '/assets/*',
+  '/icons/*',
+  '/locales/*',
+  '/manifest.webmanifest',
+  '/sw.js',
+  '/offline.html',
+  '/project-assets.json',
+  '/favicon.svg',
 ]
 
 async function main() {
@@ -1607,6 +1618,9 @@ async function verifyFrontendSourceInvariants() {
     ['distProjectAssetsDir', 'target copied project assets into dist/assets'],
     ['projectAssetManifestPath', 'write a generated project asset manifest into dist'],
     ['staticHostingHeadersPath', 'write static-hosting security headers into dist'],
+    ['azureStaticWebAppConfigPath', 'write Azure Static Web Apps configuration into dist'],
+    ['navigationFallback', 'emit Azure Static Web Apps SPA navigation fallback config'],
+    ['globalHeaders', 'emit Azure Static Web Apps global security headers'],
     ['Content-Security-Policy', 'emit a static-hosting CSP header for platforms that support response headers'],
     ['X-Content-Type-Options: nosniff', 'emit a nosniff header for static-hosting responses'],
     ['Permissions-Policy', 'emit a browser permissions policy for static-hosting responses'],
@@ -3114,6 +3128,7 @@ async function verifyWebDist({ basePath = '/' } = {}) {
   const indexHtml = await readMaybe(path.join(distDir, 'index.html'))
   const fallbackHtml = await readMaybe(path.join(distDir, '404.html'))
   const staticHostingHeaders = await readMaybe(path.join(distDir, '_headers'))
+  const azureStaticWebAppConfig = await readJsonMaybe(path.join(distDir, 'staticwebapp.config.json'))
   const manifest = await readJsonMaybe(path.join(distDir, 'manifest.webmanifest'))
   const projectAssetManifest = await readJsonMaybe(path.join(distDir, 'project-assets.json'))
   const serviceWorker = await readMaybe(path.join(distDir, 'sw.js'))
@@ -3151,6 +3166,9 @@ async function verifyWebDist({ basePath = '/' } = {}) {
   }
   if (staticHostingHeaders) {
     verifyStaticHostingHeaders(staticHostingHeaders, issues)
+  }
+  if (azureStaticWebAppConfig) {
+    verifyAzureStaticWebAppConfig(azureStaticWebAppConfig, issues)
   }
 
   if (manifest) {
@@ -3570,6 +3588,65 @@ function verifyStaticHostingHeaders(source, issues) {
     for (const fragment of requiredPermissionsPolicyFragments) {
       if (!permissionsPolicy.includes(fragment)) {
         issues.push(`_headers Permissions-Policy must include ${fragment}`)
+      }
+    }
+  }
+}
+
+function verifyAzureStaticWebAppConfig(config, issues) {
+  if (!config || typeof config !== 'object' || Array.isArray(config)) {
+    issues.push('staticwebapp.config.json must be a JSON object')
+    return
+  }
+
+  if (config.navigationFallback?.rewrite !== '/index.html') {
+    issues.push('staticwebapp.config.json navigationFallback.rewrite must be /index.html')
+  }
+  const fallbackExcludes = config.navigationFallback?.exclude
+  if (!Array.isArray(fallbackExcludes)) {
+    issues.push('staticwebapp.config.json navigationFallback.exclude must be an array')
+  } else {
+    for (const route of requiredAzureStaticWebAppFallbackExcludes) {
+      if (!fallbackExcludes.includes(route)) {
+        issues.push(`staticwebapp.config.json navigationFallback.exclude must include ${route}`)
+      }
+    }
+  }
+
+  if (config.responseOverrides?.['404']?.rewrite !== '/404.html') {
+    issues.push('staticwebapp.config.json responseOverrides.404.rewrite must be /404.html')
+  }
+
+  const headers = config.globalHeaders
+  if (!headers || typeof headers !== 'object' || Array.isArray(headers)) {
+    issues.push('staticwebapp.config.json globalHeaders must be an object')
+    return
+  }
+
+  const csp = headers['content-security-policy'] ?? headers['Content-Security-Policy']
+  if (!csp) {
+    issues.push('staticwebapp.config.json globalHeaders must include content-security-policy')
+  } else {
+    verifyCspPolicy(csp, requiredWebHeaderCspFragments, 'staticwebapp.config.json content-security-policy', issues)
+  }
+
+  const contentTypeOptions = headers['x-content-type-options'] ?? headers['X-Content-Type-Options']
+  if (contentTypeOptions !== 'nosniff') {
+    issues.push('staticwebapp.config.json globalHeaders must include x-content-type-options: nosniff')
+  }
+
+  const referrerPolicy = headers['referrer-policy'] ?? headers['Referrer-Policy']
+  if (referrerPolicy !== 'no-referrer') {
+    issues.push('staticwebapp.config.json globalHeaders must include referrer-policy: no-referrer')
+  }
+
+  const permissionsPolicy = headers['permissions-policy'] ?? headers['Permissions-Policy']
+  if (!permissionsPolicy) {
+    issues.push('staticwebapp.config.json globalHeaders must include permissions-policy')
+  } else {
+    for (const fragment of requiredPermissionsPolicyFragments) {
+      if (!permissionsPolicy.includes(fragment)) {
+        issues.push(`staticwebapp.config.json permissions-policy must include ${fragment}`)
       }
     }
   }

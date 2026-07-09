@@ -59,6 +59,7 @@ Script execution is treated as bounded authoring logic. Tauri script commands va
 - **Desktop CSP**: Packaged Tauri WebViews use an explicit Content Security Policy that allows local app assets, Tauri asset URLs, blob/data media, HTTPS provider connectivity, and localhost dev tooling while blocking object, frame, form, wildcard default, and `unsafe-eval` surfaces.
 - **Web/PWA CSP**: Static browser builds ship a matching `index.html` Content Security Policy meta tag, copied into the `404.html` SPA fallback, so hosted previews block object, frame, form, wildcard default, and `unsafe-eval` surfaces while still allowing required project assets, blobs, media, HTTPS providers, and localhost preview tooling.
 - **Static Hosting Headers**: Web/PWA dist preparation also emits a `_headers` file for Netlify/Cloudflare-style hosts with CSP, `X-Content-Type-Options`, `Referrer-Policy`, and `Permissions-Policy` headers; release verification checks both the generated file and the source script so response-header capable hosts get stronger browser enforcement without breaking GitHub Pages fallback.
+- **Azure Static Web Apps Config**: Web/PWA dist preparation emits `staticwebapp.config.json` with SPA navigation fallback to `index.html`, explicit asset/service-worker exclusions, a `404.html` rewrite, and matching global security headers so Azure Static Web Apps deployments share the same browser enforcement and route behavior.
 
 ## i18n Locale Boundaries
 

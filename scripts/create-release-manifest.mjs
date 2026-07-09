@@ -23,10 +23,13 @@ const outPath = path.resolve(root, readArg('out') ?? defaultOutPath)
 const expectedWebArtifacts = [
   'index.html',
   '404.html',
+  '_headers',
+  'staticwebapp.config.json',
   '.nojekyll',
   'manifest.webmanifest',
   'sw.js',
   'offline.html',
+  'project-assets.json',
   'favicon.svg',
   'icons/app-icon.svg',
   'icons/maskable-icon.svg',
@@ -453,6 +456,9 @@ function webArtifactKind(file) {
   if (rel === 'sw.js') return 'service-worker'
   if (rel === 'offline.html') return 'offline-fallback'
   if (rel === '404.html') return 'spa-fallback'
+  if (rel === '_headers') return 'static-hosting-headers'
+  if (rel === 'staticwebapp.config.json') return 'azure-static-web-app-config'
+  if (rel === 'project-assets.json') return 'project-asset-manifest'
   if (rel.startsWith('assets/')) return 'web-asset'
   if (rel.startsWith('icons/')) return 'pwa-icon'
   if (rel.startsWith('locales/')) return 'locale'
