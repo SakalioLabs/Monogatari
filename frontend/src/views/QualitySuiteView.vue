@@ -94,6 +94,7 @@
         </div>
         <div class="run-metadata-list">
           <span class="audit-chip">{{ report.run_metadata.suite_path }}</span>
+          <span class="audit-chip" :title="report.run_metadata.suite_sha256">sha256:{{ report.run_metadata.suite_sha256.slice(0, 12) }}</span>
           <span class="audit-chip">{{ report.run_metadata.git_short_commit }}</span>
           <span class="audit-chip">{{ formatTimestamp(report.run_metadata.generated_at) }}</span>
           <span class="audit-chip">{{ report.run_metadata.scenario_count }} {{ t('quality.scenarios', 'scenarios') }}</span>
@@ -341,6 +342,7 @@ interface QualitySuiteRunMetadata {
   git_commit: string
   git_short_commit: string
   suite_path: string
+  suite_sha256: string
   scenario_count: number
   pass_rate: number
 }
@@ -404,6 +406,7 @@ const previewReport: QualitySuiteReport = {
     git_commit: 'preview',
     git_short_commit: 'preview',
     suite_path: 'quality_suites/character_stability.json',
+    suite_sha256: '50eb7994d9f2432b7b798a441610f2661c714370505ee836e80565b75377a11d',
     scenario_count: 29,
     pass_rate: 1,
   },

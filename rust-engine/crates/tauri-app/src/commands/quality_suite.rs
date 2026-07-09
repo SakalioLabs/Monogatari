@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use tauri::State;
 
 use crate::commands::{chat, prompt_guard, workflow};
@@ -165,6 +166,7 @@ pub struct QualitySuiteRunMetadata {
     pub git_commit: String,
     pub git_short_commit: String,
     pub suite_path: String,
+    pub suite_sha256: String,
     pub scenario_count: usize,
     pub pass_rate: f32,
 }
@@ -302,12 +304,19 @@ pub async fn run_quality_suite(
 ) -> Result<QualitySuiteReport, String> {
     let root = project_root(&state).await;
     let loaded = load_quality_suite_from_root(&root, suite_path)?;
-    Ok(run_quality_suite_inner(&loaded.suite, Some(&root), &loaded.source_path).await)
+    Ok(run_quality_suite_inner(
+        &loaded.suite,
+        Some(&root),
+        &loaded.source_path,
+        &loaded.source_sha256,
+    )
+    .await)
 }
 
 struct LoadedQualitySuite {
     suite: QualitySuite,
     source_path: String,
+    source_sha256: String,
 }
 
 fn load_quality_suite_from_root(
@@ -335,11 +344,13 @@ fn load_quality_suite_from_root(
         Ok(LoadedQualitySuite {
             suite: parse_quality_suite(&content)?,
             source_path: quality_suite_source_path(root, &path),
+            source_sha256: quality_suite_sha256(&content),
         })
     } else {
         Ok(LoadedQualitySuite {
             suite: parse_quality_suite(DEFAULT_SUITE_JSON)?,
             source_path: "built-in:character_stability".to_string(),
+            source_sha256: quality_suite_sha256(DEFAULT_SUITE_JSON),
         })
     }
 }
@@ -392,6 +403,11 @@ fn quality_suite_source_path(project_root: &Path, suite_path: &Path) -> String {
         .unwrap_or(suite_path)
         .to_string_lossy()
         .replace('\\', "/")
+}
+
+fn quality_suite_sha256(content: &str) -> String {
+    let digest = Sha256::digest(content.as_bytes());
+    digest.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
 fn parse_quality_suite(content: &str) -> Result<QualitySuite, String> {
@@ -648,6 +664,7 @@ async fn run_quality_suite_inner(
     suite: &QualitySuite,
     project_root: Option<&Path>,
     suite_source_path: &str,
+    suite_source_sha256: &str,
 ) -> QualitySuiteReport {
     let mut scenarios = Vec::with_capacity(suite.scenarios.len());
     for scenario in &suite.scenarios {
@@ -656,7 +673,8 @@ async fn run_quality_suite_inner(
     let passed = scenarios.iter().filter(|scenario| scenario.passed).count();
     let total = scenarios.len();
     let audit_summary = quality_suite_audit_summary(&scenarios);
-    let run_metadata = quality_suite_run_metadata(total, passed, suite_source_path);
+    let run_metadata =
+        quality_suite_run_metadata(total, passed, suite_source_path, suite_source_sha256);
 
     QualitySuiteReport {
         suite_name: suite.name.clone(),
@@ -674,6 +692,7 @@ fn quality_suite_run_metadata(
     total: usize,
     passed: usize,
     suite_source_path: &str,
+    suite_source_sha256: &str,
 ) -> QualitySuiteRunMetadata {
     QualitySuiteRunMetadata {
         generated_at: chrono::Utc::now().to_rfc3339(),
@@ -687,6 +706,7 @@ fn quality_suite_run_metadata(
             .unwrap_or("unknown")
             .to_string(),
         suite_path: suite_source_path.replace('\\', "/"),
+        suite_sha256: suite_source_sha256.to_string(),
         scenario_count: total,
         pass_rate: if total > 0 {
             passed as f32 / total as f32
@@ -1866,6 +1886,7 @@ mod tests {
                 suite,
                 project_root,
                 DEFAULT_SUITE_PATH,
+                &quality_suite_sha256(DEFAULT_SUITE_JSON),
             ))
     }
 
@@ -1880,6 +1901,12 @@ mod tests {
         let _ = std::fs::remove_dir_all(&root);
 
         assert_eq!(loaded.source_path, DEFAULT_SUITE_PATH);
+        assert_eq!(
+            loaded.source_sha256,
+            quality_suite_sha256(DEFAULT_SUITE_JSON)
+        );
+        assert_eq!(loaded.source_sha256.len(), 64);
+        assert!(loaded.source_sha256.chars().all(|c| c.is_ascii_hexdigit()));
     }
 
     #[test]
@@ -1927,6 +1954,10 @@ mod tests {
         assert!(!report.run_metadata.git_commit.trim().is_empty());
         assert!(!report.run_metadata.git_short_commit.trim().is_empty());
         assert_eq!(report.run_metadata.suite_path, DEFAULT_SUITE_PATH);
+        assert_eq!(
+            report.run_metadata.suite_sha256,
+            quality_suite_sha256(DEFAULT_SUITE_JSON)
+        );
         assert!(
             report.run_metadata.git_commit == "unknown"
                 || report
