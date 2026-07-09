@@ -54,6 +54,7 @@ Script execution is treated as bounded authoring logic. Tauri script commands va
 - **Tauri Bridge**: Browser-compatible `invokeCommand()` with fallback for non-Tauri environments
 - **Web Distribution**: Production browser builds register a service worker, manifest, and offline fallback; Tauri runtime disables service worker registration.
 - **Renderer Asset Pipeline**: Story Mode resolves scene and character assets through a shared frontend resolver. Character staging prefers Live2D models, then GLB/GLTF 3D models, then 2D sprites or portraits, and falls back to a generated Three.js placeholder for assetless characters.
+- **Runtime Log Hygiene**: Production frontend source avoids `console.log` and `console.debug` debug output; release verification scans `frontend/src` while preserving warning/error reporting for real failures.
 
 ## i18n Locale Boundaries
 

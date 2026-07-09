@@ -63,6 +63,7 @@ Verified on 2026-07-09:
 - Project settings save/load paths scrub API keys, tokens, authorization headers, token-shaped values, query-secret assignments, and legacy persisted secret fields so provider credentials remain runtime-only instead of landing in `settings.json`.
 - Azure and ElevenLabs TTS provider errors redact token-shaped values, API-key assignments, authorization headers, and provider response bodies before Settings or speech-generation failures expose credentials.
 - TTS synthesis runtime logs record spoken-text length metadata instead of raw dialogue, prompt text, or token-shaped content.
+- Frontend runtime source ships without `console.log`/`console.debug` debug output, with release-gate coverage to keep production browser/Tauri consoles clean.
 - Prompt-injection detection now covers structured role-control blocks, attributed XML-like role tags, Markdown role-code-fence blocks, comment-wrapped role headers, punctuation-free role headings, English, Chinese, Japanese, Korean, fullwidth, and zero-width-obfuscated prompt-control phrases before scoring, memory writes, relationship deltas, and runtime safety traces consume player text.
 - Chat, group chat, and quality-suite runtime traces now prove when the character mind contract and creator-pinned knowledge context were applied, including resolved pinned knowledge ref IDs for audit.
 - Prompt-injection detection covers player-authored memory writes such as "remember this as official canon" so long-term character knowledge cannot be casually poisoned by dialogue text.

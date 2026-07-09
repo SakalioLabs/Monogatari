@@ -1471,6 +1471,18 @@ async function verifyFrontendSourceInvariants() {
   const audioViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'AudioView.vue'), 'utf8')
   const settingsSource = await readFile(path.join(frontendDir, 'src', 'views', 'SettingsView.vue'), 'utf8')
   const serviceWorkerSource = await readFile(path.join(frontendDir, 'public', 'sw.js'), 'utf8')
+  const frontendRuntimeFiles = (await walkFiles(path.join(frontendDir, 'src'))).filter((file) =>
+    frontendSourceExtensions.has(path.extname(file)),
+  )
+
+  for (const file of frontendRuntimeFiles) {
+    const content = await readFile(file, 'utf8')
+    content.split(/\r?\n/).forEach((line, index) => {
+      if (/console\.(log|debug)\s*\(/.test(line)) {
+        issues.push(`${relative(file)}:${index + 1}: frontend runtime code must not ship console.log/debug output`)
+      }
+    })
+  }
 
   if (!i18nSource.includes('import.meta.env.BASE_URL')) {
     issues.push('frontend/src/lib/i18n.ts must use import.meta.env.BASE_URL for browser locale fallbacks')

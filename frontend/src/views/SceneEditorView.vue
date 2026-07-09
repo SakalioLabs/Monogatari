@@ -185,20 +185,12 @@ function createScene() {
 function saveScene() {
   if (!selectedScene.value) return
   selectedScene.value.tags = tagsInput.value.split(',').map(s => s.trim()).filter(Boolean)
-  statusMsg('Scene "' + selectedScene.value.name + '" saved')
 }
 
 function deleteScene() {
   if (!selectedScene.value) return
-  const name = selectedScene.value.name
   scenes.value = scenes.value.filter(s => s.id !== selectedScene.value!.id)
   selectedScene.value = null
-  statusMsg('Scene "' + name + '" deleted')
-}
-
-function statusMsg(msg: string) {
-  // Simple feedback
-  console.log('[SceneEditor]', msg)
 }
 
 async function loadScenes() {

@@ -82,8 +82,7 @@ async function loadModel(path: string) {
 
     // Enable interaction
     model.interactive = true
-    model.on('hit', (hitAreas: string[]) => {
-      console.log('Hit areas:', hitAreas)
+    model.on('hit', () => {
       // Trigger tap motion
       if (model.internalModel?.motionManager) {
         model.motion('Tap')
@@ -92,7 +91,6 @@ async function loadModel(path: string) {
 
     app.stage.addChild(model)
     fitModelToStage()
-    console.log('Live2D model loaded:', path)
   } catch (e) {
     console.error('Failed to load Live2D model:', e)
   } finally {
