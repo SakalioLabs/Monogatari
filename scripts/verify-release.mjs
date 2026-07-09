@@ -163,6 +163,7 @@ const releaseCriticalRustFiles = [
   'crates/tauri-app/src/commands/multi_chat.rs',
   'crates/tauri-app/src/commands/content_paths.rs',
   'crates/tauri-app/src/commands/dialogue.rs',
+  'crates/tauri-app/src/commands/i18n.rs',
   'crates/tauri-app/src/commands/knowledge.rs',
   'crates/tauri-app/src/commands/live2d.rs',
   'crates/tauri-app/src/commands/marketplace.rs',
@@ -198,6 +199,7 @@ async function main() {
   await verifySensitivePatterns()
   await verifyUiTextArtifacts()
   await verifyLocaleCoverage()
+  await verifyI18nLocalePathInvariants()
   await verifyFrontendSourceInvariants()
   await verifyLegacyPromptBuilderInvariants()
   await verifyAssetManagerInvariants()
@@ -1347,6 +1349,44 @@ async function verifyLocaleCoverage() {
   }
 
   console.log(`[release] Locale coverage OK (${baseKeys.length} keys, ${requiredLocales.length} public locale(s))`)
+}
+
+async function verifyI18nLocalePathInvariants() {
+  const issues = []
+  const i18nCommandSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'i18n.rs'), 'utf8')
+
+  const i18nRequirements = [
+    ['locale_file_path', 'centralize locale JSON file path construction'],
+    ['normalize_locale_id', 'validate locale ids before path construction'],
+    ['project_root.join("locales")', 'scope locale JSON files to the project locales directory'],
+    ['Locale ids can contain only ASCII letters, numbers, and hyphen separators', 'reject path-shaped and non-portable locale ids'],
+    ['path.parent() != Some(root.as_path())', 'prove locale JSON files stay directly under project locales'],
+    ['load_locale_from_project', 'reuse guarded project locale loading'],
+    ['list_locale_ids', 'filter listed locale files through the same validator'],
+    ['translate_from_project', 'reuse guarded project locale translation'],
+    ['locale_file_paths_stay_inside_project_locales', 'test compatible locale file path resolution'],
+    ['locale_file_paths_reject_escape_attempts', 'test locale traversal and absolute path rejection'],
+    ['locale_loading_lists_and_translates_safe_locale_ids', 'test safe locale loading, listing, and translation'],
+  ]
+  for (const [needle, description] of i18nRequirements) {
+    if (!i18nCommandSource.includes(needle)) {
+      issues.push(`i18n locale path handling must ${description}`)
+    }
+  }
+
+  if (i18nCommandSource.includes('format!("{locale}.json")') || i18nCommandSource.includes('format!("{loc}.json")')) {
+    issues.push('i18n commands must not build locale JSON paths directly from raw command input')
+  }
+
+  if (i18nCommandSource.includes('ok_or("No project path")')) {
+    issues.push('i18n commands must use the active/default project data root consistently')
+  }
+
+  if (issues.length > 0) {
+    throw new Error(`i18n locale path verification failed:\n${issues.join('\n')}`)
+  }
+
+  console.log('[release] i18n locale path invariants OK')
 }
 
 async function verifyFrontendSourceInvariants() {

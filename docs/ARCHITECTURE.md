@@ -53,6 +53,10 @@ Monogatari is a desktop application built with Rust (Tauri 2.x) for the backend 
 - **Web Distribution**: Production browser builds register a service worker, manifest, and offline fallback; Tauri runtime disables service worker registration.
 - **Renderer Asset Pipeline**: Story Mode resolves scene and character assets through a shared frontend resolver. Character staging prefers Live2D models, then GLB/GLTF 3D models, then 2D sprites or portraits, and falls back to a generated Three.js placeholder for assetless characters.
 
+## i18n Locale Boundaries
+
+i18n backend commands treat locale values as portable locale IDs rather than filenames or paths. Locale IDs resolve to direct JSON files under the active project `locales/` directory, listed locales are filtered through the same validator, and slashes, dots, URI/drive-style prefixes, empty hyphen segments, control characters, and non-portable characters are rejected before filesystem access.
+
 ## Live2D Model Boundaries
 
 Live2D backend commands treat model paths as project-relative model file references. `.model3.json` and `.json` files resolve under the active project data root, sidecar expressions and motions are discovered next to that model file, and absolute paths, drive/URI-style prefixes, empty segments, `.`/`..` traversal, unsupported extensions, and non-portable segments are rejected before filesystem access. Story Mode uses the same shared renderer asset validator before passing character art paths to Live2D, GLB/GLTF, or sprite renderers.

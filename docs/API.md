@@ -169,6 +169,8 @@ Plugin manifest IDs are portable slugs, not filenames or paths. `register_plugin
 
 ## i18n
 
+i18n `locale` values are portable locale IDs, not filesystem paths. IDs such as `en` and `zh-CN` map to JSON files under the active project `locales/` directory; slashes, dots, URI-like prefixes, empty hyphen segments, and non-portable characters are rejected before loading or translating.
+
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
 | `load_locale` | `{ locale }` | `object` | Load locale strings |

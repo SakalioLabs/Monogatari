@@ -3,7 +3,7 @@
 ## Pre-Release Verification
 
 ### Automated Gate
-- [ ] `node scripts/verify-release.mjs` passes from the repository root, covering JSON assets, workflow files, score-gate workflow execution regressions, renderer asset contracts, pinned knowledge-ref contracts, all quality suites, workflow branch coverage snapshots, locale coverage, sensitive token scans, frontend UI text artifact scans, frontend source invariants, legacy C# AI prompt/API invariants, asset/save-manager, workflow command, content loader, character manager, plugin manager, marketplace, Live2D model, and TTS output path invariants, frontend route/sidebar coverage, Tauri desktop packaging configuration, Rust AI/game/assets/Tauri checks/tests, frontend audit, root and subpath Web/PWA builds, Web/PWA dist assets, release artifact manifest checks, preview route smoke checks, and legacy C# tests
+- [ ] `node scripts/verify-release.mjs` passes from the repository root, covering JSON assets, workflow files, score-gate workflow execution regressions, renderer asset contracts, pinned knowledge-ref contracts, all quality suites, workflow branch coverage snapshots, locale coverage, sensitive token scans, frontend UI text artifact scans, frontend source invariants, legacy C# AI prompt/API invariants, asset/save-manager, i18n locale, workflow command, content loader, character manager, plugin manager, marketplace, Live2D model, and TTS output path invariants, frontend route/sidebar coverage, Tauri desktop packaging configuration, Rust AI/game/assets/Tauri checks/tests, frontend audit, root and subpath Web/PWA builds, Web/PWA dist assets, release artifact manifest checks, preview route smoke checks, and legacy C# tests
 
 ### Frontend
 - [ ] `cd frontend && npm run build` passes with zero errors
@@ -96,6 +96,7 @@
 ### i18n
 - [ ] Locale switching works (en, zh-CN, ja-JP, ko-KR)
 - [ ] Nested key resolution works for all locale files
+- [ ] Tauri i18n commands load, list, and translate only portable locale IDs under the active project `locales/` directory
 - [ ] Browser fallback locale JSON loads correctly under root and `VITE_BASE_PATH` subpath deployments
 
 ### Cloud Sync
