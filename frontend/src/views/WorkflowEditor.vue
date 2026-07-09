@@ -469,6 +469,8 @@ type LocalConditionValue = number | string | boolean
 interface LocalWorkflowState {
   variables: Record<string, LocalConditionValue>
   flags: Record<string, boolean>
+  relationships: Record<string, Record<string, number>>
+  emotions: Record<string, string>
 }
 interface LocalConditionScope {
   context: Record<string, LocalConditionValue>
@@ -903,10 +905,17 @@ function workflowRunContextPayloadFromValues(values: Omit<WorkflowRunContextForm
 
 function localConditionScope(
   context: WorkflowRunContextPayload | null,
-  localState: LocalWorkflowState = createLocalWorkflowState()
+  localState: LocalWorkflowState = createLocalWorkflowState(),
+  config: Record<string, any> = {}
 ): LocalConditionScope {
   const evaluation = context?.evaluation
-  const relationship = context?.relationship ?? 0
+  const characterId = String(config.character_id || config.speaker_id || config.speaker || context?.character_id || '').trim()
+  const relationship = localRelationshipValue(
+    localState,
+    characterId,
+    'player',
+    localRelationshipFallback(context, characterId, 'player')
+  )
   const evaluationCount = context?.evaluation_count ?? 0
   const friendliness = evaluation?.friendliness ?? 0.5
   const engagement = evaluation?.engagement ?? 0.5
@@ -914,7 +923,7 @@ function localConditionScope(
   const overall = evaluation?.overall_score ?? 0.5
   return {
     context: {
-      character_id: context?.character_id || '',
+      character_id: characterId,
       relationship,
       relationship_score: relationship,
       evaluation_count: evaluationCount,
@@ -1310,7 +1319,7 @@ function workflowCoverage(currentWorkflow: Workflow, steps: WorkflowExecutionSte
 }
 
 function createLocalWorkflowState(): LocalWorkflowState {
-  return { variables: {}, flags: {} }
+  return { variables: {}, flags: {}, relationships: {}, emotions: {} }
 }
 
 function localNodeOutput(
@@ -1345,7 +1354,7 @@ function localNodeOutput(
       return { status: 'ok', flag_name: name, value }
     }
     case 'condition': {
-      const condition = evaluateLocalCondition(node.config.condition ?? 'true', context, localState)
+      const condition = evaluateLocalCondition(node.config.condition ?? 'true', context, localState, node.config)
       return {
         result: condition.result,
         condition_supported: condition.supported,
@@ -1378,10 +1387,41 @@ function localNodeOutput(
         action: 'trigger_event',
         event_id: node.config.event_id || '',
         event_type: node.config.event_type || '',
-        triggered: localEventDecision(node, context).triggered,
+        triggered: localEventDecision(node, context, localState).triggered,
         evaluation_source: context?.enabled ? 'run_context_evaluation' : 'local_preview',
-        decision: localEventDecision(node, context),
+        decision: localEventDecision(node, context, localState),
       }
+    case 'emotion_change': {
+      const characterId = String(node.config.character_id || '').trim()
+      const emotion = String(node.config.emotion || '').trim()
+      const previousEmotion = characterId ? localState.emotions[characterId] || 'neutral' : 'neutral'
+      if (characterId && emotion) localState.emotions[characterId] = emotion
+      return {
+        action: 'emotion_change',
+        character_id: characterId,
+        previous_emotion: previousEmotion,
+        emotion,
+      }
+    }
+    case 'relationship': {
+      const characterId = String(node.config.character_id || '').trim()
+      const targetId = String(node.config.target_id || node.config.other_id || 'player').trim() || 'player'
+      const delta = numericConfig(node.config.delta) ?? 0
+      const previous = localRelationshipValue(localState, characterId, targetId, localRelationshipFallback(context, characterId, targetId))
+      const current = Math.min(1, Math.max(-1, previous + delta))
+      if (characterId) {
+        localState.relationships[characterId] = localState.relationships[characterId] || {}
+        localState.relationships[characterId][targetId] = current
+      }
+      return {
+        action: 'relationship',
+        character_id: characterId,
+        target_id: targetId,
+        delta,
+        previous,
+        current,
+      }
+    }
     case 'bgm':
       return {
         action: 'bgm',
@@ -1431,13 +1471,14 @@ function localNodeOutput(
 function evaluateLocalCondition(
   value: unknown,
   context: WorkflowRunContextPayload | null,
-  localState: LocalWorkflowState = createLocalWorkflowState()
+  localState: LocalWorkflowState = createLocalWorkflowState(),
+  config: Record<string, any> = {}
 ) {
   const condition = String(value ?? '').trim()
   if (!condition) return { result: false, supported: false, error: 'condition_empty' }
   try {
     return {
-      result: evaluateLocalConditionExpression(condition, localConditionScope(context, localState)),
+      result: evaluateLocalConditionExpression(condition, localConditionScope(context, localState, config)),
       supported: true,
       error: null,
     }
@@ -1589,6 +1630,27 @@ function localVariableValue(value: unknown): LocalConditionValue {
   return String(value ?? '')
 }
 
+function localRelationshipFallback(
+  context: WorkflowRunContextPayload | null,
+  characterId: string,
+  targetId = 'player'
+): number {
+  if (!context?.enabled) return 0
+  if (targetId !== 'player') return 0
+  if (context.character_id && characterId && context.character_id !== characterId) return 0
+  return context.relationship
+}
+
+function localRelationshipValue(
+  localState: LocalWorkflowState,
+  characterId: string,
+  targetId = 'player',
+  fallback = 0
+): number {
+  if (!characterId) return fallback
+  return localState.relationships[characterId]?.[targetId] ?? fallback
+}
+
 function localNextNode(node: WorkflowNode, output: Record<string, any>, selections: Record<string, number>) {
   if (node.node_type === 'end') return { nextNodeId: null, stoppedReason: 'completed' }
   if (node.node_type === 'choice') {
@@ -1659,11 +1721,21 @@ function localEventRule(eventId: string) {
   return rules[eventId] || null
 }
 
-function localEventDecision(node: WorkflowNode, context: WorkflowRunContextPayload | null) {
+function localEventDecision(
+  node: WorkflowNode,
+  context: WorkflowRunContextPayload | null,
+  localState: LocalWorkflowState = createLocalWorkflowState()
+) {
   const eventId = String(node.config.event_id || '')
+  const characterId = String(node.config.character_id || context?.character_id || '').trim()
   const configuredType = String(node.config.event_type || '')
   const rule = localEventRule(eventId)
-  const relationship = context?.enabled ? context.relationship : 0
+  const relationship = localRelationshipValue(
+    localState,
+    characterId,
+    'player',
+    localRelationshipFallback(context, characterId, 'player')
+  )
   const evaluationCount = context?.enabled ? context.evaluation_count : 0
   const alreadyTriggered = Boolean(context?.already_triggered_events.includes(eventId))
   const actualMetric = rule?.score_metric || null
