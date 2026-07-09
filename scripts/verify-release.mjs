@@ -3372,6 +3372,19 @@ async function verifyReleaseChannelPolicy() {
     ['node_count', 'record workflow node counts in release manifests'],
     ['connection_count', 'record workflow connection counts in release manifests'],
     ['node_types', 'record workflow node type coverage in release manifests'],
+    ['collectProjectContentSources', 'emit checked-in project content source evidence into release manifests'],
+    ['project_content_source_set', 'include aggregate project content source set evidence in release manifests'],
+    ['projectContentSourceSetSummary', 'centralize aggregate project content source set evidence'],
+    ['projectContentSourceSetSha256', 'fingerprint project content source sets deterministically'],
+    ['monogatari-project-content-source-set/v1', 'version the project content source set fingerprint contract'],
+    ['data/characters/sakura.json', 'require default Sakura character content in release manifests'],
+    ['data/dialogue/sakura_park_walk.json', 'require default Sakura dialogue content in release manifests'],
+    ['data/knowledge/sakura_nature.json', 'require default Sakura knowledge content in release manifests'],
+    ['data/scenes/sakura_park.json', 'require default Sakura scene content in release manifests'],
+    ['data/assets/characters/sakura_sprite.svg', 'require default Sakura renderer asset content in release manifests'],
+    ['category_counts', 'record project content category counts in release manifests'],
+    ['knowledge_ref_count', 'record character knowledge reference counts in release manifests'],
+    ['size_bytes', 'record project content source sizes in release manifests'],
   ]
   for (const [needle, description] of manifestPolicyRequirements) {
     if (!manifestScript.includes(needle)) {

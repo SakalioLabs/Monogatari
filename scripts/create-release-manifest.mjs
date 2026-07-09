@@ -20,11 +20,23 @@ const workflowSourceDirs = [
   { id: 'project-data', dir: path.join(root, 'data', 'workflows') },
   { id: 'tauri-data', dir: path.join(rustDir, 'data', 'workflows') },
 ]
+const projectContentSourceDirs = [
+  { id: 'project-data', dir: path.join(root, 'data') },
+  { id: 'tauri-data', dir: path.join(rustDir, 'data') },
+]
+const projectContentCategories = ['assets', 'characters', 'dialogue', 'knowledge', 'scenes']
 const requiredQualitySuiteSources = [
   'data/quality_suites/character_stability.json',
 ]
 const requiredWorkflowSources = [
   'data/workflows/score_gate_demo.json',
+]
+const requiredProjectContentSources = [
+  'data/characters/sakura.json',
+  'data/dialogue/sakura_park_walk.json',
+  'data/knowledge/sakura_nature.json',
+  'data/scenes/sakura_park.json',
+  'data/assets/characters/sakura_sprite.svg',
 ]
 
 const args = process.argv.slice(2)
@@ -96,6 +108,8 @@ async function main() {
   const qualitySuiteSet = qualitySuiteSetSummary(qualitySuites)
   const workflows = await collectWorkflowSources(issues)
   const workflowSourceSet = workflowSourceSetSummary(workflows)
+  const projectContentSources = await collectProjectContentSources(issues)
+  const projectContentSourceSet = projectContentSourceSetSummary(projectContentSources)
 
   if (artifacts.length === 0) {
     issues.push('No release artifacts found. Build Web/PWA or desktop bundles before creating a manifest.')
@@ -129,6 +143,8 @@ async function main() {
     quality_suites: qualitySuites,
     workflow_source_set: workflowSourceSet,
     workflows,
+    project_content_source_set: projectContentSourceSet,
+    project_content_sources: projectContentSources,
     expected_artifacts: expectedArtifactContracts(channelPolicy),
     missing_expected_artifacts: missingExpectedArtifacts,
     signing: signingSummary(artifacts, channelPolicy),
@@ -138,8 +154,9 @@ async function main() {
   if (checkOnly) {
     const qualitySuiteSetFingerprint = manifest.quality_suite_set.content_sha256.slice(0, 12)
     const workflowSourceSetFingerprint = manifest.workflow_source_set.content_sha256.slice(0, 12)
+    const projectContentSetFingerprint = manifest.project_content_source_set.content_sha256.slice(0, 12)
     console.log(
-      `[release-manifest] OK (${manifest.artifacts.length} artifact(s), ${manifest.quality_suite_set.suite_count} quality suite(s), quality suite set ${qualitySuiteSetFingerprint}, ${manifest.workflow_source_set.workflow_count} workflow source(s), workflow set ${workflowSourceSetFingerprint}, ${manifest.missing_expected_artifacts.length} missing expected artifact(s), channel=${channel})`,
+      `[release-manifest] OK (${manifest.artifacts.length} artifact(s), ${manifest.quality_suite_set.suite_count} quality suite(s), quality suite set ${qualitySuiteSetFingerprint}, ${manifest.workflow_source_set.workflow_count} workflow source(s), workflow set ${workflowSourceSetFingerprint}, ${manifest.project_content_source_set.source_count} project content source(s), content set ${projectContentSetFingerprint}, ${manifest.missing_expected_artifacts.length} missing expected artifact(s), channel=${channel})`,
     )
     return
   }
@@ -330,6 +347,97 @@ async function collectWorkflowSources(issues) {
   return sources.sort((a, b) => a.path.localeCompare(b.path))
 }
 
+async function collectProjectContentSources(issues) {
+  const sources = []
+  for (const source of projectContentSourceDirs) {
+    for (const category of projectContentCategories) {
+      const categoryDir = path.join(source.dir, category)
+      const files = await walkFiles(categoryDir)
+
+      for (const file of files) {
+        const rel = relative(file)
+        const bytes = await readFile(file)
+        const entry = {
+          path: rel,
+          source_root: source.id,
+          category,
+          kind: projectContentKind(category, file),
+          size_bytes: bytes.byteLength,
+          sha256: createHash('sha256').update(bytes).digest('hex'),
+        }
+
+        if (path.extname(file).toLowerCase() === '.json') {
+          try {
+            Object.assign(entry, projectContentJsonSummary(category, JSON.parse(bytes.toString('utf8'))))
+          } catch (error) {
+            issues.push(`${rel}: project content source is not valid JSON: ${error.message}`)
+          }
+        }
+
+        sources.push(entry)
+      }
+    }
+  }
+
+  if (sources.length === 0) {
+    issues.push('Release manifests require at least one checked-in project content source.')
+  }
+  for (const requiredPath of requiredProjectContentSources) {
+    if (!sources.some((source) => source.path === requiredPath)) {
+      issues.push(`Missing required project content source: ${requiredPath}`)
+    }
+  }
+
+  return sources.sort((a, b) => a.path.localeCompare(b.path))
+}
+
+function projectContentKind(category, file) {
+  const ext = path.extname(file).toLowerCase()
+  if (category === 'assets') {
+    if (['.svg', '.png', '.jpg', '.jpeg', '.webp', '.gif'].includes(ext)) return 'image-asset'
+    if (['.glb', '.gltf'].includes(ext)) return 'model-asset'
+    if (['.model3.json'].includes(ext) || path.basename(file).endsWith('.model3.json')) return 'live2d-model'
+    if (['.mp3', '.ogg', '.wav', '.flac', '.m4a'].includes(ext)) return 'audio-asset'
+    return 'asset'
+  }
+  return `${category}-json`
+}
+
+function projectContentJsonSummary(category, value) {
+  const records = Array.isArray(value) ? value : [value]
+  const ids = records
+    .map((record) => record?.id)
+    .filter(nonEmptyString)
+    .sort()
+  const summary = {
+    record_count: records.length,
+    ids,
+  }
+
+  if (category === 'characters') {
+    summary.knowledge_ref_count = records.reduce((total, record) => total + characterKnowledgeRefs(record).length, 0)
+  } else if (category === 'dialogue') {
+    summary.node_count = records.reduce((total, record) => total + arrayLength(record?.nodes), 0)
+  } else if (category === 'knowledge') {
+    summary.tags = Array.from(new Set(records.flatMap((record) => Array.isArray(record?.tags) ? record.tags : []))).sort()
+    summary.categories = Array.from(new Set(records.map((record) => record?.category).filter(nonEmptyString))).sort()
+  } else if (category === 'scenes') {
+    summary.background_asset_count = records.filter((record) => nonEmptyString(record?.background) || nonEmptyString(record?.background_path)).length
+  }
+
+  return summary
+}
+
+function characterKnowledgeRefs(character) {
+  const refs = []
+  for (const field of ['knowledge_refs', 'knowledgeRefs', 'knowledge']) {
+    if (Array.isArray(character?.[field])) {
+      refs.push(...character[field].filter(nonEmptyString))
+    }
+  }
+  return Array.from(new Set(refs))
+}
+
 function qualitySuiteSetSummary(qualitySuites) {
   return {
     schema: 'monogatari-quality-suite-set/v1',
@@ -354,6 +462,46 @@ function qualitySuiteSetSha256(qualitySuites) {
     hash.update(categories.join(','))
     hash.update('\0')
     hash.update(suite.sha256 ?? '')
+    hash.update('\n')
+  }
+  return hash.digest('hex')
+}
+
+function projectContentSourceSetSummary(sources) {
+  const categoryCounts = Object.fromEntries(
+    projectContentCategories.map((category) => [
+      category,
+      sources.filter((source) => source.category === category).length,
+    ]),
+  )
+  return {
+    schema: 'monogatari-project-content-source-set/v1',
+    source_count: sources.length,
+    category_counts: categoryCounts,
+    record_count: sources.reduce((total, source) => total + (source.record_count ?? 0), 0),
+    size_bytes: sources.reduce((total, source) => total + (source.size_bytes ?? 0), 0),
+    fingerprint_algorithm: 'sha256:path-source-root-category-size-record-ids-source-sha256-v1',
+    content_sha256: projectContentSourceSetSha256(sources),
+  }
+}
+
+function projectContentSourceSetSha256(sources) {
+  const hash = createHash('sha256')
+  for (const source of [...sources].sort((a, b) => a.path.localeCompare(b.path))) {
+    const ids = Array.isArray(source.ids) ? [...source.ids].sort() : []
+    hash.update(source.path ?? '')
+    hash.update('\0')
+    hash.update(source.source_root ?? '')
+    hash.update('\0')
+    hash.update(source.category ?? '')
+    hash.update('\0')
+    hash.update(String(source.size_bytes ?? 0))
+    hash.update('\0')
+    hash.update(String(source.record_count ?? 0))
+    hash.update('\0')
+    hash.update(ids.join(','))
+    hash.update('\0')
+    hash.update(source.sha256 ?? '')
     hash.update('\n')
   }
   return hash.digest('hex')
@@ -720,4 +868,8 @@ function relativeTo(file, base) {
 
 function nonEmptyString(value) {
   return typeof value === 'string' && value.trim().length > 0
+}
+
+function arrayLength(value) {
+  return Array.isArray(value) ? value.length : 0
 }
