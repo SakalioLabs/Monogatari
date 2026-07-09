@@ -466,7 +466,15 @@ interface WorkflowPresetMatrixReport {
 }
 
 type LocalConditionValue = number | string | boolean
-type LocalConditionScope = Record<string, LocalConditionValue>
+interface LocalWorkflowState {
+  variables: Record<string, LocalConditionValue>
+  flags: Record<string, boolean>
+}
+interface LocalConditionScope {
+  context: Record<string, LocalConditionValue>
+  variables: Record<string, LocalConditionValue>
+  flags: Record<string, boolean>
+}
 
 const NODE_WIDTH = 214
 const NODE_HEIGHT = 92
@@ -893,7 +901,10 @@ function workflowRunContextPayloadFromValues(values: Omit<WorkflowRunContextForm
   }
 }
 
-function localConditionScope(context: WorkflowRunContextPayload | null): LocalConditionScope {
+function localConditionScope(
+  context: WorkflowRunContextPayload | null,
+  localState: LocalWorkflowState = createLocalWorkflowState()
+): LocalConditionScope {
   const evaluation = context?.evaluation
   const relationship = context?.relationship ?? 0
   const evaluationCount = context?.evaluation_count ?? 0
@@ -902,19 +913,23 @@ function localConditionScope(context: WorkflowRunContextPayload | null): LocalCo
   const creativity = evaluation?.creativity ?? 0.5
   const overall = evaluation?.overall_score ?? 0.5
   return {
-    character_id: context?.character_id || '',
-    relationship,
-    relationship_score: relationship,
-    evaluation_count: evaluationCount,
-    friendliness,
-    friendliness_score: friendliness,
-    engagement,
-    engagement_score: engagement,
-    creativity,
-    creativity_score: creativity,
-    overall,
-    overall_score: overall,
-    evaluation_source: context?.enabled ? 'run_context_evaluation' : 'local_preview',
+    context: {
+      character_id: context?.character_id || '',
+      relationship,
+      relationship_score: relationship,
+      evaluation_count: evaluationCount,
+      friendliness,
+      friendliness_score: friendliness,
+      engagement,
+      engagement_score: engagement,
+      creativity,
+      creativity_score: creativity,
+      overall,
+      overall_score: overall,
+      evaluation_source: context?.enabled ? 'run_context_evaluation' : 'local_preview',
+    },
+    variables: localState.variables,
+    flags: localState.flags,
   }
 }
 
@@ -1213,6 +1228,7 @@ function runWorkflowLocally(
 
   const lookup = new Map(currentWorkflow.nodes.map((node) => [node.id, node]))
   const steps: WorkflowExecutionStep[] = []
+  const localState = createLocalWorkflowState()
   let currentNodeId = currentWorkflow.start_node_id
   let completed = false
   let stopped_reason: string | null = null
@@ -1223,7 +1239,7 @@ function runWorkflowLocally(
       stopped_reason = `missing_node:${currentNodeId}`
       break
     }
-    const output = localNodeOutput(node, context)
+    const output = localNodeOutput(node, context, localState)
     const next = localNextNode(node, output, selections)
     if (node.node_type === 'end') completed = true
 
@@ -1293,7 +1309,15 @@ function workflowCoverage(currentWorkflow: Workflow, steps: WorkflowExecutionSte
   }
 }
 
-function localNodeOutput(node: WorkflowNode, context: WorkflowRunContextPayload | null = null): Record<string, any> {
+function createLocalWorkflowState(): LocalWorkflowState {
+  return { variables: {}, flags: {} }
+}
+
+function localNodeOutput(
+  node: WorkflowNode,
+  context: WorkflowRunContextPayload | null = null,
+  localState: LocalWorkflowState = createLocalWorkflowState()
+): Record<string, any> {
   switch (node.node_type) {
     case 'start':
       return { action: 'start', node_id: node.id, next_connections: node.connections }
@@ -1308,8 +1332,20 @@ function localNodeOutput(node: WorkflowNode, context: WorkflowRunContextPayload 
       }
     case 'choice':
       return { action: 'choice', choices: arrayConfig(node.config.choices), connection_count: node.connections.length }
+    case 'set_variable': {
+      const name = localStateKey(node.config.variable_name)
+      const value = localVariableValue(node.config.value)
+      if (name) localState.variables[name] = value
+      return { status: 'ok', variable_name: name, value }
+    }
+    case 'set_flag': {
+      const name = localStateKey(node.config.flag_name)
+      const value = Boolean(node.config.value ?? true)
+      if (name) localState.flags[name] = value
+      return { status: 'ok', flag_name: name, value }
+    }
     case 'condition': {
-      const condition = evaluateLocalCondition(node.config.condition ?? 'true', context)
+      const condition = evaluateLocalCondition(node.config.condition ?? 'true', context, localState)
       return {
         result: condition.result,
         condition_supported: condition.supported,
@@ -1320,13 +1356,19 @@ function localNodeOutput(node: WorkflowNode, context: WorkflowRunContextPayload 
       const metric = normalizeMetric(node.config.criteria || node.config.metric || 'overall')
       const score = workflowMetricScore(context?.evaluation, metric) ?? 0
       const threshold = Number(node.config.threshold)
+      const passed = Number.isFinite(threshold) ? score >= threshold : null
+      const variableName = localStateKey(node.config.variable_name)
+      if (variableName) {
+        localState.variables[variableName] = score
+        if (typeof passed === 'boolean') localState.flags[`${variableName}_passed`] = passed
+      }
       return {
         action: 'evaluation',
         character_id: node.config.character_id || context?.character_id || null,
         metric,
         score,
         threshold: Number.isFinite(threshold) ? threshold : null,
-        passed: Number.isFinite(threshold) ? score >= threshold : null,
+        passed,
         source: context?.enabled ? 'run_context_evaluation' : 'local_preview',
         evaluation: context?.evaluation || null,
       }
@@ -1386,12 +1428,16 @@ function localNodeOutput(node: WorkflowNode, context: WorkflowRunContextPayload 
   }
 }
 
-function evaluateLocalCondition(value: unknown, context: WorkflowRunContextPayload | null) {
+function evaluateLocalCondition(
+  value: unknown,
+  context: WorkflowRunContextPayload | null,
+  localState: LocalWorkflowState = createLocalWorkflowState()
+) {
   const condition = String(value ?? '').trim()
   if (!condition) return { result: false, supported: false, error: 'condition_empty' }
   try {
     return {
-      result: evaluateLocalConditionExpression(condition, localConditionScope(context)),
+      result: evaluateLocalConditionExpression(condition, localConditionScope(context, localState)),
       supported: true,
       error: null,
     }
@@ -1482,11 +1528,11 @@ function localConditionValue(raw: string, scope: LocalConditionScope): LocalCond
   const quoted = text.match(/^(['"])(.*)\1$/)
   if (quoted) return quoted[2].replace(/\\(['"\\])/g, '$1')
   const variable = text.match(/^[A-Za-z_][A-Za-z0-9_]*$/)
-  if (variable && Object.prototype.hasOwnProperty.call(scope, text)) return scope[text]
+  if (variable && Object.prototype.hasOwnProperty.call(scope.context, text)) return scope.context[text]
   const getVariable = text.match(/^getVariable\((['"])([A-Za-z0-9_.-]+)\1\)$/)
-  if (getVariable && Object.prototype.hasOwnProperty.call(scope, getVariable[2])) return scope[getVariable[2]]
+  if (getVariable && Object.prototype.hasOwnProperty.call(scope.variables, getVariable[2])) return scope.variables[getVariable[2]]
   const hasFlag = text.match(/^hasFlag\((['"])([A-Za-z0-9_.-]+)\1\)$/)
-  if (hasFlag) return false
+  if (hasFlag) return Boolean(scope.flags[hasFlag[2]])
   throw new Error(`unsupported_condition:${text}`)
 }
 
@@ -1531,6 +1577,16 @@ function outerParensWrapExpression(value: string): boolean {
     if (depth === 0 && index < value.length - 1) return false
   }
   return depth === 0
+}
+
+function localStateKey(value: unknown): string {
+  return String(value ?? '').trim()
+}
+
+function localVariableValue(value: unknown): LocalConditionValue {
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  return String(value ?? '')
 }
 
 function localNextNode(node: WorkflowNode, output: Record<string, any>, selections: Record<string, number>) {
