@@ -5,14 +5,33 @@ use std::path::{Path, PathBuf};
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 use uuid::Uuid;
 
 use llm_core::{EngineError, Result};
+use llm_game::{characters::CharacterMemory, dialogue::DialogueRuntimeState};
+
+pub const GAME_SAVE_SCHEMA_V1: &str = "monogatari-game-save/v1";
+pub const GAME_SAVE_SCHEMA_V2: &str = "monogatari-game-save/v2";
+pub const MAX_GAME_SAVE_BYTES: u64 = 32 * 1024 * 1024;
+
+fn default_game_save_schema() -> String {
+    GAME_SAVE_SCHEMA_V1.to_string()
+}
+
+fn default_character_emotion() -> String {
+    "neutral".to_string()
+}
 
 /// Serializable game save data.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameSave {
+    /// Versioned persistence contract. Missing values deserialize as the legacy v1 format.
+    #[serde(default = "default_game_save_schema")]
+    pub schema: String,
+    /// Engine version that created this snapshot.
+    #[serde(default)]
+    pub engine_version: String,
     /// Unique save identifier.
     pub save_id: String,
     /// Display name for this save.
@@ -20,25 +39,61 @@ pub struct GameSave {
     /// When the save was created.
     pub timestamp: DateTime<Utc>,
     /// Current scene name.
+    #[serde(default)]
     pub current_scene: Option<String>,
+    /// Recent scene ids used by runtime navigation and author diagnostics.
+    #[serde(default)]
+    pub scene_history: Vec<String>,
     /// Active dialogue script ID.
+    #[serde(default)]
     pub current_dialogue_id: Option<String>,
     /// Current dialogue node ID.
+    #[serde(default)]
     pub current_node_id: Option<String>,
+    /// Full dialogue cursor and dialogue-local variables for v2 snapshots.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dialogue_state: Option<DialogueRuntimeState>,
     /// Game variables.
+    #[serde(default)]
     pub variables: HashMap<String, serde_json::Value>,
-    /// Character states (id -> (emotion, relationships, memory_count)).
+    /// Character states keyed by character id.
+    #[serde(default)]
     pub characters: HashMap<String, CharacterSaveState>,
     /// Game flags.
+    #[serde(default)]
     pub flags: HashMap<String, bool>,
+    /// Tauri chat session payloads keyed by character id.
+    #[serde(default)]
+    pub chat_sessions: HashMap<String, serde_json::Value>,
 }
 
 /// Saved state for a single character.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CharacterSaveState {
+    #[serde(default = "default_character_emotion")]
     pub emotion: String,
+    #[serde(default)]
     pub relationships: HashMap<String, f32>,
+    #[serde(default)]
     pub memory_count: usize,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub memory: Option<CharacterMemory>,
+}
+
+impl GameSave {
+    pub fn validate_schema(&self) -> Result<()> {
+        if matches!(
+            self.schema.as_str(),
+            GAME_SAVE_SCHEMA_V1 | GAME_SAVE_SCHEMA_V2
+        ) {
+            Ok(())
+        } else {
+            Err(EngineError::config(
+                "save_schema",
+                format!("Unsupported game save schema: {}", self.schema),
+            ))
+        }
+    }
 }
 
 /// Manages game save/load operations.
@@ -62,10 +117,18 @@ impl SaveManager {
 
     /// Save a game state to disk.
     pub async fn save(&self, save: &GameSave) -> Result<()> {
+        save.validate_schema()?;
         self.ensure_directory().await?;
         let path = self.safe_save_path(&save.save_id)?;
         let json = serde_json::to_string_pretty(save)?;
-        tokio::fs::write(&path, json).await?;
+        if json.len() as u64 > MAX_GAME_SAVE_BYTES {
+            return Err(EngineError::config(
+                "save_size",
+                format!("Game save exceeds the {MAX_GAME_SAVE_BYTES}-byte size limit."),
+            ));
+        }
+        self.write_staged(&save.save_id, &path, json.as_bytes())
+            .await?;
         info!("Game saved: {} -> {}", save.save_name, path.display());
         Ok(())
     }
@@ -73,8 +136,17 @@ impl SaveManager {
     /// Load a game state from disk by save ID.
     pub async fn load(&self, save_id: &str) -> Result<GameSave> {
         let path = self.safe_save_path(save_id)?;
+        self.recover_backup_if_needed(save_id, &path).await?;
+        let metadata = tokio::fs::metadata(&path).await?;
+        if metadata.len() > MAX_GAME_SAVE_BYTES {
+            return Err(EngineError::config(
+                "save_size",
+                format!("Game save exceeds the {MAX_GAME_SAVE_BYTES}-byte size limit."),
+            ));
+        }
         let content = tokio::fs::read_to_string(&path).await?;
         let save: GameSave = serde_json::from_str(&content)?;
+        save.validate_schema()?;
         debug!("Loaded save: {}", save.save_name);
         Ok(save)
     }
@@ -85,6 +157,12 @@ impl SaveManager {
         if path.exists() {
             tokio::fs::remove_file(&path).await?;
             info!("Deleted save: {}", save_id);
+        }
+        let (temp_path, backup_path) = self.staged_paths(save_id)?;
+        for staged_path in [temp_path, backup_path] {
+            if staged_path.exists() {
+                tokio::fs::remove_file(staged_path).await?;
+            }
         }
         Ok(())
     }
@@ -106,12 +184,22 @@ impl SaveManager {
             let Some(file_save_id) = path.file_stem().and_then(|stem| stem.to_str()) else {
                 continue;
             };
+            if tokio::fs::metadata(&path)
+                .await
+                .map(|metadata| metadata.len() > MAX_GAME_SAVE_BYTES)
+                .unwrap_or(true)
+            {
+                debug!("Ignored oversized or unreadable save {}", path.display());
+                continue;
+            }
 
             match tokio::fs::read_to_string(&path).await {
                 Ok(content) => match serde_json::from_str::<GameSave>(&content) {
-                    Ok(save) if save.save_id == file_save_id => saves.push(save),
+                    Ok(save) if save.save_id == file_save_id && save.validate_schema().is_ok() => {
+                        saves.push(save)
+                    }
                     Ok(save) => debug!(
-                        "Ignored save {} with mismatched embedded id {}",
+                        "Ignored save {} with invalid schema or mismatched embedded id {}",
                         path.display(),
                         save.save_id
                     ),
@@ -133,17 +221,48 @@ impl SaveManager {
         dialogue_id: Option<String>,
         node_id: Option<String>,
     ) -> GameSave {
-        GameSave {
-            save_id: Uuid::new_v4().to_string(),
+        Self::create_save_with_id(
+            Uuid::new_v4().to_string(),
+            name,
+            scene,
+            dialogue_id,
+            node_id,
+        )
+        .expect("generated UUID save ids must be valid")
+    }
+
+    /// Create a save with a stable caller-provided id, used by quick and auto-save slots.
+    pub fn create_save_with_id(
+        save_id: impl Into<String>,
+        name: impl Into<String>,
+        scene: Option<String>,
+        dialogue_id: Option<String>,
+        node_id: Option<String>,
+    ) -> Result<GameSave> {
+        let save_id = save_id.into();
+        if !is_valid_save_id(&save_id) {
+            return Err(EngineError::config(
+                "save_id",
+                "Save id can contain only ASCII letters, numbers, underscores, or hyphens.",
+            ));
+        }
+
+        Ok(GameSave {
+            schema: GAME_SAVE_SCHEMA_V2.to_string(),
+            engine_version: env!("CARGO_PKG_VERSION").to_string(),
+            save_id,
             save_name: name.into(),
             timestamp: Utc::now(),
             current_scene: scene,
+            scene_history: Vec::new(),
             current_dialogue_id: dialogue_id,
             current_node_id: node_id,
+            dialogue_state: None,
             variables: HashMap::new(),
             characters: HashMap::new(),
             flags: HashMap::new(),
-        }
+            chat_sessions: HashMap::new(),
+        })
     }
 
     fn safe_save_path(&self, save_id: &str) -> Result<PathBuf> {
@@ -164,6 +283,63 @@ impl SaveManager {
         }
 
         Ok(path)
+    }
+
+    fn staged_paths(&self, save_id: &str) -> Result<(PathBuf, PathBuf)> {
+        if !is_valid_save_id(save_id) {
+            return Err(EngineError::config(
+                "save_id",
+                "Save id cannot contain path separators, dots, whitespace, or control characters.",
+            ));
+        }
+        Ok((
+            self.save_directory.join(format!(".{save_id}.tmp")),
+            self.save_directory.join(format!(".{save_id}.bak")),
+        ))
+    }
+
+    async fn write_staged(&self, save_id: &str, path: &Path, bytes: &[u8]) -> Result<()> {
+        let (temp_path, backup_path) = self.staged_paths(save_id)?;
+        if temp_path.exists() {
+            tokio::fs::remove_file(&temp_path).await?;
+        }
+        tokio::fs::write(&temp_path, bytes).await?;
+
+        if !path.exists() {
+            tokio::fs::rename(&temp_path, path).await?;
+            return Ok(());
+        }
+
+        if backup_path.exists() {
+            tokio::fs::remove_file(&backup_path).await?;
+        }
+        tokio::fs::rename(path, &backup_path).await?;
+        if let Err(error) = tokio::fs::rename(&temp_path, path).await {
+            let _ = tokio::fs::rename(&backup_path, path).await;
+            let _ = tokio::fs::remove_file(&temp_path).await;
+            return Err(error.into());
+        }
+        if backup_path.exists() {
+            if let Err(error) = tokio::fs::remove_file(&backup_path).await {
+                warn!(
+                    "Save replacement succeeded but backup cleanup failed for {}: {}",
+                    backup_path.display(),
+                    error
+                );
+            }
+        }
+        Ok(())
+    }
+
+    async fn recover_backup_if_needed(&self, save_id: &str, path: &Path) -> Result<()> {
+        if path.exists() {
+            return Ok(());
+        }
+        let (_, backup_path) = self.staged_paths(save_id)?;
+        if backup_path.exists() {
+            tokio::fs::rename(backup_path, path).await?;
+        }
+        Ok(())
     }
 
     /// Get the save directory path.
@@ -204,16 +380,71 @@ mod tests {
 
     fn test_save(save_id: &str) -> GameSave {
         GameSave {
+            schema: GAME_SAVE_SCHEMA_V2.to_string(),
+            engine_version: env!("CARGO_PKG_VERSION").to_string(),
             save_id: save_id.to_string(),
             save_name: "Test Save".to_string(),
             timestamp: Utc::now(),
             current_scene: Some("test_scene".to_string()),
+            scene_history: vec!["test_scene".to_string()],
             current_dialogue_id: None,
             current_node_id: None,
+            dialogue_state: None,
             variables: HashMap::new(),
             characters: HashMap::new(),
             flags: HashMap::new(),
+            chat_sessions: HashMap::new(),
         }
+    }
+
+    #[test]
+    fn new_and_stable_slot_saves_use_v2_schema() {
+        let generated = SaveManager::create_save("Manual", None, None, None);
+        let quick = SaveManager::create_save_with_id(
+            "quick_save_0",
+            "Quick Save",
+            Some("park".to_string()),
+            None,
+            None,
+        )
+        .unwrap();
+
+        assert_eq!(generated.schema, GAME_SAVE_SCHEMA_V2);
+        assert_eq!(quick.schema, GAME_SAVE_SCHEMA_V2);
+        assert_eq!(quick.save_id, "quick_save_0");
+        assert!(
+            SaveManager::create_save_with_id("../settings", "Unsafe", None, None, None).is_err()
+        );
+    }
+
+    #[test]
+    fn legacy_save_payloads_deserialize_with_v1_defaults() {
+        let legacy = serde_json::json!({
+            "save_id": "legacy_slot",
+            "save_name": "Legacy",
+            "timestamp": Utc::now(),
+            "current_scene": "park",
+            "current_dialogue_id": null,
+            "current_node_id": null,
+            "variables": {"score": "7"},
+            "characters": {
+                "sakura": {
+                    "emotion": "happy",
+                    "relationships": {"player": 0.5},
+                    "memory_count": 2
+                }
+            },
+            "flags": {"met_sakura": true}
+        });
+
+        let save: GameSave = serde_json::from_value(legacy).unwrap();
+
+        assert_eq!(save.schema, GAME_SAVE_SCHEMA_V1);
+        assert!(save.validate_schema().is_ok());
+        assert!(save.scene_history.is_empty());
+        assert!(save.dialogue_state.is_none());
+        assert!(save.chat_sessions.is_empty());
+        assert!(save.characters["sakura"].memory.is_none());
     }
 
     #[tokio::test]
@@ -286,6 +517,26 @@ mod tests {
 
         assert_eq!(saves.len(), 1);
         assert_eq!(saves[0].save_id, "slot_1");
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[tokio::test]
+    async fn stable_slot_overwrite_replaces_save_without_staged_files() {
+        let root = temp_root("stable_slot_overwrite");
+        let saves_dir = root.join("saves");
+        let manager = SaveManager::new(&saves_dir);
+        let mut first = test_save("quick_save_0");
+        first.save_name = "First".to_string();
+        manager.save(&first).await.unwrap();
+        let mut second = first.clone();
+        second.save_name = "Second".to_string();
+        manager.save(&second).await.unwrap();
+
+        let restored = manager.load("quick_save_0").await.unwrap();
+
+        assert_eq!(restored.save_name, "Second");
+        assert!(!saves_dir.join(".quick_save_0.tmp").exists());
+        assert!(!saves_dir.join(".quick_save_0.bak").exists());
         std::fs::remove_dir_all(root).unwrap();
     }
 }

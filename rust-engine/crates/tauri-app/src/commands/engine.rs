@@ -4,6 +4,8 @@ use serde::Serialize;
 use std::path::{Path, PathBuf};
 use tauri::State;
 
+use llm_game::{characters::CharacterManager, dialogue::DialogueManager, knowledge::KnowledgeBase};
+
 use crate::state::{default_project_data_root, AppState};
 
 #[derive(Serialize)]
@@ -29,41 +31,59 @@ pub async fn initialize_engine(
     };
     let path = validate_engine_project_root(path)?;
 
-    // Load characters
-    let char_path = path.join("characters");
-    if char_path.exists() {
-        let mut cm = state.character_manager.write().await;
-        cm.load_from_directory(&char_path)
-            .await
-            .map_err(|e| e.to_string())?;
-    }
+    let (characters, dialogues, knowledge) = load_project_content(&path).await?;
 
-    // Load dialogues
-    let dlg_path = path.join("dialogue");
-    if dlg_path.exists() {
-        let mut dm = state.dialogue_manager.write().await;
-        dm.load_from_directory(&dlg_path)
-            .await
-            .map_err(|e| e.to_string())?;
-    }
-
-    // Load knowledge
-    let kb_path = path.join("knowledge");
-    if kb_path.exists() {
-        let mut kb = state.knowledge_base.write().await;
-        kb.load_from_directory(&kb_path)
-            .await
-            .map_err(|e| e.to_string())?;
-    }
-
-    // Initialize AI pipeline
+    // Initialize AI backends before replacing the active project state.
     let pipeline = state.inference_pipeline.read().await;
     pipeline.initialize_all().await.map_err(|e| e.to_string())?;
+    drop(pipeline);
 
-    state.set_project_data_root(path).await;
+    let root_changed = state.set_project_data_root(path).await;
+    if !root_changed {
+        state.reset_project_runtime_state().await;
+    }
+    *state.character_manager.write().await = characters;
+    *state.dialogue_manager.write().await = dialogues;
+    *state.knowledge_base.write().await = knowledge;
     *state.initialized.write().await = true;
 
     Ok("Engine initialized successfully".to_string())
+}
+
+async fn load_project_content(
+    path: &Path,
+) -> Result<(CharacterManager, DialogueManager, KnowledgeBase), String> {
+    let mut characters = CharacterManager::new();
+    // Load characters
+    let char_path = path.join("characters");
+    if char_path.exists() {
+        characters
+            .load_from_directory(&char_path)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    let mut dialogues = DialogueManager::new();
+    // Load dialogues
+    let dlg_path = path.join("dialogue");
+    if dlg_path.exists() {
+        dialogues
+            .load_from_directory(&dlg_path)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    let mut knowledge = KnowledgeBase::new();
+    // Load knowledge
+    let kb_path = path.join("knowledge");
+    if kb_path.exists() {
+        knowledge
+            .load_from_directory(&kb_path)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    Ok((characters, dialogues, knowledge))
 }
 
 fn normalize_project_path(project_path: &str) -> Result<PathBuf, String> {
@@ -193,5 +213,35 @@ mod tests {
         assert!(validate_engine_project_root(file).is_err());
         assert!(validate_engine_project_root(root.clone()).is_ok());
         std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[tokio::test]
+    async fn project_content_loading_replaces_instead_of_merging_managers() {
+        let first = temp_root("project_first");
+        let second = temp_root("project_second");
+        for root in [&first, &second] {
+            std::fs::create_dir_all(root.join("characters")).unwrap();
+            std::fs::create_dir_all(root.join("knowledge")).unwrap();
+        }
+        std::fs::write(
+            first.join("characters").join("first.json"),
+            r#"{"id":"first","name":"First"}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            second.join("characters").join("second.json"),
+            r#"{"id":"second","name":"Second"}"#,
+        )
+        .unwrap();
+
+        let (first_characters, _, _) = load_project_content(&first).await.unwrap();
+        let (second_characters, _, _) = load_project_content(&second).await.unwrap();
+
+        assert!(first_characters.get_character("first").is_some());
+        assert!(first_characters.get_character("second").is_none());
+        assert!(second_characters.get_character("second").is_some());
+        assert!(second_characters.get_character("first").is_none());
+        std::fs::remove_dir_all(first).unwrap();
+        std::fs::remove_dir_all(second).unwrap();
     }
 }

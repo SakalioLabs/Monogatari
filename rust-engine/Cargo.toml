@@ -42,7 +42,7 @@ ort = { version = "2", features = ["directml"] }
 ndarray = "0.16"
 
 # Scripting
-rhai = { version = "1", features = ["sync"] }
+rhai = { version = "1", features = ["sync", "serde"] }
 
 # UUID for unique IDs
 uuid = { version = "1", features = ["v4"] }

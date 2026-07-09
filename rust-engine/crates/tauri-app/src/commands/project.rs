@@ -135,7 +135,7 @@ pub async fn get_project_config(
 /// Save project settings.json and return refreshed diagnostics.
 #[tauri::command]
 pub async fn save_project_config(
-    state: State<'_, AppState>,
+    _state: State<'_, AppState>,
     project_path: String,
     config: Value,
 ) -> Result<ProjectConfigState, String> {
@@ -160,7 +160,6 @@ pub async fn save_project_config(
         .await
         .map_err(|e| e.to_string())?;
 
-    state.set_project_data_root(root.clone()).await;
     build_project_config_state(&root)
 }
 

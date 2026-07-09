@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 
+use serde::{Deserialize, Serialize};
 use tracing::{debug, info};
 
 use llm_core::{normalize_script_state_key, normalize_script_state_map, Result};
@@ -34,6 +35,19 @@ pub enum DialogueEvent {
     ShowChoices { choices: Vec<Choice> },
     /// Dialogue has ended.
     DialogueEnd,
+}
+
+/// Serializable dialogue cursor and local story state.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct DialogueRuntimeState {
+    #[serde(default)]
+    pub active_script_id: Option<String>,
+    #[serde(default)]
+    pub current_node_id: Option<String>,
+    #[serde(default)]
+    pub flags: HashMap<String, bool>,
+    #[serde(default)]
+    pub variables: HashMap<String, serde_json::Value>,
 }
 
 /// Manages dialogue flow, advancing through nodes and handling choices.
@@ -275,6 +289,64 @@ impl DialogueManager {
         (&self.flags, &self.variables)
     }
 
+    /// Snapshot the active dialogue cursor and its local state for persistence.
+    pub fn runtime_state(&self) -> DialogueRuntimeState {
+        DialogueRuntimeState {
+            active_script_id: self.active_script_id.clone(),
+            current_node_id: self.current_node_id.clone(),
+            flags: self.flags.clone(),
+            variables: self.variables.clone(),
+        }
+    }
+
+    /// Validate and normalize a persisted dialogue snapshot without mutating runtime state.
+    pub fn validate_runtime_state(
+        &self,
+        mut state: DialogueRuntimeState,
+    ) -> Result<DialogueRuntimeState> {
+        state.flags = normalize_script_state_map(state.flags)?;
+        state.variables = normalize_script_state_map(state.variables)?;
+
+        match (&state.active_script_id, &state.current_node_id) {
+            (None, None) => {}
+            (Some(script_id), Some(node_id)) => {
+                let script = self.scripts.get(script_id).ok_or_else(|| {
+                    llm_core::EngineError::dialogue(
+                        script_id,
+                        node_id,
+                        "Saved dialogue script is not loaded",
+                    )
+                })?;
+                if !script.nodes.contains_key(node_id) {
+                    return Err(llm_core::EngineError::dialogue(
+                        script_id,
+                        node_id,
+                        "Saved dialogue node does not exist",
+                    ));
+                }
+            }
+            _ => {
+                return Err(llm_core::EngineError::dialogue(
+                    state.active_script_id.as_deref().unwrap_or("none"),
+                    state.current_node_id.as_deref().unwrap_or("none"),
+                    "Saved dialogue cursor must include both script and node ids",
+                ));
+            }
+        }
+
+        Ok(state)
+    }
+
+    /// Restore a previously validated dialogue cursor and local state.
+    pub fn restore_runtime_state(&mut self, state: DialogueRuntimeState) -> Result<()> {
+        let state = self.validate_runtime_state(state)?;
+        self.active_script_id = state.active_script_id;
+        self.current_node_id = state.current_node_id;
+        self.flags = state.flags;
+        self.variables = state.variables;
+        Ok(())
+    }
+
     /// Load dialogue state from persistence.
     pub fn load_state(
         &mut self,
@@ -407,5 +479,57 @@ mod tests {
         let variables = HashMap::new();
 
         assert!(manager.load_state(flags, variables).is_err());
+    }
+
+    #[tokio::test]
+    async fn dialogue_runtime_snapshot_restores_cursor_and_local_state() {
+        let script: DialogueScript = serde_json::from_value(serde_json::json!({
+            "id": "intro",
+            "title": "Intro",
+            "start_node_id": "start",
+            "nodes": {
+                "start": {
+                    "id": "start",
+                    "text": "Hello",
+                    "next_node_id": "second"
+                },
+                "second": {
+                    "id": "second",
+                    "text": "Again"
+                }
+            }
+        }))
+        .unwrap();
+        let mut manager = DialogueManager::new();
+        manager.scripts.insert(script.id.clone(), script);
+        manager.start_dialogue("intro").await.unwrap();
+        manager.set_flag("started", true).unwrap();
+        let snapshot = manager.runtime_state();
+
+        manager.advance().await.unwrap();
+        assert_eq!(manager.current_node().unwrap().id, "second");
+        manager.restore_runtime_state(snapshot).unwrap();
+
+        assert_eq!(manager.current_node().unwrap().id, "start");
+        assert!(manager.has_flag("started"));
+    }
+
+    #[test]
+    fn dialogue_runtime_snapshot_rejects_broken_cursors() {
+        let manager = DialogueManager::new();
+        assert!(manager
+            .validate_runtime_state(DialogueRuntimeState {
+                active_script_id: Some("missing".to_string()),
+                current_node_id: Some("start".to_string()),
+                ..Default::default()
+            })
+            .is_err());
+        assert!(manager
+            .validate_runtime_state(DialogueRuntimeState {
+                active_script_id: Some("intro".to_string()),
+                current_node_id: None,
+                ..Default::default()
+            })
+            .is_err());
     }
 }

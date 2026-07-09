@@ -105,12 +105,14 @@ Workflow command `path` values are project workflow references, not arbitrary fi
 
 ## Save/Load
 
-`saveId` values are opaque portable identifiers returned by `save_game` or `list_saves`; they are not file paths. Runtime save managers reject traversal-shaped IDs and filter mismatched save files before load/delete/list operations.
+`saveId` values are opaque portable identifiers returned by `save_game` or `list_saves`; they are not file paths. Runtime save managers reject traversal-shaped IDs and filter mismatched save files before load/delete/list operations. Omitting `saveId` creates a UUID-backed manual save; passing a stable ID overwrites that quick-save or auto-save slot.
+
+New saves use `monogatari-game-save/v2`. The snapshot restores scene history, the active dialogue cursor and local state, typed Rhai variables, character emotion/relationships/full memory, chat messages, evaluation state, safety traces, and triggered event IDs. Legacy schema-less saves load as v1 with defaults for fields that did not previously exist.
 
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
-| `save_game` | `{ saveName }` | `string` | Save game state |
-| `load_game` | `{ saveId }` | `void` | Load game state by safe save ID |
+| `save_game` | `{ saveName, saveId? }` | `string` | Save complete runtime state; optionally overwrite a stable slot |
+| `load_game` | `{ saveId }` | `string` | Restore game state by safe save ID |
 | `list_saves` | - | `SaveInfo[]` | List all saves |
 | `delete_save` | `{ saveId }` | `void` | Delete save by safe save ID |
 

@@ -1,6 +1,10 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Added backward-compatible `monogatari-game-save/v2` runtime snapshots covering scene history, dialogue cursor/local state, typed Rhai variables, character emotion/relationships/full memory, chat history, evaluations, safety traces, and triggered-event state.
+- Added stable quick-save and auto-save slot IDs, complete runtime save/restore regression coverage, legacy v1 compatibility tests, and release-gate invariants for the persistence contract.
+- Added staged stable-slot replacement with backup recovery and a 32 MiB save payload limit so interrupted or oversized save operations fail without silently corrupting the active slot.
+- Added staged project content loading and runtime reset tests so same-root reloads and project switches replace old managers instead of merging characters, dialogue, knowledge, chat, scene, or script state.
 - Added a configurable offline quality suite for character stability, prompt-injection resistance, relationship and fallback scoring side-channel containment, memory-poisoning resistance, memory prompt replay safety, tool-role injection containment, identity drift, style drift, real knowledge-reference anchoring, evaluation-summary safety, workflow output safety, workflow tool-call containment, workflow branch coverage, private reasoning leakage, fallback scoring, overrange score clamping, story-event trigger/idempotence regression, and event-rule snapshot checks.
 - Added stable SHA-256 event-trigger rule fingerprints to live chat decisions, manual scoring reports, Quality Suite reports, and the checked-in event-rule snapshot so story unlock rules can be audited across release builds.
 - Added block-level prompt-control sanitization for Tauri, shared Rust AI, and legacy C# prompt builders so explicit XML, Markdown fence, and comment-wrapped role-control payloads are omitted along with their opening markers.

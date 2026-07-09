@@ -2470,6 +2470,9 @@ async function verifyAssetManagerInvariants() {
 async function verifySaveManagerInvariants() {
   const issues = []
   const rustSaveManagerSource = await readFile(path.join(rustDir, 'crates', 'assets', 'src', 'save_manager.rs'), 'utf8')
+  const rustSaveCommandSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'save.rs'), 'utf8')
+  const gameViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'GameView.vue'), 'utf8')
+  const gameStoreSource = await readFile(path.join(frontendDir, 'src', 'stores', 'game.ts'), 'utf8')
   const csharpSaveManagerSource = await readFile(path.join(root, 'src', 'LLMAssistant.Assets', 'SaveManager.cs'), 'utf8')
   const csharpSaveManagerTests = await readFile(path.join(root, 'tests', 'LLMAssistant.Tests', 'SaveManagerTests.cs'), 'utf8')
 
@@ -2484,10 +2487,49 @@ async function verifySaveManagerInvariants() {
     ['load_rejects_ids_that_escape_save_directory', 'test load rejection for escaping ids'],
     ['delete_rejects_ids_that_escape_save_directory', 'test delete rejection for escaping ids'],
     ['list_saves_ignores_invalid_or_mismatched_save_ids', 'test list filtering for invalid or mismatched ids'],
+    ['GAME_SAVE_SCHEMA_V2', 'version complete runtime snapshots through the v2 save schema'],
+    ['validate_schema', 'reject unsupported save schemas before restore'],
+    ['create_save_with_id', 'support stable quick-save and auto-save slots'],
+    ['legacy_save_payloads_deserialize_with_v1_defaults', 'test backward-compatible v1 save loading'],
+    ['new_and_stable_slot_saves_use_v2_schema', 'test generated and stable slots use the v2 contract'],
+    ['MAX_GAME_SAVE_BYTES', 'bound serialized save file reads and writes'],
+    ['write_staged', 'stage save overwrites before replacing the active slot'],
+    ['recover_backup_if_needed', 'recover interrupted stable-slot replacements'],
+    ['stable_slot_overwrite_replaces_save_without_staged_files', 'test stable slot replacement and cleanup'],
   ]
   for (const [needle, description] of rustRequirements) {
     if (!rustSaveManagerSource.includes(needle)) {
       issues.push(`Rust SaveManager must ${description}`)
+    }
+  }
+
+  const rustCommandRequirements = [
+    ['save_id: Option<String>', 'accept optional stable save slots without breaking manual UUID saves'],
+    ['capture_game_save', 'centralize complete runtime snapshot capture'],
+    ['restore_game_save', 'centralize validated runtime restoration'],
+    ['snapshot_character_states', 'persist character emotion, relationships, and full memory'],
+    ['snapshot_chat_sessions', 'persist chat history, evaluation, audit, and triggered-event state'],
+    ['dialogue_state', 'persist the active dialogue cursor and dialogue-local state'],
+    ['script_variables_to_json', 'serialize Rhai variables without stringifying primitive types'],
+    ['json_variables_to_script', 'restore persisted Rhai variable types'],
+    ['game_save_round_trip_restores_character_chat_scene_and_script_state', 'test complete runtime save restoration'],
+  ]
+  for (const [needle, description] of rustCommandRequirements) {
+    if (!rustSaveCommandSource.includes(needle)) {
+      issues.push(`Rust save commands must ${description}`)
+    }
+  }
+
+  const frontendRequirements = [
+    [gameViewSource, 'saveId: QUICK_SAVE_ID', 'write quick saves to the stable quick-save slot'],
+    [gameViewSource, 'saveId: AUTO_SAVE_ID', 'overwrite a bounded auto-save slot instead of creating unbounded files'],
+    [gameStoreSource, "invokeCommand('save_game', { saveName, saveId })", 'send the backend save command contract'],
+    [gameStoreSource, "invokeCommand('load_game', { saveId })", 'send the backend load command contract'],
+    [gameStoreSource, 's.save_id !== saveId', 'consume backend save_id fields when deleting local rows'],
+  ]
+  for (const [source, needle, description] of frontendRequirements) {
+    if (!source.includes(needle)) {
+      issues.push(`Frontend save flow must ${description}`)
     }
   }
 
@@ -2611,7 +2653,7 @@ async function verifyScriptCommandInvariants() {
     [workflowSource, 'se.set_flag(name', 'validate workflow set_flag state keys through ScriptEngine'],
     [workflowSource, 'map_err(|e| e.to_string())?', 'return workflow script state key errors to callers'],
     [workflowSource, 'workflow_state_nodes_reject_invalid_state_keys', 'test workflow state key rejection'],
-    [saveCommandSource, 'se.load_state(variables, save.flags.clone())', 'validate save-restored variables and flags as one state load'],
+    [saveCommandSource, '.load_state(script_variables, save.flags.clone())', 'validate typed save-restored variables and flags as one state load'],
     [gameDialogueSource, 'normalize_script_state_key', 'validate legacy dialogue script state keys'],
     [gameDialogueSource, 'normalize_script_state_map', 'validate legacy dialogue loaded state maps'],
     [gameDialogueSource, 'dialogue_state_keys_reject_invalid_names', 'test legacy dialogue state key rejection'],
@@ -3109,8 +3151,12 @@ async function verifyTauriPackagingConfig() {
     [tauriStateSource, 'AssetManager::new(&data_path)', 'rebind the asset manager when project roots change'],
     [tauriStateSource, 'SaveManager::new(data_path.join("saves"))', 'rebind the save manager when project roots change'],
     [tauriEngineSource, 'current_project_data_root().await', 'keep empty engine initialization paths on the active or discovered default root'],
-    [tauriEngineSource, 'state.set_project_data_root(path).await', 'rebind project managers after engine initialization'],
-    [tauriProjectSource, 'state.set_project_data_root(root.clone()).await', 'rebind project managers after saving project config'],
+    [tauriEngineSource, 'load_project_content(&path).await?', 'stage all project content before replacing active managers'],
+    [tauriEngineSource, 'let root_changed = state.set_project_data_root(path).await', 'rebind project managers after staged engine initialization'],
+    [tauriEngineSource, 'project_content_loading_replaces_instead_of_merging_managers', 'test project reloads do not merge old content'],
+    [tauriStateSource, 'reset_project_runtime_state', 'clear mutable chat, scene, and script state across project reloads'],
+    [tauriStateSource, 'changing_project_root_clears_project_runtime_state', 'test project root changes clear runtime state'],
+    [tauriStateSource, 'same_root_reload_can_explicitly_clear_project_runtime_state', 'test same-root project reloads clear runtime state'],
     [tauriScenesSource, 'Ok(default_project_data_root())', 'scan scene assets from the discovered default root before explicit initialization'],
     [tauriAnalyticsSource, 'state.current_project_data_root().await', 'persist analytics under the active project root'],
     [tauriAnalyticsSource, 'project_root.join("analytics.json")', 'keep analytics files project-scoped'],
@@ -3160,6 +3206,9 @@ async function verifyTauriPackagingConfig() {
     if (!source.includes(needle)) {
       issues.push(`Tauri runtime data-root handling must ${description}`)
     }
+  }
+  if (tauriProjectSource.includes('state.set_project_data_root(root.clone()).await')) {
+    issues.push('saving settings.json must not switch the active project without loading its content managers')
   }
 
   const chatSafetyTraceRequirements = [

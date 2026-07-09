@@ -466,10 +466,11 @@ async function advanceDialogue() {
 }
 
 const QUICK_SAVE_ID = 'quick_save_0'
+const AUTO_SAVE_ID = 'auto_save_0'
 
 async function saveQuick() {
   try {
-    await invokeCommand<string>('save_game', { saveName: 'Quick Save' })
+    await invokeCommand<string>('save_game', { saveName: 'Quick Save', saveId: QUICK_SAVE_ID })
     toastMessage.value = 'Quick saved'
   } catch (e) { errorMessage.value = String(e) }
 }
@@ -560,7 +561,7 @@ onMounted(async () => {
     if (dialogueState.value?.is_active) {
       try {
         const name = 'Auto-save ' + new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-        await invokeCommand<string>('save_game', { saveName: name })
+        await invokeCommand<string>('save_game', { saveName: name, saveId: AUTO_SAVE_ID })
       } catch (e) { console.error('Auto-save failed:', e) }
     }
   }, 120000)

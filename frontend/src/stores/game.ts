@@ -34,7 +34,7 @@ export const useGameStore = defineStore('game', () => {
   const dialogueState = ref<DialogueState | null>(null)
   const isLoading = ref(false)
   const activeSceneId = ref<string | null>(null)
-  const saves = ref<{ id: string; timestamp: string }[]>([])
+  const saves = ref<{ save_id: string; timestamp: string }[]>([])
 
   async function loadCharacters() {
     try {
@@ -87,10 +87,10 @@ export const useGameStore = defineStore('game', () => {
     }
   }
 
-  async function saveGame(slotId: string) {
+  async function saveGame(saveName: string, saveId?: string) {
     isLoading.value = true
     try {
-      return await invokeCommand('save_game', { slotId })
+      return await invokeCommand('save_game', { saveName, saveId })
     } catch (e) {
       console.error('Save failed:', e)
       return null
@@ -99,10 +99,10 @@ export const useGameStore = defineStore('game', () => {
     }
   }
 
-  async function loadGame(slotId: string) {
+  async function loadGame(saveId: string) {
     isLoading.value = true
     try {
-      return await invokeCommand('load_game', { slotId })
+      return await invokeCommand('load_game', { saveId })
     } catch (e) {
       console.error('Load failed:', e)
       return null
@@ -113,17 +113,17 @@ export const useGameStore = defineStore('game', () => {
 
   async function listSaves() {
     try {
-      saves.value = await invokeCommand<{ id: string; timestamp: string }[]>('list_saves', undefined, [])
+      saves.value = await invokeCommand<{ save_id: string; timestamp: string }[]>('list_saves', undefined, [])
     } catch {
       saves.value = []
     }
     return saves.value
   }
 
-  async function deleteSave(slotId: string) {
+  async function deleteSave(saveId: string) {
     try {
-      await invokeCommand('delete_save', { slotId })
-      saves.value = saves.value.filter(s => s.id !== slotId)
+      await invokeCommand('delete_save', { saveId })
+      saves.value = saves.value.filter(s => s.save_id !== saveId)
     } catch (e) {
       console.error('Delete save failed:', e)
     }

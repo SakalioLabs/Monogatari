@@ -1,4 +1,4 @@
-﻿//! Application state management.
+//! Application state management.
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -59,10 +59,29 @@ impl AppState {
     }
 
     /// Rebind project-scoped managers to a discovered project data root.
-    pub async fn set_project_data_root(&self, data_path: PathBuf) {
+    pub async fn set_project_data_root(&self, data_path: PathBuf) -> bool {
+        let root_changed = self.project_path.read().await.as_ref() != Some(&data_path);
+        if root_changed {
+            self.reset_project_runtime_state().await;
+        }
         *self.asset_manager.write().await = AssetManager::new(&data_path);
         *self.save_manager.write().await = SaveManager::new(data_path.join("saves"));
         *self.project_path.write().await = Some(data_path);
+        root_changed
+    }
+
+    /// Clear mutable state that must never survive a project reload or switch.
+    pub async fn reset_project_runtime_state(&self) {
+        self.chat_sessions.write().await.clear();
+        *self.active_scene_id.write().await = None;
+        self.scene_history.write().await.clear();
+        *self.scene_manager.write().await = SceneManager::new();
+        self.script_engine
+            .read()
+            .await
+            .load_state(HashMap::new(), HashMap::new())
+            .expect("empty script state must always be valid");
+        *self.initialized.write().await = false;
     }
 
     /// Resolve the active project data root for project-scoped commands.
@@ -166,5 +185,55 @@ mod tests {
         assert_eq!(found.as_deref(), Some(bundled_data.as_path()));
 
         std::fs::remove_dir_all(resource_dir).unwrap();
+    }
+
+    #[tokio::test]
+    async fn changing_project_root_clears_project_runtime_state() {
+        let state = AppState::new();
+        let first_root = temp_root("monogatari_first_project");
+        let second_root = temp_root("monogatari_second_project");
+        state.set_project_data_root(first_root).await;
+        state
+            .chat_sessions
+            .write()
+            .await
+            .insert("sakura".to_string(), ChatSession::new("sakura".to_string()));
+        *state.active_scene_id.write().await = Some("park".to_string());
+        state.scene_history.write().await.push("park".to_string());
+        state
+            .script_engine
+            .read()
+            .await
+            .set_flag("visited_park", true)
+            .unwrap();
+        *state.initialized.write().await = true;
+
+        state.set_project_data_root(second_root.clone()).await;
+
+        assert!(state.chat_sessions.read().await.is_empty());
+        assert!(state.active_scene_id.read().await.is_none());
+        assert!(state.scene_history.read().await.is_empty());
+        assert!(!state.script_engine.read().await.has_flag("visited_park"));
+        assert!(!*state.initialized.read().await);
+        assert_eq!(state.current_project_data_root().await, second_root);
+    }
+
+    #[tokio::test]
+    async fn same_root_reload_can_explicitly_clear_project_runtime_state() {
+        let state = AppState::new();
+        let root = temp_root("monogatari_same_project");
+        assert!(state.set_project_data_root(root.clone()).await);
+        state
+            .chat_sessions
+            .write()
+            .await
+            .insert("sakura".to_string(), ChatSession::new("sakura".to_string()));
+        *state.active_scene_id.write().await = Some("park".to_string());
+
+        assert!(!state.set_project_data_root(root).await);
+        state.reset_project_runtime_state().await;
+
+        assert!(state.chat_sessions.read().await.is_empty());
+        assert!(state.active_scene_id.read().await.is_none());
     }
 }

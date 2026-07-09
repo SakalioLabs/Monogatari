@@ -125,7 +125,7 @@ Project asset files are scoped to the active project data root. The Rust assets 
 
 ## Engine Project Root Boundaries
 
-Engine initialization resolves an empty project path to the active/default project data root, accepts local filesystem project directories, and rejects URI-shaped or control-character input. The resolved root must exist and be a directory before character, dialogue, knowledge, asset, and save managers are rebound to it.
+Engine initialization resolves an empty project path to the active/default project data root, accepts local filesystem project directories, and rejects URI-shaped or control-character input. The resolved root must exist and be a directory. Character, dialogue, and knowledge content is loaded into fresh temporary managers first; only a complete successful load replaces the active managers. Every reload clears mutable chat sessions, scene history, script state, and event audit state, including same-root reloads. Saving `settings.json` for another directory does not activate that project without loading its content managers.
 
 ## Character Authoring Boundaries
 
@@ -146,6 +146,8 @@ Character, dialogue, and knowledge reload commands accept project content refere
 ## Save Data Boundaries
 
 Save files are scoped to the active project `saves/` directory. The Rust assets `SaveManager` and the retained legacy C# `SaveManager` both validate save IDs before constructing paths, allow only portable filename characters, reject traversal-shaped IDs, and filter listed save files whose embedded save ID does not match the filename. Tauri load/delete commands should consume save IDs returned by `save_game` or `list_saves`, not arbitrary filesystem paths.
+
+Rust runtime snapshots use `monogatari-game-save/v2` while schema-less legacy payloads deserialize as v1. V2 snapshots include scene history, the validated dialogue cursor and dialogue-local variables, typed Rhai variables and flags, character emotion/relationships/full bounded memory, and serialized chat sessions containing messages, evaluation state, safety traces, and triggered event IDs. Restore validates schemas, state keys, dialogue references, chat identities, message bounds, and score ranges before mutating runtime state. Quick-save and auto-save provide stable IDs so repeated snapshots replace bounded slots. Stable-slot writes stage a temporary snapshot and retain a recoverable prior file until replacement succeeds; reads and writes reject payloads above 32 MiB.
 
 ## Cloud Sync Architecture
 
