@@ -113,6 +113,7 @@
 - Added Unicode-obfuscated prompt-injection normalization and a checked-in quality scenario for fullwidth role markers and zero-width character splitting.
 - Added multilingual local fallback scoring signals and a checked-in quality scenario for friendly creative Chinese, Japanese, and Korean player text.
 - Added a release artifact manifest generator with SHA-256 checksums, channel metadata, installer expectations, and code-signing readiness evidence.
+- Added git source-state evidence and clean tracked worktree enforcement for final release artifact manifest generation.
 - Added a checked-in release channel policy and manifest enforcement for stable/beta installer requirements, preflight exceptions, and verified installer signing evidence sidecars.
 - Added release-gate validation that checked-in character pinned knowledge refs resolve to project knowledge entries across both data roots.
 - Added missing Springtown lore anchors for character pinned knowledge refs so creator-declared identity and world context remain stable.

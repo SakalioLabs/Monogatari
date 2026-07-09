@@ -142,7 +142,7 @@
 - [ ] Azure and ElevenLabs TTS provider errors redact token-shaped values, API-key assignments, authorization headers, sensitive provider headers, and response bodies before reaching frontend status surfaces
 - [ ] TTS synthesis logs record text length metadata instead of raw spoken dialogue, prompt text, or token-shaped content
 - [ ] Project export manifest includes a versioned schema marker, file inventory, per-file checksums, generated assets, and redacted sensitive settings
-- [ ] Release artifact manifest generated with SHA-256 checksums, checked-in release channel policy metadata, installer expectations, and signing evidence
+- [ ] Release artifact manifest generated from a clean tracked git worktree with SHA-256 checksums, checked-in release channel policy metadata, source-state evidence, installer expectations, and signing evidence
 - [ ] `scripts/release-channel-policy.json` confirms stable/beta releases require Windows MSI/NSIS installers and verified signing evidence, with missing-installer preflight exceptions explicitly policy-gated
 - [ ] `docs/MOBILE_DEPLOYMENT.md` reviewed before Android/iOS project generation
 - [ ] Git tag created: `git tag v0.9.5`

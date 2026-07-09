@@ -3297,6 +3297,12 @@ async function verifyReleaseChannelPolicy() {
     ['allow_unsigned_installers', 'gate unsigned installer exceptions through policy'],
     ['missing_evidence', 'surface missing installer signature evidence'],
     ['invalid_evidence', 'surface invalid installer signature evidence'],
+    ['source_state', 'emit git source state evidence into release manifests'],
+    ['gitSourceState', 'centralize release manifest git source state evidence'],
+    ['tracked_worktree_dirty', 'record whether tracked source files were dirty at manifest generation'],
+    ['clean_worktree_required', 'record whether clean source state was required for manifest generation'],
+    ['--allow-dirty-worktree', 'require an explicit internal diagnostic override for dirty final manifests'],
+    ['--untracked-files=no', 'inspect tracked git worktree status without collecting untracked secret files'],
   ]
   for (const [needle, description] of manifestPolicyRequirements) {
     if (!manifestScript.includes(needle)) {

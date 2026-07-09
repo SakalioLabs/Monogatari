@@ -17,6 +17,7 @@ const args = process.argv.slice(2)
 const argSet = new Set(args)
 const checkOnly = argSet.has('--check')
 const allowMissingInstallers = argSet.has('--allow-missing-installers')
+const allowDirtyWorktree = argSet.has('--allow-dirty-worktree')
 const channel = readArg('channel') ?? process.env.MONOGATARI_RELEASE_CHANNEL ?? 'stable'
 const outPath = path.resolve(root, readArg('out') ?? defaultOutPath)
 
@@ -59,9 +60,18 @@ async function main() {
   }
 
   const versions = await readVersions()
+  const sourceState = gitSourceState()
   const versionValues = new Set(Object.values(versions).filter(Boolean))
   if (versionValues.size !== 1) {
     issues.push(`Version mismatch across release sources: ${JSON.stringify(versions)}`)
+  }
+  if (!sourceState.git_commit) {
+    issues.push('Release manifests require a git commit id for source traceability.')
+  }
+  if (!checkOnly && sourceState.tracked_worktree_dirty && !allowDirtyWorktree) {
+    issues.push(
+      'Final release manifest generation requires a clean tracked git worktree. Commit or stash tracked changes, or pass --allow-dirty-worktree for internal diagnostics.',
+    )
   }
 
   const artifacts = []
@@ -93,8 +103,9 @@ async function main() {
     version: Array.from(versionValues)[0] ?? '0.0.0',
     channel,
     generated_at: new Date().toISOString(),
-    git_commit: gitCommit(),
+    git_commit: sourceState.git_commit,
     sources: versions,
+    source_state: sourceState,
     distribution: distributionSummary(releasePolicy, channelPolicy, missingInstallers),
     expected_artifacts: expectedArtifactContracts(channelPolicy),
     missing_expected_artifacts: missingExpectedArtifacts,
@@ -500,6 +511,31 @@ function gitCommit() {
     return execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim()
   } catch {
     return null
+  }
+}
+
+function gitSourceState() {
+  const trackedStatus = gitTrackedWorktreeStatus()
+  return {
+    git_commit: gitCommit(),
+    tracked_worktree_dirty: trackedStatus.length > 0,
+    tracked_worktree_status: trackedStatus,
+    clean_worktree_required: !checkOnly && !allowDirtyWorktree,
+    allow_dirty_worktree_requested: allowDirtyWorktree,
+  }
+}
+
+function gitTrackedWorktreeStatus() {
+  try {
+    return execFileSync('git', ['status', '--short', '--untracked-files=no'], {
+      cwd: root,
+      encoding: 'utf8',
+    })
+      .split(/\r?\n/)
+      .map((line) => line.trimEnd())
+      .filter(Boolean)
+  } catch {
+    return []
   }
 }
 
