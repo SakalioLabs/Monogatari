@@ -3,9 +3,8 @@
 use tauri::State;
 
 use crate::state::AppState;
-use llm_scripting::SCRIPT_MAX_TEXT_CHARS;
+use llm_scripting::{validate_condition_source, SCRIPT_MAX_TEXT_CHARS};
 
-const MAX_CONDITION_TEXT_CHARS: usize = 2_000;
 const MAX_DSL_SCRIPT_TEXT_CHARS: usize = 100_000;
 
 fn validate_script_text(label: &str, text: &str, max_chars: usize) -> Result<(), String> {
@@ -38,7 +37,7 @@ pub async fn evaluate_condition(
     state: State<'_, AppState>,
     condition: String,
 ) -> Result<bool, String> {
-    validate_script_text("Condition", &condition, MAX_CONDITION_TEXT_CHARS)?;
+    validate_condition_source(&condition).map_err(|e| e.to_string())?;
     let se = state.script_engine.read().await;
     se.evaluate_condition(&condition).map_err(|e| e.to_string())
 }
@@ -68,6 +67,11 @@ mod tests {
     #[test]
     fn script_inputs_limit_large_payloads() {
         assert!(validate_script_text("Script", "x".repeat(101).as_str(), 100).is_err());
+    }
+
+    #[test]
+    fn condition_inputs_use_shared_limits() {
+        assert!(validate_condition_source(&"true".repeat(501)).is_err());
     }
 
     #[test]

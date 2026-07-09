@@ -23,6 +23,7 @@ pub use llm_core::{
 use llm_core::{EngineError, Result};
 
 pub const SCRIPT_MAX_TEXT_CHARS: usize = 20_000;
+pub const SCRIPT_MAX_CONDITION_CHARS: usize = 2_000;
 pub const SCRIPT_MAX_OPERATIONS: u64 = 100_000;
 pub const SCRIPT_MAX_CALL_LEVELS: usize = 32;
 pub const SCRIPT_MAX_EXPR_DEPTH: usize = 64;
@@ -31,20 +32,28 @@ pub const SCRIPT_MAX_VARIABLES: usize = 512;
 pub const SCRIPT_MAX_FUNCTIONS: usize = 128;
 
 pub fn validate_script_source(script: &str) -> Result<()> {
-    let char_count = script.chars().count();
-    if char_count > SCRIPT_MAX_TEXT_CHARS {
+    validate_labeled_source("Script", script, SCRIPT_MAX_TEXT_CHARS)
+}
+
+pub fn validate_condition_source(condition: &str) -> Result<()> {
+    validate_labeled_source("Condition", condition, SCRIPT_MAX_CONDITION_CHARS)
+}
+
+fn validate_labeled_source(label: &str, source: &str, max_chars: usize) -> Result<()> {
+    let char_count = source.chars().count();
+    if char_count > max_chars {
         return Err(EngineError::script(
-            format!("Script must be {SCRIPT_MAX_TEXT_CHARS} characters or fewer."),
+            format!("{label} must be {max_chars} characters or fewer."),
             0,
             0,
         ));
     }
-    if script
+    if source
         .chars()
         .any(|ch| ch.is_control() && !matches!(ch, '\n' | '\r' | '\t'))
     {
         return Err(EngineError::script(
-            "Script cannot contain control characters.",
+            format!("{label} cannot contain control characters."),
             0,
             0,
         ));
@@ -108,7 +117,7 @@ impl ScriptEngine {
 
     /// Evaluate a condition expression and return the boolean result.
     pub fn evaluate_condition(&self, condition: &str) -> Result<bool> {
-        validate_script_source(condition)?;
+        validate_condition_source(condition)?;
         let mut scope = Scope::new();
         let result = self
             .condition_engine
@@ -339,6 +348,21 @@ mod tests {
             .is_err());
         assert!(!engine.has_flag("condition_mutated"));
         assert_eq!(engine.get_variable("score").unwrap().as_int().unwrap(), 75);
+    }
+
+    #[test]
+    fn condition_engine_rejects_oversized_conditions() {
+        let engine = ScriptEngine::new();
+        let condition = "true".repeat(SCRIPT_MAX_CONDITION_CHARS + 1);
+
+        assert!(engine.evaluate_condition(&condition).is_err());
+    }
+
+    #[test]
+    fn condition_engine_rejects_control_characters() {
+        let engine = ScriptEngine::new();
+
+        assert!(engine.evaluate_condition("true\u{0007}").is_err());
     }
 
     #[test]

@@ -1005,6 +1005,8 @@ function nodeRunTooltip(node: WorkflowNode): string {
 
 const WORKFLOW_STATE_KEY_MAX_CHARS = 128
 const WORKFLOW_STATE_KEY_PATTERN = /^[A-Za-z0-9_.-]+$/
+const WORKFLOW_CONDITION_MAX_CHARS = 2000
+const WORKFLOW_CONDITION_CONTROL_PATTERN = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/u
 
 function validateWorkflowStateKey(value: unknown): string | null {
   if (typeof value !== 'string') return 'State key must be a string.'
@@ -1013,6 +1015,14 @@ function validateWorkflowStateKey(value: unknown): string | null {
   if (key.length > WORKFLOW_STATE_KEY_MAX_CHARS) return `State key must be ${WORKFLOW_STATE_KEY_MAX_CHARS} characters or fewer.`
   if (key === '.' || key === '..') return 'State key cannot be a current or parent directory marker.'
   if (!WORKFLOW_STATE_KEY_PATTERN.test(key)) return 'State key can contain only ASCII letters, numbers, dots, underscores, or hyphens.'
+  return null
+}
+
+function validateWorkflowCondition(value: unknown): string | null {
+  if (typeof value !== 'string') return 'Condition must be a string.'
+  if (!value.trim()) return null
+  if (Array.from(value).length > WORKFLOW_CONDITION_MAX_CHARS) return `Condition must be ${WORKFLOW_CONDITION_MAX_CHARS} characters or fewer.`
+  if (WORKFLOW_CONDITION_CONTROL_PATTERN.test(value)) return 'Condition cannot contain control characters.'
   return null
 }
 
@@ -1089,6 +1099,13 @@ function validateWorkflowLocally(currentWorkflow: Workflow): WorkflowValidationR
       if (value === null || value === undefined || (typeof value === 'string' && !value.trim())) continue
       const error = validateWorkflowStateKey(value)
       if (error) addIssue('error', 'node_state_key_invalid', node.id, `State key field \`${field}\` is invalid: ${error}`)
+    }
+    if (node.node_type === 'condition') {
+      const value = node.config.condition
+      if (value !== null && value !== undefined && !(typeof value === 'string' && !value.trim())) {
+        const error = validateWorkflowCondition(value)
+        if (error) addIssue('error', 'node_condition_invalid', node.id, `Condition field \`condition\` is invalid: ${error}`)
+      }
     }
 
     const localTargets = new Set<string>()

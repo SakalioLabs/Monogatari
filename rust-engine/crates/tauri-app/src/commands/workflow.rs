@@ -4,6 +4,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::{Component, Path, PathBuf};
 
 use llm_core::normalize_script_state_key;
+use llm_scripting::validate_condition_source;
 use serde::{Deserialize, Serialize};
 use tauri::State;
 
@@ -463,7 +464,12 @@ async fn execute_workflow_node_inner_with_context(
             Ok(serde_json::json!({"status": "ok"}))
         }
         "condition" => {
-            let condition = node.config["condition"].as_str().unwrap_or("true");
+            let condition = node
+                .config
+                .get("condition")
+                .and_then(|value| value.as_str())
+                .ok_or_else(|| "Condition field `condition` must be a string.".to_string())?;
+            validate_condition_source(condition).map_err(|e| e.to_string())?;
             let se = state.script_engine.read().await;
             let result = se
                 .evaluate_condition(condition)
@@ -1505,6 +1511,7 @@ fn validate_workflow_inner(workflow: &Workflow) -> WorkflowValidationResult {
             }
         }
         validate_workflow_state_keys(node, &mut issues);
+        validate_workflow_condition(node, &mut issues);
 
         let mut local_targets = HashSet::new();
         for target_id in &node.connections {
@@ -1609,6 +1616,41 @@ fn warn_unreachable_nodes(
                 "Node is not reachable from the configured start node.",
             );
         }
+    }
+}
+
+fn validate_workflow_condition(node: &WorkflowNode, issues: &mut Vec<WorkflowValidationIssue>) {
+    if node.node_type != "condition" {
+        return;
+    }
+
+    let Some(value) = node.config.get("condition") else {
+        return;
+    };
+    if value.is_null() {
+        return;
+    }
+    let Some(condition) = value.as_str() else {
+        push_issue(
+            issues,
+            "error",
+            "node_condition_invalid",
+            Some(node.id.clone()),
+            "Condition field `condition` must be a string.",
+        );
+        return;
+    };
+    if condition.trim().is_empty() {
+        return;
+    }
+    if let Err(error) = validate_condition_source(condition) {
+        push_issue(
+            issues,
+            "error",
+            "node_condition_invalid",
+            Some(node.id.clone()),
+            format!("Condition field `condition` is invalid: {error}"),
+        );
     }
 }
 
@@ -2000,6 +2042,47 @@ mod tests {
     }
 
     #[test]
+    fn workflow_validation_rejects_invalid_conditions() {
+        let workflow = Workflow {
+            id: "wf_conditions".to_string(),
+            name: "Conditions".to_string(),
+            nodes: vec![
+                node("start", "start", vec!["too_long"], serde_json::json!({})),
+                node(
+                    "too_long",
+                    "condition",
+                    vec!["control"],
+                    serde_json::json!({"condition": "true".repeat(501)}),
+                ),
+                node(
+                    "control",
+                    "condition",
+                    vec!["non_string"],
+                    serde_json::json!({"condition": "true\u{0007}"}),
+                ),
+                node(
+                    "non_string",
+                    "condition",
+                    vec!["end"],
+                    serde_json::json!({"condition": true}),
+                ),
+                node("end", "end", vec![], serde_json::json!({})),
+            ],
+            start_node_id: "start".to_string(),
+        };
+
+        let validation = validate_workflow_inner(&workflow);
+        let invalid_condition_count = validation
+            .issues
+            .iter()
+            .filter(|issue| issue.code == "node_condition_invalid")
+            .count();
+
+        assert!(!validation.valid);
+        assert_eq!(invalid_condition_count, 3);
+    }
+
+    #[test]
     fn validates_checked_in_workflow_files() {
         let manifest_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
         let workflow_dirs = [
@@ -2161,6 +2244,49 @@ mod tests {
         )
         .await;
         assert!(flag.unwrap_err().contains("Script state key"));
+    }
+
+    #[tokio::test]
+    async fn workflow_condition_nodes_reject_invalid_payloads() {
+        let state = AppState::new();
+
+        let non_string = execute_workflow_node_inner(
+            &state,
+            node(
+                "bad_condition_type",
+                "condition",
+                vec![],
+                serde_json::json!({"condition": true}),
+            ),
+        )
+        .await;
+        assert!(non_string.unwrap_err().contains("Condition field"));
+
+        let oversized = execute_workflow_node_inner(
+            &state,
+            node(
+                "bad_condition_size",
+                "condition",
+                vec![],
+                serde_json::json!({"condition": "true".repeat(501)}),
+            ),
+        )
+        .await;
+        assert!(oversized.unwrap_err().contains("Condition must be"));
+
+        let control = execute_workflow_node_inner(
+            &state,
+            node(
+                "bad_condition_control",
+                "condition",
+                vec![],
+                serde_json::json!({"condition": "true\u{0007}"}),
+            ),
+        )
+        .await;
+        assert!(control
+            .unwrap_err()
+            .contains("Condition cannot contain control characters"));
     }
 
     #[tokio::test]

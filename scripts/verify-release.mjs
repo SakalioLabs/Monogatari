@@ -644,6 +644,8 @@ function fileExistsSync(filePath) {
 
 const workflowStateKeyMaxChars = 128
 const workflowStateKeyPattern = /^[A-Za-z0-9_.-]+$/
+const workflowConditionMaxChars = 2000
+const workflowConditionControlPattern = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/u
 
 function validateScriptStateKey(value) {
   if (typeof value !== 'string') return 'must be a string'
@@ -654,6 +656,16 @@ function validateScriptStateKey(value) {
   if (!workflowStateKeyPattern.test(key)) {
     return 'can contain only ASCII letters, numbers, dots, underscores, or hyphens'
   }
+  return null
+}
+
+function validateWorkflowCondition(value) {
+  if (typeof value !== 'string') return 'must be a string'
+  if (!value.trim()) return null
+  if (Array.from(value).length > workflowConditionMaxChars) {
+    return `must be ${workflowConditionMaxChars} characters or fewer`
+  }
+  if (workflowConditionControlPattern.test(value)) return 'cannot contain control characters'
   return null
 }
 
@@ -744,6 +756,13 @@ function verifyWorkflowShape(workflow, label) {
       if (value === null || value === undefined || (typeof value === 'string' && !value.trim())) continue
       const error = validateScriptStateKey(value)
       if (error) issues.push(`${nodeLabel}: state key field ${field} is invalid: ${error}`)
+    }
+    if (node.node_type === 'condition') {
+      const value = config.condition
+      if (value !== null && value !== undefined && !(typeof value === 'string' && !value.trim())) {
+        const error = validateWorkflowCondition(value)
+        if (error) issues.push(`${nodeLabel}: condition field is invalid: ${error}`)
+      }
     }
     if (!Array.isArray(node.connections)) {
       issues.push(`${nodeLabel}: connections must be an array`)
@@ -1576,6 +1595,9 @@ async function verifyFrontendSourceInvariants() {
     ['validateWorkflowStateKey', 'validate workflow state keys in the local browser validator'],
     ['WORKFLOW_STATE_KEY_PATTERN', 'keep frontend workflow state key rules portable'],
     ['node_state_key_invalid', 'surface invalid workflow state keys before execution'],
+    ['validateWorkflowCondition', 'validate workflow condition expressions in the local browser validator'],
+    ['WORKFLOW_CONDITION_MAX_CHARS', 'keep frontend workflow condition limits aligned with the backend'],
+    ['node_condition_invalid', 'surface invalid workflow conditions before execution'],
     ['isEvaluationStep(step)', 'render evaluation score diagnostics in workflow run traces'],
     ['isTriggerEventStep(step)', 'render story-event trigger diagnostics in workflow run traces'],
     ['eventBlockers(step)', 'surface event trigger blocker reasons in workflow run traces'],
@@ -2137,7 +2159,8 @@ async function verifyScriptCommandInvariants() {
   const commandRequirements = [
     ['validate_script_text', 'centralize script command input validation'],
     ['SCRIPT_MAX_TEXT_CHARS', 'reuse the shared Rhai script source size cap for direct execution'],
-    ['MAX_CONDITION_TEXT_CHARS', 'cap condition expression payload size'],
+    ['validate_condition_source', 'reuse shared condition expression validation'],
+    ['condition_inputs_use_shared_limits', 'test condition command inputs use shared limits'],
     ['MAX_DSL_SCRIPT_TEXT_CHARS', 'cap DSL parser payload size'],
     ['cannot contain control characters', 'reject hidden control-character payloads'],
     ['script_inputs_reject_control_characters', 'test control-character rejection'],
@@ -2167,6 +2190,7 @@ async function verifyScriptCommandInvariants() {
 
   const engineRequirements = [
     ['SCRIPT_MAX_TEXT_CHARS', 'define a shared script source size cap'],
+    ['SCRIPT_MAX_CONDITION_CHARS', 'define a shared condition expression size cap'],
     ['SCRIPT_STATE_KEY_MAX_CHARS', 're-export the shared script state key size cap'],
     ['condition_engine: Engine', 'separate read-only condition evaluation from mutating script execution'],
     ['register_state_read_functions', 'share read-only state access functions across script engines'],
@@ -2178,7 +2202,10 @@ async function verifyScriptCommandInvariants() {
     ['normalize_script_state_map(variables)', 'validate loaded script variables before replacing runtime state'],
     ['validate_script_source', 'centralize Rhai script source validation in the shared engine crate'],
     ['validate_script_source(script)?', 'validate all direct ScriptEngine executions before evaluating Rhai'],
-    ['Script cannot contain control characters', 'reject hidden control characters in every ScriptEngine caller'],
+    ['validate_condition_source(condition)?', 'validate condition expressions through the shared condition limits'],
+    ['cannot contain control characters', 'reject hidden control characters in every ScriptEngine caller'],
+    ['condition_engine_rejects_oversized_conditions', 'test condition expression size rejection'],
+    ['condition_engine_rejects_control_characters', 'test condition expression control-character rejection'],
     ['SCRIPT_MAX_OPERATIONS', 'define a script operation budget'],
     ['set_max_operations(SCRIPT_MAX_OPERATIONS)', 'bound Rhai execution operations'],
     ['set_max_call_levels(SCRIPT_MAX_CALL_LEVELS)', 'bound Rhai recursive call depth'],
@@ -2235,6 +2262,11 @@ async function verifyWorkflowCommandInvariants() {
     ['validate_workflow_state_keys', 'centralize workflow state-key config validation'],
     ['node_state_key_invalid', 'report invalid workflow state keys before execution'],
     ['workflow_validation_rejects_invalid_state_keys', 'test workflow validation rejects invalid state keys'],
+    ['validate_condition_source', 'reuse shared condition expression validation'],
+    ['validate_workflow_condition', 'centralize workflow condition config validation'],
+    ['node_condition_invalid', 'report invalid workflow conditions before execution'],
+    ['workflow_validation_rejects_invalid_conditions', 'test workflow validation rejects invalid conditions'],
+    ['workflow_condition_nodes_reject_invalid_payloads', 'test workflow condition nodes reject invalid payloads'],
     ['project_root.join("workflows")', 'scope workflow files to the project workflows directory'],
     ['Workflow paths cannot contain empty, current, or parent directory segments', 'reject traversal-shaped workflow paths'],
     ['Workflow paths must end with .json', 'limit workflow command file access to JSON workflow files'],
