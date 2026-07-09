@@ -72,7 +72,7 @@
 - [ ] ONNX mode: local model inference (if applicable)
 - [ ] Evaluation triggers fire at correct intervals
 - [ ] Relationship milestones unlock events correctly
-- [ ] Workflow LLM nodes guard generated output before it is used by downstream story nodes
+- [ ] Workflow LLM nodes guard generated output and replace blank or guard-only results with stable failure text before it is used by downstream story nodes
 - [ ] Character prompts include creator-declared pinned knowledge references before keyword search results
 - [ ] Chat runtime emits author-visible safety trace evidence for input wrapping, prompt-injection detection, guarded responses, memory guards, stream replacements, and relationship side-channel containment
 - [ ] Prompt-injection detection covers attributed XML-like role tags, Markdown role-code-fence blocks, comment-wrapped role headers, punctuation-free role headings, English, Chinese, Japanese, Korean, fullwidth, and zero-width-obfuscated prompt-control attempts before scoring, memory writes, relationship deltas, and hidden prompt boundaries consume player text, and explicit XML/fence/comment role-control block bodies are omitted with their markers across active and legacy prompt builders
