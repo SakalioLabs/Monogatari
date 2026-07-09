@@ -105,7 +105,7 @@ Three TTS provider types:
 
 Character voice assignments persist in the AppState and can be configured per-character.
 
-All generated TTS files, including system SAPI, Azure, and ElevenLabs outputs, are written under the active project `assets/tts/` directory. Character/provider filename components are sanitized before path construction so generated audio cannot escape the project data root or collide through fixed global temp filenames. Azure and ElevenLabs request failures, response bodies, token-shaped values, API-key assignments, and sensitive provider headers are redacted before errors reach frontend status surfaces.
+All generated TTS files, including system SAPI, Azure, and ElevenLabs outputs, are written under the active project `assets/tts/` directory. Character/provider filename components are sanitized before path construction so generated audio cannot escape the project data root or collide through fixed global temp filenames. Azure and ElevenLabs request failures, response bodies, token-shaped values, API-key assignments, and sensitive provider headers are redacted before errors reach frontend status surfaces. Runtime synthesis logs record text length metadata instead of raw spoken dialogue, prompt text, or token-shaped content.
 
 ## Asset Data Boundaries
 
