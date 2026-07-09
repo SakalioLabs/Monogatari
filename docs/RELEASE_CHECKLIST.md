@@ -141,7 +141,7 @@
 - [ ] Installed Tauri build writes analytics, sync manifests, saves, and generated system/API TTS assets under the active project data root with sanitized output filenames
 - [ ] Azure and ElevenLabs TTS provider errors redact token-shaped values, API-key assignments, authorization headers, sensitive provider headers, and response bodies before reaching frontend status surfaces
 - [ ] TTS synthesis logs record text length metadata instead of raw spoken dialogue, prompt text, or token-shaped content
-- [ ] Project export manifest includes a versioned schema marker, file inventory, per-file SHA-256 and legacy MD5 checksums, generated assets, and redacted sensitive settings
+- [ ] Project export manifest includes a versioned schema marker, engine/build provenance, file inventory, per-file SHA-256 and legacy MD5 checksums, generated assets, and redacted sensitive settings
 - [ ] Release artifact manifest generated from a clean tracked git worktree with SHA-256 checksums, checked-in Quality Suite source evidence, checked-in release channel policy metadata, source-state evidence, installer expectations, and signing evidence
 - [ ] `scripts/release-channel-policy.json` confirms stable/beta releases require Windows MSI/NSIS installers and verified signing evidence, with missing-installer preflight exceptions explicitly policy-gated
 - [ ] `docs/MOBILE_DEPLOYMENT.md` reviewed before Android/iOS project generation

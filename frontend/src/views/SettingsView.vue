@@ -614,6 +614,11 @@ async function exportProjectManifest() {
         format: 'monogatari-project',
         schema: 'monogatari-project-export@1',
         exported_at: new Date().toISOString(),
+        export_metadata: {
+          engine_version: '0.9.5',
+          git_commit: 'preview',
+          git_short_commit: 'preview',
+        },
         project_path: projectState.value?.project_path || projectPath.value,
         settings: sanitizeManifestSettings(buildConfigForSave(projectState.value?.config || previewState.config)),
         content: {},

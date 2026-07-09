@@ -580,6 +580,7 @@ fn build_project_export_manifest(
         "schema": "monogatari-project-export@1",
         "version": "1.0",
         "exported_at": Utc::now().to_rfc3339(),
+        "export_metadata": project_export_metadata(),
         "project_path": project_root.to_string_lossy(),
         "settings": sanitize_export_config(&config),
         "content": {
@@ -597,6 +598,18 @@ fn build_project_export_manifest(
             "excluded": ["saves", "analytics.json", ".sync_manifest.json"]
         }
     }))
+}
+
+fn project_export_metadata() -> Value {
+    json!({
+        "engine_version": env!("CARGO_PKG_VERSION"),
+        "git_commit": option_env!("MONOGATARI_GIT_COMMIT")
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or("unknown"),
+        "git_short_commit": option_env!("MONOGATARI_GIT_SHORT_COMMIT")
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or("unknown"),
+    })
 }
 
 fn configured_project_path(
@@ -1175,6 +1188,26 @@ mod tests {
         let manifest =
             build_project_export_manifest(&root, Vec::new(), Vec::new(), 0, None).unwrap();
         assert_eq!(manifest["schema"], "monogatari-project-export@1");
+        assert_eq!(
+            manifest["export_metadata"]["engine_version"],
+            env!("CARGO_PKG_VERSION")
+        );
+        assert!(manifest["export_metadata"]["git_commit"]
+            .as_str()
+            .is_some_and(|value| !value.trim().is_empty()));
+        assert!(manifest["export_metadata"]["git_short_commit"]
+            .as_str()
+            .is_some_and(|value| !value.trim().is_empty()));
+        if manifest["export_metadata"]["git_commit"] != "unknown" {
+            assert!(manifest["export_metadata"]["git_commit"]
+                .as_str()
+                .unwrap()
+                .starts_with(
+                    manifest["export_metadata"]["git_short_commit"]
+                        .as_str()
+                        .unwrap()
+                ));
+        }
         assert_eq!(manifest["settings"]["ai"]["api"]["api_key"], "<redacted>");
         let files = manifest["package"]["files"].as_array().unwrap();
         let tts_file = files
