@@ -12,6 +12,7 @@ use std::{
 };
 
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use tauri::State;
 use tracing::debug;
 
@@ -153,6 +154,8 @@ pub struct TriggeredEvent {
 pub struct EventTriggerRule {
     pub event_id: String,
     pub event_type: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rule_fingerprint: Option<String>,
     #[serde(default)]
     pub min_relationship: Option<f32>,
     #[serde(default)]
@@ -175,6 +178,8 @@ pub struct EventTriggerDecision {
     pub actual_evaluation_count: u32,
     pub actual_score_metric: Option<String>,
     pub actual_score: Option<f32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rule_fingerprint: Option<String>,
     pub rule: Option<EventTriggerRule>,
     pub blocked_reasons: Vec<String>,
 }
@@ -1166,6 +1171,7 @@ pub(super) fn explain_event_trigger(
             actual_evaluation_count: eval_count,
             actual_score_metric: None,
             actual_score: None,
+            rule_fingerprint: None,
             rule: None,
             blocked_reasons: vec![format!(
                 "No trigger rule is registered for `{}`.",
@@ -1214,6 +1220,7 @@ pub(super) fn explain_event_trigger(
                 actual_evaluation_count: eval_count,
                 actual_score_metric,
                 actual_score,
+                rule_fingerprint: rule.rule_fingerprint.clone(),
                 rule: Some(rule),
                 blocked_reasons,
             };
@@ -1242,6 +1249,7 @@ pub(super) fn explain_event_trigger(
         actual_evaluation_count: eval_count,
         actual_score_metric,
         actual_score,
+        rule_fingerprint: rule.rule_fingerprint.clone(),
         rule: Some(rule),
         blocked_reasons,
     }
@@ -1279,63 +1287,105 @@ fn evaluation_metric(eval: &ConversationEvaluation, metric: &str) -> Option<f32>
 
 pub(super) fn get_event_trigger_rules() -> Vec<EventTriggerRule> {
     vec![
-        EventTriggerRule {
-            event_id: "first_friend".to_string(),
-            event_type: "relationship_milestone".to_string(),
-            min_relationship: Some(FIRST_FRIEND_THRESHOLD),
-            score_metric: None,
-            min_score: None,
-            min_evaluation_count: None,
-        },
-        EventTriggerRule {
-            event_id: "close_friend".to_string(),
-            event_type: "relationship_milestone".to_string(),
-            min_relationship: Some(CLOSE_FRIEND_THRESHOLD),
-            score_metric: None,
-            min_score: None,
-            min_evaluation_count: None,
-        },
-        EventTriggerRule {
-            event_id: "best_friend".to_string(),
-            event_type: "relationship_milestone".to_string(),
-            min_relationship: Some(BEST_FRIEND_THRESHOLD),
-            score_metric: None,
-            min_score: None,
-            min_evaluation_count: None,
-        },
-        EventTriggerRule {
-            event_id: "high_engagement".to_string(),
-            event_type: "special_dialogue".to_string(),
-            min_relationship: None,
-            score_metric: Some("engagement".to_string()),
-            min_score: Some(HIGH_SCORE_EVENT_THRESHOLD),
-            min_evaluation_count: Some(2),
-        },
-        EventTriggerRule {
-            event_id: "creative_talk".to_string(),
-            event_type: "special_dialogue".to_string(),
-            min_relationship: None,
-            score_metric: Some("creativity".to_string()),
-            min_score: Some(HIGH_SCORE_EVENT_THRESHOLD),
-            min_evaluation_count: Some(2),
-        },
-        EventTriggerRule {
-            event_id: "dedicated_player".to_string(),
-            event_type: "cumulative_achievement".to_string(),
-            min_relationship: None,
-            score_metric: None,
-            min_score: None,
-            min_evaluation_count: Some(DEDICATED_PLAYER_EVAL_COUNT),
-        },
-        EventTriggerRule {
-            event_id: "super_dedicated".to_string(),
-            event_type: "cumulative_achievement".to_string(),
-            min_relationship: None,
-            score_metric: None,
-            min_score: None,
-            min_evaluation_count: Some(SUPER_DEDICATED_EVAL_COUNT),
-        },
+        event_trigger_rule(
+            "first_friend",
+            "relationship_milestone",
+            Some(FIRST_FRIEND_THRESHOLD),
+            None,
+            None,
+            None,
+        ),
+        event_trigger_rule(
+            "close_friend",
+            "relationship_milestone",
+            Some(CLOSE_FRIEND_THRESHOLD),
+            None,
+            None,
+            None,
+        ),
+        event_trigger_rule(
+            "best_friend",
+            "relationship_milestone",
+            Some(BEST_FRIEND_THRESHOLD),
+            None,
+            None,
+            None,
+        ),
+        event_trigger_rule(
+            "high_engagement",
+            "special_dialogue",
+            None,
+            Some("engagement"),
+            Some(HIGH_SCORE_EVENT_THRESHOLD),
+            Some(2),
+        ),
+        event_trigger_rule(
+            "creative_talk",
+            "special_dialogue",
+            None,
+            Some("creativity"),
+            Some(HIGH_SCORE_EVENT_THRESHOLD),
+            Some(2),
+        ),
+        event_trigger_rule(
+            "dedicated_player",
+            "cumulative_achievement",
+            None,
+            None,
+            None,
+            Some(DEDICATED_PLAYER_EVAL_COUNT),
+        ),
+        event_trigger_rule(
+            "super_dedicated",
+            "cumulative_achievement",
+            None,
+            None,
+            None,
+            Some(SUPER_DEDICATED_EVAL_COUNT),
+        ),
     ]
+}
+
+fn event_trigger_rule(
+    event_id: &str,
+    event_type: &str,
+    min_relationship: Option<f32>,
+    score_metric: Option<&str>,
+    min_score: Option<f32>,
+    min_evaluation_count: Option<u32>,
+) -> EventTriggerRule {
+    let mut rule = EventTriggerRule {
+        event_id: event_id.to_string(),
+        event_type: event_type.to_string(),
+        rule_fingerprint: None,
+        min_relationship,
+        score_metric: score_metric.map(str::to_string),
+        min_score,
+        min_evaluation_count,
+    };
+    rule.rule_fingerprint = Some(event_trigger_rule_fingerprint(&rule));
+    rule
+}
+
+pub(super) fn event_trigger_rule_fingerprint(rule: &EventTriggerRule) -> String {
+    let payload = serde_json::json!({
+        "schema": "monogatari-event-trigger-rule/v1",
+        "event_id": rule.event_id.as_str(),
+        "event_type": rule.event_type.as_str(),
+        "min_relationship": rule.min_relationship.map(format_rule_float),
+        "score_metric": rule.score_metric.as_deref(),
+        "min_score": rule.min_score.map(format_rule_float),
+        "min_evaluation_count": rule.min_evaluation_count,
+    });
+    let encoded = serde_json::to_vec(&payload)
+        .expect("event trigger rule fingerprint payload should serialize");
+    let mut hasher = Sha256::new();
+    hasher.update(encoded);
+    format!("{:x}", hasher.finalize())
+}
+
+fn format_rule_float(value: f32) -> String {
+    format!("{value:.6}")
 }
 
 /// Define all possible special events in the game.
@@ -2313,6 +2363,17 @@ mod tests {
             .expect("first_friend decision");
         assert!(first_friend.triggered);
         assert_eq!(first_friend.actual_relationship, 0.35);
+        assert!(first_friend
+            .rule_fingerprint
+            .as_deref()
+            .is_some_and(is_sha256_hex));
+        assert_eq!(
+            first_friend.rule_fingerprint,
+            first_friend
+                .rule
+                .as_ref()
+                .and_then(|rule| rule.rule_fingerprint.clone())
+        );
 
         let high_engagement = decisions
             .iter()
@@ -2345,6 +2406,30 @@ mod tests {
     }
 
     #[test]
+    fn event_trigger_rule_fingerprints_are_stable_and_rule_bound() {
+        let rules = get_event_trigger_rules();
+        assert!(rules
+            .iter()
+            .all(|rule| rule.rule_fingerprint.as_deref().is_some_and(is_sha256_hex)));
+
+        let repeated = get_event_trigger_rules();
+        assert_eq!(rules, repeated);
+
+        let first_friend = rules
+            .iter()
+            .find(|rule| rule.event_id == "first_friend")
+            .expect("first_friend rule");
+        let mut changed = first_friend.clone();
+        changed.min_relationship = Some(0.4);
+        changed.rule_fingerprint = None;
+
+        assert_ne!(
+            first_friend.rule_fingerprint.as_deref(),
+            Some(event_trigger_rule_fingerprint(&changed).as_str())
+        );
+    }
+
+    #[test]
     fn conversation_evaluation_report_serializes_event_audit() {
         let eval = evaluation(0.7, 0.85, 0.2);
         let decisions = build_event_trigger_decisions(0.35, &eval, 2, &[]);
@@ -2359,6 +2444,13 @@ mod tests {
         assert!(payload["event_trigger_decisions"]
             .as_array()
             .is_some_and(|decisions| !decisions.is_empty()));
+        let first_decision = &payload["event_trigger_decisions"][0];
+        assert!(first_decision["rule_fingerprint"]
+            .as_str()
+            .is_some_and(is_sha256_hex));
+        assert!(first_decision["rule"]["rule_fingerprint"]
+            .as_str()
+            .is_some_and(is_sha256_hex));
         assert!(payload["triggerable_events"]
             .as_array()
             .is_some_and(|events| events
@@ -2406,5 +2498,12 @@ mod tests {
         assert!(payload["event_trigger_decisions"]
             .as_array()
             .is_some_and(|decisions| !decisions.is_empty()));
+        assert!(payload["event_trigger_decisions"][0]["rule_fingerprint"]
+            .as_str()
+            .is_some_and(is_sha256_hex));
+    }
+
+    fn is_sha256_hex(value: &str) -> bool {
+        value.len() == 64 && value.chars().all(|ch| ch.is_ascii_hexdigit())
     }
 }

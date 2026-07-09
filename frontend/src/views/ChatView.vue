@@ -167,6 +167,7 @@
             <span>{{ decision.event_id }}</span>
             <strong>{{ decision.triggered ? 'Ready' : 'Blocked' }}</strong>
             <small>{{ eventDecisionReason(decision) }}</small>
+            <code v-if="shortRuleFingerprint(decision)" class="rule-fingerprint">rule {{ shortRuleFingerprint(decision) }}</code>
           </div>
         </div>
         <p v-else class="muted-copy">No event decision yet.</p>
@@ -230,6 +231,7 @@ interface TriggeredEvent {
 interface EventTriggerRule {
   event_id: string
   event_type: string
+  rule_fingerprint?: string | null
   min_relationship?: number | null
   score_metric?: string | null
   min_score?: number | null
@@ -246,6 +248,7 @@ interface EventTriggerDecision {
   actual_evaluation_count: number
   actual_score_metric?: string | null
   actual_score?: number | null
+  rule_fingerprint?: string | null
   rule?: EventTriggerRule | null
   blocked_reasons: string[]
 }
@@ -397,6 +400,11 @@ function eventDecisionReason(decision: EventTriggerDecision): string {
     return `${metric} / Eval ${decision.actual_evaluation_count}`
   }
   return decision.blocked_reasons[0] || 'Waiting for trigger rule'
+}
+
+function shortRuleFingerprint(decision: EventTriggerDecision): string {
+  const fingerprint = decision.rule_fingerprint || decision.rule?.rule_fingerprint || ''
+  return fingerprint ? fingerprint.slice(0, 10) : ''
 }
 
 function resizeInput() {
@@ -1055,7 +1063,8 @@ onUnmounted(cleanupStreamListeners)
 }
 
 .event-decision-row span,
-.event-decision-row small {
+.event-decision-row small,
+.rule-fingerprint {
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -1081,6 +1090,13 @@ onUnmounted(cleanupStreamListeners)
   color: var(--text-tertiary);
   font-size: 11px;
   line-height: 1.35;
+}
+
+.rule-fingerprint {
+  grid-column: 1 / -1;
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 800;
 }
 
 .link-btn {

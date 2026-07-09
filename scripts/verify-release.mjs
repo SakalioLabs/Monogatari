@@ -966,6 +966,9 @@ function verifyQualitySuiteShape(suite, label) {
       for (const rule of rules) {
         if (!nonEmptyString(rule.event_id)) issues.push(`${scenarioLabel}: event rule id is required`)
         if (!nonEmptyString(rule.event_type)) issues.push(`${scenarioLabel}: event rule type is required`)
+        if (rule.rule_fingerprint !== undefined && (typeof rule.rule_fingerprint !== 'string' || !/^[a-f0-9]{64}$/i.test(rule.rule_fingerprint))) {
+          issues.push(`${scenarioLabel}: rule_fingerprint must be a 64-character SHA-256 hex string when provided`)
+        }
         if (rule.min_relationship !== undefined && typeof rule.min_relationship !== 'number') {
           issues.push(`${scenarioLabel}: min_relationship must be numeric`)
         }
@@ -1056,6 +1059,10 @@ function verifyDefaultQualitySuite(suite) {
   const eventRuleIds = new Set(eventRules.map((rule) => rule.event_id))
   for (const id of requiredEventRules) {
     if (!eventRuleIds.has(id)) issues.push(`Missing required event rule snapshot: ${id}`)
+    const rule = eventRules.find((candidate) => candidate.event_id === id)
+    if (!nonEmptyString(rule?.rule_fingerprint)) {
+      issues.push(`Event rule snapshot must pin rule_fingerprint for ${id}`)
+    }
   }
 
   const knowledgeScenario = suite.scenarios?.find((scenario) => scenario.id === 'knowledge-anchor-safe-response')
@@ -1876,6 +1883,8 @@ async function verifyFrontendSourceInvariants() {
     ['runtime-trace-row', 'keep a stable style hook for quality runtime trace diagnostics'],
     ['runtime-guard-note-list', 'keep a stable style hook for runtime guard note summaries'],
     ['guard-note-chip', 'keep a stable style hook for runtime guard note chips'],
+    ['rule_fingerprint', 'type event rule fingerprints in quality reports'],
+    ['ruleChipLabel', 'show short event rule fingerprints in quality event-rule chips'],
     ['activeSafetySignals', 'surface active safety signal counts in the quality workbench'],
     ['audit-panel', 'keep a stable style hook for quality audit summaries'],
     ['category-audit-list', 'surface quality category audit summaries'],
@@ -1967,11 +1976,14 @@ async function verifyFrontendSourceInvariants() {
     ['get_chat_session_audit', 'restore latest chat safety and event audit state after character switching'],
     ['last_safety_trace', 'restore the latest runtime safety trace from chat sessions'],
     ['EventTriggerDecision', 'type runtime event trigger decisions'],
+    ['rule_fingerprint', 'type runtime event rule fingerprints'],
     ['ConversationEvaluationReport', 'type atomic manual scoring reports'],
     ['evaluate_conversation_report', 'refresh story event decisions from the manual scoring report'],
     ['triggerable_events', 'carry triggerable story events in manual scoring reports'],
     ['chat-event-decisions', 'listen for runtime event trigger decisions'],
     ['eventDecisionSummary', 'surface story event trigger decision summaries'],
+    ['shortRuleFingerprint', 'show short event rule fingerprints in the chat event audit'],
+    ['rule-fingerprint', 'keep a stable style hook for chat event rule fingerprint diagnostics'],
     ['event-decision-panel', 'keep a stable style hook for story event trigger diagnostics'],
     ['safety-trace-panel', 'keep a stable style hook for chat safety trace diagnostics'],
     ['STREAM_FAILURE_BUBBLE', 'keep a stable frontend streaming failure bubble'],
@@ -3167,12 +3179,16 @@ async function verifyTauriPackagingConfig() {
     ['pinned_knowledge_ref_count', 'report resolved pinned knowledge reference counts'],
     ['pinned_knowledge_ref_ids', 'report resolved pinned knowledge reference ids'],
     ['event_trigger_decisions', 'return explainable story event trigger decisions'],
+    ['rule_fingerprint', 'return event rule fingerprints with story event decisions'],
+    ['event_trigger_rule_fingerprint', 'centralize story event rule fingerprint generation'],
+    ['monogatari-event-trigger-rule/v1', 'version story event rule fingerprint payloads'],
     ['ConversationEvaluationReport', 'type atomic manual scoring reports'],
     ['evaluate_conversation_report', 'return scoring and event decisions through one command'],
     ['triggerable_events', 'return triggerable story events in scoring reports'],
     ['build_event_trigger_decisions', 'centralize explainable story event trigger decisions'],
     ['triggered_events_from_decisions', 'derive triggered story events from the decision audit'],
     ['chat-event-decisions', 'emit story event trigger decisions for streaming chat'],
+    ['event_trigger_rule_fingerprints_are_stable_and_rule_bound', 'test event rule fingerprints are stable and rule-bound'],
     ['character_mind_contract_applied', 'emit runtime trace evidence for the character mind contract'],
     ['pinned_knowledge_context_applied', 'emit runtime trace evidence for pinned knowledge context'],
     ['streaming_generation_failed_message', 'replace partial streaming replies with a stable failure bubble'],
@@ -3257,6 +3273,8 @@ async function verifyTauriPackagingConfig() {
     ['scenario_runtime_safety_trace', 'centralize quality runtime trace construction'],
     ['chat::build_chat_safety_trace', 'reuse the chat safety trace contract in quality reports'],
     ['chat::build_event_trigger_decisions', 'reuse the chat story event decision contract in quality reports'],
+    ['rule_fingerprint', 'carry story event rule fingerprints into quality reports'],
+    ['expected.rule_fingerprint', 'let quality suites pin event rule fingerprints when needed'],
     ['pinned_knowledge_ref_count', 'carry pinned knowledge evidence into quality runtime traces'],
     ['pinned_knowledge_ref_ids', 'carry pinned knowledge ref ids into quality runtime traces'],
     ['guard_workflow_story_output', 'reuse runtime workflow LLM output finalization in quality reports'],

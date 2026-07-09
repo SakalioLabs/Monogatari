@@ -194,7 +194,7 @@
               <div class="event-row">
                 <span v-for="event in scenario.triggered_events" :key="event" class="event-chip">{{ event }}</span>
                 <span v-for="ref in scenario.knowledge_refs_resolved || []" :key="ref" class="knowledge-ref-chip">{{ ref }}</span>
-                <span v-for="rule in scenario.event_rules_verified || []" :key="rule.event_id" class="rule-chip">{{ rule.event_id }}</span>
+                <span v-for="rule in scenario.event_rules_verified || []" :key="rule.event_id" class="rule-chip" :title="rule.rule_fingerprint || rule.event_id">{{ ruleChipLabel(rule) }}</span>
                 <span v-if="scenario.workflow_coverage" class="workflow-coverage-chip">{{ formatCoverage(scenario.workflow_coverage.coverage_percent) }}</span>
                 <span v-for="decision in blockedEventDecisions(scenario)" :key="`blocked-${decision.event_id}`" class="blocked-event-chip">{{ decisionLabel(decision) }}</span>
                 <span v-if="!scenario.triggered_events.length && !(scenario.knowledge_refs_resolved?.length) && !(scenario.event_rules_verified?.length) && !blockedEventDecisions(scenario).length" class="muted small">{{ t('quality.no-events', 'No events') }}</span>
@@ -307,6 +307,7 @@ interface WorkflowCoverageRunReport {
 interface EventTriggerRule {
   event_id: string
   event_type: string
+  rule_fingerprint?: string | null
   min_relationship?: number | null
   score_metric?: string | null
   min_score?: number | null
@@ -323,6 +324,7 @@ interface EventTriggerDecision {
   actual_evaluation_count: number
   actual_score_metric?: string | null
   actual_score?: number | null
+  rule_fingerprint?: string | null
   rule?: EventTriggerRule | null
   blocked_reasons: string[]
 }
@@ -1064,6 +1066,10 @@ function blockedEventDecisions(scenario: QualityScenarioReport) {
 
 function decisionLabel(decision: EventTriggerDecision) {
   return `${decision.event_id}: ${decision.blocked_reasons[0]}`
+}
+
+function ruleChipLabel(rule: EventTriggerRule) {
+  return rule.rule_fingerprint ? `${rule.event_id} @${rule.rule_fingerprint.slice(0, 10)}` : rule.event_id
 }
 
 function formatCoverage(value: number) {

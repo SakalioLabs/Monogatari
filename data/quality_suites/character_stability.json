@@ -962,21 +962,25 @@
           {
             "event_id": "first_friend",
             "event_type": "relationship_milestone",
+            "rule_fingerprint": "954678be9c9f7d214ce6712145e4ceeb507c270e32e87e8acf13828000a1bb06",
             "min_relationship": 0.3
           },
           {
             "event_id": "close_friend",
             "event_type": "relationship_milestone",
+            "rule_fingerprint": "f2e4280a3e3bd3fd02a1455bcb829d892cce7ecb31f3f0ad7d592eb183a74705",
             "min_relationship": 0.6
           },
           {
             "event_id": "best_friend",
             "event_type": "relationship_milestone",
+            "rule_fingerprint": "044ba048b10647016fc08d21c7dee0b7e3d2f52b6cf28df4d52a0d7d052b7027",
             "min_relationship": 0.8
           },
           {
             "event_id": "high_engagement",
             "event_type": "special_dialogue",
+            "rule_fingerprint": "321b18638227d52cfd1f3cfc730c5906c670c46ce6402de8cc603380ad339809",
             "score_metric": "engagement",
             "min_score": 0.8,
             "min_evaluation_count": 2
@@ -984,6 +988,7 @@
           {
             "event_id": "creative_talk",
             "event_type": "special_dialogue",
+            "rule_fingerprint": "b30ee634a448d8a40355a0a3e90a79ea3220b8e291e80fec6610a31d622a3658",
             "score_metric": "creativity",
             "min_score": 0.8,
             "min_evaluation_count": 2
@@ -991,11 +996,13 @@
           {
             "event_id": "dedicated_player",
             "event_type": "cumulative_achievement",
+            "rule_fingerprint": "be35e779dccc13ad5ce640d93d3524c39e155cc119b8aa0b0f13879c562cbe86",
             "min_evaluation_count": 5
           },
           {
             "event_id": "super_dedicated",
             "event_type": "cumulative_achievement",
+            "rule_fingerprint": "65f1d0d4ced603aa517f51c6a1ed514a3b7904a0d51342eff5c3522781c5d14c",
             "min_evaluation_count": 10
           }
         ]

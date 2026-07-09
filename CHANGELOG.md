@@ -2,6 +2,7 @@
 
 ### Added
 - Added a configurable offline quality suite for character stability, prompt-injection resistance, relationship and fallback scoring side-channel containment, memory-poisoning resistance, memory prompt replay safety, tool-role injection containment, identity drift, style drift, real knowledge-reference anchoring, evaluation-summary safety, workflow output safety, workflow tool-call containment, workflow branch coverage, private reasoning leakage, fallback scoring, overrange score clamping, story-event trigger/idempotence regression, and event-rule snapshot checks.
+- Added stable SHA-256 event-trigger rule fingerprints to live chat decisions, manual scoring reports, Quality Suite reports, and the checked-in event-rule snapshot so story unlock rules can be audited across release builds.
 - Added block-level prompt-control sanitization for Tauri, shared Rust AI, and legacy C# prompt builders so explicit XML, Markdown fence, and comment-wrapped role-control payloads are omitted along with their opening markers.
 - Added a checked-in block-body prompt-injection quality scenario proving XML, Markdown fence, and comment-wrapped role-control payloads cannot boost scores, poison memory, or trigger story events.
 - Added Quality Suites workbench guard-note summaries and export evidence so author QA reports include runtime safety trace guard note counts alongside category, failure, safety-signal, and workflow coverage summaries.

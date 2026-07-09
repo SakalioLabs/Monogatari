@@ -504,6 +504,15 @@ fn validate_quality_suite_shape(suite: &QualitySuite) -> Vec<String> {
                 issues.push(format!("{scenario_label}: event rule type is required."));
             }
             if rule
+                .rule_fingerprint
+                .as_deref()
+                .is_some_and(|fingerprint| !is_sha256_hex(fingerprint))
+            {
+                issues.push(format!(
+                    "{scenario_label}: rule_fingerprint must be a 64-character SHA-256 hex string."
+                ));
+            }
+            if rule
                 .score_metric
                 .as_deref()
                 .is_some_and(|metric| metric.trim().is_empty())
@@ -516,6 +525,10 @@ fn validate_quality_suite_shape(suite: &QualitySuite) -> Vec<String> {
     }
 
     issues
+}
+
+fn is_sha256_hex(value: &str) -> bool {
+    value.len() == 64 && value.chars().all(|ch| ch.is_ascii_hexdigit())
 }
 
 fn validate_quality_score_bounds(
@@ -1830,6 +1843,14 @@ fn compare_event_rule(
             expected.event_id, expected.min_evaluation_count, actual.min_evaluation_count
         ));
     }
+    if let Some(expected_fingerprint) = expected.rule_fingerprint.as_deref() {
+        if actual.rule_fingerprint.as_deref() != Some(expected_fingerprint) {
+            issues.push(format!(
+                "Event rule `{}` rule_fingerprint expected {:?}, got {:?}.",
+                expected.event_id, expected.rule_fingerprint, actual.rule_fingerprint
+            ));
+        }
+    }
 }
 
 fn check_min(label: &str, actual: f32, expected: Option<f32>, issues: &mut Vec<String>) {
@@ -2982,6 +3003,7 @@ mod tests {
                     expected_event_rules: vec![chat::EventTriggerRule {
                         event_id: "first_friend".to_string(),
                         event_type: "relationship_milestone".to_string(),
+                        rule_fingerprint: None,
                         min_relationship: Some(0.4),
                         score_metric: None,
                         min_score: None,
