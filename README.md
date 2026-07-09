@@ -115,7 +115,7 @@ Verified on 2026-07-09:
 - Workflow Run reports graph coverage and unvisited nodes so authors can see which score/story branches still need testing.
 - Workflow Run preset matrix executes all score-gate preview presets and merges graph coverage to confirm branch coverage quickly.
 - Quality Suites can now pin workflow branch coverage snapshots, including the checked-in score-gate fixture's unlock, low-score, and repeat-trigger branches.
-- Quality Suite reports show and export versioned audit evidence with run metadata, suite source paths, SHA-256 suite fingerprints, build commit ids, failed-scenario ids, category summaries, safety-signal counts, finalized guarded workflow output text, and workflow coverage summaries for release QA, customer review, and branch-coverage audits.
+- Quality Suite lists, reports, and exports show versioned audit evidence with run metadata, suite source paths, SHA-256 suite fingerprints, build commit ids, failed-scenario ids, category summaries, safety-signal counts, finalized guarded workflow output text, and workflow coverage summaries for release QA, customer review, and branch-coverage audits.
 - Quality suite schema validation rejects contradictory expectations such as out-of-range score bounds or events marked both expected and forbidden.
 - Character prompts pin creator-declared knowledge references before keyword search results so core lore stays stable.
 - Character content loading accepts single-object JSON files, legacy sprite field names, and optional renderer asset fields.

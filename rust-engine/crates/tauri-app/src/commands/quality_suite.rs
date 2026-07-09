@@ -145,6 +145,7 @@ pub struct QualitySuiteSummary {
     pub description: String,
     pub scenario_count: usize,
     pub path: String,
+    pub suite_sha256: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -284,13 +285,18 @@ pub async fn list_quality_suites(
                     .unwrap_or(&path)
                     .to_string_lossy()
                     .as_ref(),
+                &quality_suite_sha256(&content),
             ));
         }
     }
 
     if summaries.is_empty() {
         let suite = parse_quality_suite(DEFAULT_SUITE_JSON)?;
-        summaries.push(summary_for_suite(&suite, "built-in:character_stability"));
+        summaries.push(summary_for_suite(
+            &suite,
+            "built-in:character_stability",
+            &quality_suite_sha256(DEFAULT_SUITE_JSON),
+        ));
     }
 
     summaries.sort_by(|a, b| a.name.cmp(&b.name));
@@ -650,13 +656,14 @@ fn push_conflicting_values(
     }
 }
 
-fn summary_for_suite(suite: &QualitySuite, path: &str) -> QualitySuiteSummary {
+fn summary_for_suite(suite: &QualitySuite, path: &str, suite_sha256: &str) -> QualitySuiteSummary {
     QualitySuiteSummary {
         name: suite.name.clone(),
         version: suite.version.clone(),
         description: suite.description.clone(),
         scenario_count: suite.scenarios.len(),
         path: path.replace('\\', "/"),
+        suite_sha256: suite_sha256.to_string(),
     }
 }
 
@@ -1907,6 +1914,23 @@ mod tests {
         );
         assert_eq!(loaded.source_sha256.len(), 64);
         assert!(loaded.source_sha256.chars().all(|c| c.is_ascii_hexdigit()));
+    }
+
+    #[test]
+    fn quality_suite_summary_reports_source_fingerprint() {
+        let suite = parse_quality_suite(DEFAULT_SUITE_JSON).unwrap();
+        let summary = summary_for_suite(
+            &suite,
+            DEFAULT_SUITE_PATH,
+            &quality_suite_sha256(DEFAULT_SUITE_JSON),
+        );
+
+        assert_eq!(summary.path, DEFAULT_SUITE_PATH);
+        assert_eq!(
+            summary.suite_sha256,
+            quality_suite_sha256(DEFAULT_SUITE_JSON)
+        );
+        assert_eq!(summary.suite_sha256.len(), 64);
     }
 
     #[test]

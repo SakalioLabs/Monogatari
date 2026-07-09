@@ -119,6 +119,7 @@
           <span class="suite-title">{{ suite.name }}</span>
           <span class="suite-meta">{{ suite.scenario_count }} {{ t('quality.scenarios', 'scenarios') }} - {{ suite.version }}</span>
           <span class="suite-path">{{ suite.path }}</span>
+          <span class="suite-fingerprint" :title="suite.suite_sha256">sha256:{{ suite.suite_sha256.slice(0, 12) }}</span>
         </button>
         <p v-if="!suites.length && !loading" class="muted">{{ t('quality.empty', 'No quality suites found.') }}</p>
       </aside>
@@ -228,6 +229,7 @@ interface QualitySuiteSummary {
   description: string
   scenario_count: number
   path: string
+  suite_sha256: string
 }
 
 interface ConversationEvaluation {
@@ -391,6 +393,7 @@ const previewSuites: QualitySuiteSummary[] = [
     description: 'Offline regression scenarios for prompt-injection resistance, structured role-block and block-body prompt-control containment, multilingual and Unicode-obfuscated prompt-injection resistance, group chat runtime trace evidence, relationship and fallback scoring side-channel containment, multilingual fallback scoring, memory-poisoning resistance, memory prompt replay safety, identity drift, style drift, real knowledge-reference anchoring, knowledge-boundary stability, evaluation summary safety, workflow output safety, workflow tool-call containment, workflow branch coverage, private reasoning leakage, fallback scoring, overrange score clamping, story-event trigger consistency/idempotence, and event-rule snapshots.',
     scenario_count: 29,
     path: 'quality_suites/character_stability.json',
+    suite_sha256: '50eb7994d9f2432b7b798a441610f2661c714370505ee836e80565b75377a11d',
   },
 ]
 
@@ -1249,7 +1252,8 @@ onMounted(async () => {
 .suite-row { display: grid; gap: 4px; width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); color: inherit; text-align: left; cursor: pointer; transition: border-color var(--transition-fast), background var(--transition-fast); }
 .suite-row:hover, .suite-row.active { border-color: rgba(45,212,191,0.45); background: rgba(45,212,191,0.08); }
 .suite-title { color: var(--text-primary); font-size: 13px; font-weight: 800; }
-.suite-meta, .suite-path { color: var(--text-tertiary); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.suite-meta, .suite-path, .suite-fingerprint { color: var(--text-tertiary); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.suite-fingerprint { width: fit-content; max-width: 100%; padding: 2px 6px; border-radius: 999px; background: rgba(148,163,184,0.12); color: var(--text-secondary); font-weight: 800; }
 .status-pill { padding: 4px 9px; border-radius: 999px; background: var(--surface-3); color: var(--text-secondary); font-size: 11px; font-weight: 800; white-space: nowrap; }
 .status-pill.ok { background: rgba(34,197,94,0.14); color: var(--success); }
 .status-pill.bad { background: rgba(239,68,68,0.14); color: var(--danger); }

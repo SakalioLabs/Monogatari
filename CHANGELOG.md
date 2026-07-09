@@ -9,6 +9,7 @@
 - Added build git commit metadata to Quality Suite QA reports so exported evidence can be tied back to a specific source revision.
 - Added backend-confirmed suite source paths to Quality Suite QA reports so exports identify the exact regression suite that was executed.
 - Added SHA-256 suite content fingerprints to Quality Suite QA reports so exported evidence can be matched to the exact regression suite contents.
+- Added SHA-256 suite content fingerprints to the Quality Suites list so authors can verify the selected regression suite before running it.
 - Added checked-in Quality Suite source evidence to release manifests, including suite paths, scenario counts, categories, and SHA-256 fingerprints.
 - Added finalized guarded workflow output evidence to Quality Suite reports and exports so QA can inspect the safe story text consumed after workflow LLM output sanitization.
 - Added runtime renderer fallback handling so Story Mode and Character Editor skip failed Live2D/GLB/GLTF loads and continue to the next valid 3D, sprite, portrait, or generated placeholder candidate.
