@@ -6,6 +6,7 @@ use std::path::{Component, Path, PathBuf};
 use chrono::Utc;
 use serde::Serialize;
 use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
 use tauri::State;
 
 use crate::state::{default_project_data_root, AppState};
@@ -673,13 +674,21 @@ fn push_export_file(
     }
     let metadata = std::fs::metadata(path).map_err(|e| e.to_string())?;
     let bytes = std::fs::read(path).map_err(|e| e.to_string())?;
+    let checksum_md5 = format!("{:x}", md5::compute(&bytes));
+    let checksum_sha256 = checksum_sha256(&bytes);
     files.push(json!({
         "category": category,
         "path": relative,
         "size_bytes": metadata.len(),
-        "checksum_md5": format!("{:x}", md5::compute(bytes)),
+        "checksum_md5": checksum_md5,
+        "checksum_sha256": checksum_sha256,
     }));
     Ok(())
+}
+
+fn checksum_sha256(bytes: &[u8]) -> String {
+    let digest = Sha256::digest(bytes);
+    digest.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
 fn project_relative_path(project_root: &Path, path: &Path) -> String {
@@ -1168,10 +1177,16 @@ mod tests {
         assert_eq!(manifest["schema"], "monogatari-project-export@1");
         assert_eq!(manifest["settings"]["ai"]["api"]["api_key"], "<redacted>");
         let files = manifest["package"]["files"].as_array().unwrap();
-        assert!(files
+        let tts_file = files
             .iter()
-            .any(|file| file["path"] == "assets/tts/line.wav"
-                && file["checksum_md5"].as_str().is_some()));
+            .find(|file| file["path"] == "assets/tts/line.wav")
+            .expect("tts asset should be included");
+        assert_eq!(
+            tts_file["checksum_sha256"],
+            "c57d7e92019708b614c90fa3685cd644f543a60153fb99ec9b67c381a245fb2a"
+        );
+        assert!(tts_file["checksum_md5"].as_str().is_some());
+        assert_eq!(tts_file["checksum_sha256"].as_str().unwrap().len(), 64);
         assert!(files.iter().any(|file| file["path"] == "settings.json"));
         assert!(!files.iter().any(|file| file["path"] == "saves/slot.json"));
         assert!(!files.iter().any(|file| file["path"] == "analytics.json"));
