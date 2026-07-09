@@ -71,10 +71,12 @@ Knowledge loader `directory` values resolve under the active project `knowledge/
 
 ## AI Backend
 
+ONNX `modelPath` and `tokenizerPath` values are project-relative references under the active project data root. Model references must end in `.onnx`, tokenizer references must end in `.json`, and absolute paths, drive/URI-style prefixes, empty segments, `.`/`..` traversal, and non-portable path segments are rejected. `configure_onnx` registers and activates the ONNX backend.
+
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
 | `configure_api` | `{ baseUrl, apiKey, model }` | `void` | Set OpenAI-compatible API |
-| `configure_onnx` | `{ modelPath, tokenizerPath }` | `void` | Set local ONNX model |
+| `configure_onnx` | `{ modelPath, tokenizerPath }` | `void` | Set active project-scoped ONNX model |
 | `generate_response` | `{ prompt, options }` | `InferenceResult` | One-shot generation |
 | `generate_stream` | `{ prompt, options }` | `void` | Streaming generation |
 | `get_ai_status` | - | `AiStatus` | Current AI configuration |

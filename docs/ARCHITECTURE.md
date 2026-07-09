@@ -79,6 +79,8 @@ When live evaluator output is unavailable, deterministic fallback scoring uses o
 
 API backend configuration treats provider credentials as runtime-only secrets. The Rust API engine redacts API keys, bearer tokens, sensitive custom headers, and echoed secret assignments from debug output and API error surfaces before they can reach logs or frontend error reports.
 
+ONNX backend configuration treats `modelPath` and `tokenizerPath` as project-relative file references under the active project data root. Model references must be `.onnx`, tokenizer references must be `.json`, path-shaped or non-portable input is rejected before engine registration, and successful ONNX configuration activates the ONNX engine so Settings cannot silently leave an older backend selected.
+
 The legacy C# AI path mirrors the same boundary-sanitization intent for bracket, fullwidth, XML/header, and JSON-shaped role spoofing, and redacts token-shaped values plus JSON/header/query secret assignments from provider error bodies and request exceptions while the legacy solution remains in the release gate.
 
 ## Workflow System

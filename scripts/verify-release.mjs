@@ -148,6 +148,7 @@ const releaseCriticalRustFiles = [
   'crates/assets/src/save_manager.rs',
   'crates/tauri-app/src/main.rs',
   'crates/tauri-app/src/state.rs',
+  'crates/tauri-app/src/commands/ai.rs',
   'crates/tauri-app/src/commands/engine.rs',
   'crates/tauri-app/src/commands/project.rs',
   'crates/tauri-app/src/commands/scenes.rs',
@@ -202,6 +203,7 @@ async function main() {
   await verifyI18nLocalePathInvariants()
   await verifyFrontendSourceInvariants()
   await verifyLegacyPromptBuilderInvariants()
+  await verifyAiBackendConfigInvariants()
   await verifyAssetManagerInvariants()
   await verifySaveManagerInvariants()
   await verifyWorkflowCommandInvariants()
@@ -1875,6 +1877,58 @@ async function verifyLegacyPromptBuilderInvariants() {
   }
 
   console.log('[release] Legacy C# AI invariants OK')
+}
+
+async function verifyAiBackendConfigInvariants() {
+  const issues = []
+  const aiCommandSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'ai.rs'), 'utf8')
+  const settingsViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'SettingsView.vue'), 'utf8')
+
+  const aiRequirements = [
+    ['onnx_model_config_in_project', 'centralize project-scoped ONNX config construction'],
+    ['onnx_file_path_in_project', 'resolve ONNX model and tokenizer paths under the project root'],
+    ['normalize_onnx_file_ref', 'normalize and validate ONNX path references before path construction'],
+    ['current_project_data_root', 'bind ONNX model references to the active project data root'],
+    ['ONNX file paths cannot contain drive prefixes or URI schemes', 'reject URI-like and drive-prefixed ONNX paths'],
+    ['ONNX file paths cannot contain empty, current, or parent directory segments', 'reject traversal-shaped ONNX paths'],
+    ['&[".onnx"]', 'restrict model references to ONNX files'],
+    ['&[".json"]', 'restrict tokenizer references to JSON files'],
+    ['path.starts_with(project_root)', 'prove ONNX file references stay under the project root'],
+    ['register_onnx_engine', 'reuse the guarded ONNX registration helper'],
+    ['set_active_engine("ONNX")', 'activate the ONNX backend after configuration'],
+    ['onnx_file_paths_resolve_under_project_root', 'test compatible ONNX file path resolution'],
+    ['onnx_file_paths_reject_escape_attempts', 'test ONNX traversal and absolute path rejection'],
+    ['configure_onnx_registers_active_engine', 'test ONNX configuration activates the backend'],
+  ]
+  for (const [needle, description] of aiRequirements) {
+    if (!aiCommandSource.includes(needle)) {
+      issues.push(`AI backend configuration must ${description}`)
+    }
+  }
+
+  if (
+    aiCommandSource.includes('PathBuf::from(&model_path)')
+    || aiCommandSource.includes('PathBuf::from(&tokenizer_path)')
+    || aiCommandSource.includes('std::path::PathBuf::from(&model_path)')
+    || aiCommandSource.includes('std::path::PathBuf::from(&tokenizer_path)')
+  ) {
+    issues.push('AI backend configuration must not turn frontend ONNX strings directly into filesystem paths')
+  }
+
+  const settingsRequirements = [
+    ["invokeCommand<void>('configure_onnx', { modelPath: modelPath.value, tokenizerPath: tokenizerPath.value })", 'send modelPath and tokenizerPath through the backend ONNX command contract'],
+  ]
+  for (const [needle, description] of settingsRequirements) {
+    if (!settingsViewSource.includes(needle)) {
+      issues.push(`Settings AI backend UI must ${description}`)
+    }
+  }
+
+  if (issues.length > 0) {
+    throw new Error(`AI backend config verification failed:\n${issues.join('\n')}`)
+  }
+
+  console.log('[release] AI backend config invariants OK')
 }
 
 async function verifyAssetManagerInvariants() {
