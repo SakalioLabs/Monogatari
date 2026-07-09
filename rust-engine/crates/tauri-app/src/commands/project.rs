@@ -707,6 +707,7 @@ fn push_export_file(
 fn project_content_summary(files: &[Value]) -> Value {
     let mut category_counts = BTreeMap::<String, usize>::new();
     let mut category_bytes = BTreeMap::<String, u64>::new();
+    let mut category_files = BTreeMap::<String, Vec<&Value>>::new();
     let mut json_file_count = 0usize;
     let mut asset_file_count = 0usize;
 
@@ -724,6 +725,10 @@ fn project_content_summary(files: &[Value]) -> Value {
 
         *category_counts.entry(category.clone()).or_insert(0) += 1;
         *category_bytes.entry(category.clone()).or_insert(0) += size_bytes;
+        category_files
+            .entry(category.clone())
+            .or_default()
+            .push(file);
         if path.ends_with(".json") {
             json_file_count += 1;
         }
@@ -739,6 +744,11 @@ fn project_content_summary(files: &[Value]) -> Value {
         "asset_file_count": asset_file_count,
         "category_counts": category_counts,
         "category_bytes": category_bytes,
+        "category_fingerprint_algorithm": "sha256:path-size-file-sha256-v1",
+        "category_fingerprints": category_files
+            .iter()
+            .map(|(category, files)| (category.clone(), category_content_sha256(files)))
+            .collect::<BTreeMap<_, _>>(),
         "exported_categories": EXPORT_DIRECTORIES
             .iter()
             .map(|(category, _)| *category)
@@ -754,23 +764,39 @@ fn checksum_sha256(bytes: &[u8]) -> String {
 fn package_content_sha256(files: &[Value]) -> String {
     let mut hasher = Sha256::new();
     for file in files {
-        let path = file.get("path").and_then(Value::as_str).unwrap_or("");
-        let size_bytes = file
-            .get("size_bytes")
-            .and_then(Value::as_u64)
-            .unwrap_or_default()
-            .to_string();
-        let checksum = file
-            .get("checksum_sha256")
-            .and_then(Value::as_str)
-            .unwrap_or("");
-        hasher.update(path.as_bytes());
-        hasher.update(b"\0");
-        hasher.update(size_bytes.as_bytes());
-        hasher.update(b"\0");
-        hasher.update(checksum.as_bytes());
-        hasher.update(b"\n");
+        update_file_fingerprint(&mut hasher, file);
     }
+    finish_sha256(hasher)
+}
+
+fn category_content_sha256(files: &[&Value]) -> String {
+    let mut hasher = Sha256::new();
+    for file in files {
+        update_file_fingerprint(&mut hasher, *file);
+    }
+    finish_sha256(hasher)
+}
+
+fn update_file_fingerprint(hasher: &mut Sha256, file: &Value) {
+    let path = file.get("path").and_then(Value::as_str).unwrap_or("");
+    let size_bytes = file
+        .get("size_bytes")
+        .and_then(Value::as_u64)
+        .unwrap_or_default()
+        .to_string();
+    let checksum = file
+        .get("checksum_sha256")
+        .and_then(Value::as_str)
+        .unwrap_or("");
+    hasher.update(path.as_bytes());
+    hasher.update(b"\0");
+    hasher.update(size_bytes.as_bytes());
+    hasher.update(b"\0");
+    hasher.update(checksum.as_bytes());
+    hasher.update(b"\n");
+}
+
+fn finish_sha256(hasher: Sha256) -> String {
     let digest = hasher.finalize();
     digest.iter().map(|byte| format!("{byte:02x}")).collect()
 }
@@ -1304,6 +1330,14 @@ mod tests {
         assert_eq!(manifest["content_summary"]["json_file_count"], 4);
         assert_eq!(manifest["content_summary"]["asset_file_count"], 1);
         assert_eq!(manifest["content_summary"]["category_bytes"]["assets"], 5);
+        assert_eq!(
+            manifest["content_summary"]["category_fingerprint_algorithm"],
+            "sha256:path-size-file-sha256-v1"
+        );
+        let asset_category_sha256 = manifest["content_summary"]["category_fingerprints"]["assets"]
+            .as_str()
+            .expect("asset category fingerprint");
+        assert_eq!(asset_category_sha256.len(), 64);
         assert!(manifest["content_summary"]["exported_categories"]
             .as_array()
             .unwrap()
@@ -1338,6 +1372,10 @@ mod tests {
             repeat_manifest["package"]["content_sha256"],
             manifest["package"]["content_sha256"]
         );
+        assert_eq!(
+            repeat_manifest["content_summary"]["category_fingerprints"],
+            manifest["content_summary"]["category_fingerprints"]
+        );
 
         std::fs::write(
             root.join("assets").join("tts").join("line.wav"),
@@ -1349,6 +1387,10 @@ mod tests {
         assert_ne!(
             changed_manifest["package"]["content_sha256"],
             manifest["package"]["content_sha256"]
+        );
+        assert_ne!(
+            changed_manifest["content_summary"]["category_fingerprints"]["assets"],
+            manifest["content_summary"]["category_fingerprints"]["assets"]
         );
 
         std::fs::remove_dir_all(root).unwrap();

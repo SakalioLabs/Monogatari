@@ -17,6 +17,7 @@
 - Added SHA-256 checksums to project export file inventories while retaining legacy MD5 checksums for compatibility.
 - Added whole-package SHA-256 content fingerprints to project export manifests so package handoffs can be verified as a single deterministic bundle.
 - Added content category summaries and explicit package fingerprint algorithm metadata to project export manifests for faster commercial package audits.
+- Added per-category project export fingerprints so commercial package audits can isolate character, dialogue, knowledge, scene, asset, workflow, locale, and quality-suite changes.
 - Added engine version and build commit provenance to project export manifests so package handoffs can be traced to a specific Monogatari build.
 - Added finalized guarded workflow output evidence to Quality Suite reports and exports so QA can inspect the safe story text consumed after workflow LLM output sanitization.
 - Added runtime renderer fallback handling so Story Mode and Character Editor skip failed Live2D/GLB/GLTF loads and continue to the next valid 3D, sprite, portrait, or generated placeholder candidate.

@@ -629,6 +629,8 @@ async function exportProjectManifest() {
           asset_file_count: 0,
           category_counts: {},
           category_bytes: {},
+          category_fingerprint_algorithm: 'sha256:path-size-file-sha256-v1',
+          category_fingerprints: {},
           exported_categories: ['characters', 'dialogue', 'knowledge', 'scenes', 'assets', 'locales', 'quality_suites', 'workflows'],
         },
         package: {
