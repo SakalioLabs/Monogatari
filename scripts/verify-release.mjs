@@ -2093,7 +2093,7 @@ async function verifyScriptCommandInvariants() {
 
   const commandRequirements = [
     ['validate_script_text', 'centralize script command input validation'],
-    ['MAX_SCRIPT_TEXT_CHARS', 'cap direct Rhai execution payload size'],
+    ['SCRIPT_MAX_TEXT_CHARS', 'reuse the shared Rhai script source size cap for direct execution'],
     ['MAX_CONDITION_TEXT_CHARS', 'cap condition expression payload size'],
     ['MAX_DSL_SCRIPT_TEXT_CHARS', 'cap DSL parser payload size'],
     ['cannot contain control characters', 'reject hidden control-character payloads'],
@@ -2108,6 +2108,10 @@ async function verifyScriptCommandInvariants() {
   }
 
   const engineRequirements = [
+    ['SCRIPT_MAX_TEXT_CHARS', 'define a shared script source size cap'],
+    ['validate_script_source', 'centralize Rhai script source validation in the shared engine crate'],
+    ['validate_script_source(script)?', 'validate all direct ScriptEngine executions before evaluating Rhai'],
+    ['Script cannot contain control characters', 'reject hidden control characters in every ScriptEngine caller'],
     ['SCRIPT_MAX_OPERATIONS', 'define a script operation budget'],
     ['set_max_operations(SCRIPT_MAX_OPERATIONS)', 'bound Rhai execution operations'],
     ['set_max_call_levels(SCRIPT_MAX_CALL_LEVELS)', 'bound Rhai recursive call depth'],
@@ -2117,6 +2121,8 @@ async function verifyScriptCommandInvariants() {
     ['set_max_modules(0)', 'disable module imports in release scripting'],
     ['script_engine_limits_runaway_loops', 'test runaway loop aborts'],
     ['script_engine_limits_recursive_calls', 'test recursive call aborts'],
+    ['script_engine_rejects_control_characters_before_execution', 'test shared control-character rejection'],
+    ['script_engine_rejects_oversized_source_before_execution', 'test shared source size rejection'],
   ]
   for (const [needle, description] of engineRequirements) {
     if (!scriptingSource.includes(needle)) {

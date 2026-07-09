@@ -3,8 +3,8 @@
 use tauri::State;
 
 use crate::state::AppState;
+use llm_scripting::SCRIPT_MAX_TEXT_CHARS;
 
-const MAX_SCRIPT_TEXT_CHARS: usize = 20_000;
 const MAX_CONDITION_TEXT_CHARS: usize = 2_000;
 const MAX_DSL_SCRIPT_TEXT_CHARS: usize = 100_000;
 
@@ -26,7 +26,7 @@ fn validate_script_text(label: &str, text: &str, max_chars: usize) -> Result<(),
 /// Execute a Rhai script expression.
 #[tauri::command]
 pub async fn execute_script(state: State<'_, AppState>, script: String) -> Result<String, String> {
-    validate_script_text("Script", &script, MAX_SCRIPT_TEXT_CHARS)?;
+    validate_script_text("Script", &script, SCRIPT_MAX_TEXT_CHARS)?;
     let se = state.script_engine.read().await;
     let result = se.execute(&script).map_err(|e| e.to_string())?;
     Ok(format!("{:?}", result))

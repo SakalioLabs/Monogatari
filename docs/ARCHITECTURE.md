@@ -35,7 +35,7 @@ Monogatari is a desktop application built with Rust (Tauri 2.x) for the backend 
 | `scripting` | Rhai scripting | ScriptEngine |
 | `tauri-app` | Tauri commands | AppState, 22 command modules |
 
-Script execution is treated as bounded authoring logic. Tauri script commands validate payload size and hidden control characters before execution or DSL parsing, while `ScriptEngine` caps Rhai operations, recursive calls, expression depth, variable count, function definitions, and module imports so custom game logic cannot hang the workbench through runaway loops or recursion.
+Script execution is treated as bounded authoring logic. Tauri script commands validate payload size and hidden control characters before execution or DSL parsing, and `ScriptEngine::execute` repeats that source validation for workflow and future plugin callers. The shared engine caps Rhai operations, recursive calls, expression depth, variable count, function definitions, and module imports so custom game logic cannot hang the workbench through runaway loops or recursion.
 
 ## Data Flow
 

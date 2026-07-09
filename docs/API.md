@@ -126,7 +126,7 @@ Scene and renderer asset paths are project-relative asset references. Runtime as
 
 ## Scripting
 
-Scripting command text is author-controlled data, not an unbounded transport. Direct Rhai execution, condition evaluation, and DSL parsing reject hidden control characters and oversized payloads before invoking the runtime; the shared Rhai engine also caps operations, call depth, expression depth, variables, functions, and module imports so runaway scripts fail instead of consuming the workbench.
+Scripting command text is author-controlled data, not an unbounded transport. Direct Rhai execution, condition evaluation, and DSL parsing reject hidden control characters and oversized payloads before invoking the runtime; every `ScriptEngine::execute` caller repeats the shared Rhai source validation and caps operations, call depth, expression depth, variables, functions, and module imports so runaway scripts fail instead of consuming the workbench.
 
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
