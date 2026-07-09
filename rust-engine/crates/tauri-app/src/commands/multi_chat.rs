@@ -3,6 +3,8 @@
 //! Allows players to interact with multiple characters in a shared conversation,
 //! where characters can react to each other and the player.
 
+use std::collections::HashSet;
+
 use serde::{Deserialize, Serialize};
 use tauri::State;
 use tracing::debug;
@@ -49,9 +51,7 @@ pub async fn start_group_chat(
     state: State<'_, AppState>,
     character_ids: Vec<String>,
 ) -> Result<GroupChatSession, String> {
-    if character_ids.len() < 2 {
-        return Err("Group chat requires at least 2 characters.".to_string());
-    }
+    let character_ids = normalize_group_character_ids(&character_ids)?;
 
     // Verify all characters exist
     let cm = state.character_manager.read().await;
@@ -81,6 +81,24 @@ pub async fn send_group_message(
     message: String,
 ) -> Result<GroupChatSession, String> {
     let mut updated = session;
+    let message = message.trim().to_string();
+    if message.is_empty() {
+        return Err("Group chat message cannot be empty.".to_string());
+    }
+    if !updated.active {
+        return Err("Group chat session is not active.".to_string());
+    }
+    updated.character_ids = normalize_group_character_ids(&updated.character_ids)?;
+
+    {
+        let cm = state.character_manager.read().await;
+        for id in &updated.character_ids {
+            if cm.get_character(id).is_none() {
+                return Err(format!("Character not found: {id}"));
+            }
+        }
+    }
+
     let now = format!(
         "{:?}",
         std::time::SystemTime::now()
@@ -239,6 +257,28 @@ fn build_guarded_group_chat_prompt(system_prompt: &str, messages: &[GroupChatMes
     )
 }
 
+fn normalize_group_character_ids(character_ids: &[String]) -> Result<Vec<String>, String> {
+    let mut normalized = Vec::new();
+    let mut seen = HashSet::new();
+
+    for id in character_ids {
+        let id = id.trim();
+        if id.is_empty() {
+            return Err("Group chat character IDs cannot be empty.".to_string());
+        }
+        if !seen.insert(id.to_string()) {
+            return Err(format!("Duplicate group chat character: {id}"));
+        }
+        normalized.push(id.to_string());
+    }
+
+    if normalized.len() < 2 {
+        return Err("Group chat requires at least 2 characters.".to_string());
+    }
+
+    Ok(normalized)
+}
+
 fn group_transcript_line(message: &GroupChatMessage) -> String {
     if message.role == "player" {
         prompt_guard::transcript_line("Player", &message.content)
@@ -309,6 +349,23 @@ mod tests {
             timestamp: "0".to_string(),
             safety_trace: None,
         }
+    }
+
+    #[test]
+    fn group_character_ids_are_trimmed_unique_and_minimum_size() {
+        let normalized = normalize_group_character_ids(&[
+            " sakura ".to_string(),
+            "luna".to_string(),
+            "kenji ".to_string(),
+        ])
+        .unwrap();
+
+        assert_eq!(normalized, vec!["sakura", "luna", "kenji"]);
+        assert!(normalize_group_character_ids(&["sakura".to_string()]).is_err());
+        assert!(normalize_group_character_ids(&["sakura".to_string(), " ".to_string()]).is_err());
+        assert!(
+            normalize_group_character_ids(&["sakura".to_string(), "sakura".to_string()]).is_err()
+        );
     }
 
     #[test]
