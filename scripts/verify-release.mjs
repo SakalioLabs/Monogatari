@@ -192,6 +192,22 @@ const uiTextArtifactPatterns = [
   { label: 'stray Chinese road separator', pattern: /\s\u8DEF\s/ },
 ]
 
+const sharedCspFragments = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' asset: http://asset.localhost data: blob:",
+  "media-src 'self' asset: http://asset.localhost data: blob:",
+  "font-src 'self' data:",
+  "connect-src 'self' asset: http://asset.localhost https: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*",
+  "worker-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'none'",
+]
+const requiredTauriCspFragments = [...sharedCspFragments, "frame-ancestors 'none'"]
+const requiredWebCspFragments = [...sharedCspFragments, "frame-src 'none'"]
+
 async function main() {
   const started = Date.now()
   console.log('[release] Starting Monogatari release verification')
@@ -1490,6 +1506,15 @@ async function verifyFrontendSourceInvariants() {
     })
   }
 
+  const sourceWebCsp = extractHtmlCsp(indexSource)
+  if (!sourceWebCsp) {
+    issues.push('frontend/index.html must declare a Web/PWA Content Security Policy meta tag')
+  } else {
+    verifyCspPolicy(sourceWebCsp, requiredWebCspFragments, 'frontend/index.html Web/PWA CSP', issues, {
+      forbiddenFragments: ["frame-ancestors 'none'"],
+    })
+  }
+
   if (!i18nSource.includes('import.meta.env.BASE_URL')) {
     issues.push('frontend/src/lib/i18n.ts must use import.meta.env.BASE_URL for browser locale fallbacks')
   }
@@ -2689,31 +2714,7 @@ async function verifyTauriPackagingConfig() {
   if (!nonEmptyString(csp)) {
     issues.push('tauri.conf.json app.security.csp must define a production Content Security Policy')
   } else {
-    const requiredCspFragments = [
-      "default-src 'self'",
-      "script-src 'self'",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' asset: http://asset.localhost data: blob:",
-      "media-src 'self' asset: http://asset.localhost data: blob:",
-      "font-src 'self' data:",
-      "connect-src 'self' asset: http://asset.localhost https: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*",
-      "worker-src 'self' blob:",
-      "object-src 'none'",
-      "base-uri 'self'",
-      "form-action 'none'",
-      "frame-ancestors 'none'",
-    ]
-    for (const fragment of requiredCspFragments) {
-      if (!csp.includes(fragment)) {
-        issues.push(`tauri.conf.json app.security.csp must include ${fragment}`)
-      }
-    }
-    if (csp.includes("'unsafe-eval'")) {
-      issues.push('tauri.conf.json app.security.csp must not allow unsafe-eval')
-    }
-    if (/default-src\s+\*/.test(csp)) {
-      issues.push('tauri.conf.json app.security.csp must not use default-src *')
-    }
+    verifyCspPolicy(csp, requiredTauriCspFragments, 'tauri.conf.json app.security.csp', issues)
   }
 
   const mobileDeploymentRequirements = [
@@ -3113,6 +3114,24 @@ async function verifyWebDist({ basePath = '/' } = {}) {
   }
   if (indexHtml) {
     verifyIndexAssetBase(indexHtml, normalizedBase, issues)
+    const indexCsp = extractHtmlCsp(indexHtml)
+    if (!indexCsp) {
+      issues.push('index.html must include the Web/PWA Content Security Policy meta tag')
+    } else {
+      verifyCspPolicy(indexCsp, requiredWebCspFragments, 'index.html Web/PWA CSP', issues, {
+        forbiddenFragments: ["frame-ancestors 'none'"],
+      })
+    }
+  }
+  if (fallbackHtml) {
+    const fallbackCsp = extractHtmlCsp(fallbackHtml)
+    if (!fallbackCsp) {
+      issues.push('404.html must include the Web/PWA Content Security Policy meta tag')
+    } else {
+      verifyCspPolicy(fallbackCsp, requiredWebCspFragments, '404.html Web/PWA CSP', issues, {
+        forbiddenFragments: ["frame-ancestors 'none'"],
+      })
+    }
   }
 
   if (manifest) {
@@ -3471,6 +3490,36 @@ async function readJsonMaybe(filePath) {
   const content = await readMaybe(filePath)
   if (!content) return null
   return JSON.parse(content)
+}
+
+function extractHtmlCsp(html) {
+  if (typeof html !== 'string') return null
+
+  for (const match of html.matchAll(/<meta\b[^>]*>/gi)) {
+    const tag = match[0]
+    if (!/\bhttp-equiv\s*=\s*["']Content-Security-Policy["']/i.test(tag)) continue
+    return tag.match(/\bcontent\s*=\s*(["'])([\s\S]*?)\1/i)?.[2] ?? null
+  }
+  return null
+}
+
+function verifyCspPolicy(csp, requiredFragments, label, issues, options = {}) {
+  for (const fragment of requiredFragments) {
+    if (!csp.includes(fragment)) {
+      issues.push(`${label} must include ${fragment}`)
+    }
+  }
+  if (csp.includes("'unsafe-eval'")) {
+    issues.push(`${label} must not allow unsafe-eval`)
+  }
+  if (/default-src\s+\*/.test(csp)) {
+    issues.push(`${label} must not use default-src *`)
+  }
+  for (const fragment of options.forbiddenFragments ?? []) {
+    if (csp.includes(fragment)) {
+      issues.push(`${label} must not include ${fragment}`)
+    }
+  }
 }
 
 function nonEmptyString(value) {

@@ -17,6 +17,7 @@
 - [ ] `npm audit` shows zero vulnerabilities
 - [ ] Frontend runtime source contains no `console.log` or `console.debug` debug output before Web/PWA or Tauri packaging
 - [ ] Frontend runtime source contains no `v-html` or direct `innerHTML`/`outerHTML` assignment before Web/PWA or Tauri packaging
+- [ ] Web/PWA `index.html` and `404.html` include a Content Security Policy meta tag that blocks object/frame/form/`unsafe-eval` surfaces while allowing required app assets, blob/data media, HTTPS providers, and localhost preview tooling
 - [ ] All 21 views render correctly (Dashboard, Title, Story Mode, AI Chat, Workflow, Character Editor, Scene Assets, Settings, Characters, Group Chat, Analytics, Quality, Marketplace, Plugins, Audio, Knowledge, Dialogue Editor, Scene Editor, CG Gallery, Backlog, Achievements)
 - [ ] Sidebar navigation works for all 20 items
 - [ ] Responsive layout verified on mobile viewport (375px) and tablet (768px), with the build-time responsive shell verifier attached as release evidence
@@ -119,6 +120,7 @@
 - [ ] README.md version and features updated
 - [ ] Tauri bundle config declares installer metadata, Windows MSI/NSIS targets, icon assets, WebView2 install mode, and bundled sample `data/` resources
 - [ ] Tauri app security declares a production CSP instead of `csp: null`, keeps `script-src 'self'`, blocks `unsafe-eval`, and allows only required local asset, blob/data media, HTTPS, and localhost dev sources
+- [ ] Web/PWA app-shell security declares a CSP meta tag in source and generated static fallback output, keeps `script-src 'self'`, blocks `unsafe-eval`, and allows only required app asset, blob/data media, HTTPS, and localhost preview sources
 - [ ] Installed Tauri build resolves bundled sample `data/` resources at startup when no development project data root is available
 - [ ] Installed Tauri build writes analytics, sync manifests, saves, and generated system/API TTS assets under the active project data root with sanitized output filenames
 - [ ] Azure and ElevenLabs TTS provider errors redact token-shaped values, API-key assignments, authorization headers, sensitive provider headers, and response bodies before reaching frontend status surfaces
