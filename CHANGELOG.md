@@ -5,6 +5,7 @@
 - Added block-level prompt-control sanitization for Tauri, shared Rust AI, and legacy C# prompt builders so explicit XML, Markdown fence, and comment-wrapped role-control payloads are omitted along with their opening markers.
 - Added a checked-in block-body prompt-injection quality scenario proving XML, Markdown fence, and comment-wrapped role-control payloads cannot boost scores, poison memory, or trigger story events.
 - Added Quality Suites workbench guard-note summaries and export evidence so author QA reports include runtime safety trace guard note counts alongside category, failure, safety-signal, and workflow coverage summaries.
+- Added finalized guarded workflow output evidence to Quality Suite reports and exports so QA can inspect the safe story text consumed after workflow LLM output sanitization.
 - Added runtime renderer fallback handling so Story Mode and Character Editor skip failed Live2D/GLB/GLTF loads and continue to the next valid 3D, sprite, portrait, or generated placeholder candidate.
 - Added buffered OpenAI-compatible SSE stream parsing so API streaming responses survive split JSON lines, split UTF-8 content, `[DONE]` markers, and final lines without trailing newlines.
 - Added ONNX runtime-unavailable guards and real AI backend readiness reporting so local ONNX configuration cannot emit placeholder character text or appear ready before a runtime executor is linked.

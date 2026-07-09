@@ -215,6 +215,7 @@ pub struct QualityScenarioReport {
     pub style_drift_detected: bool,
     pub evaluation_summary_leak_detected: bool,
     pub workflow_output_leak_detected: bool,
+    pub workflow_output: Option<String>,
     pub memory_prompt_leak_detected: bool,
     pub runtime_safety_trace: Option<chat::ChatSafetyTrace>,
     pub workflow_coverage: Option<QualityWorkflowCoverageReport>,
@@ -733,6 +734,8 @@ async fn run_quality_scenario(
         prompt_guard::has_private_reasoning_leak(&evaluation.summary)
             || prompt_guard::has_prompt_injection_markers(&evaluation.summary);
     let workflow_output = scenario_workflow_output(scenario);
+    let workflow_output_report =
+        (!workflow_output.trim().is_empty()).then(|| workflow_output.clone());
     let workflow_output_leak_detected = !workflow_output.trim().is_empty()
         && (prompt_guard::has_private_reasoning_leak(&workflow_output)
             || prompt_guard::has_prompt_injection_markers(&workflow_output));
@@ -793,6 +796,7 @@ async fn run_quality_scenario(
         style_drift_detected,
         evaluation_summary_leak_detected,
         workflow_output_leak_detected,
+        workflow_output: workflow_output_report,
         memory_prompt_leak_detected,
         runtime_safety_trace,
         workflow_coverage: workflow_evidence.coverage,
@@ -1902,6 +1906,10 @@ mod tests {
             .expect("workflow guard-only fallback scenario");
         assert!(workflow_guard_only.passed);
         assert!(!workflow_guard_only.workflow_output_leak_detected);
+        assert_eq!(
+            workflow_guard_only.workflow_output.as_deref(),
+            Some(prompt_guard::stable_workflow_generation_failure_text())
+        );
         assert!(
             report
                 .audit_summary

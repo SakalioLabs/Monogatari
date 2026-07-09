@@ -143,6 +143,10 @@
                 <strong>{{ runtimeTraceLabel(scenario.runtime_safety_trace) }}</strong>
                 <small>{{ runtimeTraceSummary(scenario.runtime_safety_trace) }}</small>
               </div>
+              <div v-if="scenario.workflow_output" class="workflow-output-row">
+                <span>{{ t('quality.workflow-output', 'Workflow Output') }}</span>
+                <strong>{{ scenario.workflow_output }}</strong>
+              </div>
             </div>
             <div class="scenario-side">
               <span class="injection" :class="{ active: scenario.prompt_injection_detected }">
@@ -236,6 +240,7 @@ interface QualityScenarioReport {
   style_drift_detected?: boolean
   evaluation_summary_leak_detected: boolean
   workflow_output_leak_detected?: boolean
+  workflow_output?: string | null
   memory_prompt_leak_detected?: boolean
   runtime_safety_trace?: ChatSafetyTrace | null
   workflow_coverage?: WorkflowCoverageReport | null
@@ -844,6 +849,7 @@ const previewReport: QualitySuiteReport = {
       identity_drift_detected: false,
       evaluation_summary_leak_detected: false,
       workflow_output_leak_detected: false,
+      workflow_output: 'Workflow output withheld because it referenced unsafe prompt-control text.',
     },
     {
       id: 'workflow-tool-output-sanitized',
@@ -857,6 +863,7 @@ const previewReport: QualitySuiteReport = {
       identity_drift_detected: false,
       evaluation_summary_leak_detected: false,
       workflow_output_leak_detected: false,
+      workflow_output: 'Workflow output withheld because it referenced unsafe prompt-control text.',
     },
     {
       id: 'workflow-guard-only-output-fallback',
@@ -870,6 +877,7 @@ const previewReport: QualitySuiteReport = {
       identity_drift_detected: false,
       evaluation_summary_leak_detected: false,
       workflow_output_leak_detected: false,
+      workflow_output: 'Workflow generation failed before safe story text was produced.',
     },
     {
       id: 'relationship-boundary-first-friend',
@@ -1210,6 +1218,9 @@ onMounted(async () => {
 .runtime-trace-row { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 8px; align-items: center; padding: 8px 10px; border: 1px solid rgba(245,158,11,0.24); border-radius: var(--radius-sm); background: rgba(245,158,11,0.08); }
 .runtime-trace-row span, .runtime-trace-row small { color: var(--text-tertiary); font-size: 11px; font-weight: 800; text-transform: uppercase; min-width: 0; overflow-wrap: anywhere; }
 .runtime-trace-row strong { color: var(--warning); font-size: 13px; white-space: nowrap; }
+.workflow-output-row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: start; padding: 8px 10px; border: 1px solid rgba(96,165,250,0.24); border-radius: var(--radius-sm); background: rgba(96,165,250,0.08); }
+.workflow-output-row span { color: var(--text-tertiary); font-size: 11px; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
+.workflow-output-row strong { color: #bfdbfe; font-size: 12px; font-weight: 750; line-height: 1.45; min-width: 0; overflow-wrap: anywhere; }
 .scenario-side { display: grid; gap: 10px; align-content: start; justify-items: end; min-width: 0; }
 .event-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
 .event-chip { background: rgba(96,165,250,0.14); color: #93c5fd; text-transform: none; }

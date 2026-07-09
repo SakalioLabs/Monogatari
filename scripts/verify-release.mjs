@@ -1835,6 +1835,8 @@ async function verifyFrontendSourceInvariants() {
     ['score-gate-workflow-coverage', 'include the score-gate workflow coverage preview scenario'],
     ['workflow-tool-output-sanitized', 'include the workflow tool-output containment preview scenario'],
     ['workflow-guard-only-output-fallback', 'include the workflow guard-only fallback preview scenario'],
+    ['workflow_output', 'type finalized workflow output evidence in quality scenario reports'],
+    ['workflow-output-row', 'keep a stable style hook for finalized workflow output evidence rows'],
     ['fallback-injection-score-contained', 'include the fallback scoring injection containment preview scenario'],
     ['structured-role-injection-contained', 'include the structured role-block injection containment preview scenario'],
     ['block-body-prompt-injection-contained', 'include the block-body prompt-control containment preview scenario'],
@@ -3221,6 +3223,8 @@ async function verifyTauriPackagingConfig() {
     ['pinned_knowledge_ref_ids', 'carry pinned knowledge ref ids into quality runtime traces'],
     ['guard_workflow_story_output', 'reuse runtime workflow LLM output finalization in quality reports'],
     ['workflow_output_equals', 'let workflow quality scenarios assert finalized workflow output text'],
+    ['workflow_output: Option<String>', 'export finalized workflow output text in quality reports'],
+    ['workflow_output_report', 'omit empty workflow output evidence from non-workflow scenarios'],
     ['reports_workflow_output_finalization_mismatches', 'test finalized workflow output expectations fail loudly'],
   ]
   for (const [needle, description] of qualityRuntimeTraceRequirements) {
