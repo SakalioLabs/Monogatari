@@ -271,12 +271,10 @@ mod tests {
 pub async fn get_ai_status(state: State<'_, AppState>) -> Result<AIStatus, String> {
     let pipeline = state.inference_pipeline.read().await;
     let engines = pipeline
-        .engine_names()
+        .engine_statuses()
+        .await
         .into_iter()
-        .map(|name| EngineInfo {
-            name: name.to_string(),
-            ready: true, // Would check actual engine readiness
-        })
+        .map(|(name, ready)| EngineInfo { name, ready })
         .collect();
 
     Ok(AIStatus {

@@ -1,6 +1,12 @@
 //! Tests for the AI inference pipeline.
 
-use llm_ai::{InferenceOptions, InferencePipeline, PromptBuilder};
+use std::sync::Arc;
+
+use llm_ai::{
+    APIConfig, APIEngine, InferenceEngine, InferenceOptions, InferencePipeline, ModelConfig,
+    ONNXEngine, PromptBuilder,
+};
+use tokio::sync::RwLock;
 
 #[test]
 fn test_prompt_builder_empty() {
@@ -73,6 +79,31 @@ fn test_inference_pipeline_no_active_engine() {
     // Should return error when no active engine
     let result = rt.block_on(pipeline.generate_response("test", &options));
     assert!(result.is_err());
+}
+
+#[test]
+fn test_inference_pipeline_engine_statuses_reflect_readiness() {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let mut pipeline = InferencePipeline::new();
+    let mut api_engine = APIEngine::new(APIConfig {
+        base_url: "https://example.test/v1".to_string(),
+        api_key: "test-key".to_string(),
+        model: "test-model".to_string(),
+        ..Default::default()
+    });
+    rt.block_on(api_engine.initialize()).unwrap();
+
+    pipeline.register_engine(Arc::new(RwLock::new(api_engine)));
+    pipeline.register_engine(Arc::new(RwLock::new(ONNXEngine::new(
+        ModelConfig::default(),
+    ))));
+
+    let statuses = rt.block_on(pipeline.engine_statuses());
+
+    assert_eq!(
+        statuses,
+        vec![("API".to_string(), true), ("ONNX".to_string(), false)]
+    );
 }
 
 #[test]

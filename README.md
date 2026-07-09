@@ -35,7 +35,7 @@ Monogatari is a development engine for creating LLM-driven text adventure games.
 - **Template Marketplace** - Browse, import, and export community-created templates, characters, and story modules.
 
 - **Project Export** - Export project as distributable JSON manifest with content inventory for packaging.
-- **Multiple AI Backends** - OpenAI-compatible API (GPT, Claude, etc.) and local ONNX models with DirectML.
+- **Multiple AI Backends** - OpenAI-compatible API (GPT, Claude, etc.) plus project-scoped ONNX configuration preflight with explicit runtime-unavailable guards until local ONNX execution is linked.
 - **Title Screen** - Cinematic animated title screen with particle effects, glowing brand logo, and quick-access menu for game start, workflow editing, gallery, and settings.
 - **CG Gallery** - Scene and character art collection viewer with grid layout, locked/unlocked states, preview modal with weather/time metadata, and color-coded thumbnails.
 - **Backlog Viewer** - Full conversation history replay with character selector, role-based filtering (player/character/system), emotion badges, and jump-to-latest.
@@ -79,7 +79,7 @@ Verified on 2026-07-09:
 - Prompt-injection text cannot advance local relationship sentiment deltas, so positive words inside meta-instructions cannot silently unlock relationship milestone events.
 - Chat runtime responses emit safety trace evidence for player input wrapping, prompt-injection detection, memory guarding, response guarding, stream replacement, and relationship side-channel containment.
 - Group chat character responses reuse the same runtime safety trace contract so multi-character scenes expose prompt-injection, response guard, memory guard, and relationship side-channel evidence per reply.
-- ONNX backend configuration resolves model and tokenizer references under the active project data root, rejects raw filesystem paths, and activates the ONNX engine after registration.
+- ONNX backend configuration resolves model and tokenizer references under the active project data root, rejects raw filesystem paths, activates the ONNX engine after registration, and reports the backend as not ready instead of returning placeholder success while ONNX Runtime execution is not linked.
 - Chat sessions now expose a restorable audit report with the latest safety trace, evaluation, story-event decisions, and triggerable events so author diagnostics survive character switching.
 - Quality Suites now export runtime safety trace evidence and guard-note count summaries, and include group chat plus block-body prompt-injection scenarios that require concrete guard notes for input wrapping, response guarding, memory guarding, relationship side-channel containment, and score/event containment.
 - Local fallback scoring ignores prompt-injection text for engagement and creativity boosts, so long meta-instructions cannot unlock score-gated story events when model evaluation is unavailable.
@@ -307,6 +307,8 @@ API keys are runtime-only. Set them through Settings when configuring the AI bac
 
 ### ONNX Mode (Local)
 
+ONNX configuration is project-scoped and validated, but this build does not link an ONNX Runtime executor yet. ONNX inference and streaming fail with an explicit runtime-unavailable error instead of returning placeholder character text; use the API backend for production dialogue until the local runtime integration is enabled.
+
 ```json
 {
   "ai": {
@@ -397,7 +399,7 @@ API keys are runtime-only. Set them through Settings when configuring the AI bac
 ### Completed
 
 - [x] Core engine architecture (EventBus, ServiceLocator, GameClock)
-- [x] AI inference pipeline (API + ONNX with DirectML)
+- [x] AI inference pipeline (API + project-scoped ONNX configuration preflight with runtime-unavailable guard)
 - [x] Character system (personality, memory, emotions, relationships)
 - [x] Dialogue system (branching, choices, flags, scripts)
 - [x] Knowledge base (keyword search, category/tag indexing)
@@ -492,7 +494,7 @@ API keys are runtime-only. Set them through Settings when configuring the AI bac
 
 - **Backend**: Rust, Tauri 2.x
 - **Frontend**: Vue 3, TypeScript, Vite, Pinia
-- **AI**: OpenAI-compatible API, ONNX Runtime (DirectML)
+- **AI**: OpenAI-compatible API, guarded ONNX configuration preflight for future local runtime integration
 - **Scripting**: Rhai
 - **Rendering**: PixiJS, Live2D Cubism SDK
 - **Desktop**: Tauri (WebView2 on Windows, WebKit on macOS/Linux)

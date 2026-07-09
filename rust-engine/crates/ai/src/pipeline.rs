@@ -56,6 +56,22 @@ impl InferencePipeline {
         self.engines.keys().map(|s| s.as_str()).collect()
     }
 
+    /// List registered engines with their actual readiness state.
+    pub async fn engine_statuses(&self) -> Vec<(String, bool)> {
+        let mut names = self.engines.keys().cloned().collect::<Vec<_>>();
+        names.sort();
+
+        let mut statuses = Vec::with_capacity(names.len());
+        for name in names {
+            if let Some(engine) = self.engines.get(&name) {
+                let engine = engine.read().await;
+                statuses.push((name, engine.is_ready()));
+            }
+        }
+
+        statuses
+    }
+
     /// Initialize all registered engines.
     pub async fn initialize_all(&self) -> Result<()> {
         for (name, engine) in &self.engines {

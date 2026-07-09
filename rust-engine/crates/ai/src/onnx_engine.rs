@@ -1,15 +1,18 @@
 //! ONNX Runtime inference engine for local LLM execution.
 
 use std::path::PathBuf;
-use std::time::Instant;
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use tracing::{debug, info, warn};
+use tracing::info;
 
 use llm_core::Result;
 
 use crate::inference::{InferenceEngine, InferenceOptions, InferenceResult};
+
+/// Message returned when this build has ONNX configuration support but no ONNX Runtime executor.
+pub const ONNX_RUNTIME_UNAVAILABLE_MESSAGE: &str =
+    "ONNX Runtime execution is not linked in this build; local ONNX inference is unavailable. Configure the API backend or enable an ONNX Runtime integration before using ONNX mode.";
 
 /// Configuration for the ONNX inference engine.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -116,6 +119,10 @@ impl ONNXEngine {
             initialized: false,
         }
     }
+
+    fn runtime_unavailable_error() -> llm_core::EngineError {
+        llm_core::EngineError::inference("ONNX", ONNX_RUNTIME_UNAVAILABLE_MESSAGE)
+    }
 }
 
 #[async_trait]
@@ -153,61 +160,14 @@ impl InferenceEngine for ONNXEngine {
             ));
         }
 
-        self.initialized = true;
-        info!("ONNX engine initialized successfully");
-        Ok(())
+        let _tokenizer = Tokenizer::from_file(&self.config.tokenizer_path)?;
+
+        self.initialized = false;
+        Err(Self::runtime_unavailable_error())
     }
 
-    async fn infer(&self, prompt: &str, options: &InferenceOptions) -> Result<InferenceResult> {
-        if !self.initialized {
-            return Err(llm_core::EngineError::inference(
-                "ONNX",
-                "Engine not initialized",
-            ));
-        }
-
-        let start = Instant::now();
-        debug!("Running ONNX inference");
-
-        // Load tokenizer
-        let tokenizer = Tokenizer::from_file(&self.config.tokenizer_path)?;
-
-        // Encode input
-        let input_tokens = tokenizer.encode(prompt);
-        debug!("Input tokens: {}", input_tokens.len());
-
-        // For now, simulate autoregressive generation
-        // In a full implementation, this would:
-        // 1. Load the ONNX model via ort crate
-        // 2. Create an OrtSession with DirectML or CPU provider
-        // 3. Run the autoregressive token generation loop
-        // 4. Apply temperature, top-k, top-p sampling
-
-        let generated_tokens = Vec::new();
-        let _max_tokens = options.max_tokens.min(512) as usize;
-
-        // Placeholder: generate empty response until ONNX model is loaded
-        // The actual ONNX inference would use ort crate's Session
-        warn!(
-            "ONNX inference is a placeholder - actual model loading requires ort crate integration"
-        );
-
-        let generated_text = if generated_tokens.is_empty() {
-            String::from("[ONNX inference placeholder - model not loaded]")
-        } else {
-            tokenizer.decode(&generated_tokens)
-        };
-
-        let duration = start.elapsed().as_millis() as u64;
-        debug!("ONNX inference completed in {}ms", duration);
-
-        Ok(InferenceResult {
-            text: generated_text,
-            success: true,
-            error: None,
-            duration_ms: duration,
-            tokens_generated: generated_tokens.len() as u32,
-        })
+    async fn infer(&self, _prompt: &str, _options: &InferenceOptions) -> Result<InferenceResult> {
+        Err(Self::runtime_unavailable_error())
     }
 
     async fn infer_stream(
@@ -216,24 +176,90 @@ impl InferenceEngine for ONNXEngine {
         options: &InferenceOptions,
         on_chunk: Box<dyn Fn(String) + Send + 'static>,
     ) -> Result<InferenceResult> {
-        // ONNX stream simulation: generate full result then send word by word
-        let result = self.infer(prompt, options).await?;
-
-        if result.success {
-            let words: Vec<&str> = result.text.split_whitespace().collect();
-            for word in words {
-                on_chunk(format!("{word} "));
-                // Small delay to simulate streaming
-                tokio::time::sleep(std::time::Duration::from_millis(30)).await;
-            }
-        }
-
-        Ok(result)
+        let _ = on_chunk;
+        self.infer(prompt, options).await
     }
 
     async fn shutdown(&mut self) -> Result<()> {
         self.initialized = false;
         info!("ONNX engine shut down");
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn temp_model_dir(label: &str) -> PathBuf {
+        let unique = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!(
+            "monogatari-onnx-{label}-{}-{unique}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("model.onnx"), b"placeholder model").unwrap();
+        std::fs::write(dir.join("tokenizer.json"), br#"["hello","world"]"#).unwrap();
+        dir
+    }
+
+    fn test_config(dir: &std::path::Path) -> ModelConfig {
+        ModelConfig {
+            model_path: dir.join("model.onnx"),
+            tokenizer_path: dir.join("tokenizer.json"),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn onnx_initialize_reports_runtime_unavailable_without_ready_state() {
+        let dir = temp_model_dir("initialize");
+        let mut engine = ONNXEngine::new(test_config(&dir));
+        let rt = tokio::runtime::Runtime::new().unwrap();
+
+        let error = rt.block_on(engine.initialize()).unwrap_err();
+
+        assert!(error.to_string().contains(ONNX_RUNTIME_UNAVAILABLE_MESSAGE));
+        assert!(!engine.is_ready());
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn onnx_infer_reports_runtime_unavailable_without_placeholder_success() {
+        let dir = temp_model_dir("infer");
+        let engine = ONNXEngine::new(test_config(&dir));
+        let rt = tokio::runtime::Runtime::new().unwrap();
+
+        let error = rt
+            .block_on(engine.infer("hello", &InferenceOptions::default()))
+            .unwrap_err();
+
+        assert!(error.to_string().contains(ONNX_RUNTIME_UNAVAILABLE_MESSAGE));
+        assert!(!error.to_string().contains("placeholder"));
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn onnx_stream_reports_runtime_unavailable_without_chunks() {
+        let dir = temp_model_dir("stream");
+        let engine = ONNXEngine::new(test_config(&dir));
+        let emitted = std::sync::Arc::new(std::sync::Mutex::new(Vec::<String>::new()));
+        let emitted_for_callback = emitted.clone();
+        let rt = tokio::runtime::Runtime::new().unwrap();
+
+        let error = rt
+            .block_on(engine.infer_stream(
+                "hello",
+                &InferenceOptions::default(),
+                Box::new(move |chunk| emitted_for_callback.lock().unwrap().push(chunk)),
+            ))
+            .unwrap_err();
+
+        assert!(error.to_string().contains(ONNX_RUNTIME_UNAVAILABLE_MESSAGE));
+        assert!(emitted.lock().unwrap().is_empty());
+        std::fs::remove_dir_all(dir).unwrap();
     }
 }

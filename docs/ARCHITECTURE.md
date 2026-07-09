@@ -20,7 +20,7 @@ Monogatari is a desktop application built with Rust (Tauri 2.x) for the backend 
 |  core/ | ai/ | game/ | assets/ | scripting/       |
 +--------------------------------------------------+
 |           External Services                        |
-|  OpenAI API | ONNX Runtime | TTS Providers        |
+|  OpenAI API | ONNX Preflight | TTS Providers       |
 +--------------------------------------------------+
 ```
 
@@ -41,7 +41,7 @@ Script execution is treated as bounded authoring logic. Tauri script commands va
 
 1. **Player sends message** via ChatView -> invokeCommand("send_chat_message")
 2. **Backend builds context** from character personality, knowledge base, conversation history
-3. **AI pipeline generates response** via OpenAI-compatible API or ONNX model
+3. **AI pipeline generates response** via OpenAI-compatible API; ONNX mode is project-scoped configuration preflight until a local runtime executor is linked
 4. **Response streamed** back via Tauri events (chat-chunk, chat-complete)
 5. **Evaluation triggered** every 5 messages - scores friendliness, engagement, creativity
 6. **Events triggered** based on cumulative scores and relationship milestones
@@ -75,7 +75,7 @@ Live2D backend commands treat model paths as project-relative model file referen
 
 The `InferencePipeline` supports two backends:
 1. **API Engine**: OpenAI-compatible endpoints (GPT-4, Claude, etc.)
-2. **ONNX Engine**: Local models via ONNX Runtime with DirectML acceleration
+2. **ONNX Engine**: Project-scoped local model/tokenizer configuration preflight with explicit runtime-unavailable errors until ONNX Runtime execution is linked
 
 Character responses use a structured prompt system:
 - System prompt with character personality, background, and emotion
@@ -89,7 +89,7 @@ When live evaluator output is unavailable, deterministic fallback scoring uses o
 
 API backend configuration treats provider credentials as runtime-only secrets. Project settings save/load paths scrub API keys, tokens, authorization headers, token-shaped values, query-secret assignments, and legacy persisted secret fields before writing `settings.json` or returning project config state to the frontend. The Rust API engine redacts API keys, bearer tokens, sensitive custom headers, and echoed secret assignments from debug output and API error surfaces before they can reach logs or frontend error reports. OpenAI-compatible streaming responses are parsed through a buffered SSE delta parser so provider chunks can split JSON lines or UTF-8 content without dropping streamed character text.
 
-ONNX backend configuration treats `modelPath` and `tokenizerPath` as project-relative file references under the active project data root. Model references must be `.onnx`, tokenizer references must be `.json`, path-shaped or non-portable input is rejected before engine registration, and successful ONNX configuration activates the ONNX engine so Settings cannot silently leave an older backend selected.
+ONNX backend configuration treats `modelPath` and `tokenizerPath` as project-relative file references under the active project data root. Model references must be `.onnx`, tokenizer references must be `.json`, path-shaped or non-portable input is rejected before engine registration, and successful ONNX configuration activates the ONNX engine so Settings cannot silently leave an older backend selected. Until a real ONNX Runtime executor is linked, ONNX initialization, inference, and streaming return an explicit runtime-unavailable error and AI status reports the backend as not ready, preventing placeholder text from entering character dialogue or scoring flows.
 
 The legacy C# AI path mirrors the same boundary-sanitization intent for bracket, fullwidth, XML/header, attributed XML-like, Markdown role-code-fence, comment-wrapped, punctuation-free heading, and JSON-shaped role spoofing, and redacts token-shaped values plus JSON/header/query secret assignments from provider error bodies and request exceptions while the legacy solution remains in the release gate.
 

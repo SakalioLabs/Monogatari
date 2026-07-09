@@ -7,7 +7,7 @@ A powerful visual novel / galgame engine powered by Large Language Models, built
 - **LLM-Powered Characters**: AI-driven characters with personality, memory, and emotional states
 - **Live2D Support**: Animated character models using Live2D Cubism SDK
 - **Visual Workflow Editor**: Create stories visually without coding (Dify-style)
-- **Multiple AI Backends**: Support for OpenAI-compatible APIs and local ONNX models with DirectML
+- **Multiple AI Backends**: Support for OpenAI-compatible APIs plus project-scoped ONNX configuration preflight with explicit runtime-unavailable guards until local ONNX execution is linked
 - **Dialogue System**: Branching dialogue trees with choices and relationship tracking
 - **Knowledge Base**: World lore and context system for consistent storytelling
 - **Save/Load System**: Full game state persistence
@@ -99,6 +99,8 @@ dm.start_dialogue("meeting_sakura").await?;
 ```
 
 #### ONNX Mode (Local)
+ONNX configuration is project-scoped and validated, but this build does not link an ONNX Runtime executor yet. ONNX inference and streaming fail with an explicit runtime-unavailable error instead of returning placeholder character text; use the API backend for production dialogue until the local runtime integration is enabled.
+
 ```json
 {
   "ai": {

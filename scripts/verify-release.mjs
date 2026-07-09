@@ -2161,6 +2161,9 @@ async function verifyAiBackendConfigInvariants() {
   const issues = []
   const aiCommandSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'ai.rs'), 'utf8')
   const rustApiEngineSource = await readFile(path.join(rustDir, 'crates', 'ai', 'src', 'api_engine.rs'), 'utf8')
+  const rustOnnxEngineSource = await readFile(path.join(rustDir, 'crates', 'ai', 'src', 'onnx_engine.rs'), 'utf8')
+  const rustPipelineSource = await readFile(path.join(rustDir, 'crates', 'ai', 'src', 'pipeline.rs'), 'utf8')
+  const rustPipelineTests = await readFile(path.join(rustDir, 'crates', 'ai', 'tests', 'pipeline_tests.rs'), 'utf8')
   const settingsViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'SettingsView.vue'), 'utf8')
 
   const aiRequirements = [
@@ -2197,6 +2200,36 @@ async function verifyAiBackendConfigInvariants() {
     if (!rustApiEngineSource.includes(needle)) {
       issues.push(`Rust API streaming must ${description}`)
     }
+  }
+
+  const onnxRuntimeGuardRequirements = [
+    ['ONNX_RUNTIME_UNAVAILABLE_MESSAGE', 'declare a single unavailable-runtime message'],
+    ['Err(Self::runtime_unavailable_error())', 'fail explicitly instead of returning placeholder inference text'],
+    ['onnx_initialize_reports_runtime_unavailable_without_ready_state', 'test ONNX initialization remains not ready without runtime linkage'],
+    ['onnx_infer_reports_runtime_unavailable_without_placeholder_success', 'test ONNX inference cannot masquerade as successful placeholder output'],
+    ['onnx_stream_reports_runtime_unavailable_without_chunks', 'test ONNX streaming does not emit placeholder chunks'],
+  ]
+  for (const [needle, description] of onnxRuntimeGuardRequirements) {
+    if (!rustOnnxEngineSource.includes(needle)) {
+      issues.push(`Rust ONNX runtime guard must ${description}`)
+    }
+  }
+  if (rustOnnxEngineSource.includes('[ONNX inference placeholder - model not loaded]')) {
+    issues.push('Rust ONNX runtime guard must not return placeholder text as a successful inference result')
+  }
+
+  const aiStatusRequirements = [
+    [rustPipelineSource, 'engine_statuses', 'expose actual inference engine readiness from the pipeline'],
+    [aiCommandSource, 'engine_statuses()', 'report actual engine readiness in get_ai_status'],
+    [rustPipelineTests, 'test_inference_pipeline_engine_statuses_reflect_readiness', 'test mixed ready/not-ready engine status reporting'],
+  ]
+  for (const [source, needle, description] of aiStatusRequirements) {
+    if (!source.includes(needle)) {
+      issues.push(`AI backend status must ${description}`)
+    }
+  }
+  if (aiCommandSource.includes('ready: true')) {
+    issues.push('AI backend status must not hard-code registered engines as ready')
   }
 
   if (
