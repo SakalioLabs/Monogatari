@@ -297,6 +297,7 @@ impl InferenceEngine for APIEngine {
         }
 
         let mut full_text = String::new();
+        let mut sse_parser = SseDeltaParser::default();
         let mut stream = response.bytes_stream();
 
         while let Some(chunk_result) = stream.next().await {
@@ -304,22 +305,17 @@ impl InferenceEngine for APIEngine {
                 llm_core::EngineError::inference("API", format!("Stream read error: {e}"))
             })?;
 
-            let text = String::from_utf8_lossy(&chunk);
-            for line in text.lines() {
-                let line = line.trim();
-                if !line.starts_with("data:") || line == "data: [DONE]" {
-                    continue;
-                }
-                let data = line.trim_start_matches("data:").trim();
-                if let Ok(chunk) = serde_json::from_str::<StreamChunk>(data) {
-                    for choice in chunk.choices {
-                        if let Some(content) = choice.delta.content {
-                            full_text.push_str(&content);
-                            on_chunk(content);
-                        }
-                    }
-                }
+            for content in sse_parser.push_bytes(&chunk) {
+                full_text.push_str(&content);
+                on_chunk(content);
             }
+            if sse_parser.done {
+                break;
+            }
+        }
+        for content in sse_parser.finish() {
+            full_text.push_str(&content);
+            on_chunk(content);
         }
 
         let duration = start.elapsed().as_millis() as u64;
@@ -339,6 +335,72 @@ impl InferenceEngine for APIEngine {
         self.initialized = false;
         info!("API engine shut down");
         Ok(())
+    }
+}
+
+#[derive(Default)]
+struct SseDeltaParser {
+    pending: Vec<u8>,
+    done: bool,
+}
+
+impl SseDeltaParser {
+    fn push_bytes(&mut self, bytes: &[u8]) -> Vec<String> {
+        if self.done {
+            return Vec::new();
+        }
+
+        self.pending.extend_from_slice(bytes);
+        let mut contents = Vec::new();
+        while let Some(newline_index) = self.pending.iter().position(|byte| *byte == b'\n') {
+            let mut line = self.pending.drain(..=newline_index).collect::<Vec<_>>();
+            if line.last() == Some(&b'\n') {
+                line.pop();
+            }
+            if line.last() == Some(&b'\r') {
+                line.pop();
+            }
+            if let Some(content) = self.parse_line(&line) {
+                contents.extend(content);
+            }
+            if self.done {
+                self.pending.clear();
+                break;
+            }
+        }
+        contents
+    }
+
+    fn finish(&mut self) -> Vec<String> {
+        if self.done || self.pending.is_empty() {
+            return Vec::new();
+        }
+
+        let line = std::mem::take(&mut self.pending);
+        self.parse_line(&line).unwrap_or_default()
+    }
+
+    fn parse_line(&mut self, line: &[u8]) -> Option<Vec<String>> {
+        let line = String::from_utf8_lossy(line);
+        let trimmed = line.trim();
+        if !trimmed.starts_with("data:") {
+            return None;
+        }
+
+        let data = trimmed.trim_start_matches("data:").trim();
+        if data == "[DONE]" {
+            self.done = true;
+            return None;
+        }
+
+        let chunk = serde_json::from_str::<StreamChunk>(data).ok()?;
+        Some(
+            chunk
+                .choices
+                .into_iter()
+                .filter_map(|choice| choice.delta.content)
+                .collect(),
+        )
     }
 }
 
@@ -643,5 +705,45 @@ mod tests {
         assert!(redacted.contains("<redacted>"));
         assert!(redacted.contains("bad key"));
         assert!(redacted.contains("https://example.test?access_token=<redacted>"));
+    }
+
+    #[test]
+    fn sse_delta_parser_buffers_split_json_and_unicode_lines() {
+        let mut parser = SseDeltaParser::default();
+        let first = br#"data: {"choices":[{"delta":{"content":"Hel"},"finish_reason":null}]}"#;
+        let split_unicode =
+            "data: {\"choices\":[{\"delta\":{\"content\":\"lo 世界\"},\"finish_reason\":null}]}\n";
+        let split_at = split_unicode
+            .find("界")
+            .expect("unicode marker in test payload")
+            + 1;
+        let done = b"data: [DONE]\n";
+
+        assert!(parser.push_bytes(&first[..24]).is_empty());
+        assert!(parser.push_bytes(&first[24..]).is_empty());
+        assert_eq!(parser.push_bytes(b"\n"), vec!["Hel".to_string()]);
+        assert!(parser
+            .push_bytes(&split_unicode.as_bytes()[..split_at])
+            .is_empty());
+        assert_eq!(
+            parser.push_bytes(&split_unicode.as_bytes()[split_at..]),
+            vec!["lo 世界".to_string()]
+        );
+        assert!(parser.push_bytes(done).is_empty());
+        assert!(parser.done);
+        assert!(parser
+            .push_bytes(br#"data: {"choices":[{"delta":{"content":"ignored"}}]}"#)
+            .is_empty());
+    }
+
+    #[test]
+    fn sse_delta_parser_flushes_final_line_without_newline() {
+        let mut parser = SseDeltaParser::default();
+        parser.push_bytes(
+            br#"data: {"choices":[{"delta":{"content":"final"},"finish_reason":null}]}"#,
+        );
+
+        assert_eq!(parser.finish(), vec!["final".to_string()]);
+        assert!(parser.finish().is_empty());
     }
 }

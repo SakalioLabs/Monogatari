@@ -2160,6 +2160,7 @@ async function verifyLegacyPromptBuilderInvariants() {
 async function verifyAiBackendConfigInvariants() {
   const issues = []
   const aiCommandSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'ai.rs'), 'utf8')
+  const rustApiEngineSource = await readFile(path.join(rustDir, 'crates', 'ai', 'src', 'api_engine.rs'), 'utf8')
   const settingsViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'SettingsView.vue'), 'utf8')
 
   const aiRequirements = [
@@ -2181,6 +2182,20 @@ async function verifyAiBackendConfigInvariants() {
   for (const [needle, description] of aiRequirements) {
     if (!aiCommandSource.includes(needle)) {
       issues.push(`AI backend configuration must ${description}`)
+    }
+  }
+
+  const apiStreamingRequirements = [
+    ['SseDeltaParser', 'buffer OpenAI-compatible SSE stream lines across network chunks'],
+    ['push_bytes(&chunk)', 'feed raw response bytes into the buffered SSE parser'],
+    ['if sse_parser.done', 'stop reading after an SSE [DONE] marker'],
+    ['finish()', 'flush a final SSE line if the server closes without a trailing newline'],
+    ['sse_delta_parser_buffers_split_json_and_unicode_lines', 'test split JSON and UTF-8 stream chunks'],
+    ['sse_delta_parser_flushes_final_line_without_newline', 'test final unterminated SSE line handling'],
+  ]
+  for (const [needle, description] of apiStreamingRequirements) {
+    if (!rustApiEngineSource.includes(needle)) {
+      issues.push(`Rust API streaming must ${description}`)
     }
   }
 
