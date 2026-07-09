@@ -190,7 +190,7 @@ public class PromptBuilder
 
         foreach (var role in PromptControlRoles)
         {
-            if (ContainsRoleTag(compact, role)
+            if (ContainsRoleTag(line, compact, role)
                 || compact.Contains($"\"role\":\"{role}\"", StringComparison.Ordinal)
                 || compact.Contains($"'role':'{role}'", StringComparison.Ordinal)
                 || compact.Contains($"role=\"{role}\"", StringComparison.Ordinal)
@@ -226,11 +226,42 @@ public class PromptBuilder
         return false;
     }
 
-    private static bool ContainsRoleTag(string compact, string role)
+    private static bool ContainsRoleTag(string line, string compact, string role)
     {
         return compact.Contains($"<{role}>", StringComparison.Ordinal)
             || compact.Contains($"</{role}>", StringComparison.Ordinal)
             || compact.Contains($"<{role}/", StringComparison.Ordinal)
-            || compact.Contains($"<{role}:", StringComparison.Ordinal);
+            || compact.Contains($"<{role}:", StringComparison.Ordinal)
+            || ContainsRoleTagWithBoundary(line, $"<{role}")
+            || ContainsRoleTagWithBoundary(line, $"</{role}");
+    }
+
+    private static bool ContainsRoleTagWithBoundary(string line, string marker)
+    {
+        var searchFrom = 0;
+        while (searchFrom < line.Length)
+        {
+            var offset = line.IndexOf(marker, searchFrom, StringComparison.Ordinal);
+            if (offset < 0)
+            {
+                return false;
+            }
+
+            var boundary = offset + marker.Length;
+            if (boundary >= line.Length)
+            {
+                return true;
+            }
+
+            var ch = line[boundary];
+            if (char.IsWhiteSpace(ch) || ch is '>' or '/' or ':')
+            {
+                return true;
+            }
+
+            searchFrom = boundary;
+        }
+
+        return false;
     }
 }

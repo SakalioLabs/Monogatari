@@ -206,7 +206,7 @@ fn is_structural_role_control_line(line: &str) -> bool {
     let compact: String = line.chars().filter(|ch| !ch.is_whitespace()).collect();
 
     for role in PROMPT_CONTROL_ROLES {
-        if contains_role_tag(&compact, role)
+        if contains_role_tag(line, &compact, role)
             || compact.contains(&format!("\"role\":\"{role}\""))
             || compact.contains(&format!("'role':'{role}'"))
             || compact.contains(&format!("role=\"{role}\""))
@@ -239,15 +239,37 @@ fn is_structural_role_control_line(line: &str) -> bool {
     false
 }
 
-fn contains_role_tag(compact: &str, role: &str) -> bool {
-    [
+fn contains_role_tag(line: &str, compact: &str, role: &str) -> bool {
+    let compact_markers = [
         format!("<{role}>"),
         format!("</{role}>"),
         format!("<{role}/"),
         format!("<{role}:"),
-    ]
-    .iter()
-    .any(|marker| compact.contains(marker))
+    ];
+
+    if compact_markers
+        .iter()
+        .any(|marker| compact.contains(marker))
+    {
+        return true;
+    }
+
+    role_tag_with_boundary(line, &format!("<{role}"))
+        || role_tag_with_boundary(line, &format!("</{role}"))
+}
+
+fn role_tag_with_boundary(line: &str, marker: &str) -> bool {
+    let mut search_from = 0;
+    while let Some(offset) = line[search_from..].find(marker) {
+        let boundary = search_from + offset + marker.len();
+        match line[boundary..].chars().next() {
+            None => return true,
+            Some(ch) if ch.is_whitespace() || matches!(ch, '>' | '/' | ':') => return true,
+            _ => search_from = boundary,
+        }
+    }
+
+    false
 }
 
 #[cfg(test)]

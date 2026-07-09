@@ -1904,6 +1904,8 @@ async function verifyLegacyPromptBuilderInvariants() {
     ['SanitizePromptContent', 'sanitize prompt content before legacy C# prompt assembly'],
     ['NormalizeSecurityText', 'normalize security-sensitive Unicode before legacy C# prompt checks'],
     ['IsStructuralRoleControlLine', 'detect XML/header/JSON-shaped role spoofing'],
+    ['ContainsRoleTag(line, compact, role)', 'detect attributed XML role spoofing'],
+    ['ContainsRoleTagWithBoundary', 'match attributed XML role tags without broad substring false positives'],
     ['SafeRoleHeader', 'prevent arbitrary AddMessage role labels from creating prompt sections'],
     ['Guarded prompt-control marker omitted.', 'omit structural prompt-control marker lines'],
     ['\\uFF01', 'normalize fullwidth ASCII ranges'],
@@ -1919,6 +1921,8 @@ async function verifyLegacyPromptBuilderInvariants() {
   const testRequirements = [
     ['Build_SanitizesRoleMarkersInsidePromptContent', 'test bracket/header/XML role marker sanitization'],
     ['Build_SanitizesFullwidthAndJsonRoleSpoofing', 'test fullwidth and JSON role spoofing sanitization'],
+    ['Build_SanitizesAttributedRoleTags', 'test attributed XML role tag sanitization'],
+    ['Build_AllowsNonRoleTagPrefixes', 'test attributed XML role matching keeps role-name boundaries'],
     ['Build_DefaultsUnexpectedMessageRolesToUser', 'test arbitrary message roles cannot create prompt sections'],
   ]
 
@@ -2796,6 +2800,7 @@ async function verifyTauriPackagingConfig() {
     ['\\u{FF01}', 'normalize fullwidth ASCII and punctuation before guard checks'],
     ['\\u{200B}', 'remove zero-width obfuscation before guard checks'],
     ['role:system', 'detect role markers after punctuation normalization'],
+    ['role_tag_with_boundary', 'detect attributed XML role-control tags without broad substring false positives'],
     ['忽略之前', 'detect Chinese prompt-control instructions'],
     ['以前の指示を無視', 'detect Japanese prompt-control instructions'],
     ['이전 지시를 무시', 'detect Korean prompt-control instructions'],
