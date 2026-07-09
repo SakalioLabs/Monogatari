@@ -54,6 +54,7 @@ const requiredQualityScenarios = [
   'evaluation-summary-sanitized',
   'workflow-output-sanitized',
   'workflow-tool-output-sanitized',
+  'workflow-guard-only-output-fallback',
   'score-gate-workflow-coverage',
   'relationship-boundary-first-friend',
   'already-triggered-event-not-replayed',
@@ -1105,6 +1106,20 @@ function verifyDefaultQualitySuite(suite) {
     }
   }
 
+  const workflowGuardOnlyScenario = suite.scenarios?.find((scenario) => scenario.id === 'workflow-guard-only-output-fallback')
+  if (workflowGuardOnlyScenario?.expect?.workflow_output_leak_detected !== false) {
+    issues.push('Workflow guard-only output scenario must expect workflow_output_leak_detected=false')
+  }
+  if (workflowGuardOnlyScenario?.expect?.workflow_output_equals !== 'Workflow generation failed before safe story text was produced.') {
+    issues.push('Workflow guard-only output scenario must expect stable workflow generation failure text')
+  }
+  const workflowGuardOnlyOutput = workflowGuardOnlyScenario?.mock_workflow_output ?? ''
+  for (const marker of ['```tool', 'function_call', 'unlock_event']) {
+    if (!workflowGuardOnlyOutput.includes(marker)) {
+      issues.push(`Workflow guard-only output scenario must include attack marker ${marker}`)
+    }
+  }
+
   const workflowCoverageScenario = suite.scenarios?.find((scenario) => scenario.id === 'score-gate-workflow-coverage')
   if (workflowCoverageScenario?.workflow_path !== 'workflows/score_gate_demo.json') {
     issues.push('Workflow coverage scenario must target workflows/score_gate_demo.json')
@@ -1819,11 +1834,12 @@ async function verifyFrontendSourceInvariants() {
     ['workflow-coverage-chip', 'keep a stable style hook for workflow coverage chips'],
     ['score-gate-workflow-coverage', 'include the score-gate workflow coverage preview scenario'],
     ['workflow-tool-output-sanitized', 'include the workflow tool-output containment preview scenario'],
+    ['workflow-guard-only-output-fallback', 'include the workflow guard-only fallback preview scenario'],
     ['fallback-injection-score-contained', 'include the fallback scoring injection containment preview scenario'],
     ['structured-role-injection-contained', 'include the structured role-block injection containment preview scenario'],
     ['block-body-prompt-injection-contained', 'include the block-body prompt-control containment preview scenario'],
     ['relationship-injection-delta-contained', 'include the relationship injection side-channel preview scenario'],
-    ['scenario_count: 28', 'keep the browser preview quality suite scenario count aligned with the default suite'],
+    ['scenario_count: 29', 'keep the browser preview quality suite scenario count aligned with the default suite'],
     ["{ category: 'injection', total: 8", 'keep the browser preview injection category count aligned with the default suite'],
     ['relationship_delta', 'type relationship delta evidence in quality scenario reports'],
     ['memory_prompt_leak_detected', 'surface memory prompt replay safety in quality suites'],
@@ -2604,8 +2620,7 @@ async function verifyWorkflowCommandInvariants() {
     ['WorkflowPreviewState', 'isolate desktop run-context preview state from persistent runtime state'],
     ['workflow_preview_script_engine', 'snapshot script state into desktop workflow previews'],
     ['run_context_preview_isolates_workflow_state_nodes', 'test desktop workflow previews do not persist state node effects'],
-    ['guarded_workflow_llm_output', 'centralize guarded workflow LLM node output finalization'],
-    ['stable_workflow_llm_failure_text', 'return stable workflow LLM text when no safe story text remains'],
+    ['prompt_guard::guard_workflow_story_output', 'finalize workflow LLM node output through the shared prompt guard'],
     ['workflow_llm_output_falls_back_when_guard_has_no_story_text', 'test workflow LLM guard-only output does not become story text'],
     ['workflow_branch_weights', 'normalize random branch weights before selecting workflow branches'],
     ['random_branch_uses_normalized_weights', 'test random branch execution uses normalized weights'],
@@ -3204,6 +3219,9 @@ async function verifyTauriPackagingConfig() {
     ['chat::build_event_trigger_decisions', 'reuse the chat story event decision contract in quality reports'],
     ['pinned_knowledge_ref_count', 'carry pinned knowledge evidence into quality runtime traces'],
     ['pinned_knowledge_ref_ids', 'carry pinned knowledge ref ids into quality runtime traces'],
+    ['guard_workflow_story_output', 'reuse runtime workflow LLM output finalization in quality reports'],
+    ['workflow_output_equals', 'let workflow quality scenarios assert finalized workflow output text'],
+    ['reports_workflow_output_finalization_mismatches', 'test finalized workflow output expectations fail loudly'],
   ]
   for (const [needle, description] of qualityRuntimeTraceRequirements) {
     if (!tauriQualitySuiteSource.includes(needle)) {

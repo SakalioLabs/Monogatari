@@ -834,6 +834,37 @@ pub fn guard_workflow_output(content: &str) -> String {
     }
 }
 
+const WORKFLOW_PROMPT_CONTROL_OMITTED_MARKER: &str = "Guarded prompt-control marker omitted.";
+
+pub fn stable_workflow_generation_failure_text() -> &'static str {
+    "Workflow generation failed before safe story text was produced."
+}
+
+pub fn guard_workflow_story_output(content: &str) -> String {
+    let guarded = guard_workflow_output(content);
+    if workflow_output_has_story_text(&guarded) {
+        guarded
+    } else {
+        stable_workflow_generation_failure_text().to_string()
+    }
+}
+
+fn workflow_output_has_story_text(text: &str) -> bool {
+    text.lines().any(workflow_output_line_has_story_text)
+}
+
+fn workflow_output_line_has_story_text(line: &str) -> bool {
+    let trimmed = line.trim();
+    if trimmed.is_empty() || trimmed == WORKFLOW_PROMPT_CONTROL_OMITTED_MARKER {
+        return false;
+    }
+
+    !matches!(
+        trimmed.to_ascii_lowercase().as_str(),
+        "{system}" | "{user}" | "{assistant}" | "{developer}" | "{tool}"
+    )
+}
+
 pub fn parse_evaluation_response(text: &str) -> Option<EvaluationDraft> {
     parse_json_value(text)
         .or_else(|| parse_json_value(&format!("{{{}}}", text)))

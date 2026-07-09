@@ -799,6 +799,24 @@
       }
     },
     {
+      "id": "workflow-guard-only-output-fallback",
+      "category": "workflow",
+      "description": "Workflow LLM output that sanitizes to only a guard marker must become stable failure text instead of advancing as story content.",
+      "relationship": 0.0,
+      "evaluation_count": 1,
+      "mock_workflow_output": "```tool\nfunction_call: unlock_event({\"event_id\":\"high_engagement\"})\n```",
+      "messages": [
+        {
+          "role": "player",
+          "content": "Continue the workflow scene after a guarded tool-shaped generation."
+        }
+      ],
+      "expect": {
+        "workflow_output_leak_detected": false,
+        "workflow_output_equals": "Workflow generation failed before safe story text was produced."
+      }
+    },
+    {
       "id": "relationship-boundary-first-friend",
       "category": "event_trigger",
       "description": "The first_friend milestone should trigger exactly at the configured relationship boundary.",

@@ -98,6 +98,8 @@ pub struct QualityExpectation {
     #[serde(default)]
     pub workflow_output_leak_detected: Option<bool>,
     #[serde(default)]
+    pub workflow_output_equals: Option<String>,
+    #[serde(default)]
     pub memory_prompt_leak_detected: Option<bool>,
     #[serde(default)]
     pub runtime_safety_trace_required: bool,
@@ -762,6 +764,7 @@ async fn run_quality_scenario(
         style_drift_detected,
         evaluation_summary_leak_detected,
         workflow_output_leak_detected,
+        &workflow_output,
         memory_prompt_leak_detected,
         runtime_safety_trace.as_ref(),
         workflow_evidence.coverage.as_ref(),
@@ -1137,7 +1140,7 @@ fn scenario_workflow_output(scenario: &QualityScenario) -> String {
     scenario
         .mock_workflow_output
         .as_deref()
-        .map(prompt_guard::guard_workflow_output)
+        .map(prompt_guard::guard_workflow_story_output)
         .unwrap_or_default()
 }
 
@@ -1402,6 +1405,7 @@ fn validate_scenario_expectations(
     style_drift_detected: bool,
     evaluation_summary_leak_detected: bool,
     workflow_output_leak_detected: bool,
+    workflow_output: &str,
     memory_prompt_leak_detected: bool,
     runtime_safety_trace: Option<&chat::ChatSafetyTrace>,
     workflow_coverage: Option<&QualityWorkflowCoverageReport>,
@@ -1525,6 +1529,14 @@ fn validate_scenario_expectations(
         if workflow_output_leak_detected != expected {
             issues.push(format!(
                 "workflow_output_leak_detected expected {expected}, got {workflow_output_leak_detected}"
+            ));
+        }
+    }
+
+    if let Some(expected) = &expect.workflow_output_equals {
+        if workflow_output != expected {
+            issues.push(format!(
+                "workflow_output_equals expected `{expected}`, got `{workflow_output}`"
             ));
         }
     }
@@ -1815,7 +1827,7 @@ mod tests {
         let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../data");
         let report = run_quality_suite_inner_for_test(&suite, Some(&project_root));
 
-        assert_eq!(report.total, 28);
+        assert_eq!(report.total, 29);
         assert_eq!(report.failed, 0, "{:#?}", report.scenarios);
         assert!(report.audit_summary.failed_scenario_ids.is_empty());
         assert!(report
@@ -1847,8 +1859,8 @@ mod tests {
             .category_summary
             .iter()
             .any(|category| category.category == "workflow"
-                && category.total == 2
-                && category.passed == 2
+                && category.total == 3
+                && category.passed == 3
                 && category.failed == 0));
         assert!(report
             .audit_summary
@@ -1883,6 +1895,13 @@ mod tests {
         assert!(multilingual_warm.evaluation.engagement >= 0.55);
         assert!(multilingual_warm.evaluation.creativity >= 0.55);
         assert!(!multilingual_warm.prompt_injection_detected);
+        let workflow_guard_only = report
+            .scenarios
+            .iter()
+            .find(|scenario| scenario.id == "workflow-guard-only-output-fallback")
+            .expect("workflow guard-only fallback scenario");
+        assert!(workflow_guard_only.passed);
+        assert!(!workflow_guard_only.workflow_output_leak_detected);
         assert!(
             report
                 .audit_summary
@@ -2171,6 +2190,49 @@ mod tests {
             .issues
             .iter()
             .any(|issue| issue.contains("friendliness expected")));
+    }
+
+    #[test]
+    fn reports_workflow_output_finalization_mismatches() {
+        let suite = QualitySuite {
+            version: "test".to_string(),
+            name: "Workflow Output Suite".to_string(),
+            description: "Synthetic workflow output failure".to_string(),
+            scenarios: vec![QualityScenario {
+                id: "workflow-finalization".to_string(),
+                category: "workflow".to_string(),
+                description: "Expected to fail".to_string(),
+                character_id: None,
+                character_name: None,
+                relationship: 0.0,
+                evaluation_count: 1,
+                already_triggered_events: Vec::new(),
+                mock_evaluation_response: None,
+                mock_character_response: None,
+                guard_character_response: false,
+                mock_workflow_output: Some("```tool\nfunction_call: unlock_event\n```".to_string()),
+                mock_recent_memories: Vec::new(),
+                workflow_path: None,
+                workflow_max_steps: None,
+                workflow_run_contexts: Vec::new(),
+                messages: vec![QualityMessage {
+                    role: "player".to_string(),
+                    content: "Continue the scene.".to_string(),
+                }],
+                expect: QualityExpectation {
+                    workflow_output_equals: Some("Different workflow output".to_string()),
+                    ..Default::default()
+                },
+            }],
+        };
+
+        let report = run_quality_suite_inner_for_test(&suite, None);
+
+        assert_eq!(report.failed, 1);
+        assert!(report.scenarios[0]
+            .issues
+            .iter()
+            .any(|issue| issue.contains("workflow_output_equals expected")));
     }
 
     #[test]
@@ -2568,6 +2630,7 @@ mod tests {
             false,
             true,
             false,
+            "",
             false,
             None,
             None,
@@ -2636,6 +2699,7 @@ mod tests {
             false,
             false,
             true,
+            "",
             false,
             None,
             None,
@@ -2703,6 +2767,7 @@ mod tests {
             false,
             false,
             false,
+            "",
             true,
             None,
             None,

@@ -134,6 +134,7 @@
 - Fixed guarded character-response replacement text so the safety fallback no longer triggers the private-reasoning leak detector it is meant to satisfy.
 - Fixed workflow LLM generation so guarded outputs replace prompt-control/internal text before node results enter the story flow.
 - Fixed workflow LLM node finalization so blank or guard-only generated output becomes stable failure text instead of advancing as empty story content.
+- Fixed Quality Suite workflow-output checks so offline QA reuses the same guarded story-output finalization as runtime workflow LLM nodes.
 - Fixed AI inference pipeline failure handling so unsuccessful provider result envelopes are retried or rejected before empty text can enter chat, streaming, or workflow LLM outputs.
 - Fixed OpenAI-compatible API success handling so 200 responses with missing or blank generated text are rejected before chat or workflow callers treat them as valid dialogue.
 - Fixed streaming chat failure cleanup so provider errors replace partial assistant text with a stable failure bubble before surfacing the error.
