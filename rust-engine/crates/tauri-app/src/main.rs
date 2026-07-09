@@ -7,6 +7,7 @@
 
 mod commands;
 mod state;
+mod story_events;
 
 use state::{discover_bundled_project_data_root, is_project_data_root, AppState};
 use tauri::Manager;
@@ -57,6 +58,8 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             commands::engine::initialize_engine,
             commands::engine::get_engine_status,
+            commands::story_events::get_story_event_catalog,
+            commands::story_events::reload_story_event_catalog,
             commands::project::get_project_config,
             commands::project::save_project_config,
             commands::project::export_project,

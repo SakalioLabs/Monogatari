@@ -7,6 +7,8 @@ const rootDir = path.resolve(scriptDir, '..', '..')
 const distDir = path.resolve(scriptDir, '..', 'dist')
 const projectAssetsDir = path.join(rootDir, 'data', 'assets')
 const distProjectAssetsDir = path.join(distDir, 'assets')
+const projectEventsDir = path.join(rootDir, 'data', 'events')
+const distProjectEventsDir = path.join(distDir, 'events')
 const projectAssetManifestPath = path.join(distDir, 'project-assets.json')
 const staticHostingHeadersPath = path.join(distDir, '_headers')
 const staticHostingRedirectsPath = path.join(distDir, '_redirects')
@@ -59,6 +61,7 @@ function staticHostingHeaders() {
 function staticHostingRedirects() {
   return [
     '/assets/* /assets/:splat 200',
+    '/events/* /events/:splat 200',
     '/icons/* /icons/:splat 200',
     '/locales/* /locales/:splat 200',
     '/manifest.webmanifest /manifest.webmanifest 200',
@@ -77,6 +80,7 @@ function azureStaticWebAppConfig() {
       rewrite: '/index.html',
       exclude: [
         '/assets/*',
+        '/events/*',
         '/icons/*',
         '/locales/*',
         '/manifest.webmanifest',
@@ -131,11 +135,15 @@ async function projectAssetManifest() {
   const assetFiles = (await walkFiles(projectAssetsDir, []))
     .map((file) => `/assets/${path.relative(projectAssetsDir, file).replaceAll(path.sep, '/')}`)
     .sort()
+  const eventCatalogFiles = (await walkFiles(projectEventsDir, []))
+    .map((file) => `/events/${path.relative(projectEventsDir, file).replaceAll(path.sep, '/')}`)
+    .sort()
 
   return {
     schema: 'monogatari-web-project-assets/v1',
     generated_by: 'frontend/scripts/prepare-web-dist.mjs',
     assets: assetFiles,
+    event_catalogs: eventCatalogFiles,
   }
 }
 
@@ -154,10 +162,11 @@ if (missing.length > 0) {
 await copyFile(path.join(distDir, 'index.html'), path.join(distDir, '404.html'))
 await writeFile(path.join(distDir, '.nojekyll'), '')
 await cp(projectAssetsDir, distProjectAssetsDir, { recursive: true, force: true })
+await cp(projectEventsDir, distProjectEventsDir, { recursive: true, force: true })
 await writeFile(projectAssetManifestPath, `${JSON.stringify(await projectAssetManifest(), null, 2)}\n`)
 await writeFile(staticHostingHeadersPath, staticHostingHeaders())
 await writeFile(staticHostingRedirectsPath, staticHostingRedirects())
 await writeFile(azureStaticWebAppConfigPath, `${JSON.stringify(azureStaticWebAppConfig(), null, 2)}\n`)
 await writeFile(vercelConfigPath, `${JSON.stringify(vercelConfig(), null, 2)}\n`)
 
-console.log('[web-dist] Static hosting assets ready: 404.html, .nojekyll, _headers, _redirects, staticwebapp.config.json, vercel.json, manifest.webmanifest, sw.js, offline.html, PWA icons, project assets, project asset manifest')
+console.log('[web-dist] Static hosting assets ready: 404.html, .nojekyll, _headers, _redirects, staticwebapp.config.json, vercel.json, manifest.webmanifest, sw.js, offline.html, PWA icons, project assets, story events, project asset manifest')

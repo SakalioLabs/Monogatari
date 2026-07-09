@@ -220,6 +220,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { invokeCommand } from '../lib/tauri'
 import { useI18n } from '../lib/i18n'
+import { loadStoryEventCatalog, type EventTriggerRule } from '../lib/storyEvents'
 
 const { t } = useI18n()
 
@@ -302,16 +303,6 @@ interface WorkflowCoverageRunReport {
   coverage_percent: number
   executed_node_ids: string[]
   unvisited_node_ids: string[]
-}
-
-interface EventTriggerRule {
-  event_id: string
-  event_type: string
-  rule_fingerprint?: string | null
-  min_relationship?: number | null
-  score_metric?: string | null
-  min_score?: number | null
-  min_evaluation_count?: number | null
 }
 
 interface EventTriggerDecision {
@@ -931,7 +922,7 @@ const previewReport: QualitySuiteReport = {
       private_reasoning_leak_detected: false,
       identity_drift_detected: false,
       evaluation_summary_leak_detected: false,
-      event_rules_verified: [{ event_id: 'first_friend', event_type: 'relationship_milestone', min_relationship: 0.3 }],
+      event_rules_verified: [],
     },
     {
       id: 'already-triggered-event-not-replayed',
@@ -976,15 +967,7 @@ const previewReport: QualitySuiteReport = {
       issues: [],
       evaluation: { friendliness: 0.5, engagement: 0.4, creativity: 0.38, overall_score: 0.43, summary: 'Event rule snapshot' },
       triggered_events: [],
-      event_rules_verified: [
-        { event_id: 'first_friend', event_type: 'relationship_milestone', min_relationship: 0.3 },
-        { event_id: 'close_friend', event_type: 'relationship_milestone', min_relationship: 0.6 },
-        { event_id: 'best_friend', event_type: 'relationship_milestone', min_relationship: 0.8 },
-        { event_id: 'high_engagement', event_type: 'special_dialogue', score_metric: 'engagement', min_score: 0.8, min_evaluation_count: 2 },
-        { event_id: 'creative_talk', event_type: 'special_dialogue', score_metric: 'creativity', min_score: 0.8, min_evaluation_count: 2 },
-        { event_id: 'dedicated_player', event_type: 'cumulative_achievement', min_evaluation_count: 5 },
-        { event_id: 'super_dedicated', event_type: 'cumulative_achievement', min_evaluation_count: 10 },
-      ],
+      event_rules_verified: [],
       prompt_injection_detected: false,
       private_reasoning_leak_detected: false,
       identity_drift_detected: false,
@@ -1189,16 +1172,36 @@ async function runSelectedSuite() {
   running.value = true
   errorMessage.value = null
   try {
+    const eventCatalog = await loadStoryEventCatalog()
+    const previewReportWithCatalog = previewQualityReport(eventCatalog.events.map((event) => event.rule))
     report.value = await invokeCommand<QualitySuiteReport>(
       'run_quality_suite',
       { suitePath: selectedSuite.value.path },
-      previewReport,
+      previewReportWithCatalog,
     )
   } catch (e) {
     report.value = null
     errorMessage.value = formatError(e)
   } finally {
     running.value = false
+  }
+}
+
+function previewQualityReport(eventRules: EventTriggerRule[]): QualitySuiteReport {
+  return {
+    ...previewReport,
+    scenarios: previewReport.scenarios.map((scenario) => {
+      if (scenario.id === 'event-rule-snapshot') {
+        return { ...scenario, event_rules_verified: eventRules }
+      }
+      if (scenario.id === 'relationship-boundary-first-friend') {
+        return {
+          ...scenario,
+          event_rules_verified: eventRules.filter((rule) => rule.event_id === 'first_friend'),
+        }
+      }
+      return scenario
+    }),
   }
 }
 

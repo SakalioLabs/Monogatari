@@ -72,6 +72,11 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  if (path.startsWith("/events/")) {
+    event.respondWith(staleWhileRevalidate(request));
+    return;
+  }
+
   if (path.startsWith("/locales/") || path.startsWith("/icons/") || path === "/manifest.webmanifest" || path === "/favicon.svg") {
     event.respondWith(staleWhileRevalidate(request));
   }
@@ -85,8 +90,8 @@ async function cacheProjectAssets() {
     const manifest = await manifestResponse.json();
     if (manifest.schema !== "monogatari-web-project-assets/v1" || !Array.isArray(manifest.assets)) return;
 
-    const projectAssets = manifest.assets
-      .filter((assetPath) => typeof assetPath === "string" && assetPath.startsWith("/assets/"))
+    const projectAssets = [...manifest.assets, ...(Array.isArray(manifest.event_catalogs) ? manifest.event_catalogs : [])]
+      .filter((assetPath) => typeof assetPath === "string" && (assetPath.startsWith("/assets/") || assetPath.startsWith("/events/")))
       .map(withBase);
     if (projectAssets.length === 0) return;
 

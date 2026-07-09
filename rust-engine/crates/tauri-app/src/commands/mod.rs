@@ -21,5 +21,6 @@ pub mod quality_suite;
 pub mod save;
 pub mod scenes;
 pub mod script;
+pub mod story_events;
 pub mod tts;
 pub mod workflow;

@@ -38,6 +38,7 @@
     "dialogue": "dialogue",
     "knowledge": "knowledge",
     "scenes": "scenes",
+    "events": "events",
     "saves": "saves",
     "assets": "assets"
   }

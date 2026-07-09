@@ -15,6 +15,7 @@ use llm_game::{
 use llm_scripting::ScriptEngine;
 
 use crate::commands::chat::ChatSession;
+use crate::story_events::StoryEventCatalog;
 
 /// Main application state shared across all Tauri commands.
 pub struct AppState {
@@ -27,6 +28,7 @@ pub struct AppState {
     #[allow(dead_code)]
     pub asset_manager: Arc<RwLock<AssetManager>>,
     pub script_engine: Arc<RwLock<ScriptEngine>>,
+    pub story_event_catalog: Arc<RwLock<StoryEventCatalog>>,
     pub project_path: Arc<RwLock<Option<PathBuf>>>,
     pub initialized: Arc<RwLock<bool>>,
     /// Active authoring/runtime scene selected from the scene asset catalog.
@@ -50,6 +52,7 @@ impl AppState {
             asset_manager: Arc::new(RwLock::new(AssetManager::new(&data_path))),
             save_manager: Arc::new(RwLock::new(SaveManager::new(data_path.join("saves")))),
             script_engine: Arc::new(RwLock::new(ScriptEngine::new())),
+            story_event_catalog: Arc::new(RwLock::new(StoryEventCatalog::default())),
             project_path: Arc::new(RwLock::new(None)),
             initialized: Arc::new(RwLock::new(false)),
             active_scene_id: Arc::new(RwLock::new(None)),
@@ -76,6 +79,7 @@ impl AppState {
         *self.active_scene_id.write().await = None;
         self.scene_history.write().await.clear();
         *self.scene_manager.write().await = SceneManager::new();
+        *self.story_event_catalog.write().await = StoryEventCatalog::default();
         self.script_engine
             .read()
             .await
@@ -192,7 +196,16 @@ mod tests {
         let state = AppState::new();
         let first_root = temp_root("monogatari_first_project");
         let second_root = temp_root("monogatari_second_project");
-        state.set_project_data_root(first_root).await;
+        std::fs::create_dir_all(first_root.join("events")).unwrap();
+        std::fs::write(
+            first_root.join("events").join("custom.json"),
+            r#"{"schema":"monogatari-story-event-catalog/v1","events":[{"event_id":"first_only","event_type":"unlock","description":"First only"}]}"#,
+        )
+        .unwrap();
+        state.set_project_data_root(first_root.clone()).await;
+        *state.story_event_catalog.write().await =
+            StoryEventCatalog::load_from_project_root(&state.current_project_data_root().await)
+                .unwrap();
         state
             .chat_sessions
             .write()
@@ -214,8 +227,15 @@ mod tests {
         assert!(state.active_scene_id.read().await.is_none());
         assert!(state.scene_history.read().await.is_empty());
         assert!(!state.script_engine.read().await.has_flag("visited_park"));
+        assert!(state
+            .story_event_catalog
+            .read()
+            .await
+            .definition("first_only", None)
+            .is_none());
         assert!(!*state.initialized.read().await);
         assert_eq!(state.current_project_data_root().await, second_root);
+        std::fs::remove_dir_all(first_root).unwrap();
     }
 
     #[tokio::test]

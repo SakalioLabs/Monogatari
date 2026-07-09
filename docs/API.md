@@ -41,6 +41,15 @@ Character authoring IDs are portable slugs, not filenames or paths. `create_char
 | `get_available_events` | `{ characterId }` | `TriggeredEvent[]` | Get unlockable events |
 | `preview_event_triggers` | `{ characterId }` | `EventTriggerDecision[]` | Explain current story-event trigger state |
 
+## Story Events
+
+Story events load from the active project's configured `paths.events` directory, defaulting to `events/`. A missing directory in a legacy project uses the bundled compatibility catalog; an existing empty directory intentionally disables automatic story events. Catalog loading rejects invalid schemas, duplicate IDs, unsupported score metrics, unsafe configured paths, oversized files, symlinks, and character scopes that reference unknown project characters.
+
+| Command | Args | Returns | Description |
+|---------|------|---------|-------------|
+| `get_story_event_catalog` | - | `StoryEventCatalogSnapshot` | Return active definitions, trigger rules, source, count, and catalog fingerprint |
+| `reload_story_event_catalog` | - | `StoryEventCatalogSnapshot` | Validate and atomically replace the active project catalog |
+
 ### Streaming Events
 - `chat-chunk` - Token-by-token response
 - `chat-complete` - Full response text
@@ -91,7 +100,7 @@ Workflow command `path` values are project workflow references, not arbitrary fi
 |---------|------|---------|-------------|
 | `get_workflow_nodes` | - | `NodeTypeInfo[]` | Available node types |
 | `execute_workflow_node` | `{ nodeId, context }` | `NodeResult` | Execute single node |
-| `validate_workflow` | `{ workflow }` | `ValidationResult` | Validate workflow graph |
+| `validate_workflow` | `{ workflow }` | `ValidationResult` | Validate graph and active-catalog event references |
 | `save_workflow` | `{ workflow, path }` | `void` | Save workflow JSON under project `workflows/` |
 | `load_workflow` | `{ path }` | `Workflow` | Load workflow JSON from project `workflows/` |
 

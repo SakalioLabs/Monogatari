@@ -108,6 +108,14 @@ The visual workflow editor supports 21 node types across 5 categories:
 
 Workflows are validated for: node IDs, start/end structure, missing config, broken links, duplicate connections, and unreachable nodes. Backend save/load commands resolve workflow JSON paths against the active project `workflows/` directory, accepting simple filenames or `workflows/...` references while rejecting absolute paths, URI/drive prefixes, empty segments, `.`/`..` traversal, and non-JSON files before disk access.
 
+## Story Event Catalog
+
+`StoryEventCatalog` is project-scoped runtime state loaded from versioned `events/*.json` assets. Engine initialization stages and validates the catalog beside fresh character, dialogue, and knowledge managers, including configured path containment and character-scope references, before replacing active state. Failed loads or hot reloads leave the prior catalog untouched. Missing event directories retain compatibility defaults for legacy projects, while an existing empty directory represents an intentional zero-event catalog.
+
+Live chat, manual scoring, workflow trigger nodes, workflow validation, Quality Suites, and browser workflow previews consume the same event definitions. Rules combine optional relationship, normalized score, and evaluation-count thresholds; can target explicit character IDs; and can opt into repeatable triggering. Default rule behavior retains v1 fingerprints pinned by Quality Suites, while scoped or repeatable behavior uses v2 fingerprints. A catalog fingerprint binds event descriptions, payload data, and rule fingerprints for project/release audits.
+
+Web/PWA builds copy `data/events` into the deployable `events/` tree, list those files in `project-assets.json`, cache them through the service worker, and fetch them relative to `VITE_BASE_PATH`. The checked-in catalog is compiled only as a final browser fallback when static event content cannot be reached.
+
 ## TTS Architecture
 
 Three TTS provider types:
@@ -125,7 +133,7 @@ Project asset files are scoped to the active project data root. The Rust assets 
 
 ## Engine Project Root Boundaries
 
-Engine initialization resolves an empty project path to the active/default project data root, accepts local filesystem project directories, and rejects URI-shaped or control-character input. The resolved root must exist and be a directory. Character, dialogue, and knowledge content is loaded into fresh temporary managers first; only a complete successful load replaces the active managers. Every reload clears mutable chat sessions, scene history, script state, and event audit state, including same-root reloads. Saving `settings.json` for another directory does not activate that project without loading its content managers.
+Engine initialization resolves an empty project path to the active/default project data root, accepts local filesystem project directories, and rejects URI-shaped or control-character input. The resolved root must exist and be a directory. Character, dialogue, knowledge, and story-event content is loaded into fresh temporary managers first; only a complete successful load replaces the active managers. Every reload clears mutable chat sessions, scene history, script state, and event audit state, including same-root reloads. Saving `settings.json` for another directory does not activate that project without loading its content managers.
 
 ## Character Authoring Boundaries
 

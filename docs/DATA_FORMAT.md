@@ -102,6 +102,41 @@ Scenes are stored in `rust-engine/data/scenes/`.
 }
 ```
 
+## Story Event Catalog Format
+
+Story events are stored in one or more JSON files under the configured project `events/` directory. IDs are unique across all catalog files. Every configured threshold is combined with AND semantics.
+
+```json
+{
+  "schema": "monogatari-story-event-catalog/v1",
+  "events": [
+    {
+      "event_id": "luna_secret",
+      "event_type": "special_dialogue",
+      "description": "Luna shares a secret.",
+      "data": {
+        "dialogue_id": "luna_secret_dialogue"
+      },
+      "character_ids": ["luna"],
+      "repeatable": false,
+      "rule": {
+        "min_relationship": 0.4,
+        "score_metric": "overall",
+        "min_score": 0.75,
+        "min_evaluation_count": 2
+      }
+    }
+  ]
+}
+```
+
+- `score_metric` accepts `friendliness`, `engagement`, `creativity`, or `overall` and must be paired with `min_score` in the `0..1` range.
+- `min_relationship` accepts `-1..1`; `min_evaluation_count` is a non-negative integer.
+- Empty or omitted `character_ids` applies the event to every character. Scoped IDs must exist when the project activates.
+- `repeatable` defaults to `false`. Non-repeatable events are recorded per character chat session and blocked after their first trigger.
+- `data` is an author-defined object consumed by downstream dialogue, scene, ending, or unlock handling.
+- Default unscoped rules preserve the `monogatari-event-trigger-rule/v1` fingerprint contract. Character-scoped or repeatable rules use v2 fingerprints so all trigger behavior is audit-bound.
+
 ## Workflow Format
 
 Workflows are stored as JSON files and loaded via the Workflow Editor.

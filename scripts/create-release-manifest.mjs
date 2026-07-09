@@ -24,7 +24,7 @@ const projectContentSourceDirs = [
   { id: 'project-data', dir: path.join(root, 'data') },
   { id: 'tauri-data', dir: path.join(rustDir, 'data') },
 ]
-const projectContentCategories = ['assets', 'characters', 'dialogue', 'knowledge', 'scenes']
+const projectContentCategories = ['assets', 'characters', 'dialogue', 'events', 'knowledge', 'scenes']
 const requiredQualitySuiteSources = [
   'data/quality_suites/character_stability.json',
 ]
@@ -37,6 +37,7 @@ const requiredProjectContentSources = [
   'data/knowledge/sakura_nature.json',
   'data/scenes/sakura_park.json',
   'data/assets/characters/sakura_sprite.svg',
+  'data/events/story_events.json',
 ]
 
 const args = process.argv.slice(2)
@@ -59,6 +60,7 @@ const expectedWebArtifacts = [
   'sw.js',
   'offline.html',
   'project-assets.json',
+  'events/story_events.json',
   'favicon.svg',
   'icons/app-icon.svg',
   'icons/maskable-icon.svg',
@@ -404,9 +406,11 @@ function projectContentKind(category, file) {
 }
 
 function projectContentJsonSummary(category, value) {
-  const records = Array.isArray(value) ? value : [value]
+  const records = category === 'events' && Array.isArray(value?.events)
+    ? value.events
+    : Array.isArray(value) ? value : [value]
   const ids = records
-    .map((record) => record?.id)
+    .map((record) => category === 'events' ? record?.event_id : record?.id)
     .filter(nonEmptyString)
     .sort()
   const summary = {
@@ -423,6 +427,11 @@ function projectContentJsonSummary(category, value) {
     summary.categories = Array.from(new Set(records.map((record) => record?.category).filter(nonEmptyString))).sort()
   } else if (category === 'scenes') {
     summary.background_asset_count = records.filter((record) => nonEmptyString(record?.background) || nonEmptyString(record?.background_path)).length
+  } else if (category === 'events') {
+    summary.schema = value?.schema ?? null
+    summary.event_types = Array.from(new Set(records.map((record) => record?.event_type).filter(nonEmptyString))).sort()
+    summary.character_scoped_count = records.filter((record) => Array.isArray(record?.character_ids) && record.character_ids.length > 0).length
+    summary.repeatable_count = records.filter((record) => record?.repeatable === true).length
   }
 
   return summary

@@ -1,0 +1,89 @@
+{
+  "schema": "monogatari-story-event-catalog/v1",
+  "events": [
+    {
+      "event_id": "first_friend",
+      "event_type": "relationship_milestone",
+      "description": "You've become friends with the character!",
+      "data": {
+        "unlock_scene": "friend_scene",
+        "dialogue_id": "friend_celebration"
+      },
+      "rule": {
+        "min_relationship": 0.3
+      }
+    },
+    {
+      "event_id": "close_friend",
+      "event_type": "relationship_milestone",
+      "description": "You've become close friends!",
+      "data": {
+        "unlock_scene": "close_friend_scene",
+        "dialogue_id": "close_friend_dialogue"
+      },
+      "rule": {
+        "min_relationship": 0.6
+      }
+    },
+    {
+      "event_id": "best_friend",
+      "event_type": "relationship_milestone",
+      "description": "You've become best friends! A special ending is now available.",
+      "data": {
+        "unlock_ending": "best_friend_ending",
+        "dialogue_id": "best_friend_dialogue"
+      },
+      "rule": {
+        "min_relationship": 0.8
+      }
+    },
+    {
+      "event_id": "high_engagement",
+      "event_type": "special_dialogue",
+      "description": "Your engaging conversation has unlocked a special dialogue!",
+      "data": {
+        "dialogue_id": "engaged_conversation"
+      },
+      "rule": {
+        "score_metric": "engagement",
+        "min_score": 0.8,
+        "min_evaluation_count": 2
+      }
+    },
+    {
+      "event_id": "creative_talk",
+      "event_type": "special_dialogue",
+      "description": "Your creative responses have impressed the character!",
+      "data": {
+        "dialogue_id": "impressed_character"
+      },
+      "rule": {
+        "score_metric": "creativity",
+        "min_score": 0.8,
+        "min_evaluation_count": 2
+      }
+    },
+    {
+      "event_id": "dedicated_player",
+      "event_type": "cumulative_achievement",
+      "description": "You've had many conversations! New content unlocked.",
+      "data": {
+        "unlock_scene": "memories_scene"
+      },
+      "rule": {
+        "min_evaluation_count": 5
+      }
+    },
+    {
+      "event_id": "super_dedicated",
+      "event_type": "cumulative_achievement",
+      "description": "Your dedication is remarkable! A secret scene is available.",
+      "data": {
+        "unlock_scene": "secret_scene"
+      },
+      "rule": {
+        "min_evaluation_count": 10
+      }
+    }
+  ]
+}

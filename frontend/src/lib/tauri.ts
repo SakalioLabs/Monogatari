@@ -2,7 +2,7 @@ import { invoke as tauriInvoke } from '@tauri-apps/api/core'
 
 type CommandArgs = Record<string, unknown>
 
-function hasTauriRuntime(): boolean {
+export function hasTauriRuntime(): boolean {
   return typeof window !== 'undefined'
     && ('__TAURI_INTERNALS__' in window || '__TAURI__' in window)
 }

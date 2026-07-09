@@ -113,8 +113,25 @@
 
           <div v-for="field in getConfigFields(selectedNode.node_type)" :key="field" class="property-group">
             <span>{{ formatFieldName(field) }}</span>
+            <select
+              v-if="field === 'event_id' && selectedNode.node_type === 'trigger_event'"
+              class="input"
+              :value="selectedNode.config[field] || ''"
+              @change="updateStoryEvent(($event.target as HTMLSelectElement).value)"
+            >
+              <option value="" disabled>Select event</option>
+              <option v-for="event in storyEvents" :key="event.event_id" :value="event.event_id">
+                {{ event.event_id }} / {{ event.event_type }}
+              </option>
+            </select>
+            <input
+              v-else-if="field === 'event_type' && selectedNode.node_type === 'trigger_event'"
+              class="input"
+              :value="selectedNode.config[field] || ''"
+              readonly
+            />
             <textarea
-              v-if="isLongField(field)"
+              v-else-if="isLongField(field)"
               class="input"
               rows="4"
               :value="selectedNode.config[field]"
@@ -351,6 +368,7 @@
 import { useI18n } from '../lib/i18n'
 import { computed, onMounted, ref } from 'vue'
 import { invokeCommand } from '../lib/tauri'
+import { loadStoryEventCatalog, type StoryEventDefinition } from '../lib/storyEvents'
 
 const { t } = useI18n()
 
@@ -485,6 +503,7 @@ const workflow = ref<Workflow | null>(null)
 const nodes = ref<WorkflowNode[]>([])
 const selectedNode = ref<WorkflowNode | null>(null)
 const nodeTypes = ref<NodeTypeInfo[]>([])
+const storyEvents = ref<StoryEventDefinition[]>([])
 const canvasRef = ref<HTMLDivElement>()
 const validationResult = ref<WorkflowValidationResult | null>(null)
 const validationMessage = ref('')
@@ -679,6 +698,14 @@ function updateConfig(field: string, value: any) {
     selectedNode.value.config[field] = value
     markWorkflowDirty()
   }
+}
+
+function updateStoryEvent(eventId: string) {
+  if (!selectedNode.value) return
+  const definition = storyEvents.value.find((event) => event.event_id === eventId)
+  selectedNode.value.config.event_id = eventId
+  selectedNode.value.config.event_type = definition?.event_type || ''
+  markWorkflowDirty()
 }
 
 function markWorkflowDirty() {
@@ -1145,6 +1172,20 @@ function validateWorkflowLocally(currentWorkflow: Workflow): WorkflowValidationR
 
     for (const field of requiredFields[node.node_type] || []) {
       if (!isConfigFieldPresentForNode(node.node_type, node.config, field)) addIssue('error', 'node_config_missing', node.id, `Required field \`${field}\` is missing.`)
+    }
+    if (node.node_type === 'trigger_event' && String(node.config.event_id || '').trim()) {
+      const definition = localEventDefinition(String(node.config.event_id).trim())
+      if (!definition) {
+        addIssue('error', 'node_event_unknown', node.id, `Story event \`${node.config.event_id}\` is not in the active project catalog.`)
+      } else if (node.config.event_type && String(node.config.event_type).trim() !== definition.event_type) {
+        addIssue('error', 'node_event_unknown', node.id, `Story event \`${definition.event_id}\` does not use type \`${node.config.event_type}\`.`)
+      } else if (
+        definition.rule.character_ids?.length
+        && node.config.character_id
+        && !definition.rule.character_ids.includes(String(node.config.character_id).trim())
+      ) {
+        addIssue('error', 'node_event_character_mismatch', node.id, `Story event \`${definition.event_id}\` is not available for character \`${node.config.character_id}\`.`)
+      }
     }
     for (const field of workflowStateKeyFields(node.node_type)) {
       const value = node.config[field]
@@ -1746,17 +1787,8 @@ function workflowMetricScore(evaluation: WorkflowRunContextPayload['evaluation']
   return null
 }
 
-function localEventRule(eventId: string) {
-  const rules: Record<string, Record<string, any>> = {
-    first_friend: { event_id: 'first_friend', event_type: 'relationship_milestone', min_relationship: 0.3 },
-    close_friend: { event_id: 'close_friend', event_type: 'relationship_milestone', min_relationship: 0.6 },
-    best_friend: { event_id: 'best_friend', event_type: 'relationship_milestone', min_relationship: 0.8 },
-    high_engagement: { event_id: 'high_engagement', event_type: 'special_dialogue', score_metric: 'engagement', min_score: 0.8, min_evaluation_count: 2 },
-    creative_talk: { event_id: 'creative_talk', event_type: 'special_dialogue', score_metric: 'creativity', min_score: 0.8, min_evaluation_count: 2 },
-    dedicated_player: { event_id: 'dedicated_player', event_type: 'cumulative_achievement', min_evaluation_count: 5 },
-    super_dedicated: { event_id: 'super_dedicated', event_type: 'cumulative_achievement', min_evaluation_count: 10 },
-  }
-  return rules[eventId] || null
+function localEventDefinition(eventId: string) {
+  return storyEvents.value.find((event) => event.event_id === eventId) || null
 }
 
 function localEventDecision(
@@ -1767,7 +1799,8 @@ function localEventDecision(
   const eventId = String(node.config.event_id || '')
   const characterId = String(node.config.character_id || context?.character_id || '').trim()
   const configuredType = String(node.config.event_type || '')
-  const rule = localEventRule(eventId)
+  const definition = localEventDefinition(eventId)
+  const rule = definition?.rule || null
   const relationship = localRelationshipValue(
     localState,
     characterId,
@@ -1782,21 +1815,23 @@ function localEventDecision(
 
   if (!context?.enabled) blocked_reasons.push('local_preview_no_chat_session')
   if (!rule) blocked_reasons.push('event_rule_missing')
-  if (alreadyTriggered) blocked_reasons.push('already_triggered')
-  if (rule?.min_relationship !== undefined && relationship < rule.min_relationship) {
+  if (definition && configuredType && configuredType !== definition.event_type) blocked_reasons.push('event_type_mismatch')
+  if (rule?.character_ids?.length && !rule.character_ids.includes(characterId)) blocked_reasons.push('character_not_allowed')
+  if (alreadyTriggered && !rule?.repeatable) blocked_reasons.push('already_triggered')
+  if (rule?.min_relationship != null && relationship < rule.min_relationship) {
     blocked_reasons.push(`relationship ${relationship.toFixed(2)} < ${Number(rule.min_relationship).toFixed(2)}`)
   }
-  if (rule?.min_evaluation_count !== undefined && evaluationCount < rule.min_evaluation_count) {
+  if (rule?.min_evaluation_count != null && evaluationCount < rule.min_evaluation_count) {
     blocked_reasons.push(`evaluation_count ${evaluationCount} < ${rule.min_evaluation_count}`)
   }
-  if (rule?.min_score !== undefined && (actualScore === null || actualScore < rule.min_score)) {
+  if (rule?.min_score != null && (actualScore === null || actualScore < rule.min_score)) {
     blocked_reasons.push(`${actualMetric || 'score'} ${formatScore(actualScore)} < ${Number(rule.min_score).toFixed(2)}`)
   }
 
   return {
     event_id: eventId,
-    event_type: configuredType || rule?.event_type || '',
-    description: eventId,
+    event_type: configuredType || definition?.event_type || '',
+    description: definition?.description || eventId,
     triggered: blocked_reasons.length === 0,
     already_triggered: alreadyTriggered,
     actual_relationship: relationship,
@@ -1970,9 +2005,15 @@ async function exportJSON() {
 
 onMounted(async () => {
   try {
-    nodeTypes.value = await invokeCommand<NodeTypeInfo[]>('get_workflow_nodes', undefined, previewNodeTypes)
+    const [loadedNodeTypes, eventCatalog] = await Promise.all([
+      invokeCommand<NodeTypeInfo[]>('get_workflow_nodes', undefined, previewNodeTypes),
+      loadStoryEventCatalog(),
+    ])
+    nodeTypes.value = loadedNodeTypes
+    storyEvents.value = eventCatalog.events
   } catch (e) {
-    console.error('Failed to load node types:', e)
+    nodeTypes.value = previewNodeTypes
+    console.error('Failed to load workflow authoring catalogs:', e)
   }
   newWorkflow()
 })

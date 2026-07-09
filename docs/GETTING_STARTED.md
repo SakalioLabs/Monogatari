@@ -75,6 +75,27 @@ Create a JSON file in `rust-engine/data/dialogue/`:
 }
 ```
 
+## Creating a Score-Gated Story Event
+
+Add an entry to a versioned JSON catalog under `data/events/`, then select that event from a Workflow `Trigger Event` node. The same rule is used by chat evaluation, workflow previews, and Quality Suites.
+
+```json
+{
+  "schema": "monogatari-story-event-catalog/v1",
+  "events": [{
+    "event_id": "my_character_reveal",
+    "event_type": "special_dialogue",
+    "description": "The character reveals a secret.",
+    "character_ids": ["my_character"],
+    "rule": {
+      "score_metric": "engagement",
+      "min_score": 0.8,
+      "min_evaluation_count": 2
+    }
+  }]
+}
+```
+
 ## Building for Production
 
 ```bash
@@ -90,7 +111,7 @@ Before cutting a release, run the automated gate from the repository root:
 node scripts/verify-release.mjs
 ```
 
-This validates JSON assets, checked-in workflow files, all quality suite files, workflow branch coverage snapshots, locale coverage, frontend UI text artifacts, frontend source invariants, legacy C# AI prompt/API invariants, AI backend config, engine project root, asset/save-manager, script command and state-key invariants, i18n locale, workflow command, content loader, character manager, plugin manager, marketplace, Live2D model, and TTS output/error invariants, mobile shell readiness, Tauri mobile deployment preflight, Rust core/AI/scripting/game/assets/Tauri checks and tests, frontend audit, the Web/PWA build, generated dist assets, responsive shell layout signals, release artifact manifest checks, and legacy C# tests.
+This validates JSON assets, story event catalog schemas/fingerprints, checked-in workflow event references, all quality suite files, workflow branch coverage snapshots, locale coverage, frontend UI text artifacts, frontend source invariants, legacy C# AI prompt/API invariants, AI backend config, engine project root, asset/save-manager, script command and state-key invariants, i18n locale, workflow command, content loader, character manager, plugin manager, marketplace, Live2D model, and TTS output/error invariants, mobile shell readiness, Tauri mobile deployment preflight, Rust core/AI/scripting/game/assets/Tauri checks and tests, frontend audit, the Web/PWA build, generated dist assets, responsive shell layout signals, release artifact manifest checks, and legacy C# tests.
 
 ```bash
 node scripts/verify-tauri-mobile-preflight.mjs
@@ -101,7 +122,7 @@ npm run verify:responsive-shell
 npm run preview:web
 ```
 
-The Tauri mobile preflight verifies Android/iOS command readiness, Vite `TAURI_DEV_HOST` binding, compact Tauri shell config, and `docs/MOBILE_DEPLOYMENT.md`. The mobile readiness check verifies safe-area viewport metadata, iOS/PWA install metadata, compact Tauri shell limits, and bottom navigation safe-area padding. The web build emits `manifest.webmanifest`, `sw.js`, an offline fallback page, `404.html`, `.nojekyll`, `_headers`, `_redirects`, `staticwebapp.config.json`, `vercel.json`, copied `data/assets` project sample assets, and `project-assets.json` for static hosting. It also runs the bundle budget verifier and responsive shell verifier so entry assets stay small while 375px mobile and 768px tablet layout signals stay present in the built Web/PWA shell. The service worker registers only in production browser builds, precaches the generated project asset manifest for offline sample renderer assets, and is disabled inside Tauri.
+The Tauri mobile preflight verifies Android/iOS command readiness, Vite `TAURI_DEV_HOST` binding, compact Tauri shell config, and `docs/MOBILE_DEPLOYMENT.md`. The mobile readiness check verifies safe-area viewport metadata, iOS/PWA install metadata, compact Tauri shell limits, and bottom navigation safe-area padding. The web build emits `manifest.webmanifest`, `sw.js`, an offline fallback page, `404.html`, `.nojekyll`, `_headers`, `_redirects`, `staticwebapp.config.json`, `vercel.json`, copied `data/assets` renderer assets, copied `data/events` catalogs, and `project-assets.json` for static hosting. It also runs the bundle budget verifier and responsive shell verifier so entry assets stay small while 375px mobile and 768px tablet layout signals stay present in the built Web/PWA shell. The service worker registers only in production browser builds, precaches the generated project manifest for offline renderer and story-event assets, and is disabled inside Tauri.
 
 For GitHub Pages or any subpath deployment, set the base path before building:
 

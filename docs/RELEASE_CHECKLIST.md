@@ -42,6 +42,7 @@
 - [ ] Project settings save/load paths scrub API keys, tokens, authorization headers, token-shaped values, query-secret assignments, and legacy persisted secret fields before writing `settings.json` or returning project config state to the frontend
 - [ ] ONNX backend configuration accepts only project-relative `.onnx` model and `.json` tokenizer references and activates the ONNX engine after registration
 - [ ] Engine initialization stages fresh character/dialogue/knowledge managers before activation, replaces rather than merges previous project content, and clears mutable runtime state on same-root reloads and project switches
+- [ ] Engine initialization stages the versioned story event catalog with character-reference validation, and failed loads or hot reloads leave the active catalog unchanged
 - [ ] Saving project `settings.json` does not switch the active project root without loading the matching content managers
 - [ ] Legacy C# API engine redacts token-shaped values and JSON/header/query secret assignments from provider error bodies and request exceptions while the legacy solution remains release-gated
 - [ ] Rust and legacy C# asset managers reject absolute, URI-like, empty, current-directory, and parent-traversal asset paths before reading project assets
@@ -51,6 +52,8 @@
 - [ ] Stable-slot overwrites stage and recover the previous save on replacement failure, clean temporary files after success, and reject save payloads larger than 32 MiB before unbounded reads or writes
 - [ ] Rhai script commands and direct `ScriptEngine` callers reject oversized or hidden-control-character payloads, condition expressions use shared limits and run through a read-only Rhai engine, workflow conditions receive read-only relationship/evaluation context variables for desktop and Web/PWA previews, desktop run-context previews and browser workflow previews mirror per-run variable, flag, signed relationship, emotion, scene, and weighted random-branch behavior for later branches without mutating persistent runtime state, workflow validation rejects invalid condition and state-key config before execution, script variables/flags use portable state keys before workflow, dialogue, or save data writes, and the shared script engine caps operations, recursion, expression depth, variables, functions, and module imports
 - [ ] Workflow save/load commands read and write only JSON files under the active project `workflows/` directory
+- [ ] Workflow validation, desktop execution, browser preview, chat scoring, and Quality Suites resolve trigger nodes from the same project story event catalog
+- [ ] Story event catalogs reject invalid schemas, duplicate IDs, unsafe configured paths, symlinks, unsupported metrics, out-of-range thresholds, oversized content, and unknown scoped characters
 - [ ] Character, dialogue, and knowledge loader commands read only from the active project `characters/`, `dialogue/`, and `knowledge/` directories
 - [ ] Character create/delete commands resolve through the active or discovered default project data root, validate portable character IDs, and touch only direct JSON files under `characters/`
 - [ ] Plugin listing, registration, and removal commands resolve through the active or discovered default project data root, validate portable plugin IDs, normalize optional `.rhai` script references under `plugins/`, and touch only direct manifest JSON files under `plugins/`
@@ -141,6 +144,7 @@
 - [ ] Web/PWA static-hosting redirects are generated and release-verified for asset passthrough, local rewrite targets, 200 rewrite status, and final SPA fallback ordering
 - [ ] Web/PWA Azure Static Web Apps configuration is generated and release-verified for fallback routing, asset exclusions, 404 handling, and global security headers
 - [ ] Web/PWA Vercel configuration is generated and release-verified for SPA fallback routing, local rewrite targets, and global security headers
+- [ ] Web/PWA dist includes `events/story_events.json`, inventories event catalogs in `project-assets.json`, and serves/caches them correctly at root and subpath bases
 - [ ] Installed Tauri build resolves bundled sample `data/` resources at startup when no development project data root is available
 - [ ] Installed Tauri build writes analytics, sync manifests, saves, and generated system/API TTS assets under the active project data root with sanitized output filenames
 - [ ] Azure and ElevenLabs TTS provider errors redact token-shaped values, API-key assignments, authorization headers, sensitive provider headers, and response bodies before reaching frontend status surfaces

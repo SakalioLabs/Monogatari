@@ -39,6 +39,7 @@
         "dialogue": "dialogue",
         "scenes": "scenes",
         "assets": "assets",
+        "events": "events",
         "saves": "saves",
         "quality_suites": "quality_suites"
     }

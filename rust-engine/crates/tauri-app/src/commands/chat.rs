@@ -12,19 +12,14 @@ use std::{
 };
 
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 use tauri::State;
 use tracing::debug;
 
 use crate::commands::prompt_guard;
 use crate::state::AppState;
+use crate::story_events::{EventScoreSnapshot, StoryEventCatalog};
+pub use crate::story_events::{EventTriggerDecision, EventTriggerRule, TriggeredEvent};
 
-const FIRST_FRIEND_THRESHOLD: f32 = 0.3;
-const CLOSE_FRIEND_THRESHOLD: f32 = 0.6;
-const BEST_FRIEND_THRESHOLD: f32 = 0.8;
-const HIGH_SCORE_EVENT_THRESHOLD: f32 = 0.8;
-const DEDICATED_PLAYER_EVAL_COUNT: u32 = 5;
-const SUPER_DEDICATED_EVAL_COUNT: u32 = 10;
 const STREAM_SAFETY_WINDOW_CHARS: usize = 240;
 
 #[derive(Debug, Clone, Default)]
@@ -138,50 +133,6 @@ pub struct ConversationEvaluation {
     pub creativity: f32,    // 0.0 - 1.0
     pub overall_score: f32, // 0.0 - 1.0
     pub summary: String,
-}
-
-/// A special event triggered by the evaluation system.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TriggeredEvent {
-    pub event_id: String,
-    pub event_type: String, // "special_dialogue", "scene_change", "relationship_milestone", "unlock"
-    pub description: String,
-    pub data: serde_json::Value,
-}
-
-/// Stable trigger rule metadata used by release-gate quality suites.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct EventTriggerRule {
-    pub event_id: String,
-    pub event_type: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub rule_fingerprint: Option<String>,
-    #[serde(default)]
-    pub min_relationship: Option<f32>,
-    #[serde(default)]
-    pub score_metric: Option<String>,
-    #[serde(default)]
-    pub min_score: Option<f32>,
-    #[serde(default)]
-    pub min_evaluation_count: Option<u32>,
-}
-
-/// Explainable event trigger result for author tooling and QA.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EventTriggerDecision {
-    pub event_id: String,
-    pub event_type: String,
-    pub description: String,
-    pub triggered: bool,
-    pub already_triggered: bool,
-    pub actual_relationship: f32,
-    pub actual_evaluation_count: u32,
-    pub actual_score_metric: Option<String>,
-    pub actual_score: Option<f32>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub rule_fingerprint: Option<String>,
-    pub rule: Option<EventTriggerRule>,
-    pub blocked_reasons: Vec<String>,
 }
 
 /// Atomic manual scoring report for author tooling.
@@ -457,10 +408,12 @@ ROLEPLAY RULES:
             let next_cumulative_score = cumulative_score + eval.overall_score;
             let next_evaluation_count = evaluation_count + 1;
             evaluation = Some(eval.clone());
+            let event_catalog = state.story_event_catalog.read().await.clone();
 
             // Check for triggered events and keep the full decision audit.
             let decisions = check_event_trigger_decisions(
                 &state,
+                &event_catalog,
                 &character_id,
                 &eval,
                 next_cumulative_score,
@@ -468,7 +421,7 @@ ROLEPLAY RULES:
                 &already_triggered,
             )
             .await;
-            let events = triggered_events_from_decisions(&decisions);
+            let events = triggered_events_from_decisions(&event_catalog, &decisions);
 
             {
                 let mut sessions = state.chat_sessions.write().await;
@@ -549,8 +502,10 @@ pub async fn evaluate_conversation_report(
     character_id: String,
 ) -> Result<ConversationEvaluationReport, String> {
     let evaluation = evaluate_conversation_for_character(&state, &character_id).await?;
+    let event_catalog = state.story_event_catalog.read().await.clone();
     let event_trigger_decisions = preview_event_triggers(state, character_id).await?;
-    let triggerable_events = triggered_events_from_decisions(&event_trigger_decisions);
+    let triggerable_events =
+        triggered_events_from_decisions(&event_catalog, &event_trigger_decisions);
 
     Ok(ConversationEvaluationReport {
         evaluation,
@@ -623,15 +578,9 @@ pub async fn get_available_events(
     state: State<'_, AppState>,
     character_id: String,
 ) -> Result<Vec<TriggeredEvent>, String> {
+    let event_catalog = state.story_event_catalog.read().await.clone();
     let decisions = preview_event_triggers(state, character_id).await?;
-    let available: Vec<TriggeredEvent> = get_event_definitions()
-        .into_iter()
-        .filter(|event| {
-            decisions
-                .iter()
-                .any(|decision| decision.event_id == event.event_id && decision.triggered)
-        })
-        .collect();
+    let available = triggered_events_from_decisions(&event_catalog, &decisions);
 
     Ok(available)
 }
@@ -656,19 +605,16 @@ pub async fn preview_event_triggers(
 
     let relationship = player_relationship(&state, &character_id).await;
     let evaluation = last_evaluation.unwrap_or_else(neutral_conversation_evaluation);
+    let event_catalog = state.story_event_catalog.read().await.clone();
 
-    Ok(get_event_definitions()
-        .into_iter()
-        .map(|event| {
-            explain_event_trigger(
-                &event,
-                relationship,
-                &evaluation,
-                evaluation_count,
-                already_triggered.contains(&event.event_id),
-            )
-        })
-        .collect())
+    Ok(build_event_trigger_decisions(
+        &event_catalog,
+        &character_id,
+        relationship,
+        &evaluation,
+        evaluation_count,
+        &already_triggered,
+    ))
 }
 
 async fn build_chat_session_audit_report(
@@ -707,13 +653,17 @@ async fn build_chat_session_audit_report(
     let evaluation = last_evaluation
         .clone()
         .unwrap_or_else(neutral_conversation_evaluation);
+    let event_catalog = state.story_event_catalog.read().await.clone();
     let event_trigger_decisions = build_event_trigger_decisions(
+        &event_catalog,
+        character_id,
         relationship_score,
         &evaluation,
         evaluation_count,
         &triggered_event_ids,
     );
-    let triggerable_events = triggered_events_from_decisions(&event_trigger_decisions);
+    let triggerable_events =
+        triggered_events_from_decisions(&event_catalog, &event_trigger_decisions);
 
     Ok(ChatSessionAuditReport {
         character_id: character_id.to_string(),
@@ -1100,6 +1050,7 @@ fn stream_remaining(buffer: &str, emitted_chars: usize) -> Option<String> {
 /// Explain every special event trigger decision for runtime chat audits.
 async fn check_event_trigger_decisions(
     state: &State<'_, AppState>,
+    event_catalog: &StoryEventCatalog,
     character_id: &str,
     eval: &ConversationEvaluation,
     _cumulative_score: f32,
@@ -1107,151 +1058,50 @@ async fn check_event_trigger_decisions(
     already_triggered: &[String],
 ) -> Vec<EventTriggerDecision> {
     let relationship = player_relationship(state, character_id).await;
-    build_event_trigger_decisions(relationship, eval, eval_count, already_triggered)
+    build_event_trigger_decisions(
+        event_catalog,
+        character_id,
+        relationship,
+        eval,
+        eval_count,
+        already_triggered,
+    )
 }
 
 pub(super) fn build_event_trigger_decisions(
+    event_catalog: &StoryEventCatalog,
+    character_id: &str,
     relationship: f32,
     eval: &ConversationEvaluation,
     eval_count: u32,
     already_triggered: &[String],
 ) -> Vec<EventTriggerDecision> {
-    get_event_definitions()
-        .into_iter()
-        .map(|def| {
-            explain_event_trigger(
-                &def,
-                relationship,
-                eval,
-                eval_count,
-                already_triggered.contains(&def.event_id),
-            )
-        })
-        .collect()
-}
-
-fn triggered_events_from_decisions(decisions: &[EventTriggerDecision]) -> Vec<TriggeredEvent> {
-    let triggered_ids: HashSet<&str> = decisions
-        .iter()
-        .filter(|decision| decision.triggered)
-        .map(|decision| decision.event_id.as_str())
-        .collect();
-
-    get_event_definitions()
-        .into_iter()
-        .filter(|def| {
-            if triggered_ids.contains(def.event_id.as_str()) {
-                debug!("Triggered event: {}", def.event_id);
-                true
-            } else {
-                false
-            }
-        })
-        .collect()
-}
-
-pub(super) fn explain_event_trigger(
-    def: &TriggeredEvent,
-    relationship: f32,
-    eval: &ConversationEvaluation,
-    eval_count: u32,
-    already_triggered: bool,
-) -> EventTriggerDecision {
-    let Some(rule) = get_event_trigger_rules()
-        .into_iter()
-        .find(|rule| rule.event_id == def.event_id && rule.event_type == def.event_type)
-    else {
-        return EventTriggerDecision {
-            event_id: def.event_id.clone(),
-            event_type: def.event_type.clone(),
-            description: def.description.clone(),
-            triggered: false,
-            already_triggered,
-            actual_relationship: relationship,
-            actual_evaluation_count: eval_count,
-            actual_score_metric: None,
-            actual_score: None,
-            rule_fingerprint: None,
-            rule: None,
-            blocked_reasons: vec![format!(
-                "No trigger rule is registered for `{}`.",
-                def.event_id
-            )],
-        };
-    };
-
-    let mut blocked_reasons = Vec::new();
-    let mut actual_score_metric = None;
-    let mut actual_score = None;
-
-    if already_triggered {
-        blocked_reasons.push(format!("Event `{}` has already triggered.", def.event_id));
-    }
-
-    if let Some(min_relationship) = rule.min_relationship {
-        if relationship < min_relationship {
-            blocked_reasons.push(format!(
-                "relationship {relationship:.3} is below required {min_relationship:.3}"
-            ));
-        }
-    }
-
-    if let Some(min_evaluation_count) = rule.min_evaluation_count {
-        if eval_count < min_evaluation_count {
-            blocked_reasons.push(format!(
-                "evaluation_count {eval_count} is below required {min_evaluation_count}"
-            ));
-        }
-    }
-
-    if let Some(min_score) = rule.min_score {
-        let Some(metric) = rule.score_metric.as_deref() else {
-            blocked_reasons.push(format!(
-                "Event `{}` requires a minimum score but has no score_metric.",
-                def.event_id
-            ));
-            return EventTriggerDecision {
-                event_id: def.event_id.clone(),
-                event_type: def.event_type.clone(),
-                description: def.description.clone(),
-                triggered: false,
-                already_triggered,
-                actual_relationship: relationship,
-                actual_evaluation_count: eval_count,
-                actual_score_metric,
-                actual_score,
-                rule_fingerprint: rule.rule_fingerprint.clone(),
-                rule: Some(rule),
-                blocked_reasons,
-            };
-        };
-        actual_score_metric = Some(metric.to_string());
-        match evaluation_metric(eval, metric) {
-            Some(actual) => {
-                actual_score = Some(actual);
-                if actual < min_score {
-                    blocked_reasons.push(format!(
-                        "{metric} {actual:.3} is below required {min_score:.3}"
-                    ));
-                }
-            }
-            None => blocked_reasons.push(format!("Unknown score metric `{metric}`.")),
-        }
-    }
-
-    EventTriggerDecision {
-        event_id: def.event_id.clone(),
-        event_type: def.event_type.clone(),
-        description: def.description.clone(),
-        triggered: blocked_reasons.is_empty(),
+    event_catalog.decisions(
+        character_id,
+        relationship,
+        event_score_snapshot(eval),
+        eval_count,
         already_triggered,
-        actual_relationship: relationship,
-        actual_evaluation_count: eval_count,
-        actual_score_metric,
-        actual_score,
-        rule_fingerprint: rule.rule_fingerprint.clone(),
-        rule: Some(rule),
-        blocked_reasons,
+    )
+}
+
+fn triggered_events_from_decisions(
+    event_catalog: &StoryEventCatalog,
+    decisions: &[EventTriggerDecision],
+) -> Vec<TriggeredEvent> {
+    let events = event_catalog.triggered_events(decisions);
+    for event in &events {
+        debug!("Triggered event: {}", event.event_id);
+    }
+    events
+}
+
+fn event_score_snapshot(eval: &ConversationEvaluation) -> EventScoreSnapshot {
+    EventScoreSnapshot {
+        friendliness: eval.friendliness,
+        engagement: eval.engagement,
+        creativity: eval.creativity,
+        overall: eval.overall_score,
     }
 }
 
@@ -1275,183 +1125,41 @@ fn neutral_conversation_evaluation() -> ConversationEvaluation {
     }
 }
 
-fn evaluation_metric(eval: &ConversationEvaluation, metric: &str) -> Option<f32> {
-    match metric {
-        "friendliness" => Some(eval.friendliness),
-        "engagement" => Some(eval.engagement),
-        "creativity" => Some(eval.creativity),
-        "overall" => Some(eval.overall_score),
-        _ => None,
-    }
-}
-
+#[cfg(test)]
 pub(super) fn get_event_trigger_rules() -> Vec<EventTriggerRule> {
-    vec![
-        event_trigger_rule(
-            "first_friend",
-            "relationship_milestone",
-            Some(FIRST_FRIEND_THRESHOLD),
-            None,
-            None,
-            None,
-        ),
-        event_trigger_rule(
-            "close_friend",
-            "relationship_milestone",
-            Some(CLOSE_FRIEND_THRESHOLD),
-            None,
-            None,
-            None,
-        ),
-        event_trigger_rule(
-            "best_friend",
-            "relationship_milestone",
-            Some(BEST_FRIEND_THRESHOLD),
-            None,
-            None,
-            None,
-        ),
-        event_trigger_rule(
-            "high_engagement",
-            "special_dialogue",
-            None,
-            Some("engagement"),
-            Some(HIGH_SCORE_EVENT_THRESHOLD),
-            Some(2),
-        ),
-        event_trigger_rule(
-            "creative_talk",
-            "special_dialogue",
-            None,
-            Some("creativity"),
-            Some(HIGH_SCORE_EVENT_THRESHOLD),
-            Some(2),
-        ),
-        event_trigger_rule(
-            "dedicated_player",
-            "cumulative_achievement",
-            None,
-            None,
-            None,
-            Some(DEDICATED_PLAYER_EVAL_COUNT),
-        ),
-        event_trigger_rule(
-            "super_dedicated",
-            "cumulative_achievement",
-            None,
-            None,
-            None,
-            Some(SUPER_DEDICATED_EVAL_COUNT),
-        ),
-    ]
+    StoryEventCatalog::default().trigger_rules()
 }
 
-fn event_trigger_rule(
-    event_id: &str,
-    event_type: &str,
-    min_relationship: Option<f32>,
-    score_metric: Option<&str>,
-    min_score: Option<f32>,
-    min_evaluation_count: Option<u32>,
-) -> EventTriggerRule {
-    let mut rule = EventTriggerRule {
-        event_id: event_id.to_string(),
-        event_type: event_type.to_string(),
-        rule_fingerprint: None,
-        min_relationship,
-        score_metric: score_metric.map(str::to_string),
-        min_score,
-        min_evaluation_count,
-    };
-    rule.rule_fingerprint = Some(event_trigger_rule_fingerprint(&rule));
-    rule
-}
-
+#[cfg(test)]
 pub(super) fn event_trigger_rule_fingerprint(rule: &EventTriggerRule) -> String {
-    let payload = serde_json::json!({
-        "schema": "monogatari-event-trigger-rule/v1",
-        "event_id": rule.event_id.as_str(),
-        "event_type": rule.event_type.as_str(),
-        "min_relationship": rule.min_relationship.map(format_rule_float),
-        "score_metric": rule.score_metric.as_deref(),
-        "min_score": rule.min_score.map(format_rule_float),
-        "min_evaluation_count": rule.min_evaluation_count,
-    });
-    let encoded = serde_json::to_vec(&payload)
-        .expect("event trigger rule fingerprint payload should serialize");
-    let mut hasher = Sha256::new();
-    hasher.update(encoded);
-    format!("{:x}", hasher.finalize())
+    crate::story_events::event_trigger_rule_fingerprint(rule)
 }
 
-fn format_rule_float(value: f32) -> String {
-    format!("{value:.6}")
-}
-
-/// Define all possible special events in the game.
+/// Compatibility catalog used only by unit tests and legacy internal callers.
+#[cfg(test)]
 pub(super) fn get_event_definitions() -> Vec<TriggeredEvent> {
-    vec![
-        TriggeredEvent {
-            event_id: "first_friend".to_string(),
-            event_type: "relationship_milestone".to_string(),
-            description: "You've become friends with the character!".to_string(),
-            data: serde_json::json!({
-                "unlock_scene": "friend_scene",
-                "dialogue_id": "friend_celebration"
-            }),
-        },
-        TriggeredEvent {
-            event_id: "close_friend".to_string(),
-            event_type: "relationship_milestone".to_string(),
-            description: "You've become close friends!".to_string(),
-            data: serde_json::json!({
-                "unlock_scene": "close_friend_scene",
-                "dialogue_id": "close_friend_dialogue"
-            }),
-        },
-        TriggeredEvent {
-            event_id: "best_friend".to_string(),
-            event_type: "relationship_milestone".to_string(),
-            description: "You've become best friends! A special ending is now available."
-                .to_string(),
-            data: serde_json::json!({
-                "unlock_ending": "best_friend_ending",
-                "dialogue_id": "best_friend_dialogue"
-            }),
-        },
-        TriggeredEvent {
-            event_id: "high_engagement".to_string(),
-            event_type: "special_dialogue".to_string(),
-            description: "Your engaging conversation has unlocked a special dialogue!".to_string(),
-            data: serde_json::json!({
-                "dialogue_id": "engaged_conversation"
-            }),
-        },
-        TriggeredEvent {
-            event_id: "creative_talk".to_string(),
-            event_type: "special_dialogue".to_string(),
-            description: "Your creative responses have impressed the character!".to_string(),
-            data: serde_json::json!({
-                "dialogue_id": "impressed_character"
-            }),
-        },
-        TriggeredEvent {
-            event_id: "dedicated_player".to_string(),
-            event_type: "cumulative_achievement".to_string(),
-            description: "You've had many conversations! New content unlocked.".to_string(),
-            data: serde_json::json!({
-                "unlock_scene": "memories_scene"
-            }),
-        },
-        TriggeredEvent {
-            event_id: "super_dedicated".to_string(),
-            event_type: "cumulative_achievement".to_string(),
-            description: "Your dedication is remarkable! A secret scene is available.".to_string(),
-            data: serde_json::json!({
-                "unlock_scene": "secret_scene"
-            }),
-        },
-    ]
+    StoryEventCatalog::default().event_definitions()
+}
+
+#[cfg(test)]
+pub(super) fn explain_event_trigger(
+    event: &TriggeredEvent,
+    relationship: f32,
+    evaluation: &ConversationEvaluation,
+    evaluation_count: u32,
+    already_triggered: bool,
+) -> EventTriggerDecision {
+    StoryEventCatalog::default()
+        .decision_for(
+            &event.event_id,
+            Some(&event.event_type),
+            None,
+            relationship,
+            event_score_snapshot(evaluation),
+            evaluation_count,
+            already_triggered,
+        )
+        .expect("compatibility event definitions and trigger rules must stay aligned")
 }
 
 /// Simple emotion detection from response text.
@@ -1884,8 +1592,10 @@ Stay in character. Respond naturally with emotion (use *actions* for body langua
             if let Ok(eval) = eval_result {
                 let next_cumulative_score = cumulative_score + eval.overall_score;
                 let next_evaluation_count = evaluation_count + 1;
+                let event_catalog = state.story_event_catalog.read().await.clone();
                 let decisions = check_event_trigger_decisions(
                     &state,
+                    &event_catalog,
                     &character_id,
                     &eval,
                     next_cumulative_score,
@@ -1893,7 +1603,7 @@ Stay in character. Respond naturally with emotion (use *actions* for body langua
                     &already_triggered,
                 )
                 .await;
-                let events = triggered_events_from_decisions(&decisions);
+                let events = triggered_events_from_decisions(&event_catalog, &decisions);
 
                 {
                     let mut sessions = state.chat_sessions.write().await;
@@ -1947,6 +1657,11 @@ fn streaming_generation_failed_message() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const FIRST_FRIEND_THRESHOLD: f32 = 0.3;
+    const CLOSE_FRIEND_THRESHOLD: f32 = 0.6;
+    const HIGH_SCORE_EVENT_THRESHOLD: f32 = 0.8;
+    const SUPER_DEDICATED_EVAL_COUNT: u32 = 10;
 
     fn player_message(content: &str) -> ChatMessage {
         ChatMessage {
@@ -2355,7 +2070,8 @@ mod tests {
     #[test]
     fn event_trigger_decisions_drive_triggered_event_list() {
         let eval = evaluation(0.7, 0.85, 0.2);
-        let decisions = build_event_trigger_decisions(0.35, &eval, 2, &[]);
+        let catalog = StoryEventCatalog::default();
+        let decisions = build_event_trigger_decisions(&catalog, "sakura", 0.35, &eval, 2, &[]);
 
         let first_friend = decisions
             .iter()
@@ -2396,7 +2112,7 @@ mod tests {
             .iter()
             .any(|reason| reason.contains("relationship")));
 
-        let triggered: Vec<String> = triggered_events_from_decisions(&decisions)
+        let triggered: Vec<String> = triggered_events_from_decisions(&catalog, &decisions)
             .into_iter()
             .map(|event| event.event_id)
             .collect();
@@ -2432,10 +2148,11 @@ mod tests {
     #[test]
     fn conversation_evaluation_report_serializes_event_audit() {
         let eval = evaluation(0.7, 0.85, 0.2);
-        let decisions = build_event_trigger_decisions(0.35, &eval, 2, &[]);
+        let catalog = StoryEventCatalog::default();
+        let decisions = build_event_trigger_decisions(&catalog, "sakura", 0.35, &eval, 2, &[]);
         let report = ConversationEvaluationReport {
             evaluation: eval,
-            triggerable_events: triggered_events_from_decisions(&decisions),
+            triggerable_events: triggered_events_from_decisions(&catalog, &decisions),
             event_trigger_decisions: decisions,
         };
 
@@ -2461,7 +2178,8 @@ mod tests {
     #[test]
     fn chat_session_audit_report_serializes_restorable_safety_state() {
         let eval = evaluation(0.7, 0.85, 0.2);
-        let decisions = build_event_trigger_decisions(0.35, &eval, 2, &[]);
+        let catalog = StoryEventCatalog::default();
+        let decisions = build_event_trigger_decisions(&catalog, "sakura", 0.35, &eval, 2, &[]);
         let safety_trace = build_chat_safety_trace(
             "hello",
             "Sakura",
@@ -2481,7 +2199,7 @@ mod tests {
             triggered_event_ids: vec!["first_friend".to_string()],
             last_evaluation: Some(eval),
             last_safety_trace: Some(safety_trace),
-            triggerable_events: triggered_events_from_decisions(&decisions),
+            triggerable_events: triggered_events_from_decisions(&catalog, &decisions),
             event_trigger_decisions: decisions,
         };
 

@@ -9,6 +9,7 @@ use tauri::State;
 
 use crate::commands::{chat, prompt_guard, workflow};
 use crate::state::{default_project_data_root, AppState};
+use crate::story_events::StoryEventCatalog;
 
 const DEFAULT_SUITE_JSON: &str =
     include_str!("../../../../../data/quality_suites/character_stability.json");
@@ -310,11 +311,13 @@ pub async fn run_quality_suite(
 ) -> Result<QualitySuiteReport, String> {
     let root = project_root(&state).await;
     let loaded = load_quality_suite_from_root(&root, suite_path)?;
+    let event_catalog = state.story_event_catalog.read().await.clone();
     Ok(run_quality_suite_inner(
         &loaded.suite,
         Some(&root),
         &loaded.source_path,
         &loaded.source_sha256,
+        &event_catalog,
     )
     .await)
 }
@@ -685,10 +688,11 @@ async fn run_quality_suite_inner(
     project_root: Option<&Path>,
     suite_source_path: &str,
     suite_source_sha256: &str,
+    event_catalog: &StoryEventCatalog,
 ) -> QualitySuiteReport {
     let mut scenarios = Vec::with_capacity(suite.scenarios.len());
     for scenario in &suite.scenarios {
-        scenarios.push(run_quality_scenario(scenario, project_root).await);
+        scenarios.push(run_quality_scenario(scenario, project_root, event_catalog).await);
     }
     let passed = scenarios.iter().filter(|scenario| scenario.passed).count();
     let total = scenarios.len();
@@ -819,6 +823,7 @@ fn quality_suite_audit_summary(scenarios: &[QualityScenarioReport]) -> QualitySu
 async fn run_quality_scenario(
     scenario: &QualityScenario,
     project_root: Option<&Path>,
+    event_catalog: &StoryEventCatalog,
 ) -> QualityScenarioReport {
     let messages = scenario_chat_messages(scenario);
     let prompt_injection_detected = scenario.messages.iter().any(|message| {
@@ -855,7 +860,10 @@ async fn run_quality_scenario(
     let knowledge_anchor_missing_detected = !knowledge_evidence.issues.is_empty();
     let knowledge_boundary_violation_detected =
         scenario_knowledge_boundary_violation(scenario, &character_response);
+    let event_character_id = scenario.character_id.as_deref().unwrap_or("sakura");
     let event_trigger_decisions = chat::build_event_trigger_decisions(
+        event_catalog,
+        event_character_id,
         event_relationship,
         &evaluation,
         scenario.evaluation_count,
@@ -866,7 +874,7 @@ async fn run_quality_scenario(
         .filter(|decision| decision.triggered)
         .map(|decision| decision.event_id.clone())
         .collect();
-    let event_rules_verified = scenario_event_rules(scenario);
+    let event_rules_verified = scenario_event_rules(scenario, event_catalog);
     let issues = validate_scenario_expectations(
         scenario,
         &evaluation,
@@ -1466,7 +1474,10 @@ fn scenario_chat_messages(scenario: &QualityScenario) -> Vec<chat::ChatMessage> 
         .collect()
 }
 
-fn scenario_event_rules(scenario: &QualityScenario) -> Vec<chat::EventTriggerRule> {
+fn scenario_event_rules(
+    scenario: &QualityScenario,
+    event_catalog: &StoryEventCatalog,
+) -> Vec<chat::EventTriggerRule> {
     let expected_ids: Vec<&str> = scenario
         .expect
         .expected_event_rules
@@ -1478,7 +1489,8 @@ fn scenario_event_rules(scenario: &QualityScenario) -> Vec<chat::EventTriggerRul
         return Vec::new();
     }
 
-    chat::get_event_trigger_rules()
+    event_catalog
+        .trigger_rules()
         .into_iter()
         .filter(|rule| expected_ids.contains(&rule.event_id.as_str()))
         .collect()
@@ -1906,6 +1918,11 @@ mod tests {
         suite: &QualitySuite,
         project_root: Option<&Path>,
     ) -> QualitySuiteReport {
+        let event_catalog = project_root
+            .map(StoryEventCatalog::load_from_project_root)
+            .transpose()
+            .unwrap()
+            .unwrap_or_default();
         tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
@@ -1915,6 +1932,7 @@ mod tests {
                 project_root,
                 DEFAULT_SUITE_PATH,
                 &quality_suite_sha256(DEFAULT_SUITE_JSON),
+                &event_catalog,
             ))
     }
 
@@ -3008,6 +3026,8 @@ mod tests {
                         score_metric: None,
                         min_score: None,
                         min_evaluation_count: None,
+                        character_ids: Vec::new(),
+                        repeatable: false,
                     }],
                     ..Default::default()
                 },

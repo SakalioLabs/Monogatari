@@ -7,6 +7,7 @@ use tauri::State;
 use llm_game::{characters::CharacterManager, dialogue::DialogueManager, knowledge::KnowledgeBase};
 
 use crate::state::{default_project_data_root, AppState};
+use crate::story_events::StoryEventCatalog;
 
 #[derive(Serialize)]
 pub struct EngineStatus {
@@ -14,6 +15,8 @@ pub struct EngineStatus {
     pub character_count: usize,
     pub dialogue_count: usize,
     pub knowledge_count: usize,
+    pub story_event_count: usize,
+    pub story_event_catalog_fingerprint: String,
     pub ai_engines: Vec<String>,
     pub active_ai_engine: Option<String>,
 }
@@ -31,7 +34,7 @@ pub async fn initialize_engine(
     };
     let path = validate_engine_project_root(path)?;
 
-    let (characters, dialogues, knowledge) = load_project_content(&path).await?;
+    let (characters, dialogues, knowledge, story_events) = load_project_content(&path).await?;
 
     // Initialize AI backends before replacing the active project state.
     let pipeline = state.inference_pipeline.read().await;
@@ -45,6 +48,7 @@ pub async fn initialize_engine(
     *state.character_manager.write().await = characters;
     *state.dialogue_manager.write().await = dialogues;
     *state.knowledge_base.write().await = knowledge;
+    *state.story_event_catalog.write().await = story_events;
     *state.initialized.write().await = true;
 
     Ok("Engine initialized successfully".to_string())
@@ -52,7 +56,15 @@ pub async fn initialize_engine(
 
 async fn load_project_content(
     path: &Path,
-) -> Result<(CharacterManager, DialogueManager, KnowledgeBase), String> {
+) -> Result<
+    (
+        CharacterManager,
+        DialogueManager,
+        KnowledgeBase,
+        StoryEventCatalog,
+    ),
+    String,
+> {
     let mut characters = CharacterManager::new();
     // Load characters
     let char_path = path.join("characters");
@@ -83,7 +95,11 @@ async fn load_project_content(
             .map_err(|e| e.to_string())?;
     }
 
-    Ok((characters, dialogues, knowledge))
+    let story_events = StoryEventCatalog::load_from_project_root(path)?;
+    let character_ids = characters.character_ids();
+    story_events.validate_character_references(character_ids.iter().map(String::as_str))?;
+
+    Ok((characters, dialogues, knowledge, story_events))
 }
 
 fn normalize_project_path(project_path: &str) -> Result<PathBuf, String> {
@@ -147,13 +163,17 @@ pub async fn get_engine_status(state: State<'_, AppState>) -> Result<EngineStatu
     let cm = state.character_manager.read().await;
     let dm = state.dialogue_manager.read().await;
     let kb = state.knowledge_base.read().await;
+    let story_events = state.story_event_catalog.read().await;
     let pipeline = state.inference_pipeline.read().await;
+    let story_event_snapshot = story_events.snapshot();
 
     Ok(EngineStatus {
         initialized,
         character_count: cm.character_ids().len(),
         dialogue_count: dm.script_ids().len(),
         knowledge_count: kb.len(),
+        story_event_count: story_event_snapshot.event_count,
+        story_event_catalog_fingerprint: story_event_snapshot.catalog_fingerprint,
         ai_engines: pipeline
             .engine_names()
             .iter()
@@ -222,6 +242,7 @@ mod tests {
         for root in [&first, &second] {
             std::fs::create_dir_all(root.join("characters")).unwrap();
             std::fs::create_dir_all(root.join("knowledge")).unwrap();
+            std::fs::create_dir_all(root.join("events")).unwrap();
         }
         std::fs::write(
             first.join("characters").join("first.json"),
@@ -233,14 +254,28 @@ mod tests {
             r#"{"id":"second","name":"Second"}"#,
         )
         .unwrap();
+        std::fs::write(
+            first.join("events").join("events.json"),
+            r#"{"schema":"monogatari-story-event-catalog/v1","events":[{"event_id":"first_event","event_type":"unlock","description":"First"}]}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            second.join("events").join("events.json"),
+            r#"{"schema":"monogatari-story-event-catalog/v1","events":[{"event_id":"second_event","event_type":"unlock","description":"Second"}]}"#,
+        )
+        .unwrap();
 
-        let (first_characters, _, _) = load_project_content(&first).await.unwrap();
-        let (second_characters, _, _) = load_project_content(&second).await.unwrap();
+        let (first_characters, _, _, first_events) = load_project_content(&first).await.unwrap();
+        let (second_characters, _, _, second_events) = load_project_content(&second).await.unwrap();
 
         assert!(first_characters.get_character("first").is_some());
         assert!(first_characters.get_character("second").is_none());
         assert!(second_characters.get_character("second").is_some());
         assert!(second_characters.get_character("first").is_none());
+        assert!(first_events.definition("first_event", None).is_some());
+        assert!(first_events.definition("second_event", None).is_none());
+        assert!(second_events.definition("second_event", None).is_some());
+        assert!(second_events.definition("first_event", None).is_none());
         std::fs::remove_dir_all(first).unwrap();
         std::fs::remove_dir_all(second).unwrap();
     }

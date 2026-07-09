@@ -10,6 +10,7 @@ use tauri::State;
 
 use crate::commands::{chat, prompt_guard};
 use crate::state::AppState;
+use crate::story_events::{EventScoreSnapshot, StoryEventCatalog, StoryEventDefinition};
 
 const DEFAULT_WORKFLOW_MAX_STEPS: usize = 64;
 const WORKFLOW_MAX_STEPS_LIMIT: usize = 256;
@@ -326,8 +327,12 @@ pub async fn get_workflow_nodes() -> Result<Vec<WorkflowNodeTypeInfo>, String> {
 
 /// Validate a workflow before save/import/export.
 #[tauri::command]
-pub async fn validate_workflow(workflow: Workflow) -> Result<WorkflowValidationResult, String> {
-    Ok(validate_workflow_inner(&workflow))
+pub async fn validate_workflow(
+    state: State<'_, AppState>,
+    workflow: Workflow,
+) -> Result<WorkflowValidationResult, String> {
+    let event_catalog = state.story_event_catalog.read().await;
+    Ok(validate_workflow_with_catalog(&workflow, &event_catalog))
 }
 
 /// Execute a workflow graph from its configured start node and return a trace.
@@ -358,7 +363,8 @@ pub(crate) async fn execute_workflow_inner(
     choice_selections: Option<HashMap<String, usize>>,
     run_context: Option<WorkflowRunContext>,
 ) -> Result<WorkflowExecutionReport, String> {
-    let validation = validate_workflow_inner(&workflow);
+    let event_catalog = state.story_event_catalog.read().await.clone();
+    let validation = validate_workflow_with_catalog(&workflow, &event_catalog);
     if !validation.valid {
         return Err(format_validation_errors(&validation));
     }
@@ -690,7 +696,8 @@ async fn execute_workflow_node_inner_with_context(
                 .and_then(|value| value.as_str())
                 .map(str::trim)
                 .filter(|value| !value.is_empty());
-            let event = workflow_event_definition(event_id, event_type)?;
+            let event_catalog = state.story_event_catalog.read().await.clone();
+            let event = workflow_event_definition(&event_catalog, event_id, event_type)?;
             let character_id =
                 workflow_character_id_from_state(&state, &node.config, run_context).await;
             let (evaluation, evaluation_source) =
@@ -711,13 +718,20 @@ async fn execute_workflow_node_inner_with_context(
                 run_context,
             )
             .await;
-            let decision = chat::explain_event_trigger(
-                &event,
+            let decision = event_catalog.decision_for(
+                &event.event_id,
+                Some(&event.event_type),
+                character_id.as_deref(),
                 relationship,
-                &evaluation,
+                EventScoreSnapshot {
+                    friendliness: evaluation.friendliness,
+                    engagement: evaluation.engagement,
+                    creativity: evaluation.creativity,
+                    overall: evaluation.overall_score,
+                },
                 evaluation_count,
                 already_triggered,
-            );
+            )?;
 
             if decision.triggered && run_context.is_none() {
                 if let Some(character_id) = character_id.as_deref() {
@@ -1520,17 +1534,13 @@ fn clamp_workflow_relationship(value: f32) -> f32 {
 }
 
 fn workflow_event_definition(
+    event_catalog: &StoryEventCatalog,
     event_id: &str,
     event_type: Option<&str>,
-) -> Result<chat::TriggeredEvent, String> {
-    chat::get_event_definitions()
-        .into_iter()
-        .find(|event| {
-            event.event_id == event_id
-                && event_type
-                    .map(|event_type| event.event_type == event_type)
-                    .unwrap_or(true)
-        })
+) -> Result<StoryEventDefinition, String> {
+    event_catalog
+        .definition(event_id, event_type)
+        .cloned()
         .ok_or_else(|| match event_type {
             Some(event_type) => {
                 format!("Unknown workflow event `{event_id}` with type `{event_type}`.")
@@ -1565,7 +1575,8 @@ async fn save_workflow_to_project(
     workflow: &Workflow,
     requested_path: &str,
 ) -> Result<String, String> {
-    let validation = validate_workflow_inner(workflow);
+    let event_catalog = StoryEventCatalog::load_from_project_root(project_root)?;
+    let validation = validate_workflow_with_catalog(workflow, &event_catalog);
     if !validation.valid {
         return Err(format_validation_errors(&validation));
     }
@@ -1600,7 +1611,8 @@ async fn load_workflow_from_project(
         .await
         .map_err(|e| e.to_string())?;
     let workflow: Workflow = serde_json::from_str(&content).map_err(|e| e.to_string())?;
-    let validation = validate_workflow_inner(&workflow);
+    let event_catalog = StoryEventCatalog::load_from_project_root(project_root)?;
+    let validation = validate_workflow_with_catalog(&workflow, &event_catalog);
     if !validation.valid {
         return Err(format_validation_errors(&validation));
     }
@@ -1898,6 +1910,68 @@ fn validate_workflow_inner(workflow: &Workflow) -> WorkflowValidationResult {
         warning_count,
         issues,
     }
+}
+
+fn validate_workflow_with_catalog(
+    workflow: &Workflow,
+    event_catalog: &StoryEventCatalog,
+) -> WorkflowValidationResult {
+    let mut result = validate_workflow_inner(workflow);
+
+    for node in workflow
+        .nodes
+        .iter()
+        .filter(|node| node.node_type == "trigger_event")
+    {
+        let Some(event_id) = config_string(&node.config, &["event_id"]) else {
+            continue;
+        };
+        let event_type = config_string(&node.config, &["event_type"]);
+        let Some(definition) = event_catalog.definition(&event_id, event_type.as_deref()) else {
+            push_issue(
+                &mut result.issues,
+                "error",
+                "node_event_unknown",
+                Some(node.id.clone()),
+                match event_type {
+                    Some(event_type) => format!(
+                        "Story event `{event_id}` with type `{event_type}` is not in the active project catalog."
+                    ),
+                    None => format!(
+                        "Story event `{event_id}` is not in the active project catalog."
+                    ),
+                },
+            );
+            continue;
+        };
+
+        if let Some(character_id) = config_string(&node.config, &["character_id"]) {
+            if !definition.applies_to_character(&character_id) {
+                push_issue(
+                    &mut result.issues,
+                    "error",
+                    "node_event_character_mismatch",
+                    Some(node.id.clone()),
+                    format!(
+                        "Story event `{event_id}` is not available for character `{character_id}`."
+                    ),
+                );
+            }
+        }
+    }
+
+    result.error_count = result
+        .issues
+        .iter()
+        .filter(|issue| issue.severity == "error")
+        .count();
+    result.warning_count = result
+        .issues
+        .iter()
+        .filter(|issue| issue.severity == "warning")
+        .count();
+    result.valid = result.error_count == 0;
+    result
 }
 
 fn warn_unreachable_nodes(
@@ -3432,18 +3506,25 @@ mod tests {
 
     #[test]
     fn resolves_workflow_event_definition_by_type() {
-        let event = workflow_event_definition("high_engagement", Some("special_dialogue")).unwrap();
+        let catalog = StoryEventCatalog::default();
+        let event =
+            workflow_event_definition(&catalog, "high_engagement", Some("special_dialogue"))
+                .unwrap();
 
         assert_eq!(event.event_id, "high_engagement");
         assert_eq!(event.event_type, "special_dialogue");
-        assert!(
-            workflow_event_definition("high_engagement", Some("relationship_milestone")).is_err()
-        );
+        assert!(workflow_event_definition(
+            &catalog,
+            "high_engagement",
+            Some("relationship_milestone")
+        )
+        .is_err());
     }
 
     #[test]
     fn event_decision_can_drive_workflow_trigger_nodes() {
-        let event = workflow_event_definition("high_engagement", None).unwrap();
+        let catalog = StoryEventCatalog::default();
+        let event = workflow_event_definition(&catalog, "high_engagement", None).unwrap();
         let evaluation = chat::ConversationEvaluation {
             friendliness: 0.5,
             engagement: 0.9,
@@ -3452,8 +3533,34 @@ mod tests {
             summary: "test".to_string(),
         };
 
-        let blocked = chat::explain_event_trigger(&event, 0.0, &evaluation, 1, false);
-        let triggered = chat::explain_event_trigger(&event, 0.0, &evaluation, 2, false);
+        let scores = EventScoreSnapshot {
+            friendliness: evaluation.friendliness,
+            engagement: evaluation.engagement,
+            creativity: evaluation.creativity,
+            overall: evaluation.overall_score,
+        };
+        let blocked = catalog
+            .decision_for(
+                &event.event_id,
+                Some(&event.event_type),
+                Some("sakura"),
+                0.0,
+                scores,
+                1,
+                false,
+            )
+            .unwrap();
+        let triggered = catalog
+            .decision_for(
+                &event.event_id,
+                Some(&event.event_type),
+                Some("sakura"),
+                0.0,
+                scores,
+                2,
+                false,
+            )
+            .unwrap();
 
         assert!(!blocked.triggered);
         assert!(blocked
@@ -3463,5 +3570,63 @@ mod tests {
         assert!(triggered.triggered);
         assert_eq!(triggered.actual_score_metric.as_deref(), Some("engagement"));
         assert_eq!(triggered.actual_score, Some(0.9));
+    }
+
+    #[test]
+    fn workflow_validation_uses_project_event_catalog_and_character_scope() {
+        let root = temp_root("event_catalog_validation");
+        std::fs::create_dir_all(root.join("events")).unwrap();
+        std::fs::write(
+            root.join("events").join("custom.json"),
+            r#"{
+              "schema":"monogatari-story-event-catalog/v1",
+              "events":[{
+                "event_id":"luna_secret",
+                "event_type":"special_dialogue",
+                "description":"Luna shares a secret.",
+                "character_ids":["luna"],
+                "rule":{"score_metric":"overall","min_score":0.7}
+              }]
+            }"#,
+        )
+        .unwrap();
+        let catalog = StoryEventCatalog::load_from_project_root(&root).unwrap();
+        let mut workflow = Workflow {
+            id: "scoped_event".to_string(),
+            name: "Scoped Event".to_string(),
+            start_node_id: "start".to_string(),
+            nodes: vec![
+                node("start", "start", vec!["event"], serde_json::json!({})),
+                node(
+                    "event",
+                    "trigger_event",
+                    vec!["end"],
+                    serde_json::json!({
+                        "event_id": "luna_secret",
+                        "event_type": "special_dialogue",
+                        "character_id": "luna"
+                    }),
+                ),
+                node("end", "end", vec![], serde_json::json!({})),
+            ],
+        };
+
+        assert!(validate_workflow_with_catalog(&workflow, &catalog).valid);
+
+        workflow.nodes[1].config["character_id"] = serde_json::json!("sakura");
+        let mismatch = validate_workflow_with_catalog(&workflow, &catalog);
+        assert!(!mismatch.valid);
+        assert!(mismatch
+            .issues
+            .iter()
+            .any(|issue| issue.code == "node_event_character_mismatch"));
+
+        workflow.nodes[1].config["event_id"] = serde_json::json!("missing_event");
+        let unknown = validate_workflow_with_catalog(&workflow, &catalog);
+        assert!(unknown
+            .issues
+            .iter()
+            .any(|issue| issue.code == "node_event_unknown"));
+        std::fs::remove_dir_all(root).unwrap();
     }
 }

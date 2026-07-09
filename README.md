@@ -104,6 +104,7 @@ Verified on 2026-07-09:
 - Live2D model commands load only project-relative `.model3.json`/`.json` files under the active project data root, and Story Mode validates renderer asset paths before handing them to the runtime.
 - Engine initialization validates that the selected project root is an existing local directory before loading managers or rebinding active project state.
 - Engine project reloads stage character, dialogue, and knowledge managers before activation, replace rather than merge prior content, and clear chat, scene, script, and event runtime state even when reloading the same project root.
+- Story event rules are versioned project assets under `events/*.json`. Chat scoring, workflow execution, local Web/PWA previews, and Quality Suites consume the same catalog, with validated score/relationship/evaluation thresholds, optional character scope, repeat behavior, stable rule/catalog fingerprints, and atomic author hot reloads.
 - Checked-in score-gate workflow fixtures prove conversation evaluation can drive visual workflow branches and score-aware story-event unlocks.
 - Chat runtime responses emit story-event trigger decisions with actual relationship values, score metrics, evaluation counts, stable SHA-256 event-rule fingerprints, and blocker reasons.
 - Manual Chat scoring returns an atomic evaluation report with matching story-event trigger decisions and triggerable events so authors can debug score gates without waiting for periodic evaluation.
@@ -150,7 +151,7 @@ monogatari/
 |   |   +-- assets/        # Asset management, save/load
 |   |   +-- scripting/     # Rhai scripting engine
 |   |   +-- tauri-app/     # Tauri commands (AI, Chat, Dialogue, Workflow, etc.)
-|   +-- data/              # Example characters, dialogues, knowledge, scenes, assets
+|   +-- data/              # Example characters, dialogues, knowledge, events, scenes, assets
 +-- frontend/              # Vue 3 + Vite + Pinia
 |   +-- src/
 |   |   +-- views/         # 21 production views including chat, story runtime, editors, galleries, analytics, and quality gates
@@ -194,7 +195,7 @@ Run the automated pre-release gate first:
 node scripts/verify-release.mjs
 ```
 
-This verifies JSON assets, checked-in workflow files, renderer asset contracts for characters and scenes, pinned character knowledge refs, all quality suite files, workflow branch coverage snapshots, locale coverage, sensitive token patterns, frontend UI text artifacts, frontend source invariants, legacy C# AI prompt/API invariants, AI backend config, engine project root, asset/save-manager, script command, i18n locale, workflow command, content loader, character manager, plugin manager, marketplace, Live2D model, and TTS output/error/log-privacy invariants, frontend route/sidebar coverage, Tauri desktop packaging configuration, Tauri mobile deployment preflight, Rust core/state-key, AI, scripting, game, assets, and Tauri checks and tests, root and subpath Web/PWA builds with bundle budgets, Web/PWA dist assets, release artifact manifest checks, preview route smoke checks, frontend audit, and legacy C# tests.
+This verifies JSON assets, versioned story event catalogs and fingerprints, checked-in workflow event references, renderer asset contracts for characters and scenes, pinned character knowledge refs, all quality suite files, workflow branch coverage snapshots, locale coverage, sensitive token patterns, frontend UI text artifacts, frontend source invariants, legacy C# AI prompt/API invariants, AI backend config, engine project root, asset/save-manager, script command, i18n locale, workflow command, content loader, character manager, plugin manager, marketplace, Live2D model, and TTS output/error/log-privacy invariants, frontend route/sidebar coverage, Tauri desktop packaging configuration, Tauri mobile deployment preflight, Rust core/state-key, AI, scripting, game, assets, and Tauri checks and tests, root and subpath Web/PWA builds with bundle budgets, Web/PWA event assets, release artifact manifest checks, preview route smoke checks, frontend audit, and legacy C# tests.
 
 ```bash
 cd frontend
@@ -267,7 +268,7 @@ The web build emits `dist/404.html` for SPA fallback, `dist/.nojekyll` for GitHu
 
 1. Open Settings from the sidebar
 2. Set the project data path, title, target FPS, and content directory mappings
-3. Review readiness diagnostics for characters, dialogue, knowledge, scenes, assets, and saves
+3. Review readiness diagnostics for characters, dialogue, knowledge, story events, scenes, assets, and saves
 4. Save `settings.json`, configure the AI backend with the runtime API key, then initialize the runtime
 
 ### Node Types

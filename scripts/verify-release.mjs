@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { createServer } from 'node:net'
 import { statSync } from 'node:fs'
 import { readdir, readFile, stat } from 'node:fs/promises'
@@ -70,6 +71,7 @@ const requiredEventRules = [
   'dedicated_player',
   'super_dedicated',
 ]
+const storyEventControlPattern = /[\u0000-\u001f\u007f]/
 
 const requiredWebDistFiles = [
   'index.html',
@@ -83,6 +85,7 @@ const requiredWebDistFiles = [
   'sw.js',
   'offline.html',
   'project-assets.json',
+  'events/story_events.json',
   'favicon.svg',
   'icons/app-icon.svg',
   'icons/maskable-icon.svg',
@@ -157,6 +160,7 @@ const releaseCriticalRustFiles = [
   'crates/scripting/src/lib.rs',
   'crates/tauri-app/src/main.rs',
   'crates/tauri-app/src/state.rs',
+  'crates/tauri-app/src/story_events.rs',
   'crates/tauri-app/src/commands/ai.rs',
   'crates/tauri-app/src/commands/engine.rs',
   'crates/tauri-app/src/commands/project.rs',
@@ -181,6 +185,7 @@ const releaseCriticalRustFiles = [
   'crates/tauri-app/src/commands/prompt_guard.rs',
   'crates/tauri-app/src/commands/quality_suite.rs',
   'crates/tauri-app/src/commands/script.rs',
+  'crates/tauri-app/src/commands/story_events.rs',
   'crates/tauri-app/src/commands/workflow.rs',
 ]
 
@@ -225,6 +230,7 @@ const requiredPermissionsPolicyFragments = [
 ]
 const requiredAzureStaticWebAppFallbackExcludes = [
   '/assets/*',
+  '/events/*',
   '/icons/*',
   '/locales/*',
   '/manifest.webmanifest',
@@ -235,6 +241,7 @@ const requiredAzureStaticWebAppFallbackExcludes = [
 ]
 const requiredStaticRedirectPassthroughs = [
   ['/assets/*', '/assets/:splat'],
+  ['/events/*', '/events/:splat'],
   ['/icons/*', '/icons/:splat'],
   ['/locales/*', '/locales/:splat'],
   ['/manifest.webmanifest', '/manifest.webmanifest'],
@@ -255,6 +262,7 @@ async function main() {
   console.log('[release] Starting Monogatari release verification')
 
   await verifyJsonFiles()
+  await verifyStoryEventCatalogs()
   await verifyWorkflowFiles()
   await verifyRendererAssets()
   await verifyKnowledgeRefs()
@@ -391,6 +399,162 @@ async function verifyJsonFiles() {
   console.log(`[release] JSON parse OK (${files.length} files)`)
 }
 
+async function verifyStoryEventCatalogs() {
+  const issues = []
+  const catalogs = []
+  let fileCount = 0
+
+  for (const dataRoot of rendererDataRoots) {
+    const catalog = await loadStoryEventCatalog(dataRoot, issues)
+    catalogs.push({ label: dataRoot.label, catalog })
+    fileCount += catalog.fileCount
+    for (const eventId of requiredEventRules) {
+      if (!catalog.events.has(eventId)) {
+        issues.push(`${dataRoot.label}: missing required story event ${eventId}`)
+      }
+    }
+  }
+
+  if (catalogs.length === 2) {
+    const left = normalizedStoryEventCatalog(catalogs[0].catalog)
+    const right = normalizedStoryEventCatalog(catalogs[1].catalog)
+    if (stableStringify(left) !== stableStringify(right)) {
+      issues.push(`${catalogs[0].label} and ${catalogs[1].label} story event catalogs must match`)
+    }
+  }
+
+  if (issues.length > 0) {
+    throw new Error(`Story event catalog verification failed:\n${issues.join('\n')}`)
+  }
+
+  console.log(`[release] Story event catalogs OK (${fileCount} file(s), ${catalogs[0]?.catalog.events.size ?? 0} events)`)
+}
+
+async function loadStoryEventCatalog(dataRoot, issues) {
+  const eventsDir = path.join(dataRoot.dir, 'events')
+  const files = await jsonFilesInDir(eventsDir, issues)
+  const events = new Map()
+
+  if (files.length === 0) {
+    issues.push(`${dataRoot.label}: events/ must contain at least one JSON catalog`)
+  }
+
+  for (const file of files) {
+    const label = relative(file)
+    const document = JSON.parse(await readFile(file, 'utf8'))
+    if (document?.schema !== 'monogatari-story-event-catalog/v1') {
+      issues.push(`${label}: schema must be monogatari-story-event-catalog/v1`)
+    }
+    if (!Array.isArray(document?.events)) {
+      issues.push(`${label}: events must be an array`)
+      continue
+    }
+
+    for (const event of document.events) {
+      const eventId = typeof event?.event_id === 'string' ? event.event_id : ''
+      const eventLabel = `${label}:${eventId || '<missing-id>'}`
+      if (!portableStoryEventId(eventId, 128)) issues.push(`${eventLabel}: event_id must be a portable identifier`)
+      if (!portableStoryEventId(event?.event_type, 128)) issues.push(`${eventLabel}: event_type must be a portable identifier`)
+      if (!nonEmptyString(event?.description) || event.description.length > 2048 || storyEventControlPattern.test(event.description)) {
+        issues.push(`${eventLabel}: description must be non-empty, bounded, and free of control characters`)
+      }
+      if (event?.data !== undefined && (!event.data || typeof event.data !== 'object' || Array.isArray(event.data))) {
+        issues.push(`${eventLabel}: data must be a JSON object`)
+      }
+      if (event?.repeatable !== undefined && typeof event.repeatable !== 'boolean') {
+        issues.push(`${eventLabel}: repeatable must be boolean`)
+      }
+
+      const characterIds = event?.character_ids ?? []
+      if (!Array.isArray(characterIds)) {
+        issues.push(`${eventLabel}: character_ids must be an array`)
+      } else {
+        const uniqueCharacterIds = new Set()
+        for (const characterId of characterIds) {
+          if (!portableStoryEventId(characterId, 128)) issues.push(`${eventLabel}: invalid character_id ${String(characterId)}`)
+          if (uniqueCharacterIds.has(characterId)) issues.push(`${eventLabel}: duplicate character_id ${String(characterId)}`)
+          uniqueCharacterIds.add(characterId)
+        }
+      }
+
+      const rule = event?.rule ?? {}
+      if (!rule || typeof rule !== 'object' || Array.isArray(rule)) {
+        issues.push(`${eventLabel}: rule must be an object`)
+        continue
+      }
+      if (rule.min_relationship !== undefined && (!Number.isFinite(rule.min_relationship) || rule.min_relationship < -1 || rule.min_relationship > 1)) {
+        issues.push(`${eventLabel}: min_relationship must be between -1 and 1`)
+      }
+      const hasMetric = rule.score_metric !== undefined && rule.score_metric !== null
+      const hasMinimumScore = rule.min_score !== undefined && rule.min_score !== null
+      if (hasMetric !== hasMinimumScore) {
+        issues.push(`${eventLabel}: score_metric and min_score must be configured together`)
+      }
+      if (hasMetric && !['friendliness', 'engagement', 'creativity', 'overall'].includes(rule.score_metric)) {
+        issues.push(`${eventLabel}: unsupported score_metric ${String(rule.score_metric)}`)
+      }
+      if (hasMinimumScore && (!Number.isFinite(rule.min_score) || rule.min_score < 0 || rule.min_score > 1)) {
+        issues.push(`${eventLabel}: min_score must be between 0 and 1`)
+      }
+      if (rule.min_evaluation_count !== undefined && (!Number.isInteger(rule.min_evaluation_count) || rule.min_evaluation_count < 0 || rule.min_evaluation_count > 1_000_000)) {
+        issues.push(`${eventLabel}: min_evaluation_count must be an integer between 0 and 1000000`)
+      }
+
+      if (events.has(eventId)) {
+        issues.push(`${eventLabel}: duplicate event_id`)
+        continue
+      }
+      events.set(eventId, {
+        event_id: eventId,
+        event_type: event?.event_type,
+        description: event?.description,
+        data: event?.data ?? {},
+        character_ids: Array.isArray(characterIds) ? [...characterIds].sort() : [],
+        repeatable: event?.repeatable === true,
+        rule: {
+          min_relationship: rule.min_relationship ?? null,
+          score_metric: rule.score_metric ?? null,
+          min_score: rule.min_score ?? null,
+          min_evaluation_count: rule.min_evaluation_count ?? null,
+        },
+        rule_fingerprint: storyEventRuleFingerprint(event),
+      })
+    }
+  }
+
+  return { events, fileCount: files.length }
+}
+
+function portableStoryEventId(value, maxLength) {
+  return typeof value === 'string'
+    && value.length > 0
+    && value.length <= maxLength
+    && value.trim() === value
+    && /^[A-Za-z0-9_.-]+$/.test(value)
+}
+
+function storyEventRuleFingerprint(event) {
+  const rule = event?.rule ?? {}
+  const characterIds = Array.isArray(event?.character_ids) ? [...event.character_ids].sort() : []
+  const scoped = characterIds.length > 0 || event?.repeatable === true
+  const payload = {
+    schema: scoped ? 'monogatari-event-trigger-rule/v2' : 'monogatari-event-trigger-rule/v1',
+    event_id: event?.event_id ?? '',
+    event_type: event?.event_type ?? '',
+    min_relationship: Number.isFinite(rule.min_relationship) ? rule.min_relationship.toFixed(6) : null,
+    score_metric: rule.score_metric ?? null,
+    min_score: Number.isFinite(rule.min_score) ? rule.min_score.toFixed(6) : null,
+    min_evaluation_count: rule.min_evaluation_count ?? null,
+    ...(scoped ? { character_ids: characterIds, repeatable: event?.repeatable === true } : {}),
+  }
+  return createHash('sha256').update(stableStringify(payload)).digest('hex')
+}
+
+function normalizedStoryEventCatalog(catalog) {
+  return [...catalog.events.values()]
+    .sort((left, right) => left.event_id.localeCompare(right.event_id))
+}
+
 async function verifyWorkflowFiles() {
   const workflowDirs = [
     path.join(root, 'data', 'workflows'),
@@ -398,6 +562,11 @@ async function verifyWorkflowFiles() {
   ]
   const workflowFiles = []
   const issues = []
+  const eventCatalogs = new Map()
+
+  for (const dataRoot of rendererDataRoots) {
+    eventCatalogs.set(dataRoot.label, (await loadStoryEventCatalog(dataRoot, issues)).events)
+  }
 
   for (const workflowDir of workflowDirs) {
     try {
@@ -413,7 +582,12 @@ async function verifyWorkflowFiles() {
 
   for (const workflowPath of workflowFiles) {
     const workflow = JSON.parse(await readFile(workflowPath, 'utf8'))
-    issues.push(...verifyWorkflowShape(workflow, relative(workflowPath)))
+    const dataRoot = rendererDataRoots.find((candidate) => workflowPath.startsWith(candidate.dir))
+    issues.push(...verifyWorkflowShape(
+      workflow,
+      relative(workflowPath),
+      eventCatalogs.get(dataRoot?.label) ?? new Map(),
+    ))
   }
 
   if (workflowFiles.length === 0) {
@@ -739,7 +913,7 @@ function workflowStateKeyFields(nodeType) {
   }
 }
 
-function verifyWorkflowShape(workflow, label) {
+function verifyWorkflowShape(workflow, label, storyEvents = new Map()) {
   const issues = []
   if (!nonEmptyString(workflow.id)) issues.push(`${label}: id is required`)
   if (!nonEmptyString(workflow.name)) issues.push(`${label}: name is required`)
@@ -820,6 +994,20 @@ function verifyWorkflowShape(workflow, label) {
       if (value !== null && value !== undefined && !(typeof value === 'string' && !value.trim())) {
         const error = validateWorkflowCondition(value)
         if (error) issues.push(`${nodeLabel}: condition field is invalid: ${error}`)
+      }
+    }
+    if (node.node_type === 'trigger_event' && nonEmptyString(config.event_id)) {
+      const definition = storyEvents.get(config.event_id.trim())
+      if (!definition) {
+        issues.push(`${nodeLabel}: story event ${config.event_id} is not in the project catalog`)
+      } else if (nonEmptyString(config.event_type) && config.event_type.trim() !== definition.event_type) {
+        issues.push(`${nodeLabel}: story event ${config.event_id} does not use type ${config.event_type}`)
+      } else if (
+        nonEmptyString(config.character_id)
+        && definition.character_ids.length > 0
+        && !definition.character_ids.includes(config.character_id.trim())
+      ) {
+        issues.push(`${nodeLabel}: story event ${config.event_id} is not available for character ${config.character_id}`)
       }
     }
     if (!Array.isArray(node.connections)) {
@@ -913,7 +1101,8 @@ async function verifyQualitySuites() {
 
   const defaultSuitePath = path.join(suiteDir, 'character_stability.json')
   const defaultSuite = JSON.parse(await readFile(defaultSuitePath, 'utf8'))
-  issues.push(...verifyDefaultQualitySuite(defaultSuite))
+  const storyEventCatalog = await loadStoryEventCatalog(rendererDataRoots[0], issues)
+  issues.push(...verifyDefaultQualitySuite(defaultSuite, storyEventCatalog.events))
 
   if (issues.length > 0) {
     throw new Error(`Quality suite verification failed:\n${issues.join('\n')}`)
@@ -1047,7 +1236,7 @@ function verifyQualityExpectationConflicts(expect, scenarioLabel, issues) {
   }
 }
 
-function verifyDefaultQualitySuite(suite) {
+function verifyDefaultQualitySuite(suite, storyEvents) {
   const issues = []
   const scenarioIds = new Set((suite.scenarios ?? []).map((scenario) => scenario.id))
   for (const id of requiredQualityScenarios) {
@@ -1062,6 +1251,8 @@ function verifyDefaultQualitySuite(suite) {
     const rule = eventRules.find((candidate) => candidate.event_id === id)
     if (!nonEmptyString(rule?.rule_fingerprint)) {
       issues.push(`Event rule snapshot must pin rule_fingerprint for ${id}`)
+    } else if (storyEvents.get(id)?.rule_fingerprint !== rule.rule_fingerprint) {
+      issues.push(`Event rule snapshot fingerprint does not match data/events for ${id}`)
     }
   }
 
@@ -1582,6 +1773,7 @@ async function verifyFrontendSourceInvariants() {
   const i18nSource = await readFile(path.join(frontendDir, 'src', 'lib', 'i18n.ts'), 'utf8')
   const pwaSource = await readFile(path.join(frontendDir, 'src', 'lib', 'pwa.ts'), 'utf8')
   const rendererAssetsSource = await readFile(path.join(frontendDir, 'src', 'lib', 'rendererAssets.ts'), 'utf8')
+  const storyEventsSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyEvents.ts'), 'utf8')
   const live2dCanvasSource = await readFile(path.join(frontendDir, 'src', 'components', 'Live2DCanvas.vue'), 'utf8')
   const characterModelSource = await readFile(path.join(frontendDir, 'src', 'components', 'CharacterModelView.vue'), 'utf8')
   const prepareWebDistSource = await readFile(path.join(frontendDir, 'scripts', 'prepare-web-dist.mjs'), 'utf8')
@@ -1687,6 +1879,8 @@ async function verifyFrontendSourceInvariants() {
     ['PROJECT_ASSET_MANIFEST_PATH', 'declare the generated project asset manifest path'],
     ['/project-assets.json', 'precache the generated project asset manifest'],
     ['cacheProjectAssets()', 'cache generated project assets during service worker install'],
+    ['manifest.event_catalogs', 'cache project story event catalogs during service worker install'],
+    ['path.startsWith("/events/")', 'serve project story events through an offline-aware strategy'],
     ['monogatari-web-project-assets/v1', 'validate the project asset manifest schema before caching'],
     ['function withBase', 'define withBase helper'],
     ['function routePath', 'define routePath helper'],
@@ -1702,6 +1896,7 @@ async function verifyFrontendSourceInvariants() {
 
   const webDistPackagingRequirements = [
     ["'data', 'assets'", 'copy checked-in project assets from data/assets'],
+    ["'data', 'events'", 'copy checked-in story event catalogs from data/events'],
     ['distProjectAssetsDir', 'target copied project assets into dist/assets'],
     ['projectAssetManifestPath', 'write a generated project asset manifest into dist'],
     ['staticHostingHeadersPath', 'write static-hosting security headers into dist'],
@@ -1719,12 +1914,40 @@ async function verifyFrontendSourceInvariants() {
     ['monogatari-web-project-assets/v1', 'version the generated project asset manifest schema'],
     ['walkFiles(projectAssetsDir', 'inventory copied project assets for offline PWA caching'],
     ['cp(projectAssetsDir, distProjectAssetsDir', 'merge project assets into the Web/PWA dist asset tree'],
+    ['cp(projectEventsDir, distProjectEventsDir', 'merge story event catalogs into the Web/PWA dist tree'],
+    ['event_catalogs', 'inventory story event catalogs in the Web/PWA project manifest'],
     ['project asset manifest', 'report the generated project asset manifest in the Web/PWA preparation output'],
   ]
   for (const [needle, description] of webDistPackagingRequirements) {
     if (!prepareWebDistSource.includes(needle)) {
       issues.push(`frontend/scripts/prepare-web-dist.mjs must ${description}`)
     }
+  }
+
+  const storyEventFrontendRequirements = [
+    [storyEventsSource, "../../../data/events/story_events.json", 'derive browser fallback rules from the checked-in project catalog'],
+    [storyEventsSource, 'monogatari-story-event-catalog/v1', 'validate the browser story event catalog schema'],
+    [storyEventsSource, "invokeCommand<StoryEventCatalogSnapshot>('get_story_event_catalog')", 'load the active desktop story event catalog'],
+    [storyEventsSource, "new URL('events/story_events.json'", 'load deployed Web/PWA story events relative to the configured base path'],
+    [workflowEditorSource, 'loadStoryEventCatalog()', 'load project story events into the workflow editor'],
+    [workflowEditorSource, 'updateStoryEvent', 'bind workflow event selection to catalog metadata'],
+    [workflowEditorSource, 'v-for="event in storyEvents"', 'render catalog-backed story event options'],
+    [workflowEditorSource, 'node_event_unknown', 'reject unknown story event references in browser validation'],
+    [workflowEditorSource, 'rule?.character_ids?.length', 'honor character-scoped story events in browser previews'],
+    [workflowEditorSource, '!rule?.repeatable', 'honor repeatable story events in browser previews'],
+    [qualitySuiteSource, 'loadStoryEventCatalog()', 'load project story events into the Web/PWA quality report preview'],
+    [qualitySuiteSource, 'previewQualityReport(eventCatalog.events.map((event) => event.rule))', 'derive preview event rule evidence from the shared catalog'],
+  ]
+  for (const [source, needle, description] of storyEventFrontendRequirements) {
+    if (!source.includes(needle)) {
+      issues.push(`Story event frontend integration must ${description}`)
+    }
+  }
+  if (workflowEditorSource.includes('const rules: Record<string, Record<string, any>>')) {
+    issues.push('frontend/src/views/WorkflowEditor.vue must not keep a second hardcoded story event rule catalog')
+  }
+  if (qualitySuiteSource.includes("{ event_id: 'close_friend', event_type: 'relationship_milestone'")) {
+    issues.push('frontend/src/views/QualitySuiteView.vue must not keep a second hardcoded story event rule catalog')
   }
 
   const rendererAssetRequirements = [
@@ -2688,6 +2911,7 @@ async function verifyWorkflowCommandInvariants() {
     ['workflow_condition_scope_variables', 'expose score and relationship context to workflow condition expressions'],
     ['node_condition_invalid', 'report invalid workflow conditions before execution'],
     ['workflow_validation_rejects_invalid_conditions', 'test workflow validation rejects invalid conditions'],
+    ['workflow_validation_uses_project_event_catalog_and_character_scope', 'test workflow event ids and character scope against project catalogs'],
     ['workflow_condition_nodes_reject_invalid_payloads', 'test workflow condition nodes reject invalid payloads'],
     ['workflow_condition_nodes_can_read_preview_context', 'test condition nodes can branch on preview context'],
     ['checked_in_sakura_meeting_uses_relationship_condition_context', 'test checked-in relationship condition workflows execute'],
@@ -3014,6 +3238,8 @@ async function verifyTauriPackagingConfig() {
   const mobileDeploymentDocs = await readFile(path.join(root, 'docs', 'MOBILE_DEPLOYMENT.md'), 'utf8')
   const tauriMainSource = await readFile(path.join(tauriAppDir, 'src', 'main.rs'), 'utf8')
   const tauriStateSource = await readFile(path.join(tauriAppDir, 'src', 'state.rs'), 'utf8')
+  const tauriStoryEventsSource = await readFile(path.join(tauriAppDir, 'src', 'story_events.rs'), 'utf8')
+  const tauriStoryEventCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'story_events.rs'), 'utf8')
   const tauriEngineSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'engine.rs'), 'utf8')
   const tauriProjectSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'project.rs'), 'utf8')
   const tauriScenesSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'scenes.rs'), 'utf8')
@@ -3021,6 +3247,7 @@ async function verifyTauriPackagingConfig() {
   const tauriPromptGuardSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'prompt_guard.rs'), 'utf8')
   const tauriMultiChatSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'multi_chat.rs'), 'utf8')
   const tauriQualitySuiteSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'quality_suite.rs'), 'utf8')
+  const tauriWorkflowSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'workflow.rs'), 'utf8')
   const tauriAnalyticsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'analytics.rs'), 'utf8')
   const tauriCloudSyncSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'cloud_sync.rs'), 'utf8')
   const tauriTtsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'tts.rs'), 'utf8')
@@ -3120,7 +3347,7 @@ async function verifyTauriPackagingConfig() {
       issues.push('tauri.conf.json bundle.resources must map ../../../data to clean data/ resource output')
     }
     const dataRoot = path.resolve(tauriAppDir, source)
-    for (const dir of ['assets', 'characters', 'dialogue', 'knowledge', 'locales', 'quality_suites', 'scenes', 'workflows']) {
+    for (const dir of ['assets', 'characters', 'dialogue', 'events', 'knowledge', 'locales', 'quality_suites', 'scenes', 'workflows']) {
       if (!(await directoryExists(path.join(dataRoot, dir)))) {
         issues.push(`bundled data resource is missing ${dir}/`)
       }
@@ -3150,8 +3377,11 @@ async function verifyTauriPackagingConfig() {
     [tauriStateSource, 'pub fn is_project_data_root', 'validate project data roots before binding them'],
     [tauriStateSource, 'AssetManager::new(&data_path)', 'rebind the asset manager when project roots change'],
     [tauriStateSource, 'SaveManager::new(data_path.join("saves"))', 'rebind the save manager when project roots change'],
+    [tauriStateSource, 'story_event_catalog: Arc<RwLock<StoryEventCatalog>>', 'keep the active story event catalog project-scoped'],
     [tauriEngineSource, 'current_project_data_root().await', 'keep empty engine initialization paths on the active or discovered default root'],
     [tauriEngineSource, 'load_project_content(&path).await?', 'stage all project content before replacing active managers'],
+    [tauriEngineSource, 'StoryEventCatalog::load_from_project_root(path)?', 'stage project story events during engine initialization'],
+    [tauriEngineSource, 'validate_character_references', 'validate character-scoped story events before activation'],
     [tauriEngineSource, 'let root_changed = state.set_project_data_root(path).await', 'rebind project managers after staged engine initialization'],
     [tauriEngineSource, 'project_content_loading_replaces_instead_of_merging_managers', 'test project reloads do not merge old content'],
     [tauriStateSource, 'reset_project_runtime_state', 'clear mutable chat, scene, and script state across project reloads'],
@@ -3201,6 +3431,7 @@ async function verifyTauriPackagingConfig() {
     [tauriProjectSource, 'scrub_runtime_secret_config_removes_sensitive_settings_before_save', 'test project settings secret scrubbing before save'],
     [tauriProjectSource, 'build_state_scrubs_legacy_settings_secrets', 'test legacy project settings secrets are not returned to the frontend'],
     [tauriProjectSource, 'EXPORT_DIRECTORIES', 'declare exportable project directories explicitly'],
+    [tauriProjectSource, '("events", "events")', 'include story event catalogs in project exports'],
   ]
   for (const [source, needle, description] of runtimeDataRootRequirements) {
     if (!source.includes(needle)) {
@@ -3229,8 +3460,6 @@ async function verifyTauriPackagingConfig() {
     ['pinned_knowledge_ref_ids', 'report resolved pinned knowledge reference ids'],
     ['event_trigger_decisions', 'return explainable story event trigger decisions'],
     ['rule_fingerprint', 'return event rule fingerprints with story event decisions'],
-    ['event_trigger_rule_fingerprint', 'centralize story event rule fingerprint generation'],
-    ['monogatari-event-trigger-rule/v1', 'version story event rule fingerprint payloads'],
     ['ConversationEvaluationReport', 'type atomic manual scoring reports'],
     ['evaluate_conversation_report', 'return scoring and event decisions through one command'],
     ['triggerable_events', 'return triggerable story events in scoring reports'],
@@ -3246,6 +3475,38 @@ async function verifyTauriPackagingConfig() {
   for (const [needle, description] of chatSafetyTraceRequirements) {
     if (!tauriChatSource.includes(needle)) {
       issues.push(`Chat runtime safety tracing must ${description}`)
+    }
+  }
+
+  const storyEventCatalogRequirements = [
+    [tauriStoryEventsSource, 'monogatari-story-event-catalog/v1', 'version project story event catalogs'],
+    [tauriStoryEventsSource, 'monogatari-event-trigger-rule/v1', 'preserve legacy rule fingerprint compatibility'],
+    [tauriStoryEventsSource, 'monogatari-event-trigger-rule/v2', 'fingerprint character scope and repeat behavior'],
+    [tauriStoryEventsSource, 'MAX_STORY_EVENT_FILE_BYTES', 'bound individual story event files'],
+    [tauriStoryEventsSource, 'MAX_STORY_EVENT_CATALOG_BYTES', 'bound aggregate story event catalogs'],
+    [tauriStoryEventsSource, 'metadata.file_type().is_symlink()', 'reject symlinked story event files'],
+    [tauriStoryEventsSource, 'normalize_event_directory_reference', 'validate configured story event directories'],
+    [tauriStoryEventsSource, 'Story event directory escapes the project root', 'enforce the project root boundary for event directories'],
+    [tauriStoryEventsSource, 'Duplicate story event id', 'reject duplicate story event ids'],
+    [tauriStoryEventsSource, 'validate_character_references', 'validate character-scoped event references'],
+    [tauriStoryEventsSource, 'event_trigger_rule_fingerprint', 'centralize trigger rule fingerprints'],
+    [tauriStoryEventsSource, 'checked_in_catalog_preserves_pinned_v1_rule_fingerprints', 'test pinned legacy rule fingerprints'],
+    [tauriStoryEventsSource, 'project_catalog_supports_character_scope_and_repeatable_rules', 'test creator-defined scope and repeat behavior'],
+    [tauriStoryEventsSource, 'configured_event_directory_is_project_relative_and_enforced', 'test configured event directory containment'],
+    [tauriStoryEventsSource, 'missing_directory_uses_compatibility_catalog_but_empty_directory_stays_empty', 'preserve old projects without forcing events into intentionally empty catalogs'],
+    [tauriStoryEventCommandsSource, 'get_story_event_catalog', 'expose the active catalog to author tooling'],
+    [tauriStoryEventCommandsSource, 'reload_story_event_catalog', 'support atomic author hot reloads'],
+    [tauriStoryEventCommandsSource, 'rejected_reload_leaves_active_catalog_unchanged', 'test failed reloads do not replace active rules'],
+    [tauriChatSource, 'state.story_event_catalog.read().await.clone()', 'evaluate chat events from the active project catalog'],
+    [tauriWorkflowSource, 'validate_workflow_with_catalog', 'validate workflow event references against the active catalog'],
+    [tauriWorkflowSource, 'node_event_unknown', 'report unknown workflow story events'],
+    [tauriWorkflowSource, 'event_catalog.decision_for', 'evaluate workflow trigger nodes from project rules'],
+    [tauriQualitySuiteSource, 'event_catalog: &StoryEventCatalog', 'run quality scenarios against project event rules'],
+    [tauriMainSource, 'commands::story_events::get_story_event_catalog', 'register story event catalog commands'],
+  ]
+  for (const [source, needle, description] of storyEventCatalogRequirements) {
+    if (!source.includes(needle)) {
+      issues.push(`Story event catalog integration must ${description}`)
     }
   }
 
@@ -3465,6 +3726,10 @@ async function verifyReleaseChannelPolicy() {
     ['data/knowledge/sakura_nature.json', 'require default Sakura knowledge content in release manifests'],
     ['data/scenes/sakura_park.json', 'require default Sakura scene content in release manifests'],
     ['data/assets/characters/sakura_sprite.svg', 'require default Sakura renderer asset content in release manifests'],
+    ['data/events/story_events.json', 'require project story event content in release manifests'],
+    ['event_types', 'record story event type coverage in release manifests'],
+    ['character_scoped_count', 'record character-scoped story event counts in release manifests'],
+    ['repeatable_count', 'record repeatable story event counts in release manifests'],
     ['category_counts', 'record project content category counts in release manifests'],
     ['category_bytes', 'record project content category byte counts in release manifests'],
     ['category_fingerprint_algorithm', 'record project content category fingerprint algorithms in release manifests'],
@@ -3673,6 +3938,7 @@ async function verifyWebDist({ basePath = '/' } = {}) {
 
 async function verifyWebProjectAssets(distDir, projectAssetManifest, issues) {
   const sourceAssetsDir = path.join(root, 'data', 'assets')
+  const sourceEventsDir = path.join(root, 'data', 'events')
   if (!(await directoryExists(sourceAssetsDir))) {
     issues.push('data/assets must exist for Web/PWA project asset packaging')
     return
@@ -3693,6 +3959,10 @@ async function verifyWebProjectAssets(distDir, projectAssetManifest, issues) {
   }
   if (!Array.isArray(projectAssetManifest.assets)) {
     issues.push('project-assets.json assets must be an array')
+    return
+  }
+  if (!Array.isArray(projectAssetManifest.event_catalogs)) {
+    issues.push('project-assets.json event_catalogs must be an array')
     return
   }
 
@@ -3720,6 +3990,31 @@ async function verifyWebProjectAssets(distDir, projectAssetManifest, issues) {
     }
     if (!(await fileExists(path.join(distDir, assetPath.slice(1))))) {
       issues.push(`project-assets.json references missing dist asset: ${assetPath}`)
+    }
+  }
+
+  const sourceEvents = await walkFiles(sourceEventsDir, [])
+  const manifestEvents = new Set(projectAssetManifest.event_catalogs)
+  if (manifestEvents.size !== projectAssetManifest.event_catalogs.length) {
+    issues.push('project-assets.json event_catalogs must not contain duplicates')
+  }
+  for (const sourceEvent of sourceEvents) {
+    const relativeEventPath = path.relative(sourceEventsDir, sourceEvent)
+    const manifestEventPath = `/events/${relativeEventPath.replaceAll(path.sep, '/')}`
+    if (!(await fileExists(path.join(distDir, 'events', relativeEventPath)))) {
+      issues.push(`Missing Web/PWA story event catalog: events/${relativeEventPath.replaceAll(path.sep, '/')}`)
+    }
+    if (!manifestEvents.has(manifestEventPath)) {
+      issues.push(`project-assets.json must include ${manifestEventPath}`)
+    }
+  }
+  for (const eventPath of projectAssetManifest.event_catalogs) {
+    if (typeof eventPath !== 'string' || !eventPath.startsWith('/events/')) {
+      issues.push(`project-assets.json event catalog paths must be root-relative /events entries: ${eventPath}`)
+      continue
+    }
+    if (!(await fileExists(path.join(distDir, eventPath.slice(1))))) {
+      issues.push(`project-assets.json references missing story event catalog: ${eventPath}`)
     }
   }
 }
@@ -3814,6 +4109,20 @@ async function verifyWebPreview({ basePath = '/', env = {} } = {}) {
       if (!body.includes('<div id="app">')) {
         issues.push(`${route.path}: preview response did not include the Vue app mount point`)
       }
+    }
+
+    try {
+      const eventResponse = await fetch(previewUrl(port, normalizedBase, '/events/story_events.json'))
+      const eventContentType = eventResponse.headers.get('content-type') ?? ''
+      const eventCatalog = await eventResponse.json()
+      if (eventResponse.status !== 200 || !eventContentType.includes('application/json')) {
+        issues.push(`story events: expected HTTP 200 application/json, got ${eventResponse.status} ${eventContentType}`)
+      }
+      if (eventCatalog?.schema !== 'monogatari-story-event-catalog/v1') {
+        issues.push('story events: preview catalog schema is invalid')
+      }
+    } catch (error) {
+      issues.push(`story events: preview request failed: ${error.message}`)
     }
 
     if (issues.length > 0) {

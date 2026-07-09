@@ -83,6 +83,12 @@ const PROJECT_PATHS: &[PathDefinition] = &[
         required: true,
     },
     PathDefinition {
+        key: "events",
+        label: "Story Events",
+        fallback: "events",
+        required: false,
+    },
+    PathDefinition {
         key: "saves",
         label: "Saves",
         fallback: "saves",
@@ -102,6 +108,7 @@ const EXPORT_DIRECTORIES: &[(&str, &str)] = &[
     ("knowledge", "knowledge"),
     ("scenes", "scenes"),
     ("assets", "assets"),
+    ("events", "events"),
     ("locales", "locales"),
     ("quality_suites", "quality_suites"),
     ("workflows", "workflows"),
@@ -424,6 +431,7 @@ fn default_project_config() -> Value {
             "knowledge": "knowledge",
             "scenes": "scenes",
             "assets": "assets",
+            "events": "events",
             "saves": "saves"
         }
     })
