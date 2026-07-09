@@ -16,6 +16,7 @@
 - [ ] `node scripts/verify-tauri-mobile-preflight.mjs` passes, proving Android/iOS command readiness, Vite mobile host binding, compact Tauri shell config, and mobile deployment documentation
 - [ ] `npm audit` shows zero vulnerabilities
 - [ ] Frontend runtime source contains no `console.log` or `console.debug` debug output before Web/PWA or Tauri packaging
+- [ ] Frontend runtime source contains no `v-html` or direct `innerHTML`/`outerHTML` assignment before Web/PWA or Tauri packaging
 - [ ] All 21 views render correctly (Dashboard, Title, Story Mode, AI Chat, Workflow, Character Editor, Scene Assets, Settings, Characters, Group Chat, Analytics, Quality, Marketplace, Plugins, Audio, Knowledge, Dialogue Editor, Scene Editor, CG Gallery, Backlog, Achievements)
 - [ ] Sidebar navigation works for all 20 items
 - [ ] Responsive layout verified on mobile viewport (375px) and tablet (768px), with the build-time responsive shell verifier attached as release evidence

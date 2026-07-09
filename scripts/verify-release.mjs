@@ -1481,6 +1481,12 @@ async function verifyFrontendSourceInvariants() {
       if (/console\.(log|debug)\s*\(/.test(line)) {
         issues.push(`${relative(file)}:${index + 1}: frontend runtime code must not ship console.log/debug output`)
       }
+      if (/v-html\s*=/.test(line)) {
+        issues.push(`${relative(file)}:${index + 1}: frontend runtime code must not use v-html HTML injection`)
+      }
+      if (/\b(?:innerHTML|outerHTML)\s*=/.test(line)) {
+        issues.push(`${relative(file)}:${index + 1}: frontend runtime code must not assign raw HTML strings`)
+      }
     })
   }
 

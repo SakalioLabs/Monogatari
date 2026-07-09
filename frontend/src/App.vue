@@ -10,7 +10,7 @@
       </div>
       <nav class="sidebar-nav">
         <router-link v-for="item in navItems" :key="item.path" :to="item.path" class="nav-item" :class="{ active: $route.path === item.path }" :title="item.label">
-          <span class="nav-icon" v-html="item.icon"></span>
+          <span class="nav-icon">{{ item.icon }}</span>
           <span class="nav-label" v-show="!sidebarCollapsed">{{ item.label }}</span>
           <span v-if="item.badge && !sidebarCollapsed" class="nav-badge">{{ item.badge }}</span>
         </router-link>
@@ -20,7 +20,7 @@
       </div>
       <div class="sidebar-footer">
         <button class="nav-item" @click="sidebarCollapsed = !sidebarCollapsed" :title="t('app.compact', 'Compact')">
-          <span class="nav-icon" v-html="sidebarCollapsed ? '&rsaquo;' : '&lsaquo;'"></span>
+          <span class="nav-icon">{{ sidebarCollapsed ? navIcon.expand : navIcon.collapse }}</span>
           <span class="nav-label" v-show="!sidebarCollapsed">{{ t('app.compact', 'Compact') }}</span>
         </button>
       </div>
@@ -82,6 +82,31 @@ if (typeof window !== 'undefined') {
 }
 const showSidebar = computed(() => route.name !== 'game' && route.name !== 'title')
 
+const navIcon = {
+  dashboard: '\u25a0',
+  chat: '\u25c6',
+  story: '\u25b6',
+  workflow: '\u22ee',
+  assets: '\u25a6',
+  editor: '\u270e',
+  characters: '\u263a',
+  group: '\u2605',
+  settings: '\u2699',
+  analytics: '\u25a4',
+  quality: '\u2713',
+  plugins: '\u2692',
+  scenes: '\u25a3',
+  dialogues: '\u25c7',
+  knowledge: '\u25a7',
+  audio: '\u266b',
+  marketplace: '\u2606',
+  gallery: '\u25a9',
+  backlog: '\u25b1',
+  achievements: '\u25c9',
+  expand: '\u203a',
+  collapse: '\u2039',
+} as const
+
 // Global keyboard handler
 function handleGlobalKeydown(e: KeyboardEvent) {
   if (e.key === '?' && !e.ctrlKey && !e.metaKey && !showShortcuts.value) {
@@ -94,26 +119,26 @@ function handleGlobalKeydown(e: KeyboardEvent) {
 }
 
 const navItems = computed(() => [
-  { path: '/', label: t('nav.dashboard', 'Dashboard'), icon: '&#9632;' },
-  { path: '/chat', label: t('nav.chat', 'AI Chat'), icon: '&#9670;', badge: t('badge.live', 'Live') },
-  { path: '/game', label: t('nav.story', 'Story Mode'), icon: '&#9654;' },
-  { path: '/editor', label: t('nav.workflow', 'Workflow'), icon: '&#8942;' },
-  { path: '/assets', label: t('nav.assets', 'Scene Assets'), icon: '&#9638;' },
-  { path: '/character-editor', label: t('nav.editor', 'Editor'), icon: '&#9998;' },
-  { path: '/characters', label: t('nav.characters', 'Characters'), icon: '&#9786;' },
-  { path: '/group-chat', label: t('nav.group', 'Group Chat'), icon: '&#9733;' },
-  { path: '/settings', label: t('nav.settings', 'Settings'), icon: '&#9881;' },
-  { path: '/analytics', label: t('nav.analytics', 'Analytics'), icon: '&#9636;' },
-  { path: '/quality', label: t('nav.quality', 'Quality'), icon: '&#10003;', badge: t('badge.gate', 'Gate') },
-  { path: '/plugins', label: t('nav.plugins', 'Plugins'), icon: '&#128295;' },
-  { path: '/scene-editor', label: t('nav.scenes', 'Scenes'), icon: '&#127912;' },
-  { path: '/dialogue-editor', label: t('nav.dialogues', 'Dialogues'), icon: '&#128172;' },
-  { path: '/knowledge', label: t('nav.knowledge', 'Knowledge'), icon: '&#128218;' },
-  { path: '/audio', label: t('nav.audio', 'Audio'), icon: '&#9835;' },
-  { path: '/marketplace', label: t('nav.marketplace', 'Marketplace'), icon: '&#9733;', badge: t('badge.new', 'New') },
-  { path: '/cg-gallery', label: t('nav.cg-gallery', 'CG Gallery'), icon: '&#127912;' },
-  { path: '/backlog', label: t('nav.backlog', 'Backlog'), icon: '&#128214;' },
-  { path: '/achievements', label: t('nav.achievements', 'Achievements'), icon: '&#127942;' },
+  { path: '/', label: t('nav.dashboard', 'Dashboard'), icon: navIcon.dashboard },
+  { path: '/chat', label: t('nav.chat', 'AI Chat'), icon: navIcon.chat, badge: t('badge.live', 'Live') },
+  { path: '/game', label: t('nav.story', 'Story Mode'), icon: navIcon.story },
+  { path: '/editor', label: t('nav.workflow', 'Workflow'), icon: navIcon.workflow },
+  { path: '/assets', label: t('nav.assets', 'Scene Assets'), icon: navIcon.assets },
+  { path: '/character-editor', label: t('nav.editor', 'Editor'), icon: navIcon.editor },
+  { path: '/characters', label: t('nav.characters', 'Characters'), icon: navIcon.characters },
+  { path: '/group-chat', label: t('nav.group', 'Group Chat'), icon: navIcon.group },
+  { path: '/settings', label: t('nav.settings', 'Settings'), icon: navIcon.settings },
+  { path: '/analytics', label: t('nav.analytics', 'Analytics'), icon: navIcon.analytics },
+  { path: '/quality', label: t('nav.quality', 'Quality'), icon: navIcon.quality, badge: t('badge.gate', 'Gate') },
+  { path: '/plugins', label: t('nav.plugins', 'Plugins'), icon: navIcon.plugins },
+  { path: '/scene-editor', label: t('nav.scenes', 'Scenes'), icon: navIcon.scenes },
+  { path: '/dialogue-editor', label: t('nav.dialogues', 'Dialogues'), icon: navIcon.dialogues },
+  { path: '/knowledge', label: t('nav.knowledge', 'Knowledge'), icon: navIcon.knowledge },
+  { path: '/audio', label: t('nav.audio', 'Audio'), icon: navIcon.audio },
+  { path: '/marketplace', label: t('nav.marketplace', 'Marketplace'), icon: navIcon.marketplace, badge: t('badge.new', 'New') },
+  { path: '/cg-gallery', label: t('nav.cg-gallery', 'CG Gallery'), icon: navIcon.gallery },
+  { path: '/backlog', label: t('nav.backlog', 'Backlog'), icon: navIcon.backlog },
+  { path: '/achievements', label: t('nav.achievements', 'Achievements'), icon: navIcon.achievements },
 ])
 </script>
 
