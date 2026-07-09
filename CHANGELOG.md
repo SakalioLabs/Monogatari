@@ -8,6 +8,7 @@
 - Added script command input limits, Rhai execution budgets, and release-gate invariants so author scripts reject hidden control characters and abort runaway loops or recursion.
 - Added shared script state key validation and release-gate invariants so Rhai variables, flags, workflow state writes, dialogue scripts, and save loading use portable save-friendly keys.
 - Added workflow validation for script state key fields so invalid variable and flag names are caught during authoring/import before workflow execution.
+- Added a read-only Rhai condition engine so condition expressions can inspect variables and flags without mutating story state.
 - Added marketplace template path isolation tests and release-gate invariants so template import/export uses project-scoped template references instead of raw filesystem paths.
 - Added Live2D model path isolation tests, renderer asset validation hardening, and release-gate invariants so model loading stays inside the active project data root.
 - Added i18n locale path isolation tests and release-gate invariants so locale loading, listing, and translation use safe locale IDs inside the active project locales directory.

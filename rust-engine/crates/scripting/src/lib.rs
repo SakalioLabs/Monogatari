@@ -60,6 +60,7 @@ fn rhai_state_key_error(error: EngineError) -> Box<rhai::EvalAltResult> {
 /// A scripting engine powered by Rhai for game logic and dialogue triggers.
 pub struct ScriptEngine {
     engine: Engine,
+    condition_engine: Engine,
     variables: Arc<RwLock<HashMap<String, Dynamic>>>,
     flags: Arc<RwLock<HashMap<String, bool>>>,
 }
@@ -67,98 +68,28 @@ pub struct ScriptEngine {
 impl ScriptEngine {
     /// Create a new script engine with default game functions registered.
     pub fn new() -> Self {
-        let mut engine = Engine::new();
-        engine
-            .set_max_operations(SCRIPT_MAX_OPERATIONS)
-            .set_max_call_levels(SCRIPT_MAX_CALL_LEVELS)
-            .set_max_expr_depths(SCRIPT_MAX_EXPR_DEPTH, SCRIPT_MAX_FUNCTION_EXPR_DEPTH)
-            .set_max_variables(SCRIPT_MAX_VARIABLES)
-            .set_max_functions(SCRIPT_MAX_FUNCTIONS)
-            .set_max_modules(0);
-
         let variables: Arc<RwLock<HashMap<String, Dynamic>>> =
             Arc::new(RwLock::new(HashMap::new()));
         let flags: Arc<RwLock<HashMap<String, bool>>> = Arc::new(RwLock::new(HashMap::new()));
 
-        // Register game-specific functions
-        let vars = Arc::clone(&variables);
-        engine.register_fn(
-            "setVariable",
-            move |name: &str,
-                  value: Dynamic|
-                  -> std::result::Result<(), Box<rhai::EvalAltResult>> {
-                let key = normalize_script_state_key(name).map_err(rhai_state_key_error)?;
-                let mut vars = vars.write().unwrap();
-                vars.insert(key, value);
-                Ok(())
-            },
+        let mut engine = Engine::new();
+        configure_engine_limits(&mut engine);
+        register_state_read_functions(&mut engine, Arc::clone(&variables), Arc::clone(&flags));
+        register_state_write_functions(&mut engine, Arc::clone(&variables), Arc::clone(&flags));
+        register_common_functions(&mut engine);
+
+        let mut condition_engine = Engine::new();
+        configure_engine_limits(&mut condition_engine);
+        register_state_read_functions(
+            &mut condition_engine,
+            Arc::clone(&variables),
+            Arc::clone(&flags),
         );
-
-        let vars = Arc::clone(&variables);
-        engine.register_fn(
-            "getVariable",
-            move |name: &str| -> std::result::Result<Dynamic, Box<rhai::EvalAltResult>> {
-                let key = normalize_script_state_key(name).map_err(rhai_state_key_error)?;
-                let vars = vars.read().unwrap();
-                Ok(vars.get(&key).cloned().unwrap_or(Dynamic::UNIT))
-            },
-        );
-
-        let flgs = Arc::clone(&flags);
-        engine.register_fn(
-            "setFlag",
-            move |name: &str, value: bool| -> std::result::Result<(), Box<rhai::EvalAltResult>> {
-                let key = normalize_script_state_key(name).map_err(rhai_state_key_error)?;
-                let mut flags = flgs.write().unwrap();
-                flags.insert(key, value);
-                Ok(())
-            },
-        );
-
-        let flgs = Arc::clone(&flags);
-        engine.register_fn(
-            "hasFlag",
-            move |name: &str| -> std::result::Result<bool, Box<rhai::EvalAltResult>> {
-                let key = normalize_script_state_key(name).map_err(rhai_state_key_error)?;
-                let flags = flgs.read().unwrap();
-                Ok(flags.get(&key).copied().unwrap_or(false))
-            },
-        );
-
-        // Register utility functions
-        engine.register_fn("log", |message: &str| {
-            debug!("[Script] {}", message);
-        });
-
-        engine.register_fn("random_int", |min: i64, max: i64| -> i64 {
-            use rand::Rng;
-            rand::thread_rng().gen_range(min..=max)
-        });
-
-        // Register math functions
-        engine.register_fn("abs", |x: i64| -> i64 { x.abs() });
-        engine.register_fn("min", |a: i64, b: i64| -> i64 { a.min(b) });
-        engine.register_fn("max", |a: i64, b: i64| -> i64 { a.max(b) });
-        engine.register_fn("clamp", |x: i64, min: i64, max: i64| -> i64 {
-            x.clamp(min, max)
-        });
-
-        // Register string functions
-        engine.register_fn("len", |s: &str| -> i64 { s.len() as i64 });
-        engine.register_fn("contains", |s: &str, sub: &str| -> bool { s.contains(sub) });
-        engine.register_fn("starts_with", |s: &str, prefix: &str| -> bool {
-            s.starts_with(prefix)
-        });
-        engine.register_fn("ends_with", |s: &str, suffix: &str| -> bool {
-            s.ends_with(suffix)
-        });
-
-        // Register comparison helpers
-        engine.register_fn("eq", |a: &str, b: &str| -> bool { a == b });
-        engine.register_fn("ne", |a: &str, b: &str| -> bool { a != b });
+        register_common_functions(&mut condition_engine);
 
         Self {
             engine,
+            condition_engine,
             variables,
             flags,
         }
@@ -177,7 +108,12 @@ impl ScriptEngine {
 
     /// Evaluate a condition expression and return the boolean result.
     pub fn evaluate_condition(&self, condition: &str) -> Result<bool> {
-        let result = self.execute(condition)?;
+        validate_script_source(condition)?;
+        let mut scope = Scope::new();
+        let result = self
+            .condition_engine
+            .eval_with_scope::<Dynamic>(&mut scope, condition)
+            .map_err(|e| llm_core::EngineError::script(format!("Condition error: {e}"), 0, 0))?;
         match result.as_bool() {
             Ok(b) => Ok(b),
             Err(_) => Ok(false),
@@ -254,6 +190,100 @@ impl ScriptEngine {
     }
 }
 
+fn configure_engine_limits(engine: &mut Engine) {
+    engine
+        .set_max_operations(SCRIPT_MAX_OPERATIONS)
+        .set_max_call_levels(SCRIPT_MAX_CALL_LEVELS)
+        .set_max_expr_depths(SCRIPT_MAX_EXPR_DEPTH, SCRIPT_MAX_FUNCTION_EXPR_DEPTH)
+        .set_max_variables(SCRIPT_MAX_VARIABLES)
+        .set_max_functions(SCRIPT_MAX_FUNCTIONS)
+        .set_max_modules(0);
+}
+
+fn register_state_read_functions(
+    engine: &mut Engine,
+    variables: Arc<RwLock<HashMap<String, Dynamic>>>,
+    flags: Arc<RwLock<HashMap<String, bool>>>,
+) {
+    engine.register_fn(
+        "getVariable",
+        move |name: &str| -> std::result::Result<Dynamic, Box<rhai::EvalAltResult>> {
+            let key = normalize_script_state_key(name).map_err(rhai_state_key_error)?;
+            let vars = variables.read().unwrap();
+            Ok(vars.get(&key).cloned().unwrap_or(Dynamic::UNIT))
+        },
+    );
+
+    engine.register_fn(
+        "hasFlag",
+        move |name: &str| -> std::result::Result<bool, Box<rhai::EvalAltResult>> {
+            let key = normalize_script_state_key(name).map_err(rhai_state_key_error)?;
+            let flags = flags.read().unwrap();
+            Ok(flags.get(&key).copied().unwrap_or(false))
+        },
+    );
+}
+
+fn register_state_write_functions(
+    engine: &mut Engine,
+    variables: Arc<RwLock<HashMap<String, Dynamic>>>,
+    flags: Arc<RwLock<HashMap<String, bool>>>,
+) {
+    engine.register_fn(
+        "setVariable",
+        move |name: &str, value: Dynamic| -> std::result::Result<(), Box<rhai::EvalAltResult>> {
+            let key = normalize_script_state_key(name).map_err(rhai_state_key_error)?;
+            let mut vars = variables.write().unwrap();
+            vars.insert(key, value);
+            Ok(())
+        },
+    );
+
+    engine.register_fn(
+        "setFlag",
+        move |name: &str, value: bool| -> std::result::Result<(), Box<rhai::EvalAltResult>> {
+            let key = normalize_script_state_key(name).map_err(rhai_state_key_error)?;
+            let mut flags = flags.write().unwrap();
+            flags.insert(key, value);
+            Ok(())
+        },
+    );
+}
+
+fn register_common_functions(engine: &mut Engine) {
+    // Register utility functions
+    engine.register_fn("log", |message: &str| {
+        debug!("[Script] {}", message);
+    });
+
+    engine.register_fn("random_int", |min: i64, max: i64| -> i64 {
+        use rand::Rng;
+        rand::thread_rng().gen_range(min..=max)
+    });
+
+    // Register math functions
+    engine.register_fn("abs", |x: i64| -> i64 { x.abs() });
+    engine.register_fn("min", |a: i64, b: i64| -> i64 { a.min(b) });
+    engine.register_fn("max", |a: i64, b: i64| -> i64 { a.max(b) });
+    engine.register_fn("clamp", |x: i64, min: i64, max: i64| -> i64 {
+        x.clamp(min, max)
+    });
+
+    // Register string functions
+    engine.register_fn("len", |s: &str| -> i64 { s.len() as i64 });
+    engine.register_fn("contains", |s: &str, sub: &str| -> bool { s.contains(sub) });
+    engine.register_fn("starts_with", |s: &str, prefix: &str| -> bool {
+        s.starts_with(prefix)
+    });
+    engine.register_fn("ends_with", |s: &str, suffix: &str| -> bool {
+        s.ends_with(suffix)
+    });
+
+    // Register comparison helpers
+    engine.register_fn("eq", |a: &str, b: &str| -> bool { a == b });
+    engine.register_fn("ne", |a: &str, b: &str| -> bool { a != b });
+}
+
 impl Default for ScriptEngine {
     fn default() -> Self {
         Self::new()
@@ -290,6 +320,37 @@ mod tests {
         assert!(!engine
             .evaluate_condition("hasFlag(\"met_unknown\")")
             .unwrap());
+    }
+
+    #[test]
+    fn condition_engine_can_read_but_not_mutate_state() {
+        let engine = ScriptEngine::new();
+        engine.set_flag("met_sakura", true).unwrap();
+        engine.set_variable("score", Dynamic::from(75i64)).unwrap();
+
+        assert!(engine
+            .evaluate_condition("hasFlag(\"met_sakura\") && getVariable(\"score\") >= 75")
+            .unwrap());
+        assert!(engine
+            .evaluate_condition("setFlag(\"condition_mutated\", true)")
+            .is_err());
+        assert!(engine
+            .evaluate_condition("setVariable(\"score\", 100)")
+            .is_err());
+        assert!(!engine.has_flag("condition_mutated"));
+        assert_eq!(engine.get_variable("score").unwrap().as_int().unwrap(), 75);
+    }
+
+    #[test]
+    fn direct_scripts_keep_state_mutation_functions() {
+        let engine = ScriptEngine::new();
+
+        let _ = engine
+            .execute("setFlag(\"script_mutated\", true); setVariable(\"score\", 100);")
+            .unwrap();
+
+        assert!(engine.has_flag("script_mutated"));
+        assert_eq!(engine.get_variable("score").unwrap().as_int().unwrap(), 100);
     }
 
     #[test]

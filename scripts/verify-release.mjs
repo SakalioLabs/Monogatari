@@ -2168,6 +2168,11 @@ async function verifyScriptCommandInvariants() {
   const engineRequirements = [
     ['SCRIPT_MAX_TEXT_CHARS', 'define a shared script source size cap'],
     ['SCRIPT_STATE_KEY_MAX_CHARS', 're-export the shared script state key size cap'],
+    ['condition_engine: Engine', 'separate read-only condition evaluation from mutating script execution'],
+    ['register_state_read_functions', 'share read-only state access functions across script engines'],
+    ['register_state_write_functions', 'keep state mutation functions out of condition evaluation'],
+    ['condition_engine_can_read_but_not_mutate_state', 'test condition expressions cannot mutate script state'],
+    ['direct_scripts_keep_state_mutation_functions', 'test direct author scripts can still mutate state intentionally'],
     ['Box<rhai::EvalAltResult>', 'return Rhai runtime errors for invalid script state keys'],
     ['normalize_script_state_key(name)', 'validate Rhai variable and flag names before state access'],
     ['normalize_script_state_map(variables)', 'validate loaded script variables before replacing runtime state'],
