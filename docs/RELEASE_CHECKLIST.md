@@ -118,6 +118,7 @@
 - [ ] CHANGELOG.md updated with release notes
 - [ ] README.md version and features updated
 - [ ] Tauri bundle config declares installer metadata, Windows MSI/NSIS targets, icon assets, WebView2 install mode, and bundled sample `data/` resources
+- [ ] Tauri app security declares a production CSP instead of `csp: null`, keeps `script-src 'self'`, blocks `unsafe-eval`, and allows only required local asset, blob/data media, HTTPS, and localhost dev sources
 - [ ] Installed Tauri build resolves bundled sample `data/` resources at startup when no development project data root is available
 - [ ] Installed Tauri build writes analytics, sync manifests, saves, and generated system/API TTS assets under the active project data root with sanitized output filenames
 - [ ] Azure and ElevenLabs TTS provider errors redact token-shaped values, API-key assignments, authorization headers, sensitive provider headers, and response bodies before reaching frontend status surfaces

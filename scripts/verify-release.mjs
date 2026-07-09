@@ -2685,6 +2685,37 @@ async function verifyTauriPackagingConfig() {
     issues.push('tauri.conf.json build.beforeBuildCommand must run the production frontend build before desktop packaging')
   }
 
+  const csp = config.app?.security?.csp
+  if (!nonEmptyString(csp)) {
+    issues.push('tauri.conf.json app.security.csp must define a production Content Security Policy')
+  } else {
+    const requiredCspFragments = [
+      "default-src 'self'",
+      "script-src 'self'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' asset: http://asset.localhost data: blob:",
+      "media-src 'self' asset: http://asset.localhost data: blob:",
+      "font-src 'self' data:",
+      "connect-src 'self' asset: http://asset.localhost https: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*",
+      "worker-src 'self' blob:",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'none'",
+      "frame-ancestors 'none'",
+    ]
+    for (const fragment of requiredCspFragments) {
+      if (!csp.includes(fragment)) {
+        issues.push(`tauri.conf.json app.security.csp must include ${fragment}`)
+      }
+    }
+    if (csp.includes("'unsafe-eval'")) {
+      issues.push('tauri.conf.json app.security.csp must not allow unsafe-eval')
+    }
+    if (/default-src\s+\*/.test(csp)) {
+      issues.push('tauri.conf.json app.security.csp must not use default-src *')
+    }
+  }
+
   const mobileDeploymentRequirements = [
     [viteConfigSource, 'const mobileDevHost = process.env.TAURI_DEV_HOST', 'let Tauri mobile commands select the Vite dev host'],
     [viteConfigSource, 'host: mobileDevHost || false', 'bind Vite to the Tauri-selected mobile host'],

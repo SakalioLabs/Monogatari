@@ -56,6 +56,7 @@ Script execution is treated as bounded authoring logic. Tauri script commands va
 - **Renderer Asset Pipeline**: Story Mode resolves scene and character assets through a shared frontend resolver. Character staging prefers Live2D models, then GLB/GLTF 3D models, then 2D sprites or portraits, and falls back to a generated Three.js placeholder for assetless characters.
 - **Runtime Log Hygiene**: Production frontend source avoids `console.log` and `console.debug` debug output; release verification scans `frontend/src` while preserving warning/error reporting for real failures.
 - **DOM Injection Boundaries**: The frontend shell renders navigation symbols through normal text bindings, and release verification rejects `v-html` plus direct raw-HTML assignments in runtime source.
+- **Desktop CSP**: Packaged Tauri WebViews use an explicit Content Security Policy that allows local app assets, Tauri asset URLs, blob/data media, HTTPS provider connectivity, and localhost dev tooling while blocking object, frame, form, wildcard default, and `unsafe-eval` surfaces.
 
 ## i18n Locale Boundaries
 
