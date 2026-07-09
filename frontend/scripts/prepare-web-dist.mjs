@@ -9,6 +9,7 @@ const projectAssetsDir = path.join(rootDir, 'data', 'assets')
 const distProjectAssetsDir = path.join(distDir, 'assets')
 const projectAssetManifestPath = path.join(distDir, 'project-assets.json')
 const staticHostingHeadersPath = path.join(distDir, '_headers')
+const staticHostingRedirectsPath = path.join(distDir, '_redirects')
 const azureStaticWebAppConfigPath = path.join(distDir, 'staticwebapp.config.json')
 const vercelConfigPath = path.join(distDir, 'vercel.json')
 const webSecurityCsp =
@@ -51,6 +52,21 @@ function staticHostingHeaders() {
     '  X-Content-Type-Options: nosniff',
     '  Referrer-Policy: no-referrer',
     `  Permissions-Policy: ${webPermissionsPolicy}`,
+    '',
+  ].join('\n')
+}
+
+function staticHostingRedirects() {
+  return [
+    '/assets/* /assets/:splat 200',
+    '/icons/* /icons/:splat 200',
+    '/locales/* /locales/:splat 200',
+    '/manifest.webmanifest /manifest.webmanifest 200',
+    '/sw.js /sw.js 200',
+    '/offline.html /offline.html 200',
+    '/project-assets.json /project-assets.json 200',
+    '/favicon.svg /favicon.svg 200',
+    '/* /index.html 200',
     '',
   ].join('\n')
 }
@@ -140,7 +156,8 @@ await writeFile(path.join(distDir, '.nojekyll'), '')
 await cp(projectAssetsDir, distProjectAssetsDir, { recursive: true, force: true })
 await writeFile(projectAssetManifestPath, `${JSON.stringify(await projectAssetManifest(), null, 2)}\n`)
 await writeFile(staticHostingHeadersPath, staticHostingHeaders())
+await writeFile(staticHostingRedirectsPath, staticHostingRedirects())
 await writeFile(azureStaticWebAppConfigPath, `${JSON.stringify(azureStaticWebAppConfig(), null, 2)}\n`)
 await writeFile(vercelConfigPath, `${JSON.stringify(vercelConfig(), null, 2)}\n`)
 
-console.log('[web-dist] Static hosting assets ready: 404.html, .nojekyll, _headers, staticwebapp.config.json, vercel.json, manifest.webmanifest, sw.js, offline.html, PWA icons, project assets, project asset manifest')
+console.log('[web-dist] Static hosting assets ready: 404.html, .nojekyll, _headers, _redirects, staticwebapp.config.json, vercel.json, manifest.webmanifest, sw.js, offline.html, PWA icons, project assets, project asset manifest')

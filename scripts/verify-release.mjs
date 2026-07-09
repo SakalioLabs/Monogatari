@@ -73,6 +73,7 @@ const requiredWebDistFiles = [
   'index.html',
   '404.html',
   '_headers',
+  '_redirects',
   'staticwebapp.config.json',
   'vercel.json',
   '.nojekyll',
@@ -229,6 +230,16 @@ const requiredAzureStaticWebAppFallbackExcludes = [
   '/offline.html',
   '/project-assets.json',
   '/favicon.svg',
+]
+const requiredStaticRedirectPassthroughs = [
+  ['/assets/*', '/assets/:splat'],
+  ['/icons/*', '/icons/:splat'],
+  ['/locales/*', '/locales/:splat'],
+  ['/manifest.webmanifest', '/manifest.webmanifest'],
+  ['/sw.js', '/sw.js'],
+  ['/offline.html', '/offline.html'],
+  ['/project-assets.json', '/project-assets.json'],
+  ['/favicon.svg', '/favicon.svg'],
 ]
 const requiredVercelSecurityHeaders = [
   'Content-Security-Policy',
@@ -1625,6 +1636,7 @@ async function verifyFrontendSourceInvariants() {
     ['distProjectAssetsDir', 'target copied project assets into dist/assets'],
     ['projectAssetManifestPath', 'write a generated project asset manifest into dist'],
     ['staticHostingHeadersPath', 'write static-hosting security headers into dist'],
+    ['staticHostingRedirectsPath', 'write static-hosting SPA redirect rules into dist'],
     ['azureStaticWebAppConfigPath', 'write Azure Static Web Apps configuration into dist'],
     ['vercelConfigPath', 'write Vercel deployment configuration into dist'],
     ['navigationFallback', 'emit Azure Static Web Apps SPA navigation fallback config'],
@@ -1634,6 +1646,7 @@ async function verifyFrontendSourceInvariants() {
     ['Content-Security-Policy', 'emit a static-hosting CSP header for platforms that support response headers'],
     ['X-Content-Type-Options: nosniff', 'emit a nosniff header for static-hosting responses'],
     ['Permissions-Policy', 'emit a browser permissions policy for static-hosting responses'],
+    ['/* /index.html 200', 'emit a static-hosting SPA fallback rewrite'],
     ['monogatari-web-project-assets/v1', 'version the generated project asset manifest schema'],
     ['walkFiles(projectAssetsDir', 'inventory copied project assets for offline PWA caching'],
     ['cp(projectAssetsDir, distProjectAssetsDir', 'merge project assets into the Web/PWA dist asset tree'],
@@ -3138,6 +3151,7 @@ async function verifyWebDist({ basePath = '/' } = {}) {
   const indexHtml = await readMaybe(path.join(distDir, 'index.html'))
   const fallbackHtml = await readMaybe(path.join(distDir, '404.html'))
   const staticHostingHeaders = await readMaybe(path.join(distDir, '_headers'))
+  const staticHostingRedirects = await readMaybe(path.join(distDir, '_redirects'))
   const azureStaticWebAppConfig = await readJsonMaybe(path.join(distDir, 'staticwebapp.config.json'))
   const vercelConfig = await readJsonMaybe(path.join(distDir, 'vercel.json'))
   const manifest = await readJsonMaybe(path.join(distDir, 'manifest.webmanifest'))
@@ -3177,6 +3191,9 @@ async function verifyWebDist({ basePath = '/' } = {}) {
   }
   if (staticHostingHeaders) {
     verifyStaticHostingHeaders(staticHostingHeaders, issues)
+  }
+  if (staticHostingRedirects) {
+    verifyStaticHostingRedirects(staticHostingRedirects, issues)
   }
   if (azureStaticWebAppConfig) {
     verifyAzureStaticWebAppConfig(azureStaticWebAppConfig, issues)
@@ -3604,6 +3621,49 @@ function verifyStaticHostingHeaders(source, issues) {
         issues.push(`_headers Permissions-Policy must include ${fragment}`)
       }
     }
+  }
+}
+
+function verifyStaticHostingRedirects(source, issues) {
+  const rules = source
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith('#'))
+    .map((line) => line.split(/\s+/))
+
+  if (rules.length === 0) {
+    issues.push('_redirects must define static-hosting redirect rules')
+    return
+  }
+
+  for (const parts of rules) {
+    const [from, to, status] = parts
+    if (!from || !to || !status) {
+      issues.push(`_redirects rule must include source, destination, and status: ${parts.join(' ')}`)
+      continue
+    }
+    if (parts.length !== 3) {
+      issues.push(`_redirects rule must not include extra fields: ${parts.join(' ')}`)
+    }
+    if (status !== '200') {
+      issues.push(`_redirects rule must use 200 rewrite status: ${parts.join(' ')}`)
+    }
+    if (/^https?:\/\//i.test(to)) {
+      issues.push(`_redirects rule must not target an external URL: ${parts.join(' ')}`)
+    }
+  }
+
+  for (const [from, to] of requiredStaticRedirectPassthroughs) {
+    if (!rules.some((rule) => rule[0] === from && rule[1] === to && rule[2] === '200')) {
+      issues.push(`_redirects must include passthrough rule: ${from} ${to} 200`)
+    }
+  }
+
+  const fallbackIndex = rules.findIndex((rule) => rule[0] === '/*' && rule[1] === '/index.html' && rule[2] === '200')
+  if (fallbackIndex < 0) {
+    issues.push('_redirects must include SPA fallback rule: /* /index.html 200')
+  } else if (fallbackIndex !== rules.length - 1) {
+    issues.push('_redirects SPA fallback rule must be the final rule')
   }
 }
 

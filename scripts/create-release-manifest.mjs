@@ -24,6 +24,7 @@ const expectedWebArtifacts = [
   'index.html',
   '404.html',
   '_headers',
+  '_redirects',
   'staticwebapp.config.json',
   'vercel.json',
   '.nojekyll',
@@ -458,6 +459,7 @@ function webArtifactKind(file) {
   if (rel === 'offline.html') return 'offline-fallback'
   if (rel === '404.html') return 'spa-fallback'
   if (rel === '_headers') return 'static-hosting-headers'
+  if (rel === '_redirects') return 'static-hosting-redirects'
   if (rel === 'staticwebapp.config.json') return 'azure-static-web-app-config'
   if (rel === 'vercel.json') return 'vercel-static-app-config'
   if (rel === 'project-assets.json') return 'project-asset-manifest'

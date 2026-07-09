@@ -17,6 +17,7 @@
 - Added a production Tauri Content Security Policy and release-gate checks so packaged desktop WebViews no longer ship with CSP disabled.
 - Added Web/PWA Content Security Policy meta coverage and release-gate checks so static browser builds share the same hardened app shell baseline.
 - Added generated Web/PWA static-hosting `_headers` output with CSP, nosniff, referrer, and permissions-policy release-gate coverage for hosts that support response headers.
+- Added generated Web/PWA static-hosting `_redirects` output with asset passthrough rules and SPA fallback coverage for Netlify/Cloudflare-style static hosts.
 - Added generated Azure Static Web Apps `staticwebapp.config.json` output with SPA navigation fallback and global security headers, plus release-manifest coverage for required Web/PWA hosting artifacts.
 - Added generated Vercel `vercel.json` output with SPA rewrite and global security headers, plus release-manifest coverage for Vercel static deployments.
 - Added project settings runtime-secret scrubbing so API keys, tokens, authorization headers, token-shaped values, query-secret assignments, and legacy persisted secret fields are omitted before `settings.json` saves or project config state returns to the frontend.

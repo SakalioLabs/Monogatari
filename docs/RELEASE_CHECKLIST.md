@@ -7,7 +7,7 @@
 
 ### Frontend
 - [ ] `cd frontend && npm run build` passes with zero errors
-- [ ] `cd frontend && npm run build:web` emits manifest, service worker, offline fallback, `404.html`, `.nojekyll`, `_headers`, `staticwebapp.config.json`, `vercel.json`, and `project-assets.json` assets
+- [ ] `cd frontend && npm run build:web` emits manifest, service worker, offline fallback, `404.html`, `.nojekyll`, `_headers`, `_redirects`, `staticwebapp.config.json`, `vercel.json`, and `project-assets.json` assets
 - [ ] Web/PWA dist includes copied `data/assets` project sample backgrounds and character sprites under `dist/assets`
 - [ ] Web/PWA manifest includes dedicated install and maskable icons, and `sw.js` precaches those icon assets plus generated project sample assets for offline install surfaces
 - [ ] `cd frontend && npm run verify:mobile-readiness` passes, proving safe-area viewport metadata, iOS/PWA install metadata, bottom navigation safe-area padding, and compact Tauri shell limits
@@ -19,6 +19,7 @@
 - [ ] Frontend runtime source contains no `v-html` or direct `innerHTML`/`outerHTML` assignment before Web/PWA or Tauri packaging
 - [ ] Web/PWA `index.html` and `404.html` include a Content Security Policy meta tag that blocks object/frame/form/`unsafe-eval` surfaces while allowing required app assets, blob/data media, HTTPS providers, and localhost preview tooling
 - [ ] Web/PWA dist includes a static-hosting `_headers` file with CSP, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, and a restrictive browser `Permissions-Policy`
+- [ ] Web/PWA dist includes a static-hosting `_redirects` file with project asset passthrough rules and a final `/* /index.html 200` SPA fallback
 - [ ] Web/PWA dist includes an Azure Static Web Apps `staticwebapp.config.json` with SPA navigation fallback, static asset exclusions, 404 rewrite, and matching global security headers
 - [ ] Web/PWA dist includes a Vercel `vercel.json` with SPA rewrite to `index.html`, no external rewrite destinations, and matching global security headers
 - [ ] All 21 views render correctly (Dashboard, Title, Story Mode, AI Chat, Workflow, Character Editor, Scene Assets, Settings, Characters, Group Chat, Analytics, Quality, Marketplace, Plugins, Audio, Knowledge, Dialogue Editor, Scene Editor, CG Gallery, Backlog, Achievements)
@@ -125,6 +126,7 @@
 - [ ] Tauri app security declares a production CSP instead of `csp: null`, keeps `script-src 'self'`, blocks `unsafe-eval`, and allows only required local asset, blob/data media, HTTPS, and localhost dev sources
 - [ ] Web/PWA app-shell security declares a CSP meta tag in source and generated static fallback output, keeps `script-src 'self'`, blocks `unsafe-eval`, and allows only required app asset, blob/data media, HTTPS, and localhost preview sources
 - [ ] Web/PWA static-hosting security headers are generated for response-header capable hosts and release-verified for CSP, MIME sniffing, referrer, and browser permission surfaces
+- [ ] Web/PWA static-hosting redirects are generated and release-verified for asset passthrough, local rewrite targets, 200 rewrite status, and final SPA fallback ordering
 - [ ] Web/PWA Azure Static Web Apps configuration is generated and release-verified for fallback routing, asset exclusions, 404 handling, and global security headers
 - [ ] Web/PWA Vercel configuration is generated and release-verified for SPA fallback routing, local rewrite targets, and global security headers
 - [ ] Installed Tauri build resolves bundled sample `data/` resources at startup when no development project data root is available
