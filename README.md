@@ -80,7 +80,7 @@ Verified on 2026-07-09:
 - Group chat character responses reuse the same runtime safety trace contract so multi-character scenes expose prompt-injection, response guard, memory guard, and relationship side-channel evidence per reply.
 - ONNX backend configuration resolves model and tokenizer references under the active project data root, rejects raw filesystem paths, and activates the ONNX engine after registration.
 - Chat sessions now expose a restorable audit report with the latest safety trace, evaluation, story-event decisions, and triggerable events so author diagnostics survive character switching.
-- Quality Suites now export runtime safety trace evidence and include group chat plus block-body prompt-injection scenarios that require concrete guard notes for input wrapping, response guarding, memory guarding, relationship side-channel containment, and score/event containment.
+- Quality Suites now export runtime safety trace evidence and guard-note count summaries, and include group chat plus block-body prompt-injection scenarios that require concrete guard notes for input wrapping, response guarding, memory guarding, relationship side-channel containment, and score/event containment.
 - Local fallback scoring ignores prompt-injection text for engagement and creativity boosts, so long meta-instructions cannot unlock score-gated story events when model evaluation is unavailable.
 - Local fallback scoring now recognizes Chinese, Japanese, and Korean friendly, question, and creative-story signals so offline scoring remains useful when model evaluation is unavailable in international builds.
 - Evaluation score parsing clamps overrange, above-scale, and negative model scores before quality reports or event triggers consume them.
