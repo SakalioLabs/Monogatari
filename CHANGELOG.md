@@ -2,6 +2,7 @@
 
 ### Added
 - Added a configurable offline quality suite for character stability, prompt-injection resistance, relationship and fallback scoring side-channel containment, memory-poisoning resistance, memory prompt replay safety, tool-role injection containment, identity drift, style drift, real knowledge-reference anchoring, evaluation-summary safety, workflow output safety, workflow tool-call containment, workflow branch coverage, private reasoning leakage, fallback scoring, overrange score clamping, story-event trigger/idempotence regression, and event-rule snapshot checks.
+- Added block-level prompt-control sanitization for Tauri, shared Rust AI, and legacy C# prompt builders so explicit XML, Markdown fence, and comment-wrapped role-control payloads are omitted along with their opening markers.
 - Added content loader path isolation tests and release-gate invariants so character, dialogue, and knowledge reload commands resolve only under the active project content directories.
 - Added character manager path isolation tests and release-gate invariants so character create/delete commands use the active or discovered default project data root, safe portable IDs, and stay inside the project characters directory.
 - Added plugin manager path isolation tests, Plugin workbench command-contract checks, and release-gate invariants so plugin listing, registration, and removal use the active or discovered default project data root plus safe portable IDs and optional `.rhai` script references inside the project plugins directory.
@@ -120,6 +121,7 @@
 - Restored `cargo check --locked -p llm-galgame-app` by aligning Tauri command dependencies and current core APIs.
 - Rebuilt corrupted zh-CN, ja-JP, and ko-KR locale JSON files with the full 280-key i18n surface.
 - Fixed frontend i18n loading so Tauri `{ locale, strings }` payloads and browser `/locales/*.json` fallback files both resolve correctly.
+- Fixed the legacy C# character loader and tests so current sample character JSON maps display names, emotion, sprite paths, and nested personality traits before legacy dialogue and AI prompt tests run.
 - Fixed guarded chat streaming so private-reasoning leak replacements overwrite the visible reply instead of appending to partial streamed text.
 - Fixed guarded character-response replacement text so the safety fallback no longer triggers the private-reasoning leak detector it is meant to satisfy.
 - Fixed workflow LLM generation so guarded outputs replace prompt-control/internal text before node results enter the story flow.

@@ -93,9 +93,132 @@ public class PromptBuilder
 
     private static string SanitizePromptContent(string content)
     {
-        return string.Join(
-            Environment.NewLine,
-            content.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n').Select(SanitizePromptLine));
+        var sanitized = new List<string>();
+        PromptControlBlock? activeBlock = null;
+
+        foreach (var line in content.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n'))
+        {
+            if (activeBlock is { } block)
+            {
+                if (PromptControlBlockEnds(line, block))
+                {
+                    activeBlock = null;
+                }
+                continue;
+            }
+
+            var blockStart = PromptControlBlockStartForLine(line);
+            if (blockStart is { } start)
+            {
+                sanitized.Add("Guarded prompt-control marker omitted.");
+                if (!start.ClosesOnLine)
+                {
+                    activeBlock = start.Block;
+                }
+                continue;
+            }
+
+            sanitized.Add(SanitizePromptLine(line));
+        }
+
+        return string.Join(Environment.NewLine, sanitized);
+    }
+
+    private enum PromptControlBlockKind
+    {
+        Fence,
+        RoleTag,
+        HtmlComment,
+        CComment
+    }
+
+    private readonly struct PromptControlBlock(PromptControlBlockKind kind, char fence = '\0', string? role = null)
+    {
+        public PromptControlBlockKind Kind { get; } = kind;
+        public char Fence { get; } = fence;
+        public string? Role { get; } = role;
+    }
+
+    private readonly struct PromptControlBlockStart(PromptControlBlock block, bool closesOnLine)
+    {
+        public PromptControlBlock Block { get; } = block;
+        public bool ClosesOnLine { get; } = closesOnLine;
+    }
+
+    private static PromptControlBlockStart? PromptControlBlockStartForLine(string line)
+    {
+        var trimmed = line.Trim();
+        var asciiLower = trimmed.ToLowerInvariant();
+        var normalizedLower = NormalizeSecurityText(trimmed);
+
+        return PromptControlBlockStartForNormalizedLine(asciiLower)
+            ?? PromptControlBlockStartForNormalizedLine(normalizedLower);
+    }
+
+    private static PromptControlBlockStart? PromptControlBlockStartForNormalizedLine(string line)
+    {
+        if (RoleCodeFenceChar(line) is { } fence)
+        {
+            return new PromptControlBlockStart(
+                new PromptControlBlock(PromptControlBlockKind.Fence, fence),
+                closesOnLine: false);
+        }
+
+        var trimmed = line.TrimStart();
+        var controlLine = TrimPromptLinePrefixes(trimmed);
+        if (trimmed.StartsWith("<!--", StringComparison.Ordinal)
+            && IsStructuralRoleControlLine(controlLine))
+        {
+            return new PromptControlBlockStart(
+                new PromptControlBlock(PromptControlBlockKind.HtmlComment),
+                trimmed.Contains("-->", StringComparison.Ordinal));
+        }
+        if (trimmed.StartsWith("/*", StringComparison.Ordinal)
+            && IsStructuralRoleControlLine(controlLine))
+        {
+            return new PromptControlBlockStart(
+                new PromptControlBlock(PromptControlBlockKind.CComment),
+                trimmed.Contains("*/", StringComparison.Ordinal));
+        }
+
+        var compact = new string(controlLine.Where(ch => !char.IsWhiteSpace(ch)).ToArray());
+        foreach (var role in PromptControlRoles)
+        {
+            if (!ContainsRoleOpeningTag(controlLine, compact, role))
+            {
+                continue;
+            }
+
+            return new PromptControlBlockStart(
+                new PromptControlBlock(PromptControlBlockKind.RoleTag, role: role),
+                ContainsRoleClosingTag(controlLine, compact, role)
+                    || compact.Contains("/>", StringComparison.Ordinal));
+        }
+
+        return null;
+    }
+
+    private static bool PromptControlBlockEnds(string line, PromptControlBlock block)
+    {
+        var trimmed = line.Trim();
+        var asciiLower = trimmed.ToLowerInvariant();
+        var normalizedLower = NormalizeSecurityText(trimmed);
+
+        return PromptControlBlockEndsInNormalizedLine(asciiLower, block)
+            || PromptControlBlockEndsInNormalizedLine(normalizedLower, block);
+    }
+
+    private static bool PromptControlBlockEndsInNormalizedLine(string line, PromptControlBlock block)
+    {
+        return block.Kind switch
+        {
+            PromptControlBlockKind.Fence => IsCodeFenceBoundary(line, block.Fence),
+            PromptControlBlockKind.RoleTag => block.Role is { } role
+                && ContainsRoleClosingTag(line, new string(line.Where(ch => !char.IsWhiteSpace(ch)).ToArray()), role),
+            PromptControlBlockKind.HtmlComment => line.Contains("-->", StringComparison.Ordinal),
+            PromptControlBlockKind.CComment => line.Contains("*/", StringComparison.Ordinal),
+            _ => false
+        };
     }
 
     private static string SanitizePromptLine(string line)
@@ -253,8 +376,21 @@ public class PromptBuilder
 
     private static bool IsRoleCodeFenceLine(string line)
     {
-        var payload = RoleCodeFencePayload(line, '`') ?? RoleCodeFencePayload(line, '~');
-        return payload is not null && PromptControlRoles.Any(role => RoleLabelWithBoundary(payload, role));
+        return RoleCodeFenceChar(line) is not null;
+    }
+
+    private static char? RoleCodeFenceChar(string line)
+    {
+        foreach (var fence in new[] { '`', '~' })
+        {
+            var payload = RoleCodeFencePayload(line, fence);
+            if (payload is not null && PromptControlRoles.Any(role => RoleLabelWithBoundary(payload, role)))
+            {
+                return fence;
+            }
+        }
+
+        return null;
     }
 
     private static string? RoleCodeFencePayload(string line, char fence)
@@ -272,6 +408,18 @@ public class PromptBuilder
         }
 
         return trimmed[markerLength..].TrimStart();
+    }
+
+    private static bool IsCodeFenceBoundary(string line, char fence)
+    {
+        var trimmed = line.TrimStart();
+        var markerLength = 0;
+        while (markerLength < trimmed.Length && trimmed[markerLength] == fence)
+        {
+            markerLength++;
+        }
+
+        return markerLength >= 3;
     }
 
     private static bool RoleLabelWithBoundary(string line, string role)
@@ -296,6 +444,20 @@ public class PromptBuilder
             || compact.Contains($"<{role}/", StringComparison.Ordinal)
             || compact.Contains($"<{role}:", StringComparison.Ordinal)
             || ContainsRoleTagWithBoundary(line, $"<{role}")
+            || ContainsRoleTagWithBoundary(line, $"</{role}");
+    }
+
+    private static bool ContainsRoleOpeningTag(string line, string compact, string role)
+    {
+        return compact.Contains($"<{role}>", StringComparison.Ordinal)
+            || compact.Contains($"<{role}/", StringComparison.Ordinal)
+            || compact.Contains($"<{role}:", StringComparison.Ordinal)
+            || ContainsRoleTagWithBoundary(line, $"<{role}");
+    }
+
+    private static bool ContainsRoleClosingTag(string line, string compact, string role)
+    {
+        return compact.Contains($"</{role}>", StringComparison.Ordinal)
             || ContainsRoleTagWithBoundary(line, $"</{role}");
     }
 

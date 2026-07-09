@@ -17,12 +17,14 @@ public class IntegrationTests
         var dataPath = Path.Combine(FindProjectRoot(), "data", "characters");
         await manager.LoadCharactersFromDirectory(dataPath);
 
-        Assert.Single(manager.Characters);
+        Assert.True(manager.Characters.Count >= 3);
         var sakura = manager.GetCharacter("sakura");
         Assert.NotNull(sakura);
         Assert.Equal("Sakura", sakura.DisplayName);
         Assert.Equal("happy", sakura.CurrentEmotion);
-        Assert.NotEmpty(sakura.Personality.Likes);
+        Assert.Equal("assets/characters/sakura_sprite.svg", sakura.SpritePath);
+        Assert.Equal(0.9f, sakura.Personality.GetTrait("openness"));
+        Assert.Contains("nature metaphors", sakura.Personality.SpeechStyle, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
