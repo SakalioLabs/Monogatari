@@ -574,6 +574,7 @@ fn build_project_export_manifest(
         .iter()
         .filter_map(|file| file.get("size_bytes").and_then(Value::as_u64))
         .sum();
+    let content_sha256 = package_content_sha256(&files);
 
     Ok(json!({
         "format": "monogatari-project",
@@ -594,6 +595,7 @@ fn build_project_export_manifest(
         "package": {
             "file_count": files.len(),
             "total_bytes": total_bytes,
+            "content_sha256": content_sha256,
             "files": files,
             "excluded": ["saves", "analytics.json", ".sync_manifest.json"]
         }
@@ -701,6 +703,30 @@ fn push_export_file(
 
 fn checksum_sha256(bytes: &[u8]) -> String {
     let digest = Sha256::digest(bytes);
+    digest.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+fn package_content_sha256(files: &[Value]) -> String {
+    let mut hasher = Sha256::new();
+    for file in files {
+        let path = file.get("path").and_then(Value::as_str).unwrap_or("");
+        let size_bytes = file
+            .get("size_bytes")
+            .and_then(Value::as_u64)
+            .unwrap_or_default()
+            .to_string();
+        let checksum = file
+            .get("checksum_sha256")
+            .and_then(Value::as_str)
+            .unwrap_or("");
+        hasher.update(path.as_bytes());
+        hasher.update(b"\0");
+        hasher.update(size_bytes.as_bytes());
+        hasher.update(b"\0");
+        hasher.update(checksum.as_bytes());
+        hasher.update(b"\n");
+    }
+    let digest = hasher.finalize();
     digest.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
@@ -1209,6 +1235,10 @@ mod tests {
                 ));
         }
         assert_eq!(manifest["settings"]["ai"]["api"]["api_key"], "<redacted>");
+        let package_sha256 = manifest["package"]["content_sha256"]
+            .as_str()
+            .expect("package content hash");
+        assert_eq!(package_sha256.len(), 64);
         let files = manifest["package"]["files"].as_array().unwrap();
         let tts_file = files
             .iter()
@@ -1223,6 +1253,25 @@ mod tests {
         assert!(files.iter().any(|file| file["path"] == "settings.json"));
         assert!(!files.iter().any(|file| file["path"] == "saves/slot.json"));
         assert!(!files.iter().any(|file| file["path"] == "analytics.json"));
+
+        let repeat_manifest =
+            build_project_export_manifest(&root, Vec::new(), Vec::new(), 0, None).unwrap();
+        assert_eq!(
+            repeat_manifest["package"]["content_sha256"],
+            manifest["package"]["content_sha256"]
+        );
+
+        std::fs::write(
+            root.join("assets").join("tts").join("line.wav"),
+            b"new voice",
+        )
+        .unwrap();
+        let changed_manifest =
+            build_project_export_manifest(&root, Vec::new(), Vec::new(), 0, None).unwrap();
+        assert_ne!(
+            changed_manifest["package"]["content_sha256"],
+            manifest["package"]["content_sha256"]
+        );
 
         std::fs::remove_dir_all(root).unwrap();
     }

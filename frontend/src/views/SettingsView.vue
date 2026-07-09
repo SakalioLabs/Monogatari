@@ -622,7 +622,12 @@ async function exportProjectManifest() {
         project_path: projectState.value?.project_path || projectPath.value,
         settings: sanitizeManifestSettings(buildConfigForSave(projectState.value?.config || previewState.config)),
         content: {},
-        package: { file_count: 0, total_bytes: 0, files: [] },
+        package: {
+          file_count: 0,
+          total_bytes: 0,
+          content_sha256: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+          files: [],
+        },
       })
     )
     downloadJson(`${safeFileName(projectTitle.value || 'monogatari-project')}-manifest.json`, manifest)
