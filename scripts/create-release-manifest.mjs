@@ -428,13 +428,28 @@ function projectContentJsonSummary(category, value) {
   } else if (category === 'scenes') {
     summary.background_asset_count = records.filter((record) => nonEmptyString(record?.background) || nonEmptyString(record?.background_path)).length
   } else if (category === 'events') {
+    const actions = records.flatMap(storyEventActions)
     summary.schema = value?.schema ?? null
     summary.event_types = Array.from(new Set(records.map((record) => record?.event_type).filter(nonEmptyString))).sort()
     summary.character_scoped_count = records.filter((record) => Array.isArray(record?.character_ids) && record.character_ids.length > 0).length
     summary.repeatable_count = records.filter((record) => record?.repeatable === true).length
+    summary.action_count = actions.length
+    summary.action_types = Array.from(new Set(actions.map((action) => action?.type).filter(nonEmptyString))).sort()
   }
 
   return summary
+}
+
+function storyEventActions(record) {
+  const actions = Array.isArray(record?.actions) ? [...record.actions] : []
+  for (const [field, type] of [
+    ['unlock_scene', 'unlock_scene'],
+    ['dialogue_id', 'unlock_dialogue'],
+    ['unlock_ending', 'unlock_ending'],
+  ]) {
+    if (nonEmptyString(record?.data?.[field])) actions.push({ type })
+  }
+  return actions
 }
 
 function characterKnowledgeRefs(character) {

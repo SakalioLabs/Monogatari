@@ -16,6 +16,7 @@ use llm_scripting::ScriptEngine;
 
 use crate::commands::chat::ChatSession;
 use crate::story_events::StoryEventCatalog;
+use crate::story_progress::StoryProgressState;
 
 /// Main application state shared across all Tauri commands.
 pub struct AppState {
@@ -29,6 +30,7 @@ pub struct AppState {
     pub asset_manager: Arc<RwLock<AssetManager>>,
     pub script_engine: Arc<RwLock<ScriptEngine>>,
     pub story_event_catalog: Arc<RwLock<StoryEventCatalog>>,
+    pub story_progress: Arc<RwLock<StoryProgressState>>,
     pub project_path: Arc<RwLock<Option<PathBuf>>>,
     pub initialized: Arc<RwLock<bool>>,
     /// Active authoring/runtime scene selected from the scene asset catalog.
@@ -53,6 +55,7 @@ impl AppState {
             save_manager: Arc::new(RwLock::new(SaveManager::new(data_path.join("saves")))),
             script_engine: Arc::new(RwLock::new(ScriptEngine::new())),
             story_event_catalog: Arc::new(RwLock::new(StoryEventCatalog::default())),
+            story_progress: Arc::new(RwLock::new(StoryProgressState::default())),
             project_path: Arc::new(RwLock::new(None)),
             initialized: Arc::new(RwLock::new(false)),
             active_scene_id: Arc::new(RwLock::new(None)),
@@ -80,6 +83,7 @@ impl AppState {
         self.scene_history.write().await.clear();
         *self.scene_manager.write().await = SceneManager::new();
         *self.story_event_catalog.write().await = StoryEventCatalog::default();
+        *self.story_progress.write().await = StoryProgressState::default();
         self.script_engine
             .read()
             .await
@@ -214,6 +218,12 @@ mod tests {
         *state.active_scene_id.write().await = Some("park".to_string());
         state.scene_history.write().await.push("park".to_string());
         state
+            .story_progress
+            .write()
+            .await
+            .unlocked_scene_ids
+            .insert("friend_scene".to_string());
+        state
             .script_engine
             .read()
             .await
@@ -226,6 +236,12 @@ mod tests {
         assert!(state.chat_sessions.read().await.is_empty());
         assert!(state.active_scene_id.read().await.is_none());
         assert!(state.scene_history.read().await.is_empty());
+        assert!(state
+            .story_progress
+            .read()
+            .await
+            .unlocked_scene_ids
+            .is_empty());
         assert!(!state.script_engine.read().await.has_flag("visited_park"));
         assert!(state
             .story_event_catalog

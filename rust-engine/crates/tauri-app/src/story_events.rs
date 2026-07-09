@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 
+use llm_core::normalize_script_state_key;
+
 pub const STORY_EVENT_CATALOG_SCHEMA_V1: &str = "monogatari-story-event-catalog/v1";
 pub const EVENT_TRIGGER_RULE_SCHEMA_V1: &str = "monogatari-event-trigger-rule/v1";
 pub const EVENT_TRIGGER_RULE_SCHEMA_V2: &str = "monogatari-event-trigger-rule/v2";
@@ -21,9 +23,19 @@ const MAX_CHARACTER_ID_CHARS: usize = 128;
 const MAX_EVENT_DESCRIPTION_CHARS: usize = 2_048;
 const MAX_EVENT_DATA_BYTES: usize = 64 * 1024;
 const MAX_EVENT_CHARACTER_IDS: usize = 128;
+const MAX_EVENT_ACTIONS: usize = 64;
 const MAX_EVALUATION_COUNT: u32 = 1_000_000;
 const DEFAULT_STORY_EVENT_CATALOG_JSON: &str =
     include_str!("../../../../data/events/story_events.json");
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
+pub enum StoryEventAction {
+    UnlockScene { scene_id: String },
+    UnlockDialogue { dialogue_id: String },
+    UnlockEnding { ending_id: String },
+    SetFlag { flag: String, value: bool },
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TriggeredEvent {
@@ -31,6 +43,8 @@ pub struct TriggeredEvent {
     pub event_type: String,
     pub description: String,
     pub data: Value,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub actions: Vec<StoryEventAction>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -59,6 +73,8 @@ pub struct StoryEventDefinition {
     pub event_type: String,
     pub description: String,
     pub data: Value,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub actions: Vec<StoryEventAction>,
     pub rule: EventTriggerRule,
     pub source_path: String,
 }
@@ -70,6 +86,7 @@ impl StoryEventDefinition {
             event_type: self.event_type.clone(),
             description: self.description.clone(),
             data: self.data.clone(),
+            actions: self.actions.clone(),
         }
     }
 
@@ -456,6 +473,10 @@ impl StoryEventCatalog {
             events: self.definitions.clone(),
         }
     }
+
+    pub fn catalog_fingerprint(&self) -> &str {
+        &self.catalog_fingerprint
+    }
 }
 
 fn project_event_directory(project_root: &Path) -> Result<(PathBuf, bool), String> {
@@ -540,6 +561,8 @@ struct StoryEventAsset {
     description: String,
     #[serde(default = "empty_object")]
     data: Value,
+    #[serde(default)]
+    actions: Vec<StoryEventAction>,
     #[serde(default)]
     character_ids: Vec<String>,
     #[serde(default)]
@@ -627,6 +650,8 @@ fn normalize_story_event(
     }
     let character_ids = character_ids.into_iter().collect::<Vec<_>>();
 
+    let actions =
+        normalize_story_event_actions(&event_id, asset.actions, &asset.data, source_path)?;
     validate_rule(&event_id, &asset.rule, source_path)?;
     let mut rule = EventTriggerRule {
         event_id: event_id.clone(),
@@ -646,9 +671,108 @@ fn normalize_story_event(
         event_type,
         description,
         data: asset.data,
+        actions,
         rule,
         source_path: source_path.replace('\\', "/"),
     })
+}
+
+fn normalize_story_event_actions(
+    event_id: &str,
+    actions: Vec<StoryEventAction>,
+    data: &Value,
+    source_path: &str,
+) -> Result<Vec<StoryEventAction>, String> {
+    if actions.len() > MAX_EVENT_ACTIONS {
+        return Err(format!(
+            "Story event `{event_id}` has {} actions; the limit is {MAX_EVENT_ACTIONS}.",
+            actions.len()
+        ));
+    }
+
+    let mut normalized = Vec::new();
+    let mut seen = HashSet::new();
+    for action in actions {
+        let action = match action {
+            StoryEventAction::UnlockScene { scene_id } => StoryEventAction::UnlockScene {
+                scene_id: validate_portable_id(
+                    &scene_id,
+                    "action scene_id",
+                    MAX_EVENT_ID_CHARS,
+                    source_path,
+                )?,
+            },
+            StoryEventAction::UnlockDialogue { dialogue_id } => {
+                StoryEventAction::UnlockDialogue {
+                    dialogue_id: validate_portable_id(
+                        &dialogue_id,
+                        "action dialogue_id",
+                        MAX_EVENT_ID_CHARS,
+                        source_path,
+                    )?,
+                }
+            }
+            StoryEventAction::UnlockEnding { ending_id } => StoryEventAction::UnlockEnding {
+                ending_id: validate_portable_id(
+                    &ending_id,
+                    "action ending_id",
+                    MAX_EVENT_ID_CHARS,
+                    source_path,
+                )?,
+            },
+            StoryEventAction::SetFlag { flag, value } => StoryEventAction::SetFlag {
+                flag: normalize_script_state_key(&flag).map_err(|error| {
+                    format!(
+                        "Story event `{event_id}` set_flag action in `{source_path}` is invalid: {error}"
+                    )
+                })?,
+                value,
+            },
+        };
+        if !seen.insert(action.clone()) {
+            return Err(format!(
+                "Story event `{event_id}` repeats action `{action:?}` in `{source_path}`."
+            ));
+        }
+        normalized.push(action);
+    }
+
+    for (field, action_type) in [
+        ("unlock_scene", "unlock_scene"),
+        ("dialogue_id", "unlock_dialogue"),
+        ("unlock_ending", "unlock_ending"),
+    ] {
+        let Some(value) = data.get(field) else {
+            continue;
+        };
+        let value = value.as_str().ok_or_else(|| {
+            format!(
+                "Story event `{event_id}` legacy data field `{field}` in `{source_path}` must be a string."
+            )
+        })?;
+        let value = validate_portable_id(
+            value,
+            &format!("legacy data {field}"),
+            MAX_EVENT_ID_CHARS,
+            source_path,
+        )?;
+        let action = match action_type {
+            "unlock_scene" => StoryEventAction::UnlockScene { scene_id: value },
+            "unlock_dialogue" => StoryEventAction::UnlockDialogue { dialogue_id: value },
+            "unlock_ending" => StoryEventAction::UnlockEnding { ending_id: value },
+            _ => unreachable!("legacy story event action mapping is exhaustive"),
+        };
+        if seen.insert(action.clone()) {
+            normalized.push(action);
+        }
+    }
+
+    if normalized.len() > MAX_EVENT_ACTIONS {
+        return Err(format!(
+            "Story event `{event_id}` has more than {MAX_EVENT_ACTIONS} normalized actions."
+        ));
+    }
+    Ok(normalized)
 }
 
 fn validate_rule(
@@ -872,6 +996,7 @@ fn story_event_catalog_fingerprint(definitions: &[StoryEventDefinition]) -> Stri
                 "event_type": definition.event_type,
                 "description": definition.description,
                 "data": definition.data,
+                "actions": definition.actions,
                 "rule_fingerprint": definition.rule.rule_fingerprint,
             })
         })
@@ -971,6 +1096,14 @@ mod tests {
     }
 
     #[test]
+    fn checked_in_catalog_preserves_cross_runtime_catalog_fingerprint() {
+        assert_eq!(
+            StoryEventCatalog::default().catalog_fingerprint(),
+            "e70fb6419b98ea215270dc7dd0de81cc077943d146685eb23f29a44cd7eed06d"
+        );
+    }
+
+    #[test]
     fn project_catalog_supports_character_scope_and_repeatable_rules() {
         let root = temp_root("scoped");
         let events = write_catalog(
@@ -1047,6 +1180,78 @@ mod tests {
         let error = StoryEventCatalog::load_from_directory(&metric_events).unwrap_err();
         assert!(error.contains("unknown score_metric `hidden_score`"));
         std::fs::remove_dir_all(metric_root).unwrap();
+    }
+
+    #[test]
+    fn catalog_normalizes_typed_actions_and_legacy_data_actions() {
+        let root = temp_root("actions");
+        let events = write_catalog(
+            &root,
+            r#"{
+              "schema":"monogatari-story-event-catalog/v1",
+              "events":[{
+                "event_id":"luna_unlock",
+                "event_type":"unlock",
+                "description":"Unlock Luna content",
+                "data":{"dialogue_id":"legacy_dialogue"},
+                "actions":[
+                  {"type":"unlock_scene","scene_id":"moon_garden"},
+                  {"type":"set_flag","flag":"luna.secret","value":true}
+                ]
+              }]
+            }"#,
+        );
+
+        let catalog = StoryEventCatalog::load_from_directory(&events).unwrap();
+        let actions = &catalog.definition("luna_unlock", None).unwrap().actions;
+
+        assert_eq!(actions.len(), 3);
+        assert!(actions.contains(&StoryEventAction::UnlockDialogue {
+            dialogue_id: "legacy_dialogue".to_string(),
+        }));
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn catalog_rejects_duplicate_or_invalid_actions() {
+        let duplicate_root = temp_root("duplicate_actions");
+        let duplicate_events = write_catalog(
+            &duplicate_root,
+            r#"{
+              "schema":"monogatari-story-event-catalog/v1",
+              "events":[{
+                "event_id":"duplicate_action",
+                "event_type":"unlock",
+                "description":"Duplicate action",
+                "actions":[
+                  {"type":"unlock_scene","scene_id":"same"},
+                  {"type":"unlock_scene","scene_id":"same"}
+                ]
+              }]
+            }"#,
+        );
+        assert!(StoryEventCatalog::load_from_directory(&duplicate_events)
+            .unwrap_err()
+            .contains("repeats action"));
+        std::fs::remove_dir_all(duplicate_root).unwrap();
+
+        let invalid_root = temp_root("invalid_action");
+        let invalid_events = write_catalog(
+            &invalid_root,
+            r#"{
+              "schema":"monogatari-story-event-catalog/v1",
+              "events":[{
+                "event_id":"bad_flag",
+                "event_type":"unlock",
+                "description":"Bad flag",
+                "actions":[{"type":"set_flag","flag":"bad flag","value":true}]
+              }]
+            }"#,
+        );
+        assert!(StoryEventCatalog::load_from_directory(&invalid_events)
+            .unwrap_err()
+            .contains("set_flag action"));
+        std::fs::remove_dir_all(invalid_root).unwrap();
     }
 
     #[test]

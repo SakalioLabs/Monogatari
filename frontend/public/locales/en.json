@@ -80,6 +80,7 @@
     "chat.mode": "Mode",
     "chat.emotion": "Emotion",
     "chat.relation": "Relation",
+    "chat.unlocks": "Unlocks",
     "chat.streaming": "Streaming",
     "chat.idle": "Idle",
     "chat.no-score": "No score yet.",

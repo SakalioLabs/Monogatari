@@ -34,7 +34,12 @@
 
     <section class="conversation-panel">
       <header class="conversation-header">
-        <button class="icon-btn" title="Back to dashboard" @click="$router.push('/')">{{ t('chat.back', 'Back to dashboard') }}</button>
+        <button
+          class="icon-btn"
+          :title="t('chat.back', 'Back to dashboard')"
+          :aria-label="t('chat.back', 'Back to dashboard')"
+          @click="$router.push('/')"
+        ><span aria-hidden="true">&larr;</span></button>
         <div class="conversation-title">
           <span class="eyebrow">{{ selectedCharacter ? t('chat.session', 'Session') : t('chat.ready', 'Ready') }}</span>
           <h2>{{ selectedCharacter?.name || t('chat.select-character', 'Select a character') }}</h2>
@@ -179,15 +184,17 @@
           <span><b>{{ t('chat.mode', 'Mode') }}</b>{{ isStreaming ? 'Streaming' : 'Idle' }}</span>
           <span><b>{{ t('chat.emotion', 'Emotion') }}</b>{{ currentEmotion }}</span>
           <span><b>{{ t('chat.relation', 'Relation') }}</b>{{ relationshipScore.toFixed(2) }}</span>
+          <span><b>{{ t('chat.unlocks', 'Unlocks') }}</b>{{ unlockedContentCount }}</span>
         </div>
       </section>
     </aside>
 
     <Transition name="fade">
-      <div v-if="activeEvent" class="event-toast" @click="activeEvent = null">
+      <div v-if="activeEvent" class="event-toast" @click="clearActiveEvent">
         <strong>{{ activeEvent.description }}</strong>
-        <span v-if="activeEvent.data.unlock_scene">{{ t('chat.scene-unlocked', 'Scene unlocked') }}</span>
-        <span v-if="activeEvent.data.dialogue_id">{{ t('chat.dialogue-available', 'Dialogue available') }}</span>
+        <span v-for="(result, index) in activeEventActionResults" :key="`${activeEvent.event_id}-${index}`">
+          {{ storyActionLabel(result) }}
+        </span>
       </div>
     </Transition>
 
@@ -202,6 +209,13 @@ import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { invokeCommand } from '../lib/tauri'
 import { useI18n } from '../lib/i18n'
+import type { StoryEventAction } from '../lib/storyEvents'
+import {
+  loadStoryProgress,
+  type StoryEventActionResult,
+  type StoryEventApplication,
+  type StoryProgressSnapshot,
+} from '../lib/storyProgress'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
 
 const { t } = useI18n()
@@ -226,6 +240,7 @@ interface TriggeredEvent {
   event_type: string
   description: string
   data: Record<string, unknown>
+  actions: StoryEventAction[]
 }
 
 interface EventTriggerRule {
@@ -311,6 +326,8 @@ const evaluation = ref<ConversationEvaluation | null>(null)
 const safetyTrace = ref<ChatSafetyTrace | null>(null)
 const eventDecisions = ref<EventTriggerDecision[]>([])
 const activeEvent = ref<TriggeredEvent | null>(null)
+const activeEventApplication = ref<StoryEventApplication | null>(null)
+const storyProgress = ref<StoryProgressSnapshot | null>(null)
 const errorMessage = ref<string | null>(null)
 const charactersLoading = ref(true)
 const messagesRef = ref<HTMLDivElement>()
@@ -360,6 +377,22 @@ const eventDecisionSummary = computed(() => {
     .slice(0, 5)
 })
 
+const unlockedContentCount = computed(() => {
+  const progress = storyProgress.value
+  if (!progress) return 0
+  return progress.unlocked_scene_ids.length
+    + progress.unlocked_dialogue_ids.length
+    + progress.unlocked_ending_ids.length
+})
+
+const activeEventActionResults = computed<StoryEventActionResult[]>(() => {
+  const application = activeEventApplication.value
+  if (application && application.event_id === activeEvent.value?.event_id) {
+    return application.action_results
+  }
+  return (activeEvent.value?.actions || []).map((action) => ({ action, changed: true }))
+})
+
 function initials(name: string): string {
   return name.trim().slice(0, 2).toUpperCase() || 'AI'
 }
@@ -405,6 +438,23 @@ function eventDecisionReason(decision: EventTriggerDecision): string {
 function shortRuleFingerprint(decision: EventTriggerDecision): string {
   const fingerprint = decision.rule_fingerprint || decision.rule?.rule_fingerprint || ''
   return fingerprint ? fingerprint.slice(0, 10) : ''
+}
+
+function storyActionLabel(result: StoryEventActionResult): string {
+  const state = result.changed ? 'unlocked' : 'already unlocked'
+  if (result.action.type === 'unlock_scene') return `Scene ${result.action.scene_id} ${state}`
+  if (result.action.type === 'unlock_dialogue') return `Dialogue ${result.action.dialogue_id} ${state}`
+  if (result.action.type === 'unlock_ending') return `Ending ${result.action.ending_id} ${state}`
+  return `Flag ${result.action.flag} ${result.changed ? 'updated' : 'unchanged'}`
+}
+
+function clearActiveEvent() {
+  activeEvent.value = null
+  activeEventApplication.value = null
+}
+
+async function refreshStoryProgress() {
+  storyProgress.value = await loadStoryProgress()
 }
 
 function resizeInput() {
@@ -474,7 +524,14 @@ async function attachStreamListeners(assistantMessage: ChatMessage) {
       eventDecisions.value = event.payload || []
     }),
     listen<TriggeredEvent[]>('chat-events', (event) => {
-      if (event.payload.length > 0) activeEvent.value = event.payload[0]
+      if (event.payload.length > 0) {
+        activeEvent.value = event.payload[0]
+        activeEventApplication.value = null
+      }
+    }),
+    listen<StoryEventApplication[]>('chat-event-applications', async (event) => {
+      if (event.payload.length > 0) activeEventApplication.value = event.payload[0]
+      await refreshStoryProgress()
     }),
     listen<string>('chat-error', (event) => {
       errorMessage.value = event.payload || 'Generation failed'
@@ -598,7 +655,12 @@ async function clearChat() {
 
 onMounted(async () => {
   try {
-    characters.value = await invokeCommand<CharacterInfo[]>('get_characters', undefined, [])
+    const [loadedCharacters, progress] = await Promise.all([
+      invokeCommand<CharacterInfo[]>('get_characters', undefined, []),
+      loadStoryProgress(),
+    ])
+    characters.value = loadedCharacters
+    storyProgress.value = progress
   } catch (e) {
     errorMessage.value = String(e)
   }
@@ -758,6 +820,8 @@ onUnmounted(cleanupStreamListeners)
 }
 
 .icon-btn {
+  display: grid;
+  place-items: center;
   width: 34px;
   height: 34px;
   border: 1px solid var(--border);
@@ -767,6 +831,7 @@ onUnmounted(cleanupStreamListeners)
   cursor: pointer;
   font-size: 24px;
   line-height: 1;
+  overflow: hidden;
 }
 
 .icon-btn:hover {

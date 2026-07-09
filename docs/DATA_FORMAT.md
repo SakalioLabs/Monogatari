@@ -114,9 +114,11 @@ Story events are stored in one or more JSON files under the configured project `
       "event_id": "luna_secret",
       "event_type": "special_dialogue",
       "description": "Luna shares a secret.",
-      "data": {
-        "dialogue_id": "luna_secret_dialogue"
-      },
+      "actions": [
+        { "type": "unlock_dialogue", "dialogue_id": "luna_secret_dialogue" },
+        { "type": "set_flag", "flag": "luna.secret", "value": true }
+      ],
+      "data": { "chapter": "luna_route" },
       "character_ids": ["luna"],
       "repeatable": false,
       "rule": {
@@ -133,9 +135,10 @@ Story events are stored in one or more JSON files under the configured project `
 - `score_metric` accepts `friendliness`, `engagement`, `creativity`, or `overall` and must be paired with `min_score` in the `0..1` range.
 - `min_relationship` accepts `-1..1`; `min_evaluation_count` is a non-negative integer.
 - Empty or omitted `character_ids` applies the event to every character. Scoped IDs must exist when the project activates.
-- `repeatable` defaults to `false`. Non-repeatable events are recorded per character chat session and blocked after their first trigger.
-- `data` is an author-defined object consumed by downstream dialogue, scene, ending, or unlock handling.
-- Default unscoped rules preserve the `monogatari-event-trigger-rule/v1` fingerprint contract. Character-scoped or repeatable rules use v2 fingerprints so all trigger behavior is audit-bound.
+- `repeatable` defaults to `false`. Non-repeatable events are recorded per character scope in persistent story progress and blocked after their first application.
+- `actions` accepts at most 64 typed effects: `unlock_scene` with `scene_id`, `unlock_dialogue` with `dialogue_id`, `unlock_ending` with `ending_id`, or `set_flag` with a portable `flag` and boolean `value`.
+- `data` remains bounded author-defined metadata. Legacy string fields `data.unlock_scene`, `data.dialogue_id`, and `data.unlock_ending` are migrated into equivalent typed actions at load time.
+- Default unscoped rules preserve the `monogatari-event-trigger-rule/v1` fingerprint contract. Character-scoped or repeatable rules use v2 fingerprints, while the catalog fingerprint binds descriptions, metadata, actions, and rule fingerprints.
 
 ## Workflow Format
 

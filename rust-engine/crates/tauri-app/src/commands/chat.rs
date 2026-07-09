@@ -16,9 +16,11 @@ use tauri::State;
 use tracing::debug;
 
 use crate::commands::prompt_guard;
+use crate::commands::story_events::apply_story_event_definition;
 use crate::state::AppState;
 use crate::story_events::{EventScoreSnapshot, StoryEventCatalog};
 pub use crate::story_events::{EventTriggerDecision, EventTriggerRule, TriggeredEvent};
+use crate::story_progress::StoryEventApplication;
 
 const STREAM_SAFETY_WINDOW_CHARS: usize = 240;
 
@@ -95,6 +97,8 @@ pub struct ChatResponse {
     pub relationship_delta: f32,
     pub evaluation: Option<ConversationEvaluation>,
     pub triggered_events: Vec<TriggeredEvent>,
+    #[serde(default)]
+    pub event_applications: Vec<StoryEventApplication>,
     #[serde(default)]
     pub event_trigger_decisions: Vec<EventTriggerDecision>,
     #[serde(default)]
@@ -388,10 +392,13 @@ ROLEPLAY RULES:
             session.triggered_event_ids.clone(),
         )
     };
+    let already_triggered =
+        merged_applied_event_ids(&state, &character_id, already_triggered).await;
 
     // Periodic evaluation (every 5 player messages)
     let mut evaluation = None;
     let mut triggered_events = Vec::new();
+    let mut event_applications = Vec::new();
     let mut event_trigger_decisions = Vec::new();
 
     if should_evaluate {
@@ -421,7 +428,13 @@ ROLEPLAY RULES:
                 &already_triggered,
             )
             .await;
-            let events = triggered_events_from_decisions(&event_catalog, &decisions);
+            let (events, applications) = apply_triggered_event_decisions(
+                &state,
+                &event_catalog,
+                &decisions,
+                Some(&character_id),
+            )
+            .await?;
 
             {
                 let mut sessions = state.chat_sessions.write().await;
@@ -439,6 +452,7 @@ ROLEPLAY RULES:
             }
             event_trigger_decisions = decisions;
             triggered_events = events;
+            event_applications = applications;
         }
     }
 
@@ -448,6 +462,7 @@ ROLEPLAY RULES:
         relationship_delta,
         evaluation,
         triggered_events,
+        event_applications,
         event_trigger_decisions,
         safety_trace,
     })
@@ -602,6 +617,8 @@ pub async fn preview_event_triggers(
             session.last_evaluation.clone(),
         )
     };
+    let already_triggered =
+        merged_applied_event_ids(&state, &character_id, already_triggered).await;
 
     let relationship = player_relationship(&state, &character_id).await;
     let evaluation = last_evaluation.unwrap_or_else(neutral_conversation_evaluation);
@@ -648,6 +665,8 @@ async fn build_chat_session_audit_report(
             None => (0, 0, 0.0, 0, Vec::new(), None, None),
         }
     };
+    let triggered_event_ids =
+        merged_applied_event_ids(state, character_id, triggered_event_ids).await;
 
     let relationship_score = player_relationship(state, character_id).await;
     let evaluation = last_evaluation
@@ -1085,6 +1104,24 @@ pub(super) fn build_event_trigger_decisions(
     )
 }
 
+async fn merged_applied_event_ids(
+    state: &AppState,
+    character_id: &str,
+    mut event_ids: Vec<String>,
+) -> Vec<String> {
+    let progress = state.story_progress.read().await;
+    event_ids.extend(
+        progress
+            .applied_events
+            .iter()
+            .filter(|applied| applied.character_id.as_deref() == Some(character_id))
+            .map(|applied| applied.event_id.clone()),
+    );
+    event_ids.sort();
+    event_ids.dedup();
+    event_ids
+}
+
 fn triggered_events_from_decisions(
     event_catalog: &StoryEventCatalog,
     decisions: &[EventTriggerDecision],
@@ -1094,6 +1131,38 @@ fn triggered_events_from_decisions(
         debug!("Triggered event: {}", event.event_id);
     }
     events
+}
+
+async fn apply_triggered_event_decisions(
+    state: &AppState,
+    event_catalog: &StoryEventCatalog,
+    decisions: &[EventTriggerDecision],
+    character_id: Option<&str>,
+) -> Result<(Vec<TriggeredEvent>, Vec<StoryEventApplication>), String> {
+    let mut events = Vec::new();
+    let mut applications = Vec::new();
+    for decision in decisions.iter().filter(|decision| decision.triggered) {
+        let definition = event_catalog
+            .definition(&decision.event_id, Some(&decision.event_type))
+            .ok_or_else(|| {
+                format!(
+                    "Triggered story event `{}` disappeared from the active catalog.",
+                    decision.event_id
+                )
+            })?;
+        let application = apply_story_event_definition(
+            state,
+            definition,
+            character_id,
+            event_catalog.catalog_fingerprint(),
+        )
+        .await?;
+        if application.applied {
+            events.push(definition.triggered_event());
+        }
+        applications.push(application);
+    }
+    Ok((events, applications))
 }
 
 fn event_score_snapshot(eval: &ConversationEvaluation) -> EventScoreSnapshot {
@@ -1564,6 +1633,8 @@ Stay in character. Respond naturally with emotion (use *actions* for body langua
                 session.triggered_event_ids.clone(),
             )
         };
+        let already_triggered =
+            merged_applied_event_ids(&state, &character_id, already_triggered).await;
 
         {
             let cm = state.character_manager.read().await;
@@ -1577,6 +1648,7 @@ Stay in character. Respond naturally with emotion (use *actions* for body langua
 
         let mut evaluation = None;
         let mut triggered_events = Vec::new();
+        let mut event_applications = Vec::new();
         let mut event_trigger_decisions = Vec::new();
 
         if should_evaluate {
@@ -1603,7 +1675,13 @@ Stay in character. Respond naturally with emotion (use *actions* for body langua
                     &already_triggered,
                 )
                 .await;
-                let events = triggered_events_from_decisions(&event_catalog, &decisions);
+                let (events, applications) = apply_triggered_event_decisions(
+                    &state,
+                    &event_catalog,
+                    &decisions,
+                    Some(&character_id),
+                )
+                .await?;
 
                 {
                     let mut sessions = state.chat_sessions.write().await;
@@ -1623,6 +1701,7 @@ Stay in character. Respond naturally with emotion (use *actions* for body langua
                 evaluation = Some(eval);
                 event_trigger_decisions = decisions;
                 triggered_events = events;
+                event_applications = applications;
             }
         }
 
@@ -1637,6 +1716,9 @@ Stay in character. Respond naturally with emotion (use *actions* for body langua
         }
         if !triggered_events.is_empty() {
             let _ = window.emit("chat-events", &triggered_events);
+        }
+        if !event_applications.is_empty() {
+            let _ = window.emit("chat-event-applications", &event_applications);
         }
     } else {
         let _ = window.emit(
@@ -2219,6 +2301,25 @@ mod tests {
         assert!(payload["event_trigger_decisions"][0]["rule_fingerprint"]
             .as_str()
             .is_some_and(is_sha256_hex));
+    }
+
+    #[tokio::test]
+    async fn persistent_progress_participates_in_chat_event_history() {
+        let state = AppState::new();
+        let (definition, catalog_fingerprint) = {
+            let catalog = state.story_event_catalog.read().await;
+            (
+                catalog.definition("first_friend", None).unwrap().clone(),
+                catalog.catalog_fingerprint().to_string(),
+            )
+        };
+        apply_story_event_definition(&state, &definition, Some("sakura"), &catalog_fingerprint)
+            .await
+            .unwrap();
+
+        let event_ids = merged_applied_event_ids(&state, "sakura", Vec::new()).await;
+
+        assert_eq!(event_ids, vec!["first_friend"]);
     }
 
     fn is_sha256_hex(value: &str) -> bool {

@@ -8,6 +8,7 @@ use llm_scripting::{validate_condition_source, ScriptEngine};
 use serde::{Deserialize, Serialize};
 use tauri::State;
 
+use crate::commands::story_events::apply_story_event_definition;
 use crate::commands::{chat, prompt_guard};
 use crate::state::AppState;
 use crate::story_events::{EventScoreSnapshot, StoryEventCatalog, StoryEventDefinition};
@@ -733,16 +734,28 @@ async fn execute_workflow_node_inner_with_context(
                 already_triggered,
             )?;
 
-            if decision.triggered && run_context.is_none() {
-                if let Some(character_id) = character_id.as_deref() {
-                    let mut sessions = state.chat_sessions.write().await;
-                    if let Some(session) = sessions.get_mut(character_id) {
-                        if !session.triggered_event_ids.contains(&event.event_id) {
-                            session.triggered_event_ids.push(event.event_id.clone());
+            let application = if decision.triggered && run_context.is_none() {
+                let application = apply_story_event_definition(
+                    state,
+                    &event,
+                    character_id.as_deref(),
+                    event_catalog.catalog_fingerprint(),
+                )
+                .await?;
+                if application.applied {
+                    if let Some(character_id) = character_id.as_deref() {
+                        let mut sessions = state.chat_sessions.write().await;
+                        if let Some(session) = sessions.get_mut(character_id) {
+                            if !session.triggered_event_ids.contains(&event.event_id) {
+                                session.triggered_event_ids.push(event.event_id.clone());
+                            }
                         }
                     }
                 }
-            }
+                Some(application)
+            } else {
+                None
+            };
 
             Ok(serde_json::json!({
                 "action": "trigger_event",
@@ -750,6 +763,9 @@ async fn execute_workflow_node_inner_with_context(
                 "event_id": event.event_id,
                 "event_type": event.event_type,
                 "triggered": decision.triggered,
+                "applied": application.as_ref().is_some_and(|application| application.applied),
+                "actions": event.actions,
+                "application": application,
                 "evaluation_source": evaluation_source,
                 "decision": decision,
             }))
@@ -1456,18 +1472,23 @@ async fn workflow_event_session_state(
         }
     }
 
+    let progress_applied = state
+        .story_progress
+        .read()
+        .await
+        .has_applied(event_id, character_id);
     let Some(character_id) = character_id else {
-        return (0, false);
+        return (0, progress_applied);
     };
 
     let sessions = state.chat_sessions.read().await;
     let Some(session) = sessions.get(character_id) else {
-        return (0, false);
+        return (0, progress_applied);
     };
 
     (
         session.evaluation_count,
-        session.triggered_event_ids.iter().any(|id| id == event_id),
+        progress_applied || session.triggered_event_ids.iter().any(|id| id == event_id),
     )
 }
 
@@ -3060,6 +3081,7 @@ mod tests {
             .find(|step| step.node_id == "trigger_high_engagement")
             .unwrap();
         assert_eq!(event_step.output["triggered"], true);
+        assert_eq!(event_step.output["applied"], true);
         assert_eq!(
             event_step.output["decision"]["actual_score_metric"],
             "engagement"
@@ -3070,6 +3092,12 @@ mod tests {
         assert!(session
             .triggered_event_ids
             .contains(&"high_engagement".to_string()));
+        assert!(state
+            .story_progress
+            .read()
+            .await
+            .unlocked_dialogue_ids
+            .contains("engaged_conversation"));
     }
 
     #[tokio::test]
@@ -3155,10 +3183,12 @@ mod tests {
         assert_eq!(report.steps[1].output["source"], "run_context_evaluation");
         assert_eq!(report.steps[1].output["passed"], true);
         assert_eq!(report.steps[2].output["triggered"], true);
+        assert_eq!(report.steps[2].output["applied"], false);
         assert_eq!(
             report.steps[2].output["decision"]["actual_evaluation_count"],
             2
         );
+        assert!(state.story_progress.read().await.applied_events.is_empty());
     }
 
     #[tokio::test]

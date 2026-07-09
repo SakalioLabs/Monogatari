@@ -161,6 +161,7 @@ const releaseCriticalRustFiles = [
   'crates/tauri-app/src/main.rs',
   'crates/tauri-app/src/state.rs',
   'crates/tauri-app/src/story_events.rs',
+  'crates/tauri-app/src/story_progress.rs',
   'crates/tauri-app/src/commands/ai.rs',
   'crates/tauri-app/src/commands/engine.rs',
   'crates/tauri-app/src/commands/project.rs',
@@ -403,6 +404,7 @@ async function verifyStoryEventCatalogs() {
   const issues = []
   const catalogs = []
   let fileCount = 0
+  const rustStoryEventSource = await readFile(path.join(tauriAppDir, 'src', 'story_events.rs'), 'utf8')
 
   for (const dataRoot of rendererDataRoots) {
     const catalog = await loadStoryEventCatalog(dataRoot, issues)
@@ -421,13 +423,29 @@ async function verifyStoryEventCatalogs() {
     if (stableStringify(left) !== stableStringify(right)) {
       issues.push(`${catalogs[0].label} and ${catalogs[1].label} story event catalogs must match`)
     }
+    if (catalogs[0].catalog.catalogFingerprint !== catalogs[1].catalog.catalogFingerprint) {
+      issues.push(`${catalogs[0].label} and ${catalogs[1].label} normalized story event fingerprints must match`)
+    }
+  }
+  for (const { label, catalog } of catalogs) {
+    if (!/^[a-f0-9]{64}$/.test(catalog.catalogFingerprint)) {
+      issues.push(`${label}: normalized story event fingerprint must be SHA-256`)
+    }
+  }
+  const pinnedCatalogFingerprint = rustStoryEventSource.match(
+    /fn checked_in_catalog_preserves_cross_runtime_catalog_fingerprint\(\)[\s\S]*?"([a-f0-9]{64})"/,
+  )?.[1]
+  if (!pinnedCatalogFingerprint) {
+    issues.push('Rust story event catalog must pin the cross-runtime catalog fingerprint')
+  } else if (catalogs[0]?.catalog.catalogFingerprint !== pinnedCatalogFingerprint) {
+    issues.push(`Release and Rust story event catalog fingerprints differ: ${catalogs[0]?.catalog.catalogFingerprint} != ${pinnedCatalogFingerprint}`)
   }
 
   if (issues.length > 0) {
     throw new Error(`Story event catalog verification failed:\n${issues.join('\n')}`)
   }
 
-  console.log(`[release] Story event catalogs OK (${fileCount} file(s), ${catalogs[0]?.catalog.events.size ?? 0} events)`)
+  console.log(`[release] Story event catalogs OK (${fileCount} file(s), ${catalogs[0]?.catalog.events.size ?? 0} events, catalog ${catalogs[0]?.catalog.catalogFingerprint.slice(0, 12) ?? 'missing'})`)
 }
 
 async function loadStoryEventCatalog(dataRoot, issues) {
@@ -464,6 +482,7 @@ async function loadStoryEventCatalog(dataRoot, issues) {
       if (event?.repeatable !== undefined && typeof event.repeatable !== 'boolean') {
         issues.push(`${eventLabel}: repeatable must be boolean`)
       }
+      const actions = normalizeStoryEventActions(event, eventLabel, issues)
 
       const characterIds = event?.character_ids ?? []
       if (!Array.isArray(characterIds)) {
@@ -509,6 +528,7 @@ async function loadStoryEventCatalog(dataRoot, issues) {
         event_type: event?.event_type,
         description: event?.description,
         data: event?.data ?? {},
+        actions,
         character_ids: Array.isArray(characterIds) ? [...characterIds].sort() : [],
         repeatable: event?.repeatable === true,
         rule: {
@@ -522,7 +542,11 @@ async function loadStoryEventCatalog(dataRoot, issues) {
     }
   }
 
-  return { events, fileCount: files.length }
+  return {
+    events,
+    fileCount: files.length,
+    catalogFingerprint: storyEventCatalogFingerprint(events),
+  }
 }
 
 function portableStoryEventId(value, maxLength) {
@@ -531,6 +555,97 @@ function portableStoryEventId(value, maxLength) {
     && value.length <= maxLength
     && value.trim() === value
     && /^[A-Za-z0-9_.-]+$/.test(value)
+}
+
+function normalizeStoryEventActions(event, eventLabel, issues) {
+  const sourceActions = event?.actions ?? []
+  if (!Array.isArray(sourceActions)) {
+    issues.push(`${eventLabel}: actions must be an array`)
+    return []
+  }
+  if (sourceActions.length > 64) issues.push(`${eventLabel}: actions cannot exceed 64 entries`)
+  const actions = []
+  const seen = new Set()
+  const append = (action, rejectDuplicate = true) => {
+    const key = stableStringify(action)
+    if (seen.has(key)) {
+      if (rejectDuplicate) issues.push(`${eventLabel}: duplicate action ${key}`)
+      return
+    }
+    seen.add(key)
+    actions.push(action)
+  }
+
+  for (const action of sourceActions) {
+    if (!action || typeof action !== 'object' || Array.isArray(action)) {
+      issues.push(`${eventLabel}: each action must be an object`)
+      continue
+    }
+    const allowedFields = {
+      unlock_scene: ['type', 'scene_id'],
+      unlock_dialogue: ['type', 'dialogue_id'],
+      unlock_ending: ['type', 'ending_id'],
+      set_flag: ['type', 'flag', 'value'],
+    }[action.type]
+    if (!allowedFields) {
+      issues.push(`${eventLabel}: unsupported action type ${String(action.type)}`)
+      continue
+    }
+    const extraFields = Object.keys(action).filter((field) => !allowedFields.includes(field))
+    if (extraFields.length > 0) issues.push(`${eventLabel}: action ${action.type} has unknown fields ${extraFields.join(', ')}`)
+
+    if (action.type === 'unlock_scene') {
+      if (!portableStoryEventId(action.scene_id, 128)) issues.push(`${eventLabel}: invalid action scene_id`)
+      else append({ type: action.type, scene_id: action.scene_id })
+    } else if (action.type === 'unlock_dialogue') {
+      if (!portableStoryEventId(action.dialogue_id, 128)) issues.push(`${eventLabel}: invalid action dialogue_id`)
+      else append({ type: action.type, dialogue_id: action.dialogue_id })
+    } else if (action.type === 'unlock_ending') {
+      if (!portableStoryEventId(action.ending_id, 128)) issues.push(`${eventLabel}: invalid action ending_id`)
+      else append({ type: action.type, ending_id: action.ending_id })
+    } else {
+      if (!portableStoryEventId(action.flag, 128)) issues.push(`${eventLabel}: invalid action flag`)
+      if (typeof action.value !== 'boolean') issues.push(`${eventLabel}: set_flag value must be boolean`)
+      if (portableStoryEventId(action.flag, 128) && typeof action.value === 'boolean') {
+        append({ type: action.type, flag: action.flag, value: action.value })
+      }
+    }
+  }
+
+  const data = event?.data && typeof event.data === 'object' && !Array.isArray(event.data)
+    ? event.data
+    : {}
+  for (const [field, type, targetField] of [
+    ['unlock_scene', 'unlock_scene', 'scene_id'],
+    ['dialogue_id', 'unlock_dialogue', 'dialogue_id'],
+    ['unlock_ending', 'unlock_ending', 'ending_id'],
+  ]) {
+    if (!(field in data)) continue
+    if (!portableStoryEventId(data[field], 128)) {
+      issues.push(`${eventLabel}: legacy data.${field} must be a portable string id`)
+      continue
+    }
+    append({ type, [targetField]: data[field] }, false)
+  }
+  if (actions.length > 64) issues.push(`${eventLabel}: normalized actions cannot exceed 64 entries`)
+  return actions
+}
+
+function storyEventCatalogFingerprint(events) {
+  const definitions = [...events.values()]
+    .sort((left, right) => left.event_id.localeCompare(right.event_id))
+    .map((event) => ({
+      event_id: event.event_id,
+      event_type: event.event_type,
+      description: event.description,
+      data: event.data,
+      actions: event.actions,
+      rule_fingerprint: event.rule_fingerprint,
+    }))
+  return createHash('sha256').update(stableStringify({
+    schema: 'monogatari-story-event-catalog-fingerprint/v1',
+    events: definitions,
+  })).digest('hex')
 }
 
 function storyEventRuleFingerprint(event) {
@@ -1774,6 +1889,7 @@ async function verifyFrontendSourceInvariants() {
   const pwaSource = await readFile(path.join(frontendDir, 'src', 'lib', 'pwa.ts'), 'utf8')
   const rendererAssetsSource = await readFile(path.join(frontendDir, 'src', 'lib', 'rendererAssets.ts'), 'utf8')
   const storyEventsSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyEvents.ts'), 'utf8')
+  const storyProgressSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyProgress.ts'), 'utf8')
   const live2dCanvasSource = await readFile(path.join(frontendDir, 'src', 'components', 'Live2DCanvas.vue'), 'utf8')
   const characterModelSource = await readFile(path.join(frontendDir, 'src', 'components', 'CharacterModelView.vue'), 'utf8')
   const prepareWebDistSource = await readFile(path.join(frontendDir, 'scripts', 'prepare-web-dist.mjs'), 'utf8')
@@ -1929,12 +2045,18 @@ async function verifyFrontendSourceInvariants() {
     [storyEventsSource, 'monogatari-story-event-catalog/v1', 'validate the browser story event catalog schema'],
     [storyEventsSource, "invokeCommand<StoryEventCatalogSnapshot>('get_story_event_catalog')", 'load the active desktop story event catalog'],
     [storyEventsSource, "new URL('events/story_events.json'", 'load deployed Web/PWA story events relative to the configured base path'],
+    [storyEventsSource, 'normalizeActions', 'normalize typed and legacy story event actions in browser builds'],
+    [storyEventsSource, "type: 'set_flag'", 'type supported story event actions in browser builds'],
+    [storyProgressSource, "invokeCommand<StoryProgressSnapshot>('get_story_progress')", 'query persistent story progress in desktop builds'],
+    [chatViewSource, "listen<StoryEventApplication[]>('chat-event-applications'", 'surface applied event effects from streaming chat'],
+    [chatViewSource, 'loadStoryProgress()', 'refresh persistent unlock counts in the chat workbench'],
     [workflowEditorSource, 'loadStoryEventCatalog()', 'load project story events into the workflow editor'],
     [workflowEditorSource, 'updateStoryEvent', 'bind workflow event selection to catalog metadata'],
     [workflowEditorSource, 'v-for="event in storyEvents"', 'render catalog-backed story event options'],
     [workflowEditorSource, 'node_event_unknown', 'reject unknown story event references in browser validation'],
     [workflowEditorSource, 'rule?.character_ids?.length', 'honor character-scoped story events in browser previews'],
     [workflowEditorSource, '!rule?.repeatable', 'honor repeatable story events in browser previews'],
+    [workflowEditorSource, 'actions: definition?.actions || []', 'preview typed story event actions without applying side effects'],
     [qualitySuiteSource, 'loadStoryEventCatalog()', 'load project story events into the Web/PWA quality report preview'],
     [qualitySuiteSource, 'previewQualityReport(eventCatalog.events.map((event) => event.rule))', 'derive preview event rule evidence from the shared catalog'],
   ]
@@ -2710,11 +2832,11 @@ async function verifySaveManagerInvariants() {
     ['load_rejects_ids_that_escape_save_directory', 'test load rejection for escaping ids'],
     ['delete_rejects_ids_that_escape_save_directory', 'test delete rejection for escaping ids'],
     ['list_saves_ignores_invalid_or_mismatched_save_ids', 'test list filtering for invalid or mismatched ids'],
-    ['GAME_SAVE_SCHEMA_V2', 'version complete runtime snapshots through the v2 save schema'],
+    ['GAME_SAVE_SCHEMA_V3', 'version complete runtime snapshots through the v3 save schema'],
     ['validate_schema', 'reject unsupported save schemas before restore'],
     ['create_save_with_id', 'support stable quick-save and auto-save slots'],
     ['legacy_save_payloads_deserialize_with_v1_defaults', 'test backward-compatible v1 save loading'],
-    ['new_and_stable_slot_saves_use_v2_schema', 'test generated and stable slots use the v2 contract'],
+    ['new_and_stable_slot_saves_use_v3_schema', 'test generated and stable slots use the v3 contract'],
     ['MAX_GAME_SAVE_BYTES', 'bound serialized save file reads and writes'],
     ['write_staged', 'stage save overwrites before replacing the active slot'],
     ['recover_backup_if_needed', 'recover interrupted stable-slot replacements'],
@@ -2732,10 +2854,16 @@ async function verifySaveManagerInvariants() {
     ['restore_game_save', 'centralize validated runtime restoration'],
     ['snapshot_character_states', 'persist character emotion, relationships, and full memory'],
     ['snapshot_chat_sessions', 'persist chat history, evaluation, audit, and triggered-event state'],
+    ['story_progress', 'persist applied story events and unlocked content'],
+    ['let story_progress = state.story_progress.read().await', 'snapshot story progress before action-backed script flags using the executor lock order'],
+    ['deserialize_story_progress', 'validate story progress before runtime restore'],
+    ['migrate_legacy_story_progress', 'reconstruct unlock state from v1/v2 triggered event sessions'],
     ['dialogue_state', 'persist the active dialogue cursor and dialogue-local state'],
     ['script_variables_to_json', 'serialize Rhai variables without stringifying primitive types'],
     ['json_variables_to_script', 'restore persisted Rhai variable types'],
     ['game_save_round_trip_restores_character_chat_scene_and_script_state', 'test complete runtime save restoration'],
+    ['v2_save_migrates_triggered_events_into_story_progress', 'test backward-compatible story progress migration'],
+    ['invalid_story_progress_is_rejected_before_runtime_mutation', 'test atomic rejection of invalid progress snapshots'],
   ]
   for (const [needle, description] of rustCommandRequirements) {
     if (!rustSaveCommandSource.includes(needle)) {
@@ -3239,6 +3367,7 @@ async function verifyTauriPackagingConfig() {
   const tauriMainSource = await readFile(path.join(tauriAppDir, 'src', 'main.rs'), 'utf8')
   const tauriStateSource = await readFile(path.join(tauriAppDir, 'src', 'state.rs'), 'utf8')
   const tauriStoryEventsSource = await readFile(path.join(tauriAppDir, 'src', 'story_events.rs'), 'utf8')
+  const tauriStoryProgressSource = await readFile(path.join(tauriAppDir, 'src', 'story_progress.rs'), 'utf8')
   const tauriStoryEventCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'story_events.rs'), 'utf8')
   const tauriEngineSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'engine.rs'), 'utf8')
   const tauriProjectSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'project.rs'), 'utf8')
@@ -3378,6 +3507,7 @@ async function verifyTauriPackagingConfig() {
     [tauriStateSource, 'AssetManager::new(&data_path)', 'rebind the asset manager when project roots change'],
     [tauriStateSource, 'SaveManager::new(data_path.join("saves"))', 'rebind the save manager when project roots change'],
     [tauriStateSource, 'story_event_catalog: Arc<RwLock<StoryEventCatalog>>', 'keep the active story event catalog project-scoped'],
+    [tauriStateSource, 'story_progress: Arc<RwLock<StoryProgressState>>', 'keep persistent story progress project-scoped'],
     [tauriEngineSource, 'current_project_data_root().await', 'keep empty engine initialization paths on the active or discovered default root'],
     [tauriEngineSource, 'load_project_content(&path).await?', 'stage all project content before replacing active managers'],
     [tauriEngineSource, 'StoryEventCatalog::load_from_project_root(path)?', 'stage project story events during engine initialization'],
@@ -3385,6 +3515,7 @@ async function verifyTauriPackagingConfig() {
     [tauriEngineSource, 'let root_changed = state.set_project_data_root(path).await', 'rebind project managers after staged engine initialization'],
     [tauriEngineSource, 'project_content_loading_replaces_instead_of_merging_managers', 'test project reloads do not merge old content'],
     [tauriStateSource, 'reset_project_runtime_state', 'clear mutable chat, scene, and script state across project reloads'],
+    [tauriStateSource, 'StoryProgressState::default()', 'clear story progress across project reloads'],
     [tauriStateSource, 'changing_project_root_clears_project_runtime_state', 'test project root changes clear runtime state'],
     [tauriStateSource, 'same_root_reload_can_explicitly_clear_project_runtime_state', 'test same-root project reloads clear runtime state'],
     [tauriScenesSource, 'Ok(default_project_data_root())', 'scan scene assets from the discovered default root before explicit initialization'],
@@ -3489,20 +3620,35 @@ async function verifyTauriPackagingConfig() {
     [tauriStoryEventsSource, 'Story event directory escapes the project root', 'enforce the project root boundary for event directories'],
     [tauriStoryEventsSource, 'Duplicate story event id', 'reject duplicate story event ids'],
     [tauriStoryEventsSource, 'validate_character_references', 'validate character-scoped event references'],
+    [tauriStoryEventsSource, 'pub enum StoryEventAction', 'define typed story event actions'],
+    [tauriStoryEventsSource, 'normalize_story_event_actions', 'normalize typed and legacy event effects'],
+    [tauriStoryEventsSource, 'MAX_EVENT_ACTIONS', 'bound event action lists'],
     [tauriStoryEventsSource, 'event_trigger_rule_fingerprint', 'centralize trigger rule fingerprints'],
     [tauriStoryEventsSource, 'checked_in_catalog_preserves_pinned_v1_rule_fingerprints', 'test pinned legacy rule fingerprints'],
+    [tauriStoryEventsSource, 'checked_in_catalog_preserves_cross_runtime_catalog_fingerprint', 'pin the action-bound catalog fingerprint across Rust and release tooling'],
     [tauriStoryEventsSource, 'project_catalog_supports_character_scope_and_repeatable_rules', 'test creator-defined scope and repeat behavior'],
     [tauriStoryEventsSource, 'configured_event_directory_is_project_relative_and_enforced', 'test configured event directory containment'],
     [tauriStoryEventsSource, 'missing_directory_uses_compatibility_catalog_but_empty_directory_stays_empty', 'preserve old projects without forcing events into intentionally empty catalogs'],
     [tauriStoryEventCommandsSource, 'get_story_event_catalog', 'expose the active catalog to author tooling'],
+    [tauriStoryEventCommandsSource, 'get_story_progress', 'expose persistent story progress to runtime tooling'],
     [tauriStoryEventCommandsSource, 'reload_story_event_catalog', 'support atomic author hot reloads'],
+    [tauriStoryEventCommandsSource, 'apply_story_event_definition', 'centralize atomic story event effect application'],
     [tauriStoryEventCommandsSource, 'rejected_reload_leaves_active_catalog_unchanged', 'test failed reloads do not replace active rules'],
     [tauriChatSource, 'state.story_event_catalog.read().await.clone()', 'evaluate chat events from the active project catalog'],
+    [tauriChatSource, 'apply_triggered_event_decisions', 'apply triggered chat events through the shared executor'],
+    [tauriChatSource, 'chat-event-applications', 'emit applied event effects for streaming chat'],
     [tauriWorkflowSource, 'validate_workflow_with_catalog', 'validate workflow event references against the active catalog'],
     [tauriWorkflowSource, 'node_event_unknown', 'report unknown workflow story events'],
     [tauriWorkflowSource, 'event_catalog.decision_for', 'evaluate workflow trigger nodes from project rules'],
+    [tauriWorkflowSource, 'apply_story_event_definition', 'apply real workflow trigger effects through the shared executor'],
     [tauriQualitySuiteSource, 'event_catalog: &StoryEventCatalog', 'run quality scenarios against project event rules'],
     [tauriMainSource, 'commands::story_events::get_story_event_catalog', 'register story event catalog commands'],
+    [tauriMainSource, 'commands::story_events::get_story_progress', 'register story progress commands'],
+    [tauriStoryProgressSource, 'monogatari-story-progress/v1', 'version persistent story progress'],
+    [tauriStoryProgressSource, 'monogatari-story-event-application/v1', 'version event application audit reports'],
+    [tauriStoryProgressSource, 'validate_and_normalize', 'validate restored story progress before activation'],
+    [tauriStoryProgressSource, 'nonrepeatable_event_applies_once_per_character_scope', 'test idempotent nonrepeatable effects'],
+    [tauriStoryProgressSource, 'repeatable_event_increments_count_but_unlocks_idempotently', 'test repeatable event accounting'],
   ]
   for (const [source, needle, description] of storyEventCatalogRequirements) {
     if (!source.includes(needle)) {
@@ -3730,6 +3876,8 @@ async function verifyReleaseChannelPolicy() {
     ['event_types', 'record story event type coverage in release manifests'],
     ['character_scoped_count', 'record character-scoped story event counts in release manifests'],
     ['repeatable_count', 'record repeatable story event counts in release manifests'],
+    ['action_count', 'record typed story event action counts in release manifests'],
+    ['action_types', 'record typed story event action coverage in release manifests'],
     ['category_counts', 'record project content category counts in release manifests'],
     ['category_bytes', 'record project content category byte counts in release manifests'],
     ['category_fingerprint_algorithm', 'record project content category fingerprint algorithms in release manifests'],

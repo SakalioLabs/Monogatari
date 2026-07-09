@@ -1,10 +1,13 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Added typed `unlock_scene`, `unlock_dialogue`, `unlock_ending`, and `set_flag` story-event actions with bounded validation, legacy `data` action migration, action-bound catalog fingerprints, and shared chat/workflow execution.
+- Added project-scoped `monogatari-story-progress/v1` state with idempotent unlock sets, per-character application counts, action audit reports, progress fingerprints, frontend runtime diagnostics, and side-effect-free author previews.
+- Added backward-compatible `monogatari-game-save/v3` snapshots for story progress, including v1/v2 triggered-event migration and atomic rejection of malformed progress payloads.
 - Added versioned project story event catalogs under `events/*.json`, with bounded parsing, duplicate/schema/threshold validation, character scope, repeat behavior, configured-path containment, stable rule/catalog fingerprints, and legacy-project fallback behavior.
 - Unified live chat, manual scoring, Workflow trigger execution and validation, Quality Suites, and Web/PWA workflow previews on the active project event catalog, replacing duplicated hardcoded trigger rules.
 - Added catalog-backed Workflow event menus, atomic event hot reload commands, Web/PWA event packaging/offline caching, project export/release-manifest event categories, and release-gate coverage for event assets and workflow references.
-- Added backward-compatible `monogatari-game-save/v2` runtime snapshots covering scene history, dialogue cursor/local state, typed Rhai variables, character emotion/relationships/full memory, chat history, evaluations, safety traces, and triggered-event state.
+- Added backward-compatible runtime snapshots covering scene history, dialogue cursor/local state, typed Rhai variables, character emotion/relationships/full memory, chat history, evaluations, safety traces, and triggered-event state.
 - Added stable quick-save and auto-save slot IDs, complete runtime save/restore regression coverage, legacy v1 compatibility tests, and release-gate invariants for the persistence contract.
 - Added staged stable-slot replacement with backup recovery and a 32 MiB save payload limit so interrupted or oversized save operations fail without silently corrupting the active slot.
 - Added staged project content loading and runtime reset tests so same-root reloads and project switches replace old managers instead of merging characters, dialogue, knowledge, chat, scene, or script state.

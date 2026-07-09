@@ -17,6 +17,9 @@ pub struct EngineStatus {
     pub knowledge_count: usize,
     pub story_event_count: usize,
     pub story_event_catalog_fingerprint: String,
+    pub applied_story_event_count: usize,
+    pub unlocked_story_content_count: usize,
+    pub story_progress_fingerprint: String,
     pub ai_engines: Vec<String>,
     pub active_ai_engine: Option<String>,
 }
@@ -164,8 +167,10 @@ pub async fn get_engine_status(state: State<'_, AppState>) -> Result<EngineStatu
     let dm = state.dialogue_manager.read().await;
     let kb = state.knowledge_base.read().await;
     let story_events = state.story_event_catalog.read().await;
+    let story_progress = state.story_progress.read().await;
     let pipeline = state.inference_pipeline.read().await;
     let story_event_snapshot = story_events.snapshot();
+    let story_progress_snapshot = story_progress.snapshot();
 
     Ok(EngineStatus {
         initialized,
@@ -174,6 +179,11 @@ pub async fn get_engine_status(state: State<'_, AppState>) -> Result<EngineStatu
         knowledge_count: kb.len(),
         story_event_count: story_event_snapshot.event_count,
         story_event_catalog_fingerprint: story_event_snapshot.catalog_fingerprint,
+        applied_story_event_count: story_progress_snapshot.applied_event_count,
+        unlocked_story_content_count: story_progress_snapshot.unlocked_scene_ids.len()
+            + story_progress_snapshot.unlocked_dialogue_ids.len()
+            + story_progress_snapshot.unlocked_ending_ids.len(),
+        story_progress_fingerprint: story_progress_snapshot.progress_fingerprint,
         ai_engines: pipeline
             .engine_names()
             .iter()

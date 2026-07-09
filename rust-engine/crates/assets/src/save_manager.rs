@@ -13,6 +13,7 @@ use llm_game::{characters::CharacterMemory, dialogue::DialogueRuntimeState};
 
 pub const GAME_SAVE_SCHEMA_V1: &str = "monogatari-game-save/v1";
 pub const GAME_SAVE_SCHEMA_V2: &str = "monogatari-game-save/v2";
+pub const GAME_SAVE_SCHEMA_V3: &str = "monogatari-game-save/v3";
 pub const MAX_GAME_SAVE_BYTES: u64 = 32 * 1024 * 1024;
 
 fn default_game_save_schema() -> String {
@@ -65,6 +66,9 @@ pub struct GameSave {
     /// Tauri chat session payloads keyed by character id.
     #[serde(default)]
     pub chat_sessions: HashMap<String, serde_json::Value>,
+    /// Versioned Tauri story progress payload for v3 snapshots.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub story_progress: Option<serde_json::Value>,
 }
 
 /// Saved state for a single character.
@@ -84,7 +88,7 @@ impl GameSave {
     pub fn validate_schema(&self) -> Result<()> {
         if matches!(
             self.schema.as_str(),
-            GAME_SAVE_SCHEMA_V1 | GAME_SAVE_SCHEMA_V2
+            GAME_SAVE_SCHEMA_V1 | GAME_SAVE_SCHEMA_V2 | GAME_SAVE_SCHEMA_V3
         ) {
             Ok(())
         } else {
@@ -248,7 +252,7 @@ impl SaveManager {
         }
 
         Ok(GameSave {
-            schema: GAME_SAVE_SCHEMA_V2.to_string(),
+            schema: GAME_SAVE_SCHEMA_V3.to_string(),
             engine_version: env!("CARGO_PKG_VERSION").to_string(),
             save_id,
             save_name: name.into(),
@@ -262,6 +266,7 @@ impl SaveManager {
             characters: HashMap::new(),
             flags: HashMap::new(),
             chat_sessions: HashMap::new(),
+            story_progress: None,
         })
     }
 
@@ -380,7 +385,7 @@ mod tests {
 
     fn test_save(save_id: &str) -> GameSave {
         GameSave {
-            schema: GAME_SAVE_SCHEMA_V2.to_string(),
+            schema: GAME_SAVE_SCHEMA_V3.to_string(),
             engine_version: env!("CARGO_PKG_VERSION").to_string(),
             save_id: save_id.to_string(),
             save_name: "Test Save".to_string(),
@@ -394,11 +399,12 @@ mod tests {
             characters: HashMap::new(),
             flags: HashMap::new(),
             chat_sessions: HashMap::new(),
+            story_progress: None,
         }
     }
 
     #[test]
-    fn new_and_stable_slot_saves_use_v2_schema() {
+    fn new_and_stable_slot_saves_use_v3_schema() {
         let generated = SaveManager::create_save("Manual", None, None, None);
         let quick = SaveManager::create_save_with_id(
             "quick_save_0",
@@ -409,8 +415,8 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(generated.schema, GAME_SAVE_SCHEMA_V2);
-        assert_eq!(quick.schema, GAME_SAVE_SCHEMA_V2);
+        assert_eq!(generated.schema, GAME_SAVE_SCHEMA_V3);
+        assert_eq!(quick.schema, GAME_SAVE_SCHEMA_V3);
         assert_eq!(quick.save_id, "quick_save_0");
         assert!(
             SaveManager::create_save_with_id("../settings", "Unsafe", None, None, None).is_err()
@@ -444,6 +450,7 @@ mod tests {
         assert!(save.scene_history.is_empty());
         assert!(save.dialogue_state.is_none());
         assert!(save.chat_sessions.is_empty());
+        assert!(save.story_progress.is_none());
         assert!(save.characters["sakura"].memory.is_none());
     }
 

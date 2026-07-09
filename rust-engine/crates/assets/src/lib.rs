@@ -8,5 +8,5 @@ pub mod save_manager;
 pub use asset_manager::AssetManager;
 pub use save_manager::{
     CharacterSaveState, GameSave, SaveManager, GAME_SAVE_SCHEMA_V1, GAME_SAVE_SCHEMA_V2,
-    MAX_GAME_SAVE_BYTES,
+    GAME_SAVE_SCHEMA_V3, MAX_GAME_SAVE_BYTES,
 };

@@ -8,6 +8,7 @@
 mod commands;
 mod state;
 mod story_events;
+mod story_progress;
 
 use state::{discover_bundled_project_data_root, is_project_data_root, AppState};
 use tauri::Manager;
@@ -59,6 +60,7 @@ fn main() {
             commands::engine::initialize_engine,
             commands::engine::get_engine_status,
             commands::story_events::get_story_event_catalog,
+            commands::story_events::get_story_progress,
             commands::story_events::reload_story_event_catalog,
             commands::project::get_project_config,
             commands::project::save_project_config,

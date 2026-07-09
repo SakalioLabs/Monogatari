@@ -10,6 +10,8 @@ use tauri::State;
 
 use crate::commands::chat::{ChatSession, ConversationEvaluation};
 use crate::state::AppState;
+use crate::story_events::StoryEventAction;
+use crate::story_progress::StoryProgressState;
 
 const MAX_SAVE_NAME_CHARS: usize = 128;
 const MAX_SAVED_SCENE_HISTORY: usize = 64;
@@ -36,6 +38,7 @@ pub struct SaveInfo {
 struct SaveRestoreSummary {
     character_count: usize,
     chat_session_count: usize,
+    applied_event_count: usize,
 }
 
 /// Save a complete runtime snapshot. A stable `save_id` overwrites a named slot.
@@ -63,8 +66,8 @@ pub async fn load_game(state: State<'_, AppState>, save_id: String) -> Result<St
     let summary = restore_game_save(&state, save).await?;
 
     Ok(format!(
-        "Loaded save: {save_name} ({} character state(s), {} chat session(s))",
-        summary.character_count, summary.chat_session_count
+        "Loaded save: {save_name} ({} character state(s), {} chat session(s), {} applied story event(s))",
+        summary.character_count, summary.chat_session_count, summary.applied_event_count
     ))
 }
 
@@ -113,10 +116,17 @@ async fn capture_game_save(
     }
     save.dialogue_state = Some(dialogue_state);
 
+    // Match the event executor lock order so action flags and progress share one snapshot boundary.
+    let story_progress = state.story_progress.read().await;
     let script_engine = state.script_engine.read().await;
     save.flags = script_engine.all_flags();
     save.variables = script_variables_to_json(script_engine.all_variables())?;
+    save.story_progress = Some(
+        serde_json::to_value(story_progress.clone())
+            .map_err(|error| format!("Unable to serialize story progress: {error}"))?,
+    );
     drop(script_engine);
+    drop(story_progress);
 
     save.characters = snapshot_character_states(state).await;
     save.chat_sessions = snapshot_chat_sessions(state).await?;
@@ -133,6 +143,23 @@ async fn restore_game_save(
     let script_variables = json_variables_to_script(&save.variables)?;
     let scene_history = normalize_scene_history(save.scene_history.clone())?;
     let chat_sessions = deserialize_chat_sessions(&save.chat_sessions)?;
+    let known_character_ids: HashSet<String> = state
+        .character_manager
+        .read()
+        .await
+        .character_ids()
+        .into_iter()
+        .collect();
+    let chat_sessions: HashMap<String, ChatSession> = chat_sessions
+        .into_iter()
+        .filter(|(character_id, _)| known_character_ids.contains(character_id))
+        .collect();
+    let had_story_progress = save.story_progress.is_some();
+    let mut story_progress = deserialize_story_progress(save.story_progress.take())?;
+    if !had_story_progress {
+        migrate_legacy_story_progress(state, &chat_sessions, &mut story_progress, &mut save.flags)
+            .await?;
+    }
 
     let dialogue_state = save.dialogue_state.clone().unwrap_or(DialogueRuntimeState {
         active_script_id: save.current_dialogue_id.clone(),
@@ -146,18 +173,6 @@ async fn restore_game_save(
         .await
         .validate_runtime_state(dialogue_state)
         .map_err(|e| e.to_string())?;
-
-    let known_character_ids: HashSet<String> = state
-        .character_manager
-        .read()
-        .await
-        .character_ids()
-        .into_iter()
-        .collect();
-    let chat_sessions: HashMap<String, ChatSession> = chat_sessions
-        .into_iter()
-        .filter(|(character_id, _)| known_character_ids.contains(character_id))
-        .collect();
 
     // Every fallible conversion and cross-reference check is complete before mutation begins.
     state
@@ -176,6 +191,8 @@ async fn restore_game_save(
     let character_count = restore_character_states(state, save.characters).await;
     let chat_session_count = chat_sessions.len();
     *state.chat_sessions.write().await = chat_sessions;
+    let applied_event_count = story_progress.applied_events.len();
+    *state.story_progress.write().await = story_progress;
     *state.active_scene_id.write().await = save.current_scene.clone();
     *state.scene_history.write().await = if scene_history.is_empty() {
         save.current_scene.into_iter().collect()
@@ -186,7 +203,51 @@ async fn restore_game_save(
     Ok(SaveRestoreSummary {
         character_count,
         chat_session_count,
+        applied_event_count,
     })
+}
+
+fn deserialize_story_progress(
+    snapshot: Option<serde_json::Value>,
+) -> Result<StoryProgressState, String> {
+    let progress = snapshot
+        .map(serde_json::from_value::<StoryProgressState>)
+        .transpose()
+        .map_err(|error| format!("Invalid story progress snapshot: {error}"))?
+        .unwrap_or_default();
+    progress.validate_and_normalize()
+}
+
+async fn migrate_legacy_story_progress(
+    state: &AppState,
+    chat_sessions: &HashMap<String, ChatSession>,
+    progress: &mut StoryProgressState,
+    flags: &mut HashMap<String, bool>,
+) -> Result<(), String> {
+    let catalog = state.story_event_catalog.read().await.clone();
+    for (character_id, session) in chat_sessions {
+        for event_id in &session.triggered_event_ids {
+            let Some(definition) = catalog.definition(event_id, None) else {
+                continue;
+            };
+            if !definition.rule.character_ids.is_empty()
+                && !definition.applies_to_character(character_id)
+            {
+                continue;
+            }
+            let application = progress.apply_event(
+                definition,
+                Some(character_id),
+                catalog.catalog_fingerprint(),
+            )?;
+            for result in application.action_results {
+                if let StoryEventAction::SetFlag { flag, value } = result.action {
+                    flags.insert(flag, value);
+                }
+            }
+        }
+    }
+    Ok(())
 }
 
 async fn snapshot_character_states(state: &AppState) -> HashMap<String, CharacterSaveState> {
@@ -467,6 +528,8 @@ pub async fn delete_save(state: State<'_, AppState>, save_id: String) -> Result<
 mod tests {
     use super::*;
     use crate::commands::chat::{ChatMessage, ChatSafetyTrace};
+    use crate::commands::story_events::apply_story_event_definition;
+    use llm_assets::GAME_SAVE_SCHEMA_V2;
     use llm_game::characters::{memory::MemoryType, Character};
 
     #[test]
@@ -557,6 +620,16 @@ mod tests {
             .write()
             .await
             .insert("sakura".to_string(), session);
+        let (definition, catalog_fingerprint) = {
+            let catalog = state.story_event_catalog.read().await;
+            (
+                catalog.definition("first_friend", None).unwrap().clone(),
+                catalog.catalog_fingerprint().to_string(),
+            )
+        };
+        apply_story_event_definition(&state, &definition, Some("sakura"), &catalog_fingerprint)
+            .await
+            .unwrap();
 
         let save = capture_game_save(
             &state,
@@ -568,6 +641,7 @@ mod tests {
         assert_eq!(save.save_id, "quick_save_0");
         assert_eq!(save.variables["score"], serde_json::json!(7));
         assert_eq!(save.characters["sakura"].memory_count, 1);
+        assert!(save.story_progress.is_some());
 
         {
             let character = state
@@ -583,6 +657,7 @@ mod tests {
         }
         *state.active_scene_id.write().await = Some("elsewhere".to_string());
         state.chat_sessions.write().await.clear();
+        *state.story_progress.write().await = StoryProgressState::default();
         state
             .script_engine
             .read()
@@ -596,6 +671,7 @@ mod tests {
             SaveRestoreSummary {
                 character_count: 1,
                 chat_session_count: 1,
+                applied_event_count: 1,
             }
         );
         assert_eq!(
@@ -603,6 +679,12 @@ mod tests {
             Some("riverbank")
         );
         assert_eq!(state.scene_history.read().await.len(), 2);
+        assert!(state
+            .story_progress
+            .read()
+            .await
+            .unlocked_scene_ids
+            .contains("friend_scene"));
         assert_eq!(
             state.chat_sessions.read().await["sakura"].evaluation_count,
             1
@@ -627,5 +709,53 @@ mod tests {
         assert_eq!(character.emotion, "happy");
         assert_eq!(character.relationships["player"], 0.65);
         assert_eq!(character.memory.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn v2_save_migrates_triggered_events_into_story_progress() {
+        let state = AppState::new();
+        state
+            .character_manager
+            .write()
+            .await
+            .add_character(Character::new("sakura", "Sakura"));
+        let mut session = ChatSession::new("sakura".to_string());
+        session.triggered_event_ids = vec!["first_friend".to_string()];
+        let mut save = SaveManager::create_save("Legacy V2", None, None, None);
+        save.schema = GAME_SAVE_SCHEMA_V2.to_string();
+        save.story_progress = None;
+        save.chat_sessions
+            .insert("sakura".to_string(), serde_json::to_value(session).unwrap());
+
+        let summary = restore_game_save(&state, save).await.unwrap();
+
+        assert_eq!(summary.applied_event_count, 1);
+        assert!(state
+            .story_progress
+            .read()
+            .await
+            .unlocked_scene_ids
+            .contains("friend_scene"));
+    }
+
+    #[tokio::test]
+    async fn invalid_story_progress_is_rejected_before_runtime_mutation() {
+        let state = AppState::new();
+        state
+            .story_progress
+            .write()
+            .await
+            .unlocked_scene_ids
+            .insert("keep_scene".to_string());
+        let mut save = SaveManager::create_save("Invalid Progress", None, None, None);
+        save.story_progress = Some(serde_json::json!({ "schema": "unsupported" }));
+
+        assert!(restore_game_save(&state, save).await.is_err());
+        assert!(state
+            .story_progress
+            .read()
+            .await
+            .unlocked_scene_ids
+            .contains("keep_scene"));
     }
 }

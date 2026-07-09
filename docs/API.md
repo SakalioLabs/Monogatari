@@ -43,11 +43,12 @@ Character authoring IDs are portable slugs, not filenames or paths. `create_char
 
 ## Story Events
 
-Story events load from the active project's configured `paths.events` directory, defaulting to `events/`. A missing directory in a legacy project uses the bundled compatibility catalog; an existing empty directory intentionally disables automatic story events. Catalog loading rejects invalid schemas, duplicate IDs, unsupported score metrics, unsafe configured paths, oversized files, symlinks, and character scopes that reference unknown project characters.
+Story events load from the active project's configured `paths.events` directory, defaulting to `events/`. A missing directory in a legacy project uses the bundled compatibility catalog; an existing empty directory intentionally disables automatic story events. Catalog loading rejects invalid schemas, duplicate IDs, unsupported score metrics or actions, unsafe configured paths, oversized files, symlinks, and character scopes that reference unknown project characters. Real chat and workflow triggers atomically apply typed scene, dialogue, ending, and script-flag effects to persistent story progress; preview and Quality Suite paths do not mutate it.
 
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
 | `get_story_event_catalog` | - | `StoryEventCatalogSnapshot` | Return active definitions, trigger rules, source, count, and catalog fingerprint |
+| `get_story_progress` | - | `StoryProgressSnapshot` | Return applied event scopes, unlock sets, application counts, and progress fingerprint |
 | `reload_story_event_catalog` | - | `StoryEventCatalogSnapshot` | Validate and atomically replace the active project catalog |
 
 ### Streaming Events
@@ -58,6 +59,7 @@ Story events load from the active project's configured `paths.events` directory,
 - `chat-evaluation` - Conversation scores
 - `chat-event-decisions` - Explainable story-event trigger decisions
 - `chat-events` - Triggered special events
+- `chat-event-applications` - Applied effects, idempotence state, and progress fingerprints
 
 ## Dialogue
 
@@ -116,7 +118,7 @@ Workflow command `path` values are project workflow references, not arbitrary fi
 
 `saveId` values are opaque portable identifiers returned by `save_game` or `list_saves`; they are not file paths. Runtime save managers reject traversal-shaped IDs and filter mismatched save files before load/delete/list operations. Omitting `saveId` creates a UUID-backed manual save; passing a stable ID overwrites that quick-save or auto-save slot.
 
-New saves use `monogatari-game-save/v2`. The snapshot restores scene history, the active dialogue cursor and local state, typed Rhai variables, character emotion/relationships/full memory, chat messages, evaluation state, safety traces, and triggered event IDs. Legacy schema-less saves load as v1 with defaults for fields that did not previously exist.
+New saves use `monogatari-game-save/v3`. The snapshot restores scene history, the active dialogue cursor and local state, typed Rhai variables, character emotion/relationships/full memory, chat messages, evaluation state, safety traces, triggered event IDs, and validated story progress. Legacy schema-less v1 and v2 saves remain readable; known per-character triggered events migrate into the progress ledger and reconstruct their current typed unlock effects.
 
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|

@@ -1423,15 +1423,21 @@ function localNodeOutput(
         evaluation: context?.evaluation || null,
       }
     }
-    case 'trigger_event':
+    case 'trigger_event': {
+      const decision = localEventDecision(node, context, localState)
+      const definition = localEventDefinition(String(node.config.event_id || ''))
       return {
         action: 'trigger_event',
         event_id: node.config.event_id || '',
         event_type: node.config.event_type || '',
-        triggered: localEventDecision(node, context, localState).triggered,
+        triggered: decision.triggered,
+        applied: false,
+        actions: definition?.actions || [],
+        application: null,
         evaluation_source: context?.enabled ? 'run_context_evaluation' : 'local_preview',
-        decision: localEventDecision(node, context, localState),
+        decision,
       }
+    }
     case 'emotion_change': {
       const characterId = String(node.config.character_id || '').trim()
       const emotion = String(node.config.emotion || '').trim()
