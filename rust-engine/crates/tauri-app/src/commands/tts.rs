@@ -141,6 +141,210 @@ fn write_tts_output_bytes(
     Ok(output_path.to_string_lossy().to_string())
 }
 
+fn redact_tts_error_text(text: &str) -> String {
+    let token_redacted = redact_tts_token_like_values(text);
+    redact_tts_secret_assignments(&token_redacted)
+}
+
+fn redact_tts_token_like_values(text: &str) -> String {
+    let mut redacted = String::with_capacity(text.len());
+    let mut cursor = 0;
+    while cursor < text.len() {
+        if let Some((prefix, min_len)) = tts_token_prefix_at(text, cursor) {
+            let token_end = tts_token_end(text, cursor);
+            let body_len = text[cursor + prefix.len()..token_end]
+                .chars()
+                .filter(|ch| is_tts_token_char(*ch))
+                .count();
+            if body_len >= min_len {
+                redacted.push_str("<redacted>");
+                cursor = token_end;
+                continue;
+            }
+        }
+
+        let ch = text[cursor..]
+            .chars()
+            .next()
+            .expect("cursor at char boundary");
+        redacted.push(ch);
+        cursor += ch.len_utf8();
+    }
+
+    redacted
+}
+
+fn tts_token_prefix_at(text: &str, cursor: usize) -> Option<(&'static str, usize)> {
+    let rest = &text[cursor..];
+    for (prefix, min_len) in [("github_pat_", 20), ("ghp_", 20), ("sk-", 20)] {
+        if rest.starts_with(prefix) {
+            return Some((prefix, min_len));
+        }
+    }
+    None
+}
+
+fn tts_token_end(text: &str, cursor: usize) -> usize {
+    text[cursor..]
+        .char_indices()
+        .find_map(|(offset, ch)| (!is_tts_token_char(ch)).then_some(cursor + offset))
+        .unwrap_or(text.len())
+}
+
+fn is_tts_token_char(ch: char) -> bool {
+    ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-')
+}
+
+fn redact_tts_secret_assignments(text: &str) -> String {
+    let mut redacted = text.to_string();
+    for key in [
+        "api_key",
+        "apiKey",
+        "access_token",
+        "accessToken",
+        "token",
+        "secret",
+        "password",
+        "authorization",
+        "x-api-key",
+        "api-key",
+        "xi-api-key",
+        "ocp-apim-subscription-key",
+    ] {
+        redacted = redact_tts_assignment_values(&redacted, key);
+    }
+    redacted
+}
+
+fn redact_tts_assignment_values(text: &str, key: &str) -> String {
+    let mut result = String::with_capacity(text.len());
+    let mut cursor = 0;
+
+    while let Some(relative) = find_tts_key_case_insensitive(&text[cursor..], key) {
+        let key_start = cursor + relative;
+        let key_end = key_start + key.len();
+        if !is_tts_key_boundary(text, key_start, key_end) {
+            result.push_str(&text[cursor..key_end]);
+            cursor = key_end;
+            continue;
+        }
+
+        let Some((value_start, value_end)) = tts_assignment_value_span(text, key_start, key_end)
+        else {
+            result.push_str(&text[cursor..key_end]);
+            cursor = key_end;
+            continue;
+        };
+
+        result.push_str(&text[cursor..value_start]);
+        result.push_str("<redacted>");
+        cursor = value_end;
+    }
+
+    result.push_str(&text[cursor..]);
+    result
+}
+
+fn find_tts_key_case_insensitive(text: &str, key: &str) -> Option<usize> {
+    text.to_ascii_lowercase().find(&key.to_ascii_lowercase())
+}
+
+fn is_tts_key_boundary(text: &str, start: usize, end: usize) -> bool {
+    let before = text[..start].chars().next_back();
+    let after = text[end..].chars().next();
+    !before.is_some_and(|ch| ch.is_ascii_alphanumeric() || ch == '_' || ch == '-')
+        && !after.is_some_and(|ch| ch.is_ascii_alphanumeric() || ch == '_' || ch == '-')
+}
+
+fn tts_assignment_value_span(
+    text: &str,
+    key_start: usize,
+    key_end: usize,
+) -> Option<(usize, usize)> {
+    let mut idx = skip_tts_ws(text, key_end);
+
+    if let Some(quote) = text[..key_start]
+        .chars()
+        .next_back()
+        .filter(|ch| matches!(ch, '"' | '\''))
+    {
+        if text[idx..].starts_with(quote) {
+            idx += quote.len_utf8();
+            idx = skip_tts_ws(text, idx);
+        }
+    }
+
+    if let Some(quote) = text[idx..]
+        .chars()
+        .next()
+        .filter(|ch| matches!(ch, '"' | '\''))
+    {
+        idx += quote.len_utf8();
+        idx = skip_tts_ws(text, idx);
+    }
+
+    let separator = text[idx..].chars().next()?;
+    if !matches!(separator, ':' | '=') {
+        return None;
+    }
+    idx += separator.len_utf8();
+    idx = skip_tts_ws(text, idx);
+
+    if let Some(quote) = text[idx..]
+        .chars()
+        .next()
+        .filter(|ch| matches!(ch, '"' | '\''))
+    {
+        let value_start = idx + quote.len_utf8();
+        let value_end = text[value_start..]
+            .char_indices()
+            .find_map(|(offset, ch)| (ch == quote).then_some(value_start + offset))
+            .unwrap_or(text.len());
+        return Some((value_start, value_end));
+    }
+
+    let value_start = idx;
+    let value_end = text[value_start..]
+        .char_indices()
+        .find_map(|(offset, ch)| {
+            (ch.is_whitespace() || matches!(ch, '&' | ',' | '}' | ']' | ';'))
+                .then_some(value_start + offset)
+        })
+        .unwrap_or(text.len());
+    (value_start < value_end).then_some((value_start, value_end))
+}
+
+fn skip_tts_ws(text: &str, start: usize) -> usize {
+    text[start..]
+        .char_indices()
+        .find_map(|(offset, ch)| (!ch.is_whitespace()).then_some(start + offset))
+        .unwrap_or(text.len())
+}
+
+fn tts_provider_error_message(provider: &str, status: reqwest::StatusCode, body: &str) -> String {
+    let safe_body = redact_tts_error_text(body);
+    let safe_body = safe_body.trim();
+    if safe_body.is_empty() {
+        format!("{provider} TTS error: {status}")
+    } else {
+        format!(
+            "{provider} TTS error {status}: {}",
+            truncate_tts_error_body(safe_body)
+        )
+    }
+}
+
+fn truncate_tts_error_body(value: &str) -> String {
+    const MAX_ERROR_CHARS: usize = 500;
+    let mut chars = value.chars();
+    let truncated = chars.by_ref().take(MAX_ERROR_CHARS).collect::<String>();
+    if chars.next().is_some() {
+        format!("{truncated}...")
+    } else {
+        truncated
+    }
+}
+
 #[tauri::command]
 pub async fn configure_tts(config: TtsConfig) -> Result<String, String> {
     tracing::info!(
@@ -198,15 +402,24 @@ async fn azure_tts(
         .body(body)
         .send()
         .await
-        .map_err(|e| format!("Azure TTS request failed: {}", e))?;
+        .map_err(|e| {
+            format!(
+                "Azure TTS request failed: {}",
+                redact_tts_error_text(&e.to_string())
+            )
+        })?;
     if resp.status().is_success() {
-        let bytes = resp
-            .bytes()
-            .await
-            .map_err(|e| format!("Azure TTS read failed: {}", e))?;
+        let bytes = resp.bytes().await.map_err(|e| {
+            format!(
+                "Azure TTS read failed: {}",
+                redact_tts_error_text(&e.to_string())
+            )
+        })?;
         write_tts_output_bytes(output_path, &bytes, "Azure")
     } else {
-        Err(format!("Azure TTS error: {}", resp.status()))
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
+        Err(tts_provider_error_message("Azure", status, &body))
     }
 }
 
@@ -226,15 +439,24 @@ async fn elevenlabs_tts(
         .json(&serde_json::json!({"text": text, "model_id": "eleven_monolingual_v1"}))
         .send()
         .await
-        .map_err(|e| format!("ElevenLabs request failed: {}", e))?;
+        .map_err(|e| {
+            format!(
+                "ElevenLabs request failed: {}",
+                redact_tts_error_text(&e.to_string())
+            )
+        })?;
     if resp.status().is_success() {
-        let bytes = resp
-            .bytes()
-            .await
-            .map_err(|e| format!("ElevenLabs read failed: {}", e))?;
+        let bytes = resp.bytes().await.map_err(|e| {
+            format!(
+                "ElevenLabs read failed: {}",
+                redact_tts_error_text(&e.to_string())
+            )
+        })?;
         write_tts_output_bytes(output_path, &bytes, "ElevenLabs")
     } else {
-        Err(format!("ElevenLabs error: {}", resp.status()))
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
+        Err(tts_provider_error_message("ElevenLabs", status, &body))
     }
 }
 
@@ -348,7 +570,7 @@ fn tts_failure(error: String) -> TtsResult {
         success: false,
         audio_path: None,
         duration_ms: None,
-        error: Some(error),
+        error: Some(redact_tts_error_text(&error)),
     }
 }
 
@@ -446,5 +668,41 @@ mod tests {
 
         assert!(tts_output_path(&root, "system", "sakura", 1, "../wav").is_err());
         assert!(tts_output_path(&root, "system", "sakura", 1, "txt").is_err());
+    }
+
+    #[test]
+    fn redacts_tts_provider_error_text() {
+        let bearer_key = format!("sk-{}", "A".repeat(24));
+        let github_key = format!("{}{}", "github_pat_", "B".repeat(24));
+        let plain_secret = "plain-tts-secret";
+        let header_secret = "header-secret-value";
+        let azure_secret = "azure-header-secret";
+        let body = format!(
+            r#"{{"error":"bad voice","api_key":"{plain_secret}","url":"https://example.test?access_token={github_key}","Authorization":"Bearer {bearer_key}","xi-api-key":"{header_secret}","Ocp-Apim-Subscription-Key":"{azure_secret}"}}"#
+        );
+
+        let redacted = redact_tts_error_text(&body);
+
+        assert!(!redacted.contains(&bearer_key));
+        assert!(!redacted.contains(&github_key));
+        assert!(!redacted.contains(plain_secret));
+        assert!(!redacted.contains(header_secret));
+        assert!(!redacted.contains(azure_secret));
+        assert!(redacted.contains("bad voice"));
+        assert!(redacted.contains("<redacted>"));
+        assert!(redacted.contains("access_token=<redacted>"));
+    }
+
+    #[test]
+    fn tts_failure_redacts_error_surface() {
+        let provider_key = format!("sk-{}", "C".repeat(24));
+        let result = tts_failure(format!(
+            "ElevenLabs request failed: xi-api-key={provider_key}"
+        ));
+
+        assert!(!result.success);
+        let error = result.error.expect("redacted error");
+        assert!(!error.contains(&provider_key));
+        assert!(error.contains("xi-api-key=<redacted>"));
     }
 }

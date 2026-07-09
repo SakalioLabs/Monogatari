@@ -2580,6 +2580,10 @@ async function verifyTtsOutputInvariants() {
     ['tts_output_path(&project_root, "azure"', 'write Azure provider output under the active project root'],
     ['tts_output_path(&project_root, "elevenlabs"', 'write ElevenLabs provider output under the active project root'],
     ['tts_output_path(&project_root, "system"', 'write system provider output under the active project root'],
+    ['redact_tts_error_text', 'redact TTS provider error surfaces'],
+    ['tts_provider_error_message', 'redact non-success provider response bodies'],
+    ['tts_failure_redacts_error_surface', 'test final TTS error surface redaction'],
+    ['redacts_tts_provider_error_text', 'test TTS provider secret redaction helpers'],
     ['tts_output_path_sanitizes_character_ids_and_stays_in_project_assets', 'test sanitized character ids cannot escape assets/tts'],
     ['api_provider_tts_outputs_are_project_scoped', 'test API provider output paths are project-scoped'],
     ['tts_output_path_rejects_unsupported_extensions', 'test unsupported generated audio extensions are rejected'],
@@ -2597,10 +2601,10 @@ async function verifyTtsOutputInvariants() {
   }
 
   if (issues.length > 0) {
-    throw new Error(`TTS output path verification failed:\n${issues.join('\n')}`)
+    throw new Error(`TTS output/error verification failed:\n${issues.join('\n')}`)
   }
 
-  console.log('[release] TTS output path invariants OK')
+  console.log('[release] TTS output/error invariants OK')
 }
 
 async function verifyTauriPackagingConfig() {

@@ -10,6 +10,7 @@
 - Added workflow validation for script state key fields so invalid variable and flag names are caught during authoring/import before workflow execution.
 - Added a read-only Rhai condition engine so condition expressions can inspect variables and flags without mutating story state.
 - Added shared condition expression validation so command inputs and workflow condition nodes reject non-string, oversized, or hidden-control-character payloads before execution.
+- Added TTS provider error redaction so Azure and ElevenLabs request failures, response bodies, sensitive headers, and token-shaped values are cleaned before reaching frontend error surfaces.
 - Added read-only workflow condition context variables for relationship, evaluation scores, and evaluation count, plus matching Web/PWA preview evaluation for common condition expressions.
 - Added Web/PWA workflow preview state mirroring so local `set_variable`, `set_flag`, and evaluation outputs can drive later `getVariable` and `hasFlag` conditions.
 - Added Web/PWA workflow preview mirrors for relationship and emotion nodes so browser previews expose the same per-run state transitions as desktop workflow execution.

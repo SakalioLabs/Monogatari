@@ -138,7 +138,7 @@ Script variable and flag names are persisted state keys. They are trimmed, limit
 
 ## TTS
 
-Generated system, Azure, and ElevenLabs speech files are written under the active project `assets/tts/` directory with sanitized character/provider filename components.
+Generated system, Azure, and ElevenLabs speech files are written under the active project `assets/tts/` directory with sanitized character/provider filename components. Azure and ElevenLabs provider errors redact token-shaped values, API-key assignments, authorization headers, and response bodies before returning `TtsResult.error`.
 
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
