@@ -7,6 +7,7 @@
 - Added Quality Suites workbench guard-note summaries and export evidence so author QA reports include runtime safety trace guard note counts alongside category, failure, safety-signal, and workflow coverage summaries.
 - Added Quality Suite run metadata so QA exports identify the engine version, generated timestamp, scenario count, and pass rate.
 - Added build git commit metadata to Quality Suite QA reports so exported evidence can be tied back to a specific source revision.
+- Added backend-confirmed suite source paths to Quality Suite QA reports so exports identify the exact regression suite that was executed.
 - Added finalized guarded workflow output evidence to Quality Suite reports and exports so QA can inspect the safe story text consumed after workflow LLM output sanitization.
 - Added runtime renderer fallback handling so Story Mode and Character Editor skip failed Live2D/GLB/GLTF loads and continue to the next valid 3D, sprite, portrait, or generated placeholder candidate.
 - Added buffered OpenAI-compatible SSE stream parsing so API streaming responses survive split JSON lines, split UTF-8 content, `[DONE]` markers, and final lines without trailing newlines.

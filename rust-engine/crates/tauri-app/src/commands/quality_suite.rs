@@ -164,6 +164,7 @@ pub struct QualitySuiteRunMetadata {
     pub engine_version: String,
     pub git_commit: String,
     pub git_short_commit: String,
+    pub suite_path: String,
     pub scenario_count: usize,
     pub pass_rate: f32,
 }
@@ -300,28 +301,46 @@ pub async fn run_quality_suite(
     suite_path: Option<String>,
 ) -> Result<QualitySuiteReport, String> {
     let root = project_root(&state).await;
-    let suite = load_quality_suite_from_root(&root, suite_path)?;
-    Ok(run_quality_suite_inner(&suite, Some(&root)).await)
+    let loaded = load_quality_suite_from_root(&root, suite_path)?;
+    Ok(run_quality_suite_inner(&loaded.suite, Some(&root), &loaded.source_path).await)
+}
+
+struct LoadedQualitySuite {
+    suite: QualitySuite,
+    source_path: String,
 }
 
 fn load_quality_suite_from_root(
     root: &Path,
     suite_path: Option<String>,
-) -> Result<QualitySuite, String> {
-    let path = match suite_path {
-        Some(path) if path == "built-in:character_stability" => None,
-        Some(path) => Some(resolve_suite_path(&root, &path)?),
-        None => {
-            let default_path = root.join(DEFAULT_SUITE_PATH);
-            default_path.exists().then_some(default_path)
-        }
-    };
+) -> Result<LoadedQualitySuite, String> {
+    let path =
+        match suite_path {
+            Some(path) if path == "built-in:character_stability" => None,
+            Some(path) => Some(resolve_suite_path(&root, &path)?),
+            None => {
+                let default_path = root.join(DEFAULT_SUITE_PATH);
+                if default_path.exists() {
+                    Some(default_path.canonicalize().map_err(|e| {
+                        format!("Failed to resolve default quality suite path: {e}")
+                    })?)
+                } else {
+                    None
+                }
+            }
+        };
 
     if let Some(path) = path {
         let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
-        parse_quality_suite(&content)
+        Ok(LoadedQualitySuite {
+            suite: parse_quality_suite(&content)?,
+            source_path: quality_suite_source_path(root, &path),
+        })
     } else {
-        parse_quality_suite(DEFAULT_SUITE_JSON)
+        Ok(LoadedQualitySuite {
+            suite: parse_quality_suite(DEFAULT_SUITE_JSON)?,
+            source_path: "built-in:character_stability".to_string(),
+        })
     }
 }
 
@@ -362,6 +381,17 @@ fn resolve_suite_path(project_root: &Path, suite_path: &str) -> Result<PathBuf, 
     }
 
     Ok(path)
+}
+
+fn quality_suite_source_path(project_root: &Path, suite_path: &Path) -> String {
+    let root = project_root
+        .canonicalize()
+        .unwrap_or_else(|_| project_root.to_path_buf());
+    suite_path
+        .strip_prefix(&root)
+        .unwrap_or(suite_path)
+        .to_string_lossy()
+        .replace('\\', "/")
 }
 
 fn parse_quality_suite(content: &str) -> Result<QualitySuite, String> {
@@ -617,6 +647,7 @@ fn summary_for_suite(suite: &QualitySuite, path: &str) -> QualitySuiteSummary {
 async fn run_quality_suite_inner(
     suite: &QualitySuite,
     project_root: Option<&Path>,
+    suite_source_path: &str,
 ) -> QualitySuiteReport {
     let mut scenarios = Vec::with_capacity(suite.scenarios.len());
     for scenario in &suite.scenarios {
@@ -625,7 +656,7 @@ async fn run_quality_suite_inner(
     let passed = scenarios.iter().filter(|scenario| scenario.passed).count();
     let total = scenarios.len();
     let audit_summary = quality_suite_audit_summary(&scenarios);
-    let run_metadata = quality_suite_run_metadata(total, passed);
+    let run_metadata = quality_suite_run_metadata(total, passed, suite_source_path);
 
     QualitySuiteReport {
         suite_name: suite.name.clone(),
@@ -639,7 +670,11 @@ async fn run_quality_suite_inner(
     }
 }
 
-fn quality_suite_run_metadata(total: usize, passed: usize) -> QualitySuiteRunMetadata {
+fn quality_suite_run_metadata(
+    total: usize,
+    passed: usize,
+    suite_source_path: &str,
+) -> QualitySuiteRunMetadata {
     QualitySuiteRunMetadata {
         generated_at: chrono::Utc::now().to_rfc3339(),
         engine_version: env!("CARGO_PKG_VERSION").to_string(),
@@ -651,6 +686,7 @@ fn quality_suite_run_metadata(total: usize, passed: usize) -> QualitySuiteRunMet
             .filter(|value| !value.trim().is_empty())
             .unwrap_or("unknown")
             .to_string(),
+        suite_path: suite_source_path.replace('\\', "/"),
         scenario_count: total,
         pass_rate: if total > 0 {
             passed as f32 / total as f32
@@ -1826,7 +1862,24 @@ mod tests {
             .enable_all()
             .build()
             .unwrap()
-            .block_on(run_quality_suite_inner(suite, project_root))
+            .block_on(run_quality_suite_inner(
+                suite,
+                project_root,
+                DEFAULT_SUITE_PATH,
+            ))
+    }
+
+    #[test]
+    fn quality_suite_loader_reports_relative_source_path() {
+        let root = unique_temp_root("suite-source");
+        make_data_root(&root, true);
+        let suite_path = root.join(DEFAULT_SUITE_PATH);
+        std::fs::write(&suite_path, DEFAULT_SUITE_JSON).unwrap();
+
+        let loaded = load_quality_suite_from_root(&root, None).expect("load default suite");
+        let _ = std::fs::remove_dir_all(&root);
+
+        assert_eq!(loaded.source_path, DEFAULT_SUITE_PATH);
     }
 
     #[test]
@@ -1873,6 +1926,7 @@ mod tests {
         );
         assert!(!report.run_metadata.git_commit.trim().is_empty());
         assert!(!report.run_metadata.git_short_commit.trim().is_empty());
+        assert_eq!(report.run_metadata.suite_path, DEFAULT_SUITE_PATH);
         assert!(
             report.run_metadata.git_commit == "unknown"
                 || report
