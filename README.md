@@ -75,6 +75,7 @@ Verified on 2026-07-09:
 - Chat, group chat, and quality-suite runtime traces now prove when the character mind contract and creator-pinned knowledge context were applied, including resolved pinned knowledge ref IDs for audit.
 - OpenAI-compatible API streaming uses buffered SSE delta parsing so split JSON lines, split UTF-8 content, `[DONE]` markers, and final unterminated lines do not drop character response chunks.
 - OpenAI-compatible API streaming rejects provider error frames and malformed SSE data frames before partial stream text can be finalized as successful dialogue.
+- Streaming chat errors replace partial assistant bubbles with a stable failure message before surfacing the provider/runtime error.
 - The shared AI inference pipeline retries or rejects unsuccessful provider result envelopes before chat, streaming, or workflow LLM callers can consume empty generated text.
 - OpenAI-compatible API responses must include non-blank generated text before being reported as successful, including both standard and streaming completions.
 - Prompt-injection detection covers player-authored memory writes such as "remember this as official canon" so long-term character knowledge cannot be casually poisoned by dialogue text.

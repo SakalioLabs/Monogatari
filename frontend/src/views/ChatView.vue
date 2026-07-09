@@ -312,6 +312,7 @@ const errorMessage = ref<string | null>(null)
 const charactersLoading = ref(true)
 const messagesRef = ref<HTMLDivElement>()
 const inputRef = ref<HTMLTextAreaElement>()
+const STREAM_FAILURE_BUBBLE = 'Generation failed before the streamed reply completed.'
 
 let streamUnlisteners: UnlistenFn[] = []
 
@@ -382,6 +383,10 @@ function formatSafetyNote(note: string) {
   return note
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (ch) => ch.toUpperCase())
+}
+
+function streamFailureBubble(): string {
+  return STREAM_FAILURE_BUBBLE
 }
 
 function eventDecisionReason(decision: EventTriggerDecision): string {
@@ -465,7 +470,7 @@ async function attachStreamListeners(assistantMessage: ChatMessage) {
     }),
     listen<string>('chat-error', (event) => {
       errorMessage.value = event.payload || 'Generation failed'
-      if (!assistantMessage.content) assistantMessage.content = errorMessage.value
+      assistantMessage.content = streamFailureBubble()
       isStreaming.value = false
     }),
   ])
@@ -530,7 +535,7 @@ async function sendMessage() {
     await refreshRelationship()
   } catch (e) {
     errorMessage.value = String(e)
-    if (!assistantMessage.content) assistantMessage.content = `Error: ${e}`
+    assistantMessage.content = streamFailureBubble()
   } finally {
     isLoading.value = false
     isStreaming.value = false

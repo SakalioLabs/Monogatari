@@ -1721,10 +1721,20 @@ Stay in character. Respond naturally with emotion (use *actions* for body langua
         }
     });
 
-    let result = pipeline
+    let result = match pipeline
         .generate_stream(&full_prompt, &options, on_chunk)
         .await
-        .map_err(|e| format!("AI error: {e}"))?;
+    {
+        Ok(result) => result,
+        Err(e) => {
+            let error_message = format!("AI error: {e}");
+            let replacement = streaming_generation_failed_message();
+            stream_replacement_sent.store(true, Ordering::SeqCst);
+            let _ = window.emit("chat-replace", &replacement);
+            let _ = window.emit("chat-error", &error_message);
+            return Err(error_message);
+        }
+    };
 
     if result.success {
         let response_text = prompt_guard::guard_character_response(&char_name, &result.text);
@@ -1880,6 +1890,10 @@ Stay in character. Respond naturally with emotion (use *actions* for body langua
     Ok(())
 }
 
+fn streaming_generation_failed_message() -> String {
+    "Generation failed before the streamed reply completed.".to_string()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1994,6 +2008,17 @@ mod tests {
         assert_eq!(prefix, "春のa");
         assert_eq!(emitted, 3);
         assert_eq!(stream_remaining(text, emitted).unwrap(), "bc");
+    }
+
+    #[test]
+    fn streaming_failure_replacement_is_stable_and_generic() {
+        let replacement = streaming_generation_failed_message();
+        let github_pat_prefix = ["github", "_pat_"].concat();
+
+        assert!(replacement.contains("Generation failed"));
+        assert!(!replacement.contains("sk-"));
+        assert!(!replacement.contains(&github_pat_prefix));
+        assert!(!replacement.contains("Bearer "));
     }
 
     #[test]

@@ -1938,6 +1938,9 @@ async function verifyFrontendSourceInvariants() {
     ['eventDecisionSummary', 'surface story event trigger decision summaries'],
     ['event-decision-panel', 'keep a stable style hook for story event trigger diagnostics'],
     ['safety-trace-panel', 'keep a stable style hook for chat safety trace diagnostics'],
+    ['STREAM_FAILURE_BUBBLE', 'keep a stable frontend streaming failure bubble'],
+    ['function streamFailureBubble(): string', 'avoid embedding provider/runtime errors in assistant failure bubbles'],
+    ['assistantMessage.content = streamFailureBubble()', 'force streaming failures to clear partial streamed text with stable copy'],
   ]
   for (const [needle, description] of chatSafetyTraceRequirements) {
     if (!chatViewSource.includes(needle)) {
@@ -3110,6 +3113,8 @@ async function verifyTauriPackagingConfig() {
     ['chat-event-decisions', 'emit story event trigger decisions for streaming chat'],
     ['character_mind_contract_applied', 'emit runtime trace evidence for the character mind contract'],
     ['pinned_knowledge_context_applied', 'emit runtime trace evidence for pinned knowledge context'],
+    ['streaming_generation_failed_message', 'replace partial streaming replies with a stable failure bubble'],
+    ['streaming_failure_replacement_is_stable_and_generic', 'test streaming failure replacement text stays generic'],
   ]
   for (const [needle, description] of chatSafetyTraceRequirements) {
     if (!tauriChatSource.includes(needle)) {
