@@ -1,6 +1,6 @@
 //! Project configuration commands for commercial authoring readiness.
 
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::path::{Component, Path, PathBuf};
 
 use chrono::Utc;
@@ -575,6 +575,7 @@ fn build_project_export_manifest(
         .filter_map(|file| file.get("size_bytes").and_then(Value::as_u64))
         .sum();
     let content_sha256 = package_content_sha256(&files);
+    let content_summary = project_content_summary(&files);
 
     Ok(json!({
         "format": "monogatari-project",
@@ -592,9 +593,11 @@ fn build_project_export_manifest(
             "scenes": file_scenes,
             "current_scene": current_scene,
         },
+        "content_summary": content_summary,
         "package": {
             "file_count": files.len(),
             "total_bytes": total_bytes,
+            "fingerprint_algorithm": "sha256:path-size-file-sha256-v1",
             "content_sha256": content_sha256,
             "files": files,
             "excluded": ["saves", "analytics.json", ".sync_manifest.json"]
@@ -699,6 +702,48 @@ fn push_export_file(
         "checksum_sha256": checksum_sha256,
     }));
     Ok(())
+}
+
+fn project_content_summary(files: &[Value]) -> Value {
+    let mut category_counts = BTreeMap::<String, usize>::new();
+    let mut category_bytes = BTreeMap::<String, u64>::new();
+    let mut json_file_count = 0usize;
+    let mut asset_file_count = 0usize;
+
+    for file in files {
+        let category = file
+            .get("category")
+            .and_then(Value::as_str)
+            .unwrap_or("unknown")
+            .to_string();
+        let size_bytes = file
+            .get("size_bytes")
+            .and_then(Value::as_u64)
+            .unwrap_or_default();
+        let path = file.get("path").and_then(Value::as_str).unwrap_or("");
+
+        *category_counts.entry(category.clone()).or_insert(0) += 1;
+        *category_bytes.entry(category.clone()).or_insert(0) += size_bytes;
+        if path.ends_with(".json") {
+            json_file_count += 1;
+        }
+        if category == "assets" {
+            asset_file_count += 1;
+        }
+    }
+
+    json!({
+        "schema": "monogatari-project-content-summary/v1",
+        "file_count": files.len(),
+        "json_file_count": json_file_count,
+        "asset_file_count": asset_file_count,
+        "category_counts": category_counts,
+        "category_bytes": category_bytes,
+        "exported_categories": EXPORT_DIRECTORIES
+            .iter()
+            .map(|(category, _)| *category)
+            .collect::<Vec<_>>(),
+    })
 }
 
 fn checksum_sha256(bytes: &[u8]) -> String {
@@ -1235,6 +1280,39 @@ mod tests {
                 ));
         }
         assert_eq!(manifest["settings"]["ai"]["api"]["api_key"], "<redacted>");
+        assert_eq!(
+            manifest["content_summary"]["schema"],
+            "monogatari-project-content-summary/v1"
+        );
+        assert_eq!(
+            manifest["content_summary"]["category_counts"]["characters"],
+            1
+        );
+        assert_eq!(
+            manifest["content_summary"]["category_counts"]["dialogue"],
+            1
+        );
+        assert_eq!(
+            manifest["content_summary"]["category_counts"]["knowledge"],
+            1
+        );
+        assert_eq!(manifest["content_summary"]["category_counts"]["assets"], 1);
+        assert_eq!(
+            manifest["content_summary"]["category_counts"]["settings"],
+            1
+        );
+        assert_eq!(manifest["content_summary"]["json_file_count"], 4);
+        assert_eq!(manifest["content_summary"]["asset_file_count"], 1);
+        assert_eq!(manifest["content_summary"]["category_bytes"]["assets"], 5);
+        assert!(manifest["content_summary"]["exported_categories"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|category| category.as_str() == Some("workflows")));
+        assert_eq!(
+            manifest["package"]["fingerprint_algorithm"],
+            "sha256:path-size-file-sha256-v1"
+        );
         let package_sha256 = manifest["package"]["content_sha256"]
             .as_str()
             .expect("package content hash");
