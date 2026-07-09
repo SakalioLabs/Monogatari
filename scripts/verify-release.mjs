@@ -1851,6 +1851,7 @@ async function verifyFrontendSourceInvariants() {
     ['monogatari-quality-report', 'use stable quality report export filenames'],
     ['run_metadata', 'export quality suite run metadata for QA provenance'],
     ['QualitySuiteRunMetadata', 'type quality suite run metadata'],
+    ['git_short_commit', 'surface the quality report source commit in run metadata'],
     ['formatTimestamp', 'format quality report generation timestamps'],
     ['run-metadata-list', 'keep a stable style hook for quality run metadata'],
     ['audit_summary', 'include backend audit summaries in quality report exports'],
@@ -2941,6 +2942,7 @@ async function verifyTauriPackagingConfig() {
   const viteConfigSource = await readFile(path.join(frontendDir, 'vite.config.ts'), 'utf8')
   const cargoWorkspace = await readFile(path.join(rustDir, 'Cargo.toml'), 'utf8')
   const tauriCargoSource = await readFile(path.join(tauriAppDir, 'Cargo.toml'), 'utf8')
+  const tauriBuildSource = await readFile(path.join(tauriAppDir, 'build.rs'), 'utf8')
   const mobilePreflightSource = await readFile(path.join(root, 'scripts', 'verify-tauri-mobile-preflight.mjs'), 'utf8')
   const mobileDeploymentDocs = await readFile(path.join(root, 'docs', 'MOBILE_DEPLOYMENT.md'), 'utf8')
   const tauriMainSource = await readFile(path.join(tauriAppDir, 'src', 'main.rs'), 'utf8')
@@ -3232,11 +3234,25 @@ async function verifyTauriPackagingConfig() {
     ['QualitySuiteRunMetadata', 'export quality suite run metadata'],
     ['quality_suite_run_metadata', 'centralize quality suite run metadata generation'],
     ['CARGO_PKG_VERSION', 'bind quality suite run metadata to the engine package version'],
+    ['MONOGATARI_GIT_COMMIT', 'bind quality suite run metadata to the build git commit'],
+    ['MONOGATARI_GIT_SHORT_COMMIT', 'export a compact git commit for quality report UI evidence'],
     ['reports_workflow_output_finalization_mismatches', 'test finalized workflow output expectations fail loudly'],
   ]
   for (const [needle, description] of qualityRuntimeTraceRequirements) {
     if (!tauriQualitySuiteSource.includes(needle)) {
       issues.push(`Quality suite runtime safety tracing must ${description}`)
+    }
+  }
+
+  const buildMetadataRequirements = [
+    ['cargo:rustc-env=MONOGATARI_GIT_COMMIT', 'inject the build git commit into the Tauri binary'],
+    ['cargo:rustc-env=MONOGATARI_GIT_SHORT_COMMIT', 'inject a short build git commit into the Tauri binary'],
+    ['rev-parse', 'derive build commit metadata from git'],
+    ['symbolic-ref', 'rerun the build script when the current branch ref changes'],
+  ]
+  for (const [needle, description] of buildMetadataRequirements) {
+    if (!tauriBuildSource.includes(needle)) {
+      issues.push(`Tauri build metadata must ${description}`)
     }
   }
 

@@ -93,6 +93,7 @@
           <strong>{{ report.run_metadata.engine_version }}</strong>
         </div>
         <div class="run-metadata-list">
+          <span class="audit-chip">{{ report.run_metadata.git_short_commit }}</span>
           <span class="audit-chip">{{ formatTimestamp(report.run_metadata.generated_at) }}</span>
           <span class="audit-chip">{{ report.run_metadata.scenario_count }} {{ t('quality.scenarios', 'scenarios') }}</span>
           <span class="audit-chip ok">{{ formatRatio(report.run_metadata.pass_rate) }}</span>
@@ -336,6 +337,8 @@ interface QualitySuiteReport {
 interface QualitySuiteRunMetadata {
   generated_at: string
   engine_version: string
+  git_commit: string
+  git_short_commit: string
   scenario_count: number
   pass_rate: number
 }
@@ -396,6 +399,8 @@ const previewReport: QualitySuiteReport = {
   run_metadata: {
     generated_at: '2026-07-09T00:00:00Z',
     engine_version: '0.9.5',
+    git_commit: 'preview',
+    git_short_commit: 'preview',
     scenario_count: 29,
     pass_rate: 1,
   },

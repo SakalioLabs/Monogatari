@@ -162,6 +162,8 @@ pub struct QualitySuiteReport {
 pub struct QualitySuiteRunMetadata {
     pub generated_at: String,
     pub engine_version: String,
+    pub git_commit: String,
+    pub git_short_commit: String,
     pub scenario_count: usize,
     pub pass_rate: f32,
 }
@@ -641,6 +643,14 @@ fn quality_suite_run_metadata(total: usize, passed: usize) -> QualitySuiteRunMet
     QualitySuiteRunMetadata {
         generated_at: chrono::Utc::now().to_rfc3339(),
         engine_version: env!("CARGO_PKG_VERSION").to_string(),
+        git_commit: option_env!("MONOGATARI_GIT_COMMIT")
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or("unknown")
+            .to_string(),
+        git_short_commit: option_env!("MONOGATARI_GIT_SHORT_COMMIT")
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or("unknown")
+            .to_string(),
         scenario_count: total,
         pass_rate: if total > 0 {
             passed as f32 / total as f32
@@ -1860,6 +1870,15 @@ mod tests {
         assert_eq!(
             report.run_metadata.engine_version,
             env!("CARGO_PKG_VERSION")
+        );
+        assert!(!report.run_metadata.git_commit.trim().is_empty());
+        assert!(!report.run_metadata.git_short_commit.trim().is_empty());
+        assert!(
+            report.run_metadata.git_commit == "unknown"
+                || report
+                    .run_metadata
+                    .git_commit
+                    .starts_with(&report.run_metadata.git_short_commit)
         );
         assert_eq!(report.run_metadata.scenario_count, report.total);
         assert_eq!(report.run_metadata.pass_rate, 1.0);

@@ -88,7 +88,7 @@
 - [ ] Group chat command boundaries trim participant IDs, reject empty or duplicate participant sets, reject inactive sessions, and refuse blank messages before advancing multi-character scenes
 - [ ] Quality Suites panel runs character stability, structured role-block prompt-injection, multilingual and Unicode-obfuscated prompt-injection, group chat runtime trace, relationship and fallback scoring side-channel containment, memory-poisoning containment, memory prompt replay containment, tool-role injection containment, identity drift, style drift, real knowledge-reference anchoring, knowledge-boundary stability, evaluation-summary safety, workflow output safety, workflow guard-only fallback, workflow tool-call containment, workflow branch coverage, private reasoning leakage, fallback scoring, overrange score clamping, event-idempotence, and event-rule snapshot regression checks
 - [ ] Quality suite files reject out-of-range score expectations and contradictory expected/forbidden events, markers, or workflow nodes before release reports run
-- [ ] Quality Suites panel shows and exports versioned audit evidence with run metadata, failed-scenario ids, category summaries, safety-signal counts, runtime safety trace guard notes, finalized guarded workflow output text, and workflow coverage summaries
+- [ ] Quality Suites panel shows and exports versioned audit evidence with run metadata, build commit ids, failed-scenario ids, category summaries, safety-signal counts, runtime safety trace guard notes, finalized guarded workflow output text, and workflow coverage summaries
 
 ### Workflow Editor
 - [ ] All 21 node types render in palette
