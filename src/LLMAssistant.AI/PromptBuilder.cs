@@ -183,7 +183,13 @@ public class PromptBuilder
 
     private static string TrimPromptLinePrefixes(string line)
     {
-        return line.TrimStart(' ', '\t', '>', '-', '*', '`', '#', '"', '\'');
+        var trimmed = line.TrimStart();
+        if (trimmed.StartsWith("<!--", StringComparison.Ordinal))
+        {
+            trimmed = trimmed[4..];
+        }
+
+        return trimmed.TrimStart(' ', '\t', '>', '!', '/', '-', '*', '`', '#', '"', '\'');
     }
 
     private static bool IsStructuralRoleControlLine(string line)

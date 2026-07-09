@@ -24,8 +24,8 @@
 - [ ] All 22 command modules register correctly in main.rs
 - [ ] Chat streaming works with API backend
 - [ ] Character personality/knowledge injection verified
-- [ ] Shared Rust AI prompt builder sanitizes embedded role-boundary markers, attributed XML-like role tags, and Markdown role-code-fence blocks in message history and context sections before OpenAI-compatible role parsing
-- [ ] Legacy C# prompt builder sanitizes embedded role-boundary markers, attributed XML-like role tags, and Markdown role-code-fence blocks while the legacy solution remains release-gated
+- [ ] Shared Rust AI prompt builder sanitizes embedded role-boundary markers, attributed XML-like role tags, Markdown role-code-fence blocks, and comment-wrapped role headers in message history and context sections before OpenAI-compatible role parsing
+- [ ] Legacy C# prompt builder sanitizes embedded role-boundary markers, attributed XML-like role tags, Markdown role-code-fence blocks, and comment-wrapped role headers while the legacy solution remains release-gated
 - [ ] Rust API engine debug output and API error surfaces redact API keys, bearer tokens, sensitive custom headers, and provider-echoed secret assignments before logs or frontend error reports expose them
 - [ ] ONNX backend configuration accepts only project-relative `.onnx` model and `.json` tokenizer references and activates the ONNX engine after registration
 - [ ] Engine initialization binds only existing local project directories as the active project root
@@ -62,7 +62,7 @@
 - [ ] Workflow LLM nodes guard generated output before it is used by downstream story nodes
 - [ ] Character prompts include creator-declared pinned knowledge references before keyword search results
 - [ ] Chat runtime emits author-visible safety trace evidence for input wrapping, prompt-injection detection, guarded responses, memory guards, stream replacements, and relationship side-channel containment
-- [ ] Prompt-injection detection covers attributed XML-like role tags, Markdown role-code-fence blocks, English, Chinese, Japanese, Korean, fullwidth, and zero-width-obfuscated prompt-control attempts before scoring, memory writes, relationship deltas, and hidden prompt boundaries consume player text
+- [ ] Prompt-injection detection covers attributed XML-like role tags, Markdown role-code-fence blocks, comment-wrapped role headers, English, Chinese, Japanese, Korean, fullwidth, and zero-width-obfuscated prompt-control attempts before scoring, memory writes, relationship deltas, and hidden prompt boundaries consume player text
 - [ ] Local fallback scoring recognizes English, Chinese, Japanese, and Korean friendly, question, and creative-story signals while continuing to ignore prompt-injection text
 - [ ] Chat session audit restores the latest safety trace, evaluation, story-event trigger decisions, and triggerable events after character switching
 - [ ] Chat runtime traces prove character mind contract application and creator-pinned knowledge context anchoring, including resolved pinned knowledge ref IDs

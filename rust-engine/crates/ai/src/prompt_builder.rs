@@ -199,8 +199,11 @@ fn is_bracket_role_marker(line: &str) -> bool {
 }
 
 fn trim_prompt_line_prefixes(line: &str) -> &str {
+    let line = line.trim_start();
+    let line = line.strip_prefix("<!--").unwrap_or(line);
+
     line.trim_start_matches(|ch: char| {
-        ch.is_whitespace() || matches!(ch, '>' | '-' | '*' | '`' | '#' | '"' | '\'')
+        ch.is_whitespace() || matches!(ch, '>' | '!' | '/' | '-' | '*' | '`' | '#' | '"' | '\'')
     })
 }
 
