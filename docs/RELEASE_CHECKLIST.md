@@ -35,6 +35,7 @@
 - [ ] Legacy C# prompt builder sanitizes embedded role-boundary markers, attributed XML-like role tags, Markdown role-code-fence blocks, comment-wrapped role headers, and punctuation-free role headings while the legacy solution remains release-gated
 - [ ] Rust API engine debug output and API error surfaces redact API keys, bearer tokens, sensitive custom headers, and provider-echoed secret assignments before logs or frontend error reports expose them
 - [ ] Rust API engine rejects blank runtime API keys/models, non-local plaintext HTTP provider URLs, embedded URL credentials, query strings, and fragments before the backend can become active
+- [ ] Shared AI inference pipeline retries or rejects unsuccessful provider result envelopes before chat, streaming, or workflow LLM callers consume generated text
 - [ ] Project settings save/load paths scrub API keys, tokens, authorization headers, token-shaped values, query-secret assignments, and legacy persisted secret fields before writing `settings.json` or returning project config state to the frontend
 - [ ] ONNX backend configuration accepts only project-relative `.onnx` model and `.json` tokenizer references and activates the ONNX engine after registration
 - [ ] Engine initialization binds only existing local project directories as the active project root

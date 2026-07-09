@@ -1,12 +1,78 @@
 //! Tests for the AI inference pipeline.
 
-use std::sync::Arc;
+use std::sync::{
+    atomic::{AtomicUsize, Ordering},
+    Arc,
+};
 
+use async_trait::async_trait;
 use llm_ai::{
-    APIConfig, APIEngine, InferenceEngine, InferenceOptions, InferencePipeline, ModelConfig,
-    ONNXEngine, PromptBuilder,
+    APIConfig, APIEngine, InferenceEngine, InferenceOptions, InferencePipeline, InferenceResult,
+    ModelConfig, ONNXEngine, PromptBuilder,
 };
 use tokio::sync::RwLock;
+
+struct UnsuccessfulResultEngine {
+    infer_attempts: Arc<AtomicUsize>,
+    stream_attempts: Arc<AtomicUsize>,
+}
+
+impl UnsuccessfulResultEngine {
+    fn new(infer_attempts: Arc<AtomicUsize>, stream_attempts: Arc<AtomicUsize>) -> Self {
+        Self {
+            infer_attempts,
+            stream_attempts,
+        }
+    }
+
+    fn failed_result(&self) -> InferenceResult {
+        InferenceResult {
+            text: "must not be consumed".to_string(),
+            success: false,
+            error: Some("provider returned 429".to_string()),
+            duration_ms: 1,
+            tokens_generated: 0,
+        }
+    }
+}
+
+#[async_trait]
+impl InferenceEngine for UnsuccessfulResultEngine {
+    fn name(&self) -> &str {
+        "FailingAPI"
+    }
+
+    fn is_ready(&self) -> bool {
+        true
+    }
+
+    async fn initialize(&mut self) -> llm_core::Result<()> {
+        Ok(())
+    }
+
+    async fn infer(
+        &self,
+        _prompt: &str,
+        _options: &InferenceOptions,
+    ) -> llm_core::Result<InferenceResult> {
+        self.infer_attempts.fetch_add(1, Ordering::SeqCst);
+        Ok(self.failed_result())
+    }
+
+    async fn infer_stream(
+        &self,
+        _prompt: &str,
+        _options: &InferenceOptions,
+        _on_chunk: Box<dyn Fn(String) + Send + 'static>,
+    ) -> llm_core::Result<InferenceResult> {
+        self.stream_attempts.fetch_add(1, Ordering::SeqCst);
+        Ok(self.failed_result())
+    }
+
+    async fn shutdown(&mut self) -> llm_core::Result<()> {
+        Ok(())
+    }
+}
 
 #[test]
 fn test_prompt_builder_empty() {
@@ -118,6 +184,85 @@ fn test_inference_pipeline_engine_statuses_reflect_readiness() {
         statuses,
         vec![("API".to_string(), true), ("ONNX".to_string(), false)]
     );
+}
+
+#[test]
+fn test_inference_pipeline_retries_unsuccessful_results() {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let infer_attempts = Arc::new(AtomicUsize::new(0));
+    let stream_attempts = Arc::new(AtomicUsize::new(0));
+    let mut pipeline = InferencePipeline::new();
+    pipeline.register_engine(Arc::new(RwLock::new(UnsuccessfulResultEngine::new(
+        Arc::clone(&infer_attempts),
+        Arc::clone(&stream_attempts),
+    ))));
+    pipeline.set_active_engine("FailingAPI").unwrap();
+
+    let error = rt
+        .block_on(pipeline.generate_response("hello", &InferenceOptions::default()))
+        .unwrap_err()
+        .to_string();
+
+    assert!(error.contains("FailingAPI"));
+    assert!(error.contains("provider returned 429"));
+    assert_eq!(infer_attempts.load(Ordering::SeqCst), 3);
+    assert_eq!(stream_attempts.load(Ordering::SeqCst), 0);
+}
+
+#[test]
+fn test_inference_pipeline_specific_engine_rejects_unsuccessful_result() {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let infer_attempts = Arc::new(AtomicUsize::new(0));
+    let stream_attempts = Arc::new(AtomicUsize::new(0));
+    let mut pipeline = InferencePipeline::new();
+    pipeline.register_engine(Arc::new(RwLock::new(UnsuccessfulResultEngine::new(
+        Arc::clone(&infer_attempts),
+        Arc::clone(&stream_attempts),
+    ))));
+
+    let error = rt
+        .block_on(pipeline.generate_response_with_engine(
+            "FailingAPI",
+            "hello",
+            &InferenceOptions::default(),
+        ))
+        .unwrap_err()
+        .to_string();
+
+    assert!(error.contains("provider returned 429"));
+    assert_eq!(infer_attempts.load(Ordering::SeqCst), 1);
+    assert_eq!(stream_attempts.load(Ordering::SeqCst), 0);
+}
+
+#[test]
+fn test_inference_pipeline_stream_rejects_unsuccessful_result() {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let infer_attempts = Arc::new(AtomicUsize::new(0));
+    let stream_attempts = Arc::new(AtomicUsize::new(0));
+    let emitted_chunks = Arc::new(AtomicUsize::new(0));
+    let emitted_chunks_for_callback = Arc::clone(&emitted_chunks);
+    let mut pipeline = InferencePipeline::new();
+    pipeline.register_engine(Arc::new(RwLock::new(UnsuccessfulResultEngine::new(
+        Arc::clone(&infer_attempts),
+        Arc::clone(&stream_attempts),
+    ))));
+    pipeline.set_active_engine("FailingAPI").unwrap();
+
+    let error = rt
+        .block_on(pipeline.generate_stream(
+            "hello",
+            &InferenceOptions::default(),
+            Box::new(move |_| {
+                emitted_chunks_for_callback.fetch_add(1, Ordering::SeqCst);
+            }),
+        ))
+        .unwrap_err()
+        .to_string();
+
+    assert!(error.contains("provider returned 429"));
+    assert_eq!(infer_attempts.load(Ordering::SeqCst), 0);
+    assert_eq!(stream_attempts.load(Ordering::SeqCst), 1);
+    assert_eq!(emitted_chunks.load(Ordering::SeqCst), 0);
 }
 
 #[test]

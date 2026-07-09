@@ -120,12 +120,24 @@ impl InferencePipeline {
 
         for attempt in 1..=max_retries {
             match engine.infer(prompt, options).await {
-                Ok(result) => {
-                    if attempt > 1 {
-                        info!("Inference succeeded on attempt {}", attempt);
+                Ok(result) => match ensure_successful_result(engine_name, result) {
+                    Ok(result) => {
+                        if attempt > 1 {
+                            info!("Inference succeeded on attempt {}", attempt);
+                        }
+                        return Ok(result);
                     }
-                    return Ok(result);
-                }
+                    Err(e) => {
+                        warn!("Inference attempt {} failed: {}", attempt, e);
+                        last_error = Some(e);
+                        if attempt < max_retries {
+                            tokio::time::sleep(std::time::Duration::from_millis(
+                                100 * attempt as u64,
+                            ))
+                            .await;
+                        }
+                    }
+                },
                 Err(e) => {
                     warn!("Inference attempt {} failed: {}", attempt, e);
                     last_error = Some(e);
@@ -156,7 +168,8 @@ impl InferencePipeline {
             .ok_or_else(|| llm_core::EngineError::inference(engine_name, "Engine not found"))?;
 
         let engine = engine.read().await;
-        engine.infer(prompt, options).await
+        let result = engine.infer(prompt, options).await?;
+        ensure_successful_result(engine_name, result)
     }
 
     /// Generate a streaming response using the active engine.
@@ -176,7 +189,8 @@ impl InferencePipeline {
             .ok_or_else(|| llm_core::EngineError::inference(engine_name, "Engine not found"))?;
 
         let engine = engine.read().await;
-        engine.infer_stream(prompt, options, on_chunk).await
+        let result = engine.infer_stream(prompt, options, on_chunk).await?;
+        ensure_successful_result(engine_name, result)
     }
 
     /// Shut down all engines.
@@ -187,6 +201,19 @@ impl InferencePipeline {
             engine.shutdown().await?;
         }
         Ok(())
+    }
+}
+
+fn ensure_successful_result(engine_name: &str, result: InferenceResult) -> Result<InferenceResult> {
+    if result.success {
+        Ok(result)
+    } else {
+        Err(llm_core::EngineError::inference(
+            engine_name,
+            result
+                .error
+                .unwrap_or_else(|| "Inference returned unsuccessful result".to_string()),
+        ))
     }
 }
 

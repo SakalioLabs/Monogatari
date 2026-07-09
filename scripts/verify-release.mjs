@@ -2264,6 +2264,19 @@ async function verifyAiBackendConfigInvariants() {
     }
   }
 
+  const pipelineFailureRequirements = [
+    [rustPipelineSource, 'ensure_successful_result', 'normalize unsuccessful inference results before callers consume generated text'],
+    [rustPipelineSource, 'Inference returned unsuccessful result', 'provide a stable fallback error for unsuccessful inference results without provider details'],
+    [rustPipelineTests, 'test_inference_pipeline_retries_unsuccessful_results', 'test retry handling for unsuccessful inference result envelopes'],
+    [rustPipelineTests, 'test_inference_pipeline_specific_engine_rejects_unsuccessful_result', 'test direct engine calls reject unsuccessful inference result envelopes'],
+    [rustPipelineTests, 'test_inference_pipeline_stream_rejects_unsuccessful_result', 'test streaming calls reject unsuccessful inference result envelopes'],
+  ]
+  for (const [source, needle, description] of pipelineFailureRequirements) {
+    if (!source.includes(needle)) {
+      issues.push(`AI pipeline failure handling must ${description}`)
+    }
+  }
+
   if (
     aiCommandSource.includes('PathBuf::from(&model_path)')
     || aiCommandSource.includes('PathBuf::from(&tokenizer_path)')
