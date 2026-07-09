@@ -146,6 +146,7 @@ const releaseCriticalRustFiles = [
   'crates/ai/src/prompt_builder.rs',
   'crates/assets/src/asset_manager.rs',
   'crates/assets/src/save_manager.rs',
+  'crates/scripting/src/lib.rs',
   'crates/tauri-app/src/main.rs',
   'crates/tauri-app/src/state.rs',
   'crates/tauri-app/src/commands/ai.rs',
@@ -171,6 +172,7 @@ const releaseCriticalRustFiles = [
   'crates/tauri-app/src/commands/plugin.rs',
   'crates/tauri-app/src/commands/prompt_guard.rs',
   'crates/tauri-app/src/commands/quality_suite.rs',
+  'crates/tauri-app/src/commands/script.rs',
   'crates/tauri-app/src/commands/workflow.rs',
 ]
 
@@ -207,6 +209,7 @@ async function main() {
   await verifyEngineProjectRootInvariants()
   await verifyAssetManagerInvariants()
   await verifySaveManagerInvariants()
+  await verifyScriptCommandInvariants()
   await verifyWorkflowCommandInvariants()
   await verifyContentLoaderPathInvariants()
   await verifyCharacterManagerPathInvariants()
@@ -225,6 +228,7 @@ async function main() {
   await run('Release-critical Rust format check', 'rustfmt', ['--edition', '2021', '--check', ...releaseCriticalRustFiles], rustDir)
   await run('Rust AI prompt and pipeline tests', 'cargo', ['test', '--locked', '-p', 'llm-ai'], rustDir)
   await run('Rust asset management tests', 'cargo', ['test', '--locked', '-p', 'llm-assets'], rustDir)
+  await run('Rust scripting tests', 'cargo', ['test', '--locked', '-p', 'llm-scripting'], rustDir)
   await run('Rust game tests', 'cargo', ['test', '--locked', '-p', 'llm-game'], rustDir)
   await run('Rust Tauri command tests', 'cargo', ['test', '--locked', '-p', 'llm-galgame-app'], rustDir)
   await run('Rust Tauri app check', 'cargo', ['check', '--locked', '-p', 'llm-galgame-app'], rustDir)
@@ -2080,6 +2084,51 @@ async function verifySaveManagerInvariants() {
   }
 
   console.log('[release] Save manager path invariants OK')
+}
+
+async function verifyScriptCommandInvariants() {
+  const issues = []
+  const scriptCommandSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'script.rs'), 'utf8')
+  const scriptingSource = await readFile(path.join(rustDir, 'crates', 'scripting', 'src', 'lib.rs'), 'utf8')
+
+  const commandRequirements = [
+    ['validate_script_text', 'centralize script command input validation'],
+    ['MAX_SCRIPT_TEXT_CHARS', 'cap direct Rhai execution payload size'],
+    ['MAX_CONDITION_TEXT_CHARS', 'cap condition expression payload size'],
+    ['MAX_DSL_SCRIPT_TEXT_CHARS', 'cap DSL parser payload size'],
+    ['cannot contain control characters', 'reject hidden control-character payloads'],
+    ['script_inputs_reject_control_characters', 'test control-character rejection'],
+    ['script_inputs_limit_large_payloads', 'test script payload size limits'],
+    ['script_inputs_allow_multiline_text', 'continue allowing normal multiline authoring scripts'],
+  ]
+  for (const [needle, description] of commandRequirements) {
+    if (!scriptCommandSource.includes(needle)) {
+      issues.push(`Script commands must ${description}`)
+    }
+  }
+
+  const engineRequirements = [
+    ['SCRIPT_MAX_OPERATIONS', 'define a script operation budget'],
+    ['set_max_operations(SCRIPT_MAX_OPERATIONS)', 'bound Rhai execution operations'],
+    ['set_max_call_levels(SCRIPT_MAX_CALL_LEVELS)', 'bound Rhai recursive call depth'],
+    ['set_max_expr_depths(SCRIPT_MAX_EXPR_DEPTH, SCRIPT_MAX_FUNCTION_EXPR_DEPTH)', 'bound Rhai expression nesting'],
+    ['set_max_variables(SCRIPT_MAX_VARIABLES)', 'bound Rhai variable growth'],
+    ['set_max_functions(SCRIPT_MAX_FUNCTIONS)', 'bound Rhai function definitions'],
+    ['set_max_modules(0)', 'disable module imports in release scripting'],
+    ['script_engine_limits_runaway_loops', 'test runaway loop aborts'],
+    ['script_engine_limits_recursive_calls', 'test recursive call aborts'],
+  ]
+  for (const [needle, description] of engineRequirements) {
+    if (!scriptingSource.includes(needle)) {
+      issues.push(`Script engine limits must ${description}`)
+    }
+  }
+
+  if (issues.length > 0) {
+    throw new Error(`Script command verification failed:\n${issues.join('\n')}`)
+  }
+
+  console.log('[release] Script command invariants OK')
 }
 
 async function verifyWorkflowCommandInvariants() {

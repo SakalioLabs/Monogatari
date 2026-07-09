@@ -19,6 +19,13 @@ use tracing::debug;
 
 use llm_core::Result;
 
+pub const SCRIPT_MAX_OPERATIONS: u64 = 100_000;
+pub const SCRIPT_MAX_CALL_LEVELS: usize = 32;
+pub const SCRIPT_MAX_EXPR_DEPTH: usize = 64;
+pub const SCRIPT_MAX_FUNCTION_EXPR_DEPTH: usize = 32;
+pub const SCRIPT_MAX_VARIABLES: usize = 512;
+pub const SCRIPT_MAX_FUNCTIONS: usize = 128;
+
 /// A scripting engine powered by Rhai for game logic and dialogue triggers.
 pub struct ScriptEngine {
     engine: Engine,
@@ -30,10 +37,17 @@ impl ScriptEngine {
     /// Create a new script engine with default game functions registered.
     pub fn new() -> Self {
         let mut engine = Engine::new();
+        engine
+            .set_max_operations(SCRIPT_MAX_OPERATIONS)
+            .set_max_call_levels(SCRIPT_MAX_CALL_LEVELS)
+            .set_max_expr_depths(SCRIPT_MAX_EXPR_DEPTH, SCRIPT_MAX_FUNCTION_EXPR_DEPTH)
+            .set_max_variables(SCRIPT_MAX_VARIABLES)
+            .set_max_functions(SCRIPT_MAX_FUNCTIONS)
+            .set_max_modules(0);
+
         let variables: Arc<RwLock<HashMap<String, Dynamic>>> =
             Arc::new(RwLock::new(HashMap::new()));
-        let flags: Arc<RwLock<HashMap<String, bool>>> =
-            Arc::new(RwLock::new(HashMap::new()));
+        let flags: Arc<RwLock<HashMap<String, bool>>> = Arc::new(RwLock::new(HashMap::new()));
 
         // Register game-specific functions
         let vars = Arc::clone(&variables);
@@ -74,13 +88,19 @@ impl ScriptEngine {
         engine.register_fn("abs", |x: i64| -> i64 { x.abs() });
         engine.register_fn("min", |a: i64, b: i64| -> i64 { a.min(b) });
         engine.register_fn("max", |a: i64, b: i64| -> i64 { a.max(b) });
-        engine.register_fn("clamp", |x: i64, min: i64, max: i64| -> i64 { x.clamp(min, max) });
+        engine.register_fn("clamp", |x: i64, min: i64, max: i64| -> i64 {
+            x.clamp(min, max)
+        });
 
         // Register string functions
         engine.register_fn("len", |s: &str| -> i64 { s.len() as i64 });
         engine.register_fn("contains", |s: &str, sub: &str| -> bool { s.contains(sub) });
-        engine.register_fn("starts_with", |s: &str, prefix: &str| -> bool { s.starts_with(prefix) });
-        engine.register_fn("ends_with", |s: &str, suffix: &str| -> bool { s.ends_with(suffix) });
+        engine.register_fn("starts_with", |s: &str, prefix: &str| -> bool {
+            s.starts_with(prefix)
+        });
+        engine.register_fn("ends_with", |s: &str, suffix: &str| -> bool {
+            s.ends_with(suffix)
+        });
 
         // Register comparison helpers
         engine.register_fn("eq", |a: &str, b: &str| -> bool { a == b });
@@ -149,11 +169,7 @@ impl ScriptEngine {
     }
 
     /// Load variables and flags from save data.
-    pub fn load_state(
-        &self,
-        variables: HashMap<String, Dynamic>,
-        flags: HashMap<String, bool>,
-    ) {
+    pub fn load_state(&self, variables: HashMap<String, Dynamic>, flags: HashMap<String, bool>) {
         let mut vars = self.variables.write().unwrap();
         *vars = variables;
         let mut flgs = self.flags.write().unwrap();
@@ -200,29 +216,33 @@ mod tests {
     fn test_execute_condition() {
         let engine = ScriptEngine::new();
         engine.set_flag("met_sakura", true);
-        assert!(engine.evaluate_condition("hasFlag(\"met_sakura\")").unwrap());
-        assert!(!engine.evaluate_condition("hasFlag(\"met_unknown\")").unwrap());
+        assert!(engine
+            .evaluate_condition("hasFlag(\"met_sakura\")")
+            .unwrap());
+        assert!(!engine
+            .evaluate_condition("hasFlag(\"met_unknown\")")
+            .unwrap());
     }
 
     #[test]
     fn test_math_functions() {
         let engine = ScriptEngine::new();
-        
+
         // Test abs
         let result = engine.execute("abs(-5)").unwrap();
         assert_eq!(result.as_int().unwrap(), 5);
-        
+
         // Test min/max
         let result = engine.execute("min(3, 7)").unwrap();
         assert_eq!(result.as_int().unwrap(), 3);
-        
+
         let result = engine.execute("max(3, 7)").unwrap();
         assert_eq!(result.as_int().unwrap(), 7);
-        
+
         // Test clamp
         let result = engine.execute("clamp(5, 1, 10)").unwrap();
         assert_eq!(result.as_int().unwrap(), 5);
-        
+
         let result = engine.execute("clamp(0, 1, 10)").unwrap();
         assert_eq!(result.as_int().unwrap(), 1);
     }
@@ -230,22 +250,26 @@ mod tests {
     #[test]
     fn test_string_functions() {
         let engine = ScriptEngine::new();
-        
+
         // Test len
         let result = engine.execute("len(\"hello\")").unwrap();
         assert_eq!(result.as_int().unwrap(), 5);
-        
+
         // Test contains
-        let result = engine.execute("contains(\"hello world\", \"world\")").unwrap();
+        let result = engine
+            .execute("contains(\"hello world\", \"world\")")
+            .unwrap();
         assert!(result.as_bool().unwrap());
-        
-        let result = engine.execute("contains(\"hello world\", \"xyz\")").unwrap();
+
+        let result = engine
+            .execute("contains(\"hello world\", \"xyz\")")
+            .unwrap();
         assert!(!result.as_bool().unwrap());
-        
+
         // Test starts_with
         let result = engine.execute("starts_with(\"hello\", \"hel\")").unwrap();
         assert!(result.as_bool().unwrap());
-        
+
         // Test ends_with
         let result = engine.execute("ends_with(\"hello\", \"llo\")").unwrap();
         assert!(result.as_bool().unwrap());
@@ -254,14 +278,14 @@ mod tests {
     #[test]
     fn test_comparison_functions() {
         let engine = ScriptEngine::new();
-        
+
         // Test eq
         let result = engine.execute("eq(\"test\", \"test\")").unwrap();
         assert!(result.as_bool().unwrap());
-        
+
         let result = engine.execute("eq(\"test\", \"other\")").unwrap();
         assert!(!result.as_bool().unwrap());
-        
+
         // Test ne
         let result = engine.execute("ne(\"test\", \"other\")").unwrap();
         assert!(result.as_bool().unwrap());
@@ -270,7 +294,7 @@ mod tests {
     #[test]
     fn test_random_function() {
         let engine = ScriptEngine::new();
-        
+
         // Test random_int
         let result = engine.execute("random_int(1, 100)").unwrap();
         let val = result.as_int().unwrap();
@@ -280,13 +304,31 @@ mod tests {
     #[test]
     fn test_complex_script() {
         let engine = ScriptEngine::new();
-        
+
         // Set some variables
         engine.set_variable("health", Dynamic::from(100i64));
         engine.set_variable("damage", Dynamic::from(25i64));
-        
+
         // Execute a complex script
-        let result = engine.execute("let h = getVariable(\"health\"); let d = getVariable(\"damage\"); h - d").unwrap();
+        let result = engine
+            .execute("let h = getVariable(\"health\"); let d = getVariable(\"damage\"); h - d")
+            .unwrap();
         assert_eq!(result.as_int().unwrap(), 75);
+    }
+
+    #[test]
+    fn script_engine_limits_runaway_loops() {
+        let engine = ScriptEngine::new();
+
+        assert!(engine.execute("while true { }").is_err());
+    }
+
+    #[test]
+    fn script_engine_limits_recursive_calls() {
+        let engine = ScriptEngine::new();
+
+        assert!(engine
+            .execute("fn recurse() { recurse(); } recurse();")
+            .is_err());
     }
 }
