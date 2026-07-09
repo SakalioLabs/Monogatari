@@ -18,7 +18,7 @@ Monogatari is a development engine for creating LLM-driven text adventure games.
 - **Visual Workflow Editor** - Drag-and-drop node-based editor for designing dialogue flows, branching conditions, LLM generation nodes, evaluation triggers, and scene transitions.
 - **Workflow Validation** - Import/export and project-scoped save/load paths validate node ids, start/end structure, missing config fields, broken links, duplicate links, and unreachable nodes.
 - **Scene Asset Library** - Project scene metadata and background files are scanned, validated, listed, and selectable as the active runtime scene.
-- **Renderer Fallback Pipeline** - Story Mode resolves project assets across Tauri and Web builds, preferring Live2D, then GLB/GLTF 3D models, then 2D sprites or portraits, with a generated 3D stage placeholder when no art is available.
+- **Renderer Fallback Pipeline** - Story Mode resolves project assets across Tauri and Web builds, preferring Live2D, then GLB/GLTF 3D models, then 2D sprites or portraits, with runtime load-failure fallback and a generated 3D stage placeholder when no art is available.
 - **Project Control Panel** - Project settings, path readiness, AI backend selection, and runtime initialization are managed from one production-oriented console.
 - **Character System** - Full personality model (Big Five traits), memory system, emotion tracking, and relationship scores per character.
 - **Knowledge Base** - Keyword-indexed world lore, pinned character references, and release-verified context anchors that feed into AI prompts for consistent storytelling.

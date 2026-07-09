@@ -4,6 +4,11 @@
     <div v-if="loading" class="loading-overlay">
       <p>Loading model...</p>
     </div>
+    <div v-else-if="loadError" class="error-overlay">
+      <span class="error-mark">L2D</span>
+      <strong>{{ loadError }}</strong>
+      <span class="error-hint">Check the model path and Live2D runtime files.</span>
+    </div>
   </div>
 </template>
 
@@ -16,9 +21,14 @@ const props = defineProps<{
   motion?: string
 }>()
 
+const emit = defineEmits<{
+  (e: 'load-error', payload: { path: string | null; message: string }): void
+}>()
+
 const containerRef = ref<HTMLDivElement>()
 const canvasRef = ref<HTMLCanvasElement>()
 const loading = ref(false)
+const loadError = ref<string | null>(null)
 
 // Live2D model state
 let app: any = null
@@ -51,6 +61,9 @@ async function initPixi() {
       await loadModel(props.modelPath)
     }
   } catch (e) {
+    const message = 'Could not initialize Live2D runtime'
+    loadError.value = message
+    emit('load-error', { path: props.modelPath, message })
     console.error('Failed to initialize PixiJS/Live2D:', e)
   }
 }
@@ -58,6 +71,7 @@ async function initPixi() {
 async function loadModel(path: string) {
   if (!app) return
   loading.value = true
+  loadError.value = null
 
   try {
     const { Live2DModel } = await import('pixi-live2d-display')
@@ -92,6 +106,9 @@ async function loadModel(path: string) {
     app.stage.addChild(model)
     fitModelToStage()
   } catch (e) {
+    const message = 'Could not load Live2D model'
+    loadError.value = message
+    emit('load-error', { path, message })
     console.error('Failed to load Live2D model:', e)
   } finally {
     loading.value = false
@@ -130,7 +147,11 @@ function setMotion(motion: string) {
 
 // Watch for prop changes
 watch(() => props.modelPath, (newPath) => {
-  if (newPath) loadModel(newPath)
+  if (newPath) {
+    loadModel(newPath)
+  } else {
+    loadError.value = null
+  }
 })
 
 watch(() => props.expression, (newExpr) => {
@@ -179,5 +200,40 @@ onUnmounted(() => {
   justify-content: center;
   background: rgba(0,0,0,0.5);
   color: var(--text-muted);
+}
+.error-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px;
+  background: rgba(15,17,21,0.72);
+  color: var(--text-tertiary);
+  text-align: center;
+  font-size: 12px;
+}
+.error-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--brand-light);
+  font-family: var(--font-mono);
+  font-weight: 900;
+}
+.error-overlay strong {
+  color: var(--text-primary);
+  font-size: 13px;
+}
+.error-hint {
+  color: var(--text-tertiary);
+  font-size: 11px;
 }
 </style>

@@ -59,15 +59,16 @@ export function rendererAssetValidationMessage(path: string, extensions: string[
 
 export function selectCharacterRendererAsset(
   character: CharacterRendererSource | null | undefined,
-  options: { expression?: string | null; validatePaths?: boolean } = {},
+  options: { expression?: string | null; validatePaths?: boolean; blockedPaths?: Iterable<string | null | undefined> } = {},
 ): RendererAssetChoice {
   if (!character) return placeholderChoice()
 
   const expression = options.expression?.trim() || character.emotion?.trim() || 'neutral'
-  const live2d = assetChoice('live2d', character.live2d_model_path, rendererAssetSpecs[0].extensions, options.validatePaths)
+  const blockedPaths = rendererBlockedPathSet(options.blockedPaths)
+  const live2d = assetChoice('live2d', character.live2d_model_path, rendererAssetSpecs[0].extensions, options.validatePaths, blockedPaths)
   if (live2d) return live2d
 
-  const model3d = assetChoice('model3d', character.model_3d_path, rendererAssetSpecs[1].extensions, options.validatePaths)
+  const model3d = assetChoice('model3d', character.model_3d_path, rendererAssetSpecs[1].extensions, options.validatePaths, blockedPaths)
   if (model3d) return model3d
 
   const sprites = cleanRendererPathMap(character.sprite_paths)
@@ -76,7 +77,7 @@ export function selectCharacterRendererAsset(
     || sprites.neutral
     || character.sprite_path
     || character.portrait_path
-  const sprite = assetChoice('sprite', spritePath, imageAssetExtensions, options.validatePaths)
+  const sprite = assetChoice('sprite', spritePath, imageAssetExtensions, options.validatePaths, blockedPaths)
   if (sprite) return sprite
 
   return placeholderChoice()
@@ -87,16 +88,28 @@ function assetChoice(
   path: string | null | undefined,
   extensions: string[],
   validatePaths = false,
+  blockedPaths: Set<string> = new Set(),
 ): RendererAssetChoice | null {
   const trimmed = path?.trim()
   if (!trimmed) return null
   if (validatePaths && rendererAssetValidationMessage(trimmed, extensions)) return null
+  const resolvedUrl = resolveAssetUrl(trimmed)
+  if (blockedPaths.has(trimmed) || (resolvedUrl && blockedPaths.has(resolvedUrl))) return null
 
   return {
     mode,
     path: trimmed,
-    resolvedUrl: resolveAssetUrl(trimmed),
+    resolvedUrl,
   }
+}
+
+function rendererBlockedPathSet(paths: Iterable<string | null | undefined> | undefined): Set<string> {
+  const blocked = new Set<string>()
+  for (const path of paths ?? []) {
+    const trimmed = path?.trim()
+    if (trimmed) blocked.add(trimmed)
+  }
+  return blocked
 }
 
 function placeholderChoice(): RendererAssetChoice {

@@ -26,12 +26,14 @@
           :model-path="currentLive2dPath"
           :expression="currentExpression"
           :motion="currentMotion"
+          @load-error="markRendererAssetFailed"
         />
         <CharacterModelView
           v-else-if="currentModel3dPath"
           :model-path="currentModel3dPath"
           :expression="currentExpression"
           :motion="currentMotion"
+          @load-error="markRendererAssetFailed"
         />
         <div v-else-if="currentSpritePath" class="sprite-stage">
           <img :src="currentSpritePath" :alt="currentCharacter?.name || 'Character sprite'" />
@@ -174,7 +176,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import Live2DCanvas from '../components/Live2DCanvas.vue'
 import CharacterModelView from '../components/CharacterModelView.vue'
 import { invokeCommand } from '../lib/tauri'
@@ -245,6 +247,7 @@ const saves = ref<SaveInfo[]>([])
 const errorMessage = ref<string | null>(null)
 const toastMessage = ref<string | null>(null)
 const isLoading = ref(false)
+const failedRendererAssets = ref<Record<string, true>>({})
 
 const settings = ref({
   textSpeed: 30,
@@ -289,7 +292,11 @@ const sceneBackdropStyle = computed(() => {
 })
 
 const currentRendererAsset = computed(() =>
-  selectCharacterRendererAsset(currentCharacter.value, { expression: currentExpression.value, validatePaths: true })
+  selectCharacterRendererAsset(currentCharacter.value, {
+    expression: currentExpression.value,
+    validatePaths: true,
+    blockedPaths: Object.keys(failedRendererAssets.value),
+  })
 )
 const currentLive2dPath = computed(() =>
   currentRendererAsset.value.mode === 'live2d' ? currentRendererAsset.value.resolvedUrl : null
@@ -308,6 +315,17 @@ function formatTime(timestamp: string): string {
     return timestamp
   }
 }
+
+function markRendererAssetFailed(payload: { path: string | null; message: string }) {
+  const path = payload.path?.trim()
+  if (!path) return
+  failedRendererAssets.value = { ...failedRendererAssets.value, [path]: true }
+  errorMessage.value = `${payload.message}; falling back to the next renderer asset.`
+}
+
+watch(() => currentCharacter.value?.id, () => {
+  failedRendererAssets.value = {}
+})
 
 async function loadActiveScene() {
   try {

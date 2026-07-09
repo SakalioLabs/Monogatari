@@ -21,6 +21,10 @@ const props = defineProps<{
   motion?: string
 }>()
 
+const emit = defineEmits<{
+  (e: 'load-error', payload: { path: string | null; message: string }): void
+}>()
+
 const containerRef = ref<HTMLDivElement>()
 const modelLoaded = ref(false)
 const modelError = ref<string | null>(null)
@@ -108,7 +112,9 @@ async function loadModel(path: string, THREE: any, GLTFLoader: any) {
     }
     modelLoaded.value = true
   } catch (e) {
-    modelError.value = 'Could not load model'
+    const message = 'Could not load 3D model'
+    modelError.value = message
+    emit('load-error', { path, message })
     showPlaceholder(THREE)
   }
 }

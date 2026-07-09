@@ -158,6 +158,30 @@ assert.deepEqual(
 assert.deepEqual(
   plain(selectCharacterRendererAsset(
     {
+      live2d_model_path: 'live2d/hero.model3.json',
+      model_3d_path: 'models/hero.glb',
+      sprite_path: 'assets/sprites/hero_base.png',
+    },
+    { validatePaths: true, blockedPaths: ['asset:live2d/hero.model3.json'] },
+  )),
+  { mode: 'model3d', path: 'models/hero.glb', resolvedUrl: 'asset:models/hero.glb' },
+)
+
+assert.deepEqual(
+  plain(selectCharacterRendererAsset(
+    {
+      live2d_model_path: 'live2d/hero.model3.json',
+      model_3d_path: 'models/hero.glb',
+      sprite_path: 'assets/sprites/hero_base.png',
+    },
+    { validatePaths: true, blockedPaths: ['live2d/hero.model3.json', 'asset:models/hero.glb'] },
+  )),
+  { mode: 'sprite', path: 'assets/sprites/hero_base.png', resolvedUrl: 'asset:assets/sprites/hero_base.png' },
+)
+
+assert.deepEqual(
+  plain(selectCharacterRendererAsset(
+    {
       live2d_model_path: 'C:/assets/hero.model3.json',
       model_3d_path: '../models/hero.glb',
       sprite_path: '/assets/sprites/hero.png',

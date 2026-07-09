@@ -138,12 +138,14 @@
                 :model-path="previewLive2dPath"
                 :expression="previewExpression"
                 motion="idle"
+                @load-error="markPreviewRendererAssetFailed"
               />
               <CharacterModelView
                 v-else-if="previewModel3dPath"
                 :model-path="previewModel3dPath"
                 :expression="previewExpression"
                 motion="idle"
+                @load-error="markPreviewRendererAssetFailed"
               />
               <div v-else-if="previewSpritePath" class="sprite-preview">
                 <img :src="previewSpritePath" :alt="form.name || 'Character sprite preview'" />
@@ -295,7 +297,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, onMounted } from 'vue'
+import { computed, reactive, ref, onMounted, watch } from 'vue'
 import Live2DCanvas from '../components/Live2DCanvas.vue'
 import CharacterModelView from '../components/CharacterModelView.vue'
 import {
@@ -400,6 +402,7 @@ const defaultForm = (): CharForm => ({
 })
 
 const form = reactive<CharForm>(defaultForm())
+const previewFailedRendererAssets = ref<Record<string, true>>({})
 
 const otherCharacters = computed(() =>
   characterList.value.filter(c => c.id !== form.id)
@@ -461,7 +464,11 @@ const rendererPreviewAsset = computed(() =>
       sprite_paths: form.sprite_paths,
       emotion: form.default_emotion,
     },
-    { expression: previewExpression.value, validatePaths: true },
+    {
+      expression: previewExpression.value,
+      validatePaths: true,
+      blockedPaths: Object.keys(previewFailedRendererAssets.value),
+    },
   )
 )
 
@@ -483,6 +490,25 @@ const rendererPreviewMode = computed(() => {
   if (rendererPreviewAsset.value.mode === 'sprite') return 'Sprite'
   return 'Generated 3D'
 })
+
+function markPreviewRendererAssetFailed(payload: { path: string | null; message: string }) {
+  const path = payload.path?.trim()
+  if (!path) return
+  previewFailedRendererAssets.value = { ...previewFailedRendererAssets.value, [path]: true }
+}
+
+watch(
+  () => [
+    form.live2d_model_path,
+    form.model_3d_path,
+    form.portrait_path,
+    form.sprite_path,
+    JSON.stringify(cleanSpritePaths(form.sprite_paths)),
+  ],
+  () => {
+    previewFailedRendererAssets.value = {}
+  },
+)
 
 const radarTraits = computed(() => [
   form.openness, form.agreeableness, form.extraversion, form.neuroticism, form.conscientiousness

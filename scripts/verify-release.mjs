@@ -1560,6 +1560,8 @@ async function verifyFrontendSourceInvariants() {
   const i18nSource = await readFile(path.join(frontendDir, 'src', 'lib', 'i18n.ts'), 'utf8')
   const pwaSource = await readFile(path.join(frontendDir, 'src', 'lib', 'pwa.ts'), 'utf8')
   const rendererAssetsSource = await readFile(path.join(frontendDir, 'src', 'lib', 'rendererAssets.ts'), 'utf8')
+  const live2dCanvasSource = await readFile(path.join(frontendDir, 'src', 'components', 'Live2DCanvas.vue'), 'utf8')
+  const characterModelSource = await readFile(path.join(frontendDir, 'src', 'components', 'CharacterModelView.vue'), 'utf8')
   const prepareWebDistSource = await readFile(path.join(frontendDir, 'scripts', 'prepare-web-dist.mjs'), 'utf8')
   const mobileReadinessSource = await readFile(path.join(frontendDir, 'scripts', 'verify-mobile-readiness.mjs'), 'utf8')
   const responsiveShellSource = await readFile(path.join(frontendDir, 'scripts', 'verify-responsive-shell.mjs'), 'utf8')
@@ -1711,6 +1713,8 @@ async function verifyFrontendSourceInvariants() {
     ['model_3d_path', 'rank GLB/GLTF fields in the renderer selector'],
     ['sprite_path', 'rank sprite fallback fields in the renderer selector'],
     ['portrait_path', 'rank portrait fallback fields in the renderer selector'],
+    ['blockedPaths', 'skip runtime-failed renderer asset paths before choosing the next fallback'],
+    ['rendererBlockedPathSet', 'normalize runtime-failed renderer paths for fallback selection'],
   ]
   for (const [needle, description] of rendererAssetRequirements) {
     if (!rendererAssetsSource.includes(needle)) {
@@ -1724,11 +1728,23 @@ async function verifyFrontendSourceInvariants() {
   if (!gameViewSource.includes('selectCharacterRendererAsset(currentCharacter.value')) {
     issues.push('frontend/src/views/GameView.vue must derive Story Mode renderer priority through selectCharacterRendererAsset')
   }
+  if (!gameViewSource.includes('markRendererAssetFailed') || !gameViewSource.includes('blockedPaths: Object.keys(failedRendererAssets.value)')) {
+    issues.push('frontend/src/views/GameView.vue must fall back to the next renderer asset after runtime load failures')
+  }
   if (!characterEditorSource.includes("from '../lib/rendererAssets'")) {
     issues.push('frontend/src/views/CharacterEditorView.vue must use shared renderer asset helpers')
   }
   if (!characterEditorSource.includes('selectCharacterRendererAsset(') || !characterEditorSource.includes('validatePaths: true')) {
     issues.push('frontend/src/views/CharacterEditorView.vue must derive preview renderer priority through selectCharacterRendererAsset with validation')
+  }
+  if (!characterEditorSource.includes('markPreviewRendererAssetFailed') || !characterEditorSource.includes('blockedPaths: Object.keys(previewFailedRendererAssets.value)')) {
+    issues.push('frontend/src/views/CharacterEditorView.vue must preview fallback renderer assets after runtime load failures')
+  }
+  if (!live2dCanvasSource.includes("defineEmits") || !live2dCanvasSource.includes("'load-error'") || !live2dCanvasSource.includes('loadError')) {
+    issues.push('frontend/src/components/Live2DCanvas.vue must emit load-error and surface Live2D runtime load failures')
+  }
+  if (!characterModelSource.includes("defineEmits") || !characterModelSource.includes("'load-error'") || !characterModelSource.includes('Could not load 3D model')) {
+    issues.push('frontend/src/components/CharacterModelView.vue must emit load-error for runtime GLB/GLTF load failures')
   }
 
   const workflowRunDiagnosticsRequirements = [

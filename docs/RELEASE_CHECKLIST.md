@@ -59,7 +59,7 @@
 - [ ] Character Editor renderer preview follows Story Mode priority for Live2D, GLB/GLTF, sprite/portrait, and generated 3D fallback states
 - [ ] Story Mode and Character Editor preview both derive renderer priority from the shared frontend renderer asset selector
 - [ ] `npm run verify:renderer-assets` passes, proving shared renderer selector priority, expression sprite resolution, validation skips, and generated fallback behavior
-- [ ] Story Mode renderer fallback verified for Live2D, GLB/GLTF, sprite/portrait, and assetless character states
+- [ ] Story Mode renderer fallback verified for Live2D, GLB/GLTF, sprite/portrait, assetless character states, and runtime Live2D/GLB/GLTF load failures that must skip to the next valid candidate
 - [ ] Checked-in character `knowledge_refs`, legacy `knowledge`, and `knowledgeRefs` resolve to existing knowledge entries in both project data roots
 
 ### AI Integration
