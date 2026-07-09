@@ -30,6 +30,7 @@
 - [ ] `cargo check --locked -p llm-galgame-app` passes
 - [ ] All 22 command modules register correctly in main.rs
 - [ ] Chat streaming works with API backend
+- [ ] API streaming rejects provider error frames and malformed SSE data frames instead of finalizing partial text as a successful completion
 - [ ] Character personality/knowledge injection verified
 - [ ] Shared Rust AI prompt builder sanitizes embedded role-boundary markers, attributed XML-like role tags, Markdown role-code-fence blocks, comment-wrapped role headers, and punctuation-free role headings in message history and context sections before OpenAI-compatible role parsing
 - [ ] Legacy C# prompt builder sanitizes embedded role-boundary markers, attributed XML-like role tags, Markdown role-code-fence blocks, comment-wrapped role headers, and punctuation-free role headings while the legacy solution remains release-gated

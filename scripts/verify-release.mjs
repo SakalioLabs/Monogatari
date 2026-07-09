@@ -2199,8 +2199,13 @@ async function verifyAiBackendConfigInvariants() {
     ['push_bytes(&chunk)', 'feed raw response bytes into the buffered SSE parser'],
     ['if sse_parser.done', 'stop reading after an SSE [DONE] marker'],
     ['finish()', 'flush a final SSE line if the server closes without a trailing newline'],
+    ['stream_error_message', 'detect provider error payloads inside SSE data frames'],
+    ['Failed to parse stream response', 'reject malformed SSE data frames instead of ignoring provider payload drift'],
     ['sse_delta_parser_buffers_split_json_and_unicode_lines', 'test split JSON and UTF-8 stream chunks'],
     ['sse_delta_parser_flushes_final_line_without_newline', 'test final unterminated SSE line handling'],
+    ['sse_delta_parser_reports_stream_error_frames', 'test provider error frames abort streaming inference'],
+    ['sse_delta_parser_rejects_error_frame_after_partial_content', 'test provider error frames abort even after partial text'],
+    ['sse_delta_parser_rejects_malformed_data_frames', 'test malformed SSE data frames are rejected'],
   ]
   for (const [needle, description] of apiStreamingRequirements) {
     if (!rustApiEngineSource.includes(needle)) {

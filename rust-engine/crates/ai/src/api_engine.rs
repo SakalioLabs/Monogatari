@@ -362,7 +362,7 @@ impl InferenceEngine for APIEngine {
                 llm_core::EngineError::inference("API", format!("Stream read error: {e}"))
             })?;
 
-            for content in sse_parser.push_bytes(&chunk) {
+            for content in sse_parser.push_bytes(&chunk)? {
                 full_text.push_str(&content);
                 on_chunk(content);
             }
@@ -370,7 +370,7 @@ impl InferenceEngine for APIEngine {
                 break;
             }
         }
-        for content in sse_parser.finish() {
+        for content in sse_parser.finish()? {
             full_text.push_str(&content);
             on_chunk(content);
         }
@@ -424,9 +424,9 @@ struct SseDeltaParser {
 }
 
 impl SseDeltaParser {
-    fn push_bytes(&mut self, bytes: &[u8]) -> Vec<String> {
+    fn push_bytes(&mut self, bytes: &[u8]) -> Result<Vec<String>> {
         if self.done {
-            return Vec::new();
+            return Ok(Vec::new());
         }
 
         self.pending.extend_from_slice(bytes);
@@ -439,7 +439,7 @@ impl SseDeltaParser {
             if line.last() == Some(&b'\r') {
                 line.pop();
             }
-            if let Some(content) = self.parse_line(&line) {
+            if let Some(content) = self.parse_line(&line)? {
                 contents.extend(content);
             }
             if self.done {
@@ -447,40 +447,65 @@ impl SseDeltaParser {
                 break;
             }
         }
-        contents
+        Ok(contents)
     }
 
-    fn finish(&mut self) -> Vec<String> {
+    fn finish(&mut self) -> Result<Vec<String>> {
         if self.done || self.pending.is_empty() {
-            return Vec::new();
+            return Ok(Vec::new());
         }
 
         let line = std::mem::take(&mut self.pending);
-        self.parse_line(&line).unwrap_or_default()
+        Ok(self.parse_line(&line)?.unwrap_or_default())
     }
 
-    fn parse_line(&mut self, line: &[u8]) -> Option<Vec<String>> {
+    fn parse_line(&mut self, line: &[u8]) -> Result<Option<Vec<String>>> {
         let line = String::from_utf8_lossy(line);
         let trimmed = line.trim();
         if !trimmed.starts_with("data:") {
-            return None;
+            return Ok(None);
         }
 
         let data = trimmed.trim_start_matches("data:").trim();
+        if data.is_empty() {
+            return Ok(None);
+        }
         if data == "[DONE]" {
             self.done = true;
-            return None;
+            return Ok(None);
         }
 
-        let chunk = serde_json::from_str::<StreamChunk>(data).ok()?;
-        Some(
+        if let Some(message) = stream_error_message(data) {
+            return Err(llm_core::EngineError::inference(
+                "API",
+                format!("API stream error: {message}"),
+            ));
+        }
+
+        let chunk = serde_json::from_str::<StreamChunk>(data).map_err(|e| {
+            llm_core::EngineError::inference("API", format!("Failed to parse stream response: {e}"))
+        })?;
+        Ok(Some(
             chunk
                 .choices
                 .into_iter()
                 .filter_map(|choice| choice.delta.content)
                 .collect(),
-        )
+        ))
     }
+}
+
+fn stream_error_message(data: &str) -> Option<String> {
+    let value = serde_json::from_str::<serde_json::Value>(data).ok()?;
+    let error = value.get("error")?;
+    let message = error
+        .get("message")
+        .and_then(|value| value.as_str())
+        .map(str::to_string)
+        .or_else(|| error.as_str().map(str::to_string))
+        .unwrap_or_else(|| error.to_string());
+
+    Some(redact_sensitive_text(&message))
 }
 
 fn redacted_secret(value: &str) -> String {
@@ -964,31 +989,80 @@ mod tests {
             + 1;
         let done = b"data: [DONE]\n";
 
-        assert!(parser.push_bytes(&first[..24]).is_empty());
-        assert!(parser.push_bytes(&first[24..]).is_empty());
-        assert_eq!(parser.push_bytes(b"\n"), vec!["Hel".to_string()]);
+        assert!(parser.push_bytes(&first[..24]).unwrap().is_empty());
+        assert!(parser.push_bytes(&first[24..]).unwrap().is_empty());
+        assert_eq!(parser.push_bytes(b"\n").unwrap(), vec!["Hel".to_string()]);
         assert!(parser
             .push_bytes(&split_unicode.as_bytes()[..split_at])
+            .unwrap()
             .is_empty());
         assert_eq!(
-            parser.push_bytes(&split_unicode.as_bytes()[split_at..]),
+            parser
+                .push_bytes(&split_unicode.as_bytes()[split_at..])
+                .unwrap(),
             vec!["lo 世界".to_string()]
         );
-        assert!(parser.push_bytes(done).is_empty());
+        assert!(parser.push_bytes(done).unwrap().is_empty());
         assert!(parser.done);
         assert!(parser
             .push_bytes(br#"data: {"choices":[{"delta":{"content":"ignored"}}]}"#)
+            .unwrap()
             .is_empty());
     }
 
     #[test]
     fn sse_delta_parser_flushes_final_line_without_newline() {
         let mut parser = SseDeltaParser::default();
-        parser.push_bytes(
-            br#"data: {"choices":[{"delta":{"content":"final"},"finish_reason":null}]}"#,
-        );
+        parser
+            .push_bytes(
+                br#"data: {"choices":[{"delta":{"content":"final"},"finish_reason":null}]}"#,
+            )
+            .unwrap();
 
-        assert_eq!(parser.finish(), vec!["final".to_string()]);
-        assert!(parser.finish().is_empty());
+        assert_eq!(parser.finish().unwrap(), vec!["final".to_string()]);
+        assert!(parser.finish().unwrap().is_empty());
+    }
+
+    #[test]
+    fn sse_delta_parser_reports_stream_error_frames() {
+        let mut parser = SseDeltaParser::default();
+        let secret = format!("sk-{}", "D".repeat(24));
+        let line =
+            format!("data: {{\"error\":{{\"message\":\"provider rejected token {secret}\"}}}}\n");
+
+        let error = parser.push_bytes(line.as_bytes()).unwrap_err().to_string();
+
+        assert!(error.contains("API stream error"));
+        assert!(error.contains("<redacted>"));
+        assert!(!error.contains(&secret));
+    }
+
+    #[test]
+    fn sse_delta_parser_rejects_error_frame_after_partial_content() {
+        let mut parser = SseDeltaParser::default();
+        let partial = parser
+            .push_bytes(
+                b"data: {\"choices\":[{\"delta\":{\"content\":\"partial\"},\"finish_reason\":null}]}\n",
+            )
+            .unwrap();
+        assert_eq!(partial, vec!["partial".to_string()]);
+
+        let error = parser
+            .push_bytes(b"data: {\"error\":{\"message\":\"stream interrupted\"}}\n")
+            .unwrap_err()
+            .to_string();
+
+        assert!(error.contains("stream interrupted"));
+    }
+
+    #[test]
+    fn sse_delta_parser_rejects_malformed_data_frames() {
+        let mut parser = SseDeltaParser::default();
+        let error = parser
+            .push_bytes(b"data: {\"choices\":\"not-a-choice-list\"}\n")
+            .unwrap_err()
+            .to_string();
+
+        assert!(error.contains("Failed to parse stream response"));
     }
 }
