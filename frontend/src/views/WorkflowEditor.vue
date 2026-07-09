@@ -1438,8 +1438,10 @@ function localNodeOutput(
     case 'wait':
       return { action: 'wait', duration_ms: durationMsConfig(node.config, 1000) }
     case 'random_branch': {
-      const chosen = node.connections[0] || ''
-      return { action: 'random_branch', chosen_connection: chosen, index: 0 }
+      const weights = workflowBranchWeights(node.config, node.connections.length)
+      const index = selectWeightedBranchIndex(weights)
+      const chosen = node.connections[index] || ''
+      return { action: 'random_branch', chosen_connection: chosen, index, weights }
     }
     case 'sub_workflow':
       return {
@@ -1693,6 +1695,37 @@ function durationMsConfig(config: Record<string, any>, fallback: number): number
   const duration = numericConfig(config.duration)
   if (duration !== null) return Math.round(duration * 1000)
   return fallback
+}
+
+function workflowBranchWeights(config: Record<string, any>, connectionCount: number): number[] {
+  if (connectionCount <= 0) return []
+  const rawWeights = Array.isArray(config.weights)
+    ? config.weights.map((value: any) => branchWeightConfig(value))
+    : typeof config.weights === 'string'
+      ? config.weights.split('\n').map((value: string) => branchWeightConfig(value))
+      : []
+  const weights = Array.from({ length: connectionCount }, (_, index) => rawWeights[index] ?? 1)
+    .map((weight) => Number.isFinite(weight) && weight > 0 ? weight : 0)
+  return weights.reduce((sum, weight) => sum + weight, 0) > 0 ? weights : weights.map(() => 1)
+}
+
+function branchWeightConfig(value: any): number {
+  const text = String(value ?? '').trim()
+  if (!text) return 1
+  const number = Number(text)
+  return Number.isFinite(number) ? number : 1
+}
+
+function selectWeightedBranchIndex(weights: number[]): number {
+  const total = weights.reduce((sum, weight) => sum + weight, 0)
+  if (total <= 0) return 0
+  const roll = Math.random() * total
+  let acc = 0
+  for (let index = 0; index < weights.length; index += 1) {
+    acc += weights[index]
+    if (roll < acc) return index
+  }
+  return Math.max(0, weights.length - 1)
 }
 
 function normalizeMetric(metric: any): string {

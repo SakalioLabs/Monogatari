@@ -572,10 +572,7 @@ async fn execute_workflow_node_inner_with_context(
             Ok(serde_json::json!({"action": "wait", "duration_ms": ms}))
         }
         "random_branch" => {
-            let weights: Vec<f64> = node.config["weights"]
-                .as_array()
-                .map(|a| a.iter().filter_map(|v| v.as_f64()).collect())
-                .unwrap_or_else(|| node.connections.iter().map(|_| 1.0).collect());
+            let weights = workflow_branch_weights(&node.config, node.connections.len());
             let total: f64 = weights.iter().sum();
             let r = rand::random::<f64>() * total;
             let mut acc = 0.0;
@@ -588,9 +585,12 @@ async fn execute_workflow_node_inner_with_context(
                 }
             }
             let chosen = node.connections.get(selected).cloned().unwrap_or_default();
-            Ok(
-                serde_json::json!({"action": "random_branch", "chosen_connection": chosen, "index": selected}),
-            )
+            Ok(serde_json::json!({
+                "action": "random_branch",
+                "chosen_connection": chosen,
+                "index": selected,
+                "weights": weights
+            }))
         }
         "trigger_event" => {
             let event_id = node.config["event_id"].as_str().unwrap_or("").trim();
@@ -1007,6 +1007,39 @@ fn optional_config_f32(config: &serde_json::Value, field: &str) -> Option<f32> {
         serde_json::Value::String(text) => text.trim().parse::<f32>().ok(),
         _ => None,
     })
+}
+
+fn workflow_branch_weights(config: &serde_json::Value, connection_count: usize) -> Vec<f64> {
+    if connection_count == 0 {
+        return Vec::new();
+    }
+
+    let mut weights = match config.get("weights") {
+        Some(serde_json::Value::Array(items)) => items
+            .iter()
+            .map(|value| value_as_f64(value).unwrap_or(1.0))
+            .collect::<Vec<_>>(),
+        Some(serde_json::Value::String(text)) => text
+            .lines()
+            .map(|line| line.trim().parse::<f64>().unwrap_or(1.0))
+            .collect::<Vec<_>>(),
+        _ => Vec::new(),
+    };
+
+    weights.resize(connection_count, 1.0);
+    weights.truncate(connection_count);
+
+    for weight in &mut weights {
+        if !weight.is_finite() || *weight <= 0.0 {
+            *weight = 0.0;
+        }
+    }
+
+    if weights.iter().sum::<f64>() <= 0.0 {
+        weights.fill(1.0);
+    }
+
+    weights
 }
 
 async fn workflow_character_id_from_state(
@@ -2269,6 +2302,54 @@ mod tests {
             "max_tokens": 0
         }));
         assert_eq!(options.max_tokens, 1);
+    }
+
+    #[test]
+    fn workflow_branch_weights_normalize_invalid_and_missing_entries() {
+        assert!(workflow_branch_weights(&serde_json::json!({}), 0).is_empty());
+
+        assert_eq!(
+            workflow_branch_weights(&serde_json::json!({"weights": [-1, 0, "0.25"]}), 4),
+            vec![0.0, 0.0, 0.25, 1.0]
+        );
+
+        assert_eq!(
+            workflow_branch_weights(&serde_json::json!({"weights": [-1, 0, -0.5]}), 3),
+            vec![1.0, 1.0, 1.0]
+        );
+
+        assert_eq!(
+            workflow_branch_weights(&serde_json::json!({"weights": "2\nbad\n-1"}), 4),
+            vec![2.0, 1.0, 0.0, 1.0]
+        );
+    }
+
+    #[tokio::test]
+    async fn random_branch_uses_normalized_weights() {
+        let state = AppState::new();
+        let random = execute_workflow_node_inner(
+            &state,
+            node(
+                "random",
+                "random_branch",
+                vec!["left", "middle", "right"],
+                serde_json::json!({"weights": [-1, 1, 0]}),
+            ),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(random["action"], "random_branch");
+        assert_eq!(random["chosen_connection"], "middle");
+        assert_eq!(random["index"], 1);
+        assert_eq!(
+            random["weights"].as_array().unwrap(),
+            &vec![
+                serde_json::json!(0.0),
+                serde_json::json!(1.0),
+                serde_json::json!(0.0)
+            ]
+        );
     }
 
     #[tokio::test]
