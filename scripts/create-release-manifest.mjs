@@ -86,6 +86,7 @@ async function main() {
   await collectWebArtifacts(artifacts, missingExpectedArtifacts)
   await collectDesktopInstallers(artifacts, missingExpectedArtifacts, issues, channelPolicy)
   const qualitySuites = await collectQualitySuiteSources(issues)
+  const qualitySuiteSet = qualitySuiteSetSummary(qualitySuites)
 
   if (artifacts.length === 0) {
     issues.push('No release artifacts found. Build Web/PWA or desktop bundles before creating a manifest.')
@@ -115,6 +116,7 @@ async function main() {
     sources: versions,
     source_state: sourceState,
     distribution: distributionSummary(releasePolicy, channelPolicy, missingInstallers),
+    quality_suite_set: qualitySuiteSet,
     quality_suites: qualitySuites,
     expected_artifacts: expectedArtifactContracts(channelPolicy),
     missing_expected_artifacts: missingExpectedArtifacts,
@@ -123,8 +125,9 @@ async function main() {
   }
 
   if (checkOnly) {
+    const qualitySuiteSetFingerprint = manifest.quality_suite_set.content_sha256.slice(0, 12)
     console.log(
-      `[release-manifest] OK (${manifest.artifacts.length} artifact(s), ${manifest.quality_suites.length} quality suite(s), ${manifest.missing_expected_artifacts.length} missing expected artifact(s), channel=${channel})`,
+      `[release-manifest] OK (${manifest.artifacts.length} artifact(s), ${manifest.quality_suite_set.suite_count} quality suite(s), quality suite set ${qualitySuiteSetFingerprint}, ${manifest.missing_expected_artifacts.length} missing expected artifact(s), channel=${channel})`,
     )
     return
   }
@@ -269,6 +272,35 @@ async function collectQualitySuiteSources(issues) {
   }
 
   return sources.sort((a, b) => a.path.localeCompare(b.path))
+}
+
+function qualitySuiteSetSummary(qualitySuites) {
+  return {
+    schema: 'monogatari-quality-suite-set/v1',
+    suite_count: qualitySuites.length,
+    scenario_count: qualitySuites.reduce((total, suite) => total + (suite.scenario_count ?? 0), 0),
+    categories: Array.from(new Set(qualitySuites.flatMap((suite) => suite.categories ?? []))).sort(),
+    fingerprint_algorithm: 'sha256:path-source-root-scenario-count-categories-suite-sha256-v1',
+    content_sha256: qualitySuiteSetSha256(qualitySuites),
+  }
+}
+
+function qualitySuiteSetSha256(qualitySuites) {
+  const hash = createHash('sha256')
+  for (const suite of [...qualitySuites].sort((a, b) => a.path.localeCompare(b.path))) {
+    const categories = Array.isArray(suite.categories) ? [...suite.categories].sort() : []
+    hash.update(suite.path ?? '')
+    hash.update('\0')
+    hash.update(suite.source_root ?? '')
+    hash.update('\0')
+    hash.update(String(suite.scenario_count ?? 0))
+    hash.update('\0')
+    hash.update(categories.join(','))
+    hash.update('\0')
+    hash.update(suite.sha256 ?? '')
+    hash.update('\n')
+  }
+  return hash.digest('hex')
 }
 
 async function collectWebArtifacts(artifacts, missingExpectedArtifacts) {
