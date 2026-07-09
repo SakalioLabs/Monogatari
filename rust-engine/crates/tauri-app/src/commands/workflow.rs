@@ -470,9 +470,11 @@ async fn execute_workflow_node_inner_with_context(
                 .and_then(|value| value.as_str())
                 .ok_or_else(|| "Condition field `condition` must be a string.".to_string())?;
             validate_condition_source(condition).map_err(|e| e.to_string())?;
+            let scope_variables =
+                workflow_condition_scope_variables(state, &node.config, run_context).await;
             let se = state.script_engine.read().await;
             let result = se
-                .evaluate_condition(condition)
+                .evaluate_condition_with_scope_variables(condition, scope_variables)
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({"result": result}))
         }
@@ -1073,6 +1075,91 @@ async fn workflow_evaluation_for_character(
         })
 }
 
+async fn workflow_condition_scope_variables(
+    state: &AppState,
+    config: &serde_json::Value,
+    run_context: Option<&WorkflowRunContext>,
+) -> Vec<(String, rhai::Dynamic)> {
+    let character_id = workflow_character_id_from_state(state, config, run_context).await;
+    let (evaluation, evaluation_source) =
+        workflow_evaluation_for_character(state, character_id.as_deref(), run_context).await;
+    let relationship =
+        workflow_relationship_for_character(state, character_id.as_deref(), run_context).await;
+    let evaluation_count =
+        workflow_evaluation_count_for_character(state, character_id.as_deref(), run_context).await;
+
+    workflow_condition_scope_from_values(
+        character_id.as_deref(),
+        relationship,
+        evaluation_count,
+        &evaluation,
+        evaluation_source,
+    )
+}
+
+fn workflow_condition_scope_from_values(
+    character_id: Option<&str>,
+    relationship: f32,
+    evaluation_count: u32,
+    evaluation: &chat::ConversationEvaluation,
+    evaluation_source: &str,
+) -> Vec<(String, rhai::Dynamic)> {
+    vec![
+        (
+            "character_id".to_string(),
+            rhai::Dynamic::from(character_id.unwrap_or_default().to_string()),
+        ),
+        (
+            "relationship".to_string(),
+            rhai::Dynamic::from(relationship as f64),
+        ),
+        (
+            "relationship_score".to_string(),
+            rhai::Dynamic::from(relationship as f64),
+        ),
+        (
+            "evaluation_count".to_string(),
+            rhai::Dynamic::from(i64::from(evaluation_count)),
+        ),
+        (
+            "friendliness".to_string(),
+            rhai::Dynamic::from(evaluation.friendliness as f64),
+        ),
+        (
+            "friendliness_score".to_string(),
+            rhai::Dynamic::from(evaluation.friendliness as f64),
+        ),
+        (
+            "engagement".to_string(),
+            rhai::Dynamic::from(evaluation.engagement as f64),
+        ),
+        (
+            "engagement_score".to_string(),
+            rhai::Dynamic::from(evaluation.engagement as f64),
+        ),
+        (
+            "creativity".to_string(),
+            rhai::Dynamic::from(evaluation.creativity as f64),
+        ),
+        (
+            "creativity_score".to_string(),
+            rhai::Dynamic::from(evaluation.creativity as f64),
+        ),
+        (
+            "overall".to_string(),
+            rhai::Dynamic::from(evaluation.overall_score as f64),
+        ),
+        (
+            "overall_score".to_string(),
+            rhai::Dynamic::from(evaluation.overall_score as f64),
+        ),
+        (
+            "evaluation_source".to_string(),
+            rhai::Dynamic::from(evaluation_source.to_string()),
+        ),
+    ]
+}
+
 async fn workflow_relationship_for_character(
     state: &AppState,
     character_id: Option<&str>,
@@ -1099,6 +1186,28 @@ async fn workflow_relationship_for_character(
     } else {
         0.0
     }
+}
+
+async fn workflow_evaluation_count_for_character(
+    state: &AppState,
+    character_id: Option<&str>,
+    run_context: Option<&WorkflowRunContext>,
+) -> u32 {
+    if workflow_run_context_applies(run_context, character_id) {
+        return run_context
+            .and_then(|context| context.evaluation_count)
+            .unwrap_or(0);
+    }
+
+    let Some(character_id) = character_id else {
+        return 0;
+    };
+
+    let sessions = state.chat_sessions.read().await;
+    sessions
+        .get(character_id)
+        .map(|session| session.evaluation_count)
+        .unwrap_or(0)
 }
 
 async fn workflow_event_session_state(
@@ -1856,8 +1965,23 @@ mod tests {
     }
 
     fn load_score_gate_workflow() -> Workflow {
-        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../data/workflows/score_gate_demo.json");
+        load_workflow_fixture("score_gate_demo.json")
+    }
+
+    fn load_sakura_meeting_workflow() -> Workflow {
+        load_workflow_fixture("sakura_meeting.json")
+    }
+
+    fn load_workflow_fixture(name: &str) -> Workflow {
+        let manifest_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let candidates = [
+            manifest_dir.join("../../data/workflows").join(name),
+            manifest_dir.join("../../../data/workflows").join(name),
+        ];
+        let path = candidates
+            .into_iter()
+            .find(|path| path.is_file())
+            .unwrap_or_else(|| panic!("workflow fixture not found: {name}"));
         let content = std::fs::read_to_string(&path)
             .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
         serde_json::from_str(&content).unwrap_or_else(|error| panic!("{}: {error}", path.display()))
@@ -2287,6 +2411,120 @@ mod tests {
         assert!(control
             .unwrap_err()
             .contains("Condition cannot contain control characters"));
+    }
+
+    #[tokio::test]
+    async fn workflow_condition_nodes_can_read_preview_context() {
+        let state = AppState::new();
+        add_test_character(&state, "sakura").await;
+        let workflow = Workflow {
+            id: "wf_condition_context".to_string(),
+            name: "Condition Context".to_string(),
+            nodes: vec![
+                node("start", "start", vec!["gate"], serde_json::json!({})),
+                node(
+                    "gate",
+                    "condition",
+                    vec!["high", "low"],
+                    serde_json::json!({
+                        "character_id": "sakura",
+                        "condition": "relationship > 0.5 && engagement >= 0.8 && evaluation_count >= 2"
+                    }),
+                ),
+                node(
+                    "high",
+                    "dialogue",
+                    vec!["end"],
+                    serde_json::json!({"text": "High context"}),
+                ),
+                node(
+                    "low",
+                    "dialogue",
+                    vec!["end"],
+                    serde_json::json!({"text": "Low context"}),
+                ),
+                node("end", "end", vec![], serde_json::json!({})),
+            ],
+            start_node_id: "start".to_string(),
+        };
+        let run_context = WorkflowRunContext {
+            enabled: true,
+            character_id: Some("sakura".to_string()),
+            relationship: Some(0.72),
+            evaluation_count: Some(2),
+            already_triggered_events: Vec::new(),
+            evaluation: Some(chat::ConversationEvaluation {
+                friendliness: 0.66,
+                engagement: 0.91,
+                creativity: 0.62,
+                overall_score: 0.72,
+                summary: "Condition context fixture.".to_string(),
+            }),
+        };
+
+        let report = execute_workflow_inner(&state, workflow, Some(8), None, Some(run_context))
+            .await
+            .unwrap();
+        let node_ids: Vec<&str> = report
+            .steps
+            .iter()
+            .map(|step| step.node_id.as_str())
+            .collect();
+
+        assert!(report.completed);
+        assert_eq!(node_ids, vec!["start", "gate", "high", "end"]);
+        assert_eq!(report.steps[1].output["result"], true);
+    }
+
+    #[tokio::test]
+    async fn checked_in_sakura_meeting_uses_relationship_condition_context() {
+        let state = AppState::new();
+        add_test_character(&state, "sakura").await;
+        let workflow = load_sakura_meeting_workflow();
+        let choice_selections = HashMap::from([("player_choice".to_string(), 1)]);
+
+        let neutral_report = execute_workflow_inner(
+            &state,
+            workflow.clone(),
+            Some(16),
+            Some(choice_selections.clone()),
+            None,
+        )
+        .await
+        .unwrap();
+        let neutral_node_ids: Vec<&str> = neutral_report
+            .steps
+            .iter()
+            .map(|step| step.node_id.as_str())
+            .collect();
+        assert!(neutral_report.completed);
+        assert!(neutral_node_ids.contains(&"low_friend"));
+
+        let warm_context = WorkflowRunContext {
+            enabled: true,
+            character_id: Some("sakura".to_string()),
+            relationship: Some(0.75),
+            evaluation_count: Some(1),
+            already_triggered_events: Vec::new(),
+            evaluation: None,
+        };
+        let warm_report = execute_workflow_inner(
+            &state,
+            workflow,
+            Some(16),
+            Some(choice_selections),
+            Some(warm_context),
+        )
+        .await
+        .unwrap();
+        let warm_node_ids: Vec<&str> = warm_report
+            .steps
+            .iter()
+            .map(|step| step.node_id.as_str())
+            .collect();
+
+        assert!(warm_report.completed);
+        assert!(warm_node_ids.contains(&"high_friend"));
     }
 
     #[tokio::test]

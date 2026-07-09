@@ -117,8 +117,23 @@ impl ScriptEngine {
 
     /// Evaluate a condition expression and return the boolean result.
     pub fn evaluate_condition(&self, condition: &str) -> Result<bool> {
+        self.evaluate_condition_with_scope_variables(condition, std::iter::empty())
+    }
+
+    /// Evaluate a condition expression with temporary read-only scope variables.
+    pub fn evaluate_condition_with_scope_variables<I>(
+        &self,
+        condition: &str,
+        scope_variables: I,
+    ) -> Result<bool>
+    where
+        I: IntoIterator<Item = (String, Dynamic)>,
+    {
         validate_condition_source(condition)?;
         let mut scope = Scope::new();
+        for (name, value) in scope_variables {
+            scope.push_dynamic(name, value);
+        }
         let result = self
             .condition_engine
             .eval_with_scope::<Dynamic>(&mut scope, condition)
@@ -348,6 +363,24 @@ mod tests {
             .is_err());
         assert!(!engine.has_flag("condition_mutated"));
         assert_eq!(engine.get_variable("score").unwrap().as_int().unwrap(), 75);
+    }
+
+    #[test]
+    fn condition_engine_can_read_temporary_scope_variables() {
+        let engine = ScriptEngine::new();
+        let variables = vec![
+            ("relationship".to_string(), Dynamic::from(0.75_f64)),
+            ("engagement".to_string(), Dynamic::from(0.82_f64)),
+            ("evaluation_count".to_string(), Dynamic::from(3_i64)),
+        ];
+
+        assert!(engine
+            .evaluate_condition_with_scope_variables(
+                "relationship > 0.5 && engagement >= 0.8 && evaluation_count >= 2",
+                variables,
+            )
+            .unwrap());
+        assert!(engine.get_variable("relationship").is_none());
     }
 
     #[test]
