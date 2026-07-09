@@ -170,6 +170,9 @@ assert.deepEqual(
 assert.equal(rendererAssetValidationMessage('https://cdn.example.com/hero.png', imageAssetExtensions), 'Use a project-relative path')
 assert.equal(rendererAssetValidationMessage('/assets/hero.png', imageAssetExtensions), 'Absolute paths are not portable')
 assert.equal(rendererAssetValidationMessage('../assets/hero.png', imageAssetExtensions), 'Parent traversal is not allowed')
+assert.equal(rendererAssetValidationMessage('assets//hero.png', imageAssetExtensions), 'Path segments must be portable')
+assert.equal(rendererAssetValidationMessage('assets/./hero.png', imageAssetExtensions), 'Path segments must be portable')
+assert.equal(rendererAssetValidationMessage('assets/hero portrait.png', imageAssetExtensions), 'Path segments must be portable')
 assert.equal(rendererAssetValidationMessage('assets/hero.bmp', imageAssetExtensions), 'Expected .png, .jpg, .jpeg, .webp, .svg')
 assert.equal(rendererAssetValidationMessage('live2d/hero.model3.json', ['.json', '.model3.json']), null)
 

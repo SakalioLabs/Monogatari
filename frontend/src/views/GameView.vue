@@ -289,7 +289,7 @@ const sceneBackdropStyle = computed(() => {
 })
 
 const currentRendererAsset = computed(() =>
-  selectCharacterRendererAsset(currentCharacter.value, { expression: currentExpression.value })
+  selectCharacterRendererAsset(currentCharacter.value, { expression: currentExpression.value, validatePaths: true })
 )
 const currentLive2dPath = computed(() =>
   currentRendererAsset.value.mode === 'live2d' ? currentRendererAsset.value.resolvedUrl : null

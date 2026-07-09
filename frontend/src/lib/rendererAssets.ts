@@ -45,9 +45,12 @@ export function cleanRendererPathMap(value: unknown): Record<string, string> {
 export function rendererAssetValidationMessage(path: string, extensions: string[]): string | null {
   const normalized = path.trim().replace(/\\/g, '/')
   if (!normalized) return null
-  if (/^(https?:|data:|blob:|asset:)/i.test(normalized)) return 'Use a project-relative path'
   if (/^[a-zA-Z]:\//.test(normalized) || normalized.startsWith('/')) return 'Absolute paths are not portable'
-  if (normalized.split('/').includes('..')) return 'Parent traversal is not allowed'
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(normalized)) return 'Use a project-relative path'
+  const segments = normalized.split('/')
+  if (segments.includes('..')) return 'Parent traversal is not allowed'
+  if (segments.some(segment => !segment || segment === '.')) return 'Path segments must be portable'
+  if (segments.some(segment => !/^[A-Za-z0-9._-]+$/.test(segment))) return 'Path segments must be portable'
 
   const extension = rendererAssetExtension(normalized)
   if (!extensions.includes(extension)) return `Expected ${extensions.join(', ')}`

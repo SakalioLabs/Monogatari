@@ -164,6 +164,7 @@ const releaseCriticalRustFiles = [
   'crates/tauri-app/src/commands/content_paths.rs',
   'crates/tauri-app/src/commands/dialogue.rs',
   'crates/tauri-app/src/commands/knowledge.rs',
+  'crates/tauri-app/src/commands/live2d.rs',
   'crates/tauri-app/src/commands/marketplace.rs',
   'crates/tauri-app/src/commands/plugin.rs',
   'crates/tauri-app/src/commands/prompt_guard.rs',
@@ -206,6 +207,7 @@ async function main() {
   await verifyCharacterManagerPathInvariants()
   await verifyPluginManagerPathInvariants()
   await verifyMarketplacePathInvariants()
+  await verifyLive2dPathInvariants()
   await verifyTtsOutputInvariants()
   await verifyFrontendRouteCoverage()
   await verifyTauriPackagingConfig()
@@ -2151,6 +2153,57 @@ async function verifyMarketplacePathInvariants() {
   }
 
   console.log('[release] Marketplace path invariants OK')
+}
+
+async function verifyLive2dPathInvariants() {
+  const issues = []
+  const live2dSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'live2d.rs'), 'utf8')
+  const rendererAssetsSource = await readFile(path.join(frontendDir, 'src', 'lib', 'rendererAssets.ts'), 'utf8')
+  const gameViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'GameView.vue'), 'utf8')
+
+  const live2dRequirements = [
+    ['live2d_model_path_in_project', 'centralize Live2D model path resolution'],
+    ['normalize_live2d_model_ref', 'normalize and validate Live2D model references'],
+    ['current_project_data_root', 'resolve Live2D models under the active project data root'],
+    ['Live2D model paths cannot contain drive prefixes or URI schemes', 'reject URI-like and drive-prefixed model paths'],
+    ['Live2D model paths cannot contain empty, current, or parent directory segments', 'reject traversal-shaped model paths'],
+    ['Live2D model paths must point to a .model3.json or .json file', 'restrict Live2D command loading to model JSON files'],
+    ['path.starts_with(project_root)', 'prove Live2D paths stay under the project root before filesystem access'],
+    ['canonical_model.starts_with(&canonical_root)', 'prove canonical Live2D paths stay under the project root'],
+    ['load_live2d_model_from_project', 'reuse the guarded project Live2D loader'],
+    ['live2d_model_paths_resolve_under_project_root', 'test compatible Live2D model path resolution'],
+    ['live2d_model_paths_reject_escape_attempts', 'test Live2D traversal and absolute path rejection'],
+    ['load_live2d_model_reads_project_model_sidecars', 'test guarded model loading and sidecar discovery'],
+  ]
+  for (const [needle, description] of live2dRequirements) {
+    if (!live2dSource.includes(needle)) {
+      issues.push(`Live2D command path handling must ${description}`)
+    }
+  }
+
+  if (live2dSource.includes('PathBuf::from(&model_path)') || live2dSource.includes('std::path::PathBuf::from(&model_path)')) {
+    issues.push('Live2D commands must not turn frontend model strings directly into filesystem paths')
+  }
+
+  const rendererRequirements = [
+    ['Path segments must be portable', 'reject empty, current, and non-portable renderer asset segments'],
+    ['^[a-zA-Z][a-zA-Z0-9+.-]*:', 'reject URI-like renderer asset paths before resolution'],
+  ]
+  for (const [needle, description] of rendererRequirements) {
+    if (!rendererAssetsSource.includes(needle)) {
+      issues.push(`Renderer asset validation must ${description}`)
+    }
+  }
+
+  if (!gameViewSource.includes('validatePaths: true')) {
+    issues.push('Story Mode renderer selection must validate project-relative asset paths before rendering')
+  }
+
+  if (issues.length > 0) {
+    throw new Error(`Live2D path verification failed:\n${issues.join('\n')}`)
+  }
+
+  console.log('[release] Live2D model path invariants OK')
 }
 
 async function verifyTtsOutputInvariants() {

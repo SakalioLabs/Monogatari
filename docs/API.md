@@ -194,9 +194,11 @@ Marketplace `templatePath` and `outputPath` values are project template referenc
 
 ## Live2D
 
+Live2D `modelPath` values are project-relative model file references under the active project data root, not arbitrary filesystem paths. `.model3.json` and `.json` files are accepted; absolute paths, drive/URI-style prefixes, empty segments, `.`/`..` traversal, and non-portable segments are rejected before loading sidecar expressions or motions.
+
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
-| `load_model` | `{ modelPath }` | `ModelInfo` | Load Live2D model |
+| `load_model` | `{ modelPath }` | `ModelInfo` | Load project-scoped Live2D model |
 | `set_expression` | `{ expressionId }` | `void` | Set expression |
 | `set_motion` | `{ motionGroup, index }` | `void` | Play motion |
 | `get_model_info` | - | `ModelInfo` | Current model info |

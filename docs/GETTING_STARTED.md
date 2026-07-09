@@ -47,7 +47,7 @@ Optional renderer fields can be added to the same character file:
 }
 ```
 
-Story Mode uses the first available renderer in this order: Live2D, GLB/GLTF 3D, emotion sprite, portrait, generated 3D placeholder. The built-in Sakura, Luna, and Kenji samples include checked-in SVG portrait and sprite assets under `assets/characters/` in both Web and bundled Tauri data roots.
+Story Mode uses the first available renderer in this order: Live2D, GLB/GLTF 3D, emotion sprite, portrait, generated 3D placeholder. Renderer paths are project-relative portable references; Live2D backend commands load `.model3.json`/`.json` files only from the active project data root. The built-in Sakura, Luna, and Kenji samples include checked-in SVG portrait and sprite assets under `assets/characters/` in both Web and bundled Tauri data roots.
 
 ## Creating a Dialogue
 
