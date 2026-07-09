@@ -343,6 +343,20 @@ const modelPath = ref('models/model.onnx')
 const tokenizerPath = ref('models/tokenizer.json')
 const useDirectML = ref(true)
 const selectedTheme = ref(localStorage.getItem('monogatari-theme') || 'dark')
+const runtimeSecretSettingKeys = new Set([
+  'api_key',
+  'apiKey',
+  'api-token',
+  'api_token',
+  'authorization',
+  'x-api-key',
+  'api-key',
+  'token',
+  'access_token',
+  'accessToken',
+  'secret',
+  'password',
+].map((key) => key.toLowerCase()))
 
 function applyTheme() {
   document.documentElement.setAttribute('data-theme', selectedTheme.value)
@@ -526,7 +540,6 @@ function applyProjectState(state: ProjectConfigState) {
   targetFps.value = Number(getConfigValue(config, ['engine', 'target_fps']) || getConfigValue(config, ['engine', 'targetFps']) || targetFps.value)
   provider.value = getConfigValue(config, ['ai', 'provider']) || provider.value
   apiBaseUrl.value = getConfigValue(config, ['ai', 'api', 'base_url']) || getConfigValue(config, ['ai', 'api', 'baseUrl']) || apiBaseUrl.value
-  apiKey.value = getConfigValue(config, ['ai', 'api', 'api_key']) || getConfigValue(config, ['ai', 'api', 'apiKey']) || apiKey.value
   apiModel.value = getConfigValue(config, ['ai', 'api', 'model']) || apiModel.value
   modelPath.value = getConfigValue(config, ['ai', 'onnx', 'model_path']) || getConfigValue(config, ['ai', 'onnx', 'modelPath']) || modelPath.value
   tokenizerPath.value = getConfigValue(config, ['ai', 'onnx', 'tokenizer_path']) || getConfigValue(config, ['ai', 'onnx', 'tokenizerPath']) || tokenizerPath.value
@@ -637,7 +650,7 @@ function buildConfigForSave(source: Record<string, any>) {
   setConfigValue(config, ['engine', 'target_fps'], Number(targetFps.value) || 60)
   setConfigValue(config, ['ai', 'provider'], provider.value)
   setConfigValue(config, ['ai', 'api', 'base_url'], apiBaseUrl.value)
-  setConfigValue(config, ['ai', 'api', 'api_key'], apiKey.value)
+  setConfigValue(config, ['ai', 'api', 'api_key'], '')
   setConfigValue(config, ['ai', 'api', 'model'], apiModel.value)
   setConfigValue(config, ['ai', 'onnx', 'model_path'], modelPath.value)
   setConfigValue(config, ['ai', 'onnx', 'tokenizer_path'], tokenizerPath.value)
@@ -645,7 +658,7 @@ function buildConfigForSave(source: Record<string, any>) {
   for (const [key, value] of Object.entries(pathEdits)) {
     setConfigValue(config, ['paths', key], value)
   }
-  return config
+  return scrubRuntimeSecretSettings(config)
 }
 
 function getConfigValue(config: Record<string, any>, path: string[]) {
@@ -659,6 +672,19 @@ function setConfigValue(config: Record<string, any>, path: string[], value: any)
     current = current[key]
   }
   current[path[path.length - 1]] = value
+}
+
+function scrubRuntimeSecretSettings(value: any): any {
+  if (Array.isArray(value)) return value.map(scrubRuntimeSecretSettings)
+  if (!value || typeof value !== 'object') return value
+  return Object.fromEntries(Object.entries(value).map(([key, entry]) => {
+    if (isRuntimeSecretSettingKey(key)) return [key, '']
+    return [key, scrubRuntimeSecretSettings(entry)]
+  }))
+}
+
+function isRuntimeSecretSettingKey(key: string) {
+  return runtimeSecretSettingKeys.has(key.toLowerCase())
 }
 
 function downloadJson(filename: string, value: unknown) {
@@ -679,7 +705,7 @@ function sanitizeManifestSettings(value: any): any {
   if (Array.isArray(value)) return value.map(sanitizeManifestSettings)
   if (!value || typeof value !== 'object') return value
   return Object.fromEntries(Object.entries(value).map(([key, entry]) => {
-    if (['api_key', 'apiKey', 'token', 'access_token', 'accessToken', 'secret', 'password'].includes(key)) {
+    if (isRuntimeSecretSettingKey(key)) {
       return [key, '<redacted>']
     }
     return [key, sanitizeManifestSettings(entry)]

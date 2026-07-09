@@ -109,6 +109,11 @@ const EXPORT_DIRECTORIES: &[(&str, &str)] = &[
 const SECRET_CONFIG_KEYS: &[&str] = &[
     "api_key",
     "apiKey",
+    "api-token",
+    "api_token",
+    "authorization",
+    "x-api-key",
+    "api-key",
     "token",
     "access_token",
     "accessToken",
@@ -147,6 +152,7 @@ pub async fn save_project_config(
         return Err("Project config must be a JSON object.".to_string());
     }
 
+    let config = scrub_runtime_secret_config(&config);
     let settings_path = root.join("settings.json");
     let json = serde_json::to_string_pretty(&config).map_err(|e| e.to_string())?;
     tokio::fs::write(&settings_path, json)
@@ -198,6 +204,7 @@ fn build_project_config_state(project_root: &Path) -> Result<ProjectConfigState,
         );
         default_project_config()
     };
+    let config = scrub_runtime_secret_config(&config);
 
     let paths = collect_path_statuses(project_root, &config, &mut issues);
     validate_ai_config(&config, &mut issues);
@@ -687,7 +694,7 @@ fn sanitize_export_config(config: &Value) -> Value {
         Value::Object(map) => Value::Object(
             map.iter()
                 .map(|(key, value)| {
-                    if SECRET_CONFIG_KEYS.contains(&key.as_str()) {
+                    if is_secret_config_key(key) {
                         (key.clone(), Value::String("<redacted>".to_string()))
                     } else {
                         (key.clone(), sanitize_export_config(value))
@@ -698,6 +705,32 @@ fn sanitize_export_config(config: &Value) -> Value {
         Value::Array(items) => Value::Array(items.iter().map(sanitize_export_config).collect()),
         _ => config.clone(),
     }
+}
+
+fn scrub_runtime_secret_config(config: &Value) -> Value {
+    match config {
+        Value::Object(map) => Value::Object(
+            map.iter()
+                .map(|(key, value)| {
+                    if is_secret_config_key(key) {
+                        (key.clone(), Value::String(String::new()))
+                    } else {
+                        (key.clone(), scrub_runtime_secret_config(value))
+                    }
+                })
+                .collect(),
+        ),
+        Value::Array(items) => {
+            Value::Array(items.iter().map(scrub_runtime_secret_config).collect())
+        }
+        _ => config.clone(),
+    }
+}
+
+fn is_secret_config_key(key: &str) -> bool {
+    SECRET_CONFIG_KEYS
+        .iter()
+        .any(|candidate| key.eq_ignore_ascii_case(candidate))
 }
 
 fn collect_json_ids(dir: &Path) -> Vec<String> {
@@ -805,6 +838,81 @@ mod tests {
         assert!(state.valid, "{:?}", state.issues);
         assert_eq!(state.paths.len(), PROJECT_PATHS.len());
         assert!(state.paths.iter().any(|path| path.key == "characters"));
+
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn scrub_runtime_secret_config_removes_sensitive_settings_before_save() {
+        let config = json!({
+            "ai": {
+                "provider": "api",
+                "api": {
+                    "base_url": "https://example.test/v1",
+                    "api_key": "plain-runtime-secret",
+                    "apiKey": "legacy-runtime-secret",
+                    "authorization": "Bearer runtime-secret",
+                    "model": "test-model"
+                }
+            },
+            "sync": {
+                "token": "sync-runtime-secret",
+                "endpoint": "https://sync.example.test"
+            },
+            "nested": [
+                { "password": "nested-runtime-secret", "label": "kept" }
+            ]
+        });
+
+        let scrubbed = scrub_runtime_secret_config(&config);
+
+        assert_eq!(scrubbed["ai"]["api"]["api_key"], "");
+        assert_eq!(scrubbed["ai"]["api"]["apiKey"], "");
+        assert_eq!(scrubbed["ai"]["api"]["authorization"], "");
+        assert_eq!(scrubbed["sync"]["token"], "");
+        assert_eq!(scrubbed["nested"][0]["password"], "");
+        assert_eq!(scrubbed["ai"]["api"]["base_url"], "https://example.test/v1");
+        assert_eq!(scrubbed["ai"]["api"]["model"], "test-model");
+        assert_eq!(scrubbed["sync"]["endpoint"], "https://sync.example.test");
+        assert_eq!(scrubbed["nested"][0]["label"], "kept");
+    }
+
+    #[test]
+    fn build_state_scrubs_legacy_settings_secrets() {
+        let root = std::env::temp_dir().join(format!(
+            "monogatari_project_secret_scrub_{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        for dir in ["characters", "dialogue", "knowledge", "assets"] {
+            std::fs::create_dir_all(root.join(dir)).unwrap();
+        }
+        std::fs::write(
+            root.join("settings.json"),
+            json!({
+                "ai": {
+                    "provider": "api",
+                    "api": {
+                        "base_url": "https://example.test/v1",
+                        "api_key": "legacy-runtime-secret",
+                        "model": "test-model"
+                    }
+                }
+            })
+            .to_string(),
+        )
+        .unwrap();
+
+        let state = build_project_config_state(&root).unwrap();
+
+        assert_eq!(state.config["ai"]["api"]["api_key"], "");
+        assert!(state
+            .issues
+            .iter()
+            .any(|issue| issue.code == "api_key_missing"));
+        assert!(!state.config.to_string().contains("legacy-runtime-secret"));
 
         std::fs::remove_dir_all(root).unwrap();
     }

@@ -1719,11 +1719,20 @@ async function verifyFrontendSourceInvariants() {
     ['downloadJson(', 'download project export manifests as JSON'],
     ['sanitizeManifestSettings', 'redact sensitive settings in browser preview export manifests'],
     ['Export Manifest', 'surface a project manifest export control'],
+    ['runtimeSecretSettingKeys', 'centralize frontend runtime secret setting keys'],
+    ['scrubRuntimeSecretSettings', 'scrub runtime secrets before saving project settings'],
+    ["setConfigValue(config, ['ai', 'api', 'api_key'], '')", 'keep API keys runtime-only when saving project settings'],
   ]
   for (const [needle, description] of projectExportRequirements) {
     if (!settingsSource.includes(needle)) {
       issues.push(`frontend/src/views/SettingsView.vue must ${description}`)
     }
+  }
+  if (settingsSource.includes("setConfigValue(config, ['ai', 'api', 'api_key'], apiKey.value)")) {
+    issues.push('frontend/src/views/SettingsView.vue must not persist runtime API keys into settings.json payloads')
+  }
+  if (settingsSource.includes("apiKey.value = getConfigValue(config, ['ai', 'api', 'api_key'])")) {
+    issues.push('frontend/src/views/SettingsView.vue must not hydrate runtime API keys from project settings')
   }
 
   const cloudSyncSettingsRequirements = [
@@ -2767,7 +2776,11 @@ async function verifyTauriPackagingConfig() {
     [tauriProjectSource, 'collect_project_file_inventory', 'include a file inventory in project export manifests'],
     [tauriProjectSource, 'checksum_md5', 'include per-file checksums in project export manifests'],
     [tauriProjectSource, 'sanitize_export_config', 'redact sensitive settings in project export manifests'],
+    [tauriProjectSource, 'scrub_runtime_secret_config(&config)', 'scrub runtime secrets before saving or returning project settings'],
+    [tauriProjectSource, 'is_secret_config_key', 'centralize project config secret key matching'],
     [tauriProjectSource, 'SECRET_CONFIG_KEYS', 'centralize sensitive export config keys'],
+    [tauriProjectSource, 'scrub_runtime_secret_config_removes_sensitive_settings_before_save', 'test project settings secret scrubbing before save'],
+    [tauriProjectSource, 'build_state_scrubs_legacy_settings_secrets', 'test legacy project settings secrets are not returned to the frontend'],
     [tauriProjectSource, 'EXPORT_DIRECTORIES', 'declare exportable project directories explicitly'],
   ]
   for (const [source, needle, description] of runtimeDataRootRequirements) {

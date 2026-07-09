@@ -200,7 +200,7 @@ Marketplace `templatePath` and `outputPath` values are project template referenc
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
 | `get_project_config` | `{ projectPath }` | `ProjectConfig` | Get project settings |
-| `save_project_config` | `{ projectPath, config }` | `ProjectConfig` | Save project settings |
+| `save_project_config` | `{ projectPath, config }` | `ProjectConfig` | Save project settings with runtime secrets scrubbed before writing `settings.json` |
 
 ## Live2D
 

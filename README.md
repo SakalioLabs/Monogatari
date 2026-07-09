@@ -60,6 +60,7 @@ Verified on 2026-07-09:
 - The shared Rust AI prompt builder sanitizes embedded role-boundary markers, attributed XML-like role tags, Markdown role-code-fence blocks, comment-wrapped role headers, and punctuation-free role headings in message history and context sections so reusable integrations cannot accidentally reintroduce `[System]`/`[User]`/`[Assistant]` prompt-boundary injection.
 - The legacy C# AI path mirrors role-boundary sanitization for bracket, fullwidth, XML/header, attributed XML-like, Markdown role-code-fence, comment-wrapped, punctuation-free heading, and JSON-shaped role spoofing, and redacts provider-error API secrets while the legacy solution remains part of the release gate.
 - OpenAI-compatible API configuration debug output and API error surfaces redact API keys, bearer tokens, sensitive custom headers, and provider-echoed secret assignments before logs or frontend error reports can expose them.
+- Project settings save/load paths scrub API keys, tokens, authorization headers, and legacy persisted secret fields so provider credentials remain runtime-only instead of landing in `settings.json`.
 - Azure and ElevenLabs TTS provider errors redact token-shaped values, API-key assignments, authorization headers, and provider response bodies before Settings or speech-generation failures expose credentials.
 - Prompt-injection detection now covers structured role-control blocks, attributed XML-like role tags, Markdown role-code-fence blocks, comment-wrapped role headers, punctuation-free role headings, English, Chinese, Japanese, Korean, fullwidth, and zero-width-obfuscated prompt-control phrases before scoring, memory writes, relationship deltas, and runtime safety traces consume player text.
 - Chat, group chat, and quality-suite runtime traces now prove when the character mind contract and creator-pinned knowledge context were applied, including resolved pinned knowledge ref IDs for audit.
@@ -247,7 +248,7 @@ The web build emits `dist/404.html` for SPA fallback, `dist/.nojekyll` for GitHu
 1. Open Settings from the sidebar
 2. Set the project data path, title, target FPS, and content directory mappings
 3. Review readiness diagnostics for characters, dialogue, knowledge, scenes, assets, and saves
-4. Save `settings.json`, configure the AI backend, then initialize the runtime
+4. Save `settings.json`, configure the AI backend with the runtime API key, then initialize the runtime
 
 ### Node Types
 
@@ -285,12 +286,14 @@ The web build emits `dist/404.html` for SPA fallback, `dist/.nojekyll` for GitHu
     "provider": "api",
     "api": {
       "base_url": "https://api.openai.com/v1",
-      "api_key": "your-key-here",
+      "api_key": "",
       "model": "gpt-4o-mini"
     }
   }
 }
 ```
+
+API keys are runtime-only. Set them through Settings when configuring the AI backend; `settings.json` saves retain only non-secret provider metadata.
 
 ### ONNX Mode (Local)
 
