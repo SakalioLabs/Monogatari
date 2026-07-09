@@ -87,6 +87,17 @@
           </div>
         </div>
       </div>
+      <div class="audit-column">
+        <div class="audit-head">
+          <span class="eyebrow">{{ t('quality.audit-run', 'Run') }}</span>
+          <strong>{{ report.run_metadata.engine_version }}</strong>
+        </div>
+        <div class="run-metadata-list">
+          <span class="audit-chip">{{ formatTimestamp(report.run_metadata.generated_at) }}</span>
+          <span class="audit-chip">{{ report.run_metadata.scenario_count }} {{ t('quality.scenarios', 'scenarios') }}</span>
+          <span class="audit-chip ok">{{ formatRatio(report.run_metadata.pass_rate) }}</span>
+        </div>
+      </div>
     </section>
 
     <section class="quality-grid">
@@ -317,8 +328,16 @@ interface QualitySuiteReport {
   total: number
   passed: number
   failed: number
+  run_metadata: QualitySuiteRunMetadata
   audit_summary: QualitySuiteAuditSummary
   scenarios: QualityScenarioReport[]
+}
+
+interface QualitySuiteRunMetadata {
+  generated_at: string
+  engine_version: string
+  scenario_count: number
+  pass_rate: number
 }
 
 interface QualitySuiteAuditSummary {
@@ -374,6 +393,12 @@ const previewReport: QualitySuiteReport = {
   total: 29,
   passed: 29,
   failed: 0,
+  run_metadata: {
+    generated_at: '2026-07-09T00:00:00Z',
+    engine_version: '0.9.5',
+    scenario_count: 29,
+    pass_rate: 1,
+  },
   audit_summary: {
     failed_scenario_ids: [],
     category_summary: [
@@ -1032,6 +1057,18 @@ function formatCoverage(value: number) {
   return `${Math.round(value)}%`
 }
 
+function formatRatio(value: number) {
+  if (!Number.isFinite(value)) return '-'
+  return `${Math.round(value * 100)}%`
+}
+
+function formatTimestamp(value: string) {
+  if (!value) return '-'
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return value
+  return parsed.toISOString().replace(/\.\d{3}Z$/, 'Z')
+}
+
 function runtimeTraceLabel(trace: ChatSafetyTrace) {
   const interventions = runtimeInterventionNotes(trace)
   return interventions.length === 0 ? 'Clean' : `${interventions.length} guards`
@@ -1067,6 +1104,7 @@ function exportQualityReport() {
     quality_report_schema: 'monogatari-quality-report/v1',
     exported_at: exportedAt,
     suite: selectedSuite.value,
+    run_metadata: report.value.run_metadata,
     summary: {
       total: report.value.total,
       passed: report.value.passed,
@@ -1160,11 +1198,11 @@ onMounted(async () => {
 .metric-card.fail .metric-value { color: var(--danger); }
 .metric-value { color: var(--brand-light); font-size: 22px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .metric-label { color: var(--text-tertiary); font-size: 11px; font-weight: 800; text-transform: uppercase; }
-.audit-panel { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.25fr) minmax(0, 1fr); gap: 12px; margin-bottom: 18px; }
+.audit-panel { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 0.9fr); gap: 12px; margin-bottom: 18px; }
 .audit-column { display: grid; align-content: start; gap: 10px; min-width: 0; min-height: 120px; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); }
 .audit-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; min-width: 0; }
 .audit-head strong { color: var(--text-primary); font-size: 15px; }
-.audit-chip-list, .safety-signal-list, .runtime-guard-note-list { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.audit-chip-list, .safety-signal-list, .runtime-guard-note-list, .run-metadata-list { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
 .audit-chip { max-width: 100%; padding: 4px 7px; border-radius: 999px; background: var(--surface-3); color: var(--text-secondary); font-size: 10px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .audit-chip.ok { background: rgba(34,197,94,0.12); color: var(--success); }
 .audit-chip.warning { background: rgba(245,158,11,0.14); color: var(--warning); }

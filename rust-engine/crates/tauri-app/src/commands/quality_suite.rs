@@ -153,8 +153,17 @@ pub struct QualitySuiteReport {
     pub total: usize,
     pub passed: usize,
     pub failed: usize,
+    pub run_metadata: QualitySuiteRunMetadata,
     pub audit_summary: QualitySuiteAuditSummary,
     pub scenarios: Vec<QualityScenarioReport>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct QualitySuiteRunMetadata {
+    pub generated_at: String,
+    pub engine_version: String,
+    pub scenario_count: usize,
+    pub pass_rate: f32,
 }
 
 #[derive(Debug, Clone, Default, Serialize)]
@@ -614,6 +623,7 @@ async fn run_quality_suite_inner(
     let passed = scenarios.iter().filter(|scenario| scenario.passed).count();
     let total = scenarios.len();
     let audit_summary = quality_suite_audit_summary(&scenarios);
+    let run_metadata = quality_suite_run_metadata(total, passed);
 
     QualitySuiteReport {
         suite_name: suite.name.clone(),
@@ -621,8 +631,22 @@ async fn run_quality_suite_inner(
         total,
         passed,
         failed: total - passed,
+        run_metadata,
         audit_summary,
         scenarios,
+    }
+}
+
+fn quality_suite_run_metadata(total: usize, passed: usize) -> QualitySuiteRunMetadata {
+    QualitySuiteRunMetadata {
+        generated_at: chrono::Utc::now().to_rfc3339(),
+        engine_version: env!("CARGO_PKG_VERSION").to_string(),
+        scenario_count: total,
+        pass_rate: if total > 0 {
+            passed as f32 / total as f32
+        } else {
+            0.0
+        },
     }
 }
 
@@ -1833,6 +1857,13 @@ mod tests {
 
         assert_eq!(report.total, 29);
         assert_eq!(report.failed, 0, "{:#?}", report.scenarios);
+        assert_eq!(
+            report.run_metadata.engine_version,
+            env!("CARGO_PKG_VERSION")
+        );
+        assert_eq!(report.run_metadata.scenario_count, report.total);
+        assert_eq!(report.run_metadata.pass_rate, 1.0);
+        assert!(chrono::DateTime::parse_from_rfc3339(&report.run_metadata.generated_at).is_ok());
         assert!(report.audit_summary.failed_scenario_ids.is_empty());
         assert!(report
             .audit_summary

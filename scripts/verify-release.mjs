@@ -1849,6 +1849,10 @@ async function verifyFrontendSourceInvariants() {
     ['exportQualityReport()', 'provide JSON export for quality reports'],
     ['quality_report_schema', 'include a stable quality report export schema marker'],
     ['monogatari-quality-report', 'use stable quality report export filenames'],
+    ['run_metadata', 'export quality suite run metadata for QA provenance'],
+    ['QualitySuiteRunMetadata', 'type quality suite run metadata'],
+    ['formatTimestamp', 'format quality report generation timestamps'],
+    ['run-metadata-list', 'keep a stable style hook for quality run metadata'],
     ['audit_summary', 'include backend audit summaries in quality report exports'],
     ['failed_scenario_ids', 'export failed quality scenario ids for QA triage'],
     ['safety_signal_counts', 'export quality safety signal counts'],
@@ -3225,6 +3229,9 @@ async function verifyTauriPackagingConfig() {
     ['workflow_output_equals', 'let workflow quality scenarios assert finalized workflow output text'],
     ['workflow_output: Option<String>', 'export finalized workflow output text in quality reports'],
     ['workflow_output_report', 'omit empty workflow output evidence from non-workflow scenarios'],
+    ['QualitySuiteRunMetadata', 'export quality suite run metadata'],
+    ['quality_suite_run_metadata', 'centralize quality suite run metadata generation'],
+    ['CARGO_PKG_VERSION', 'bind quality suite run metadata to the engine package version'],
     ['reports_workflow_output_finalization_mismatches', 'test finalized workflow output expectations fail loudly'],
   ]
   for (const [needle, description] of qualityRuntimeTraceRequirements) {
