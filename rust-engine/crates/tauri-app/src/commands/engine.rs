@@ -289,4 +289,20 @@ mod tests {
         std::fs::remove_dir_all(first).unwrap();
         std::fs::remove_dir_all(second).unwrap();
     }
+
+    #[tokio::test]
+    async fn checked_in_project_data_loads_as_real_runtime_content() {
+        let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        for root in [
+            manifest_dir.join("../../data"),
+            manifest_dir.join("../../../data"),
+        ] {
+            let (characters, dialogues, _, events) = load_project_content(&root)
+                .await
+                .unwrap_or_else(|error| panic!("{}: {error}", root.display()));
+            assert!(!characters.character_ids().is_empty(), "{}", root.display());
+            assert!(!dialogues.script_ids().is_empty(), "{}", root.display());
+            assert!(!events.snapshot().events.is_empty(), "{}", root.display());
+        }
+    }
 }

@@ -50,6 +50,15 @@ pub struct DialogueRuntimeState {
     pub variables: HashMap<String, serde_json::Value>,
 }
 
+/// Stable authoring/runtime metadata for a loaded dialogue script.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct DialogueScriptSummary {
+    pub id: String,
+    pub title: String,
+    pub start_node_id: String,
+    pub node_count: usize,
+}
+
 /// Manages dialogue flow, advancing through nodes and handling choices.
 pub struct DialogueManager {
     /// All loaded dialogue scripts.
@@ -433,6 +442,26 @@ impl DialogueManager {
     pub fn script_ids(&self) -> Vec<String> {
         self.scripts.keys().cloned().collect()
     }
+
+    /// Get deterministic dialogue metadata for content browsers and authoring tools.
+    pub fn script_summaries(&self) -> Vec<DialogueScriptSummary> {
+        let mut summaries = self
+            .scripts
+            .values()
+            .map(|script| DialogueScriptSummary {
+                id: script.id.clone(),
+                title: script.title.clone(),
+                start_node_id: script.start_node_id.clone(),
+                node_count: script.nodes.len(),
+            })
+            .collect::<Vec<_>>();
+        summaries.sort_by(|left, right| left.id.cmp(&right.id));
+        summaries
+    }
+
+    pub fn has_script(&self, script_id: &str) -> bool {
+        self.scripts.contains_key(script_id)
+    }
 }
 
 impl Default for DialogueManager {
@@ -459,6 +488,30 @@ mod tests {
             manager.get_state().1.get("chapter_1.score"),
             Some(&serde_json::Value::String("high".to_string()))
         );
+    }
+
+    #[test]
+    fn script_summaries_are_sorted_and_do_not_expose_node_content() {
+        let mut manager = DialogueManager::new();
+        for (id, title) in [("z_last", "Last"), ("a_first", "First")] {
+            let script: DialogueScript = serde_json::from_value(serde_json::json!({
+                "id": id,
+                "title": title,
+                "start_node_id": "start",
+                "nodes": {
+                    "start": {"text": "secret", "choices": []}
+                }
+            }))
+            .unwrap();
+            manager.scripts.insert(id.to_string(), script);
+        }
+
+        let summaries = manager.script_summaries();
+        assert_eq!(summaries[0].id, "a_first");
+        assert_eq!(summaries[1].id, "z_last");
+        assert_eq!(summaries[0].node_count, 1);
+        assert!(manager.has_script("a_first"));
+        assert!(!manager.has_script("missing"));
     }
 
     #[test]

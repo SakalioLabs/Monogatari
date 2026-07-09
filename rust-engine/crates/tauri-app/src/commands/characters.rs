@@ -7,7 +7,7 @@ use tauri::State;
 
 use crate::commands::content_paths::resolve_project_content_dir;
 use crate::state::AppState;
-use llm_game::characters::{Character, CharacterKnowledgeEntry, Personality};
+use llm_game::characters::{Character, CharacterKnowledgeEntry, CharacterManager, Personality};
 
 #[derive(Serialize)]
 pub struct CharacterInfo {
@@ -51,6 +51,7 @@ fn character_info(id: String, character: &Character) -> CharacterInfo {
 /// Get all characters.
 #[tauri::command]
 pub async fn get_characters(state: State<'_, AppState>) -> Result<Vec<CharacterInfo>, String> {
+    ensure_project_characters_loaded(&state).await?;
     let cm = state.character_manager.read().await;
     let mut characters = Vec::new();
 
@@ -68,6 +69,7 @@ pub async fn get_character(
     state: State<'_, AppState>,
     character_id: String,
 ) -> Result<CharacterInfo, String> {
+    ensure_project_characters_loaded(&state).await?;
     let cm = state.character_manager.read().await;
     let character = cm
         .get_character(&character_id)
@@ -75,6 +77,33 @@ pub async fn get_character(
 
     let character = character.read().await;
     Ok(character_info(character.id.clone(), &character))
+}
+
+async fn ensure_project_characters_loaded(state: &AppState) -> Result<(), String> {
+    if !state
+        .character_manager
+        .read()
+        .await
+        .character_ids()
+        .is_empty()
+    {
+        return Ok(());
+    }
+    let character_root = state.current_project_data_root().await.join("characters");
+    if !character_root.is_dir() {
+        return Ok(());
+    }
+
+    let mut loaded = CharacterManager::new();
+    loaded
+        .load_from_directory(&character_root)
+        .await
+        .map_err(|error| error.to_string())?;
+    let mut active = state.character_manager.write().await;
+    if active.character_ids().is_empty() {
+        *active = loaded;
+    }
+    Ok(())
 }
 
 /// Load characters from a directory.

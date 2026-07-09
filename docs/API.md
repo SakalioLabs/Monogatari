@@ -48,8 +48,10 @@ Story events load from the active project's configured `paths.events` directory,
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
 | `get_story_event_catalog` | - | `StoryEventCatalogSnapshot` | Return active definitions, trigger rules, source, count, and catalog fingerprint |
+| `get_story_content_access` | - | `StoryContentAccessSnapshot` | Return event-derived scene/dialogue/ending gates, source events, and current unlock decisions |
 | `get_story_progress` | - | `StoryProgressSnapshot` | Return applied event scopes, unlock sets, application counts, and progress fingerprint |
 | `reload_story_event_catalog` | - | `StoryEventCatalogSnapshot` | Validate and atomically replace the active project catalog |
+| `save_story_event_catalog` | `{ document, expectedCatalogFingerprint }` | `StoryEventCatalogSnapshot` | Validate and rollback-safely replace a single-document project catalog with optimistic concurrency |
 
 ### Streaming Events
 - `chat-chunk` - Token-by-token response
@@ -67,7 +69,8 @@ Dialogue loader `directory` values resolve under the active project `dialogue/` 
 
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
-| `start_dialogue` | `{ dialogueId }` | `void` | Begin dialogue tree |
+| `start_dialogue` | `{ dialogueId }` | `DialogueState` | Begin an accessible dialogue tree, lazily loading project dialogue assets when needed |
+| `list_dialogues` | - | `DialogueCatalogEntry[]` | List deterministic dialogue metadata with event-derived access decisions |
 | `advance_dialogue` | - | `void` | Next dialogue node |
 | `select_choice` | `{ choiceIndex }` | `void` | Player picks choice |
 | `get_dialogue_state` | - | `DialogueState` | Current dialogue state |
@@ -133,9 +136,20 @@ Scene and renderer asset paths are project-relative asset references. Runtime as
 
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
-| `list_scene_assets` | - | `SceneInfo[]` | List all scenes |
+| `list_scene_assets` | - | `SceneAssetCatalog` | List all scenes, backgrounds, and diagnostics |
+| `list_story_scenes` | - | `StorySceneInfo[]` | List scenes with event-derived access decisions |
 | `get_current_scene` | - | `ActiveScene` | Current active scene |
-| `set_scene` | `{ sceneId }` | `void` | Set active scene |
+| `set_scene` | `{ sceneId }` | `SceneInfo` | Set an authoring/runtime scene without player gate enforcement |
+| `enter_story_scene` | `{ sceneId }` | `SceneInfo` | Enter a scene through Story Mode with unlock enforcement |
+
+## Endings
+
+Ending assets live under project `endings/`. Starting an ending checks the ending unlock and any event-derived gates on its referenced scene and dialogue, verifies both referenced assets exist, then activates the scene and dialogue.
+
+| Command | Args | Returns | Description |
+|---------|------|---------|-------------|
+| `list_story_endings` | - | `StoryEndingCatalogEntry[]` | List versioned ending assets with access decisions |
+| `start_story_ending` | `{ endingId }` | `StoryEndingLaunch` | Validate and launch the ending's scene and dialogue |
 
 ## Scripting
 

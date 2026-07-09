@@ -70,7 +70,15 @@ public class DialogueManager : IGameService
 
         var choice = _currentNode.Choices[index];
 
-        if (choice.RelationshipDelta.HasValue && _currentNode.SpeakerId != null)
+        foreach (var (characterId, delta) in choice.RelationshipChanges)
+        {
+            var character = _characterManager.GetCharacter(characterId);
+            character?.AdjustRelationship("player", delta);
+        }
+
+        if (choice.RelationshipChanges.Count == 0 &&
+            choice.RelationshipDelta.HasValue &&
+            _currentNode.SpeakerId != null)
         {
             var character = _characterManager.GetCharacter(_currentNode.SpeakerId);
             character?.AdjustRelationship("player", choice.RelationshipDelta.Value);

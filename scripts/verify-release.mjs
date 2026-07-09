@@ -144,6 +144,7 @@ const expectedFrontendRoutes = [
   { path: '/audio', name: 'audio', component: 'AudioView.vue', navKey: 'nav.audio' },
   { path: '/knowledge', name: 'knowledge', component: 'KnowledgeBaseView.vue', navKey: 'nav.knowledge' },
   { path: '/dialogue-editor', name: 'dialogue-editor', component: 'DialogueEditorView.vue', navKey: 'nav.dialogues' },
+  { path: '/story-events', name: 'story-events', component: 'StoryEventEditorView.vue', navKey: 'nav.events' },
   { path: '/scene-editor', name: 'scene-editor', component: 'SceneEditorView.vue', navKey: 'nav.scenes' },
   { path: '/cg-gallery', name: 'cg-gallery', component: 'CGGalleryView.vue', navKey: 'nav.cg-gallery' },
   { path: '/backlog', name: 'backlog', component: 'BacklogView.vue', navKey: 'nav.backlog' },
@@ -157,13 +158,16 @@ const releaseCriticalRustFiles = [
   'crates/assets/src/asset_manager.rs',
   'crates/assets/src/save_manager.rs',
   'crates/game/src/dialogue/dialogue_manager.rs',
+  'crates/game/src/dialogue/dialogue_script.rs',
   'crates/scripting/src/lib.rs',
   'crates/tauri-app/src/main.rs',
   'crates/tauri-app/src/state.rs',
+  'crates/tauri-app/src/story_access.rs',
   'crates/tauri-app/src/story_events.rs',
   'crates/tauri-app/src/story_progress.rs',
   'crates/tauri-app/src/commands/ai.rs',
   'crates/tauri-app/src/commands/engine.rs',
+  'crates/tauri-app/src/commands/endings.rs',
   'crates/tauri-app/src/commands/project.rs',
   'crates/tauri-app/src/commands/scenes.rs',
   'crates/tauri-app/src/commands/analytics.rs',
@@ -300,7 +304,11 @@ async function main() {
   await run('Rust asset management tests', 'cargo', ['test', '--locked', '-p', 'llm-assets'], rustDir)
   await run('Rust scripting tests', 'cargo', ['test', '--locked', '-p', 'llm-scripting'], rustDir)
   await run('Rust game tests', 'cargo', ['test', '--locked', '-p', 'llm-game'], rustDir)
-  await run('Rust Tauri command tests', 'cargo', ['test', '--locked', '-p', 'llm-galgame-app'], rustDir)
+  await run('Rust Tauri command tests', 'cargo', ['test', '--locked', '-p', 'llm-galgame-app'], rustDir, {
+    env: process.platform === 'win32'
+      ? { CARGO_INCREMENTAL: '0', CARGO_PROFILE_TEST_DEBUG: '0' }
+      : { CARGO_INCREMENTAL: '0' },
+  })
   await run('Rust Tauri app check', 'cargo', ['check', '--locked', '-p', 'llm-galgame-app'], rustDir)
   await run(
     'Frontend audit',
@@ -403,16 +411,33 @@ async function verifyJsonFiles() {
 async function verifyStoryEventCatalogs() {
   const issues = []
   const catalogs = []
+  const contentInventories = []
   let fileCount = 0
   const rustStoryEventSource = await readFile(path.join(tauriAppDir, 'src', 'story_events.rs'), 'utf8')
 
   for (const dataRoot of rendererDataRoots) {
     const catalog = await loadStoryEventCatalog(dataRoot, issues)
+    const contentInventory = await loadStoryContentInventory(dataRoot, issues)
     catalogs.push({ label: dataRoot.label, catalog })
+    contentInventories.push({ label: dataRoot.label, inventory: contentInventory })
     fileCount += catalog.fileCount
     for (const eventId of requiredEventRules) {
       if (!catalog.events.has(eventId)) {
         issues.push(`${dataRoot.label}: missing required story event ${eventId}`)
+      }
+    }
+    for (const event of catalog.events.values()) {
+      for (const action of event.actions) {
+        const target = action.type === 'unlock_scene'
+          ? ['scene', action.scene_id, contentInventory.sceneIds]
+          : action.type === 'unlock_dialogue'
+            ? ['dialogue', action.dialogue_id, contentInventory.dialogueIds]
+            : action.type === 'unlock_ending'
+              ? ['ending', action.ending_id, contentInventory.endingIds]
+              : null
+        if (target && !target[2].has(target[1])) {
+          issues.push(`${dataRoot.label}: story event ${event.event_id} unlocks missing ${target[0]} ${target[1]}`)
+        }
       }
     }
   }
@@ -425,6 +450,11 @@ async function verifyStoryEventCatalogs() {
     }
     if (catalogs[0].catalog.catalogFingerprint !== catalogs[1].catalog.catalogFingerprint) {
       issues.push(`${catalogs[0].label} and ${catalogs[1].label} normalized story event fingerprints must match`)
+    }
+    const leftEndings = [...contentInventories[0].inventory.endings.values()].sort((left, right) => left.id.localeCompare(right.id))
+    const rightEndings = [...contentInventories[1].inventory.endings.values()].sort((left, right) => left.id.localeCompare(right.id))
+    if (stableStringify(leftEndings) !== stableStringify(rightEndings)) {
+      issues.push(`${contentInventories[0].label} and ${contentInventories[1].label} story ending catalogs must match`)
     }
   }
   for (const { label, catalog } of catalogs) {
@@ -446,6 +476,47 @@ async function verifyStoryEventCatalogs() {
   }
 
   console.log(`[release] Story event catalogs OK (${fileCount} file(s), ${catalogs[0]?.catalog.events.size ?? 0} events, catalog ${catalogs[0]?.catalog.catalogFingerprint.slice(0, 12) ?? 'missing'})`)
+}
+
+async function loadStoryContentInventory(dataRoot, issues) {
+  const sceneIds = await contentIdsInDirectory(dataRoot, 'scenes', issues)
+  const dialogueIds = await contentIdsInDirectory(dataRoot, 'dialogue', issues)
+  const endingFiles = await jsonFilesInDir(path.join(dataRoot.dir, 'endings'), issues)
+  const endings = new Map()
+  const allowedEndingFields = new Set(['schema', 'id', 'title', 'description', 'scene_id', 'dialogue_id'])
+  for (const file of endingFiles) {
+    const label = relative(file)
+    const ending = JSON.parse(await readFile(file, 'utf8'))
+    if (ending?.schema !== 'monogatari-story-ending/v1') issues.push(`${label}: schema must be monogatari-story-ending/v1`)
+    for (const field of ['id', 'scene_id', 'dialogue_id']) {
+      if (!portableStoryEventId(ending?.[field], 128)) issues.push(`${label}: ${field} must be a portable identifier`)
+    }
+    if (!nonEmptyString(ending?.title) || ending.title.length > 256) issues.push(`${label}: title must contain 1 to 256 characters`)
+    if (!nonEmptyString(ending?.description) || ending.description.length > 2048) issues.push(`${label}: description must contain 1 to 2048 characters`)
+    const unknownFields = Object.keys(ending ?? {}).filter((field) => !allowedEndingFields.has(field))
+    if (unknownFields.length > 0) issues.push(`${label}: unknown fields ${unknownFields.join(', ')}`)
+    if (sceneIds.size > 0 && !sceneIds.has(ending?.scene_id)) issues.push(`${label}: references missing scene ${String(ending?.scene_id)}`)
+    if (dialogueIds.size > 0 && !dialogueIds.has(ending?.dialogue_id)) issues.push(`${label}: references missing dialogue ${String(ending?.dialogue_id)}`)
+    if (endings.has(ending?.id)) issues.push(`${label}: duplicate ending id ${String(ending?.id)}`)
+    else if (portableStoryEventId(ending?.id, 128)) endings.set(ending.id, ending)
+  }
+  return { sceneIds, dialogueIds, endingIds: new Set(endings.keys()), endings }
+}
+
+async function contentIdsInDirectory(dataRoot, directory, issues) {
+  const files = await jsonFilesInDir(path.join(dataRoot.dir, directory), issues)
+  const ids = new Set()
+  for (const file of files) {
+    const document = JSON.parse(await readFile(file, 'utf8'))
+    if (!portableStoryEventId(document?.id, 128)) {
+      issues.push(`${relative(file)}: id must be a portable identifier`)
+    } else if (ids.has(document.id)) {
+      issues.push(`${dataRoot.label}: duplicate ${directory} id ${document.id}`)
+    } else {
+      ids.add(document.id)
+    }
+  }
+  return ids
 }
 
 async function loadStoryEventCatalog(dataRoot, issues) {
@@ -1890,6 +1961,8 @@ async function verifyFrontendSourceInvariants() {
   const rendererAssetsSource = await readFile(path.join(frontendDir, 'src', 'lib', 'rendererAssets.ts'), 'utf8')
   const storyEventsSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyEvents.ts'), 'utf8')
   const storyProgressSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyProgress.ts'), 'utf8')
+  const storyAccessSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyAccess.ts'), 'utf8')
+  const storyContentSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyContent.ts'), 'utf8')
   const live2dCanvasSource = await readFile(path.join(frontendDir, 'src', 'components', 'Live2DCanvas.vue'), 'utf8')
   const characterModelSource = await readFile(path.join(frontendDir, 'src', 'components', 'CharacterModelView.vue'), 'utf8')
   const prepareWebDistSource = await readFile(path.join(frontendDir, 'scripts', 'prepare-web-dist.mjs'), 'utf8')
@@ -1900,6 +1973,7 @@ async function verifyFrontendSourceInvariants() {
   const groupChatViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'GroupChatView.vue'), 'utf8')
   const characterEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'CharacterEditorView.vue'), 'utf8')
   const workflowEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'WorkflowEditor.vue'), 'utf8')
+  const storyEventEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'StoryEventEditorView.vue'), 'utf8')
   const qualitySuiteSource = await readFile(path.join(frontendDir, 'src', 'views', 'QualitySuiteView.vue'), 'utf8')
   const audioViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'AudioView.vue'), 'utf8')
   const settingsSource = await readFile(path.join(frontendDir, 'src', 'views', 'SettingsView.vue'), 'utf8')
@@ -1996,6 +2070,9 @@ async function verifyFrontendSourceInvariants() {
     ['/project-assets.json', 'precache the generated project asset manifest'],
     ['cacheProjectAssets()', 'cache generated project assets during service worker install'],
     ['manifest.event_catalogs', 'cache project story event catalogs during service worker install'],
+    ['manifest.scene_files', 'cache project scene catalogs during service worker install'],
+    ['manifest.dialogue_files', 'cache project dialogue scripts during service worker install'],
+    ['manifest.ending_files', 'cache project ending catalogs during service worker install'],
     ['path.startsWith("/events/")', 'serve project story events through an offline-aware strategy'],
     ['monogatari-web-project-assets/v1', 'validate the project asset manifest schema before caching'],
     ['function withBase', 'define withBase helper'],
@@ -2013,6 +2090,9 @@ async function verifyFrontendSourceInvariants() {
   const webDistPackagingRequirements = [
     ["'data', 'assets'", 'copy checked-in project assets from data/assets'],
     ["'data', 'events'", 'copy checked-in story event catalogs from data/events'],
+    ["'data', 'scenes'", 'copy checked-in scene catalogs from data/scenes'],
+    ["'data', 'dialogue'", 'copy checked-in dialogue scripts from data/dialogue'],
+    ["'data', 'endings'", 'copy checked-in ending catalogs from data/endings'],
     ['distProjectAssetsDir', 'target copied project assets into dist/assets'],
     ['projectAssetManifestPath', 'write a generated project asset manifest into dist'],
     ['staticHostingHeadersPath', 'write static-hosting security headers into dist'],
@@ -2031,6 +2111,9 @@ async function verifyFrontendSourceInvariants() {
     ['walkFiles(projectAssetsDir', 'inventory copied project assets for offline PWA caching'],
     ['cp(projectAssetsDir, distProjectAssetsDir', 'merge project assets into the Web/PWA dist asset tree'],
     ['cp(projectEventsDir, distProjectEventsDir', 'merge story event catalogs into the Web/PWA dist tree'],
+    ['cp(projectScenesDir, distProjectScenesDir', 'merge scene catalogs into the Web/PWA dist tree'],
+    ['cp(projectDialoguesDir, distProjectDialoguesDir', 'merge dialogue scripts into the Web/PWA dist tree'],
+    ['cp(projectEndingsDir, distProjectEndingsDir', 'merge ending catalogs into the Web/PWA dist tree'],
     ['event_catalogs', 'inventory story event catalogs in the Web/PWA project manifest'],
     ['project asset manifest', 'report the generated project asset manifest in the Web/PWA preparation output'],
   ]
@@ -2048,6 +2131,18 @@ async function verifyFrontendSourceInvariants() {
     [storyEventsSource, 'normalizeActions', 'normalize typed and legacy story event actions in browser builds'],
     [storyEventsSource, "type: 'set_flag'", 'type supported story event actions in browser builds'],
     [storyProgressSource, "invokeCommand<StoryProgressSnapshot>('get_story_progress')", 'query persistent story progress in desktop builds'],
+    [storyAccessSource, "invokeCommand<StoryContentAccessSnapshot>('get_story_content_access')", 'query event-derived content access in desktop builds'],
+    [storyAccessSource, 'deriveStoryContentAccess', 'derive matching content access decisions for browser builds'],
+    [storyContentSource, "invokeCommand<StorySceneInfo[]>('list_story_scenes')", 'load gated scenes from desktop projects'],
+    [storyContentSource, "invokeCommand<StoryDialogueInfo[]>('list_dialogues')", 'load gated dialogues from desktop projects'],
+    [storyContentSource, "invokeCommand<StoryEndingInfo[]>('list_story_endings')", 'load gated endings from desktop projects'],
+    [storyContentSource, 'dialogue_files', 'load packaged dialogue scripts from Web/PWA project manifests'],
+    [storyEventsSource, 'expectedCatalogFingerprint', 'save event catalogs with optimistic concurrency'],
+    [storyEventEditorSource, 'validateDocument()', 'validate edited event catalogs before save'],
+    [storyEventEditorSource, 'changeActionType', 'edit typed event effects'],
+    [gameViewSource, 'loadStoryScenes()', 'populate Story Mode from the project scene catalog'],
+    [gameViewSource, 'start_story_ending', 'launch gated ending assets from Story Mode'],
+    [gameViewSource, 'webDialogueNodeId', 'advance packaged Web/PWA dialogue scripts with a browser cursor'],
     [chatViewSource, "listen<StoryEventApplication[]>('chat-event-applications'", 'surface applied event effects from streaming chat'],
     [chatViewSource, 'loadStoryProgress()', 'refresh persistent unlock counts in the chat workbench'],
     [workflowEditorSource, 'loadStoryEventCatalog()', 'load project story events into the workflow editor'],
@@ -3368,7 +3463,12 @@ async function verifyTauriPackagingConfig() {
   const tauriStateSource = await readFile(path.join(tauriAppDir, 'src', 'state.rs'), 'utf8')
   const tauriStoryEventsSource = await readFile(path.join(tauriAppDir, 'src', 'story_events.rs'), 'utf8')
   const tauriStoryProgressSource = await readFile(path.join(tauriAppDir, 'src', 'story_progress.rs'), 'utf8')
+  const tauriStoryAccessSource = await readFile(path.join(tauriAppDir, 'src', 'story_access.rs'), 'utf8')
   const tauriStoryEventCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'story_events.rs'), 'utf8')
+  const tauriEndingCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'endings.rs'), 'utf8')
+  const tauriDialogueCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'dialogue.rs'), 'utf8')
+  const gameCharacterSource = await readFile(path.join(rustDir, 'crates', 'game', 'src', 'characters', 'character.rs'), 'utf8')
+  const gameDialogueScriptSource = await readFile(path.join(rustDir, 'crates', 'game', 'src', 'dialogue', 'dialogue_script.rs'), 'utf8')
   const tauriEngineSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'engine.rs'), 'utf8')
   const tauriProjectSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'project.rs'), 'utf8')
   const tauriScenesSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'scenes.rs'), 'utf8')
@@ -3476,7 +3576,7 @@ async function verifyTauriPackagingConfig() {
       issues.push('tauri.conf.json bundle.resources must map ../../../data to clean data/ resource output')
     }
     const dataRoot = path.resolve(tauriAppDir, source)
-    for (const dir of ['assets', 'characters', 'dialogue', 'events', 'knowledge', 'locales', 'quality_suites', 'scenes', 'workflows']) {
+    for (const dir of ['assets', 'characters', 'dialogue', 'endings', 'events', 'knowledge', 'locales', 'quality_suites', 'scenes', 'workflows']) {
       if (!(await directoryExists(path.join(dataRoot, dir)))) {
         issues.push(`bundled data resource is missing ${dir}/`)
       }
@@ -3514,6 +3614,7 @@ async function verifyTauriPackagingConfig() {
     [tauriEngineSource, 'validate_character_references', 'validate character-scoped story events before activation'],
     [tauriEngineSource, 'let root_changed = state.set_project_data_root(path).await', 'rebind project managers after staged engine initialization'],
     [tauriEngineSource, 'project_content_loading_replaces_instead_of_merging_managers', 'test project reloads do not merge old content'],
+    [tauriEngineSource, 'checked_in_project_data_loads_as_real_runtime_content', 'load both checked-in project roots through real runtime managers'],
     [tauriStateSource, 'reset_project_runtime_state', 'clear mutable chat, scene, and script state across project reloads'],
     [tauriStateSource, 'StoryProgressState::default()', 'clear story progress across project reloads'],
     [tauriStateSource, 'changing_project_root_clears_project_runtime_state', 'test project root changes clear runtime state'],
@@ -3563,6 +3664,9 @@ async function verifyTauriPackagingConfig() {
     [tauriProjectSource, 'build_state_scrubs_legacy_settings_secrets', 'test legacy project settings secrets are not returned to the frontend'],
     [tauriProjectSource, 'EXPORT_DIRECTORIES', 'declare exportable project directories explicitly'],
     [tauriProjectSource, '("events", "events")', 'include story event catalogs in project exports'],
+    [tauriProjectSource, '("endings", "endings")', 'include story ending catalogs in project exports'],
+    [gameCharacterSource, 'deserialize_relationships', 'migrate numeric and detailed legacy relationship values'],
+    [gameDialogueScriptSource, 'node.id.clone_from(node_id)', 'treat dialogue node map keys as authoritative IDs'],
   ]
   for (const [source, needle, description] of runtimeDataRootRequirements) {
     if (!source.includes(needle)) {
@@ -3632,6 +3736,10 @@ async function verifyTauriPackagingConfig() {
     [tauriStoryEventCommandsSource, 'get_story_event_catalog', 'expose the active catalog to author tooling'],
     [tauriStoryEventCommandsSource, 'get_story_progress', 'expose persistent story progress to runtime tooling'],
     [tauriStoryEventCommandsSource, 'reload_story_event_catalog', 'support atomic author hot reloads'],
+    [tauriStoryEventCommandsSource, 'save_story_event_catalog', 'support validated optimistic-concurrency catalog saves'],
+    [tauriStoryEventCommandsSource, 'write_staged_event_document', 'stage event catalog replacement before activation'],
+    [tauriStoryEventCommandsSource, 'rollback_staged_event_document', 'restore event catalogs after post-write validation failure'],
+    [tauriStoryEventCommandsSource, 'visual_save_rejects_multi_document_catalogs', 'reject ambiguous visual flattening of multi-document catalogs'],
     [tauriStoryEventCommandsSource, 'apply_story_event_definition', 'centralize atomic story event effect application'],
     [tauriStoryEventCommandsSource, 'rejected_reload_leaves_active_catalog_unchanged', 'test failed reloads do not replace active rules'],
     [tauriChatSource, 'state.story_event_catalog.read().await.clone()', 'evaluate chat events from the active project catalog'],
@@ -3640,6 +3748,19 @@ async function verifyTauriPackagingConfig() {
     [tauriWorkflowSource, 'validate_workflow_with_catalog', 'validate workflow event references against the active catalog'],
     [tauriWorkflowSource, 'node_event_unknown', 'report unknown workflow story events'],
     [tauriWorkflowSource, 'event_catalog.decision_for', 'evaluate workflow trigger nodes from project rules'],
+    [tauriWorkflowSource, 'ensure_story_content_access', 'enforce story scene gates during real workflow execution'],
+    [tauriWorkflowSource, 'workflow_scene_change_enforces_event_unlocks_for_real_runs', 'test workflow scene gate enforcement'],
+    [tauriStoryAccessSource, 'monogatari-story-content-access/v1', 'version event-derived content access snapshots'],
+    [tauriStoryAccessSource, 'ensure_story_content_access', 'centralize scene, dialogue, and ending access enforcement'],
+    [tauriStoryAccessSource, 'content_not_referenced_by_an_unlock_action_is_open', 'preserve access to legacy unreferenced content'],
+    [tauriDialogueCommandsSource, 'ensure_dialogue_access', 'enforce dialogue unlocks before playback'],
+    [tauriDialogueCommandsSource, 'list_dialogues', 'expose dialogue metadata with access decisions'],
+    [tauriScenesSource, 'enter_story_scene', 'separate gated Story Mode entry from author scene selection'],
+    [tauriEndingCommandsSource, 'monogatari-story-ending/v1', 'version story ending assets'],
+    [tauriEndingCommandsSource, 'start_story_ending_inner', 'validate and launch ending scene/dialogue pairs'],
+    [tauriEndingCommandsSource, 'ending_launch_enforces_unlocks_then_starts_scene_and_dialogue', 'test complete ending gate and launch behavior'],
+    [tauriMainSource, 'commands::story_events::save_story_event_catalog', 'register event catalog authoring saves'],
+    [tauriMainSource, 'commands::endings::start_story_ending', 'register gated ending launch commands'],
     [tauriWorkflowSource, 'apply_story_event_definition', 'apply real workflow trigger effects through the shared executor'],
     [tauriQualitySuiteSource, 'event_catalog: &StoryEventCatalog', 'run quality scenarios against project event rules'],
     [tauriMainSource, 'commands::story_events::get_story_event_catalog', 'register story event catalog commands'],
@@ -3873,6 +3994,10 @@ async function verifyReleaseChannelPolicy() {
     ['data/scenes/sakura_park.json', 'require default Sakura scene content in release manifests'],
     ['data/assets/characters/sakura_sprite.svg', 'require default Sakura renderer asset content in release manifests'],
     ['data/events/story_events.json', 'require project story event content in release manifests'],
+    ['data/endings/best_friend_ending.json', 'require project story ending content in release manifests'],
+    ["'endings'", 'include story endings in project content source categories'],
+    ['dialogueNodeCount', 'count object-map and legacy array dialogue nodes in project content summaries'],
+    ['schema_versions', 'record story ending schema versions in release manifests'],
     ['event_types', 'record story event type coverage in release manifests'],
     ['character_scoped_count', 'record character-scoped story event counts in release manifests'],
     ['repeatable_count', 'record repeatable story event counts in release manifests'],
@@ -4075,6 +4200,9 @@ async function verifyWebDist({ basePath = '/' } = {}) {
     if (!serviceWorker.includes('cacheProjectAssets()')) {
       issues.push('sw.js install flow must cache project assets from the generated manifest')
     }
+    for (const prefix of ['/scenes/', '/dialogue/', '/endings/']) {
+      if (!serviceWorker.includes(prefix)) issues.push(`sw.js must cache and route project content under ${prefix}`)
+    }
   }
 
   if (issues.length > 0) {
@@ -4163,6 +4291,38 @@ async function verifyWebProjectAssets(distDir, projectAssetManifest, issues) {
     }
     if (!(await fileExists(path.join(distDir, eventPath.slice(1))))) {
       issues.push(`project-assets.json references missing story event catalog: ${eventPath}`)
+    }
+  }
+
+  for (const content of [
+    { directory: 'scenes', manifestField: 'scene_files', prefix: '/scenes/' },
+    { directory: 'dialogue', manifestField: 'dialogue_files', prefix: '/dialogue/' },
+    { directory: 'endings', manifestField: 'ending_files', prefix: '/endings/' },
+  ]) {
+    const manifestPaths = projectAssetManifest[content.manifestField]
+    if (!Array.isArray(manifestPaths)) {
+      issues.push(`project-assets.json ${content.manifestField} must be an array`)
+      continue
+    }
+    const manifestSet = new Set(manifestPaths)
+    if (manifestSet.size !== manifestPaths.length) {
+      issues.push(`project-assets.json ${content.manifestField} must not contain duplicates`)
+    }
+    const sourceDir = path.join(root, 'data', content.directory)
+    for (const sourceFile of await walkFiles(sourceDir, [])) {
+      const relativePath = path.relative(sourceDir, sourceFile).replaceAll(path.sep, '/')
+      const manifestPath = `${content.prefix}${relativePath}`
+      if (!manifestSet.has(manifestPath)) issues.push(`project-assets.json must include ${manifestPath}`)
+      if (!(await fileExists(path.join(distDir, content.directory, relativePath)))) {
+        issues.push(`Missing Web/PWA project content: ${content.directory}/${relativePath}`)
+      }
+    }
+    for (const manifestPath of manifestPaths) {
+      if (typeof manifestPath !== 'string' || !manifestPath.startsWith(content.prefix)) {
+        issues.push(`project-assets.json ${content.manifestField} path is invalid: ${manifestPath}`)
+      } else if (!(await fileExists(path.join(distDir, manifestPath.slice(1))))) {
+        issues.push(`project-assets.json references missing project content: ${manifestPath}`)
+      }
     }
   }
 }
@@ -4271,6 +4431,22 @@ async function verifyWebPreview({ basePath = '/', env = {} } = {}) {
       }
     } catch (error) {
       issues.push(`story events: preview request failed: ${error.message}`)
+    }
+
+    for (const content of [
+      ['/scenes/sakura_park.json', 'id', 'sakura_park'],
+      ['/dialogue/sakura_park_walk.json', 'id', 'sakura_park_walk'],
+      ['/endings/best_friend_ending.json', 'schema', 'monogatari-story-ending/v1'],
+    ]) {
+      try {
+        const response = await fetch(previewUrl(port, normalizedBase, content[0]))
+        const payload = await response.json()
+        if (response.status !== 200 || payload?.[content[1]] !== content[2]) {
+          issues.push(`${content[0]}: project content preview response is invalid`)
+        }
+      } catch (error) {
+        issues.push(`${content[0]}: preview request failed: ${error.message}`)
+      }
     }
 
     if (issues.length > 0) {

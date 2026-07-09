@@ -11,6 +11,7 @@ use tauri::State;
 use crate::commands::story_events::apply_story_event_definition;
 use crate::commands::{chat, prompt_guard};
 use crate::state::AppState;
+use crate::story_access::{ensure_story_content_access, story_content_access, StoryContentKind};
 use crate::story_events::{EventScoreSnapshot, StoryEventCatalog, StoryEventDefinition};
 
 const DEFAULT_WORKFLOW_MAX_STEPS: usize = 64;
@@ -618,6 +619,20 @@ async fn execute_workflow_node_inner_with_context(
             let name = config_string(&node.config, &["name"]);
             let background_path = config_string(&node.config, &["background_path", "background"]);
             let bgm_path = config_string(&node.config, &["bgm_path", "bgm"]);
+            let access = {
+                let catalog = state.story_event_catalog.read().await;
+                let progress = state.story_progress.read().await;
+                if preview_state.is_none() {
+                    ensure_story_content_access(
+                        &catalog,
+                        &progress,
+                        StoryContentKind::Scene,
+                        &scene_id,
+                    )?
+                } else {
+                    story_content_access(&catalog, &progress, StoryContentKind::Scene, &scene_id)
+                }
+            };
             if preview_state.is_none() {
                 record_workflow_scene_change(state, &scene_id).await;
             }
@@ -627,6 +642,7 @@ async fn execute_workflow_node_inner_with_context(
                 "name": name,
                 "background_path": background_path,
                 "bgm_path": bgm_path,
+                "access": access,
             }))
         }
         "llm_generate" => {
@@ -2721,6 +2737,7 @@ mod tests {
         .await
         .unwrap();
         assert_eq!(scene["action"], "scene_change");
+        assert_eq!(scene["access"]["unlocked"], true);
         assert_eq!(
             state.active_scene_id.read().await.as_deref(),
             Some("sakura_park")
@@ -2740,6 +2757,39 @@ mod tests {
                 .unwrap();
         assert_eq!(end["action"], "end");
         assert_eq!(end["complete"], true);
+    }
+
+    #[tokio::test]
+    async fn workflow_scene_change_enforces_event_unlocks_for_real_runs() {
+        let state = AppState::new();
+        let scene_node = node(
+            "scene",
+            "scene_change",
+            vec![],
+            serde_json::json!({"scene_id": "festival_night"}),
+        );
+
+        let error = execute_workflow_node_inner(&state, scene_node.clone())
+            .await
+            .unwrap_err();
+        assert!(error.contains("first_friend"));
+        assert!(state.active_scene_id.read().await.is_none());
+
+        state
+            .story_progress
+            .write()
+            .await
+            .unlocked_scene_ids
+            .insert("festival_night".to_string());
+        let output = execute_workflow_node_inner(&state, scene_node)
+            .await
+            .unwrap();
+        assert_eq!(output["access"]["gated"], true);
+        assert_eq!(output["access"]["unlocked"], true);
+        assert_eq!(
+            state.active_scene_id.read().await.as_deref(),
+            Some("festival_night")
+        );
     }
 
     #[tokio::test]
@@ -3097,7 +3147,7 @@ mod tests {
             .read()
             .await
             .unlocked_dialogue_ids
-            .contains("engaged_conversation"));
+            .contains("through_the_lens"));
     }
 
     #[tokio::test]

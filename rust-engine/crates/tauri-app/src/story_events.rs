@@ -154,6 +154,17 @@ pub struct StoryEventCatalog {
 }
 
 impl StoryEventCatalog {
+    pub fn from_document_json(content: &str, source_path: &str) -> Result<Self, String> {
+        if content.len() as u64 > MAX_STORY_EVENT_FILE_BYTES {
+            return Err(format!(
+                "Story event document is {} bytes; the limit is {MAX_STORY_EVENT_FILE_BYTES} bytes.",
+                content.len()
+            ));
+        }
+        let document = parse_story_event_document(content, source_path)?;
+        Self::from_documents("project", vec![(source_path.to_string(), document)])
+    }
+
     pub fn load_from_project_root(project_root: &Path) -> Result<Self, String> {
         let (directory, explicitly_configured) = project_event_directory(project_root)?;
         if explicitly_configured && !directory.exists() {
@@ -346,7 +357,6 @@ impl StoryEventCatalog {
         })
     }
 
-    #[cfg(test)]
     pub fn definitions(&self) -> &[StoryEventDefinition] {
         &self.definitions
     }
@@ -476,6 +486,10 @@ impl StoryEventCatalog {
 
     pub fn catalog_fingerprint(&self) -> &str {
         &self.catalog_fingerprint
+    }
+
+    pub fn project_event_directory(project_root: &Path) -> Result<PathBuf, String> {
+        project_event_directory(project_root).map(|(directory, _)| directory)
     }
 }
 
@@ -1099,7 +1113,7 @@ mod tests {
     fn checked_in_catalog_preserves_cross_runtime_catalog_fingerprint() {
         assert_eq!(
             StoryEventCatalog::default().catalog_fingerprint(),
-            "e70fb6419b98ea215270dc7dd0de81cc077943d146685eb23f29a44cd7eed06d"
+            "f79ea33cd8ee91e961889e74cc3db23995219711c50324cad6fd9dae94a25b10"
         );
     }
 

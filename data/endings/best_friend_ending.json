@@ -1,0 +1,8 @@
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "best_friend_ending",
+  "title": "Under the Festival Stars",
+  "description": "A quiet promise closes the night after your bond reaches its strongest point.",
+  "scene_id": "festival_night",
+  "dialogue_id": "observatory_night"
+}

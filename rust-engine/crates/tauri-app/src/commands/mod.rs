@@ -8,6 +8,7 @@ pub mod chat;
 pub mod cloud_sync;
 pub(crate) mod content_paths;
 pub mod dialogue;
+pub mod endings;
 pub mod engine;
 pub mod i18n;
 pub mod knowledge;

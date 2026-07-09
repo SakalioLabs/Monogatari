@@ -40,6 +40,7 @@
         "scenes": "scenes",
         "assets": "assets",
         "events": "events",
+        "endings": "endings",
         "saves": "saves",
         "quality_suites": "quality_suites"
     }

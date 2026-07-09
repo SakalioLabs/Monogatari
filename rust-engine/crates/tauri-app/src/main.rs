@@ -7,6 +7,7 @@
 
 mod commands;
 mod state;
+mod story_access;
 mod story_events;
 mod story_progress;
 
@@ -59,9 +60,13 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             commands::engine::initialize_engine,
             commands::engine::get_engine_status,
+            commands::endings::list_story_endings,
+            commands::endings::start_story_ending,
             commands::story_events::get_story_event_catalog,
+            commands::story_events::get_story_content_access,
             commands::story_events::get_story_progress,
             commands::story_events::reload_story_event_catalog,
+            commands::story_events::save_story_event_catalog,
             commands::project::get_project_config,
             commands::project::save_project_config,
             commands::project::export_project,
@@ -69,6 +74,7 @@ fn main() {
             commands::characters::get_character,
             commands::characters::load_characters,
             commands::dialogue::start_dialogue,
+            commands::dialogue::list_dialogues,
             commands::dialogue::advance_dialogue,
             commands::dialogue::select_choice,
             commands::dialogue::get_dialogue_state,
@@ -101,8 +107,10 @@ fn main() {
             commands::save::list_saves,
             commands::save::delete_save,
             commands::scenes::list_scene_assets,
+            commands::scenes::list_story_scenes,
             commands::scenes::get_current_scene,
             commands::scenes::set_scene,
+            commands::scenes::enter_story_scene,
             commands::workflow::get_workflow_nodes,
             commands::workflow::execute_workflow,
             commands::workflow::execute_workflow_node,

@@ -684,7 +684,7 @@ mod tests {
             .read()
             .await
             .unlocked_scene_ids
-            .contains("friend_scene"));
+            .contains("festival_night"));
         assert_eq!(
             state.chat_sessions.read().await["sakura"].evaluation_count,
             1
@@ -735,7 +735,7 @@ mod tests {
             .read()
             .await
             .unlocked_scene_ids
-            .contains("friend_scene"));
+            .contains("festival_night"));
     }
 
     #[tokio::test]

@@ -131,7 +131,7 @@ export const useGameStore = defineStore('game', () => {
 
   async function setActiveScene(sceneId: string) {
     try {
-      await invokeCommand('set_scene', { sceneId })
+      await invokeCommand('enter_story_scene', { sceneId })
       activeSceneId.value = sceneId
     } catch (e) {
       console.error('Scene change failed:', e)

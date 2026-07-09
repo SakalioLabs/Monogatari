@@ -72,6 +72,8 @@ Dialogues are stored in `rust-engine/data/dialogue/`.
 - `next_node_id`: Node to transition to
 - `relationship_changes`: Map of character_id to delta (-1.0 to 1.0)
 
+Dialogue node map keys are authoritative node IDs. An optional nested `id` is accepted for compatibility and normalized to the map key. Character `relationships` values may be numeric scores or legacy objects containing a numeric `score`; runtime values are clamped to `-1..1`.
+
 ## Knowledge Format
 
 Knowledge entries are stored in `rust-engine/data/knowledge/`.
@@ -139,6 +141,25 @@ Story events are stored in one or more JSON files under the configured project `
 - `actions` accepts at most 64 typed effects: `unlock_scene` with `scene_id`, `unlock_dialogue` with `dialogue_id`, `unlock_ending` with `ending_id`, or `set_flag` with a portable `flag` and boolean `value`.
 - `data` remains bounded author-defined metadata. Legacy string fields `data.unlock_scene`, `data.dialogue_id`, and `data.unlock_ending` are migrated into equivalent typed actions at load time.
 - Default unscoped rules preserve the `monogatari-event-trigger-rule/v1` fingerprint contract. Character-scoped or repeatable rules use v2 fingerprints, while the catalog fingerprint binds descriptions, metadata, actions, and rule fingerprints.
+- An `unlock_scene`, `unlock_dialogue`, or `unlock_ending` target is gated until it appears in persistent story progress. Project content not referenced by any unlock action remains open, preserving legacy projects.
+- The visual editor writes a single JSON catalog document with an expected catalog fingerprint. Multi-document catalogs remain runtime-supported but must be consolidated before visual save to avoid silently flattening author-owned files.
+
+## Ending Format
+
+Endings are individual JSON files under project `endings/`.
+
+```json
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "best_friend_ending",
+  "title": "Under the Festival Stars",
+  "description": "A quiet promise closes the night.",
+  "scene_id": "festival_night",
+  "dialogue_id": "observatory_night"
+}
+```
+
+IDs must be portable and the referenced scene and dialogue must exist. Release verification cross-checks all event unlock targets and ending references in both checked-in data roots.
 
 ## Workflow Format
 

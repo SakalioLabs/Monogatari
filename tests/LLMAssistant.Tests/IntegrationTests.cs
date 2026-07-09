@@ -49,13 +49,14 @@ public class IntegrationTests
         var script = await DialogueParser.LoadFromFile(dataPath);
 
         Assert.NotNull(script);
-        Assert.Equal("intro_conversation", script.Id);
+        Assert.Equal("meeting_sakura", script.Id);
         Assert.Equal("Meeting Sakura", script.Title);
         Assert.NotEmpty(script.Nodes);
 
         var startNode = script.GetNode("start");
         Assert.NotNull(startNode);
         Assert.Equal("sakura", startNode.SpeakerId);
+        Assert.Equal("intro_1", startNode.NextNodeId);
     }
 
     [Fact]
@@ -81,7 +82,7 @@ public class IntegrationTests
         Assert.NotNull(shownName);
         Assert.NotNull(shownText);
         Assert.Equal("Sakura", shownName);
-        Assert.Contains("cherry blossoms", shownText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Hello", shownText, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -99,7 +100,7 @@ public class IntegrationTests
         Assert.NotNull(script);
 
         dm.StartDialogue(script);
-        dm.Advance(); // move to response_1 (has choices)
+        dm.Advance(); // move to intro_1 (has choices)
 
         Assert.NotNull(dm.CurrentNode);
         Assert.True(dm.CurrentNode.Choices.Count > 0);
@@ -108,9 +109,43 @@ public class IntegrationTests
         Assert.NotNull(sakura);
         var initialRel = sakura.GetRelationship("player");
 
-        dm.SelectChoice(0); // "Yes, they're stunning!" (+0.1)
+        dm.SelectChoice(0); // scenery response (+0.2)
 
         Assert.True(sakura.GetRelationship("player") > initialRel);
+    }
+
+    [Fact]
+    public void DialogueParser_StillAcceptsLegacyNodeArrays()
+    {
+        const string json = """
+            {
+              "id": "legacy",
+              "title": "Legacy dialogue",
+              "startNodeId": "start",
+              "nodes": [
+                {
+                  "id": "start",
+                  "speakerId": "sakura",
+                  "text": "Hello",
+                  "choices": [
+                    {
+                      "text": "Continue",
+                      "nextNodeId": "end",
+                      "relationshipDelta": 0.1
+                    }
+                  ]
+                },
+                { "id": "end", "text": "Done" }
+              ]
+            }
+            """;
+
+        var script = DialogueParser.ParseFromJson(json);
+
+        Assert.NotNull(script);
+        Assert.Equal("start", script.StartNodeId);
+        Assert.Equal("sakura", script.GetNode("start")?.SpeakerId);
+        Assert.Equal(0.1f, script.GetNode("start")?.Choices[0].RelationshipDelta);
     }
 
     [Fact]

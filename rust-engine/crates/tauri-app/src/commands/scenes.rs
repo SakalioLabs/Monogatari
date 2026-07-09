@@ -7,6 +7,9 @@ use serde::{Deserialize, Serialize};
 use tauri::State;
 
 use crate::state::{default_project_data_root, AppState};
+use crate::story_access::{
+    ensure_story_content_access, story_content_access, StoryContentAccessEntry, StoryContentKind,
+};
 
 const BACKGROUND_EXTENSIONS: &[&str] = &["png", "jpg", "jpeg", "webp", "bmp", "gif", "svg"];
 
@@ -30,6 +33,13 @@ pub struct SceneInfo {
     pub background_exists: bool,
     #[serde(default)]
     pub absolute_background_path: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct StorySceneInfo {
+    #[serde(flatten)]
+    pub scene: SceneInfo,
+    pub access: StoryContentAccessEntry,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -76,6 +86,28 @@ pub async fn list_scene_assets(state: State<'_, AppState>) -> Result<SceneAssetC
     build_scene_asset_catalog(&root)
 }
 
+/// List project scenes with the event-derived runtime access decision for each scene.
+#[tauri::command]
+pub async fn list_story_scenes(state: State<'_, AppState>) -> Result<Vec<StorySceneInfo>, String> {
+    let root = project_root(&state).await?;
+    let scene_catalog = build_scene_asset_catalog(&root)?;
+    let event_catalog = state.story_event_catalog.read().await;
+    let progress = state.story_progress.read().await;
+    Ok(scene_catalog
+        .scenes
+        .into_iter()
+        .map(|scene| StorySceneInfo {
+            access: story_content_access(
+                &event_catalog,
+                &progress,
+                StoryContentKind::Scene,
+                &scene.id,
+            ),
+            scene,
+        })
+        .collect())
+}
+
 /// Get the currently active scene selected by the authoring UI/runtime.
 #[tauri::command]
 pub async fn get_current_scene(state: State<'_, AppState>) -> Result<ActiveScene, String> {
@@ -103,11 +135,35 @@ pub async fn set_scene(
     background_path: Option<String>,
     bgm_path: Option<String>,
 ) -> Result<SceneInfo, String> {
+    set_scene_inner(&state, scene_id, name, background_path, bgm_path).await
+}
+
+/// Enter a project scene through the player runtime, enforcing story unlocks.
+#[tauri::command]
+pub async fn enter_story_scene(
+    state: State<'_, AppState>,
+    scene_id: String,
+) -> Result<SceneInfo, String> {
+    {
+        let catalog = state.story_event_catalog.read().await;
+        let progress = state.story_progress.read().await;
+        ensure_story_content_access(&catalog, &progress, StoryContentKind::Scene, &scene_id)?;
+    }
+    set_scene_inner(&state, scene_id, None, None, None).await
+}
+
+pub(crate) async fn set_scene_inner(
+    state: &AppState,
+    scene_id: String,
+    name: Option<String>,
+    background_path: Option<String>,
+    bgm_path: Option<String>,
+) -> Result<SceneInfo, String> {
     if scene_id.trim().is_empty() {
         return Err("scene_id is required".to_string());
     }
 
-    let root = project_root(&state).await?;
+    let root = project_root_inner(state).await?;
     let catalog = build_scene_asset_catalog(&root)?;
     let mut scene = catalog
         .scenes
@@ -155,6 +211,18 @@ pub async fn set_scene(
     }
 
     Ok(scene)
+}
+
+pub(crate) async fn resolve_project_scene(
+    state: &AppState,
+    scene_id: &str,
+) -> Result<SceneInfo, String> {
+    let root = project_root_inner(state).await?;
+    build_scene_asset_catalog(&root)?
+        .scenes
+        .into_iter()
+        .find(|scene| scene.id == scene_id)
+        .ok_or_else(|| format!("Story scene `{scene_id}` does not exist in the active project."))
 }
 
 fn build_scene_asset_catalog(project_root: &Path) -> Result<SceneAssetCatalog, String> {
@@ -427,6 +495,10 @@ fn resolve_project_relative(project_root: &Path, relative: &str) -> Result<PathB
 }
 
 async fn project_root(state: &State<'_, AppState>) -> Result<PathBuf, String> {
+    project_root_inner(state).await
+}
+
+async fn project_root_inner(state: &AppState) -> Result<PathBuf, String> {
     if let Some(path) = state.project_path.read().await.clone() {
         return Ok(path);
     }

@@ -26,7 +26,10 @@ impl DialogueScript {
     /// Load a dialogue script from a JSON file.
     pub async fn from_file(path: &std::path::Path) -> llm_core::Result<Self> {
         let content = tokio::fs::read_to_string(path).await?;
-        let script: Self = serde_json::from_str(&content)?;
+        let mut script: Self = serde_json::from_str(&content)?;
+        for (node_id, node) in &mut script.nodes {
+            node.id.clone_from(node_id);
+        }
         Ok(script)
     }
 

@@ -46,7 +46,11 @@ pub struct Character {
     #[serde(default = "default_emotion", alias = "currentEmotion")]
     pub emotion: String,
     /// Relationship scores with other characters (id -> score, -1.0 to 1.0).
-    #[serde(default, alias = "relationship")]
+    #[serde(
+        default,
+        alias = "relationship",
+        deserialize_with = "deserialize_relationships"
+    )]
     pub relationships: HashMap<String, f32>,
     /// Paths to sprite/model assets per emotion state.
     #[serde(default, alias = "sprites")]
@@ -81,6 +85,32 @@ pub struct Character {
 
 fn default_emotion() -> String {
     "neutral".to_string()
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum RelationshipValue {
+    Score(f32),
+    Detailed { score: f32 },
+}
+
+fn deserialize_relationships<'de, D>(
+    deserializer: D,
+) -> std::result::Result<HashMap<String, f32>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let values = Option::<HashMap<String, RelationshipValue>>::deserialize(deserializer)?
+        .unwrap_or_default();
+    Ok(values
+        .into_iter()
+        .map(|(character_id, value)| {
+            let score = match value {
+                RelationshipValue::Score(score) | RelationshipValue::Detailed { score } => score,
+            };
+            (character_id, score.clamp(-1.0, 1.0))
+        })
+        .collect())
 }
 
 fn prompt_safe_memory_content(content: &str) -> String {
@@ -420,6 +450,25 @@ mod tests {
             Some("assets/portraits/sakura.png")
         );
         assert_eq!(character.knowledge_refs, vec!["sakura_nature"]);
+    }
+
+    #[test]
+    fn parses_numeric_and_detailed_relationship_values() {
+        let character: Character = serde_json::from_str(
+            r#"{
+              "id":"hana","name":"Hana",
+              "relationships": {
+                "sakura": 0.4,
+                "mio": {"score": 0.8, "type": "close_friend"},
+                "rival": {"score": -2.0}
+              }
+            }"#,
+        )
+        .unwrap();
+
+        assert_eq!(character.relationships.get("sakura"), Some(&0.4));
+        assert_eq!(character.relationships.get("mio"), Some(&0.8));
+        assert_eq!(character.relationships.get("rival"), Some(&-1.0));
     }
 
     #[test]

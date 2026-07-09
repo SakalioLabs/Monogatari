@@ -6,8 +6,8 @@
       "event_type": "relationship_milestone",
       "description": "You've become friends with the character!",
       "actions": [
-        { "type": "unlock_scene", "scene_id": "friend_scene" },
-        { "type": "unlock_dialogue", "dialogue_id": "friend_celebration" }
+        { "type": "unlock_scene", "scene_id": "festival_night" },
+        { "type": "unlock_dialogue", "dialogue_id": "festival_preparations" }
       ],
       "rule": {
         "min_relationship": 0.3
@@ -18,8 +18,8 @@
       "event_type": "relationship_milestone",
       "description": "You've become close friends!",
       "actions": [
-        { "type": "unlock_scene", "scene_id": "close_friend_scene" },
-        { "type": "unlock_dialogue", "dialogue_id": "close_friend_dialogue" }
+        { "type": "unlock_scene", "scene_id": "great_library" },
+        { "type": "unlock_dialogue", "dialogue_id": "yuki_library" }
       ],
       "rule": {
         "min_relationship": 0.6
@@ -31,7 +31,7 @@
       "description": "You've become best friends! A special ending is now available.",
       "actions": [
         { "type": "unlock_ending", "ending_id": "best_friend_ending" },
-        { "type": "unlock_dialogue", "dialogue_id": "best_friend_dialogue" }
+        { "type": "unlock_dialogue", "dialogue_id": "observatory_night" }
       ],
       "rule": {
         "min_relationship": 0.8
@@ -42,7 +42,7 @@
       "event_type": "special_dialogue",
       "description": "Your engaging conversation has unlocked a special dialogue!",
       "actions": [
-        { "type": "unlock_dialogue", "dialogue_id": "engaged_conversation" }
+        { "type": "unlock_dialogue", "dialogue_id": "through_the_lens" }
       ],
       "rule": {
         "score_metric": "engagement",
@@ -55,7 +55,7 @@
       "event_type": "special_dialogue",
       "description": "Your creative responses have impressed the character!",
       "actions": [
-        { "type": "unlock_dialogue", "dialogue_id": "impressed_character" }
+        { "type": "unlock_dialogue", "dialogue_id": "writers_retreat" }
       ],
       "rule": {
         "score_metric": "creativity",
@@ -68,7 +68,7 @@
       "event_type": "cumulative_achievement",
       "description": "You've had many conversations! New content unlocked.",
       "actions": [
-        { "type": "unlock_scene", "scene_id": "memories_scene" }
+        { "type": "unlock_scene", "scene_id": "studio_night" }
       ],
       "rule": {
         "min_evaluation_count": 5
@@ -79,7 +79,7 @@
       "event_type": "cumulative_achievement",
       "description": "Your dedication is remarkable! A secret scene is available.",
       "actions": [
-        { "type": "unlock_scene", "scene_id": "secret_scene" }
+        { "type": "unlock_scene", "scene_id": "crossroads" }
       ],
       "rule": {
         "min_evaluation_count": 10

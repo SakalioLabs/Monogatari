@@ -11,6 +11,7 @@
         <strong>{{ dialogueState?.speaker || currentCharacter?.name || activeScene?.name || 'Demo Scene' }}</strong>
       </div>
       <div class="top-actions">
+        <button class="control-btn library-trigger" title="Story library" @click="openStoryLibrary">&#9776;</button>
         <button class="control-btn" title="Save" @click="saveGame">{{ t('game.save', 'Save') }}</button>
         <button class="control-btn" title="Load" @click="openLoadDialog">{{ t('game.load', 'Load') }}</button>
         <button class="control-btn" title="Backlog" @click="$router.push('/backlog')">{{ t('nav.backlog', 'Backlog') }}</button>
@@ -85,9 +86,9 @@
           <span class="empty-mark">M</span>
           <h1>Monogatari Runtime</h1>
           <p>{{ activeScene ? activeScene.background_path || 'Active scene is ready.' : t('game.runtime-desc', 'AI-ready visual novel playback with dialogue state, Live2D staging, and saves.') }}</p>
-          <button class="btn btn-primary btn-lg" :disabled="isLoading" @click="startDemoDialogue">
+          <button class="btn btn-primary btn-lg" :disabled="isLoading" @click="openStoryLibrary">
             <span v-if="isLoading" class="loading-spinner"></span>
-            <span>{{ isLoading ? t('game.loading', 'Loading') : t('game.start-demo', 'Start Demo') }}</span>
+            <span>{{ isLoading ? t('game.loading', 'Loading') : 'Choose Story' }}</span>
           </button>
         </div>
       </section>
@@ -95,6 +96,73 @@
 
     <Transition name="fade">
       <div v-if="toastMessage" class="toast" @click="toastMessage = null">{{ toastMessage }}</div>
+    </Transition>
+
+    <Transition name="fade">
+      <div v-if="showStoryLibrary" class="modal-overlay" @click.self="showStoryLibrary = false">
+        <div class="modal story-library-modal">
+          <div class="modal-head">
+            <div>
+              <span class="eyebrow">Story library</span>
+              <strong>{{ storyAccess.unlocked_gated_content_count }} / {{ storyAccess.gated_content_count }} gated unlocks</strong>
+            </div>
+            <button class="close-btn" @click="showStoryLibrary = false">{{ t('common.close', 'Close') }}</button>
+          </div>
+          <div class="library-tabs" role="tablist" aria-label="Story content type">
+            <button :class="{ active: libraryTab === 'scenes' }" @click="libraryTab = 'scenes'">Scenes</button>
+            <button :class="{ active: libraryTab === 'dialogues' }" @click="libraryTab = 'dialogues'">Dialogues</button>
+            <button :class="{ active: libraryTab === 'endings' }" @click="libraryTab = 'endings'">Endings</button>
+          </div>
+          <div class="story-content-list">
+            <button
+              v-for="scene in libraryTab === 'scenes' ? storyScenes : []"
+              :key="scene.id"
+              class="story-content-row"
+              :class="{ locked: !scene.access.unlocked, active: activeScene?.id === scene.id }"
+              :disabled="!scene.access.unlocked || isLoading"
+              @click="enterScene(scene)"
+            >
+              <span class="content-mark">{{ scene.access.unlocked ? 'SC' : 'LK' }}</span>
+              <span class="content-copy">
+                <strong>{{ scene.name }}</strong>
+                <small>{{ scene.id }}<template v-if="scene.access.gated"> · {{ unlockHint(scene.access) }}</template></small>
+              </span>
+              <span class="content-status">{{ activeScene?.id === scene.id ? 'Active' : scene.access.unlocked ? 'Enter' : 'Locked' }}</span>
+            </button>
+            <button
+              v-for="dialogue in libraryTab === 'dialogues' ? storyDialogues : []"
+              :key="dialogue.id"
+              class="story-content-row"
+              :class="{ locked: !dialogue.access.unlocked }"
+              :disabled="!dialogue.access.unlocked || isLoading"
+              @click="startStoryDialogue(dialogue)"
+            >
+              <span class="content-mark">{{ dialogue.access.unlocked ? 'DL' : 'LK' }}</span>
+              <span class="content-copy">
+                <strong>{{ dialogue.title }}</strong>
+                <small>{{ dialogue.node_count }} nodes<template v-if="dialogue.access.gated"> · {{ unlockHint(dialogue.access) }}</template></small>
+              </span>
+              <span class="content-status">{{ dialogue.access.unlocked ? 'Play' : 'Locked' }}</span>
+            </button>
+            <button
+              v-for="ending in libraryTab === 'endings' ? storyEndings : []"
+              :key="ending.id"
+              class="story-content-row"
+              :class="{ locked: !ending.access.unlocked }"
+              :disabled="!ending.access.unlocked || isLoading"
+              @click="startEnding(ending)"
+            >
+              <span class="content-mark">{{ ending.access.unlocked ? 'EN' : 'LK' }}</span>
+              <span class="content-copy">
+                <strong>{{ ending.title }}</strong>
+                <small>{{ ending.description }}<template v-if="ending.access.gated"> · {{ unlockHint(ending.access) }}</template></small>
+              </span>
+              <span class="content-status">{{ ending.access.unlocked ? 'View' : 'Locked' }}</span>
+            </button>
+            <p v-if="activeLibraryItems === 0" class="no-saves">No {{ libraryTab }} are available in this project.</p>
+          </div>
+        </div>
+      </div>
     </Transition>
 
     <Transition name="fade">
@@ -179,10 +247,21 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import Live2DCanvas from '../components/Live2DCanvas.vue'
 import CharacterModelView from '../components/CharacterModelView.vue'
-import { invokeCommand } from '../lib/tauri'
+import { hasTauriRuntime, invokeCommand } from '../lib/tauri'
 import { useI18n } from '../lib/i18n'
 import { resolveAssetUrl } from '../lib/assets'
 import { selectCharacterRendererAsset } from '../lib/rendererAssets'
+import { reloadStoryEventCatalog } from '../lib/storyEvents'
+import { loadStoryContentAccess, type StoryContentAccessEntry, type StoryContentAccessSnapshot } from '../lib/storyAccess'
+import {
+  loadStoryDialogues,
+  loadStoryEndings,
+  loadStoryScenes,
+  type StoryDialogueInfo,
+  type StoryEndingInfo,
+  type StorySceneInfo,
+  type WebDialogueNode,
+} from '../lib/storyContent'
 
 const { t } = useI18n()
 
@@ -227,6 +306,12 @@ interface SceneInfo {
   absolute_background_path: string | null
 }
 
+interface StoryEndingLaunch {
+  ending: StoryEndingInfo
+  scene: SceneInfo
+  dialogue: DialogueState
+}
+
 interface ActiveScene {
   scene: SceneInfo | null
   scene_history: string[]
@@ -241,6 +326,7 @@ const currentMotion = ref('idle')
 const displayedText = ref('')
 const isTyping = ref(false)
 const showLoadDialog = ref(false)
+const showStoryLibrary = ref(false)
 const showSettings = ref(false)
 const showPause = ref(false)
 const saves = ref<SaveInfo[]>([])
@@ -248,6 +334,21 @@ const errorMessage = ref<string | null>(null)
 const toastMessage = ref<string | null>(null)
 const isLoading = ref(false)
 const failedRendererAssets = ref<Record<string, true>>({})
+const storyScenes = ref<StorySceneInfo[]>([])
+const storyDialogues = ref<StoryDialogueInfo[]>([])
+const storyEndings = ref<StoryEndingInfo[]>([])
+const libraryTab = ref<'scenes' | 'dialogues' | 'endings'>('scenes')
+const storyAccess = ref<StoryContentAccessSnapshot>({
+  schema: 'monogatari-story-content-access/v1',
+  catalog_fingerprint: '',
+  progress_fingerprint: '',
+  gated_content_count: 0,
+  unlocked_gated_content_count: 0,
+  locked_content_count: 0,
+  entries: [],
+})
+const webActiveDialogue = ref<StoryDialogueInfo | null>(null)
+const webDialogueNodeId = ref<string | null>(null)
 
 const settings = ref({
   textSpeed: 30,
@@ -307,6 +408,9 @@ const currentModel3dPath = computed(() =>
 const currentSpritePath = computed(() =>
   currentRendererAsset.value.mode === 'sprite' ? currentRendererAsset.value.resolvedUrl : null
 )
+const activeLibraryItems = computed(() => libraryTab.value === 'scenes'
+  ? storyScenes.value.length
+  : libraryTab.value === 'dialogues' ? storyDialogues.value.length : storyEndings.value.length)
 
 function formatTime(timestamp: string): string {
   try {
@@ -428,12 +532,92 @@ function typewriterEffect(text: string) {
   }, settings.value.textSpeed)
 }
 
-async function startDemoDialogue() {
+function webDialogueNode(dialogue: StoryDialogueInfo, nodeId: string | null): WebDialogueNode | null {
+  if (!nodeId) return null
+  return dialogue.nodes?.[nodeId] || null
+}
+
+function browserDialogue(dialogue: StoryDialogueInfo, nodeId = dialogue.start_node_id): DialogueState {
+  const node = webDialogueNode(dialogue, nodeId)
+  if (!node) {
+    return {
+      is_active: false,
+      speaker: null,
+      text: '',
+      emotion: null,
+      choices: [],
+      live2d_expression: null,
+    }
+  }
+  return {
+    is_active: true,
+    speaker: node.speaker_id || null,
+    text: node.text,
+    emotion: node.emotion || null,
+    choices: (node.choices || []).map((choice, index) => ({ index, text: choice.text })),
+    live2d_expression: node.emotion || null,
+  }
+}
+
+function unlockHint(access: StoryContentAccessEntry): string {
+  return access.unlocked ? 'Unlocked' : `Requires ${access.unlock_event_ids.join(', ')}`
+}
+
+async function loadStoryLibrary() {
+  try {
+    await reloadStoryEventCatalog()
+    const [scenes, dialogues, endings, access] = await Promise.all([
+      loadStoryScenes(),
+      loadStoryDialogues(),
+      loadStoryEndings(),
+      loadStoryContentAccess(),
+    ])
+    storyScenes.value = scenes
+    storyDialogues.value = dialogues
+    storyEndings.value = endings
+    storyAccess.value = access
+  } catch (error) {
+    errorMessage.value = `Unable to load story library: ${error}`
+  }
+}
+
+async function openStoryLibrary() {
+  isLoading.value = true
+  await loadStoryLibrary()
+  isLoading.value = false
+  showStoryLibrary.value = true
+}
+
+async function enterScene(scene: StorySceneInfo) {
   isLoading.value = true
   errorMessage.value = null
   try {
-    await invokeCommand<void>('start_dialogue', { dialogueId: 'meeting_sakura' })
-    await updateDialogueState()
+    activeScene.value = await invokeCommand<SceneInfo>('enter_story_scene', { sceneId: scene.id }, scene)
+    localStorage.setItem(activeSceneStorageKey, JSON.stringify(activeScene.value))
+    showStoryLibrary.value = false
+    toastMessage.value = `Entered ${scene.name}`
+  } catch (error) {
+    errorMessage.value = String(error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+async function startStoryDialogue(dialogue: StoryDialogueInfo) {
+  isLoading.value = true
+  errorMessage.value = null
+  try {
+    if (hasTauriRuntime()) {
+      dialogueState.value = await invokeCommand<DialogueState>('start_dialogue', { dialogueId: dialogue.id })
+    } else {
+      webActiveDialogue.value = dialogue
+      webDialogueNodeId.value = dialogue.start_node_id
+      dialogueState.value = browserDialogue(dialogue)
+    }
+    syncCurrentCharacter()
+    currentExpression.value = dialogueState.value.emotion || dialogueState.value.live2d_expression || currentExpression.value
+    typewriterEffect(dialogueState.value.text)
+    showStoryLibrary.value = false
   } catch (e) {
     errorMessage.value = `Unable to start dialogue: ${e}`
   } finally {
@@ -441,10 +625,51 @@ async function startDemoDialogue() {
   }
 }
 
+async function startEnding(ending: StoryEndingInfo) {
+  isLoading.value = true
+  errorMessage.value = null
+  try {
+    const fallbackScene = storyScenes.value.find((scene) => scene.id === ending.scene_id) || activeScene.value
+    if (!fallbackScene) throw new Error(`Ending scene ${ending.scene_id} is unavailable`)
+    const fallbackDialogue = storyDialogues.value.find((dialogue) => dialogue.id === ending.dialogue_id)
+    if (!fallbackDialogue) throw new Error(`Ending dialogue ${ending.dialogue_id} is unavailable`)
+    const launch = await invokeCommand<StoryEndingLaunch>('start_story_ending', { endingId: ending.id }, {
+      ending,
+      scene: fallbackScene,
+      dialogue: browserDialogue(fallbackDialogue),
+    })
+    activeScene.value = launch.scene
+    dialogueState.value = launch.dialogue
+    if (!hasTauriRuntime()) {
+      webActiveDialogue.value = fallbackDialogue
+      webDialogueNodeId.value = fallbackDialogue.start_node_id
+      dialogueState.value = browserDialogue(fallbackDialogue)
+    }
+    syncCurrentCharacter()
+    typewriterEffect(launch.dialogue.text)
+    showStoryLibrary.value = false
+    toastMessage.value = `Ending: ${ending.title}`
+  } catch (error) {
+    errorMessage.value = String(error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
 async function selectChoice(index: number) {
   try {
-    await invokeCommand<void>('select_choice', { choiceIndex: index })
-    await updateDialogueState()
+    if (!hasTauriRuntime() && webActiveDialogue.value) {
+      const node = webDialogueNode(webActiveDialogue.value, webDialogueNodeId.value)
+      const target = node?.choices?.[index]?.next_node_id
+      if (!target) throw new Error(`Choice ${index + 1} has no target node`)
+      webDialogueNodeId.value = target
+      dialogueState.value = browserDialogue(webActiveDialogue.value, target)
+      syncCurrentCharacter()
+      typewriterEffect(dialogueState.value.text)
+    } else {
+      await invokeCommand<void>('select_choice', { choiceIndex: index })
+      await updateDialogueState()
+    }
   } catch (e) {
     errorMessage.value = String(e)
   }
@@ -458,8 +683,27 @@ async function advanceDialogue() {
     return
   }
   try {
-    await invokeCommand<void>('advance_dialogue')
-    await updateDialogueState()
+    if (!hasTauriRuntime() && webActiveDialogue.value) {
+      const node = webDialogueNode(webActiveDialogue.value, webDialogueNodeId.value)
+      if (node?.choices?.length) return
+      if (node?.next_node_id) {
+        webDialogueNodeId.value = node.next_node_id
+        dialogueState.value = browserDialogue(webActiveDialogue.value, node.next_node_id)
+        syncCurrentCharacter()
+        typewriterEffect(dialogueState.value.text)
+      } else {
+        webActiveDialogue.value = null
+        webDialogueNodeId.value = null
+        dialogueState.value = browserDialogue({
+          id: '', title: '', start_node_id: '', node_count: 0, nodes: {},
+          access: { content_type: 'dialogue', content_id: '', gated: false, unlocked: true, unlock_event_ids: [] },
+        }, '')
+        displayedText.value = ''
+      }
+    } else {
+      await invokeCommand<void>('advance_dialogue')
+      await updateDialogueState()
+    }
   } catch (e) {
     errorMessage.value = String(e)
   }
@@ -502,6 +746,7 @@ async function loadGame(saveId: string) {
     toastMessage.value = 'Save loaded'
     await loadActiveScene()
     await updateDialogueState()
+    await loadStoryLibrary()
   } catch (e) {
     errorMessage.value = String(e)
   }
@@ -554,6 +799,7 @@ onMounted(async () => {
   await loadCharacters()
   await updateDialogueState()
   await loadSaves()
+  await loadStoryLibrary()
   window.addEventListener('keydown', handleKeydown)
   
   // Auto-save every 2 minutes during active dialogue
@@ -658,6 +904,12 @@ onUnmounted(() => {
 .close-btn:hover {
   border-color: var(--brand);
   color: var(--brand-light);
+}
+
+.library-trigger {
+  width: 34px;
+  padding-inline: 0;
+  font-size: 17px;
 }
 
 .stage {
@@ -864,6 +1116,72 @@ onUnmounted(() => {
   padding: 18px;
 }
 
+.story-library-modal {
+  width: min(720px, calc(100vw - 32px));
+  max-height: min(680px, calc(100vh - 48px));
+}
+
+.story-library-modal .modal-head strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 14px;
+}
+
+.library-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.library-tabs button {
+  min-height: 36px;
+  border: 0;
+  border-right: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.library-tabs button:last-child { border-right: 0; }
+.library-tabs button.active { background: var(--surface-3); color: var(--brand-light); }
+
+.story-content-list {
+  display: grid;
+  gap: 7px;
+}
+
+.story-content-row {
+  width: 100%;
+  min-height: 64px;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  gap: 11px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.story-content-row:hover:not(:disabled),
+.story-content-row.active { border-color: var(--brand); background: var(--surface-3); }
+.story-content-row.locked { opacity: .68; cursor: not-allowed; }
+.content-mark { display: grid; place-items: center; width: 34px; height: 34px; border-radius: var(--radius-sm); background: var(--surface-3); color: var(--brand-light); font-family: var(--font-mono); font-size: 10px; font-weight: 900; }
+.locked .content-mark { color: var(--text-tertiary); }
+.content-copy { min-width: 0; display: grid; gap: 3px; }
+.content-copy strong, .content-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.content-copy small { color: var(--text-tertiary); font-size: 10px; }
+.content-status { color: var(--text-tertiary); font-size: 10px; font-weight: 800; text-transform: uppercase; }
+
 .modal-head,
 .settings-header {
   display: flex;
@@ -1044,5 +1362,8 @@ onUnmounted(() => {
   .dialogue-text {
     font-size: 16px;
   }
+
+  .story-content-row { grid-template-columns: 34px minmax(0, 1fr); }
+  .content-status { display: none; }
 }
 </style>

@@ -24,7 +24,7 @@ const projectContentSourceDirs = [
   { id: 'project-data', dir: path.join(root, 'data') },
   { id: 'tauri-data', dir: path.join(rustDir, 'data') },
 ]
-const projectContentCategories = ['assets', 'characters', 'dialogue', 'events', 'knowledge', 'scenes']
+const projectContentCategories = ['assets', 'characters', 'dialogue', 'endings', 'events', 'knowledge', 'scenes']
 const requiredQualitySuiteSources = [
   'data/quality_suites/character_stability.json',
 ]
@@ -38,6 +38,7 @@ const requiredProjectContentSources = [
   'data/scenes/sakura_park.json',
   'data/assets/characters/sakura_sprite.svg',
   'data/events/story_events.json',
+  'data/endings/best_friend_ending.json',
 ]
 
 const args = process.argv.slice(2)
@@ -61,6 +62,7 @@ const expectedWebArtifacts = [
   'offline.html',
   'project-assets.json',
   'events/story_events.json',
+  'endings/best_friend_ending.json',
   'favicon.svg',
   'icons/app-icon.svg',
   'icons/maskable-icon.svg',
@@ -421,7 +423,11 @@ function projectContentJsonSummary(category, value) {
   if (category === 'characters') {
     summary.knowledge_ref_count = records.reduce((total, record) => total + characterKnowledgeRefs(record).length, 0)
   } else if (category === 'dialogue') {
-    summary.node_count = records.reduce((total, record) => total + arrayLength(record?.nodes), 0)
+    summary.node_count = records.reduce((total, record) => total + dialogueNodeCount(record?.nodes), 0)
+  } else if (category === 'endings') {
+    summary.schema_versions = Array.from(new Set(records.map((record) => record?.schema).filter(nonEmptyString))).sort()
+    summary.scene_ids = Array.from(new Set(records.map((record) => record?.scene_id).filter(nonEmptyString))).sort()
+    summary.dialogue_ids = Array.from(new Set(records.map((record) => record?.dialogue_id).filter(nonEmptyString))).sort()
   } else if (category === 'knowledge') {
     summary.tags = Array.from(new Set(records.flatMap((record) => Array.isArray(record?.tags) ? record.tags : []))).sort()
     summary.categories = Array.from(new Set(records.map((record) => record?.category).filter(nonEmptyString))).sort()
@@ -438,6 +444,11 @@ function projectContentJsonSummary(category, value) {
   }
 
   return summary
+}
+
+function dialogueNodeCount(nodes) {
+  if (Array.isArray(nodes)) return nodes.length
+  return nodes && typeof nodes === 'object' ? Object.keys(nodes).length : 0
 }
 
 function storyEventActions(record) {

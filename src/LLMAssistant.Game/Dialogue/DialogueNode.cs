@@ -25,4 +25,5 @@ public class DialogueChoice
     public string? Condition { get; set; }
     public string? Script { get; set; }
     public float? RelationshipDelta { get; set; }
+    public Dictionary<string, float> RelationshipChanges { get; set; } = new();
 }

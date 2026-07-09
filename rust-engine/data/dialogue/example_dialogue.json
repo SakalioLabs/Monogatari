@@ -1,95 +1,89 @@
-[
-  {
-    "id": "meeting_sakura",
-    "title": "Meeting Sakura",
-    "start_node_id": "start",
-    "nodes": {
-      "start": {
-        "id": "start",
-        "speaker_id": "sakura",
-        "text": "Oh! Hello there! I didn't see you coming. *smiles warmly*",
-        "next_node_id": "intro_1",
-        "emotion": "surprised"
-      },
-      "intro_1": {
-        "id": "intro_1",
-        "speaker_id": "sakura",
-        "text": "I'm Sakura! I love cherry blossoms and nature. What brings you to this beautiful park today?",
-        "next_node_id": null,
-        "choices": [
-          {
-            "text": "I'm just enjoying the scenery. It's beautiful here.",
-            "next_node_id": "response_scenery",
-            "relationship_changes": { "sakura": 0.2 }
-          },
-          {
-            "text": "I was looking for someone to talk to.",
-            "next_node_id": "response_talk",
-            "relationship_changes": { "sakura": 0.1 }
-          },
-          {
-            "text": "Do you come here often?",
-            "next_node_id": "response_often",
-            "relationship_changes": { "sakura": 0.05 }
-          }
-        ]
-      },
-      "response_scenery": {
-        "id": "response_scenery",
-        "speaker_id": "sakura",
-        "text": "Right?! The cherry blossoms are in full bloom today! *eyes sparkling with joy* I could stay here forever...",
-        "next_node_id": "common_ending",
-        "emotion": "happy"
-      },
-      "response_talk": {
-        "id": "response_talk",
-        "speaker_id": "sakura",
-        "text": "Really? I'm glad you found me then! I love meeting new people. *beaming smile*",
-        "next_node_id": "common_ending",
-        "emotion": "happy"
-      },
-      "response_often": {
-        "id": "response_often",
-        "speaker_id": "sakura",
-        "text": "Almost every day! There's something magical about this place. The trees seem to whisper secrets when the wind blows...",
-        "next_node_id": "common_ending",
-        "emotion": "happy"
-      },
-      "common_ending": {
-        "id": "common_ending",
-        "speaker_id": "sakura",
-        "text": "Hey, would you like to come back tomorrow? I can show you my favorite spot where the petals fall like snow!",
-        "next_node_id": null,
-        "choices": [
-          {
-            "text": "I'd love to! See you tomorrow, Sakura.",
-            "next_node_id": "ending_yes",
-            "relationship_changes": { "sakura": 0.3 }
-          },
-          {
-            "text": "Maybe another time.",
-            "next_node_id": "ending_maybe",
-            "relationship_changes": { "sakura": -0.1 }
-          }
-        ]
-      },
-      "ending_yes": {
-        "id": "ending_yes",
-        "speaker_id": "sakura",
-        "text": "Yay! *claps hands excitedly* It's a date then! I can't wait! See you tomorrow! *waves goodbye with a big smile*",
-        "next_node_id": null,
-        "emotion": "happy",
-        "script": "setFlag('met_sakura', true)"
-      },
-      "ending_maybe": {
-        "id": "ending_maybe",
-        "speaker_id": "sakura",
-        "text": "Oh... okay. *slightly disappointed but still smiling* Well, you know where to find me! Take care!",
-        "next_node_id": null,
-        "emotion": "sad",
-        "script": "setFlag('met_sakura', true)"
-      }
+{
+  "id": "meeting_sakura",
+  "title": "Meeting Sakura",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "id": "start",
+      "speaker_id": "sakura",
+      "text": "Oh! Hello there! I didn't see you coming. *smiles warmly*",
+      "next_node_id": "intro_1",
+      "emotion": "surprised"
     },
-    "variables": {}
-  }
-]
+    "intro_1": {
+      "id": "intro_1",
+      "speaker_id": "sakura",
+      "text": "I'm Sakura! I love cherry blossoms and nature. What brings you to this beautiful park today?",
+      "choices": [
+        {
+          "text": "I'm just enjoying the scenery. It's beautiful here.",
+          "next_node_id": "response_scenery",
+          "relationship_changes": { "sakura": 0.2 }
+        },
+        {
+          "text": "I was looking for someone to talk to.",
+          "next_node_id": "response_talk",
+          "relationship_changes": { "sakura": 0.1 }
+        },
+        {
+          "text": "Do you come here often?",
+          "next_node_id": "response_often",
+          "relationship_changes": { "sakura": 0.05 }
+        }
+      ]
+    },
+    "response_scenery": {
+      "id": "response_scenery",
+      "speaker_id": "sakura",
+      "text": "Right?! The cherry blossoms are in full bloom today! *eyes sparkling with joy* I could stay here forever...",
+      "next_node_id": "common_ending",
+      "emotion": "happy"
+    },
+    "response_talk": {
+      "id": "response_talk",
+      "speaker_id": "sakura",
+      "text": "Really? I'm glad you found me then! I love meeting new people. *beaming smile*",
+      "next_node_id": "common_ending",
+      "emotion": "happy"
+    },
+    "response_often": {
+      "id": "response_often",
+      "speaker_id": "sakura",
+      "text": "Almost every day! There's something magical about this place. The trees seem to whisper secrets when the wind blows...",
+      "next_node_id": "common_ending",
+      "emotion": "happy"
+    },
+    "common_ending": {
+      "id": "common_ending",
+      "speaker_id": "sakura",
+      "text": "Hey, would you like to come back tomorrow? I can show you my favorite spot where the petals fall like snow!",
+      "choices": [
+        {
+          "text": "I'd love to! See you tomorrow, Sakura.",
+          "next_node_id": "ending_yes",
+          "relationship_changes": { "sakura": 0.3 }
+        },
+        {
+          "text": "Maybe another time.",
+          "next_node_id": "ending_maybe",
+          "relationship_changes": { "sakura": -0.1 }
+        }
+      ]
+    },
+    "ending_yes": {
+      "id": "ending_yes",
+      "speaker_id": "sakura",
+      "text": "Yay! *claps hands excitedly* It's a date then! I can't wait! See you tomorrow! *waves goodbye with a big smile*",
+      "emotion": "happy",
+      "script": "setFlag('met_sakura', true)"
+    },
+    "ending_maybe": {
+      "id": "ending_maybe",
+      "speaker_id": "sakura",
+      "text": "Oh... okay. *slightly disappointed but still smiling* Well, you know where to find me! Take care!",
+      "emotion": "sad",
+      "script": "setFlag('met_sakura', true)"
+    }
+  },
+  "variables": {}
+}

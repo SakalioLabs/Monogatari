@@ -39,18 +39,27 @@ export interface StoryEventCatalogSnapshot {
   events: StoryEventDefinition[]
 }
 
-interface StoryEventDocument {
+export interface StoryEventRuleDraft {
+  min_relationship?: number
+  score_metric?: 'friendliness' | 'engagement' | 'creativity' | 'overall'
+  min_score?: number
+  min_evaluation_count?: number
+}
+
+export interface StoryEventDraft {
+  event_id: string
+  event_type: string
+  description: string
+  data?: Record<string, unknown>
+  actions?: StoryEventAction[]
+  character_ids?: string[]
+  repeatable?: boolean
+  rule?: StoryEventRuleDraft
+}
+
+export interface StoryEventDocument {
   schema: string
-  events: Array<{
-    event_id: string
-    event_type: string
-    description: string
-    data?: Record<string, unknown>
-    actions?: unknown[]
-    character_ids?: string[]
-    repeatable?: boolean
-    rule?: Omit<EventTriggerRule, 'event_id' | 'event_type' | 'rule_fingerprint' | 'character_ids' | 'repeatable'>
-  }>
+  events: StoryEventDraft[]
 }
 
 const portableIdPattern = /^[A-Za-z0-9_.-]+$/
@@ -136,16 +145,22 @@ function documentSnapshot(document: StoryEventDocument, source: string): StoryEv
   if (document.schema !== STORY_EVENT_CATALOG_SCHEMA_V1 || !Array.isArray(document.events)) {
     throw new Error(`Unsupported story event catalog schema: ${String(document.schema)}`)
   }
+  if (document.events.length > 512) throw new Error('Story event catalog has more than 512 events')
 
   const seen = new Set<string>()
   const events = document.events.map((event): StoryEventDefinition => {
     const eventId = portableId(event.event_id, 'event_id')
     const eventType = portableId(event.event_type, 'event_type')
-    const description = String(event.description || '').trim()
-    if (!eventId || !eventType || !description || seen.has(eventId)) {
+    const description = String(event.description || '')
+    if (!eventId || !eventType || !description.trim() || description.length > 2048 || seen.has(eventId)) {
       throw new Error(`Invalid or duplicate story event: ${eventId || '<empty>'}`)
     }
     seen.add(eventId)
+    const characterIds = [...(event.character_ids || [])].map((id) => portableId(id, 'character_id')).sort()
+    if (characterIds.length > 128 || new Set(characterIds).size !== characterIds.length) {
+      throw new Error(`Invalid or duplicate character scope in story event: ${eventId}`)
+    }
+    validateRule(eventId, event.rule || {})
     return {
       event_id: eventId,
       event_type: eventType,
@@ -160,7 +175,7 @@ function documentSnapshot(document: StoryEventDocument, source: string): StoryEv
         event_id: eventId,
         event_type: eventType,
         ...(event.rule || {}),
-        character_ids: [...(event.character_ids || [])].sort(),
+        character_ids: characterIds,
         repeatable: Boolean(event.repeatable),
       },
     }
@@ -175,16 +190,86 @@ function documentSnapshot(document: StoryEventDocument, source: string): StoryEv
   }
 }
 
+function validateRule(eventId: string, rule: StoryEventRuleDraft): void {
+  if (rule.min_relationship !== undefined
+    && (!Number.isFinite(rule.min_relationship) || rule.min_relationship < -1 || rule.min_relationship > 1)) {
+    throw new Error(`Story event ${eventId} relationship threshold must be between -1 and 1`)
+  }
+  const hasMetric = rule.score_metric !== undefined
+  const hasScore = rule.min_score !== undefined
+  if (hasMetric !== hasScore) throw new Error(`Story event ${eventId} score metric and threshold must be set together`)
+  if (hasMetric && !['friendliness', 'engagement', 'creativity', 'overall'].includes(String(rule.score_metric))) {
+    throw new Error(`Story event ${eventId} has an unsupported score metric`)
+  }
+  if (hasScore && (!Number.isFinite(rule.min_score) || Number(rule.min_score) < 0 || Number(rule.min_score) > 1)) {
+    throw new Error(`Story event ${eventId} score threshold must be between 0 and 1`)
+  }
+  if (rule.min_evaluation_count !== undefined
+    && (!Number.isInteger(rule.min_evaluation_count) || rule.min_evaluation_count < 0 || rule.min_evaluation_count > 1_000_000)) {
+    throw new Error(`Story event ${eventId} evaluation count must be an integer between 0 and 1000000`)
+  }
+}
+
+export function storyEventCatalogDocument(snapshot: StoryEventCatalogSnapshot): StoryEventDocument {
+  return {
+    schema: STORY_EVENT_CATALOG_SCHEMA_V1,
+    events: snapshot.events.map((event) => ({
+      event_id: event.event_id,
+      event_type: event.event_type,
+      description: event.description,
+      ...(Object.keys(event.data || {}).length > 0 ? { data: structuredClone(event.data) } : {}),
+      ...(event.actions.length > 0 ? { actions: structuredClone(event.actions) } : {}),
+      ...((event.rule.character_ids?.length || 0) > 0 ? { character_ids: [...(event.rule.character_ids || [])] } : {}),
+      ...(event.rule.repeatable ? { repeatable: true } : {}),
+      rule: {
+        ...(event.rule.min_relationship !== undefined && event.rule.min_relationship !== null
+          ? { min_relationship: event.rule.min_relationship } : {}),
+        ...(event.rule.score_metric ? { score_metric: event.rule.score_metric as StoryEventRuleDraft['score_metric'] } : {}),
+        ...(event.rule.min_score !== undefined && event.rule.min_score !== null
+          ? { min_score: event.rule.min_score } : {}),
+        ...(event.rule.min_evaluation_count !== undefined && event.rule.min_evaluation_count !== null
+          ? { min_evaluation_count: event.rule.min_evaluation_count } : {}),
+      },
+    })),
+  }
+}
+
+const browserDraftKey = 'monogatari.storyEventCatalogDraft.v1'
+
 export async function loadStoryEventCatalog(): Promise<StoryEventCatalogSnapshot> {
   if (hasTauriRuntime()) {
     return invokeCommand<StoryEventCatalogSnapshot>('get_story_event_catalog')
   }
 
   try {
+    const localDraft = localStorage.getItem(browserDraftKey)
+    if (localDraft) return documentSnapshot(JSON.parse(localDraft) as StoryEventDocument, 'web_local_draft')
     const response = await fetch(webCatalogUrl(), { cache: 'no-cache' })
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     return documentSnapshot(await response.json() as StoryEventDocument, 'web_project')
   } catch {
     return documentSnapshot(builtInCatalog as StoryEventDocument, 'web_bundled_fallback')
   }
+}
+
+export async function reloadStoryEventCatalog(): Promise<StoryEventCatalogSnapshot> {
+  if (hasTauriRuntime()) {
+    return invokeCommand<StoryEventCatalogSnapshot>('reload_story_event_catalog')
+  }
+  return loadStoryEventCatalog()
+}
+
+export async function saveStoryEventCatalog(
+  document: StoryEventDocument,
+  expectedCatalogFingerprint: string,
+): Promise<StoryEventCatalogSnapshot> {
+  if (hasTauriRuntime()) {
+    return invokeCommand<StoryEventCatalogSnapshot>('save_story_event_catalog', {
+      document,
+      expectedCatalogFingerprint,
+    })
+  }
+  const snapshot = documentSnapshot(document, 'web_local_draft')
+  localStorage.setItem(browserDraftKey, JSON.stringify(document))
+  return snapshot
 }

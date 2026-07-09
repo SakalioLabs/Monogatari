@@ -114,6 +114,12 @@ Workflows are validated for: node IDs, start/end structure, missing config, brok
 
 Live chat, manual scoring, workflow trigger nodes, workflow validation, Quality Suites, and browser workflow previews consume the same event definitions. Rules combine optional relationship, normalized score, and evaluation-count thresholds; can target explicit character IDs; and can opt into repeatable triggering. Typed actions unlock scenes, dialogues, endings, or set validated script flags. Legacy unlock fields under `data` normalize into the same actions. Default rule behavior retains v1 fingerprints pinned by Quality Suites, while scoped or repeatable behavior uses v2 fingerprints. A catalog fingerprint binds event descriptions, payload data, typed actions, and rule fingerprints for project/release audits.
 
+`StoryContentAccess` derives gates directly from catalog actions: referenced content requires a matching progress unlock, while unreferenced content stays open. Dialogue start, Story Mode scene entry, real workflow scene changes, and ending launch call the shared guard. Author previews may inspect decisions without mutating or blocking their local simulation. `StoryContentAccessSnapshot` exposes gate sources and progress/catalog fingerprints for frontend diagnostics.
+
+The Story Event workbench converts normalized runtime definitions back into the authored v1 document shape. Saves require the fingerprint observed at load time, validate the complete candidate before filesystem mutation, reject ambiguous multi-document flattening, stage a temporary file, retain a backup during replacement, reload the project catalog, and restore the prior document if post-write validation fails.
+
+Story endings use bounded, versioned `endings/*.json` assets that bind an ending ID to a scene and dialogue. Launch verifies the ending, scene, and dialogue access decisions plus referenced asset existence before activating playback.
+
 `StoryProgressState` is a separate project-scoped runtime ledger. The shared executor records event applications per character scope, applies unlock sets idempotently, increments repeatable event counts, updates validated script flags, and returns versioned action evidence plus a progress fingerprint. Non-streaming chat, streaming chat, and real workflow nodes use this executor. Quality Suite runs and workflow run-context previews only calculate decisions and actions, so author diagnostics cannot modify player progress.
 
 Web/PWA builds copy `data/events` into the deployable `events/` tree, list those files in `project-assets.json`, cache them through the service worker, and fetch them relative to `VITE_BASE_PATH`. The checked-in catalog is compiled only as a final browser fallback when static event content cannot be reached.
@@ -152,6 +158,8 @@ Marketplace import/export commands treat template paths as project template refe
 ## Content Loader Boundaries
 
 Character, dialogue, and knowledge reload commands accept project content references rather than raw filesystem paths. `characters`, `dialogue`, and `knowledge` resolve to their canonical folders under the active project data root, while nested references stay under the same canonical folder. Absolute paths, drive/URI-style prefixes, empty segments, and `.`/`..` traversal are rejected before directory loading begins.
+
+Web/PWA packaging copies project scenes, dialogues, endings, events, and renderer assets into the static distribution, inventories them in `project-assets.json`, and pre-caches them through the service worker. The browser Story Library uses the same access snapshot and runs dialogue nodes through a local cursor for start, advance, and choice transitions; Tauri uses the Rust dialogue manager.
 
 ## Save Data Boundaries
 

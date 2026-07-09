@@ -21,6 +21,7 @@ pub struct Choice {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DialogueNode {
     /// Unique node identifier within the dialogue.
+    #[serde(default)]
     pub id: String,
     /// ID of the character speaking (if any).
     #[serde(default)]

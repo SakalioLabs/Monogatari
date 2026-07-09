@@ -46,10 +46,14 @@ Monogatari is a development engine for creating LLM-driven text adventure games.
 
 ## Current Development Status
 
-Verified on 2026-07-09:
+Verified on 2026-07-10:
 
 - Frontend production build passes with `npm run build`.
 - Web/PWA production build passes with `npm run build:web`, including static-hosting SPA fallback assets, dedicated install/maskable icons, copied project sample assets, and bundle-budget verification.
+- Story Mode exposes a project-backed Story Library whose scene, dialogue, and ending entries consume the persistent event-unlock ledger. Content not referenced by an `unlock_*` action remains open for backward compatibility.
+- The Story Event workbench edits trigger thresholds, character scopes, repeat behavior, typed actions, and metadata, with fingerprint conflict detection and rollback-safe project catalog replacement.
+- Versioned ending assets bind a gated ending ID to an existing scene and dialogue, and real ending launch validates all three access decisions before playback.
+- Web/PWA builds package scene, dialogue, ending, event, and renderer assets in `project-assets.json`, cache them for offline use, and execute checked-in branching dialogue nodes with a browser-local cursor.
 - Mobile shell readiness passes with `npm run verify:mobile-readiness`, covering viewport safe-area support, iOS/PWA metadata, compact Tauri shell limits, and bottom navigation safe-area padding.
 - Responsive shell verification runs during `npm run build:web`, covering built 375px mobile and 768px tablet Web/PWA layout signals.
 - Tauri mobile deployment preflight passes with `node scripts/verify-tauri-mobile-preflight.mjs`, covering Android/iOS command readiness, Vite `TAURI_DEV_HOST` binding, Tauri shell config, and mobile release documentation.

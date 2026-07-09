@@ -89,6 +89,12 @@ const PROJECT_PATHS: &[PathDefinition] = &[
         required: false,
     },
     PathDefinition {
+        key: "endings",
+        label: "Story Endings",
+        fallback: "endings",
+        required: false,
+    },
+    PathDefinition {
         key: "saves",
         label: "Saves",
         fallback: "saves",
@@ -109,6 +115,7 @@ const EXPORT_DIRECTORIES: &[(&str, &str)] = &[
     ("scenes", "scenes"),
     ("assets", "assets"),
     ("events", "events"),
+    ("endings", "endings"),
     ("locales", "locales"),
     ("quality_suites", "quality_suites"),
     ("workflows", "workflows"),
