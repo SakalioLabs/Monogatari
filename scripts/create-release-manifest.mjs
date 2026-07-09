@@ -16,8 +16,15 @@ const qualitySuiteSourceDirs = [
   { id: 'project-data', dir: path.join(root, 'data', 'quality_suites') },
   { id: 'tauri-data', dir: path.join(rustDir, 'data', 'quality_suites') },
 ]
+const workflowSourceDirs = [
+  { id: 'project-data', dir: path.join(root, 'data', 'workflows') },
+  { id: 'tauri-data', dir: path.join(rustDir, 'data', 'workflows') },
+]
 const requiredQualitySuiteSources = [
   'data/quality_suites/character_stability.json',
+]
+const requiredWorkflowSources = [
+  'data/workflows/score_gate_demo.json',
 ]
 
 const args = process.argv.slice(2)
@@ -87,6 +94,8 @@ async function main() {
   await collectDesktopInstallers(artifacts, missingExpectedArtifacts, issues, channelPolicy)
   const qualitySuites = await collectQualitySuiteSources(issues)
   const qualitySuiteSet = qualitySuiteSetSummary(qualitySuites)
+  const workflows = await collectWorkflowSources(issues)
+  const workflowSourceSet = workflowSourceSetSummary(workflows)
 
   if (artifacts.length === 0) {
     issues.push('No release artifacts found. Build Web/PWA or desktop bundles before creating a manifest.')
@@ -118,6 +127,8 @@ async function main() {
     distribution: distributionSummary(releasePolicy, channelPolicy, missingInstallers),
     quality_suite_set: qualitySuiteSet,
     quality_suites: qualitySuites,
+    workflow_source_set: workflowSourceSet,
+    workflows,
     expected_artifacts: expectedArtifactContracts(channelPolicy),
     missing_expected_artifacts: missingExpectedArtifacts,
     signing: signingSummary(artifacts, channelPolicy),
@@ -126,8 +137,9 @@ async function main() {
 
   if (checkOnly) {
     const qualitySuiteSetFingerprint = manifest.quality_suite_set.content_sha256.slice(0, 12)
+    const workflowSourceSetFingerprint = manifest.workflow_source_set.content_sha256.slice(0, 12)
     console.log(
-      `[release-manifest] OK (${manifest.artifacts.length} artifact(s), ${manifest.quality_suite_set.suite_count} quality suite(s), quality suite set ${qualitySuiteSetFingerprint}, ${manifest.missing_expected_artifacts.length} missing expected artifact(s), channel=${channel})`,
+      `[release-manifest] OK (${manifest.artifacts.length} artifact(s), ${manifest.quality_suite_set.suite_count} quality suite(s), quality suite set ${qualitySuiteSetFingerprint}, ${manifest.workflow_source_set.workflow_count} workflow source(s), workflow set ${workflowSourceSetFingerprint}, ${manifest.missing_expected_artifacts.length} missing expected artifact(s), channel=${channel})`,
     )
     return
   }
@@ -274,6 +286,50 @@ async function collectQualitySuiteSources(issues) {
   return sources.sort((a, b) => a.path.localeCompare(b.path))
 }
 
+async function collectWorkflowSources(issues) {
+  const sources = []
+  for (const source of workflowSourceDirs) {
+    const files = (await walkFiles(source.dir))
+      .filter((file) => path.extname(file).toLowerCase() === '.json')
+
+    for (const file of files) {
+      const rel = relative(file)
+      const bytes = await readFile(file)
+      let workflow
+      try {
+        workflow = JSON.parse(bytes.toString('utf8'))
+      } catch (error) {
+        issues.push(`${rel}: workflow source is not valid JSON: ${error.message}`)
+        continue
+      }
+
+      const nodes = Array.isArray(workflow.nodes) ? workflow.nodes : []
+      sources.push({
+        path: rel,
+        source_root: source.id,
+        id: workflow.id ?? null,
+        name: workflow.name ?? null,
+        start_node_id: workflow.start_node_id ?? null,
+        node_count: nodes.length,
+        connection_count: nodes.reduce((total, node) => total + (Array.isArray(node.connections) ? node.connections.length : 0), 0),
+        node_types: Array.from(new Set(nodes.map((node) => node.node_type).filter(nonEmptyString))).sort(),
+        sha256: createHash('sha256').update(bytes).digest('hex'),
+      })
+    }
+  }
+
+  if (sources.length === 0) {
+    issues.push('Release manifests require at least one checked-in workflow source.')
+  }
+  for (const requiredPath of requiredWorkflowSources) {
+    if (!sources.some((source) => source.path === requiredPath)) {
+      issues.push(`Missing required workflow source: ${requiredPath}`)
+    }
+  }
+
+  return sources.sort((a, b) => a.path.localeCompare(b.path))
+}
+
 function qualitySuiteSetSummary(qualitySuites) {
   return {
     schema: 'monogatari-quality-suite-set/v1',
@@ -298,6 +354,38 @@ function qualitySuiteSetSha256(qualitySuites) {
     hash.update(categories.join(','))
     hash.update('\0')
     hash.update(suite.sha256 ?? '')
+    hash.update('\n')
+  }
+  return hash.digest('hex')
+}
+
+function workflowSourceSetSummary(workflows) {
+  return {
+    schema: 'monogatari-workflow-source-set/v1',
+    workflow_count: workflows.length,
+    node_count: workflows.reduce((total, workflow) => total + (workflow.node_count ?? 0), 0),
+    connection_count: workflows.reduce((total, workflow) => total + (workflow.connection_count ?? 0), 0),
+    node_types: Array.from(new Set(workflows.flatMap((workflow) => workflow.node_types ?? []))).sort(),
+    fingerprint_algorithm: 'sha256:path-source-root-node-count-connection-count-node-types-workflow-sha256-v1',
+    content_sha256: workflowSourceSetSha256(workflows),
+  }
+}
+
+function workflowSourceSetSha256(workflows) {
+  const hash = createHash('sha256')
+  for (const workflow of [...workflows].sort((a, b) => a.path.localeCompare(b.path))) {
+    const nodeTypes = Array.isArray(workflow.node_types) ? [...workflow.node_types].sort() : []
+    hash.update(workflow.path ?? '')
+    hash.update('\0')
+    hash.update(workflow.source_root ?? '')
+    hash.update('\0')
+    hash.update(String(workflow.node_count ?? 0))
+    hash.update('\0')
+    hash.update(String(workflow.connection_count ?? 0))
+    hash.update('\0')
+    hash.update(nodeTypes.join(','))
+    hash.update('\0')
+    hash.update(workflow.sha256 ?? '')
     hash.update('\n')
   }
   return hash.digest('hex')

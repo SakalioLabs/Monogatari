@@ -3362,6 +3362,16 @@ async function verifyReleaseChannelPolicy() {
     ['data/quality_suites/character_stability.json', 'require the default character stability suite in release manifests'],
     ['scenario_count', 'record quality suite scenario counts in release manifests'],
     ['categories', 'record quality suite category coverage in release manifests'],
+    ['collectWorkflowSources', 'emit checked-in workflow source evidence into release manifests'],
+    ['workflow_source_set', 'include aggregate workflow source set evidence in release manifests'],
+    ['workflowSourceSetSummary', 'centralize aggregate workflow source set evidence'],
+    ['workflowSourceSetSha256', 'fingerprint workflow source sets deterministically'],
+    ['monogatari-workflow-source-set/v1', 'version the workflow source set fingerprint contract'],
+    ['data/workflows/score_gate_demo.json', 'require the default score-gate workflow source in release manifests'],
+    ['workflow_count', 'record workflow source counts in release manifests'],
+    ['node_count', 'record workflow node counts in release manifests'],
+    ['connection_count', 'record workflow connection counts in release manifests'],
+    ['node_types', 'record workflow node type coverage in release manifests'],
   ]
   for (const [needle, description] of manifestPolicyRequirements) {
     if (!manifestScript.includes(needle)) {
