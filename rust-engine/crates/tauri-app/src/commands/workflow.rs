@@ -3,6 +3,7 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::{Component, Path, PathBuf};
 
+use llm_core::normalize_script_state_key;
 use serde::{Deserialize, Serialize};
 use tauri::State;
 
@@ -1503,6 +1504,7 @@ fn validate_workflow_inner(workflow: &Workflow) -> WorkflowValidationResult {
                 );
             }
         }
+        validate_workflow_state_keys(node, &mut issues);
 
         let mut local_targets = HashSet::new();
         for target_id in &node.connections {
@@ -1605,6 +1607,45 @@ fn warn_unreachable_nodes(
                 "node_unreachable",
                 Some(node.id.clone()),
                 "Node is not reachable from the configured start node.",
+            );
+        }
+    }
+}
+
+fn validate_workflow_state_keys(node: &WorkflowNode, issues: &mut Vec<WorkflowValidationIssue>) {
+    let state_key_fields: &[&str] = match node.node_type.as_str() {
+        "set_variable" | "evaluation" => &["variable_name"],
+        "set_flag" => &["flag_name"],
+        _ => &[],
+    };
+
+    for field in state_key_fields {
+        let Some(value) = node.config.get(field) else {
+            continue;
+        };
+        if value.is_null() {
+            continue;
+        }
+        let Some(value) = value.as_str() else {
+            push_issue(
+                issues,
+                "error",
+                "node_state_key_invalid",
+                Some(node.id.clone()),
+                format!("State key field `{field}` must be a string."),
+            );
+            continue;
+        };
+        if value.trim().is_empty() {
+            continue;
+        }
+        if let Err(error) = normalize_script_state_key(value) {
+            push_issue(
+                issues,
+                "error",
+                "node_state_key_invalid",
+                Some(node.id.clone()),
+                format!("State key field `{field}` is invalid: {error}"),
             );
         }
     }
@@ -1915,6 +1956,47 @@ mod tests {
             .issues
             .iter()
             .any(|issue| issue.code == "connection_target_missing"));
+    }
+
+    #[test]
+    fn workflow_validation_rejects_invalid_state_keys() {
+        let workflow = Workflow {
+            id: "wf_state_keys".to_string(),
+            name: "State keys".to_string(),
+            nodes: vec![
+                node("start", "start", vec!["set_var"], serde_json::json!({})),
+                node(
+                    "set_var",
+                    "set_variable",
+                    vec!["set_flag"],
+                    serde_json::json!({"variable_name": "bad/key", "value": "1"}),
+                ),
+                node(
+                    "set_flag",
+                    "set_flag",
+                    vec!["eval"],
+                    serde_json::json!({"flag_name": "bad key", "value": true}),
+                ),
+                node(
+                    "eval",
+                    "evaluation",
+                    vec!["end"],
+                    serde_json::json!({"criteria": "engagement", "variable_name": "bad:key"}),
+                ),
+                node("end", "end", vec![], serde_json::json!({})),
+            ],
+            start_node_id: "start".to_string(),
+        };
+
+        let validation = validate_workflow_inner(&workflow);
+        let invalid_state_key_count = validation
+            .issues
+            .iter()
+            .filter(|issue| issue.code == "node_state_key_invalid")
+            .count();
+
+        assert!(!validation.valid);
+        assert_eq!(invalid_state_key_count, 3);
     }
 
     #[test]

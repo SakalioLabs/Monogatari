@@ -1003,6 +1003,25 @@ function nodeRunTooltip(node: WorkflowNode): string {
   return detail ? `${badge}: ${detail}` : badge
 }
 
+const WORKFLOW_STATE_KEY_MAX_CHARS = 128
+const WORKFLOW_STATE_KEY_PATTERN = /^[A-Za-z0-9_.-]+$/
+
+function validateWorkflowStateKey(value: unknown): string | null {
+  if (typeof value !== 'string') return 'State key must be a string.'
+  const key = value.trim()
+  if (!key) return null
+  if (key.length > WORKFLOW_STATE_KEY_MAX_CHARS) return `State key must be ${WORKFLOW_STATE_KEY_MAX_CHARS} characters or fewer.`
+  if (key === '.' || key === '..') return 'State key cannot be a current or parent directory marker.'
+  if (!WORKFLOW_STATE_KEY_PATTERN.test(key)) return 'State key can contain only ASCII letters, numbers, dots, underscores, or hyphens.'
+  return null
+}
+
+function workflowStateKeyFields(nodeType: string): string[] {
+  if (nodeType === 'set_variable' || nodeType === 'evaluation') return ['variable_name']
+  if (nodeType === 'set_flag') return ['flag_name']
+  return []
+}
+
 function validateWorkflowLocally(currentWorkflow: Workflow): WorkflowValidationResult {
   const issues: WorkflowValidationIssue[] = []
   const ids = new Set<string>()
@@ -1064,6 +1083,12 @@ function validateWorkflowLocally(currentWorkflow: Workflow): WorkflowValidationR
 
     for (const field of requiredFields[node.node_type] || []) {
       if (!isConfigFieldPresentForNode(node.node_type, node.config, field)) addIssue('error', 'node_config_missing', node.id, `Required field \`${field}\` is missing.`)
+    }
+    for (const field of workflowStateKeyFields(node.node_type)) {
+      const value = node.config[field]
+      if (value === null || value === undefined || (typeof value === 'string' && !value.trim())) continue
+      const error = validateWorkflowStateKey(value)
+      if (error) addIssue('error', 'node_state_key_invalid', node.id, `State key field \`${field}\` is invalid: ${error}`)
     }
 
     const localTargets = new Set<string>()

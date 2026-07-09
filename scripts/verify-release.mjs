@@ -642,6 +642,33 @@ function fileExistsSync(filePath) {
   }
 }
 
+const workflowStateKeyMaxChars = 128
+const workflowStateKeyPattern = /^[A-Za-z0-9_.-]+$/
+
+function validateScriptStateKey(value) {
+  if (typeof value !== 'string') return 'must be a string'
+  const key = value.trim()
+  if (!key) return null
+  if (key.length > workflowStateKeyMaxChars) return `must be ${workflowStateKeyMaxChars} characters or fewer`
+  if (key === '.' || key === '..') return 'must not be a current or parent directory marker'
+  if (!workflowStateKeyPattern.test(key)) {
+    return 'can contain only ASCII letters, numbers, dots, underscores, or hyphens'
+  }
+  return null
+}
+
+function workflowStateKeyFields(nodeType) {
+  switch (nodeType) {
+    case 'set_variable':
+    case 'evaluation':
+      return ['variable_name']
+    case 'set_flag':
+      return ['flag_name']
+    default:
+      return []
+  }
+}
+
 function verifyWorkflowShape(workflow, label) {
   const issues = []
   if (!nonEmptyString(workflow.id)) issues.push(`${label}: id is required`)
@@ -711,6 +738,12 @@ function verifyWorkflowShape(workflow, label) {
       if (!workflowConfigFieldPresent(node.node_type, config, field)) {
         issues.push(`${nodeLabel}: required field ${field} is missing`)
       }
+    }
+    for (const field of workflowStateKeyFields(node.node_type)) {
+      const value = config[field]
+      if (value === null || value === undefined || (typeof value === 'string' && !value.trim())) continue
+      const error = validateScriptStateKey(value)
+      if (error) issues.push(`${nodeLabel}: state key field ${field} is invalid: ${error}`)
     }
     if (!Array.isArray(node.connections)) {
       issues.push(`${nodeLabel}: connections must be an array`)
@@ -1540,6 +1573,9 @@ async function verifyFrontendSourceInvariants() {
   }
 
   const workflowRunDiagnosticsRequirements = [
+    ['validateWorkflowStateKey', 'validate workflow state keys in the local browser validator'],
+    ['WORKFLOW_STATE_KEY_PATTERN', 'keep frontend workflow state key rules portable'],
+    ['node_state_key_invalid', 'surface invalid workflow state keys before execution'],
     ['isEvaluationStep(step)', 'render evaluation score diagnostics in workflow run traces'],
     ['isTriggerEventStep(step)', 'render story-event trigger diagnostics in workflow run traces'],
     ['eventBlockers(step)', 'surface event trigger blocker reasons in workflow run traces'],
@@ -2190,6 +2226,10 @@ async function verifyWorkflowCommandInvariants() {
     ['state.current_project_data_root().await', 'resolve workflow commands against the active project root'],
     ['workflow_path_in_project', 'resolve workflow files through a project-scoped path helper'],
     ['normalize_workflow_relative_path', 'normalize and validate workflow paths before file access'],
+    ['normalize_script_state_key', 'validate workflow state keys during workflow validation'],
+    ['validate_workflow_state_keys', 'centralize workflow state-key config validation'],
+    ['node_state_key_invalid', 'report invalid workflow state keys before execution'],
+    ['workflow_validation_rejects_invalid_state_keys', 'test workflow validation rejects invalid state keys'],
     ['project_root.join("workflows")', 'scope workflow files to the project workflows directory'],
     ['Workflow paths cannot contain empty, current, or parent directory segments', 'reject traversal-shaped workflow paths'],
     ['Workflow paths must end with .json', 'limit workflow command file access to JSON workflow files'],
