@@ -57,6 +57,7 @@
 - Added tool-role/function-call injection detection and a checked-in quality scenario proving spoofed runtime instructions cannot unlock events or alter character identity.
 - Added structured role-block prompt-injection detection for XML, header, and JSON-shaped role spoofing before fallback scoring, memory, relationship, or story-event logic consumes player text.
 - Added attributed XML-like role tag detection for Tauri prompt guards plus Rust and legacy C# prompt builders so `<system ...>` and `<tool ...>` prompt-control variants are omitted before role parsing.
+- Added Markdown role-code-fence detection for Tauri prompt guards plus Rust and legacy C# prompt builders so backtick-fenced `system` and tilde-fenced `tool` prompt-control blocks are omitted without blocking non-role language fences.
 - Added reusable Rust AI prompt-builder boundary sanitization and release-gate `llm-ai` tests so downstream integrations cannot reintroduce role-marker prompt injection through shared prompt history or context assembly.
 - Added Rust API engine secret redaction for debug output, bearer tokens, sensitive custom headers, and API error surfaces before provider credentials can leak into logs or frontend reports.
 - Added legacy C# prompt-builder boundary sanitization and release-gate invariants so the retained legacy AI path cannot reintroduce role-marker prompt injection.

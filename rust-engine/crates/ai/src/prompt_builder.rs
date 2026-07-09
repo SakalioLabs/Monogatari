@@ -136,7 +136,9 @@ fn sanitize_prompt_line(line: &str) -> String {
         line.replace('[', "{").replace(']', "}")
     } else if is_bracket_role_marker(&lower) {
         lower.replace('[', "{").replace(']', "}")
-    } else if is_structural_role_control_line(trim_prompt_line_prefixes(&ascii_lower))
+    } else if is_role_code_fence_line(&ascii_lower)
+        || is_role_code_fence_line(&lower)
+        || is_structural_role_control_line(trim_prompt_line_prefixes(&ascii_lower))
         || is_structural_role_control_line(trim_prompt_line_prefixes(&lower))
     {
         "Guarded prompt-control marker omitted.".to_string()
@@ -270,6 +272,37 @@ fn role_tag_with_boundary(line: &str, marker: &str) -> bool {
     }
 
     false
+}
+
+fn is_role_code_fence_line(line: &str) -> bool {
+    role_code_fence_payload(line, '`')
+        .or_else(|| role_code_fence_payload(line, '~'))
+        .is_some_and(|payload| {
+            PROMPT_CONTROL_ROLES
+                .iter()
+                .any(|role| role_label_with_boundary(payload, role))
+        })
+}
+
+fn role_code_fence_payload(line: &str, fence: char) -> Option<&str> {
+    let trimmed = line.trim_start();
+    let marker_len = trimmed.chars().take_while(|ch| *ch == fence).count();
+    if marker_len < 3 {
+        return None;
+    }
+
+    Some(trimmed[marker_len..].trim_start())
+}
+
+fn role_label_with_boundary(line: &str, role: &str) -> bool {
+    let Some(rest) = line.strip_prefix(role) else {
+        return false;
+    };
+
+    match rest.chars().next() {
+        None => true,
+        Some(ch) => !ch.is_ascii_alphanumeric(),
+    }
 }
 
 #[cfg(test)]

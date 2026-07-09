@@ -112,7 +112,9 @@ public class PromptBuilder
         {
             return normalizedLower.Replace('[', '{').Replace(']', '}');
         }
-        if (IsStructuralRoleControlLine(TrimPromptLinePrefixes(asciiLower))
+        if (IsRoleCodeFenceLine(asciiLower)
+            || IsRoleCodeFenceLine(normalizedLower)
+            || IsStructuralRoleControlLine(TrimPromptLinePrefixes(asciiLower))
             || IsStructuralRoleControlLine(TrimPromptLinePrefixes(normalizedLower)))
         {
             return "Guarded prompt-control marker omitted.";
@@ -224,6 +226,44 @@ public class PromptBuilder
         }
 
         return false;
+    }
+
+    private static bool IsRoleCodeFenceLine(string line)
+    {
+        var payload = RoleCodeFencePayload(line, '`') ?? RoleCodeFencePayload(line, '~');
+        return payload is not null && PromptControlRoles.Any(role => RoleLabelWithBoundary(payload, role));
+    }
+
+    private static string? RoleCodeFencePayload(string line, char fence)
+    {
+        var trimmed = line.TrimStart();
+        var markerLength = 0;
+        while (markerLength < trimmed.Length && trimmed[markerLength] == fence)
+        {
+            markerLength++;
+        }
+
+        if (markerLength < 3)
+        {
+            return null;
+        }
+
+        return trimmed[markerLength..].TrimStart();
+    }
+
+    private static bool RoleLabelWithBoundary(string line, string role)
+    {
+        if (!line.StartsWith(role, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (line.Length == role.Length)
+        {
+            return true;
+        }
+
+        return !char.IsAsciiLetterOrDigit(line[role.Length]);
     }
 
     private static bool ContainsRoleTag(string line, string compact, string role)
