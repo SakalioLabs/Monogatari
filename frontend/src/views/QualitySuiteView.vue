@@ -1111,10 +1111,17 @@ function formatGuardNote(note: string) {
 function exportQualityReport() {
   if (!report.value) return
   const exportedAt = new Date().toISOString()
+  const suiteSource = {
+    name: report.value.suite_name,
+    version: report.value.version,
+    path: report.value.run_metadata.suite_path,
+    sha256: report.value.run_metadata.suite_sha256,
+  }
   const payload = {
     quality_report_schema: 'monogatari-quality-report/v1',
     exported_at: exportedAt,
     suite: selectedSuite.value,
+    suite_source: suiteSource,
     run_metadata: report.value.run_metadata,
     summary: {
       total: report.value.total,

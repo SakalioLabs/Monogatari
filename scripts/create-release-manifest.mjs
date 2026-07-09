@@ -12,6 +12,13 @@ const webDistDir = path.join(frontendDir, 'dist')
 const tauriBundleDir = path.join(rustDir, 'target', 'release', 'bundle')
 const defaultOutPath = path.join(root, 'release', 'monogatari-release-manifest.json')
 const releasePolicyPath = path.join(root, 'scripts', 'release-channel-policy.json')
+const qualitySuiteSourceDirs = [
+  { id: 'project-data', dir: path.join(root, 'data', 'quality_suites') },
+  { id: 'tauri-data', dir: path.join(rustDir, 'data', 'quality_suites') },
+]
+const requiredQualitySuiteSources = [
+  'data/quality_suites/character_stability.json',
+]
 
 const args = process.argv.slice(2)
 const argSet = new Set(args)
@@ -78,6 +85,7 @@ async function main() {
   const missingExpectedArtifacts = []
   await collectWebArtifacts(artifacts, missingExpectedArtifacts)
   await collectDesktopInstallers(artifacts, missingExpectedArtifacts, issues, channelPolicy)
+  const qualitySuites = await collectQualitySuiteSources(issues)
 
   if (artifacts.length === 0) {
     issues.push('No release artifacts found. Build Web/PWA or desktop bundles before creating a manifest.')
@@ -107,6 +115,7 @@ async function main() {
     sources: versions,
     source_state: sourceState,
     distribution: distributionSummary(releasePolicy, channelPolicy, missingInstallers),
+    quality_suites: qualitySuites,
     expected_artifacts: expectedArtifactContracts(channelPolicy),
     missing_expected_artifacts: missingExpectedArtifacts,
     signing: signingSummary(artifacts, channelPolicy),
@@ -115,7 +124,7 @@ async function main() {
 
   if (checkOnly) {
     console.log(
-      `[release-manifest] OK (${manifest.artifacts.length} artifact(s), ${manifest.missing_expected_artifacts.length} missing expected artifact(s), channel=${channel})`,
+      `[release-manifest] OK (${manifest.artifacts.length} artifact(s), ${manifest.quality_suites.length} quality suite(s), ${manifest.missing_expected_artifacts.length} missing expected artifact(s), channel=${channel})`,
     )
     return
   }
@@ -218,6 +227,48 @@ async function readVersions() {
     tauri_config: tauriConfig.version,
     cargo_workspace: cargoWorkspace.match(/\[workspace\.package\][\s\S]*?\nversion\s*=\s*"([^"]+)"/)?.[1] ?? null,
   }
+}
+
+async function collectQualitySuiteSources(issues) {
+  const sources = []
+  for (const source of qualitySuiteSourceDirs) {
+    const files = (await walkFiles(source.dir))
+      .filter((file) => path.extname(file).toLowerCase() === '.json')
+
+    for (const file of files) {
+      const rel = relative(file)
+      const bytes = await readFile(file)
+      let suite
+      try {
+        suite = JSON.parse(bytes.toString('utf8'))
+      } catch (error) {
+        issues.push(`${rel}: quality suite source is not valid JSON: ${error.message}`)
+        continue
+      }
+
+      const scenarios = Array.isArray(suite.scenarios) ? suite.scenarios : []
+      sources.push({
+        path: rel,
+        source_root: source.id,
+        name: suite.name ?? null,
+        version: suite.version ?? null,
+        scenario_count: scenarios.length,
+        categories: Array.from(new Set(scenarios.map((scenario) => scenario.category).filter(nonEmptyString))).sort(),
+        sha256: createHash('sha256').update(bytes).digest('hex'),
+      })
+    }
+  }
+
+  if (sources.length === 0) {
+    issues.push('Release manifests require at least one checked-in quality suite source.')
+  }
+  for (const requiredPath of requiredQualitySuiteSources) {
+    if (!sources.some((source) => source.path === requiredPath)) {
+      issues.push(`Missing required quality suite source: ${requiredPath}`)
+    }
+  }
+
+  return sources.sort((a, b) => a.path.localeCompare(b.path))
 }
 
 async function collectWebArtifacts(artifacts, missingExpectedArtifacts) {

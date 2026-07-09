@@ -1853,6 +1853,7 @@ async function verifyFrontendSourceInvariants() {
     ['QualitySuiteRunMetadata', 'type quality suite run metadata'],
     ['suite_path', 'surface the backend-confirmed quality suite source path'],
     ['suite_sha256', 'surface the backend-confirmed quality suite content fingerprint'],
+    ['suite_source', 'export the backend-confirmed quality suite source separately from the UI selection'],
     ['git_short_commit', 'surface the quality report source commit in run metadata'],
     ['formatTimestamp', 'format quality report generation timestamps'],
     ['run-metadata-list', 'keep a stable style hook for quality run metadata'],
@@ -3334,6 +3335,11 @@ async function verifyReleaseChannelPolicy() {
     ['clean_worktree_required', 'record whether clean source state was required for manifest generation'],
     ['--allow-dirty-worktree', 'require an explicit internal diagnostic override for dirty final manifests'],
     ['--untracked-files=no', 'inspect tracked git worktree status without collecting untracked secret files'],
+    ['collectQualitySuiteSources', 'emit checked-in quality suite source evidence into release manifests'],
+    ['quality_suites', 'include quality suite source evidence in release manifests'],
+    ['data/quality_suites/character_stability.json', 'require the default character stability suite in release manifests'],
+    ['scenario_count', 'record quality suite scenario counts in release manifests'],
+    ['categories', 'record quality suite category coverage in release manifests'],
   ]
   for (const [needle, description] of manifestPolicyRequirements) {
     if (!manifestScript.includes(needle)) {
