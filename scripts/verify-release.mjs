@@ -2162,6 +2162,7 @@ async function verifyCharacterManagerPathInvariants() {
   const gameCharacterSource = await readFile(path.join(rustDir, 'crates', 'game', 'src', 'characters', 'character.rs'), 'utf8')
 
   const characterManagerRequirements = [
+    ['state.current_project_data_root().await', 'resolve character authoring against the active or discovered default project root'],
     ['character_file_path', 'centralize character JSON file path construction'],
     ['normalize_character_id', 'validate character ids before path construction'],
     ['project_root.join("characters")', 'scope character JSON files to the project characters directory'],
@@ -2184,6 +2185,9 @@ async function verifyCharacterManagerPathInvariants() {
   if (characterManagerSource.includes('dir.join(format!("{id}.json"))') || characterManagerSource.includes('dir.join(format!("{character_id}.json"))')) {
     issues.push('Character manager commands must not build character JSON paths directly from raw command input')
   }
+  if (characterManagerSource.includes('No project path configured.')) {
+    issues.push('Character manager commands must not fail before trying the default project data root')
+  }
 
   if (issues.length > 0) {
     throw new Error(`Character manager path verification failed:\n${issues.join('\n')}`)
@@ -2198,6 +2202,7 @@ async function verifyPluginManagerPathInvariants() {
   const pluginViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'PluginView.vue'), 'utf8')
 
   const pluginRequirements = [
+    ['state.current_project_data_root().await', 'resolve plugin management against the active or discovered default project root'],
     ['plugin_file_path', 'centralize plugin JSON file path construction'],
     ['normalize_plugin_id', 'validate plugin ids before path construction'],
     ['normalize_plugin_manifest', 'normalize plugin manifests before writing them'],
@@ -2217,6 +2222,9 @@ async function verifyPluginManagerPathInvariants() {
 
   if (pluginSource.includes('dir.join(format!("{}.json", manifest.id))') || pluginSource.includes('dir.join(format!("{plugin_id}.json"))')) {
     issues.push('Plugin manager commands must not build plugin JSON paths directly from raw command input')
+  }
+  if (pluginSource.includes('No project path configured.')) {
+    issues.push('Plugin manager commands must not fail before trying the default project data root')
   }
 
   const pluginViewRequirements = [

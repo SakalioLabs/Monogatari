@@ -136,11 +136,11 @@ fn normalize_plugin_manifest(mut manifest: PluginManifest) -> Result<PluginManif
 /// List all installed plugins.
 #[tauri::command]
 pub async fn list_plugins(state: State<'_, AppState>) -> Result<Vec<PluginManifest>, String> {
-    let root = state.project_path.read().await;
-    let plugin_dir = root.as_ref().map(|p| p.join("plugins"));
-    let Some(dir) = plugin_dir.filter(|d| d.exists()) else {
+    let project_root = state.current_project_data_root().await;
+    let dir = project_root.join("plugins");
+    if !dir.exists() {
         return Ok(Vec::new());
-    };
+    }
 
     let mut plugins = Vec::new();
     for entry in std::fs::read_dir(&dir).map_err(|e| e.to_string())? {
@@ -180,9 +180,7 @@ pub async fn register_plugin(
     manifest: PluginManifest,
 ) -> Result<String, String> {
     let manifest = normalize_plugin_manifest(manifest)?;
-    let Some(project_root) = state.project_path.read().await.clone() else {
-        return Err("No project path configured.".to_string());
-    };
+    let project_root = state.current_project_data_root().await;
     let (id, path) = plugin_file_path(&project_root, &manifest.id)?;
     let dir = project_root.join("plugins");
 
@@ -200,10 +198,7 @@ pub async fn remove_plugin(
     state: State<'_, AppState>,
     plugin_id: String,
 ) -> Result<String, String> {
-    let Some(project_root) = state.project_path.read().await.clone() else {
-        return Err("No project path configured.".to_string());
-    };
-
+    let project_root = state.current_project_data_root().await;
     let (id, path) = plugin_file_path(&project_root, &plugin_id)?;
     if !path.exists() {
         return Err(format!("Plugin not found: {id}"));

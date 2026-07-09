@@ -77,8 +77,8 @@ Verified on 2026-07-09:
 - Workflow output safety now covers tool-role/function-call shaped text so generated node output cannot masquerade as a runtime event command.
 - Workflow save/load commands resolve JSON files under the active project `workflows/` directory and reject absolute, URI-like, and traversal-shaped paths before touching disk.
 - Character, dialogue, and knowledge loader commands resolve directory references under the active project `characters/`, `dialogue/`, and `knowledge/` roots and reject absolute, URI-like, and traversal-shaped paths before touching disk.
-- Character authoring create/delete commands validate portable character IDs before writing or removing JSON files under the active project `characters/` directory, and deletion removes the runtime character from memory.
-- Plugin registration/removal commands validate portable plugin IDs before writing or removing manifest JSON files under the active project `plugins/` directory, and the Plugin workbench sends the backend manifest contract directly.
+- Character authoring create/delete commands resolve through the active or discovered default project data root, validate portable character IDs before writing or removing JSON files under `characters/`, and deletion removes the runtime character from memory.
+- Plugin listing, registration, and removal commands resolve through the active or discovered default project data root, validate portable plugin IDs before touching manifest JSON files under `plugins/`, and the Plugin workbench sends the backend manifest contract directly.
 - Marketplace import/export commands resolve template references under the active project `templates/` directory, reject raw filesystem paths, and allow built-in catalog entries to import by safe catalog ID.
 - Live2D model commands load only project-relative `.model3.json`/`.json` files under the active project data root, and Story Mode validates renderer asset paths before handing them to the runtime.
 - Engine initialization validates that the selected project root is an existing local directory before loading managers or rebinding active project state.

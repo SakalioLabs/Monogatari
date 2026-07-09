@@ -115,11 +115,11 @@ Engine initialization resolves an empty project path to the active/default proje
 
 ## Character Authoring Boundaries
 
-Character create/delete commands treat character IDs as portable slugs rather than filenames. IDs are validated before path construction, character JSON files are written or removed only as direct children of the active project `characters/` directory, and deletion also removes the character from the in-memory runtime manager.
+Character create/delete commands resolve through the active or discovered default project data root and treat character IDs as portable slugs rather than filenames. IDs are validated before path construction, character JSON files are written or removed only as direct children of the project `characters/` directory, and deletion also removes the character from the in-memory runtime manager.
 
 ## Plugin Authoring Boundaries
 
-Plugin registration/removal commands treat plugin IDs as portable slugs rather than filenames. Plugin manifests are normalized before writing, manifest files are written or removed only as direct children of the active project `plugins/` directory, and the Plugin workbench sends the backend `{ manifest }` and `{ pluginId }` command contracts directly.
+Plugin listing, registration, and removal commands resolve through the active or discovered default project data root and treat plugin IDs as portable slugs rather than filenames. Plugin manifests are normalized before writing, manifest files are written, listed, or removed only as direct children of the project `plugins/` directory, and the Plugin workbench sends the backend `{ manifest }` and `{ pluginId }` command contracts directly.
 
 ## Marketplace Template Boundaries
 

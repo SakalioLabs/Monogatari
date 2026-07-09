@@ -191,9 +191,7 @@ pub async fn create_character(
         return Err("Character name is required.".to_string());
     }
 
-    let Some(project_root) = state.project_path.read().await.clone() else {
-        return Err("No project path configured.".to_string());
-    };
+    let project_root = state.current_project_data_root().await;
     let (id, path) = character_file_path(&project_root, &input.id)?;
     let dir = project_root.join("characters");
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
@@ -256,9 +254,7 @@ pub async fn delete_character(
     state: State<'_, AppState>,
     character_id: String,
 ) -> Result<String, String> {
-    let Some(project_root) = state.project_path.read().await.clone() else {
-        return Err("No project path configured.".to_string());
-    };
+    let project_root = state.current_project_data_root().await;
     let (id, path) = character_file_path(&project_root, &character_id)?;
     if !path.exists() {
         return Err(format!("Character not found: {id}"));
