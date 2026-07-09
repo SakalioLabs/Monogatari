@@ -177,11 +177,13 @@ Plugin manifest IDs are portable slugs, not filenames or paths. `register_plugin
 
 ## Marketplace
 
+Marketplace `templatePath` and `outputPath` values are project template references, not arbitrary filesystem paths. `sakura_demo` resolves under the active project `templates/sakura_demo`; `templates/foo` is also accepted. Absolute paths, URI-like prefixes, empty path segments, `.`/`..` traversal, and non-portable reference segments are rejected before import/export.
+
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
 | `list_marketplace_entries` | - | `MarketplaceEntry[]` | Browse templates |
-| `export_template` | `{ entryId }` | `string` | Export template |
-| `import_template` | `{ path }` | `void` | Import template |
+| `export_template` | `{ manifest, outputPath }` | `string` | Export template manifest under project `templates/` |
+| `import_template` | `{ templatePath }` | `string` | Import project template or built-in catalog entry by safe reference |
 
 ## Project
 

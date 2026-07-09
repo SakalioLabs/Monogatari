@@ -5,6 +5,7 @@
 - Added content loader path isolation tests and release-gate invariants so character, dialogue, and knowledge reload commands resolve only under the active project content directories.
 - Added character manager path isolation tests and release-gate invariants so character create/delete commands use safe portable IDs and stay inside the active project characters directory.
 - Added plugin manager path isolation tests, Plugin workbench command-contract checks, and release-gate invariants so plugin manifests use safe portable IDs inside the active project plugins directory.
+- Added marketplace template path isolation tests and release-gate invariants so template import/export uses project-scoped template references instead of raw filesystem paths.
 - Added a Quality Suites workbench view and sidebar entry for running release-gate checks from the desktop UI.
 - Added Web/PWA distribution baseline with manifest metadata, offline fallback page, service worker runtime caching, and `npm run build:web`.
 - Added dedicated Web/PWA install and maskable icons and release-gate checks that keep them in the manifest, app shell cache, and static-hosting dist.

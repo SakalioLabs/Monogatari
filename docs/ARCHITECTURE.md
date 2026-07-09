@@ -107,6 +107,10 @@ Character create/delete commands treat character IDs as portable slugs rather th
 
 Plugin registration/removal commands treat plugin IDs as portable slugs rather than filenames. Plugin manifests are normalized before writing, manifest files are written or removed only as direct children of the active project `plugins/` directory, and the Plugin workbench sends the backend `{ manifest }` and `{ pluginId }` command contracts directly.
 
+## Marketplace Template Boundaries
+
+Marketplace import/export commands treat template paths as project template references rather than raw filesystem paths. Template references resolve under the active project `templates/` directory, reject absolute paths, drive/URI-style prefixes, empty segments, `.`/`..` traversal, and non-portable segments, and built-in catalog entries import by their safe catalog IDs.
+
 ## Content Loader Boundaries
 
 Character, dialogue, and knowledge reload commands accept project content references rather than raw filesystem paths. `characters`, `dialogue`, and `knowledge` resolve to their canonical folders under the active project data root, while nested references stay under the same canonical folder. Absolute paths, drive/URI-style prefixes, empty segments, and `.`/`..` traversal are rejected before directory loading begins.

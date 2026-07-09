@@ -164,6 +164,7 @@ const releaseCriticalRustFiles = [
   'crates/tauri-app/src/commands/content_paths.rs',
   'crates/tauri-app/src/commands/dialogue.rs',
   'crates/tauri-app/src/commands/knowledge.rs',
+  'crates/tauri-app/src/commands/marketplace.rs',
   'crates/tauri-app/src/commands/plugin.rs',
   'crates/tauri-app/src/commands/prompt_guard.rs',
   'crates/tauri-app/src/commands/quality_suite.rs',
@@ -204,6 +205,7 @@ async function main() {
   await verifyContentLoaderPathInvariants()
   await verifyCharacterManagerPathInvariants()
   await verifyPluginManagerPathInvariants()
+  await verifyMarketplacePathInvariants()
   await verifyTtsOutputInvariants()
   await verifyFrontendRouteCoverage()
   await verifyTauriPackagingConfig()
@@ -2103,6 +2105,52 @@ async function verifyPluginManagerPathInvariants() {
   }
 
   console.log('[release] Plugin manager path invariants OK')
+}
+
+async function verifyMarketplacePathInvariants() {
+  const issues = []
+  const marketplaceSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'marketplace.rs'), 'utf8')
+  const marketplaceViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'MarketplaceView.vue'), 'utf8')
+
+  const marketplaceRequirements = [
+    ['template_dir_in_project', 'centralize marketplace template directory resolution'],
+    ['normalize_template_ref', 'normalize and validate marketplace template references'],
+    ['project_root.join("templates")', 'scope marketplace templates to the project templates directory'],
+    ['Marketplace template references cannot contain drive prefixes or URI schemes', 'reject URI-like and drive-prefixed template references'],
+    ['Marketplace template references cannot contain empty, current, or parent directory segments', 'reject traversal-shaped template references'],
+    ['path.starts_with(&root)', 'prove marketplace template paths stay under project templates'],
+    ['export_template_to_project', 'reuse the guarded project template exporter'],
+    ['import_template_from_project', 'reuse the guarded project template importer'],
+    ['marketplace_catalog_manifest(&template_id)', 'allow built-in catalog entries to import by safe id'],
+    ['marketplace_template_dirs_resolve_under_project_templates', 'test compatible marketplace template path resolution'],
+    ['marketplace_template_dirs_reject_escape_attempts', 'test marketplace traversal and absolute path rejection'],
+    ['export_template_writes_manifest_inside_project_templates', 'test template export containment'],
+    ['import_template_reads_project_manifest_or_catalog_entry', 'test guarded project import and catalog fallback'],
+  ]
+  for (const [needle, description] of marketplaceRequirements) {
+    if (!marketplaceSource.includes(needle)) {
+      issues.push(`Marketplace template handling must ${description}`)
+    }
+  }
+
+  if (marketplaceSource.includes('PathBuf::from(&output_path)') || marketplaceSource.includes('PathBuf::from(&template_path)')) {
+    issues.push('Marketplace commands must not turn frontend template strings directly into filesystem paths')
+  }
+
+  const marketplaceViewRequirements = [
+    ["invokeCommand('import_template', { templatePath: entry.id })", 'import marketplace entries by catalog id rather than raw filesystem path'],
+  ]
+  for (const [needle, description] of marketplaceViewRequirements) {
+    if (!marketplaceViewSource.includes(needle)) {
+      issues.push(`Marketplace workbench must ${description}`)
+    }
+  }
+
+  if (issues.length > 0) {
+    throw new Error(`Marketplace path verification failed:\n${issues.join('\n')}`)
+  }
+
+  console.log('[release] Marketplace path invariants OK')
 }
 
 async function verifyTtsOutputInvariants() {
