@@ -136,6 +136,7 @@
 - Fixed AI inference pipeline failure handling so unsuccessful provider result envelopes are retried or rejected before empty text can enter chat, streaming, or workflow LLM outputs.
 - Fixed OpenAI-compatible API success handling so 200 responses with missing or blank generated text are rejected before chat or workflow callers treat them as valid dialogue.
 - Fixed streaming chat failure cleanup so provider errors replace partial assistant text with a stable failure bubble before surfacing the error.
+- Fixed group chat generation failure handling so per-character provider failures surface as stable system messages, are omitted from future prompts, and do not log raw dialogue text.
 - Fixed knowledge loading and chat context assembly so single-object knowledge files and creator-declared character knowledge references are pinned into prompts.
 - Fixed event triggering so runtime checks and release-gate snapshots share the same serializable rule metadata.
 - Fixed Quality Suite data-root discovery so release-gate runs can find project quality suites and knowledge anchors from nested desktop/dev working directories.

@@ -1957,6 +1957,10 @@ async function verifyFrontendSourceInvariants() {
     ['knowledge_context_pinned', 'surface group chat pinned knowledge context trace evidence'],
     ['pinned_knowledge_ref_ids', 'surface group chat pinned knowledge ref id trace evidence'],
     ['group-safety-trace', 'keep a stable style hook for group chat safety trace diagnostics'],
+    ['errorMessage', 'surface group chat command failures to authors'],
+    ['group-error', 'render group chat command errors in the workbench'],
+    ['finally {', 'clear group chat loading state after send failures'],
+    ['loading.value = false', 'reset group chat loading state after command completion'],
     ['relationship_delta_blocked', 'surface group chat relationship side-channel containment evidence'],
   ]
   for (const [needle, description] of groupChatSafetyTraceRequirements) {
@@ -3168,6 +3172,11 @@ async function verifyTauriPackagingConfig() {
     ['safety_trace: Option<chat::ChatSafetyTrace>', 'attach chat safety traces to group chat messages'],
     ['build_guarded_group_chat_prompt', 'centralize guarded group chat prompt construction'],
     ['group_chat_safety_trace', 'centralize group chat runtime guard evidence'],
+    ['group_generation_failed_message', 'surface stable per-character group generation failures'],
+    ['.filter(|message| message.role == "player" || message.role == "character")', 'exclude runtime system messages from future group prompts'],
+    ['group_prompt_omits_runtime_failure_messages', 'test runtime group failure messages are not replayed as dialogue'],
+    ['group_generation_failure_message_is_stable_and_generic', 'test group generation failure copy stays generic'],
+    ['response_text.chars().count()', 'log group response length metadata instead of raw dialogue text'],
     ['chat::build_chat_safety_trace', 'reuse the single-character chat safety trace contract'],
     ['chat::relationship_delta_for_player_message', 'reuse relationship side-channel containment evidence'],
     ['TRANSCRIPT_BEGIN', 'wrap group chat transcripts as untrusted dialogue data'],

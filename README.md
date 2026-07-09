@@ -83,6 +83,7 @@ Verified on 2026-07-09:
 - Prompt-injection text cannot advance local relationship sentiment deltas, so positive words inside meta-instructions cannot silently unlock relationship milestone events.
 - Chat runtime responses emit safety trace evidence for player input wrapping, prompt-injection detection, memory guarding, response guarding, stream replacement, and relationship side-channel containment.
 - Group chat character responses reuse the same runtime safety trace contract so multi-character scenes expose prompt-injection, response guard, memory guard, and relationship side-channel evidence per reply.
+- Group chat per-character generation failures surface as stable system messages, are omitted from future prompt transcripts, and record response length metadata instead of raw dialogue in debug logs.
 - Settings-configured AI backends register through async-safe Tauri command paths; OpenAI-compatible API backends initialize before activation, so API chat and streaming are ready immediately after a successful configuration save.
 - OpenAI-compatible API configuration rejects blank runtime credentials or model IDs, embedded URL credentials, provider URL query strings/fragments, and non-local plaintext HTTP before a backend can become active.
 - ONNX backend configuration resolves model and tokenizer references under the active project data root, rejects raw filesystem paths, activates the ONNX engine after registration, and reports the backend as not ready instead of returning placeholder success while ONNX Runtime execution is not linked.

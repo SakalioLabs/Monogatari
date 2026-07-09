@@ -7,6 +7,7 @@
         <button v-else class="btn btn-danger" @click="endSession">End Session</button>
       </div>
     </header>
+    <div v-if="errorMessage" class="group-error" @click="errorMessage = null">{{ errorMessage }}</div>
 
     <div v-if="!session" class="character-select">
       <p class="select-hint">Select 2 or more characters to start a group conversation.</p>
@@ -102,6 +103,7 @@ const selectedIds = ref<string[]>([])
 const session = ref<GroupSession | null>(null)
 const input = ref('')
 const loading = ref(false)
+const errorMessage = ref<string | null>(null)
 const messagesEl = ref<HTMLElement>()
 const currentEmotion = ref('neutral')
 const relationshipScores = ref<Record<string, number>>({})
@@ -109,8 +111,12 @@ let streamUnlisteners: UnlistenFn[] = []
 
 async function loadCharacters() {
   try {
+    errorMessage.value = null
     available.value = await invokeCommand<[string, string][]>('get_group_chat_characters', {}, [])
-  } catch { available.value = [] }
+  } catch (e) {
+    available.value = []
+    errorMessage.value = String(e)
+  }
 }
 loadCharacters()
 
@@ -147,8 +153,11 @@ function toggle(id: string) {
 async function startSession() {
   if (selectedIds.value.length < 2) return
   try {
+    errorMessage.value = null
     session.value = await invokeCommand<GroupSession>('start_group_chat', { characterIds: selectedIds.value })
-  } catch (e) { console.error(e) }
+  } catch (e) {
+    errorMessage.value = String(e)
+  }
 }
 
 function endSession() { session.value = null }
@@ -184,13 +193,17 @@ function formatSafetyNote(note: string) {
 async function send() {
   if (!input.value.trim() || !session.value || loading.value) return
   loading.value = true
+  errorMessage.value = null
   try {
     session.value = await invokeCommand<GroupSession>('send_group_message', { session: session.value, message: input.value })
     input.value = ''
     await nextTick()
     if (messagesEl.value) messagesEl.value.scrollTop = messagesEl.value.scrollHeight
-  } catch (e) { console.error(e) }
-  loading.value = false
+  } catch (e) {
+    errorMessage.value = String(e)
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
@@ -198,6 +211,7 @@ async function send() {
 .group-chat { height: 100%; display: flex; flex-direction: column; padding: 24px; gap: 16px; }
 .group-chat-header { display: flex; align-items: center; justify-content: space-between; }
 .group-chat-header h2 { font-size: 20px; font-weight: 700; }
+.group-error { padding: 10px 12px; border: 1px solid rgba(239,68,68,0.28); background: rgba(239,68,68,0.08); color: var(--danger); border-radius: var(--radius); font-size: 12px; cursor: pointer; overflow-wrap: anywhere; }
 .select-hint { color: var(--text-secondary); margin-bottom: 16px; font-size: 13px; }
 .character-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
 .char-card { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface-1); cursor: pointer; transition: all var(--transition-fast); }
