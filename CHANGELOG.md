@@ -15,6 +15,7 @@
 - Added Web/PWA workflow preview mirrors for relationship and emotion nodes so browser previews expose the same per-run state transitions as desktop workflow execution.
 - Fixed Web/PWA workflow preview signed numeric parity so negative relationship deltas and camera offsets behave like desktop workflow execution.
 - Added normalized random branch weights for desktop and Web/PWA workflow previews so weighted story branches do not collapse to the first connection or invalid negative probabilities.
+- Added desktop workflow run-context state isolation so author previews can exercise variable, flag, relationship, emotion, and scene changes without mutating persistent runtime state.
 - Added marketplace template path isolation tests and release-gate invariants so template import/export uses project-scoped template references instead of raw filesystem paths.
 - Added Live2D model path isolation tests, renderer asset validation hardening, and release-gate invariants so model loading stays inside the active project data root.
 - Added i18n locale path isolation tests and release-gate invariants so locale loading, listing, and translation use safe locale IDs inside the active project locales directory.

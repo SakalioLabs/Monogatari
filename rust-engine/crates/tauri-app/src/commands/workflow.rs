@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::{Component, Path, PathBuf};
 
 use llm_core::normalize_script_state_key;
-use llm_scripting::validate_condition_source;
+use llm_scripting::{validate_condition_source, ScriptEngine};
 use serde::{Deserialize, Serialize};
 use tauri::State;
 
@@ -100,6 +100,45 @@ pub struct WorkflowRunContext {
     pub evaluation_count: Option<u32>,
     #[serde(default)]
     pub already_triggered_events: Vec<String>,
+}
+
+struct WorkflowPreviewState {
+    script_engine: ScriptEngine,
+    relationships: HashMap<String, HashMap<String, f32>>,
+    emotions: HashMap<String, String>,
+}
+
+impl WorkflowPreviewState {
+    fn new(script_engine: ScriptEngine) -> Self {
+        Self {
+            script_engine,
+            relationships: HashMap::new(),
+            emotions: HashMap::new(),
+        }
+    }
+
+    fn relationship(&self, character_id: &str, target_id: &str) -> Option<f32> {
+        self.relationships
+            .get(character_id)
+            .and_then(|targets| targets.get(target_id))
+            .copied()
+    }
+
+    fn set_relationship(&mut self, character_id: &str, target_id: &str, value: f32) {
+        self.relationships
+            .entry(character_id.to_string())
+            .or_default()
+            .insert(target_id.to_string(), value);
+    }
+
+    fn emotion(&self, character_id: &str) -> Option<&str> {
+        self.emotions.get(character_id).map(String::as_str)
+    }
+
+    fn set_emotion(&mut self, character_id: &str, emotion: &str) {
+        self.emotions
+            .insert(character_id.to_string(), emotion.to_string());
+    }
 }
 
 /// Get available workflow node types.
@@ -341,15 +380,26 @@ pub(crate) async fn execute_workflow_inner(
     let run_context = run_context
         .filter(|context| context.enabled)
         .map(normalize_workflow_run_context);
+    let mut preview_state = if run_context.is_some() {
+        Some(WorkflowPreviewState::new(
+            workflow_preview_script_engine(state).await?,
+        ))
+    } else {
+        None
+    };
 
     for step_index in 0..step_limit {
         let node = node_lookup
             .get(&current_node_id)
             .cloned()
             .ok_or_else(|| format!("Workflow node `{current_node_id}` was not found."))?;
-        let output =
-            execute_workflow_node_inner_with_context(state, node.clone(), run_context.as_ref())
-                .await?;
+        let output = execute_workflow_node_inner_with_context(
+            state,
+            node.clone(),
+            run_context.as_ref(),
+            preview_state.as_mut(),
+        )
+        .await?;
         let (next_node_id, node_stopped_reason) =
             workflow_next_node(&node, &output, &choice_selections);
 
@@ -409,13 +459,14 @@ async fn execute_workflow_node_inner(
     state: &AppState,
     node: WorkflowNode,
 ) -> Result<serde_json::Value, String> {
-    execute_workflow_node_inner_with_context(state, node, None).await
+    execute_workflow_node_inner_with_context(state, node, None, None).await
 }
 
 async fn execute_workflow_node_inner_with_context(
     state: &AppState,
     node: WorkflowNode,
     run_context: Option<&WorkflowRunContext>,
+    mut preview_state: Option<&mut WorkflowPreviewState>,
 ) -> Result<serde_json::Value, String> {
     match node.node_type.as_str() {
         "start" => Ok(serde_json::json!({
@@ -451,16 +502,30 @@ async fn execute_workflow_node_inner_with_context(
         "set_variable" => {
             let name = node.config["variable_name"].as_str().unwrap_or("");
             let value = node.config["value"].as_str().unwrap_or("");
-            let se = state.script_engine.read().await;
-            se.set_variable(name, rhai::Dynamic::from(value.to_string()))
-                .map_err(|e| e.to_string())?;
+            if let Some(preview_state) = preview_state.as_mut() {
+                preview_state
+                    .script_engine
+                    .set_variable(name, rhai::Dynamic::from(value.to_string()))
+                    .map_err(|e| e.to_string())?;
+            } else {
+                let se = state.script_engine.read().await;
+                se.set_variable(name, rhai::Dynamic::from(value.to_string()))
+                    .map_err(|e| e.to_string())?;
+            }
             Ok(serde_json::json!({"status": "ok"}))
         }
         "set_flag" => {
             let name = node.config["flag_name"].as_str().unwrap_or("");
             let value = node.config["value"].as_bool().unwrap_or(true);
-            let se = state.script_engine.read().await;
-            se.set_flag(name, value).map_err(|e| e.to_string())?;
+            if let Some(preview_state) = preview_state.as_mut() {
+                preview_state
+                    .script_engine
+                    .set_flag(name, value)
+                    .map_err(|e| e.to_string())?;
+            } else {
+                let se = state.script_engine.read().await;
+                se.set_flag(name, value).map_err(|e| e.to_string())?;
+            }
             Ok(serde_json::json!({"status": "ok"}))
         }
         "condition" => {
@@ -470,12 +535,19 @@ async fn execute_workflow_node_inner_with_context(
                 .and_then(|value| value.as_str())
                 .ok_or_else(|| "Condition field `condition` must be a string.".to_string())?;
             validate_condition_source(condition).map_err(|e| e.to_string())?;
+            let preview_ref = preview_state.as_ref().map(|state| &**state);
             let scope_variables =
-                workflow_condition_scope_variables(state, &node.config, run_context).await;
-            let se = state.script_engine.read().await;
-            let result = se
-                .evaluate_condition_with_scope_variables(condition, scope_variables)
-                .map_err(|e| e.to_string())?;
+                workflow_condition_scope_variables(state, &node.config, run_context, preview_ref)
+                    .await;
+            let result = if let Some(preview_state) = preview_state.as_ref() {
+                preview_state
+                    .script_engine
+                    .evaluate_condition_with_scope_variables(condition, scope_variables)
+            } else {
+                let se = state.script_engine.read().await;
+                se.evaluate_condition_with_scope_variables(condition, scope_variables)
+            }
+            .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({"result": result}))
         }
         "evaluation" => {
@@ -500,12 +572,25 @@ async fn execute_workflow_node_inner_with_context(
                 .map(str::trim)
                 .filter(|value| !value.is_empty())
             {
-                let se = state.script_engine.read().await;
-                se.set_variable(variable_name, rhai::Dynamic::from(score as f64))
-                    .map_err(|e| e.to_string())?;
-                if let Some(passed) = passed {
-                    se.set_flag(&format!("{variable_name}_passed"), passed)
+                if let Some(preview_state) = preview_state.as_mut() {
+                    preview_state
+                        .script_engine
+                        .set_variable(variable_name, rhai::Dynamic::from(score as f64))
                         .map_err(|e| e.to_string())?;
+                    if let Some(passed) = passed {
+                        preview_state
+                            .script_engine
+                            .set_flag(&format!("{variable_name}_passed"), passed)
+                            .map_err(|e| e.to_string())?;
+                    }
+                } else {
+                    let se = state.script_engine.read().await;
+                    se.set_variable(variable_name, rhai::Dynamic::from(score as f64))
+                        .map_err(|e| e.to_string())?;
+                    if let Some(passed) = passed {
+                        se.set_flag(&format!("{variable_name}_passed"), passed)
+                            .map_err(|e| e.to_string())?;
+                    }
                 }
             }
 
@@ -526,7 +611,9 @@ async fn execute_workflow_node_inner_with_context(
             let name = config_string(&node.config, &["name"]);
             let background_path = config_string(&node.config, &["background_path", "background"]);
             let bgm_path = config_string(&node.config, &["bgm_path", "bgm"]);
-            record_workflow_scene_change(state, &scene_id).await;
+            if preview_state.is_none() {
+                record_workflow_scene_change(state, &scene_id).await;
+            }
             Ok(serde_json::json!({
                 "action": "scene_change",
                 "scene_id": scene_id,
@@ -609,9 +696,14 @@ async fn execute_workflow_node_inner_with_context(
             let (evaluation, evaluation_source) =
                 workflow_evaluation_for_character(&state, character_id.as_deref(), run_context)
                     .await;
-            let relationship =
-                workflow_relationship_for_character(&state, character_id.as_deref(), run_context)
-                    .await;
+            let preview_ref = preview_state.as_ref().map(|state| &**state);
+            let relationship = workflow_relationship_for_character(
+                &state,
+                character_id.as_deref(),
+                run_context,
+                preview_ref,
+            )
+            .await;
             let (evaluation_count, already_triggered) = workflow_event_session_state(
                 &state,
                 character_id.as_deref(),
@@ -653,6 +745,23 @@ async fn execute_workflow_node_inner_with_context(
                 .ok_or_else(|| "emotion_change node requires character_id.".to_string())?;
             let emotion = config_string(&node.config, &["emotion"])
                 .ok_or_else(|| "emotion_change node requires emotion.".to_string())?;
+            if preview_state.is_some() {
+                let previous_emotion = workflow_character_emotion_for_preview(
+                    state,
+                    &character_id,
+                    preview_state.as_ref().map(|state| &**state),
+                )
+                .await?;
+                if let Some(preview_state) = preview_state.as_mut() {
+                    preview_state.set_emotion(&character_id, &emotion);
+                }
+                return Ok(serde_json::json!({
+                    "action": "emotion_change",
+                    "character_id": character_id,
+                    "previous_emotion": previous_emotion,
+                    "emotion": emotion,
+                }));
+            }
             let cm = state.character_manager.read().await;
             let character = cm
                 .get_character(&character_id)
@@ -676,6 +785,28 @@ async fn execute_workflow_node_inner_with_context(
             let target_id = config_string(&node.config, &["target_id", "other_id"])
                 .unwrap_or_else(|| "player".to_string());
             let delta = optional_config_f32(&node.config, "delta").unwrap_or(0.0);
+            if preview_state.is_some() {
+                ensure_workflow_character(state, &character_id).await?;
+                let previous = workflow_relationship_for_character(
+                    state,
+                    Some(&character_id),
+                    run_context,
+                    preview_state.as_ref().map(|state| &**state),
+                )
+                .await;
+                let current = clamp_workflow_relationship(previous + delta);
+                if let Some(preview_state) = preview_state.as_mut() {
+                    preview_state.set_relationship(&character_id, &target_id, current);
+                }
+                return Ok(serde_json::json!({
+                    "action": "relationship",
+                    "character_id": character_id,
+                    "target_id": target_id,
+                    "delta": delta,
+                    "previous": previous,
+                    "current": current,
+                }));
+            }
             let cm = state.character_manager.read().await;
             let character = cm
                 .get_character(&character_id)
@@ -1001,6 +1132,15 @@ fn workflow_metric_score(evaluation: &chat::ConversationEvaluation, metric: &str
     }
 }
 
+async fn workflow_preview_script_engine(state: &AppState) -> Result<ScriptEngine, String> {
+    let preview_engine = ScriptEngine::new();
+    let se = state.script_engine.read().await;
+    preview_engine
+        .load_state(se.all_variables(), se.all_flags())
+        .map_err(|e| e.to_string())?;
+    Ok(preview_engine)
+}
+
 fn optional_config_f32(config: &serde_json::Value, field: &str) -> Option<f32> {
     config.get(field).and_then(|value| match value {
         serde_json::Value::Number(number) => number.as_f64().map(|value| value as f32),
@@ -1112,12 +1252,18 @@ async fn workflow_condition_scope_variables(
     state: &AppState,
     config: &serde_json::Value,
     run_context: Option<&WorkflowRunContext>,
+    preview_state: Option<&WorkflowPreviewState>,
 ) -> Vec<(String, rhai::Dynamic)> {
     let character_id = workflow_character_id_from_state(state, config, run_context).await;
     let (evaluation, evaluation_source) =
         workflow_evaluation_for_character(state, character_id.as_deref(), run_context).await;
-    let relationship =
-        workflow_relationship_for_character(state, character_id.as_deref(), run_context).await;
+    let relationship = workflow_relationship_for_character(
+        state,
+        character_id.as_deref(),
+        run_context,
+        preview_state,
+    )
+    .await;
     let evaluation_count =
         workflow_evaluation_count_for_character(state, character_id.as_deref(), run_context).await;
 
@@ -1197,7 +1343,18 @@ async fn workflow_relationship_for_character(
     state: &AppState,
     character_id: Option<&str>,
     run_context: Option<&WorkflowRunContext>,
+    preview_state: Option<&WorkflowPreviewState>,
 ) -> f32 {
+    if let Some(value) =
+        preview_state
+            .zip(character_id)
+            .and_then(|(preview_state, character_id)| {
+                preview_state.relationship(character_id, "player")
+            })
+    {
+        return value;
+    }
+
     if workflow_run_context_applies(run_context, character_id) {
         return run_context
             .and_then(|context| context.relationship)
@@ -1219,6 +1376,30 @@ async fn workflow_relationship_for_character(
     } else {
         0.0
     }
+}
+
+async fn ensure_workflow_character(state: &AppState, character_id: &str) -> Result<(), String> {
+    let cm = state.character_manager.read().await;
+    cm.get_character(character_id)
+        .map(|_| ())
+        .ok_or_else(|| format!("Character not found: {character_id}"))
+}
+
+async fn workflow_character_emotion_for_preview(
+    state: &AppState,
+    character_id: &str,
+    preview_state: Option<&WorkflowPreviewState>,
+) -> Result<String, String> {
+    if let Some(emotion) = preview_state.and_then(|state| state.emotion(character_id)) {
+        return Ok(emotion.to_string());
+    }
+
+    let cm = state.character_manager.read().await;
+    let character = cm
+        .get_character(character_id)
+        .ok_or_else(|| format!("Character not found: {character_id}"))?;
+    let character = character.read().await;
+    Ok(character.emotion.clone())
 }
 
 async fn workflow_evaluation_count_for_character(
@@ -2931,6 +3112,139 @@ mod tests {
                 .unwrap(),
             1.0
         );
+    }
+
+    #[tokio::test]
+    async fn run_context_preview_isolates_workflow_state_nodes() {
+        let state = AppState::new();
+        add_test_character(&state, "sakura").await;
+        {
+            let cm = state.character_manager.read().await;
+            let character = cm.get_character("sakura").unwrap();
+            let mut character = character.write().await;
+            character.update_relationship("player", 0.1);
+            character.set_emotion("neutral");
+        }
+
+        let workflow = Workflow {
+            id: "preview_isolation".to_string(),
+            name: "Preview Isolation".to_string(),
+            start_node_id: "start".to_string(),
+            nodes: vec![
+                node("start", "start", vec!["eval"], serde_json::json!({})),
+                node(
+                    "eval",
+                    "evaluation",
+                    vec!["set_route", "blocked"],
+                    serde_json::json!({
+                        "character_id": "sakura",
+                        "criteria": "engagement",
+                        "threshold": 0.5,
+                        "variable_name": "preview.engagement"
+                    }),
+                ),
+                node(
+                    "set_route",
+                    "set_variable",
+                    vec!["set_flag"],
+                    serde_json::json!({"variable_name": "preview.route", "value": "open"}),
+                ),
+                node(
+                    "set_flag",
+                    "set_flag",
+                    vec!["rel"],
+                    serde_json::json!({"flag_name": "preview.flag", "value": true}),
+                ),
+                node(
+                    "rel",
+                    "relationship",
+                    vec!["condition"],
+                    serde_json::json!({"character_id": "sakura", "delta": 0.4}),
+                ),
+                node(
+                    "condition",
+                    "condition",
+                    vec!["emotion", "blocked"],
+                    serde_json::json!({
+                        "character_id": "sakura",
+                        "condition": "getVariable(\"preview.engagement\") >= 0.8 && getVariable(\"preview.route\") == \"open\" && hasFlag(\"preview.flag\") && relationship >= 0.55"
+                    }),
+                ),
+                node(
+                    "emotion",
+                    "emotion_change",
+                    vec!["scene"],
+                    serde_json::json!({"character_id": "sakura", "emotion": "joyful"}),
+                ),
+                node(
+                    "scene",
+                    "scene_change",
+                    vec!["end"],
+                    serde_json::json!({"scene_id": "preview_scene"}),
+                ),
+                node("blocked", "end", vec![], serde_json::json!({})),
+                node("end", "end", vec![], serde_json::json!({})),
+            ],
+        };
+        let run_context = WorkflowRunContext {
+            enabled: true,
+            character_id: Some("sakura".to_string()),
+            relationship: Some(0.2),
+            evaluation_count: Some(2),
+            already_triggered_events: Vec::new(),
+            evaluation: Some(chat::ConversationEvaluation {
+                friendliness: 0.6,
+                engagement: 0.84,
+                creativity: 0.5,
+                overall_score: 0.7,
+                summary: "Author preview context.".to_string(),
+            }),
+        };
+
+        let report = execute_workflow_inner(&state, workflow, Some(16), None, Some(run_context))
+            .await
+            .unwrap();
+        let node_ids: Vec<&str> = report
+            .steps
+            .iter()
+            .map(|step| step.node_id.as_str())
+            .collect();
+
+        assert!(report.completed);
+        assert_eq!(
+            node_ids,
+            vec![
+                "start",
+                "eval",
+                "set_route",
+                "set_flag",
+                "rel",
+                "condition",
+                "emotion",
+                "scene",
+                "end",
+            ]
+        );
+        assert_eq!(report.steps[1].output["source"], "run_context_evaluation");
+        assert!((report.steps[4].output["previous"].as_f64().unwrap() - 0.2).abs() < 0.0001);
+        assert!((report.steps[4].output["current"].as_f64().unwrap() - 0.6).abs() < 0.0001);
+        assert_eq!(report.steps[5].output["result"], true);
+        assert_eq!(report.steps[6].output["previous_emotion"], "neutral");
+        assert_eq!(report.steps[6].output["emotion"], "joyful");
+
+        let se = state.script_engine.read().await;
+        assert!(se.get_variable("preview.engagement").is_none());
+        assert!(se.get_variable("preview.route").is_none());
+        assert!(!se.has_flag("preview.flag"));
+        assert!(!se.has_flag("preview.engagement_passed"));
+        drop(se);
+
+        assert!(state.active_scene_id.read().await.is_none());
+        let cm = state.character_manager.read().await;
+        let character = cm.get_character("sakura").unwrap();
+        let character = character.read().await;
+        assert_eq!(character.emotion, "neutral");
+        assert!((character.relationships["player"] - 0.1).abs() < 0.0001);
     }
 
     #[tokio::test]
