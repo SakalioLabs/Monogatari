@@ -72,6 +72,7 @@ const requiredEventRules = [
 const requiredWebDistFiles = [
   'index.html',
   '404.html',
+  '_headers',
   '.nojekyll',
   'manifest.webmanifest',
   'sw.js',
@@ -207,6 +208,16 @@ const sharedCspFragments = [
 ]
 const requiredTauriCspFragments = [...sharedCspFragments, "frame-ancestors 'none'"]
 const requiredWebCspFragments = [...sharedCspFragments, "frame-src 'none'"]
+const requiredWebHeaderCspFragments = [...sharedCspFragments, "frame-src 'none'", "frame-ancestors 'none'"]
+const requiredPermissionsPolicyFragments = [
+  'camera=()',
+  'microphone=()',
+  'geolocation=()',
+  'payment=()',
+  'usb=()',
+  'serial=()',
+  'bluetooth=()',
+]
 
 async function main() {
   const started = Date.now()
@@ -1595,6 +1606,10 @@ async function verifyFrontendSourceInvariants() {
     ["'data', 'assets'", 'copy checked-in project assets from data/assets'],
     ['distProjectAssetsDir', 'target copied project assets into dist/assets'],
     ['projectAssetManifestPath', 'write a generated project asset manifest into dist'],
+    ['staticHostingHeadersPath', 'write static-hosting security headers into dist'],
+    ['Content-Security-Policy', 'emit a static-hosting CSP header for platforms that support response headers'],
+    ['X-Content-Type-Options: nosniff', 'emit a nosniff header for static-hosting responses'],
+    ['Permissions-Policy', 'emit a browser permissions policy for static-hosting responses'],
     ['monogatari-web-project-assets/v1', 'version the generated project asset manifest schema'],
     ['walkFiles(projectAssetsDir', 'inventory copied project assets for offline PWA caching'],
     ['cp(projectAssetsDir, distProjectAssetsDir', 'merge project assets into the Web/PWA dist asset tree'],
@@ -3098,6 +3113,7 @@ async function verifyWebDist({ basePath = '/' } = {}) {
 
   const indexHtml = await readMaybe(path.join(distDir, 'index.html'))
   const fallbackHtml = await readMaybe(path.join(distDir, '404.html'))
+  const staticHostingHeaders = await readMaybe(path.join(distDir, '_headers'))
   const manifest = await readJsonMaybe(path.join(distDir, 'manifest.webmanifest'))
   const projectAssetManifest = await readJsonMaybe(path.join(distDir, 'project-assets.json'))
   const serviceWorker = await readMaybe(path.join(distDir, 'sw.js'))
@@ -3132,6 +3148,9 @@ async function verifyWebDist({ basePath = '/' } = {}) {
         forbiddenFragments: ["frame-ancestors 'none'"],
       })
     }
+  }
+  if (staticHostingHeaders) {
+    verifyStaticHostingHeaders(staticHostingHeaders, issues)
   }
 
   if (manifest) {
@@ -3520,6 +3539,49 @@ function verifyCspPolicy(csp, requiredFragments, label, issues, options = {}) {
       issues.push(`${label} must not include ${fragment}`)
     }
   }
+}
+
+function verifyStaticHostingHeaders(source, issues) {
+  if (!source.includes('/*')) {
+    issues.push('_headers must define a /* route for static-hosting security headers')
+  }
+
+  const csp = extractStaticHeader(source, 'Content-Security-Policy')
+  if (!csp) {
+    issues.push('_headers must include Content-Security-Policy')
+  } else {
+    verifyCspPolicy(csp, requiredWebHeaderCspFragments, '_headers Content-Security-Policy', issues)
+  }
+
+  const contentTypeOptions = extractStaticHeader(source, 'X-Content-Type-Options')
+  if (contentTypeOptions !== 'nosniff') {
+    issues.push('_headers must include X-Content-Type-Options: nosniff')
+  }
+
+  const referrerPolicy = extractStaticHeader(source, 'Referrer-Policy')
+  if (referrerPolicy !== 'no-referrer') {
+    issues.push('_headers must include Referrer-Policy: no-referrer')
+  }
+
+  const permissionsPolicy = extractStaticHeader(source, 'Permissions-Policy')
+  if (!permissionsPolicy) {
+    issues.push('_headers must include Permissions-Policy')
+  } else {
+    for (const fragment of requiredPermissionsPolicyFragments) {
+      if (!permissionsPolicy.includes(fragment)) {
+        issues.push(`_headers Permissions-Policy must include ${fragment}`)
+      }
+    }
+  }
+}
+
+function extractStaticHeader(source, headerName) {
+  const escapedHeaderName = escapeRegExp(headerName)
+  return source.match(new RegExp(`^\\s*${escapedHeaderName}\\s*:\\s*(.+)$`, 'im'))?.[1]?.trim() ?? null
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 function nonEmptyString(value) {

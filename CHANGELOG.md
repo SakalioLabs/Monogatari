@@ -16,6 +16,7 @@
 - Added frontend HTML-injection hardening so shell navigation renders icons as text instead of `v-html`, with release-gate scans for raw HTML sinks.
 - Added a production Tauri Content Security Policy and release-gate checks so packaged desktop WebViews no longer ship with CSP disabled.
 - Added Web/PWA Content Security Policy meta coverage and release-gate checks so static browser builds share the same hardened app shell baseline.
+- Added generated Web/PWA static-hosting `_headers` output with CSP, nosniff, referrer, and permissions-policy release-gate coverage for hosts that support response headers.
 - Added project settings runtime-secret scrubbing so API keys, tokens, authorization headers, token-shaped values, query-secret assignments, and legacy persisted secret fields are omitted before `settings.json` saves or project config state returns to the frontend.
 - Added read-only workflow condition context variables for relationship, evaluation scores, and evaluation count, plus matching Web/PWA preview evaluation for common condition expressions.
 - Added Web/PWA workflow preview state mirroring so local `set_variable`, `set_flag`, and evaluation outputs can drive later `getVariable` and `hasFlag` conditions.
