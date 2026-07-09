@@ -1721,6 +1721,9 @@ async function verifyFrontendSourceInvariants() {
     ['Export Manifest', 'surface a project manifest export control'],
     ['runtimeSecretSettingKeys', 'centralize frontend runtime secret setting keys'],
     ['scrubRuntimeSecretSettings', 'scrub runtime secrets before saving project settings'],
+    ['scrubRuntimeSecretString', 'scrub token-like and assignment-shaped secrets inside setting string values'],
+    ['scrubTokenLikeValues', 'scrub token-shaped values from frontend settings payloads'],
+    ['scrubSecretAssignments', 'scrub secret assignments from frontend settings payloads'],
     ["setConfigValue(config, ['ai', 'api', 'api_key'], '')", 'keep API keys runtime-only when saving project settings'],
   ]
   for (const [needle, description] of projectExportRequirements) {
@@ -2777,6 +2780,9 @@ async function verifyTauriPackagingConfig() {
     [tauriProjectSource, 'checksum_md5', 'include per-file checksums in project export manifests'],
     [tauriProjectSource, 'sanitize_export_config', 'redact sensitive settings in project export manifests'],
     [tauriProjectSource, 'scrub_runtime_secret_config(&config)', 'scrub runtime secrets before saving or returning project settings'],
+    [tauriProjectSource, 'scrub_runtime_secret_string', 'scrub token-like and assignment-shaped secrets inside project setting string values'],
+    [tauriProjectSource, 'scrub_token_like_values', 'scrub token-shaped values from project settings payloads'],
+    [tauriProjectSource, 'scrub_secret_assignments', 'scrub secret assignments from project settings payloads'],
     [tauriProjectSource, 'is_secret_config_key', 'centralize project config secret key matching'],
     [tauriProjectSource, 'SECRET_CONFIG_KEYS', 'centralize sensitive export config keys'],
     [tauriProjectSource, 'scrub_runtime_secret_config_removes_sensitive_settings_before_save', 'test project settings secret scrubbing before save'],

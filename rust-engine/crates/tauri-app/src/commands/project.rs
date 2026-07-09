@@ -723,6 +723,7 @@ fn scrub_runtime_secret_config(config: &Value) -> Value {
         Value::Array(items) => {
             Value::Array(items.iter().map(scrub_runtime_secret_config).collect())
         }
+        Value::String(value) => Value::String(scrub_runtime_secret_string(value)),
         _ => config.clone(),
     }
 }
@@ -731,6 +732,173 @@ fn is_secret_config_key(key: &str) -> bool {
     SECRET_CONFIG_KEYS
         .iter()
         .any(|candidate| key.eq_ignore_ascii_case(candidate))
+}
+
+fn scrub_runtime_secret_string(value: &str) -> String {
+    let token_redacted = scrub_token_like_values(value);
+    scrub_secret_assignments(&token_redacted)
+}
+
+fn scrub_token_like_values(value: &str) -> String {
+    let mut redacted = String::with_capacity(value.len());
+    let mut cursor = 0;
+    while cursor < value.len() {
+        if let Some((prefix, min_len)) = token_prefix_at(value, cursor) {
+            let token_end = token_end(value, cursor);
+            let body_len = value[cursor + prefix.len()..token_end]
+                .chars()
+                .filter(|ch| is_token_char(*ch))
+                .count();
+            if body_len >= min_len {
+                redacted.push_str("<redacted>");
+                cursor = token_end;
+                continue;
+            }
+        }
+
+        let ch = value[cursor..]
+            .chars()
+            .next()
+            .expect("cursor at char boundary");
+        redacted.push(ch);
+        cursor += ch.len_utf8();
+    }
+    redacted
+}
+
+fn token_prefix_at(value: &str, cursor: usize) -> Option<(&'static str, usize)> {
+    let rest = &value[cursor..];
+    for (prefix, min_len) in [("github_pat_", 20), ("ghp_", 20), ("sk-", 20)] {
+        if rest.starts_with(prefix) {
+            return Some((prefix, min_len));
+        }
+    }
+    None
+}
+
+fn token_end(value: &str, cursor: usize) -> usize {
+    value[cursor..]
+        .char_indices()
+        .find_map(|(offset, ch)| (!is_token_char(ch)).then_some(cursor + offset))
+        .unwrap_or(value.len())
+}
+
+fn is_token_char(ch: char) -> bool {
+    ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-')
+}
+
+fn scrub_secret_assignments(value: &str) -> String {
+    let mut redacted = value.to_string();
+    for key in SECRET_CONFIG_KEYS {
+        redacted = scrub_assignment_values(&redacted, key);
+    }
+    redacted
+}
+
+fn scrub_assignment_values(value: &str, key: &str) -> String {
+    let mut result = String::with_capacity(value.len());
+    let mut cursor = 0;
+
+    while let Some(relative) = find_key_case_insensitive(&value[cursor..], key) {
+        let key_start = cursor + relative;
+        let key_end = key_start + key.len();
+        if !is_secret_key_boundary(value, key_start, key_end) {
+            result.push_str(&value[cursor..key_end]);
+            cursor = key_end;
+            continue;
+        }
+
+        let Some((value_start, value_end)) =
+            secret_assignment_value_span(value, key_start, key_end)
+        else {
+            result.push_str(&value[cursor..key_end]);
+            cursor = key_end;
+            continue;
+        };
+
+        result.push_str(&value[cursor..value_start]);
+        result.push_str("<redacted>");
+        cursor = value_end;
+    }
+
+    result.push_str(&value[cursor..]);
+    result
+}
+
+fn find_key_case_insensitive(value: &str, key: &str) -> Option<usize> {
+    value.to_ascii_lowercase().find(&key.to_ascii_lowercase())
+}
+
+fn is_secret_key_boundary(value: &str, start: usize, end: usize) -> bool {
+    let before = value[..start].chars().next_back();
+    let after = value[end..].chars().next();
+    !before.is_some_and(|ch| ch.is_ascii_alphanumeric() || ch == '_' || ch == '-')
+        && !after.is_some_and(|ch| ch.is_ascii_alphanumeric() || ch == '_' || ch == '-')
+}
+
+fn secret_assignment_value_span(
+    value: &str,
+    key_start: usize,
+    key_end: usize,
+) -> Option<(usize, usize)> {
+    let mut idx = skip_secret_ws(value, key_end);
+
+    if let Some(quote) = value[..key_start]
+        .chars()
+        .next_back()
+        .filter(|ch| matches!(ch, '"' | '\''))
+    {
+        if value[idx..].starts_with(quote) {
+            idx += quote.len_utf8();
+            idx = skip_secret_ws(value, idx);
+        }
+    }
+
+    if let Some(quote) = value[idx..]
+        .chars()
+        .next()
+        .filter(|ch| matches!(ch, '"' | '\''))
+    {
+        idx += quote.len_utf8();
+        idx = skip_secret_ws(value, idx);
+    }
+
+    let separator = value[idx..].chars().next()?;
+    if !matches!(separator, ':' | '=') {
+        return None;
+    }
+    idx += separator.len_utf8();
+    idx = skip_secret_ws(value, idx);
+
+    if let Some(quote) = value[idx..]
+        .chars()
+        .next()
+        .filter(|ch| matches!(ch, '"' | '\''))
+    {
+        let value_start = idx + quote.len_utf8();
+        let value_end = value[value_start..]
+            .char_indices()
+            .find_map(|(offset, ch)| (ch == quote).then_some(value_start + offset))
+            .unwrap_or(value.len());
+        return Some((value_start, value_end));
+    }
+
+    let value_start = idx;
+    let value_end = value[value_start..]
+        .char_indices()
+        .find_map(|(offset, ch)| {
+            (matches!(ch, '&' | ',' | '}' | ']' | ';') || ch == '\n' || ch == '\r')
+                .then_some(value_start + offset)
+        })
+        .unwrap_or(value.len());
+    (value_start < value_end).then_some((value_start, value_end))
+}
+
+fn skip_secret_ws(value: &str, start: usize) -> usize {
+    value[start..]
+        .char_indices()
+        .find_map(|(offset, ch)| (!ch.is_whitespace()).then_some(start + offset))
+        .unwrap_or(value.len())
 }
 
 fn collect_json_ids(dir: &Path) -> Vec<String> {
@@ -844,15 +1012,21 @@ mod tests {
 
     #[test]
     fn scrub_runtime_secret_config_removes_sensitive_settings_before_save() {
+        let bearer_key = format!("sk-{}", "A".repeat(24));
+        let github_key = format!("{}{}", "github_pat_", "B".repeat(24));
+        let header_secret = "header-runtime-secret";
         let config = json!({
             "ai": {
                 "provider": "api",
                 "api": {
-                    "base_url": "https://example.test/v1",
+                    "base_url": format!("https://example.test/v1?access_token={github_key}&model=chat"),
                     "api_key": "plain-runtime-secret",
                     "apiKey": "legacy-runtime-secret",
-                    "authorization": "Bearer runtime-secret",
-                    "model": "test-model"
+                    "authorization": format!("Bearer {bearer_key}"),
+                    "model": "test-model",
+                    "headers": {
+                        "trace": format!("Authorization: Bearer {header_secret}; request-id=kept")
+                    }
                 }
             },
             "sync": {
@@ -871,7 +1045,17 @@ mod tests {
         assert_eq!(scrubbed["ai"]["api"]["authorization"], "");
         assert_eq!(scrubbed["sync"]["token"], "");
         assert_eq!(scrubbed["nested"][0]["password"], "");
-        assert_eq!(scrubbed["ai"]["api"]["base_url"], "https://example.test/v1");
+        assert_eq!(
+            scrubbed["ai"]["api"]["base_url"],
+            "https://example.test/v1?access_token=<redacted>&model=chat"
+        );
+        assert_eq!(
+            scrubbed["ai"]["api"]["headers"]["trace"],
+            "Authorization: <redacted>; request-id=kept"
+        );
+        assert!(!scrubbed.to_string().contains(&bearer_key));
+        assert!(!scrubbed.to_string().contains(&github_key));
+        assert!(!scrubbed.to_string().contains(header_secret));
         assert_eq!(scrubbed["ai"]["api"]["model"], "test-model");
         assert_eq!(scrubbed["sync"]["endpoint"], "https://sync.example.test");
         assert_eq!(scrubbed["nested"][0]["label"], "kept");

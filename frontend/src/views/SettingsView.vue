@@ -676,6 +676,7 @@ function setConfigValue(config: Record<string, any>, path: string[], value: any)
 
 function scrubRuntimeSecretSettings(value: any): any {
   if (Array.isArray(value)) return value.map(scrubRuntimeSecretSettings)
+  if (typeof value === 'string') return scrubRuntimeSecretString(value)
   if (!value || typeof value !== 'object') return value
   return Object.fromEntries(Object.entries(value).map(([key, entry]) => {
     if (isRuntimeSecretSettingKey(key)) return [key, '']
@@ -685,6 +686,29 @@ function scrubRuntimeSecretSettings(value: any): any {
 
 function isRuntimeSecretSettingKey(key: string) {
   return runtimeSecretSettingKeys.has(key.toLowerCase())
+}
+
+function scrubRuntimeSecretString(value: string) {
+  return scrubSecretAssignments(scrubTokenLikeValues(value))
+}
+
+function scrubTokenLikeValues(value: string) {
+  return value.replace(/github_pat_[A-Za-z0-9_]{20,}|ghp_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9_-]{20,}/g, '<redacted>')
+}
+
+function scrubSecretAssignments(value: string) {
+  return Array.from(runtimeSecretSettingKeys).reduce((current, key) => {
+    const pattern = new RegExp(`(^|[^A-Za-z0-9_-])(${escapeRegExp(key)})(\\s*[:=]\\s*)(?:"([^"]*)"|'([^']*)'|([^&,}\\];\\r\\n]+))`, 'gi')
+    return current.replace(pattern, (_match, prefix, matchedKey, separator, doubleQuoted, singleQuoted) => {
+      if (doubleQuoted !== undefined) return `${prefix}${matchedKey}${separator}"<redacted>"`
+      if (singleQuoted !== undefined) return `${prefix}${matchedKey}${separator}'<redacted>'`
+      return `${prefix}${matchedKey}${separator}<redacted>`
+    })
+  }, value)
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 function downloadJson(filename: string, value: unknown) {
