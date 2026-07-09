@@ -1,7 +1,7 @@
 //! Tests for the script DSL parser.
 
-use llm_game::script::ScriptParser;
 use llm_game::script::ScriptCommand;
+use llm_game::script::ScriptParser;
 
 #[test]
 fn test_parse_empty_script() {
@@ -46,7 +46,12 @@ fn test_parse_dialogue_with_vocal() {
     let commands = ScriptParser::parse("Sakura:你好 -v=v1.ogg");
     assert_eq!(commands.len(), 1);
     match &commands[0] {
-        ScriptCommand::Say { speaker, text, vocal, .. } => {
+        ScriptCommand::Say {
+            speaker,
+            text,
+            vocal,
+            ..
+        } => {
             assert_eq!(speaker, &Some("Sakura".to_string()));
             assert_eq!(text, "你好");
             assert_eq!(vocal, &Some("v1.ogg".to_string()));
@@ -60,7 +65,12 @@ fn test_parse_dialogue_with_emotion() {
     let commands = ScriptParser::parse("Sakura:happy 今天天气真好！");
     assert_eq!(commands.len(), 1);
     match &commands[0] {
-        ScriptCommand::Say { speaker, text, emotion, .. } => {
+        ScriptCommand::Say {
+            speaker,
+            text,
+            emotion,
+            ..
+        } => {
             assert_eq!(speaker, &Some("Sakura".to_string()));
             assert_eq!(text, "今天天气真好！");
             assert_eq!(emotion, &Some("happy".to_string()));
@@ -86,7 +96,12 @@ fn test_parse_change_figure() {
     let commands = ScriptParser::parse("changeFigure=sakura.png -position=center -live2d");
     assert_eq!(commands.len(), 1);
     match &commands[0] {
-        ScriptCommand::ChangeFigure { path, position, live2d, .. } => {
+        ScriptCommand::ChangeFigure {
+            path,
+            position,
+            live2d,
+            ..
+        } => {
             assert_eq!(path, "sakura.png");
             assert_eq!(position, &Some("center".to_string()));
             assert!(live2d);
@@ -193,10 +208,10 @@ end
 "#;
     let commands = ScriptParser::parse(script);
     assert!(commands.len() >= 6);
-    
+
     // Verify first command is ChangeBg
     assert!(matches!(&commands[0], ScriptCommand::ChangeBg { .. }));
-    
+
     // Verify last command is End
     assert!(matches!(commands.last().unwrap(), ScriptCommand::End));
 }

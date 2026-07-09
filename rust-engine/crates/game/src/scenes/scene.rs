@@ -71,5 +71,8 @@ pub enum InputEvent {
     /// Choice selected (by index).
     ChoiceSelect { index: usize },
     /// Custom action from frontend.
-    Action { name: String, data: serde_json::Value },
+    Action {
+        name: String,
+        data: serde_json::Value,
+    },
 }

@@ -104,7 +104,9 @@ impl ScriptParser {
         if let Some(rest) = Self::strip_prefix(line, "changeBg") {
             let path = Self::extract_value(rest, "changeBg");
             let args = Self::parse_args(rest);
-            let transition = args.iter().find(|a| a.key == "transition" || a.key == "t")
+            let transition = args
+                .iter()
+                .find(|a| a.key == "transition" || a.key == "t")
                 .and_then(|a| a.value.clone());
             return Some(ScriptCommand::ChangeBg { path, transition });
         }
@@ -113,17 +115,30 @@ impl ScriptParser {
         if let Some(rest) = Self::strip_prefix(line, "changeFigure") {
             let path = Self::extract_value(rest, "changeFigure");
             let args = Self::parse_args(rest);
-            let position = args.iter().find(|a| a.key == "position" || a.key == "pos")
+            let position = args
+                .iter()
+                .find(|a| a.key == "position" || a.key == "pos")
                 .and_then(|a| a.value.clone());
-            let id = args.iter().find(|a| a.key == "id")
+            let id = args
+                .iter()
+                .find(|a| a.key == "id")
                 .and_then(|a| a.value.clone());
-            let motion = args.iter().find(|a| a.key == "motion")
+            let motion = args
+                .iter()
+                .find(|a| a.key == "motion")
                 .and_then(|a| a.value.clone());
-            let expression = args.iter().find(|a| a.key == "expression" || a.key == "exp")
+            let expression = args
+                .iter()
+                .find(|a| a.key == "expression" || a.key == "exp")
                 .and_then(|a| a.value.clone());
             let live2d = args.iter().any(|a| a.key == "live2d");
             return Some(ScriptCommand::ChangeFigure {
-                path, position, id, motion, expression, live2d,
+                path,
+                position,
+                id,
+                motion,
+                expression,
+                live2d,
             });
         }
 
@@ -321,7 +336,15 @@ impl ScriptParser {
         };
 
         // Check if content starts with an emotion keyword (e.g., "happy 今天天气真好！")
-        let known_emotions = ["happy", "sad", "angry", "surprised", "neutral", "shy", "excited"];
+        let known_emotions = [
+            "happy",
+            "sad",
+            "angry",
+            "surprised",
+            "neutral",
+            "shy",
+            "excited",
+        ];
         let (emotion, content_text) = if emotion_from_speaker.is_some() {
             // Emotion already extracted from speaker part
             (emotion_from_speaker, content_part.to_string())
@@ -340,7 +363,9 @@ impl ScriptParser {
         let (text, args) = Self::split_content_and_args(&content_text);
 
         // Extract common args
-        let vocal = args.iter().find(|a| a.key == "v" || a.key == "vocal")
+        let vocal = args
+            .iter()
+            .find(|a| a.key == "v" || a.key == "vocal")
             .and_then(|a| a.value.clone());
         let concat = args.iter().any(|a| a.key == "concat");
         let notend = args.iter().any(|a| a.key == "notend");
@@ -389,9 +414,7 @@ impl ScriptParser {
 
     /// Parse all arguments from a string.
     fn parse_args(s: &str) -> Vec<CommandArg> {
-        s.split_whitespace()
-            .filter_map(CommandArg::parse)
-            .collect()
+        s.split_whitespace().filter_map(CommandArg::parse).collect()
     }
 
     /// Parse choice options from `text1:target1,text2:target2`.
@@ -463,7 +486,13 @@ mod tests {
     fn test_parse_say_with_args() {
         let cmd = ScriptParser::parse_line("Sakura:你好 -v=v1.ogg -concat").unwrap();
         match cmd {
-            ScriptCommand::Say { speaker, text, vocal, concat, .. } => {
+            ScriptCommand::Say {
+                speaker,
+                text,
+                vocal,
+                concat,
+                ..
+            } => {
                 assert_eq!(speaker, Some("Sakura".to_string()));
                 assert_eq!(text, "你好");
                 assert_eq!(vocal, Some("v1.ogg".to_string()));

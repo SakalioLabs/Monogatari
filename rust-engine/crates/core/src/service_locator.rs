@@ -40,9 +40,8 @@ impl ServiceLocator {
 
     /// Get a reference to a service, returning an error if not found.
     pub fn get_required<T: Send + Sync + 'static>(&self) -> Result<Arc<RwLock<T>>> {
-        self.get::<T>().ok_or_else(|| {
-            EngineError::ServiceNotFound(std::any::type_name::<T>().to_string())
-        })
+        self.get::<T>()
+            .ok_or_else(|| EngineError::ServiceNotFound(std::any::type_name::<T>().to_string()))
     }
 
     /// Check if a service of the given type is registered.

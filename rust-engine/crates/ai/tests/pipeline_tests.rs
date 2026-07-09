@@ -69,7 +69,7 @@ fn test_inference_pipeline_no_active_engine() {
     let rt = tokio::runtime::Runtime::new().unwrap();
     let pipeline = InferencePipeline::new();
     let options = InferenceOptions::default();
-    
+
     // Should return error when no active engine
     let result = rt.block_on(pipeline.generate_response("test", &options));
     assert!(result.is_err());

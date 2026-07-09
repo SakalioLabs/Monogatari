@@ -42,9 +42,7 @@ pub enum ScriptCommand {
     /// Show intro text: `-intro=text`
     Intro { text: String },
     /// Show choices: `-choose=text1:target1,text2:target2`
-    Choose {
-        choices: Vec<ChoiceOption>,
-    },
+    Choose { choices: Vec<ChoiceOption> },
     /// Change scene: `-changeScene=sceneId`
     ChangeScene { scene_id: String },
     /// Call scene (push current): `-callScene=sceneId`
@@ -54,7 +52,11 @@ pub enum ScriptCommand {
     /// Set variable: `-setVar=name=value`
     SetVar { name: String, value: String },
     /// Conditional: `-if=condition`
-    If { condition: String, then_cmd: Box<ScriptCommand>, else_cmd: Option<Box<ScriptCommand>> },
+    If {
+        condition: String,
+        then_cmd: Box<ScriptCommand>,
+        else_cmd: Option<Box<ScriptCommand>>,
+    },
     /// Jump to label: `-jumpLabel=label`
     JumpLabel { label: String },
     /// Define label: `-label=name`
@@ -68,9 +70,20 @@ pub enum ScriptCommand {
     /// Set animation on figure: `-setAnimation=name`
     SetAnimation { target: String, animation: String },
     /// Set transform on figure: `-setTransform=x,y,scale,rotation,alpha`
-    SetTransform { target: String, x: f32, y: f32, scale: f32, rotation: f32, alpha: f32 },
+    SetTransform {
+        target: String,
+        x: f32,
+        y: f32,
+        scale: f32,
+        rotation: f32,
+        alpha: f32,
+    },
     /// Set filter effect: `-setFilter=blur,brightness,contrast`
-    SetFilter { target: String, filter_type: String, value: f32 },
+    SetFilter {
+        target: String,
+        filter_type: String,
+        value: f32,
+    },
     /// Unlock CG in gallery: `-unlockCg=id`
     UnlockCg { id: String },
     /// Unlock BGM in gallery: `-unlockBgm=id`
@@ -92,7 +105,10 @@ pub enum ScriptCommand {
     /// Comment (ignored)
     Comment { text: String },
     /// Unknown command (pass through)
-    Unknown { command: String, args: Vec<CommandArg> },
+    Unknown {
+        command: String,
+        args: Vec<CommandArg>,
+    },
 }
 
 /// A choice option with text and target.
@@ -109,9 +125,15 @@ impl CommandArg {
         if let Some(eq_pos) = s.find('=') {
             let key = s[..eq_pos].to_string();
             let value = s[eq_pos + 1..].to_string();
-            Some(CommandArg { key, value: Some(value) })
+            Some(CommandArg {
+                key,
+                value: Some(value),
+            })
         } else if !s.is_empty() {
-            Some(CommandArg { key: s.to_string(), value: None })
+            Some(CommandArg {
+                key: s.to_string(),
+                value: None,
+            })
         } else {
             None
         }

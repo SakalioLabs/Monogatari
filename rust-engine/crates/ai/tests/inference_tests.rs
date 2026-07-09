@@ -23,7 +23,7 @@ fn test_inference_options_clone() {
         repetition_penalty: 1.2,
         stop_sequences: vec!["\n".to_string()],
     };
-    
+
     let cloned = options.clone();
     assert_eq!(cloned.max_tokens, 1024);
     assert_eq!(cloned.temperature, 0.5);
@@ -43,11 +43,11 @@ fn test_inference_options_serialization() {
         repetition_penalty: 1.0,
         stop_sequences: vec!["END".to_string()],
     };
-    
+
     let json = serde_json::to_string(&options).unwrap();
     assert!(json.contains("256"));
     assert!(json.contains("0.8"));
-    
+
     let deserialized: InferenceOptions = serde_json::from_str(&json).unwrap();
     assert_eq!(deserialized.max_tokens, 256);
     assert_eq!(deserialized.temperature, 0.8);
@@ -62,7 +62,7 @@ fn test_inference_result_success() {
         duration_ms: 100,
         tokens_generated: 5,
     };
-    
+
     assert!(result.success);
     assert_eq!(result.text, "Hello, world!");
     assert!(result.error.is_none());
@@ -79,7 +79,7 @@ fn test_inference_result_failure() {
         duration_ms: 5000,
         tokens_generated: 0,
     };
-    
+
     assert!(!result.success);
     assert!(result.text.is_empty());
     assert_eq!(result.error, Some("Connection timeout".to_string()));
@@ -94,7 +94,7 @@ fn test_inference_result_clone() {
         duration_ms: 50,
         tokens_generated: 3,
     };
-    
+
     let cloned = result.clone();
     assert_eq!(cloned.text, "Test response");
     assert!(cloned.success);
@@ -109,11 +109,11 @@ fn test_inference_result_serialization() {
         duration_ms: 75,
         tokens_generated: 2,
     };
-    
+
     let json = serde_json::to_string(&result).unwrap();
     assert!(json.contains("Serialized"));
     assert!(json.contains("true"));
-    
+
     let deserialized: InferenceResult = serde_json::from_str(&json).unwrap();
     assert_eq!(deserialized.text, "Serialized");
     assert!(deserialized.success);
@@ -127,7 +127,7 @@ fn test_inference_options_temperature_bounds() {
         ..Default::default()
     };
     assert!(options.temperature < 0.5);
-    
+
     // Test high temperature (more random)
     let options = InferenceOptions {
         temperature: 1.5,
@@ -143,7 +143,7 @@ fn test_inference_options_max_tokens() {
         ..Default::default()
     };
     assert_eq!(options.max_tokens, 1);
-    
+
     let options = InferenceOptions {
         max_tokens: 4096,
         ..Default::default()
@@ -154,14 +154,10 @@ fn test_inference_options_max_tokens() {
 #[test]
 fn test_inference_options_stop_sequences() {
     let options = InferenceOptions {
-        stop_sequences: vec![
-            "\n\n".to_string(),
-            "END".to_string(),
-            "STOP".to_string(),
-        ],
+        stop_sequences: vec!["\n\n".to_string(), "END".to_string(), "STOP".to_string()],
         ..Default::default()
     };
-    
+
     assert_eq!(options.stop_sequences.len(), 3);
     assert!(options.stop_sequences.contains(&"\n\n".to_string()));
 }
@@ -175,9 +171,9 @@ fn test_inference_result_duration() {
         duration_ms: 10,
         tokens_generated: 1,
     };
-    
+
     assert!(result.duration_ms < 100);
-    
+
     let result = InferenceResult {
         text: "Slow".to_string(),
         success: true,
@@ -185,6 +181,6 @@ fn test_inference_result_duration() {
         duration_ms: 10000,
         tokens_generated: 100,
     };
-    
+
     assert!(result.duration_ms > 1000);
 }

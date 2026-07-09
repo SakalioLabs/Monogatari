@@ -9,7 +9,7 @@
 //!
 //! ```text
 //! ; Comments start with semicolons
-//! 
+//!
 //! ; Narrator dialogue (no speaker)
 //! 这是一段旁白。
 //!

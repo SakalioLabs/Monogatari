@@ -79,16 +79,17 @@ impl InferencePipeline {
             llm_core::EngineError::inference("none", "No active inference engine")
         })?;
 
-        let engine = self.engines.get(engine_name).ok_or_else(|| {
-            llm_core::EngineError::inference(engine_name, "Engine not found")
-        })?;
+        let engine = self
+            .engines
+            .get(engine_name)
+            .ok_or_else(|| llm_core::EngineError::inference(engine_name, "Engine not found"))?;
 
         let engine = engine.read().await;
-        
+
         // Try with retry logic
         let max_retries = 3;
         let mut last_error = None;
-        
+
         for attempt in 1..=max_retries {
             match engine.infer(prompt, options).await {
                 Ok(result) => {
@@ -102,12 +103,13 @@ impl InferencePipeline {
                     last_error = Some(e);
                     if attempt < max_retries {
                         // Exponential backoff
-                        tokio::time::sleep(std::time::Duration::from_millis(100 * attempt as u64)).await;
+                        tokio::time::sleep(std::time::Duration::from_millis(100 * attempt as u64))
+                            .await;
                     }
                 }
             }
         }
-        
+
         Err(last_error.unwrap_or_else(|| {
             llm_core::EngineError::inference("pipeline", "All retry attempts failed")
         }))
@@ -120,9 +122,10 @@ impl InferencePipeline {
         prompt: &str,
         options: &InferenceOptions,
     ) -> Result<InferenceResult> {
-        let engine = self.engines.get(engine_name).ok_or_else(|| {
-            llm_core::EngineError::inference(engine_name, "Engine not found")
-        })?;
+        let engine = self
+            .engines
+            .get(engine_name)
+            .ok_or_else(|| llm_core::EngineError::inference(engine_name, "Engine not found"))?;
 
         let engine = engine.read().await;
         engine.infer(prompt, options).await
@@ -139,9 +142,10 @@ impl InferencePipeline {
             llm_core::EngineError::inference("none", "No active inference engine")
         })?;
 
-        let engine = self.engines.get(engine_name).ok_or_else(|| {
-            llm_core::EngineError::inference(engine_name, "Engine not found")
-        })?;
+        let engine = self
+            .engines
+            .get(engine_name)
+            .ok_or_else(|| llm_core::EngineError::inference(engine_name, "Engine not found"))?;
 
         let engine = engine.read().await;
         engine.infer_stream(prompt, options, on_chunk).await

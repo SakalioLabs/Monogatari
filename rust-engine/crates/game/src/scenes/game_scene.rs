@@ -183,8 +183,9 @@ impl Scene for GameScene {
                 _ => Ok(false),
             },
             InputEvent::ChoiceSelect { index } => {
-                if let DialogueDisplayState::ShowingChoices { choices, selected, .. } =
-                    &mut self.display_state
+                if let DialogueDisplayState::ShowingChoices {
+                    choices, selected, ..
+                } = &mut self.display_state
                 {
                     if index < choices.len() {
                         *selected = index;

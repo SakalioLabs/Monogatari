@@ -136,18 +136,21 @@ impl InferenceEngine for ONNXEngine {
 
         // Verify model file exists
         if !self.config.model_path.exists() {
-            return Err(llm_core::EngineError::config("model_path", format!(
-                "Model file not found: {}",
-                self.config.model_path.display()
-            )));
+            return Err(llm_core::EngineError::config(
+                "model_path",
+                format!("Model file not found: {}", self.config.model_path.display()),
+            ));
         }
 
         // Verify tokenizer file exists
         if !self.config.tokenizer_path.exists() {
-            return Err(llm_core::EngineError::config("tokenizer_path", format!(
-                "Tokenizer file not found: {}",
-                self.config.tokenizer_path.display()
-            )));
+            return Err(llm_core::EngineError::config(
+                "tokenizer_path",
+                format!(
+                    "Tokenizer file not found: {}",
+                    self.config.tokenizer_path.display()
+                ),
+            ));
         }
 
         self.initialized = true;
@@ -157,7 +160,10 @@ impl InferenceEngine for ONNXEngine {
 
     async fn infer(&self, prompt: &str, options: &InferenceOptions) -> Result<InferenceResult> {
         if !self.initialized {
-            return Err(llm_core::EngineError::inference("ONNX", "Engine not initialized"));
+            return Err(llm_core::EngineError::inference(
+                "ONNX",
+                "Engine not initialized",
+            ));
         }
 
         let start = Instant::now();
@@ -182,7 +188,9 @@ impl InferenceEngine for ONNXEngine {
 
         // Placeholder: generate empty response until ONNX model is loaded
         // The actual ONNX inference would use ort crate's Session
-        warn!("ONNX inference is a placeholder - actual model loading requires ort crate integration");
+        warn!(
+            "ONNX inference is a placeholder - actual model loading requires ort crate integration"
+        );
 
         let generated_text = if generated_tokens.is_empty() {
             String::from("[ONNX inference placeholder - model not loaded]")

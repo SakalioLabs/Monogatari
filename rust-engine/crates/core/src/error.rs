@@ -61,7 +61,10 @@ impl<T, E: std::fmt::Display> ResultExt<T> for std::result::Result<T, E> {
 /// Helper functions for creating specific errors with context.
 impl EngineError {
     /// Create an asset not found error.
-    pub fn asset_not_found(name: impl std::fmt::Display, expected_path: impl std::fmt::Display) -> Self {
+    pub fn asset_not_found(
+        name: impl std::fmt::Display,
+        expected_path: impl std::fmt::Display,
+    ) -> Self {
         Self::AssetNotFound(format!("{name} at {expected_path}"))
     }
 
@@ -71,7 +74,11 @@ impl EngineError {
     }
 
     /// Create a dialogue error.
-    pub fn dialogue(script: impl std::fmt::Display, node: impl std::fmt::Display, message: impl std::fmt::Display) -> Self {
+    pub fn dialogue(
+        script: impl std::fmt::Display,
+        node: impl std::fmt::Display,
+        message: impl std::fmt::Display,
+    ) -> Self {
         Self::Dialogue(format!("[{script}/{node}] {message}"))
     }
 

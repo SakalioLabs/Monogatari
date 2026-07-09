@@ -2,7 +2,7 @@
 
 use llm_game::{
     characters::{Character, CharacterMemory, Personality},
-    knowledge::{KnowledgeBase, KnowledgeEntry, KnowledgeCategory},
+    knowledge::{KnowledgeBase, KnowledgeCategory, KnowledgeEntry},
     script::ScriptParser,
 };
 
@@ -86,7 +86,12 @@ fn test_multiple_arguments() {
     let commands = ScriptParser::parse("Sakura:你好 -v=v1.ogg -concat -notend");
     assert_eq!(commands.len(), 1);
     match &commands[0] {
-        llm_game::script::ScriptCommand::Say { vocal, concat, notend, .. } => {
+        llm_game::script::ScriptCommand::Say {
+            vocal,
+            concat,
+            notend,
+            ..
+        } => {
             assert_eq!(vocal, &Some("v1.ogg".to_string()));
             assert!(concat);
             assert!(notend);
@@ -147,19 +152,39 @@ fn test_set_var_with_equals_in_value() {
 #[test]
 fn test_character_memory_eviction() {
     let mut memory = CharacterMemory::new(3);
-    
+
     // Add 3 memories
-    memory.add_memory("Memory 1".to_string(), llm_game::characters::memory::MemoryType::Conversation, 0.5, vec![]);
-    memory.add_memory("Memory 2".to_string(), llm_game::characters::memory::MemoryType::Conversation, 0.7, vec![]);
-    memory.add_memory("Memory 3".to_string(), llm_game::characters::memory::MemoryType::Conversation, 0.3, vec![]);
-    
+    memory.add_memory(
+        "Memory 1".to_string(),
+        llm_game::characters::memory::MemoryType::Conversation,
+        0.5,
+        vec![],
+    );
+    memory.add_memory(
+        "Memory 2".to_string(),
+        llm_game::characters::memory::MemoryType::Conversation,
+        0.7,
+        vec![],
+    );
+    memory.add_memory(
+        "Memory 3".to_string(),
+        llm_game::characters::memory::MemoryType::Conversation,
+        0.3,
+        vec![],
+    );
+
     assert_eq!(memory.len(), 3);
-    
+
     // Add 4th memory - should evict lowest importance (Memory 3 with 0.3)
-    memory.add_memory("Memory 4".to_string(), llm_game::characters::memory::MemoryType::Conversation, 0.9, vec![]);
-    
+    memory.add_memory(
+        "Memory 4".to_string(),
+        llm_game::characters::memory::MemoryType::Conversation,
+        0.9,
+        vec![],
+    );
+
     assert_eq!(memory.len(), 3);
-    
+
     // Memory 3 should be evicted
     let recent = memory.get_recent(3);
     let has_memory3 = recent.iter().any(|m| m.content == "Memory 3");
@@ -169,15 +194,30 @@ fn test_character_memory_eviction() {
 #[test]
 fn test_character_memory_recall() {
     let mut memory = CharacterMemory::new(10);
-    
-    memory.add_memory("Cherry blossom park".to_string(), llm_game::characters::memory::MemoryType::Conversation, 0.8, vec!["park".to_string()]);
-    memory.add_memory("Beautiful sunset".to_string(), llm_game::characters::memory::MemoryType::Conversation, 0.6, vec!["sunset".to_string()]);
-    memory.add_memory("Park bench".to_string(), llm_game::characters::memory::MemoryType::Conversation, 0.4, vec!["park".to_string()]);
-    
+
+    memory.add_memory(
+        "Cherry blossom park".to_string(),
+        llm_game::characters::memory::MemoryType::Conversation,
+        0.8,
+        vec!["park".to_string()],
+    );
+    memory.add_memory(
+        "Beautiful sunset".to_string(),
+        llm_game::characters::memory::MemoryType::Conversation,
+        0.6,
+        vec!["sunset".to_string()],
+    );
+    memory.add_memory(
+        "Park bench".to_string(),
+        llm_game::characters::memory::MemoryType::Conversation,
+        0.4,
+        vec!["park".to_string()],
+    );
+
     // Recall by keyword
     let results = memory.recall("park", 10);
     assert_eq!(results.len(), 2);
-    
+
     // Recall with limit
     let results = memory.recall("park", 1);
     assert_eq!(results.len(), 1);
@@ -192,11 +232,11 @@ fn test_knowledge_base_empty_search() {
         "Test",
         "Test content.",
     ));
-    
+
     // Empty query should return no results
     let results = kb.search("", 10);
     assert!(results.is_empty());
-    
+
     // Whitespace query should return no results
     let results = kb.search("   ", 10);
     assert!(results.is_empty());
@@ -230,11 +270,11 @@ fn test_personality_default() {
 #[test]
 fn test_character_relationship_clamp() {
     let mut character = Character::new("test", "Test");
-    
+
     // Test positive clamp
     character.update_relationship("other", 2.0);
     assert_eq!(character.relationships.get("other"), Some(&1.0));
-    
+
     // Test negative clamp
     character.update_relationship("other2", -2.0);
     assert_eq!(character.relationships.get("other2"), Some(&-1.0));
@@ -348,7 +388,10 @@ fn test_parse_play_voice() {
 fn test_parse_stop_voice() {
     let commands = ScriptParser::parse("stopVoice");
     assert_eq!(commands.len(), 1);
-    assert!(matches!(commands[0], llm_game::script::ScriptCommand::StopVoice));
+    assert!(matches!(
+        commands[0],
+        llm_game::script::ScriptCommand::StopVoice
+    ));
 }
 
 #[test]
