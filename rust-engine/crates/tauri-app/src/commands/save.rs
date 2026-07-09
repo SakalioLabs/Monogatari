@@ -50,9 +50,19 @@ pub async fn load_game(state: State<'_, AppState>, save_id: String) -> Result<St
 
     // Restore flags and variables
     let se = state.script_engine.read().await;
-    for (name, value) in &save.flags {
-        se.set_flag(name, *value);
-    }
+    let variables = save
+        .variables
+        .iter()
+        .map(|(name, value)| {
+            let value = match value {
+                serde_json::Value::String(value) => value.clone(),
+                other => other.to_string(),
+            };
+            (name.clone(), rhai::Dynamic::from(value))
+        })
+        .collect();
+    se.load_state(variables, save.flags.clone())
+        .map_err(|e| e.to_string())?;
 
     Ok(format!("Loaded save: {}", save.save_name))
 }

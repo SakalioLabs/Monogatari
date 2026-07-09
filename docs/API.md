@@ -128,6 +128,8 @@ Scene and renderer asset paths are project-relative asset references. Runtime as
 
 Scripting command text is author-controlled data, not an unbounded transport. Direct Rhai execution, condition evaluation, and DSL parsing reject hidden control characters and oversized payloads before invoking the runtime; every `ScriptEngine::execute` caller repeats the shared Rhai source validation and caps operations, call depth, expression depth, variables, functions, and module imports so runaway scripts fail instead of consuming the workbench.
 
+Script variable and flag names are persisted state keys. They are trimmed, limited to 128 characters, and restricted to ASCII letters, numbers, dots, underscores, and hyphens before script execution, workflow nodes, dialogue scripts, or save loading can write them.
+
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
 | `execute_script` | `{ script }` | `ScriptResult` | Run Rhai script |

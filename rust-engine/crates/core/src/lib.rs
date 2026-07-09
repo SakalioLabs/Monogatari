@@ -64,6 +64,7 @@ pub mod event_bus;
 pub mod events;
 pub mod game_clock;
 pub mod service_locator;
+pub mod state_key;
 pub mod traits;
 
 pub use error::{EngineError, Result};
@@ -71,4 +72,7 @@ pub use event_bus::EventBus;
 pub use events::*;
 pub use game_clock::GameClock;
 pub use service_locator::ServiceLocator;
+pub use state_key::{
+    normalize_script_state_key, normalize_script_state_map, SCRIPT_STATE_KEY_MAX_CHARS,
+};
 pub use traits::GameService;

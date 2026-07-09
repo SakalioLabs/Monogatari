@@ -6,14 +6,20 @@ use std::sync::Arc;
 
 use tracing::{debug, info};
 
-use llm_core::Result;
+use llm_core::{normalize_script_state_key, normalize_script_state_map, Result};
 
 use super::dialogue_node::{Choice, DialogueNode};
 use super::dialogue_script::DialogueScript;
 
 /// Callback type for LLM-generated dialogue content.
-pub type LLMInferenceCallback =
-    Box<dyn Fn(String, Option<String>) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<String>> + Send>> + Send + Sync>;
+pub type LLMInferenceCallback = Box<
+    dyn Fn(
+            String,
+            Option<String>,
+        ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<String>> + Send>>
+        + Send
+        + Sync,
+>;
 
 /// Events fired by the dialogue manager.
 #[derive(Debug, Clone)]
@@ -25,9 +31,7 @@ pub enum DialogueEvent {
         emotion: Option<String>,
     },
     /// Show choices to the player.
-    ShowChoices {
-        choices: Vec<Choice>,
-    },
+    ShowChoices { choices: Vec<Choice> },
     /// Dialogue has ended.
     DialogueEnd,
 }
@@ -111,13 +115,15 @@ impl DialogueManager {
 
     /// Advance to the next node in a linear dialogue.
     pub async fn advance(&mut self) -> Result<()> {
-        let current_id = self.current_node_id.clone().ok_or_else(|| {
-            llm_core::EngineError::dialogue("none", "none", "No active dialogue")
-        })?;
+        let current_id = self
+            .current_node_id
+            .clone()
+            .ok_or_else(|| llm_core::EngineError::dialogue("none", "none", "No active dialogue"))?;
 
-        let script_id = self.active_script_id.clone().ok_or_else(|| {
-            llm_core::EngineError::dialogue("none", "none", "No active dialogue")
-        })?;
+        let script_id = self
+            .active_script_id
+            .clone()
+            .ok_or_else(|| llm_core::EngineError::dialogue("none", "none", "No active dialogue"))?;
 
         let script = self.scripts.get(&script_id).ok_or_else(|| {
             llm_core::EngineError::dialogue(&script_id, "unknown", "Script not found")
@@ -137,13 +143,15 @@ impl DialogueManager {
 
     /// Select a choice by index.
     pub async fn select_choice(&mut self, choice_index: usize) -> Result<()> {
-        let current_id = self.current_node_id.clone().ok_or_else(|| {
-            llm_core::EngineError::dialogue("none", "none", "No active dialogue")
-        })?;
+        let current_id = self
+            .current_node_id
+            .clone()
+            .ok_or_else(|| llm_core::EngineError::dialogue("none", "none", "No active dialogue"))?;
 
-        let script_id = self.active_script_id.clone().ok_or_else(|| {
-            llm_core::EngineError::dialogue("none", "none", "No active dialogue")
-        })?;
+        let script_id = self
+            .active_script_id
+            .clone()
+            .ok_or_else(|| llm_core::EngineError::dialogue("none", "none", "No active dialogue"))?;
         let script = self.scripts.get(&script_id).ok_or_else(|| {
             llm_core::EngineError::dialogue(&script_id, "unknown", "Script not found")
         })?;
@@ -152,15 +160,20 @@ impl DialogueManager {
         })?;
 
         let choice = node.choices.get(choice_index).ok_or_else(|| {
-            llm_core::EngineError::dialogue("current", "current", format!("Invalid choice index: {choice_index}"))
+            llm_core::EngineError::dialogue(
+                "current",
+                "current",
+                format!("Invalid choice index: {choice_index}"),
+            )
         })?;
 
         // Apply relationship changes
         // (This would need access to the CharacterManager in a full implementation)
 
         // Check and set flags from the choice
-        self.flags
-            .insert(format!("choice_{script_id}_{choice_index}"), true);
+        let choice_flag =
+            normalize_script_state_key(&format!("choice_{script_id}_{choice_index}"))?;
+        self.flags.insert(choice_flag, true);
 
         self.current_node_id = Some(choice.next_node_id.clone());
         self.process_current_node().await
@@ -168,23 +181,29 @@ impl DialogueManager {
 
     /// Process the current node: execute scripts, handle LLM, send events.
     async fn process_current_node(&mut self) -> Result<()> {
-        let current_id = self.current_node_id.clone().ok_or_else(|| {
-            llm_core::EngineError::dialogue("none", "none", "No active dialogue")
-        })?;
+        let current_id = self
+            .current_node_id
+            .clone()
+            .ok_or_else(|| llm_core::EngineError::dialogue("none", "none", "No active dialogue"))?;
 
-        let script_id = self.active_script_id.clone().ok_or_else(|| {
-            llm_core::EngineError::dialogue("none", "none", "No active dialogue")
-        })?;
+        let script_id = self
+            .active_script_id
+            .clone()
+            .ok_or_else(|| llm_core::EngineError::dialogue("none", "none", "No active dialogue"))?;
         let script = self.scripts.get(&script_id).ok_or_else(|| {
             llm_core::EngineError::dialogue(&script_id, "unknown", "Script not found")
         })?;
-        let node = script.nodes.get(&current_id).ok_or_else(|| {
-            llm_core::EngineError::dialogue("current", &current_id, "Node not found")
-        })?.clone();
+        let node = script
+            .nodes
+            .get(&current_id)
+            .ok_or_else(|| {
+                llm_core::EngineError::dialogue("current", &current_id, "Node not found")
+            })?
+            .clone();
 
         // Execute script if present
         if let Some(script_expr) = &node.script {
-            self.execute_script(script_expr);
+            self.execute_script(script_expr)?;
         }
 
         // Handle LLM-generated content
@@ -243,7 +262,7 @@ impl DialogueManager {
         let node_id = self.current_node_id.as_ref()?;
         let script = self.scripts.get(script_id)?;
         let node = script.nodes.get(node_id)?;
-        
+
         Some((
             node.speaker_id.clone(),
             node.text.clone(),
@@ -261,51 +280,69 @@ impl DialogueManager {
         &mut self,
         flags: HashMap<String, bool>,
         variables: HashMap<String, serde_json::Value>,
-    ) {
-        self.flags = flags;
-        self.variables = variables;
+    ) -> Result<()> {
+        self.flags = normalize_script_state_map(flags)?;
+        self.variables = normalize_script_state_map(variables)?;
+        Ok(())
     }
 
     /// Execute a simple script expression (setFlag, setVariable).
-    fn execute_script(&mut self, script: &str) {
+    fn execute_script(&mut self, script: &str) -> Result<()> {
         let trimmed = script.trim();
 
         // Parse setFlag('name', true/false)
-        if trimmed.starts_with("setFlag(") {
-            let inner = &trimmed[8..trimmed.len() - 1];
-            let parts: Vec<&str> = inner.split(',').map(|s| s.trim().trim_matches('\'')).collect();
+        if let Some(inner) = trimmed
+            .strip_prefix("setFlag(")
+            .and_then(|value| value.strip_suffix(')'))
+        {
+            let parts: Vec<&str> = inner
+                .split(',')
+                .map(|s| s.trim().trim_matches('\''))
+                .collect();
             if parts.len() >= 2 {
-                let flag_name = parts[0];
+                let flag_name = normalize_script_state_key(parts[0])?;
                 let value = parts[1] == "true";
-                self.flags.insert(flag_name.to_string(), value);
+                self.flags.insert(flag_name.clone(), value);
                 debug!("Set flag: {} = {}", flag_name, value);
             }
         }
 
         // Parse setVariable('name', 'value')
-        if trimmed.starts_with("setVariable(") {
-            let inner = &trimmed[12..trimmed.len() - 1];
-            let parts: Vec<&str> = inner.split(',').map(|s| s.trim().trim_matches('\'')).collect();
+        if let Some(inner) = trimmed
+            .strip_prefix("setVariable(")
+            .and_then(|value| value.strip_suffix(')'))
+        {
+            let parts: Vec<&str> = inner
+                .split(',')
+                .map(|s| s.trim().trim_matches('\''))
+                .collect();
             if parts.len() >= 2 {
-                let var_name = parts[0];
+                let var_name = normalize_script_state_key(parts[0])?;
                 let value = parts[1];
                 self.variables.insert(
-                    var_name.to_string(),
+                    var_name.clone(),
                     serde_json::Value::String(value.to_string()),
                 );
                 debug!("Set variable: {} = {}", var_name, value);
             }
         }
+
+        Ok(())
     }
 
     /// Set a game flag.
-    pub fn set_flag(&mut self, name: &str, value: bool) {
-        self.flags.insert(name.to_string(), value);
+    pub fn set_flag(&mut self, name: &str, value: bool) -> Result<()> {
+        let name = normalize_script_state_key(name)?;
+        self.flags.insert(name, value);
+        Ok(())
     }
 
     /// Check if a game flag is set.
     pub fn has_flag(&self, name: &str) -> bool {
-        self.flags.get(name).copied().unwrap_or(false)
+        let Ok(name) = normalize_script_state_key(name) else {
+            return false;
+        };
+        self.flags.get(&name).copied().unwrap_or(false)
     }
 
     /// Get the current node (for UI rendering).
@@ -329,5 +366,46 @@ impl DialogueManager {
 impl Default for DialogueManager {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dialogue_state_keys_trim_and_allow_portable_names() {
+        let mut manager = DialogueManager::new();
+
+        manager.set_flag(" chapter_1.passed ", true).unwrap();
+        manager
+            .execute_script("setVariable('chapter_1.score', 'high')")
+            .unwrap();
+
+        assert!(manager.has_flag("chapter_1.passed"));
+        assert_eq!(
+            manager.get_state().1.get("chapter_1.score"),
+            Some(&serde_json::Value::String("high".to_string()))
+        );
+    }
+
+    #[test]
+    fn dialogue_state_keys_reject_invalid_names() {
+        let mut manager = DialogueManager::new();
+
+        assert!(manager.set_flag("bad/key", true).is_err());
+        assert!(manager
+            .execute_script("setVariable('bad key', 'value')")
+            .is_err());
+        assert!(manager.execute_script("setFlag('bad:key', true)").is_err());
+    }
+
+    #[test]
+    fn dialogue_load_state_rejects_invalid_keys() {
+        let mut manager = DialogueManager::new();
+        let flags = HashMap::from([("bad/key".to_string(), true)]);
+        let variables = HashMap::new();
+
+        assert!(manager.load_state(flags, variables).is_err());
     }
 }

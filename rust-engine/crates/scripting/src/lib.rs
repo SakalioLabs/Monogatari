@@ -17,6 +17,9 @@ use std::sync::{Arc, RwLock};
 use rhai::{Dynamic, Engine, Scope};
 use tracing::debug;
 
+pub use llm_core::{
+    normalize_script_state_key, normalize_script_state_map, SCRIPT_STATE_KEY_MAX_CHARS,
+};
 use llm_core::{EngineError, Result};
 
 pub const SCRIPT_MAX_TEXT_CHARS: usize = 20_000;
@@ -50,6 +53,10 @@ pub fn validate_script_source(script: &str) -> Result<()> {
     Ok(())
 }
 
+fn rhai_state_key_error(error: EngineError) -> Box<rhai::EvalAltResult> {
+    error.to_string().into()
+}
+
 /// A scripting engine powered by Rhai for game logic and dialogue triggers.
 pub struct ScriptEngine {
     engine: Engine,
@@ -75,28 +82,48 @@ impl ScriptEngine {
 
         // Register game-specific functions
         let vars = Arc::clone(&variables);
-        engine.register_fn("setVariable", move |name: &str, value: Dynamic| {
-            let mut vars = vars.write().unwrap();
-            vars.insert(name.to_string(), value);
-        });
+        engine.register_fn(
+            "setVariable",
+            move |name: &str,
+                  value: Dynamic|
+                  -> std::result::Result<(), Box<rhai::EvalAltResult>> {
+                let key = normalize_script_state_key(name).map_err(rhai_state_key_error)?;
+                let mut vars = vars.write().unwrap();
+                vars.insert(key, value);
+                Ok(())
+            },
+        );
 
         let vars = Arc::clone(&variables);
-        engine.register_fn("getVariable", move |name: &str| -> Dynamic {
-            let vars = vars.read().unwrap();
-            vars.get(name).cloned().unwrap_or(Dynamic::UNIT)
-        });
+        engine.register_fn(
+            "getVariable",
+            move |name: &str| -> std::result::Result<Dynamic, Box<rhai::EvalAltResult>> {
+                let key = normalize_script_state_key(name).map_err(rhai_state_key_error)?;
+                let vars = vars.read().unwrap();
+                Ok(vars.get(&key).cloned().unwrap_or(Dynamic::UNIT))
+            },
+        );
 
         let flgs = Arc::clone(&flags);
-        engine.register_fn("setFlag", move |name: &str, value: bool| {
-            let mut flags = flgs.write().unwrap();
-            flags.insert(name.to_string(), value);
-        });
+        engine.register_fn(
+            "setFlag",
+            move |name: &str, value: bool| -> std::result::Result<(), Box<rhai::EvalAltResult>> {
+                let key = normalize_script_state_key(name).map_err(rhai_state_key_error)?;
+                let mut flags = flgs.write().unwrap();
+                flags.insert(key, value);
+                Ok(())
+            },
+        );
 
         let flgs = Arc::clone(&flags);
-        engine.register_fn("hasFlag", move |name: &str| -> bool {
-            let flags = flgs.read().unwrap();
-            flags.get(name).copied().unwrap_or(false)
-        });
+        engine.register_fn(
+            "hasFlag",
+            move |name: &str| -> std::result::Result<bool, Box<rhai::EvalAltResult>> {
+                let key = normalize_script_state_key(name).map_err(rhai_state_key_error)?;
+                let flags = flgs.read().unwrap();
+                Ok(flags.get(&key).copied().unwrap_or(false))
+            },
+        );
 
         // Register utility functions
         engine.register_fn("log", |message: &str| {
@@ -158,27 +185,35 @@ impl ScriptEngine {
     }
 
     /// Set a game variable.
-    pub fn set_variable(&self, name: &str, value: Dynamic) {
+    pub fn set_variable(&self, name: &str, value: Dynamic) -> Result<()> {
+        let key = normalize_script_state_key(name)?;
         let mut vars = self.variables.write().unwrap();
-        vars.insert(name.to_string(), value);
+        vars.insert(key, value);
+        Ok(())
     }
 
     /// Get a game variable.
     pub fn get_variable(&self, name: &str) -> Option<Dynamic> {
+        let key = normalize_script_state_key(name).ok()?;
         let vars = self.variables.read().unwrap();
-        vars.get(name).cloned()
+        vars.get(&key).cloned()
     }
 
     /// Set a game flag.
-    pub fn set_flag(&self, name: &str, value: bool) {
+    pub fn set_flag(&self, name: &str, value: bool) -> Result<()> {
+        let key = normalize_script_state_key(name)?;
         let mut flags = self.flags.write().unwrap();
-        flags.insert(name.to_string(), value);
+        flags.insert(key, value);
+        Ok(())
     }
 
     /// Check if a game flag is set.
     pub fn has_flag(&self, name: &str) -> bool {
+        let Ok(key) = normalize_script_state_key(name) else {
+            return false;
+        };
         let flags = self.flags.read().unwrap();
-        flags.get(name).copied().unwrap_or(false)
+        flags.get(&key).copied().unwrap_or(false)
     }
 
     /// Get all variables as a HashMap (for saving).
@@ -194,11 +229,19 @@ impl ScriptEngine {
     }
 
     /// Load variables and flags from save data.
-    pub fn load_state(&self, variables: HashMap<String, Dynamic>, flags: HashMap<String, bool>) {
+    pub fn load_state(
+        &self,
+        variables: HashMap<String, Dynamic>,
+        flags: HashMap<String, bool>,
+    ) -> Result<()> {
+        let variables = normalize_script_state_map(variables)?;
+        let flags = normalize_script_state_map(flags)?;
+
         let mut vars = self.variables.write().unwrap();
         *vars = variables;
         let mut flgs = self.flags.write().unwrap();
         *flgs = flags;
+        Ok(())
     }
 
     /// Register a custom function.
@@ -224,7 +267,7 @@ mod tests {
     #[test]
     fn test_set_get_variable() {
         let engine = ScriptEngine::new();
-        engine.set_variable("score", Dynamic::from(42i64));
+        engine.set_variable("score", Dynamic::from(42i64)).unwrap();
         let val = engine.get_variable("score").unwrap();
         assert_eq!(val.as_int().unwrap(), 42);
     }
@@ -233,14 +276,14 @@ mod tests {
     fn test_set_has_flag() {
         let engine = ScriptEngine::new();
         assert!(!engine.has_flag("test"));
-        engine.set_flag("test", true);
+        engine.set_flag("test", true).unwrap();
         assert!(engine.has_flag("test"));
     }
 
     #[test]
     fn test_execute_condition() {
         let engine = ScriptEngine::new();
-        engine.set_flag("met_sakura", true);
+        engine.set_flag("met_sakura", true).unwrap();
         assert!(engine
             .evaluate_condition("hasFlag(\"met_sakura\")")
             .unwrap());
@@ -331,8 +374,10 @@ mod tests {
         let engine = ScriptEngine::new();
 
         // Set some variables
-        engine.set_variable("health", Dynamic::from(100i64));
-        engine.set_variable("damage", Dynamic::from(25i64));
+        engine
+            .set_variable("health", Dynamic::from(100i64))
+            .unwrap();
+        engine.set_variable("damage", Dynamic::from(25i64)).unwrap();
 
         // Execute a complex script
         let result = engine
@@ -370,5 +415,52 @@ mod tests {
         let script = "x".repeat(SCRIPT_MAX_TEXT_CHARS + 1);
 
         assert!(engine.execute(&script).is_err());
+    }
+
+    #[test]
+    fn script_engine_normalizes_portable_state_keys() {
+        let engine = ScriptEngine::new();
+
+        engine
+            .set_variable(" chapter_1.score ", Dynamic::from(42i64))
+            .unwrap();
+        engine.set_flag(" chapter_1.passed ", true).unwrap();
+
+        assert_eq!(
+            engine
+                .get_variable("chapter_1.score")
+                .unwrap()
+                .as_int()
+                .unwrap(),
+            42
+        );
+        assert!(engine.has_flag("chapter_1.passed"));
+    }
+
+    #[test]
+    fn script_engine_rejects_invalid_variable_names() {
+        let engine = ScriptEngine::new();
+
+        assert!(engine.set_variable("bad/key", Dynamic::from(1i64)).is_err());
+        assert!(engine.execute("setVariable(\"bad/key\", 1)").is_err());
+        assert!(engine.execute("getVariable(\"bad key\")").is_err());
+    }
+
+    #[test]
+    fn script_engine_rejects_invalid_flag_names() {
+        let engine = ScriptEngine::new();
+
+        assert!(engine.set_flag("bad:key", true).is_err());
+        assert!(engine.execute("setFlag(\"bad:key\", true)").is_err());
+        assert!(engine.execute("hasFlag(\"bad/key\")").is_err());
+    }
+
+    #[test]
+    fn load_state_rejects_invalid_keys() {
+        let engine = ScriptEngine::new();
+        let variables = HashMap::from([("bad key".to_string(), Dynamic::from(1i64))]);
+        let flags = HashMap::new();
+
+        assert!(engine.load_state(variables, flags).is_err());
     }
 }

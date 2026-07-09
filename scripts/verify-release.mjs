@@ -142,10 +142,12 @@ const expectedFrontendRoutes = [
 ]
 
 const releaseCriticalRustFiles = [
+  'crates/core/src/state_key.rs',
   'crates/ai/src/api_engine.rs',
   'crates/ai/src/prompt_builder.rs',
   'crates/assets/src/asset_manager.rs',
   'crates/assets/src/save_manager.rs',
+  'crates/game/src/dialogue/dialogue_manager.rs',
   'crates/scripting/src/lib.rs',
   'crates/tauri-app/src/main.rs',
   'crates/tauri-app/src/state.rs',
@@ -226,6 +228,7 @@ async function main() {
   await run('Frontend mobile shell readiness', 'npm', ['run', 'verify:mobile-readiness'], frontendDir)
   await run('Tauri mobile deployment preflight', 'node', ['scripts/verify-tauri-mobile-preflight.mjs'], root)
   await run('Release-critical Rust format check', 'rustfmt', ['--edition', '2021', '--check', ...releaseCriticalRustFiles], rustDir)
+  await run('Rust core tests', 'cargo', ['test', '--locked', '-p', 'llm-core'], rustDir)
   await run('Rust AI prompt and pipeline tests', 'cargo', ['test', '--locked', '-p', 'llm-ai'], rustDir)
   await run('Rust asset management tests', 'cargo', ['test', '--locked', '-p', 'llm-assets'], rustDir)
   await run('Rust scripting tests', 'cargo', ['test', '--locked', '-p', 'llm-scripting'], rustDir)
@@ -2088,8 +2091,12 @@ async function verifySaveManagerInvariants() {
 
 async function verifyScriptCommandInvariants() {
   const issues = []
+  const coreStateKeySource = await readFile(path.join(rustDir, 'crates', 'core', 'src', 'state_key.rs'), 'utf8')
   const scriptCommandSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'script.rs'), 'utf8')
   const scriptingSource = await readFile(path.join(rustDir, 'crates', 'scripting', 'src', 'lib.rs'), 'utf8')
+  const gameDialogueSource = await readFile(path.join(rustDir, 'crates', 'game', 'src', 'dialogue', 'dialogue_manager.rs'), 'utf8')
+  const saveCommandSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'save.rs'), 'utf8')
+  const workflowSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'workflow.rs'), 'utf8')
 
   const commandRequirements = [
     ['validate_script_text', 'centralize script command input validation'],
@@ -2107,8 +2114,27 @@ async function verifyScriptCommandInvariants() {
     }
   }
 
+  const stateKeyRequirements = [
+    ['SCRIPT_STATE_KEY_MAX_CHARS', 'define a shared script state key size cap'],
+    ['normalize_script_state_key', 'centralize script variable and flag key validation'],
+    ['normalize_script_state_map', 'normalize persisted script state maps before loading'],
+    ['Script state key cannot contain control characters', 'reject hidden control-character state keys'],
+    ['Script state key can contain only ASCII letters, numbers, dots, underscores, or hyphens', 'restrict script state keys to portable save-friendly characters'],
+    ['script_state_keys_reject_control_and_path_like_values', 'test rejection of path-shaped and hidden state keys'],
+    ['script_state_maps_reject_duplicate_normalized_keys', 'test ambiguous normalized state keys'],
+  ]
+  for (const [needle, description] of stateKeyRequirements) {
+    if (!coreStateKeySource.includes(needle)) {
+      issues.push(`Script state key validation must ${description}`)
+    }
+  }
+
   const engineRequirements = [
     ['SCRIPT_MAX_TEXT_CHARS', 'define a shared script source size cap'],
+    ['SCRIPT_STATE_KEY_MAX_CHARS', 're-export the shared script state key size cap'],
+    ['Box<rhai::EvalAltResult>', 'return Rhai runtime errors for invalid script state keys'],
+    ['normalize_script_state_key(name)', 'validate Rhai variable and flag names before state access'],
+    ['normalize_script_state_map(variables)', 'validate loaded script variables before replacing runtime state'],
     ['validate_script_source', 'centralize Rhai script source validation in the shared engine crate'],
     ['validate_script_source(script)?', 'validate all direct ScriptEngine executions before evaluating Rhai'],
     ['Script cannot contain control characters', 'reject hidden control characters in every ScriptEngine caller'],
@@ -2123,10 +2149,29 @@ async function verifyScriptCommandInvariants() {
     ['script_engine_limits_recursive_calls', 'test recursive call aborts'],
     ['script_engine_rejects_control_characters_before_execution', 'test shared control-character rejection'],
     ['script_engine_rejects_oversized_source_before_execution', 'test shared source size rejection'],
+    ['script_engine_rejects_invalid_variable_names', 'test invalid script variable name rejection'],
+    ['script_engine_rejects_invalid_flag_names', 'test invalid script flag name rejection'],
+    ['load_state_rejects_invalid_keys', 'test invalid save-state key rejection'],
   ]
   for (const [needle, description] of engineRequirements) {
     if (!scriptingSource.includes(needle)) {
       issues.push(`Script engine limits must ${description}`)
+    }
+  }
+
+  const callerRequirements = [
+    [workflowSource, 'se.set_variable(name', 'validate workflow set_variable state keys through ScriptEngine'],
+    [workflowSource, 'se.set_flag(name', 'validate workflow set_flag state keys through ScriptEngine'],
+    [workflowSource, 'map_err(|e| e.to_string())?', 'return workflow script state key errors to callers'],
+    [workflowSource, 'workflow_state_nodes_reject_invalid_state_keys', 'test workflow state key rejection'],
+    [saveCommandSource, 'se.load_state(variables, save.flags.clone())', 'validate save-restored variables and flags as one state load'],
+    [gameDialogueSource, 'normalize_script_state_key', 'validate legacy dialogue script state keys'],
+    [gameDialogueSource, 'normalize_script_state_map', 'validate legacy dialogue loaded state maps'],
+    [gameDialogueSource, 'dialogue_state_keys_reject_invalid_names', 'test legacy dialogue state key rejection'],
+  ]
+  for (const [source, needle, description] of callerRequirements) {
+    if (!source.includes(needle)) {
+      issues.push(`Script state callers must ${description}`)
     }
   }
 

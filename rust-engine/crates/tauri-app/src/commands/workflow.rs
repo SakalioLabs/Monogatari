@@ -450,14 +450,15 @@ async fn execute_workflow_node_inner_with_context(
             let name = node.config["variable_name"].as_str().unwrap_or("");
             let value = node.config["value"].as_str().unwrap_or("");
             let se = state.script_engine.read().await;
-            se.set_variable(name, rhai::Dynamic::from(value.to_string()));
+            se.set_variable(name, rhai::Dynamic::from(value.to_string()))
+                .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({"status": "ok"}))
         }
         "set_flag" => {
             let name = node.config["flag_name"].as_str().unwrap_or("");
             let value = node.config["value"].as_bool().unwrap_or(true);
             let se = state.script_engine.read().await;
-            se.set_flag(name, value);
+            se.set_flag(name, value).map_err(|e| e.to_string())?;
             Ok(serde_json::json!({"status": "ok"}))
         }
         "condition" => {
@@ -491,9 +492,11 @@ async fn execute_workflow_node_inner_with_context(
                 .filter(|value| !value.is_empty())
             {
                 let se = state.script_engine.read().await;
-                se.set_variable(variable_name, rhai::Dynamic::from(score as f64));
+                se.set_variable(variable_name, rhai::Dynamic::from(score as f64))
+                    .map_err(|e| e.to_string())?;
                 if let Some(passed) = passed {
-                    se.set_flag(&format!("{variable_name}_passed"), passed);
+                    se.set_flag(&format!("{variable_name}_passed"), passed)
+                        .map_err(|e| e.to_string())?;
                 }
             }
 
@@ -2047,6 +2050,35 @@ mod tests {
                 .unwrap();
         assert_eq!(end["action"], "end");
         assert_eq!(end["complete"], true);
+    }
+
+    #[tokio::test]
+    async fn workflow_state_nodes_reject_invalid_state_keys() {
+        let state = AppState::new();
+
+        let variable = execute_workflow_node_inner(
+            &state,
+            node(
+                "bad_variable",
+                "set_variable",
+                vec![],
+                serde_json::json!({"variable_name": "bad/key", "value": "1"}),
+            ),
+        )
+        .await;
+        assert!(variable.unwrap_err().contains("Script state key"));
+
+        let flag = execute_workflow_node_inner(
+            &state,
+            node(
+                "bad_flag",
+                "set_flag",
+                vec![],
+                serde_json::json!({"flag_name": "bad key", "value": true}),
+            ),
+        )
+        .await;
+        assert!(flag.unwrap_err().contains("Script state key"));
     }
 
     #[tokio::test]
