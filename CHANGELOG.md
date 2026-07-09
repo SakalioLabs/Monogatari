@@ -14,6 +14,7 @@
 - Added aggregate Quality Suite set fingerprints to release manifests so each release can verify the exact checked-in regression suite set used for QA.
 - Added checked-in workflow source evidence and aggregate workflow-set fingerprints to release manifests so blueprint-style story fixtures can be audited with release artifacts.
 - Added checked-in project content source evidence and aggregate content-set fingerprints to release manifests so bundled characters, dialogue, knowledge, scenes, and sample assets can be audited with release artifacts.
+- Added per-category project content source fingerprints to release manifests so release audits can isolate bundled character, dialogue, knowledge, scene, and asset changes.
 - Added SHA-256 checksums to project export file inventories while retaining legacy MD5 checksums for compatibility.
 - Added whole-package SHA-256 content fingerprints to project export manifests so package handoffs can be verified as a single deterministic bundle.
 - Added content category summaries and explicit package fingerprint algorithm metadata to project export manifests for faster commercial package audits.

@@ -468,16 +468,27 @@ function qualitySuiteSetSha256(qualitySuites) {
 }
 
 function projectContentSourceSetSummary(sources) {
+  const categorySources = Object.fromEntries(
+    projectContentCategories.map((category) => [category, sources.filter((source) => source.category === category)]),
+  )
   const categoryCounts = Object.fromEntries(
+    projectContentCategories.map((category) => [category, categorySources[category].length]),
+  )
+  const categoryBytes = Object.fromEntries(
     projectContentCategories.map((category) => [
       category,
-      sources.filter((source) => source.category === category).length,
+      categorySources[category].reduce((total, source) => total + (source.size_bytes ?? 0), 0),
     ]),
   )
   return {
     schema: 'monogatari-project-content-source-set/v1',
     source_count: sources.length,
     category_counts: categoryCounts,
+    category_bytes: categoryBytes,
+    category_fingerprint_algorithm: 'sha256:path-source-root-category-size-record-ids-source-sha256-v1',
+    category_fingerprints: Object.fromEntries(
+      projectContentCategories.map((category) => [category, projectContentSourceSetSha256(categorySources[category])]),
+    ),
     record_count: sources.reduce((total, source) => total + (source.record_count ?? 0), 0),
     size_bytes: sources.reduce((total, source) => total + (source.size_bytes ?? 0), 0),
     fingerprint_algorithm: 'sha256:path-source-root-category-size-record-ids-source-sha256-v1',

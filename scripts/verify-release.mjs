@@ -3399,6 +3399,9 @@ async function verifyReleaseChannelPolicy() {
     ['data/scenes/sakura_park.json', 'require default Sakura scene content in release manifests'],
     ['data/assets/characters/sakura_sprite.svg', 'require default Sakura renderer asset content in release manifests'],
     ['category_counts', 'record project content category counts in release manifests'],
+    ['category_bytes', 'record project content category byte counts in release manifests'],
+    ['category_fingerprint_algorithm', 'record project content category fingerprint algorithms in release manifests'],
+    ['category_fingerprints', 'record project content category fingerprints in release manifests'],
     ['knowledge_ref_count', 'record character knowledge reference counts in release manifests'],
     ['size_bytes', 'record project content source sizes in release manifests'],
   ]
