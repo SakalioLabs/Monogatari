@@ -6,7 +6,10 @@ use std::sync::Arc;
 use tauri::State;
 use tokio::sync::RwLock;
 
-use llm_ai::{APIConfig, APIEngine, InferenceOptions, InferencePipeline, ModelConfig, ONNXEngine};
+use llm_ai::{
+    APIConfig, APIEngine, InferenceEngine, InferenceOptions, InferencePipeline, ModelConfig,
+    ONNXEngine,
+};
 
 use crate::state::AppState;
 
@@ -124,9 +127,22 @@ fn register_onnx_engine(
     config: ModelConfig,
 ) -> Result<(), String> {
     let engine = ONNXEngine::new(config);
-    pipeline.register_engine(Arc::new(RwLock::new(engine)));
+    pipeline.register_engine_with_name("ONNX", Arc::new(RwLock::new(engine)));
     pipeline
         .set_active_engine("ONNX")
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+async fn register_initialized_api_engine(
+    pipeline: &mut InferencePipeline,
+    config: APIConfig,
+) -> Result<(), String> {
+    let mut engine = APIEngine::new(config);
+    engine.initialize().await.map_err(|e| e.to_string())?;
+    pipeline.register_engine_with_name("API", Arc::new(RwLock::new(engine)));
+    pipeline
+        .set_active_engine("API")
         .map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -146,12 +162,8 @@ pub async fn configure_api(
         ..Default::default()
     };
 
-    let engine = APIEngine::new(config);
     let mut pipeline = state.inference_pipeline.write().await;
-    pipeline.register_engine(std::sync::Arc::new(tokio::sync::RwLock::new(engine)));
-    pipeline
-        .set_active_engine("API")
-        .map_err(|e| e.to_string())?;
+    register_initialized_api_engine(&mut pipeline, config).await?;
 
     Ok("API engine configured".to_string())
 }
@@ -263,6 +275,42 @@ mod tests {
 
         assert_eq!(pipeline.active_engine_name(), Some("ONNX"));
         assert!(pipeline.engine_names().contains(&"ONNX"));
+    }
+
+    #[test]
+    fn configure_onnx_registration_is_async_safe() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let root = PathBuf::from("project-data");
+        let config =
+            onnx_model_config_in_project(&root, "models/model.onnx", "models/tokenizer.json")
+                .unwrap();
+        let mut pipeline = InferencePipeline::new();
+
+        rt.block_on(async {
+            register_onnx_engine(&mut pipeline, config).unwrap();
+        });
+
+        assert_eq!(pipeline.active_engine_name(), Some("ONNX"));
+        assert!(pipeline.engine_names().contains(&"ONNX"));
+    }
+
+    #[test]
+    fn configure_api_initializes_ready_engine() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let config = APIConfig {
+            base_url: "https://example.test/v1".to_string(),
+            api_key: "test-key".to_string(),
+            model: "test-model".to_string(),
+            ..Default::default()
+        };
+        let mut pipeline = InferencePipeline::new();
+
+        rt.block_on(register_initialized_api_engine(&mut pipeline, config))
+            .unwrap();
+        let statuses = rt.block_on(pipeline.engine_statuses());
+
+        assert_eq!(pipeline.active_engine_name(), Some("API"));
+        assert_eq!(statuses, vec![("API".to_string(), true)]);
     }
 }
 

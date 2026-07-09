@@ -82,6 +82,20 @@ fn test_inference_pipeline_no_active_engine() {
 }
 
 #[test]
+fn test_inference_pipeline_register_engine_is_async_safe() {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let mut pipeline = InferencePipeline::new();
+
+    rt.block_on(async {
+        pipeline.register_engine(Arc::new(RwLock::new(ONNXEngine::new(
+            ModelConfig::default(),
+        ))));
+    });
+
+    assert!(pipeline.engine_names().contains(&"ONNX"));
+}
+
+#[test]
 fn test_inference_pipeline_engine_statuses_reflect_readiness() {
     let rt = tokio::runtime::Runtime::new().unwrap();
     let mut pipeline = InferencePipeline::new();

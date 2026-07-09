@@ -28,9 +28,21 @@ impl InferencePipeline {
     /// Register an inference engine.
     pub fn register_engine(&mut self, engine: Arc<RwLock<dyn InferenceEngine>>) {
         let name = {
-            let engine = engine.blocking_read();
+            let engine = engine
+                .try_read()
+                .expect("register_engine requires an unlocked engine");
             engine.name().to_string()
         };
+        self.register_engine_with_name(name, engine);
+    }
+
+    /// Register an inference engine under an explicit name.
+    pub fn register_engine_with_name(
+        &mut self,
+        name: impl Into<String>,
+        engine: Arc<RwLock<dyn InferenceEngine>>,
+    ) {
+        let name = name.into();
         info!("Registered inference engine: {}", name);
         self.engines.insert(name, engine);
     }

@@ -2176,11 +2176,16 @@ async function verifyAiBackendConfigInvariants() {
     ['&[".onnx"]', 'restrict model references to ONNX files'],
     ['&[".json"]', 'restrict tokenizer references to JSON files'],
     ['path.starts_with(project_root)', 'prove ONNX file references stay under the project root'],
+    ['register_initialized_api_engine', 'centralize initialized API registration'],
+    ['engine.initialize().await', 'initialize the API backend before marking it active'],
+    ['register_engine_with_name', 'register configured backends without blocking inside async commands'],
     ['register_onnx_engine', 'reuse the guarded ONNX registration helper'],
     ['set_active_engine("ONNX")', 'activate the ONNX backend after configuration'],
     ['onnx_file_paths_resolve_under_project_root', 'test compatible ONNX file path resolution'],
     ['onnx_file_paths_reject_escape_attempts', 'test ONNX traversal and absolute path rejection'],
     ['configure_onnx_registers_active_engine', 'test ONNX configuration activates the backend'],
+    ['configure_onnx_registration_is_async_safe', 'test ONNX registration is safe inside an async runtime'],
+    ['configure_api_initializes_ready_engine', 'test API configuration reports a ready active engine'],
   ]
   for (const [needle, description] of aiRequirements) {
     if (!aiCommandSource.includes(needle)) {
@@ -2230,6 +2235,17 @@ async function verifyAiBackendConfigInvariants() {
   }
   if (aiCommandSource.includes('ready: true')) {
     issues.push('AI backend status must not hard-code registered engines as ready')
+  }
+
+  const pipelineRegistrationRequirements = [
+    [rustPipelineSource, '.try_read()', 'avoid blocking Tokio runtime threads while deriving registered engine names'],
+    [rustPipelineSource, 'register_engine_with_name', 'allow async command paths to register engines by explicit backend name'],
+    [rustPipelineTests, 'test_inference_pipeline_register_engine_is_async_safe', 'test inference engine registration inside an async runtime'],
+  ]
+  for (const [source, needle, description] of pipelineRegistrationRequirements) {
+    if (!source.includes(needle)) {
+      issues.push(`AI pipeline registration must ${description}`)
+    }
   }
 
   if (

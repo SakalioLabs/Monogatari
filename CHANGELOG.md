@@ -8,6 +8,7 @@
 - Added runtime renderer fallback handling so Story Mode and Character Editor skip failed Live2D/GLB/GLTF loads and continue to the next valid 3D, sprite, portrait, or generated placeholder candidate.
 - Added buffered OpenAI-compatible SSE stream parsing so API streaming responses survive split JSON lines, split UTF-8 content, `[DONE]` markers, and final lines without trailing newlines.
 - Added ONNX runtime-unavailable guards and real AI backend readiness reporting so local ONNX configuration cannot emit placeholder character text or appear ready before a runtime executor is linked.
+- Added async-safe initialized backend registration so Settings-configured OpenAI-compatible providers are ready for chat and streaming immediately after configuration, and ONNX registration no longer blocks inside Tauri commands.
 - Added content loader path isolation tests and release-gate invariants so character, dialogue, and knowledge reload commands resolve only under the active project content directories.
 - Added character manager path isolation tests and release-gate invariants so character create/delete commands use the active or discovered default project data root, safe portable IDs, and stay inside the project characters directory.
 - Added plugin manager path isolation tests, Plugin workbench command-contract checks, and release-gate invariants so plugin listing, registration, and removal use the active or discovered default project data root plus safe portable IDs and optional `.rhai` script references inside the project plugins directory.
