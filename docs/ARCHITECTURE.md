@@ -119,7 +119,7 @@ Character create/delete commands resolve through the active or discovered defaul
 
 ## Plugin Authoring Boundaries
 
-Plugin listing, registration, and removal commands resolve through the active or discovered default project data root and treat plugin IDs as portable slugs rather than filenames. Plugin manifests are normalized before writing, manifest files are written, listed, or removed only as direct children of the project `plugins/` directory, and the Plugin workbench sends the backend `{ manifest }` and `{ pluginId }` command contracts directly.
+Plugin listing, registration, and removal commands resolve through the active or discovered default project data root and treat plugin IDs as portable slugs rather than filenames. Plugin manifests are normalized before writing, optional `script_path` values must be plugin-root-relative `.rhai` references with no URI, drive, absolute, empty, current, or parent segments, manifest files are written, listed, or removed only as direct children of the project `plugins/` directory, and the Plugin workbench sends the backend `{ manifest }` and `{ pluginId }` command contracts directly.
 
 ## Marketplace Template Boundaries
 

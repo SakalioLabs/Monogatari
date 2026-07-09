@@ -95,6 +95,56 @@ fn normalize_plugin_id(plugin_id: &str) -> Result<String, String> {
     Ok(id.to_string())
 }
 
+fn normalize_plugin_script_path(script_path: Option<String>) -> Result<Option<String>, String> {
+    let Some(script_path) = script_path else {
+        return Ok(None);
+    };
+
+    let path = script_path.trim();
+    if path.is_empty() {
+        return Ok(None);
+    }
+    if path.len() > 260 {
+        return Err("Plugin script path must be 260 characters or fewer.".to_string());
+    }
+    if path.chars().any(char::is_control) {
+        return Err("Plugin script path cannot contain control characters.".to_string());
+    }
+    if path.contains('\\') {
+        return Err("Plugin script paths must use forward slashes.".to_string());
+    }
+    if path.contains("://") || path.contains(':') || Path::new(path).is_absolute() {
+        return Err(
+            "Plugin script paths must be relative files under project plugins.".to_string(),
+        );
+    }
+    if Path::new(path).extension().and_then(|ext| ext.to_str()) != Some("rhai") {
+        return Err("Plugin script paths must end in .rhai.".to_string());
+    }
+
+    let mut segments = Vec::new();
+    for segment in path.split('/') {
+        if segment.is_empty() || segment == "." || segment == ".." {
+            return Err(
+                "Plugin script paths cannot contain empty, current, or parent directory segments."
+                    .to_string(),
+            );
+        }
+        if !segment
+            .chars()
+            .all(|ch| ch.is_ascii_alphanumeric() || ch == '_' || ch == '-' || ch == '.')
+        {
+            return Err(
+                "Plugin script path segments can contain only ASCII letters, numbers, dots, underscores, or hyphens."
+                    .to_string(),
+            );
+        }
+        segments.push(segment);
+    }
+
+    Ok(Some(segments.join("/")))
+}
+
 fn normalize_plugin_manifest(mut manifest: PluginManifest) -> Result<PluginManifest, String> {
     let id_source = if manifest.id.trim().is_empty() {
         manifest.name.as_str()
@@ -129,6 +179,7 @@ fn normalize_plugin_manifest(mut manifest: PluginManifest) -> Result<PluginManif
     if manifest.category.is_empty() {
         manifest.category = default_plugin_category();
     }
+    manifest.script_path = normalize_plugin_script_path(manifest.script_path)?;
 
     Ok(manifest)
 }
@@ -265,7 +316,7 @@ mod tests {
             node_type: " ".to_string(),
             category: " ".to_string(),
             configurable_fields: Vec::new(),
-            script_path: None,
+            script_path: Some(" scripts/custom_node.rhai ".to_string()),
             enabled: true,
         };
 
@@ -278,6 +329,41 @@ mod tests {
         assert_eq!(manifest.description, "Adds a branch node.");
         assert_eq!(manifest.node_type, "custom_node");
         assert_eq!(manifest.category, "node");
+        assert_eq!(
+            manifest.script_path.as_deref(),
+            Some("scripts/custom_node.rhai")
+        );
         assert!(manifest.enabled);
+    }
+
+    #[test]
+    fn plugin_script_paths_reject_escape_attempts() {
+        for path in [
+            "../custom.rhai",
+            "scripts/../custom.rhai",
+            "scripts/./custom.rhai",
+            "scripts//custom.rhai",
+            "/tmp/custom.rhai",
+            "C:/Users/example/custom.rhai",
+            "https://example.test/custom.rhai",
+            "scripts\\custom.rhai",
+            "scripts/custom.js",
+            "scripts/custom plugin.rhai",
+            "scripts/custom!.rhai",
+        ] {
+            assert!(
+                normalize_plugin_script_path(Some(path.to_string())).is_err(),
+                "{path} should be rejected"
+            );
+        }
+    }
+
+    #[test]
+    fn plugin_script_paths_trim_blank_values() {
+        assert_eq!(normalize_plugin_script_path(None).unwrap(), None);
+        assert_eq!(
+            normalize_plugin_script_path(Some("  ".to_string())).unwrap(),
+            None
+        );
     }
 }

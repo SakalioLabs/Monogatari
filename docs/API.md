@@ -145,7 +145,7 @@ Generated system, Azure, and ElevenLabs speech files are written under the activ
 
 ## Plugin System
 
-Plugin manifest IDs are portable slugs, not filenames or paths. `register_plugin.manifest.id` and `remove_plugin.pluginId` may contain only ASCII letters, numbers, underscores, or hyphens; the backend writes or deletes only `<id>.json` directly under the active project `plugins/` directory.
+Plugin manifest IDs are portable slugs, not filenames or paths. `register_plugin.manifest.id` and `remove_plugin.pluginId` may contain only ASCII letters, numbers, underscores, or hyphens; the backend resolves the active or discovered default project data root and writes or deletes only `<id>.json` directly under `plugins/`. Optional `manifest.script_path` values are plugin-root-relative `.rhai` references; absolute paths, URI/drive prefixes, backslashes, empty segments, `.`/`..` traversal, and non-portable segment characters are rejected before the manifest is stored or listed.
 
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|

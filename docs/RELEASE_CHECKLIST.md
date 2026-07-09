@@ -35,7 +35,7 @@
 - [ ] Workflow save/load commands read and write only JSON files under the active project `workflows/` directory
 - [ ] Character, dialogue, and knowledge loader commands read only from the active project `characters/`, `dialogue/`, and `knowledge/` directories
 - [ ] Character create/delete commands resolve through the active or discovered default project data root, validate portable character IDs, and touch only direct JSON files under `characters/`
-- [ ] Plugin listing, registration, and removal commands resolve through the active or discovered default project data root, validate portable plugin IDs, and touch only direct manifest JSON files under `plugins/`
+- [ ] Plugin listing, registration, and removal commands resolve through the active or discovered default project data root, validate portable plugin IDs, normalize optional `.rhai` script references under `plugins/`, and touch only direct manifest JSON files under `plugins/`
 - [ ] Marketplace import/export commands resolve template references only under the active project `templates/` directory or built-in catalog IDs
 - [ ] Live2D model commands load only project-relative `.model3.json`/`.json` model files under the active project data root
 

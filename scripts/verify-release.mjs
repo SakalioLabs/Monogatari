@@ -2206,13 +2206,18 @@ async function verifyPluginManagerPathInvariants() {
     ['plugin_file_path', 'centralize plugin JSON file path construction'],
     ['normalize_plugin_id', 'validate plugin ids before path construction'],
     ['normalize_plugin_manifest', 'normalize plugin manifests before writing them'],
+    ['normalize_plugin_script_path', 'normalize optional plugin script paths before writing or listing manifests'],
     ['project_root.join("plugins")', 'scope plugin JSON files to the project plugins directory'],
     ['Plugin ids can contain only ASCII letters, numbers, underscores, or hyphens', 'reject path-shaped and non-portable plugin ids'],
+    ['Plugin script paths must be relative files under project plugins', 'reject absolute, URI, and drive-shaped plugin script paths'],
+    ['Plugin script paths cannot contain empty, current, or parent directory segments', 'reject traversal-shaped plugin script paths'],
+    ['Plugin script paths must end in .rhai', 'limit plugin script references to Rhai files'],
     ['path.parent() != Some(root.as_path())', 'prove plugin JSON files stay directly under project plugins'],
     ['manifest.id == file_id', 'skip listed plugin manifests that do not match their file name'],
     ['plugin_file_paths_stay_inside_project_plugins', 'test compatible plugin file path resolution'],
     ['plugin_file_paths_reject_escape_attempts', 'test traversal and absolute plugin id rejection'],
     ['plugin_manifest_normalization_fills_defaults_and_safe_ids', 'test plugin manifest normalization defaults'],
+    ['plugin_script_paths_reject_escape_attempts', 'test traversal and absolute plugin script path rejection'],
   ]
   for (const [needle, description] of pluginRequirements) {
     if (!pluginSource.includes(needle)) {
