@@ -13,6 +13,7 @@
 - Added read-only workflow condition context variables for relationship, evaluation scores, and evaluation count, plus matching Web/PWA preview evaluation for common condition expressions.
 - Added Web/PWA workflow preview state mirroring so local `set_variable`, `set_flag`, and evaluation outputs can drive later `getVariable` and `hasFlag` conditions.
 - Added Web/PWA workflow preview mirrors for relationship and emotion nodes so browser previews expose the same per-run state transitions as desktop workflow execution.
+- Fixed Web/PWA workflow preview signed numeric parity so negative relationship deltas and camera offsets behave like desktop workflow execution.
 - Added marketplace template path isolation tests and release-gate invariants so template import/export uses project-scoped template references instead of raw filesystem paths.
 - Added Live2D model path isolation tests, renderer asset validation hardening, and release-gate invariants so model loading stays inside the active project data root.
 - Added i18n locale path isolation tests and release-gate invariants so locale loading, listing, and translation use safe locale IDs inside the active project locales directory.

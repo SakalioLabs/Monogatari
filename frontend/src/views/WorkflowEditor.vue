@@ -1406,7 +1406,7 @@ function localNodeOutput(
     case 'relationship': {
       const characterId = String(node.config.character_id || '').trim()
       const targetId = String(node.config.target_id || node.config.other_id || 'player').trim() || 'player'
-      const delta = numericConfig(node.config.delta) ?? 0
+      const delta = signedNumericConfig(node.config.delta) ?? 0
       const previous = localRelationshipValue(localState, characterId, targetId, localRelationshipFallback(context, characterId, targetId))
       const current = Math.min(1, Math.max(-1, previous + delta))
       if (characterId) {
@@ -1452,8 +1452,8 @@ function localNodeOutput(
       return {
         action: 'camera',
         camera_action: node.config.action || 'move',
-        x: numericConfig(node.config.target_x) ?? 0,
-        y: numericConfig(node.config.target_y) ?? 0,
+        x: signedNumericConfig(node.config.target_x) ?? 0,
+        y: signedNumericConfig(node.config.target_y) ?? 0,
         zoom: numericConfig(node.config.zoom) ?? 1,
         duration_ms: durationMsConfig(node.config, 500),
       }
@@ -1637,7 +1637,7 @@ function localRelationshipFallback(
 ): number {
   if (!context?.enabled) return 0
   if (targetId !== 'player') return 0
-  if (context.character_id && characterId && context.character_id !== characterId) return 0
+  if (context.character_id && characterId && context.character_id.toLowerCase() !== characterId.toLowerCase()) return 0
   return context.relationship
 }
 
@@ -1680,6 +1680,11 @@ function arrayConfig(value: any): string[] {
 function numericConfig(value: any): number | null {
   const number = Number(value)
   return Number.isFinite(number) && number >= 0 ? number : null
+}
+
+function signedNumericConfig(value: any): number | null {
+  const number = Number(value)
+  return Number.isFinite(number) ? number : null
 }
 
 function durationMsConfig(config: Record<string, any>, fallback: number): number {
