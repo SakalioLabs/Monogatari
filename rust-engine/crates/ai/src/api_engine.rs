@@ -292,11 +292,7 @@ impl InferenceEngine for APIEngine {
             llm_core::EngineError::inference("API", format!("Failed to parse response: {e}"))
         })?;
 
-        let text = chat_response
-            .choices
-            .first()
-            .and_then(|c| c.message.content.clone())
-            .unwrap_or_default();
+        let text = extract_chat_response_text(chat_response)?;
 
         let duration = start.elapsed().as_millis() as u64;
         debug!("API inference completed in {}ms", duration);
@@ -379,6 +375,7 @@ impl InferenceEngine for APIEngine {
             on_chunk(content);
         }
 
+        let full_text = ensure_generated_text(full_text, "API streaming response")?;
         let duration = start.elapsed().as_millis() as u64;
         debug!("API streaming inference completed in {}ms", duration);
 
@@ -396,6 +393,27 @@ impl InferenceEngine for APIEngine {
         self.initialized = false;
         info!("API engine shut down");
         Ok(())
+    }
+}
+
+fn extract_chat_response_text(chat_response: ChatResponse) -> Result<String> {
+    let text = chat_response
+        .choices
+        .first()
+        .and_then(|choice| choice.message.content.clone())
+        .unwrap_or_default();
+
+    ensure_generated_text(text, "API response")
+}
+
+fn ensure_generated_text(text: String, source: &str) -> Result<String> {
+    if text.trim().is_empty() {
+        Err(llm_core::EngineError::inference(
+            "API",
+            format!("{source} did not include generated text"),
+        ))
+    } else {
+        Ok(text)
     }
 }
 
@@ -882,6 +900,56 @@ mod tests {
         assert!(redacted.contains("<redacted>"));
         assert!(redacted.contains("bad key"));
         assert!(redacted.contains("https://example.test?access_token=<redacted>"));
+    }
+
+    #[test]
+    fn api_response_text_accepts_generated_content() {
+        let text = extract_chat_response_text(ChatResponse {
+            choices: vec![ChatChoice {
+                message: ChatMessageResponse {
+                    content: Some("Sakura smiles back.".to_string()),
+                },
+            }],
+        })
+        .unwrap();
+
+        assert_eq!(text, "Sakura smiles back.");
+    }
+
+    #[test]
+    fn api_response_text_rejects_missing_or_blank_content() {
+        let cases = [
+            ChatResponse { choices: vec![] },
+            ChatResponse {
+                choices: vec![ChatChoice {
+                    message: ChatMessageResponse { content: None },
+                }],
+            },
+            ChatResponse {
+                choices: vec![ChatChoice {
+                    message: ChatMessageResponse {
+                        content: Some(" \n\t ".to_string()),
+                    },
+                }],
+            },
+        ];
+
+        for response in cases {
+            let error = extract_chat_response_text(response)
+                .unwrap_err()
+                .to_string();
+            assert!(error.contains("generated text"));
+        }
+    }
+
+    #[test]
+    fn api_streaming_text_rejects_empty_completion() {
+        let error = ensure_generated_text(String::new(), "API streaming response")
+            .unwrap_err()
+            .to_string();
+
+        assert!(error.contains("API streaming response"));
+        assert!(error.contains("generated text"));
     }
 
     #[test]

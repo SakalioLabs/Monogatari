@@ -2223,6 +2223,18 @@ async function verifyAiBackendConfigInvariants() {
     }
   }
 
+  const apiResponseShapeRequirements = [
+    ['extract_chat_response_text', 'extract OpenAI-compatible response content through a guarded helper'],
+    ['ensure_generated_text', 'reject missing or blank generated text before reporting API success'],
+    ['api_response_text_rejects_missing_or_blank_content', 'test invalid non-streaming success payloads'],
+    ['api_streaming_text_rejects_empty_completion', 'test empty streaming completions are rejected'],
+  ]
+  for (const [needle, description] of apiResponseShapeRequirements) {
+    if (!rustApiEngineSource.includes(needle)) {
+      issues.push(`Rust API response shape handling must ${description}`)
+    }
+  }
+
   const onnxRuntimeGuardRequirements = [
     ['ONNX_RUNTIME_UNAVAILABLE_MESSAGE', 'declare a single unavailable-runtime message'],
     ['Err(Self::runtime_unavailable_error())', 'fail explicitly instead of returning placeholder inference text'],
