@@ -77,6 +77,7 @@
 - [ ] Chat runtime emits story-event trigger decisions with actual relationship values, score metrics, evaluation counts, and blocker reasons
 - [ ] Manual Chat scoring returns an atomic evaluation report with matching story-event trigger decisions and triggerable events for author score-gate debugging
 - [ ] Quality Suite story-event reports reuse the same trigger decision contract as live chat runtime responses
+- [ ] Quality Suite injection scenarios include XML, Markdown fence, and comment-wrapped role-control block bodies that must not boost scores, poison memory, or trigger story events
 - [ ] Group chat runtime emits author-visible safety trace evidence per character response, reusing the single-character guard contract
 - [ ] Quality Suites panel runs character stability, structured role-block prompt-injection, multilingual and Unicode-obfuscated prompt-injection, group chat runtime trace, relationship and fallback scoring side-channel containment, memory-poisoning containment, memory prompt replay containment, tool-role injection containment, identity drift, style drift, real knowledge-reference anchoring, knowledge-boundary stability, evaluation-summary safety, workflow output safety, workflow tool-call containment, workflow branch coverage, private reasoning leakage, fallback scoring, overrange score clamping, event-idempotence, and event-rule snapshot regression checks
 - [ ] Quality suite files reject out-of-range score expectations and contradictory expected/forbidden events, markers, or workflow nodes before release reports run

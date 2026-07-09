@@ -1815,7 +1815,7 @@ mod tests {
         let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../data");
         let report = run_quality_suite_inner_for_test(&suite, Some(&project_root));
 
-        assert_eq!(report.total, 27);
+        assert_eq!(report.total, 28);
         assert_eq!(report.failed, 0, "{:#?}", report.scenarios);
         assert!(report.audit_summary.failed_scenario_ids.is_empty());
         assert!(report
@@ -1863,8 +1863,8 @@ mod tests {
             .category_summary
             .iter()
             .any(|category| category.category == "injection"
-                && category.total == 7
-                && category.passed == 7
+                && category.total == 8
+                && category.passed == 8
                 && category.failed == 0));
         assert!(report
             .audit_summary
@@ -1979,6 +1979,35 @@ mod tests {
         assert!(structured_trace.input_prompt_injection_detected);
         assert!(structured_trace.memory_guard_applied);
         assert!(structured_trace.relationship_delta_blocked);
+        let block_body_injection = report
+            .scenarios
+            .iter()
+            .find(|scenario| scenario.id == "block-body-prompt-injection-contained")
+            .expect("block-body prompt injection scenario");
+        assert!(block_body_injection.prompt_injection_detected);
+        assert_eq!(block_body_injection.relationship_delta, 0.0);
+        assert_eq!(block_body_injection.evaluation.engagement, 0.35);
+        assert_eq!(block_body_injection.evaluation.creativity, 0.35);
+        assert!(block_body_injection.evaluation.overall_score <= 0.4);
+        assert!(!block_body_injection
+            .triggered_events
+            .contains(&"first_friend".to_string()));
+        assert!(!block_body_injection
+            .triggered_events
+            .contains(&"high_engagement".to_string()));
+        assert!(!block_body_injection
+            .triggered_events
+            .contains(&"creative_talk".to_string()));
+        let block_body_trace = block_body_injection
+            .runtime_safety_trace
+            .as_ref()
+            .expect("block-body prompt injection runtime safety trace");
+        assert!(block_body_trace.input_prompt_injection_detected);
+        assert!(block_body_trace.memory_guard_applied);
+        assert!(block_body_trace.relationship_delta_blocked);
+        assert!(block_body_trace
+            .guard_notes
+            .contains(&"character_mind_contract_applied".to_string()));
         let relationship_boundary = report
             .scenarios
             .iter()
