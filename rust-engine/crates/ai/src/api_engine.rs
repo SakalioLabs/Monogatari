@@ -6,7 +6,7 @@ use std::time::Instant;
 
 use async_trait::async_trait;
 use futures::StreamExt;
-use reqwest::Client;
+use reqwest::{Client, Url};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info};
 
@@ -63,6 +63,66 @@ impl Default for APIConfig {
             headers: HashMap::new(),
         }
     }
+}
+
+fn validate_api_config(config: &mut APIConfig) -> Result<()> {
+    config.base_url = normalize_api_base_url(&config.base_url)?;
+    config.api_key = normalize_required_api_field("api_key", &config.api_key)?;
+    config.model = normalize_required_api_field("model", &config.model)?;
+    Ok(())
+}
+
+fn normalize_required_api_field(key: &str, value: &str) -> Result<String> {
+    let normalized = value.trim();
+    if normalized.is_empty() || normalized.chars().any(char::is_control) {
+        return Err(llm_core::EngineError::config(
+            key,
+            format!("{key} is required and cannot contain control characters"),
+        ));
+    }
+    Ok(normalized.to_string())
+}
+
+fn normalize_api_base_url(base_url: &str) -> Result<String> {
+    let trimmed = base_url.trim();
+    if trimmed.is_empty() || trimmed.chars().any(char::is_control) {
+        return Err(llm_core::EngineError::config(
+            "base_url",
+            "API base URL is required and cannot contain control characters",
+        ));
+    }
+
+    let parsed = Url::parse(trimmed).map_err(|e| {
+        llm_core::EngineError::config("base_url", format!("Invalid API base URL: {e}"))
+    })?;
+    if parsed.username() != "" || parsed.password().is_some() {
+        return Err(llm_core::EngineError::config(
+            "base_url",
+            "API base URL cannot include embedded credentials",
+        ));
+    }
+    if parsed.query().is_some() || parsed.fragment().is_some() {
+        return Err(llm_core::EngineError::config(
+            "base_url",
+            "API base URL cannot include query strings or fragments",
+        ));
+    }
+
+    match parsed.scheme() {
+        "https" => Ok(trimmed.trim_end_matches('/').to_string()),
+        "http" if is_local_api_host(&parsed) => Ok(trimmed.trim_end_matches('/').to_string()),
+        _ => Err(llm_core::EngineError::config(
+            "base_url",
+            "API base URL must use HTTPS unless it targets localhost or a loopback address",
+        )),
+    }
+}
+
+fn is_local_api_host(url: &Url) -> bool {
+    matches!(
+        url.host_str(),
+        Some("localhost") | Some("127.0.0.1") | Some("::1")
+    )
 }
 
 // --- API Request/Response types ---
@@ -146,6 +206,7 @@ impl InferenceEngine for APIEngine {
     }
 
     async fn initialize(&mut self) -> Result<()> {
+        validate_api_config(&mut self.config)?;
         info!("Initializing API engine with model: {}", self.config.model);
 
         let mut client_builder =
@@ -662,6 +723,122 @@ fn parse_prompt_to_messages(prompt: &str) -> Vec<ChatMessage> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn api_initialize_normalizes_valid_runtime_config() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let mut engine = APIEngine::new(APIConfig {
+            base_url: " https://example.test/v1/ ".to_string(),
+            api_key: " test-key ".to_string(),
+            model: " test-model ".to_string(),
+            ..Default::default()
+        });
+
+        rt.block_on(engine.initialize()).unwrap();
+
+        assert!(engine.is_ready());
+        assert_eq!(engine.config.base_url, "https://example.test/v1");
+        assert_eq!(engine.config.api_key, "test-key");
+        assert_eq!(engine.config.model, "test-model");
+    }
+
+    #[test]
+    fn api_initialize_allows_local_http_runtime_config() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let mut engine = APIEngine::new(APIConfig {
+            base_url: "http://127.0.0.1:11434/v1/".to_string(),
+            api_key: "local-key".to_string(),
+            model: "local-model".to_string(),
+            ..Default::default()
+        });
+
+        rt.block_on(engine.initialize()).unwrap();
+
+        assert!(engine.is_ready());
+        assert_eq!(engine.config.base_url, "http://127.0.0.1:11434/v1");
+    }
+
+    #[test]
+    fn api_initialize_rejects_invalid_runtime_config() {
+        let cases = [
+            (
+                APIConfig {
+                    base_url: String::new(),
+                    api_key: "test-key".to_string(),
+                    model: "test-model".to_string(),
+                    ..Default::default()
+                },
+                "base_url",
+            ),
+            (
+                APIConfig {
+                    base_url: "ftp://example.test/v1".to_string(),
+                    api_key: "test-key".to_string(),
+                    model: "test-model".to_string(),
+                    ..Default::default()
+                },
+                "HTTPS",
+            ),
+            (
+                APIConfig {
+                    base_url: "http://api.example.test/v1".to_string(),
+                    api_key: "test-key".to_string(),
+                    model: "test-model".to_string(),
+                    ..Default::default()
+                },
+                "HTTPS",
+            ),
+            (
+                APIConfig {
+                    base_url: "https://user:pass@example.test/v1".to_string(),
+                    api_key: "test-key".to_string(),
+                    model: "test-model".to_string(),
+                    ..Default::default()
+                },
+                "embedded credentials",
+            ),
+            (
+                APIConfig {
+                    base_url: "https://example.test/v1?api_key=secret".to_string(),
+                    api_key: "test-key".to_string(),
+                    model: "test-model".to_string(),
+                    ..Default::default()
+                },
+                "query strings",
+            ),
+            (
+                APIConfig {
+                    base_url: "https://example.test/v1".to_string(),
+                    api_key: "  ".to_string(),
+                    model: "test-model".to_string(),
+                    ..Default::default()
+                },
+                "api_key",
+            ),
+            (
+                APIConfig {
+                    base_url: "https://example.test/v1".to_string(),
+                    api_key: "test-key".to_string(),
+                    model: "\n".to_string(),
+                    ..Default::default()
+                },
+                "model",
+            ),
+        ];
+
+        for (config, expected) in cases {
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            let mut engine = APIEngine::new(config);
+            let error = rt.block_on(engine.initialize()).unwrap_err().to_string();
+
+            assert!(
+                error.contains(expected),
+                "expected `{error}` to contain `{expected}`"
+            );
+            assert!(!engine.is_ready());
+            assert!(!error.contains("secret"));
+        }
+    }
 
     #[test]
     fn api_config_debug_redacts_api_key_and_sensitive_headers() {

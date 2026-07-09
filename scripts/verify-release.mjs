@@ -2186,6 +2186,7 @@ async function verifyAiBackendConfigInvariants() {
     ['configure_onnx_registers_active_engine', 'test ONNX configuration activates the backend'],
     ['configure_onnx_registration_is_async_safe', 'test ONNX registration is safe inside an async runtime'],
     ['configure_api_initializes_ready_engine', 'test API configuration reports a ready active engine'],
+    ['configure_api_rejects_invalid_config_without_registering_engine', 'test invalid API configuration is not registered as an active engine'],
   ]
   for (const [needle, description] of aiRequirements) {
     if (!aiCommandSource.includes(needle)) {
@@ -2204,6 +2205,21 @@ async function verifyAiBackendConfigInvariants() {
   for (const [needle, description] of apiStreamingRequirements) {
     if (!rustApiEngineSource.includes(needle)) {
       issues.push(`Rust API streaming must ${description}`)
+    }
+  }
+
+  const apiRuntimeConfigRequirements = [
+    ['validate_api_config', 'validate API runtime configuration before initialization'],
+    ['normalize_api_base_url', 'normalize API base URLs before they are used for chat requests'],
+    ['embedded credentials', 'reject API base URLs with embedded credentials'],
+    ['query strings or fragments', 'reject API base URLs with query strings or fragments'],
+    ['localhost or a loopback address', 'allow plaintext HTTP only for local API providers'],
+    ['api_initialize_rejects_invalid_runtime_config', 'test invalid API runtime configuration rejection'],
+    ['api_initialize_normalizes_valid_runtime_config', 'test valid API runtime configuration normalization'],
+  ]
+  for (const [needle, description] of apiRuntimeConfigRequirements) {
+    if (!rustApiEngineSource.includes(needle)) {
+      issues.push(`Rust API runtime configuration must ${description}`)
     }
   }
 

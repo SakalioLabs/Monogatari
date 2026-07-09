@@ -312,6 +312,26 @@ mod tests {
         assert_eq!(pipeline.active_engine_name(), Some("API"));
         assert_eq!(statuses, vec![("API".to_string(), true)]);
     }
+
+    #[test]
+    fn configure_api_rejects_invalid_config_without_registering_engine() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let config = APIConfig {
+            base_url: "http://api.example.test/v1".to_string(),
+            api_key: "test-key".to_string(),
+            model: "test-model".to_string(),
+            ..Default::default()
+        };
+        let mut pipeline = InferencePipeline::new();
+
+        let error = rt
+            .block_on(register_initialized_api_engine(&mut pipeline, config))
+            .unwrap_err();
+
+        assert!(error.contains("HTTPS"));
+        assert!(pipeline.engine_names().is_empty());
+        assert_eq!(pipeline.active_engine_name(), None);
+    }
 }
 
 /// Get the current AI status.
