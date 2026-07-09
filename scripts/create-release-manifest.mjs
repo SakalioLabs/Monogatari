@@ -25,6 +25,7 @@ const expectedWebArtifacts = [
   '404.html',
   '_headers',
   'staticwebapp.config.json',
+  'vercel.json',
   '.nojekyll',
   'manifest.webmanifest',
   'sw.js',
@@ -458,6 +459,7 @@ function webArtifactKind(file) {
   if (rel === '404.html') return 'spa-fallback'
   if (rel === '_headers') return 'static-hosting-headers'
   if (rel === 'staticwebapp.config.json') return 'azure-static-web-app-config'
+  if (rel === 'vercel.json') return 'vercel-static-app-config'
   if (rel === 'project-assets.json') return 'project-asset-manifest'
   if (rel.startsWith('assets/')) return 'web-asset'
   if (rel.startsWith('icons/')) return 'pwa-icon'

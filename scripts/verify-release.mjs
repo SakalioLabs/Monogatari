@@ -74,6 +74,7 @@ const requiredWebDistFiles = [
   '404.html',
   '_headers',
   'staticwebapp.config.json',
+  'vercel.json',
   '.nojekyll',
   'manifest.webmanifest',
   'sw.js',
@@ -228,6 +229,12 @@ const requiredAzureStaticWebAppFallbackExcludes = [
   '/offline.html',
   '/project-assets.json',
   '/favicon.svg',
+]
+const requiredVercelSecurityHeaders = [
+  'Content-Security-Policy',
+  'X-Content-Type-Options',
+  'Referrer-Policy',
+  'Permissions-Policy',
 ]
 
 async function main() {
@@ -1619,8 +1626,11 @@ async function verifyFrontendSourceInvariants() {
     ['projectAssetManifestPath', 'write a generated project asset manifest into dist'],
     ['staticHostingHeadersPath', 'write static-hosting security headers into dist'],
     ['azureStaticWebAppConfigPath', 'write Azure Static Web Apps configuration into dist'],
+    ['vercelConfigPath', 'write Vercel deployment configuration into dist'],
     ['navigationFallback', 'emit Azure Static Web Apps SPA navigation fallback config'],
     ['globalHeaders', 'emit Azure Static Web Apps global security headers'],
+    ['rewrites', 'emit Vercel SPA rewrite config'],
+    ['securityHeaderEntries', 'reuse security headers for Vercel responses'],
     ['Content-Security-Policy', 'emit a static-hosting CSP header for platforms that support response headers'],
     ['X-Content-Type-Options: nosniff', 'emit a nosniff header for static-hosting responses'],
     ['Permissions-Policy', 'emit a browser permissions policy for static-hosting responses'],
@@ -3129,6 +3139,7 @@ async function verifyWebDist({ basePath = '/' } = {}) {
   const fallbackHtml = await readMaybe(path.join(distDir, '404.html'))
   const staticHostingHeaders = await readMaybe(path.join(distDir, '_headers'))
   const azureStaticWebAppConfig = await readJsonMaybe(path.join(distDir, 'staticwebapp.config.json'))
+  const vercelConfig = await readJsonMaybe(path.join(distDir, 'vercel.json'))
   const manifest = await readJsonMaybe(path.join(distDir, 'manifest.webmanifest'))
   const projectAssetManifest = await readJsonMaybe(path.join(distDir, 'project-assets.json'))
   const serviceWorker = await readMaybe(path.join(distDir, 'sw.js'))
@@ -3169,6 +3180,9 @@ async function verifyWebDist({ basePath = '/' } = {}) {
   }
   if (azureStaticWebAppConfig) {
     verifyAzureStaticWebAppConfig(azureStaticWebAppConfig, issues)
+  }
+  if (vercelConfig) {
+    verifyVercelConfig(vercelConfig, issues)
   }
 
   if (manifest) {
@@ -3647,6 +3661,67 @@ function verifyAzureStaticWebAppConfig(config, issues) {
     for (const fragment of requiredPermissionsPolicyFragments) {
       if (!permissionsPolicy.includes(fragment)) {
         issues.push(`staticwebapp.config.json permissions-policy must include ${fragment}`)
+      }
+    }
+  }
+}
+
+function verifyVercelConfig(config, issues) {
+  if (!config || typeof config !== 'object' || Array.isArray(config)) {
+    issues.push('vercel.json must be a JSON object')
+    return
+  }
+
+  if (config.$schema !== 'https://openapi.vercel.sh/vercel.json') {
+    issues.push('vercel.json must declare the Vercel config schema')
+  }
+
+  const rewrites = config.rewrites
+  if (!Array.isArray(rewrites)) {
+    issues.push('vercel.json rewrites must be an array')
+  } else if (!rewrites.some((rewrite) => rewrite?.source === '/(.*)' && rewrite?.destination === '/index.html')) {
+    issues.push('vercel.json rewrites must route /(.*) to /index.html for SPA fallback')
+  }
+  for (const rewrite of rewrites ?? []) {
+    if (typeof rewrite?.destination === 'string' && /^https?:\/\//i.test(rewrite.destination)) {
+      issues.push('vercel.json rewrites must not point SPA fallback to an external URL')
+    }
+  }
+
+  const globalHeadersRule = Array.isArray(config.headers)
+    ? config.headers.find((rule) => rule?.source === '/(.*)' && Array.isArray(rule?.headers))
+    : null
+  if (!globalHeadersRule) {
+    issues.push('vercel.json headers must include a /(.*) security header rule')
+    return
+  }
+
+  const headerMap = new Map(
+    globalHeadersRule.headers
+      .filter((header) => typeof header?.key === 'string' && typeof header?.value === 'string')
+      .map((header) => [header.key.toLowerCase(), header.value]),
+  )
+  for (const header of requiredVercelSecurityHeaders) {
+    if (!headerMap.has(header.toLowerCase())) {
+      issues.push(`vercel.json headers must include ${header}`)
+    }
+  }
+
+  const csp = headerMap.get('content-security-policy')
+  if (csp) {
+    verifyCspPolicy(csp, requiredWebHeaderCspFragments, 'vercel.json Content-Security-Policy', issues)
+  }
+  if (headerMap.get('x-content-type-options') !== 'nosniff') {
+    issues.push('vercel.json headers must include X-Content-Type-Options: nosniff')
+  }
+  if (headerMap.get('referrer-policy') !== 'no-referrer') {
+    issues.push('vercel.json headers must include Referrer-Policy: no-referrer')
+  }
+  const permissionsPolicy = headerMap.get('permissions-policy')
+  if (permissionsPolicy) {
+    for (const fragment of requiredPermissionsPolicyFragments) {
+      if (!permissionsPolicy.includes(fragment)) {
+        issues.push(`vercel.json Permissions-Policy must include ${fragment}`)
       }
     }
   }

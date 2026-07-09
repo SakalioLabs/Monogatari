@@ -69,6 +69,7 @@ Verified on 2026-07-09:
 - Web/PWA browser builds declare a matching app-shell Content Security Policy meta tag in both `index.html` and static-hosting fallback output, with release-gate coverage for required asset/connectivity sources and blocked object/frame/form/`unsafe-eval` surfaces.
 - Web/PWA dist preparation emits a static-hosting `_headers` file with CSP, nosniff, referrer, and permissions policy headers for Netlify/Cloudflare-style hosts while keeping GitHub Pages fallback compatibility.
 - Web/PWA dist preparation emits an Azure Static Web Apps `staticwebapp.config.json` with SPA navigation fallback, 404 rewrite, and matching global security headers, all tracked by release verification and artifact manifests.
+- Web/PWA dist preparation emits a Vercel `vercel.json` with SPA rewrite and matching global security headers, so Vercel static deployments share the same route and browser-security baseline.
 - Prompt-injection detection now covers structured role-control blocks, attributed XML-like role tags, Markdown role-code-fence blocks, comment-wrapped role headers, punctuation-free role headings, English, Chinese, Japanese, Korean, fullwidth, and zero-width-obfuscated prompt-control phrases before scoring, memory writes, relationship deltas, and runtime safety traces consume player text.
 - Chat, group chat, and quality-suite runtime traces now prove when the character mind contract and creator-pinned knowledge context were applied, including resolved pinned knowledge ref IDs for audit.
 - Prompt-injection detection covers player-authored memory writes such as "remember this as official canon" so long-term character knowledge cannot be casually poisoned by dialogue text.
@@ -222,7 +223,7 @@ npm run build:web
 Remove-Item Env:VITE_BASE_PATH
 ```
 
-The web build emits `dist/404.html` for SPA fallback, `dist/.nojekyll` for GitHub Pages, `dist/_headers` for Netlify/Cloudflare-style hosts, `dist/staticwebapp.config.json` for Azure Static Web Apps, PWA assets, install/maskable icons, copied `data/assets` project sample assets, and `project-assets.json` so the service worker can precache sample renderer assets under the configured base path.
+The web build emits `dist/404.html` for SPA fallback, `dist/.nojekyll` for GitHub Pages, `dist/_headers` for Netlify/Cloudflare-style hosts, `dist/staticwebapp.config.json` for Azure Static Web Apps, `dist/vercel.json` for Vercel, PWA assets, install/maskable icons, copied `data/assets` project sample assets, and `project-assets.json` so the service worker can precache sample renderer assets under the configured base path.
 
 ## Usage
 

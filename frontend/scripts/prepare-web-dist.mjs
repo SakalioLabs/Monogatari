@@ -10,6 +10,7 @@ const distProjectAssetsDir = path.join(distDir, 'assets')
 const projectAssetManifestPath = path.join(distDir, 'project-assets.json')
 const staticHostingHeadersPath = path.join(distDir, '_headers')
 const azureStaticWebAppConfigPath = path.join(distDir, 'staticwebapp.config.json')
+const vercelConfigPath = path.join(distDir, 'vercel.json')
 const webSecurityCsp =
   "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost data: blob:; media-src 'self' asset: http://asset.localhost data: blob:; font-src 'self' data:; connect-src 'self' asset: http://asset.localhost https: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-src 'none'; frame-ancestors 'none'"
 const webPermissionsPolicy = 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=()'
@@ -83,6 +84,33 @@ function azureStaticWebAppConfig() {
   }
 }
 
+function securityHeaderEntries() {
+  return [
+    { key: 'Content-Security-Policy', value: webSecurityCsp },
+    { key: 'X-Content-Type-Options', value: 'nosniff' },
+    { key: 'Referrer-Policy', value: 'no-referrer' },
+    { key: 'Permissions-Policy', value: webPermissionsPolicy },
+  ]
+}
+
+function vercelConfig() {
+  return {
+    $schema: 'https://openapi.vercel.sh/vercel.json',
+    headers: [
+      {
+        source: '/(.*)',
+        headers: securityHeaderEntries(),
+      },
+    ],
+    rewrites: [
+      {
+        source: '/(.*)',
+        destination: '/index.html',
+      },
+    ],
+  }
+}
+
 async function projectAssetManifest() {
   const assetFiles = (await walkFiles(projectAssetsDir, []))
     .map((file) => `/assets/${path.relative(projectAssetsDir, file).replaceAll(path.sep, '/')}`)
@@ -113,5 +141,6 @@ await cp(projectAssetsDir, distProjectAssetsDir, { recursive: true, force: true 
 await writeFile(projectAssetManifestPath, `${JSON.stringify(await projectAssetManifest(), null, 2)}\n`)
 await writeFile(staticHostingHeadersPath, staticHostingHeaders())
 await writeFile(azureStaticWebAppConfigPath, `${JSON.stringify(azureStaticWebAppConfig(), null, 2)}\n`)
+await writeFile(vercelConfigPath, `${JSON.stringify(vercelConfig(), null, 2)}\n`)
 
-console.log('[web-dist] Static hosting assets ready: 404.html, .nojekyll, _headers, staticwebapp.config.json, manifest.webmanifest, sw.js, offline.html, PWA icons, project assets, project asset manifest')
+console.log('[web-dist] Static hosting assets ready: 404.html, .nojekyll, _headers, staticwebapp.config.json, vercel.json, manifest.webmanifest, sw.js, offline.html, PWA icons, project assets, project asset manifest')
