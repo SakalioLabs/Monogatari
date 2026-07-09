@@ -4,6 +4,8 @@ All Tauri commands are invoked from the frontend via `invokeCommand(commandName,
 
 ## Engine
 
+Engine `projectPath` values must resolve to an existing local project directory before initialization binds runtime state. Empty input reuses the active/default project root; URI-like input, control characters, missing paths, and file paths are rejected before managers load content.
+
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
 | `initialize_engine` | `{ projectPath: string }` | `void` | Initialize engine with data path |

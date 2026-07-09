@@ -3,7 +3,7 @@
 ## Pre-Release Verification
 
 ### Automated Gate
-- [ ] `node scripts/verify-release.mjs` passes from the repository root, covering JSON assets, workflow files, score-gate workflow execution regressions, renderer asset contracts, pinned knowledge-ref contracts, all quality suites, workflow branch coverage snapshots, locale coverage, sensitive token scans, frontend UI text artifact scans, frontend source invariants, legacy C# AI prompt/API invariants, AI backend config, asset/save-manager, i18n locale, workflow command, content loader, character manager, plugin manager, marketplace, Live2D model, and TTS output path invariants, frontend route/sidebar coverage, Tauri desktop packaging configuration, Rust AI/game/assets/Tauri checks/tests, frontend audit, root and subpath Web/PWA builds, Web/PWA dist assets, release artifact manifest checks, preview route smoke checks, and legacy C# tests
+- [ ] `node scripts/verify-release.mjs` passes from the repository root, covering JSON assets, workflow files, score-gate workflow execution regressions, renderer asset contracts, pinned knowledge-ref contracts, all quality suites, workflow branch coverage snapshots, locale coverage, sensitive token scans, frontend UI text artifact scans, frontend source invariants, legacy C# AI prompt/API invariants, AI backend config, engine project root, asset/save-manager, i18n locale, workflow command, content loader, character manager, plugin manager, marketplace, Live2D model, and TTS output path invariants, frontend route/sidebar coverage, Tauri desktop packaging configuration, Rust AI/game/assets/Tauri checks/tests, frontend audit, root and subpath Web/PWA builds, Web/PWA dist assets, release artifact manifest checks, preview route smoke checks, and legacy C# tests
 
 ### Frontend
 - [ ] `cd frontend && npm run build` passes with zero errors
@@ -28,6 +28,7 @@
 - [ ] Legacy C# prompt builder sanitizes embedded role-boundary markers while the legacy solution remains release-gated
 - [ ] Rust API engine debug output and API error surfaces redact API keys, bearer tokens, sensitive custom headers, and provider-echoed secret assignments before logs or frontend error reports expose them
 - [ ] ONNX backend configuration accepts only project-relative `.onnx` model and `.json` tokenizer references and activates the ONNX engine after registration
+- [ ] Engine initialization binds only existing local project directories as the active project root
 - [ ] Legacy C# API engine redacts token-shaped values and JSON/header/query secret assignments from provider error bodies and request exceptions while the legacy solution remains release-gated
 - [ ] Rust and legacy C# asset managers reject absolute, URI-like, empty, current-directory, and parent-traversal asset paths before reading project assets
 - [ ] Rust and legacy C# save managers reject traversal-shaped save IDs before save/load/delete and filter listed saves whose embedded IDs do not match safe filenames

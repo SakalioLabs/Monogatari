@@ -204,6 +204,7 @@ async function main() {
   await verifyFrontendSourceInvariants()
   await verifyLegacyPromptBuilderInvariants()
   await verifyAiBackendConfigInvariants()
+  await verifyEngineProjectRootInvariants()
   await verifyAssetManagerInvariants()
   await verifySaveManagerInvariants()
   await verifyWorkflowCommandInvariants()
@@ -1931,6 +1932,41 @@ async function verifyAiBackendConfigInvariants() {
   console.log('[release] AI backend config invariants OK')
 }
 
+async function verifyEngineProjectRootInvariants() {
+  const issues = []
+  const engineSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'engine.rs'), 'utf8')
+  const settingsViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'SettingsView.vue'), 'utf8')
+
+  const engineRequirements = [
+    ['current_project_data_root', 'reuse the active/default project root when initialization receives an empty project path'],
+    ['normalize_project_path_from', 'centralize testable engine project path normalization'],
+    ['validate_engine_project_root', 'validate engine project roots before binding state'],
+    ['Project path cannot contain control characters', 'reject control-character project path input'],
+    ['Project path must be a local filesystem path, not a URI', 'reject URI-shaped project path input'],
+    ['Engine project path does not exist', 'reject missing project roots before initialization'],
+    ['Engine project path is not a directory', 'reject file paths before initialization'],
+    ['state.set_project_data_root(path).await', 'bind only the validated project root into app state'],
+    ['engine_project_paths_resolve_existing_relative_dirs', 'test relative project root resolution'],
+    ['engine_project_paths_reject_uri_and_control_input', 'test URI and control-character rejection'],
+    ['engine_project_root_validation_requires_existing_directory', 'test missing and file project root rejection'],
+  ]
+  for (const [needle, description] of engineRequirements) {
+    if (!engineSource.includes(needle)) {
+      issues.push(`Engine project root handling must ${description}`)
+    }
+  }
+
+  if (!settingsViewSource.includes("invokeCommand<void>('initialize_engine', { projectPath: projectPath.value })")) {
+    issues.push('Settings project initialization must pass projectPath through the backend initialize_engine contract')
+  }
+
+  if (issues.length > 0) {
+    throw new Error(`Engine project root verification failed:\n${issues.join('\n')}`)
+  }
+
+  console.log('[release] Engine project root invariants OK')
+}
+
 async function verifyAssetManagerInvariants() {
   const issues = []
   const rustAssetManagerSource = await readFile(path.join(rustDir, 'crates', 'assets', 'src', 'asset_manager.rs'), 'utf8')
@@ -2476,7 +2512,7 @@ async function verifyTauriPackagingConfig() {
     [tauriStateSource, 'pub fn is_project_data_root', 'validate project data roots before binding them'],
     [tauriStateSource, 'AssetManager::new(&data_path)', 'rebind the asset manager when project roots change'],
     [tauriStateSource, 'SaveManager::new(data_path.join("saves"))', 'rebind the save manager when project roots change'],
-    [tauriEngineSource, 'unwrap_or_else(default_project_data_root)', 'keep empty engine initialization paths on the discovered default root'],
+    [tauriEngineSource, 'current_project_data_root().await', 'keep empty engine initialization paths on the active or discovered default root'],
     [tauriEngineSource, 'state.set_project_data_root(path).await', 'rebind project managers after engine initialization'],
     [tauriProjectSource, 'state.set_project_data_root(root.clone()).await', 'rebind project managers after saving project config'],
     [tauriScenesSource, 'Ok(default_project_data_root())', 'scan scene assets from the discovered default root before explicit initialization'],

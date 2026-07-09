@@ -109,6 +109,10 @@ All generated TTS files, including system SAPI, Azure, and ElevenLabs outputs, a
 
 Project asset files are scoped to the active project data root. The Rust assets `AssetManager` and the retained legacy C# `AssetManager` normalize asset references, reject absolute paths, drive/URI-style prefixes, empty path segments, `.`/`..` traversal, and control characters, then verify the resolved path still lives under the configured asset root before reading text, JSON, binary assets, or directory listings.
 
+## Engine Project Root Boundaries
+
+Engine initialization resolves an empty project path to the active/default project data root, accepts local filesystem project directories, and rejects URI-shaped or control-character input. The resolved root must exist and be a directory before character, dialogue, knowledge, asset, and save managers are rebound to it.
+
 ## Character Authoring Boundaries
 
 Character create/delete commands treat character IDs as portable slugs rather than filenames. IDs are validated before path construction, character JSON files are written or removed only as direct children of the active project `characters/` directory, and deletion also removes the character from the in-memory runtime manager.
