@@ -220,28 +220,45 @@ fn is_structural_role_control_line(line: &str) -> bool {
             return true;
         }
 
-        if let Some(rest) = line.strip_prefix(role) {
-            let rest = rest.trim_start();
-            if rest.starts_with(':') || rest.starts_with('=') || rest.starts_with("=>") {
-                return true;
-            }
+        if role_heading_matches(line, role) {
+            return true;
         }
+    }
 
-        for label in [
-            format!("{role} message"),
-            format!("{role} instruction"),
-            format!("{role} prompt"),
-        ] {
-            if let Some(rest) = line.strip_prefix(&label) {
-                let rest = rest.trim_start();
-                if rest.starts_with(':') || rest.starts_with('=') {
-                    return true;
-                }
+    false
+}
+
+fn role_heading_matches(line: &str, role: &str) -> bool {
+    let Some(rest) = line.strip_prefix(role) else {
+        return false;
+    };
+
+    let rest = rest.trim_start();
+    if rest.is_empty() || role_heading_separator(rest) {
+        return true;
+    }
+
+    for label in [
+        "message",
+        "messages",
+        "instruction",
+        "instructions",
+        "prompt",
+        "prompts",
+    ] {
+        if let Some(after_label) = rest.strip_prefix(label) {
+            let after_label = after_label.trim_start();
+            if after_label.is_empty() || role_heading_separator(after_label) {
+                return true;
             }
         }
     }
 
     false
+}
+
+fn role_heading_separator(value: &str) -> bool {
+    value.starts_with(':') || value.starts_with('=') || value.starts_with("=>")
 }
 
 fn contains_role_tag(line: &str, compact: &str, role: &str) -> bool {

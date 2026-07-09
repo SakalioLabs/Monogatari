@@ -207,31 +207,48 @@ public class PromptBuilder
                 return true;
             }
 
-            if (line.StartsWith(role, StringComparison.Ordinal))
+            if (RoleHeadingMatches(line, role))
             {
-                var rest = line[role.Length..].TrimStart();
-                if (rest.StartsWith(':') || rest.StartsWith('=') || rest.StartsWith("=>", StringComparison.Ordinal))
-                {
-                    return true;
-                }
-            }
-
-            foreach (var label in new[] { $"{role} message", $"{role} instruction", $"{role} prompt" })
-            {
-                if (!line.StartsWith(label, StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                var rest = line[label.Length..].TrimStart();
-                if (rest.StartsWith(':') || rest.StartsWith('='))
-                {
-                    return true;
-                }
+                return true;
             }
         }
 
         return false;
+    }
+
+    private static bool RoleHeadingMatches(string line, string role)
+    {
+        if (!line.StartsWith(role, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var rest = line[role.Length..].TrimStart();
+        if (rest.Length == 0 || RoleHeadingSeparator(rest))
+        {
+            return true;
+        }
+
+        foreach (var label in new[] { "message", "messages", "instruction", "instructions", "prompt", "prompts" })
+        {
+            if (!rest.StartsWith(label, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var afterLabel = rest[label.Length..].TrimStart();
+            if (afterLabel.Length == 0 || RoleHeadingSeparator(afterLabel))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool RoleHeadingSeparator(string value)
+    {
+        return value.StartsWith(':') || value.StartsWith('=') || value.StartsWith("=>", StringComparison.Ordinal);
     }
 
     private static bool IsRoleCodeFenceLine(string line)

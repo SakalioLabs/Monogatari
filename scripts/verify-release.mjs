@@ -1909,6 +1909,7 @@ async function verifyLegacyPromptBuilderInvariants() {
     ['IsRoleCodeFenceLine', 'detect Markdown role-code-fence spoofing'],
     ['StartsWith("<!--", StringComparison.Ordinal)', 'strip HTML comment prompt-control prefixes before role-line checks'],
     ["'!', '/', '-', '*', '`', '#'", 'strip slash/star comment prompt-control prefixes before role-line checks'],
+    ['RoleHeadingMatches', 'detect punctuation-free role heading spoofing'],
     ['SafeRoleHeader', 'prevent arbitrary AddMessage role labels from creating prompt sections'],
     ['Guarded prompt-control marker omitted.', 'omit structural prompt-control marker lines'],
     ['\\uFF01', 'normalize fullwidth ASCII ranges'],
@@ -1930,6 +1931,8 @@ async function verifyLegacyPromptBuilderInvariants() {
     ['Build_AllowsNonRoleCodeFences', 'test Markdown role-code-fence matching keeps role-name boundaries'],
     ['Build_SanitizesCommentedRoleMarkers', 'test comment-wrapped role marker sanitization'],
     ['Build_AllowsNonRoleCommentPrefixes', 'test comment-wrapped role matching keeps role-name boundaries'],
+    ['Build_SanitizesRoleHeadingsWithoutPunctuation', 'test punctuation-free role heading sanitization'],
+    ['Build_AllowsNonRoleHeadingPrefixes', 'test punctuation-free role heading matching keeps role-name boundaries'],
     ['Build_DefaultsUnexpectedMessageRolesToUser', 'test arbitrary message roles cannot create prompt sections'],
   ]
 
@@ -2811,6 +2814,7 @@ async function verifyTauriPackagingConfig() {
     ['role_code_fence_payload', 'detect Markdown role-code-fence control blocks'],
     ['strip_prefix("<!--")', 'strip HTML comment prompt-control prefixes before role-line checks'],
     ["matches!(ch, '>' | '!' | '/' | '-'", 'strip slash/star comment prompt-control prefixes before role-line checks'],
+    ['role_heading_matches', 'detect punctuation-free role heading spoofing'],
     ['忽略之前', 'detect Chinese prompt-control instructions'],
     ['以前の指示を無視', 'detect Japanese prompt-control instructions'],
     ['이전 지시를 무시', 'detect Korean prompt-control instructions'],

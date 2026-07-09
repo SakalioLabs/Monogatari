@@ -75,7 +75,7 @@ Character responses use a structured prompt system:
 - Conversation history (last 10 messages)
 - Evaluation prompt every 5 messages for scoring
 
-Prompt and response guardrails are shared by single-character chat, group chat, workflow LLM nodes, quality suites, fallback scoring, and the reusable Rust AI prompt builder. Player-authored text is wrapped as untrusted dialogue data, reusable prompt history/context sections sanitize embedded role-boundary markers, attributed XML-like role tags, Markdown role-code-fence blocks, and comment-wrapped role headers, creator-authored character mind and safety contracts stay in the system channel, and XML/header/JSON-shaped role-control blocks plus English, Chinese, Japanese, Korean, fullwidth, and zero-width-obfuscated prompt-control phrases are detected before they can influence memory writes, relationship deltas, scoring, or hidden prompt boundaries.
+Prompt and response guardrails are shared by single-character chat, group chat, workflow LLM nodes, quality suites, fallback scoring, and the reusable Rust AI prompt builder. Player-authored text is wrapped as untrusted dialogue data, reusable prompt history/context sections sanitize embedded role-boundary markers, attributed XML-like role tags, Markdown role-code-fence blocks, comment-wrapped role headers, and punctuation-free role headings, creator-authored character mind and safety contracts stay in the system channel, and XML/header/JSON-shaped role-control blocks plus English, Chinese, Japanese, Korean, fullwidth, and zero-width-obfuscated prompt-control phrases are detected before they can influence memory writes, relationship deltas, scoring, or hidden prompt boundaries.
 
 When live evaluator output is unavailable, deterministic fallback scoring uses only trusted, normalized player messages. The fallback recognizes English, Chinese, Japanese, and Korean friendly sentiment, questions, and creative-story intent so international builds keep stable relationship and story-event previews without live model calls.
 
@@ -83,7 +83,7 @@ API backend configuration treats provider credentials as runtime-only secrets. T
 
 ONNX backend configuration treats `modelPath` and `tokenizerPath` as project-relative file references under the active project data root. Model references must be `.onnx`, tokenizer references must be `.json`, path-shaped or non-portable input is rejected before engine registration, and successful ONNX configuration activates the ONNX engine so Settings cannot silently leave an older backend selected.
 
-The legacy C# AI path mirrors the same boundary-sanitization intent for bracket, fullwidth, XML/header, attributed XML-like, Markdown role-code-fence, comment-wrapped, and JSON-shaped role spoofing, and redacts token-shaped values plus JSON/header/query secret assignments from provider error bodies and request exceptions while the legacy solution remains in the release gate.
+The legacy C# AI path mirrors the same boundary-sanitization intent for bracket, fullwidth, XML/header, attributed XML-like, Markdown role-code-fence, comment-wrapped, punctuation-free heading, and JSON-shaped role spoofing, and redacts token-shaped values plus JSON/header/query secret assignments from provider error bodies and request exceptions while the legacy solution remains in the release gate.
 
 ## Workflow System
 
