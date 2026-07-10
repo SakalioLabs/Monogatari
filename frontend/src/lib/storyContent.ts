@@ -21,11 +21,18 @@ export interface StoryCharacterInfo {
   description: string
   background?: string
   emotion: string
+  currentEmotion?: string
   personality?: Record<string, unknown>
   portrait_path: string | null
   sprite_path: string | null
+  sprite_paths?: Record<string, string>
   live2d_model_path?: string | null
   model_3d_path?: string | null
+  relationships?: Record<string, number>
+  knowledge_entries?: Array<{ topic: string; content: string }>
+  knowledge_refs?: string[]
+  knowledge?: string[]
+  emotion_modifiers?: Record<string, string>
 }
 
 export interface StoryDialogueInfo {
@@ -124,6 +131,7 @@ interface DialogueDocument extends Partial<DialogueDefinition> {
 const BROWSER_ENDING_DRAFT_KEY = 'monogatari:story-ending-catalog:v1'
 const BROWSER_SCENE_DRAFT_KEY = 'monogatari:scene-authoring-catalog:v1'
 const BROWSER_DIALOGUE_DRAFT_KEY = 'monogatari:dialogue-authoring-catalog:v1'
+const BROWSER_CHARACTER_DRAFT_KEY = 'monogatari:character-authoring-catalog:v1'
 
 function baseUrl(): URL {
   const base = import.meta.env.BASE_URL || '/'
@@ -189,10 +197,12 @@ export async function loadStoryCharacters(): Promise<StoryCharacterInfo[]> {
   if (hasTauriRuntime()) {
     return normalizeStoryCharacters(await invokeCommand<StoryCharacterInfo[]>('get_characters'))
   }
+  const browserDrafts = loadBrowserCharacterDrafts()
+  if (browserDrafts !== null) return normalizeStoryCharacters(browserDrafts)
   try {
     const manifest = await webProjectManifest()
-    const documents = await fetchDocuments<StoryCharacterInfo>(manifest.character_files)
-    return normalizeStoryCharacters(documents)
+    const documents = await fetchDocuments<StoryCharacterInfo | StoryCharacterInfo[]>(manifest.character_files)
+    return normalizeStoryCharacters(documents.flatMap(document => Array.isArray(document) ? document : [document]))
   } catch {
     return browserCharacterFallback.map((character) => ({ ...character }))
   }
@@ -205,12 +215,49 @@ function normalizeStoryCharacters(documents: StoryCharacterInfo[]): StoryCharact
     byId.set(character.id, {
       ...character,
       description: character.description || '',
-      emotion: character.emotion || 'neutral',
+      emotion: character.emotion || character.currentEmotion || 'neutral',
       portrait_path: character.portrait_path || null,
       sprite_path: character.sprite_path || null,
+      knowledge_refs: character.knowledge_refs || character.knowledge || [],
     })
   }
   return [...byId.values()].sort((left, right) => left.id.localeCompare(right.id))
+}
+
+export function loadBrowserCharacterDrafts(): StoryCharacterInfo[] | null {
+  if (typeof window === 'undefined') return null
+  const raw = window.localStorage.getItem(BROWSER_CHARACTER_DRAFT_KEY)
+  if (raw === null) return null
+  try {
+    const value = JSON.parse(raw) as unknown
+    if (!Array.isArray(value)) return null
+    const characters = value.filter(isStoryCharacterInfo)
+    return characters.length === value.length ? normalizeStoryCharacters(characters) : null
+  } catch {
+    return null
+  }
+}
+
+export function saveBrowserCharacterDrafts(characters: StoryCharacterInfo[]): void {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(
+    BROWSER_CHARACTER_DRAFT_KEY,
+    JSON.stringify(normalizeStoryCharacters(characters)),
+  )
+}
+
+export function resetBrowserCharacterDrafts(): void {
+  if (typeof window === 'undefined') return
+  window.localStorage.removeItem(BROWSER_CHARACTER_DRAFT_KEY)
+}
+
+function isStoryCharacterInfo(value: unknown): value is StoryCharacterInfo {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  const input = value as Record<string, unknown>
+  return typeof input.id === 'string'
+    && input.id.trim().length > 0
+    && typeof input.name === 'string'
+    && input.name.trim().length > 0
 }
 
 export function loadBrowserSceneDrafts(): SceneDefinition[] | null {

@@ -2402,6 +2402,15 @@ async function verifyFrontendSourceInvariants() {
     [storyContentSource, 'loadBrowserSceneDrafts()', 'load browser-authored scene drafts into Story Mode'],
     [storyContentSource, 'loadBrowserDialogueDrafts()', 'load browser-authored dialogue drafts into Story Mode'],
     [storyContentSource, 'loadBrowserStoryEndingDrafts()', 'load browser-authored ending drafts into Story Mode'],
+    [storyContentSource, 'BROWSER_CHARACTER_DRAFT_KEY', 'version browser-authored character catalogs'],
+    [storyContentSource, 'loadBrowserCharacterDrafts()', 'load browser-authored character drafts into Story Mode'],
+    [storyContentSource, 'saveBrowserCharacterDrafts', 'persist browser-authored character catalogs'],
+    [storyContentSource, 'resetBrowserCharacterDrafts', 'restore packaged project characters after browser authoring'],
+    [storyContentSource, 'documents.flatMap', 'flatten packaged single and grouped character documents'],
+    [characterEditorSource, 'loadKnowledgeAuthoringCatalog', 'bind character knowledge references to the project catalog'],
+    [characterEditorSource, 'saveBrowserCharacterDrafts', 'wire Web/PWA character saves to browser authoring drafts'],
+    [characterEditorSource, 'pendingAction', 'keep character discard and restore confirmation inside the application'],
+    [characterEditorSource, 'isDirty', 'guard dirty character drafts during navigation'],
     [sceneAuthoringSource, "invokeCommand<SceneAuthoringCatalogSnapshot>('get_scene_authoring_catalog')", 'load editable scene catalog snapshots'],
     [sceneAuthoringSource, 'expectedCatalogFingerprint', 'save and delete scenes with optimistic concurrency'],
     [sceneAuthoringSource, 'saveBrowserSceneDrafts', 'persist browser scene authoring drafts'],
@@ -2473,6 +2482,9 @@ async function verifyFrontendSourceInvariants() {
   }
   if (knowledgeBaseViewSource.includes('window.confirm')) {
     issues.push('frontend/src/views/KnowledgeBaseView.vue must not block author previews with native browser confirmation dialogs')
+  }
+  if (characterEditorSource.includes('window.confirm')) {
+    issues.push('frontend/src/views/CharacterEditorView.vue must not block author workflows with native browser confirmation dialogs')
   }
   if (workflowEditorSource.includes('const rules: Record<string, Record<string, any>>')) {
     issues.push('frontend/src/views/WorkflowEditor.vue must not keep a second hardcoded story event rule catalog')

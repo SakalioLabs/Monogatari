@@ -96,6 +96,7 @@ const strictLocalizedSurfaces = [
   'src/views/AudioView.vue',
   'src/views/BacklogView.vue',
   'src/views/CGGalleryView.vue',
+  'src/views/CharacterEditorView.vue',
   'src/views/CharacterGalleryView.vue',
   'src/views/DialogueEditorView.vue',
   'src/views/EndingEditorView.vue',

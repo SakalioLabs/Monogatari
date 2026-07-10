@@ -1,306 +1,380 @@
 <template>
-  <div class="editor-workbench">
-    <aside class="char-rail">
-      <div class="rail-header">
+  <div class="character-workbench">
+    <aside class="character-browser">
+      <header class="browser-header">
         <div>
-          <span class="eyebrow">Content</span>
-          <h1>Characters</h1>
+          <span class="eyebrow">{{ t('characters.editor.eyebrow', 'Cast authoring') }}</span>
+          <h1>{{ t('characters.title', 'Characters') }}</h1>
+          <p>{{ t('characters.editor.loaded-summary', '{visible} of {total}', { visible: filteredCharacterList.length, total: characterList.length }) }}</p>
         </div>
-        <button class="btn btn-primary btn-sm" @click="createNew">+ New</button>
-      </div>
-      <div class="char-list">
-        <button
-          v-for="char in characterList"
-          :key="char.id"
-          class="char-card"
-          :class="{ selected: selectedId === char.id }"
-          @click="selectChar(char.id)"
-        >
-          <span class="avatar" :style="{ background: avatarColor(char.id) }">{{ initials(char.name) }}</span>
-          <div class="char-info">
-            <strong>{{ char.name }}</strong>
-            <small>{{ char.description || 'No description' }}</small>
-          </div>
-          <span class="char-emotion">{{ char.emotion || 'neutral' }}</span>
+        <button class="icon-command primary" :title="t('characters.create', 'Create Character')" @click="requestCreate">
+          <Plus :size="17" />
+          <span class="sr-only">{{ t('characters.create', 'Create Character') }}</span>
         </button>
-        <div v-if="characterList.length === 0" class="empty-list">
-          <span class="empty-mark">--</span>
-          <span>No characters loaded</span>
+      </header>
+
+      <label class="browser-search">
+        <Search :size="15" />
+        <input v-model="searchQuery" :placeholder="t('characters.search', 'Search characters...')" />
+      </label>
+
+      <div class="character-list">
+        <button
+          v-for="character in filteredCharacterList"
+          :key="character.id"
+          class="character-row"
+          :class="{ selected: selectedId === character.id }"
+          @click="requestSelect(character.id)"
+        >
+          <span class="avatar" :style="characterImage(character) ? undefined : { background: avatarColor(character.id) }">
+            <img
+              v-if="characterImage(character)"
+              :src="characterImage(character) || ''"
+              :alt="character.name"
+              @error="markCharacterImageFailed(character.id)"
+            />
+            <template v-else>{{ initials(character.name) }}</template>
+          </span>
+          <span class="character-copy">
+            <strong>{{ character.name }}</strong>
+            <small>{{ character.description || t('characters.no-description', 'No description') }}</small>
+          </span>
+          <span class="emotion-chip">{{ emotionLabel(character.emotion || 'neutral') }}</span>
+        </button>
+
+        <div v-if="filteredCharacterList.length === 0" class="empty-list">
+          <UserRound :size="26" />
+          <strong>{{ t('characters.no-results', 'No characters found') }}</strong>
+          <span>{{ searchQuery ? t('characters.editor.search-empty', 'Try another name or ID.') : t('characters.empty-copy', 'Create a character to begin building your project cast.') }}</span>
         </div>
       </div>
+
+      <footer v-if="browserDraft" class="browser-draft-bar">
+        <span><RotateCcw :size="13" />{{ t('characters.editor.browser-draft', 'Browser draft active') }}</span>
+        <button @click="requestRestoreProject">{{ t('characters.editor.restore-project', 'Restore project') }}</button>
+      </footer>
     </aside>
 
-    <main v-if="editing" class="editor-main">
+    <main v-if="editing" class="character-editor">
       <header class="editor-toolbar">
-        <div class="toolbar-left">
-          <span class="eyebrow">Editing</span>
-          <h2>{{ isNew ? 'New Character' : form.name }}</h2>
+        <div class="editor-title">
+          <span class="eyebrow">{{ isNew ? t('characters.editor.creating', 'Creating') : t('characters.editor.editing', 'Editing character') }}</span>
+          <div><h2>{{ isNew ? t('characters.editor.new-title', 'New character') : form.name }}</h2><code>{{ form.id || t('characters.editor.unsaved-id', 'unsaved') }}</code></div>
+          <span v-if="isDirty" class="dirty-chip">{{ t('characters.editor.dirty', 'Unsaved') }}</span>
         </div>
-        <div class="toolbar-right">
-          <button class="btn btn-secondary btn-sm" @click="exportChar">{{ t("characters.export", "Export JSON") }}</button>
-          <button class="btn btn-secondary btn-sm" @click="cancelEdit">Cancel</button>
-          <button class="btn btn-primary btn-sm" :disabled="saving" @click="save">
-            {{ saving ? 'Saving' : 'Save' }}
+        <div class="toolbar-actions">
+          <button class="btn btn-secondary btn-sm" :disabled="!form.id.trim()" @click="exportChar"><Download :size="14" />{{ t('characters.export', 'Export JSON') }}</button>
+          <button class="btn btn-secondary btn-sm" @click="requestCancel"><X :size="14" />{{ t('common.cancel', 'Cancel') }}</button>
+          <button class="btn btn-primary btn-sm" :disabled="saving || !canSave" @click="save">
+            <LoaderCircle v-if="saving" class="spinner" :size="14" />
+            <Save v-else :size="14" />
+            {{ saving ? t('characters.editor.saving', 'Saving') : t('common.save', 'Save') }}
           </button>
         </div>
       </header>
 
-      <div class="editor-tabs">
+      <nav class="editor-tabs" role="tablist" :aria-label="t('characters.editor.tabs-label', 'Character editor sections')">
         <button
           v-for="tab in tabs"
           :key="tab.key"
-          class="tab-btn"
+          role="tab"
+          class="tab-button"
+          :aria-selected="activeTab === tab.key"
           :class="{ active: activeTab === tab.key }"
           @click="activeTab = tab.key"
-        >{{ tab.label }}</button>
-      </div>
+        ><component :is="tab.icon" :size="14" />{{ tab.label }}</button>
+      </nav>
 
-      <div class="editor-content">
-        <!-- Basic Info Tab -->
-        <div v-if="activeTab === 'basic'" class="tab-panel">
-          <div class="section">
-            <span class="section-title">Identity</span>
-            <div class="form-grid">
-              <label class="form-field">
-                <span>Character ID</span>
-                <input class="input" v-model="form.id" placeholder="unique_id" :disabled="!isNew" />
-              </label>
-              <label class="form-field">
-                <span>Display Name</span>
-                <input class="input" v-model="form.name" placeholder="Character Name" />
-              </label>
-              <label class="form-field full">
-                <span>Description</span>
-                <textarea class="input" v-model="form.description" rows="2" placeholder="Short description shown in character list"></textarea>
-              </label>
-              <label class="form-field full">
-                <span>Background Story</span>
-                <textarea class="input" v-model="form.background" rows="5" placeholder="Character background and history"></textarea>
-              </label>
-            </div>
+      <p v-if="validationMessage" class="validation-banner"><TriangleAlert :size="14" />{{ validationMessage }}</p>
+
+      <div class="editor-scroll">
+        <div v-if="activeTab === 'basic'" class="tab-panel basic-panel">
+          <div class="basic-form">
+            <section class="editor-section">
+              <div class="section-heading-copy">
+                <span class="section-title">{{ t('characters.editor.identity', 'Identity') }}</span>
+                <p>{{ t('characters.editor.identity-copy', 'Define the name and stable context used throughout the project.') }}</p>
+              </div>
+              <div class="form-grid">
+                <label class="form-field">
+                  <span>{{ t('characters.editor.id', 'Character ID') }}</span>
+                  <input v-model.trim="form.id" class="input mono" maxlength="128" :placeholder="t('characters.editor.id-placeholder', 'unique_id')" :disabled="!isNew" />
+                </label>
+                <label class="form-field">
+                  <span>{{ t('characters.name', 'Name') }}</span>
+                  <input v-model.trim="form.name" class="input" maxlength="256" :placeholder="t('characters.editor.name-placeholder', 'Character name')" />
+                </label>
+                <label class="form-field full">
+                  <span>{{ t('characters.description', 'Description') }}</span>
+                  <textarea v-model="form.description" class="input" rows="3" maxlength="2048" :placeholder="t('characters.editor.description-placeholder', 'Short description shown in character lists')"></textarea>
+                </label>
+                <label class="form-field full">
+                  <span>{{ t('characters.background', 'Background') }}</span>
+                  <textarea v-model="form.background" class="input" rows="7" maxlength="16384" :placeholder="t('characters.editor.background-placeholder', 'Character history, motivations, and important context')"></textarea>
+                </label>
+              </div>
+            </section>
+
+            <section class="editor-section">
+              <div class="section-heading-copy">
+                <span class="section-title">{{ t('characters.editor.voice', 'Voice and default state') }}</span>
+                <p>{{ t('characters.editor.voice-copy', 'Set the baseline tone used by dialogue and model-generated responses.') }}</p>
+              </div>
+              <div class="form-grid">
+                <label class="form-field">
+                  <span>{{ t('characters.speech-style', 'Speech style') }}</span>
+                  <input v-model="form.speech_style" class="input" maxlength="512" :placeholder="t('characters.editor.speech-placeholder', 'Cheerful, precise, softly spoken...')" />
+                </label>
+                <label class="form-field">
+                  <span>{{ t('characters.editor.default-emotion', 'Default emotion') }}</span>
+                  <select v-model="form.default_emotion" class="input">
+                    <option v-for="emotion in emotionOptions" :key="emotion.value" :value="emotion.value">{{ emotion.label }}</option>
+                  </select>
+                </label>
+              </div>
+            </section>
+
+            <section class="editor-section">
+              <div class="section-heading-copy">
+                <span class="section-title">{{ t('characters.editor.assets', 'Renderer assets') }}</span>
+                <p>{{ t('characters.editor.assets-copy', 'Use project-relative paths; the preview selects Live2D, 3D, then sprite fallback.') }}</p>
+              </div>
+              <div class="form-grid">
+                <label class="form-field" :class="{ invalid: assetFieldIssue('live2d_model_path') }">
+                  <span>{{ t('characters.editor.live2d-path', 'Live2D model') }}</span>
+                  <input v-model="form.live2d_model_path" class="input mono" :placeholder="t('characters.editor.live2d-placeholder', 'live2d/model.model3.json')" />
+                  <small v-if="assetFieldIssue('live2d_model_path')" class="field-warning">{{ assetFieldIssue('live2d_model_path')?.message }}</small>
+                </label>
+                <label class="form-field" :class="{ invalid: assetFieldIssue('model_3d_path') }">
+                  <span>{{ t('characters.editor.model3d-path', '3D model (GLB/GLTF)') }}</span>
+                  <input v-model="form.model_3d_path" class="input mono" :placeholder="t('characters.editor.model3d-placeholder', 'models/character.glb')" />
+                  <small v-if="assetFieldIssue('model_3d_path')" class="field-warning">{{ assetFieldIssue('model_3d_path')?.message }}</small>
+                </label>
+                <label class="form-field" :class="{ invalid: assetFieldIssue('portrait_path') }">
+                  <span>{{ t('characters.editor.portrait-path', 'Portrait image') }}</span>
+                  <input v-model="form.portrait_path" class="input mono" :placeholder="t('characters.editor.portrait-placeholder', 'assets/portraits/character.png')" />
+                  <small v-if="assetFieldIssue('portrait_path')" class="field-warning">{{ assetFieldIssue('portrait_path')?.message }}</small>
+                </label>
+                <label class="form-field" :class="{ invalid: assetFieldIssue('sprite_path') }">
+                  <span>{{ t('characters.editor.sprite-path', 'Fallback sprite') }}</span>
+                  <input v-model="form.sprite_path" class="input mono" :placeholder="t('characters.editor.sprite-placeholder', 'assets/sprites/character.png')" />
+                  <small v-if="assetFieldIssue('sprite_path')" class="field-warning">{{ assetFieldIssue('sprite_path')?.message }}</small>
+                </label>
+              </div>
+            </section>
           </div>
-          <div class="section">
-            <span class="section-title">Speech and Appearance</span>
-            <div class="form-grid">
-              <label class="form-field">
-                <span>Speech Style</span>
-                <input class="input" v-model="form.speech_style" placeholder="e.g. cheerful, formal, mysterious" />
-              </label>
-              <label class="form-field">
-                <span>Default Emotion</span>
-                <select class="input" v-model="form.default_emotion">
-                  <option v-for="e in emotions" :key="e" :value="e">{{ e }}</option>
-                </select>
-              </label>
-              <label class="form-field" :class="{ invalid: assetFieldIssue('live2d_model_path') }">
-                <span>Live2D Model Path</span>
-                <input class="input" v-model="form.live2d_model_path" placeholder="live2d/model.model3.json" />
-                <small v-if="assetFieldIssue('live2d_model_path')" class="field-warning">{{ assetFieldIssue('live2d_model_path')?.message }}</small>
-              </label>
-              <label class="form-field" :class="{ invalid: assetFieldIssue('model_3d_path') }">
-                <span>3D Model Path (GLB/GLTF)</span>
-                <input class="input" v-model="form.model_3d_path" placeholder="models/character.glb" />
-                <small v-if="assetFieldIssue('model_3d_path')" class="field-warning">{{ assetFieldIssue('model_3d_path')?.message }}</small>
-              </label>
-              <label class="form-field" :class="{ invalid: assetFieldIssue('portrait_path') }">
-                <span>Portrait Image</span>
-                <input class="input" v-model="form.portrait_path" placeholder="assets/portraits/char.png" />
-                <small v-if="assetFieldIssue('portrait_path')" class="field-warning">{{ assetFieldIssue('portrait_path')?.message }}</small>
-              </label>
-              <label class="form-field" :class="{ invalid: assetFieldIssue('sprite_path') }">
-                <span>Fallback Sprite</span>
-                <input class="input" v-model="form.sprite_path" placeholder="assets/sprites/char.png" />
-                <small v-if="assetFieldIssue('sprite_path')" class="field-warning">{{ assetFieldIssue('sprite_path')?.message }}</small>
-              </label>
-            </div>
-            <div class="asset-diagnostics" :class="{ warning: assetIssueCount > 0 }">
+
+          <aside class="preview-column">
+            <section class="preview-section">
+              <div class="preview-header">
+                <div><span class="eyebrow">{{ t('characters.editor.preview', 'Renderer preview') }}</span><strong>{{ form.name || t('characters.editor.new-title', 'New character') }}</strong></div>
+                <span class="preview-mode">{{ rendererPreviewMode }}</span>
+              </div>
+              <div class="renderer-preview-stage">
+                <Live2DCanvas v-if="previewLive2dPath" :model-path="previewLive2dPath" :expression="previewExpression" motion="idle" @load-error="markPreviewRendererAssetFailed" />
+                <CharacterModelView v-else-if="previewModel3dPath" :model-path="previewModel3dPath" :expression="previewExpression" motion="idle" @load-error="markPreviewRendererAssetFailed" />
+                <div v-else-if="previewSpritePath" class="sprite-preview"><img :src="previewSpritePath" :alt="t('characters.editor.preview-alt', '{name} renderer preview', { name: form.name || t('characters.editor.new-title', 'New character') })" /></div>
+                <CharacterModelView v-else :model-path="null" :expression="previewExpression" motion="idle" />
+              </div>
+            </section>
+
+            <section class="asset-diagnostics" :class="{ warning: assetIssueCount > 0 }">
               <div class="asset-diag-head">
-                <span>Asset Contract</span>
+                <span>{{ t('characters.editor.asset-contract', 'Asset contract') }}</span>
                 <strong :class="{ warning: assetIssueCount > 0 }">{{ rendererAssetSummary }}</strong>
               </div>
               <div v-if="assetDiagnostics.length > 0" class="asset-diag-list">
-                <span v-for="diag in assetDiagnostics" :key="diag.key" class="asset-diag-row" :class="diag.state">
-                  <b>{{ diag.label }}</b>
-                  <span>{{ diag.message }}</span>
+                <span v-for="diagnostic in assetDiagnostics" :key="diagnostic.key" class="asset-diag-row" :class="diagnostic.state">
+                  <CheckCircle2 v-if="diagnostic.state === 'ready'" :size="13" />
+                  <TriangleAlert v-else :size="13" />
+                  <b>{{ diagnostic.label }}</b><span>{{ diagnostic.message }}</span>
                 </span>
               </div>
-              <div v-else class="asset-diag-empty">Generated 3D fallback</div>
-            </div>
-          </div>
-          <div class="section">
-            <div class="section-heading">
-              <span class="section-title">Renderer Preview</span>
-              <span class="preview-mode">{{ rendererPreviewMode }}</span>
-            </div>
-            <div class="renderer-preview-stage">
-              <Live2DCanvas
-                v-if="previewLive2dPath"
-                :model-path="previewLive2dPath"
-                :expression="previewExpression"
-                motion="idle"
-                @load-error="markPreviewRendererAssetFailed"
-              />
-              <CharacterModelView
-                v-else-if="previewModel3dPath"
-                :model-path="previewModel3dPath"
-                :expression="previewExpression"
-                motion="idle"
-                @load-error="markPreviewRendererAssetFailed"
-              />
-              <div v-else-if="previewSpritePath" class="sprite-preview">
-                <img :src="previewSpritePath" :alt="form.name || 'Character sprite preview'" />
-              </div>
-              <CharacterModelView
-                v-else
-                :model-path="null"
-                :expression="previewExpression"
-                motion="idle"
-              />
-            </div>
-          </div>
+              <div v-else class="asset-diag-empty"><Sparkles :size="14" />{{ t('characters.editor.generated-fallback', 'Generated 3D fallback ready') }}</div>
+            </section>
+          </aside>
         </div>
 
-        <!-- Personality Tab -->
-        <div v-if="activeTab === 'personality'" class="tab-panel">
-          <div class="section">
-            <span class="section-title">Big Five Personality Traits</span>
-            <p class="section-desc">These traits shape how the LLM generates character responses. Higher values amplify the trait in conversations.</p>
+        <div v-else-if="activeTab === 'personality'" class="tab-panel">
+          <section class="editor-section">
+            <div class="section-heading-copy">
+              <span class="section-title">{{ t('characters.editor.personality-title', 'Big Five personality') }}</span>
+              <p>{{ t('characters.editor.personality-copy', 'These values shape model responses. Higher values amplify the trait in conversation.') }}</p>
+            </div>
             <div class="trait-columns">
               <div class="trait-list">
                 <div v-for="trait in personalityTraits" :key="trait.key" class="trait-item">
-                  <div class="trait-header">
-                    <label>{{ trait.label }}</label>
-                    <span class="trait-val">{{ form[trait.key].toFixed(2) }}</span>
-                  </div>
-                  <input type="range" v-model.number="form[trait.key]" min="0" max="1" step="0.05" />
-                  <p class="trait-desc">{{ trait.desc }}</p>
+                  <div class="trait-header"><label>{{ trait.label }}</label><span class="trait-value">{{ form[trait.key].toFixed(2) }}</span></div>
+                  <input v-model.number="form[trait.key]" type="range" min="0" max="1" step="0.05" />
+                  <p>{{ trait.desc }}</p>
                 </div>
               </div>
-              <div class="radar-chart">
-                <svg viewBox="0 0 260 260" class="radar-svg">
-                  <polygon v-for="ring in 5" :key="ring"
-                    :points="radarRing(ring * 20)"
-                    fill="none" stroke="var(--border)" stroke-width="1"
-                  />
+              <div class="radar-chart" :aria-label="t('characters.personality-chart', 'Personality chart')">
+                <svg viewBox="0 0 260 260" class="radar-svg" role="img">
+                  <polygon v-for="ring in 5" :key="ring" :points="radarRing(ring * 20)" fill="none" stroke="var(--border)" stroke-width="1" />
                   <polygon :points="radarPolygon" fill="rgba(45,212,191,0.18)" stroke="var(--brand)" stroke-width="2" />
-                  <circle v-for="(pt, i) in radarPoints" :key="i" :cx="pt.x" :cy="pt.y" r="4" fill="var(--brand)" />
-                  <text v-for="(label, i) in radarLabels" :key="label"
-                    :x="radarLabelPos(i).x" :y="radarLabelPos(i).y"
-                    text-anchor="middle" fill="var(--text-secondary)" font-size="10" font-weight="700"
-                  >{{ label }}</text>
+                  <circle v-for="(point, index) in radarPoints" :key="index" :cx="point.x" :cy="point.y" r="4" fill="var(--brand)" />
+                  <text v-for="(label, index) in radarLabels" :key="label" :x="radarLabelPos(index).x" :y="radarLabelPos(index).y" text-anchor="middle" fill="var(--text-secondary)" font-size="10" font-weight="700">{{ label }}</text>
                 </svg>
               </div>
             </div>
-          </div>
+          </section>
         </div>
 
-        <!-- Emotions Tab -->
-        <div v-if="activeTab === 'emotions'" class="tab-panel">
-          <div class="section">
-            <span class="section-title">Emotion Configuration</span>
-            <p class="section-desc">Configure how the character expresses different emotions in dialogue and chat.</p>
+        <div v-else-if="activeTab === 'emotions'" class="tab-panel">
+          <section class="editor-section">
+            <div class="section-heading-copy">
+              <span class="section-title">{{ t('characters.editor.emotion-title', 'Emotion voice modifiers') }}</span>
+              <p>{{ t('characters.editor.emotion-copy', 'Describe how each emotion changes the character’s phrasing and rhythm.') }}</p>
+            </div>
             <div class="emotion-grid">
-              <div v-for="em in emotionConfigs" :key="em.name" class="emotion-card">
-                <div class="emotion-header">
-                  <span class="emotion-icon">{{ em.icon }}</span>
-                  <strong>{{ em.name }}</strong>
-                </div>
+              <div v-for="emotion in emotionConfigs" :key="emotion.key" class="emotion-card">
+                <div class="emotion-header"><span class="emotion-icon"><component :is="emotion.icon" :size="17" /></span><strong>{{ emotion.name }}</strong></div>
                 <label class="form-field">
-                  <span>Speech Modifier</span>
-                  <input class="input" v-model="form.emotion_modifiers[em.key]" :placeholder="em.default_modifier" />
+                  <span>{{ t('characters.editor.speech-modifier', 'Speech modifier') }}</span>
+                  <input v-model="form.emotion_modifiers[emotion.key]" class="input" :placeholder="emotion.default_modifier" />
                 </label>
               </div>
             </div>
-          </div>
-          <div class="section">
+          </section>
+
+          <section class="editor-section">
             <div class="section-heading">
-              <span class="section-title">Expression Sprites</span>
-              <button class="btn btn-secondary btn-sm" :disabled="!form.sprite_path.trim()" @click="fillDefaultSpritePaths">Copy Fallback</button>
+              <div class="section-heading-copy"><span class="section-title">{{ t('characters.editor.expression-sprites', 'Expression sprites') }}</span><p>{{ t('characters.editor.expression-copy', 'Override the fallback sprite for individual emotions.') }}</p></div>
+              <button class="btn btn-secondary btn-sm" :disabled="!form.sprite_path.trim()" @click="fillDefaultSpritePaths"><Copy :size="14" />{{ t('characters.editor.copy-fallback', 'Copy fallback') }}</button>
             </div>
             <div class="sprite-path-grid">
-              <label
-                v-for="emotion in emotions"
-                :key="emotion"
-                class="form-field sprite-path-row"
-                :class="{ invalid: spritePathIssue(emotion) }"
-              >
-                <span>{{ emotion }}</span>
-                <input class="input" v-model="form.sprite_paths[emotion]" :placeholder="spritePlaceholder(emotion)" />
-                <small v-if="spritePathIssue(emotion)" class="field-warning">{{ spritePathIssue(emotion)?.message }}</small>
+              <label v-for="emotion in emotionOptions" :key="emotion.value" class="form-field sprite-path-row" :class="{ invalid: spritePathIssue(emotion.value) }">
+                <span>{{ emotion.label }}</span>
+                <input v-model="form.sprite_paths[emotion.value]" class="input mono" :placeholder="spritePlaceholder(emotion.value)" />
+                <small v-if="spritePathIssue(emotion.value)" class="field-warning">{{ spritePathIssue(emotion.value)?.message }}</small>
               </label>
             </div>
-          </div>
+          </section>
         </div>
 
-        <!-- Relationships Tab -->
-        <div v-if="activeTab === 'relationships'" class="tab-panel">
-          <div class="section">
-            <span class="section-title">Default Relationships</span>
-            <p class="section-desc">Set initial relationship scores with other characters. Range from -1.0 (hostile) to 1.0 (close bond).</p>
-            <div class="rel-list">
-              <div v-for="other in otherCharacters" :key="other.id" class="rel-item">
-                <span class="rel-avatar" :style="{ background: avatarColor(other.id) }">{{ initials(other.name) }}</span>
-                <span class="rel-name">{{ other.name }}</span>
-                <input type="range" v-model.number="form.relationships[other.id]" min="-1" max="1" step="0.1" />
-                <span class="rel-val">{{ (form.relationships[other.id] || 0).toFixed(1) }}</span>
-              </div>
-              <p v-if="otherCharacters.length === 0" class="muted">No other characters available. Create more characters first.</p>
+        <div v-else-if="activeTab === 'relationships'" class="tab-panel">
+          <section class="editor-section">
+            <div class="section-heading-copy">
+              <span class="section-title">{{ t('characters.editor.relationship-title', 'Default relationships') }}</span>
+              <p>{{ t('characters.editor.relationship-copy', 'Set initial scores from -1.0 hostile to 1.0 close bond.') }}</p>
             </div>
-          </div>
+            <div class="relationship-list">
+              <div v-for="other in otherCharacters" :key="other.id" class="relationship-row">
+                <span class="relationship-avatar" :style="{ background: avatarColor(other.id) }">{{ initials(other.name) }}</span>
+                <span class="relationship-name"><strong>{{ other.name }}</strong><small>{{ other.id }}</small></span>
+                <input v-model.number="form.relationships[other.id]" type="range" min="-1" max="1" step="0.1" />
+                <span class="relationship-value">{{ (form.relationships[other.id] || 0).toFixed(1) }}</span>
+              </div>
+              <p v-if="otherCharacters.length === 0" class="muted">{{ t('characters.editor.no-relationships', 'Create another character to configure relationships.') }}</p>
+            </div>
+          </section>
         </div>
 
-        <!-- Knowledge Tab -->
-        <div v-if="activeTab === 'knowledge'" class="tab-panel">
-          <div class="section">
-            <span class="section-title">Character Knowledge</span>
-            <p class="section-desc">Define what this character knows. These entries are injected into the LLM context during conversations.</p>
-            <label class="form-field full">
-              <span>Pinned Knowledge Refs</span>
-              <input class="input" v-model="form.knowledge_refs" placeholder="sakura_nature, sakura_art_knowledge" />
+        <div v-else class="tab-panel">
+          <section class="editor-section">
+            <div class="section-heading-copy">
+              <span class="section-title">{{ t('characters.editor.knowledge-title', 'Character knowledge') }}</span>
+              <p>{{ t('characters.editor.knowledge-copy', 'Pin project knowledge and add private facts injected into conversations.') }}</p>
+            </div>
+            <label class="form-field full" :class="{ invalid: missingKnowledgeRefs.length > 0 }">
+              <span>{{ t('characters.editor.pinned-refs', 'Pinned knowledge references') }}</span>
+              <input v-model="form.knowledge_refs" class="input mono" :placeholder="t('characters.editor.pinned-placeholder', 'sakura_nature, sakura_art_knowledge')" />
+              <small v-if="missingKnowledgeRefs.length > 0" class="field-warning">{{ t('characters.editor.missing-refs', 'Unknown knowledge: {ids}', { ids: missingKnowledgeRefs.join(', ') }) }}</small>
+              <small v-else class="field-help">{{ t('characters.editor.pinned-help', 'Pinned entries are placed before search results in model context.') }}</small>
             </label>
-            <div class="knowledge-editor">
-              <div v-for="(entry, i) in form.knowledge_entries" :key="i" class="knowledge-item">
-                <label class="form-field">
-                  <span>Topic</span>
-                  <input class="input" v-model="entry.topic" placeholder="e.g. My hometown" />
-                </label>
-                <label class="form-field full">
-                  <span>Content</span>
-                  <textarea class="input" v-model="entry.content" rows="2" placeholder="What the character knows"></textarea>
-                </label>
-                <button class="btn-icon danger" @click="removeKnowledge(i)" title="Remove">x</button>
-              </div>
-              <button class="btn btn-secondary btn-sm" @click="addKnowledge">+ Add Knowledge Entry</button>
+            <div v-if="knowledgeIds.length > 0" class="knowledge-ref-options" :aria-label="t('characters.editor.available-refs', 'Available knowledge references')">
+              <button v-for="id in knowledgeIds" :key="id" :class="{ selected: parsedKnowledgeRefs.includes(id) }" @click="toggleKnowledgeRef(id)"><BookOpen :size="11" />{{ id }}</button>
             </div>
-          </div>
+          </section>
+
+          <section class="editor-section">
+            <div class="section-heading">
+              <div class="section-heading-copy"><span class="section-title">{{ t('characters.editor.local-knowledge', 'Private knowledge entries') }}</span><p>{{ t('characters.editor.local-knowledge-copy', 'Keep character-specific facts alongside the character definition.') }}</p></div>
+              <button class="btn btn-secondary btn-sm" @click="addKnowledge"><Plus :size="14" />{{ t('characters.editor.add-knowledge', 'Add entry') }}</button>
+            </div>
+            <div class="knowledge-editor">
+              <div v-for="(entry, index) in form.knowledge_entries" :key="index" class="knowledge-item">
+                <label class="form-field">
+                  <span>{{ t('characters.editor.topic', 'Topic') }}</span>
+                  <input v-model="entry.topic" class="input" :placeholder="t('characters.editor.topic-placeholder', 'My hometown')" />
+                </label>
+                <label class="form-field">
+                  <span>{{ t('characters.editor.knowledge-content', 'Content') }}</span>
+                  <textarea v-model="entry.content" class="input" rows="3" :placeholder="t('characters.editor.knowledge-placeholder', 'What this character knows')"></textarea>
+                </label>
+                <button class="icon-command danger" :title="t('characters.editor.remove-knowledge', 'Remove entry')" @click="removeKnowledge(index)"><Trash2 :size="15" /><span class="sr-only">{{ t('characters.editor.remove-knowledge', 'Remove entry') }}</span></button>
+              </div>
+              <div v-if="form.knowledge_entries.length === 0" class="inline-empty"><BookOpen :size="22" /><span>{{ t('characters.editor.no-local-knowledge', 'No private knowledge entries.') }}</span></div>
+            </div>
+          </section>
         </div>
       </div>
     </main>
 
     <main v-else class="editor-empty">
       <div class="empty-state">
-        <span class="empty-mark">CE</span>
-        <h2>Character Editor</h2>
-        <p>Select a character from the list to edit, or create a new one. Configure personality, appearance, knowledge, and relationships.</p>
-        <div class="quick-stats">
-          <span><strong>{{ characterList.length }}</strong> characters loaded</span>
-        </div>
+        <span class="empty-icon"><UserRound :size="28" /></span>
+        <h2>{{ t('characters.editor', 'Character Editor') }}</h2>
+        <p>{{ t('characters.editor.empty-copy', 'Select a character to edit or create a new cast member.') }}</p>
+        <span class="empty-count">{{ t('characters.loaded-count', '{count} characters loaded from project data.', { count: characterList.length }) }}</span>
+        <button class="btn btn-primary btn-sm" @click="requestCreate"><Plus :size="14" />{{ t('characters.create', 'Create Character') }}</button>
       </div>
     </main>
 
     <Transition name="fade">
-      <div v-if="statusMsg" class="status-toast" :class="{ error: !statusOk }" @click="statusMsg = null">
-        {{ statusMsg }}
+      <div v-if="pendingAction" class="modal-backdrop" @click.self="cancelPendingAction">
+        <section class="confirm-dialog" role="dialog" aria-modal="true" :aria-label="confirmationTitle">
+          <span class="confirm-icon"><TriangleAlert :size="18" /></span>
+          <div><span class="eyebrow">{{ t('common.confirm', 'Confirm') }}</span><h2>{{ confirmationTitle }}</h2><p>{{ confirmationCopy }}</p></div>
+          <div class="confirm-actions">
+            <button class="btn btn-secondary btn-sm" :disabled="discarding" @click="cancelPendingAction"><X :size="14" />{{ t('characters.editor.keep-editing', 'Keep editing') }}</button>
+            <button class="btn btn-danger btn-sm" :disabled="discarding" @click="confirmPendingAction">
+              <LoaderCircle v-if="discarding" class="spinner" :size="14" />
+              <RotateCcw v-else-if="pendingAction.kind === 'restore'" :size="14" />
+              <Trash2 v-else :size="14" />
+              {{ confirmationActionLabel }}
+            </button>
+          </div>
+        </section>
       </div>
     </Transition>
+
+    <Transition name="fade"><div v-if="statusMsg" class="status-toast" :class="{ error: !statusOk }" @click="statusMsg = null">{{ statusMsg }}</div></Transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, onMounted, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import {
+  Angry,
+  BookOpen,
+  CheckCircle2,
+  CircleAlert,
+  Copy,
+  Download,
+  EyeOff,
+  Frown,
+  Heart,
+  LoaderCircle,
+  Plus,
+  RotateCcw,
+  Save,
+  Search,
+  SlidersHorizontal,
+  Smile,
+  Sparkles,
+  Trash2,
+  TriangleAlert,
+  UserRound,
+  UsersRound,
+  X,
+} from '@lucide/vue'
 import { useRoute } from 'vue-router'
 import Live2DCanvas from '../components/Live2DCanvas.vue'
 import CharacterModelView from '../components/CharacterModelView.vue'
+import { resolveAssetUrl } from '../lib/assets'
+import { loadKnowledgeAuthoringCatalog } from '../lib/knowledgeContent'
 import {
   cleanRendererPathMap,
   imageAssetExtensions,
@@ -311,7 +385,13 @@ import {
 } from '../lib/rendererAssets'
 import { hasTauriRuntime, invokeCommand } from '../lib/tauri'
 import { useI18n } from '../lib/i18n'
-import { loadStoryCharacters, type StoryCharacterInfo } from '../lib/storyContent'
+import {
+  loadBrowserCharacterDrafts,
+  loadStoryCharacters,
+  resetBrowserCharacterDrafts,
+  saveBrowserCharacterDrafts,
+  type StoryCharacterInfo,
+} from '../lib/storyContent'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -351,6 +431,8 @@ interface CharacterSummary {
   description: string
   emotion: string
   live2d_model_path: string | null
+  portrait_path: string | null
+  sprite_path: string | null
 }
 
 interface AssetDiagnostic {
@@ -360,35 +442,59 @@ interface AssetDiagnostic {
   state: 'ready' | 'warning'
 }
 
+type PendingAction =
+  | { kind: 'select'; characterId: string }
+  | { kind: 'create' }
+  | { kind: 'cancel' }
+  | { kind: 'restore' }
+
 const emotions = ['neutral', 'happy', 'sad', 'angry', 'surprised', 'love', 'embarrassed', 'thoughtful', 'excited', 'anxious']
 
-const personalityTraits = [
-  { key: 'openness', label: 'Openness', desc: 'Curiosity, creativity, and willingness to try new things.' },
-  { key: 'conscientiousness', label: 'Conscientiousness', desc: 'Organization, discipline, and goal-oriented behavior.' },
-  { key: 'extraversion', label: 'Extraversion', desc: 'Sociability, assertiveness, and energy from interactions.' },
-  { key: 'agreeableness', label: 'Agreeableness', desc: 'Compassion, cooperation, and trust toward others.' },
-  { key: 'neuroticism', label: 'Neuroticism', desc: 'Emotional sensitivity, anxiety, and mood variability.' },
-]
+const emotionOptions = computed(() => [
+  { value: 'neutral', label: t('characters.editor.emotion.neutral', 'Neutral') },
+  { value: 'happy', label: t('characters.editor.emotion.happy', 'Happy') },
+  { value: 'sad', label: t('characters.editor.emotion.sad', 'Sad') },
+  { value: 'angry', label: t('characters.editor.emotion.angry', 'Angry') },
+  { value: 'surprised', label: t('characters.editor.emotion.surprised', 'Surprised') },
+  { value: 'love', label: t('characters.editor.emotion.love', 'Love') },
+  { value: 'embarrassed', label: t('characters.editor.emotion.embarrassed', 'Embarrassed') },
+  { value: 'thoughtful', label: t('characters.editor.emotion.thoughtful', 'Thoughtful') },
+  { value: 'excited', label: t('characters.editor.emotion.excited', 'Excited') },
+  { value: 'anxious', label: t('characters.editor.emotion.anxious', 'Anxious') },
+])
 
-const emotionConfigs = [
-  { name: 'Happy', key: 'happy', icon: '\u263A', default_modifier: 'cheerful, upbeat, uses exclamations' },
-  { name: 'Sad', key: 'sad', icon: '\u2639', default_modifier: 'quiet, hesitant, trailing off' },
-  { name: 'Angry', key: 'angry', icon: '\u2620', default_modifier: 'sharp, direct, shorter sentences' },
-  { name: 'Surprised', key: 'surprised', icon: '!', default_modifier: 'exclamatory, questions, disbelief' },
-  { name: 'Love', key: 'love', icon: '\u2665', default_modifier: 'warm, tender, softer tone' },
-  { name: 'Embarrassed', key: 'embarrassed', icon: '~', default_modifier: 'stammering, deflecting, nervous laughter' },
-]
+function emotionLabel(value: string): string {
+  return emotionOptions.value.find(option => option.value === value)?.label || value
+}
 
-const tabs = [
-  { key: 'basic', label: 'Basic Info' },
-  { key: 'personality', label: 'Personality' },
-  { key: 'emotions', label: 'Emotions' },
-  { key: 'relationships', label: 'Relationships' },
-  { key: 'knowledge', label: 'Knowledge' },
-]
+const personalityTraits = computed(() => [
+  { key: 'openness', label: t('characters.trait.openness', 'Openness'), desc: t('characters.editor.trait.openness', 'Curiosity, creativity, and willingness to try new things.') },
+  { key: 'conscientiousness', label: t('characters.trait.conscientiousness', 'Conscientiousness'), desc: t('characters.editor.trait.conscientiousness', 'Organization, discipline, and goal-oriented behavior.') },
+  { key: 'extraversion', label: t('characters.trait.extraversion', 'Extraversion'), desc: t('characters.editor.trait.extraversion', 'Sociability, assertiveness, and energy from interactions.') },
+  { key: 'agreeableness', label: t('characters.trait.agreeableness', 'Agreeableness'), desc: t('characters.editor.trait.agreeableness', 'Compassion, cooperation, and trust toward others.') },
+  { key: 'neuroticism', label: t('characters.trait.neuroticism', 'Neuroticism'), desc: t('characters.editor.trait.neuroticism', 'Emotional sensitivity, anxiety, and mood variability.') },
+])
+
+const emotionConfigs = computed(() => [
+  { name: t('characters.editor.emotion.happy', 'Happy'), key: 'happy', icon: Smile, default_modifier: t('characters.editor.modifier.happy', 'Cheerful, upbeat, uses exclamations') },
+  { name: t('characters.editor.emotion.sad', 'Sad'), key: 'sad', icon: Frown, default_modifier: t('characters.editor.modifier.sad', 'Quiet, hesitant, trailing off') },
+  { name: t('characters.editor.emotion.angry', 'Angry'), key: 'angry', icon: Angry, default_modifier: t('characters.editor.modifier.angry', 'Sharp, direct, shorter sentences') },
+  { name: t('characters.editor.emotion.surprised', 'Surprised'), key: 'surprised', icon: CircleAlert, default_modifier: t('characters.editor.modifier.surprised', 'Exclamatory, questioning, disbelieving') },
+  { name: t('characters.editor.emotion.love', 'Love'), key: 'love', icon: Heart, default_modifier: t('characters.editor.modifier.love', 'Warm, tender, softer tone') },
+  { name: t('characters.editor.emotion.embarrassed', 'Embarrassed'), key: 'embarrassed', icon: EyeOff, default_modifier: t('characters.editor.modifier.embarrassed', 'Stammering, deflecting, nervous laughter') },
+])
+
+const tabs = computed(() => [
+  { key: 'basic', label: t('characters.basic', 'Basic Info'), icon: UserRound },
+  { key: 'personality', label: t('characters.personality', 'Personality'), icon: SlidersHorizontal },
+  { key: 'emotions', label: t('characters.emotions', 'Emotions'), icon: Smile },
+  { key: 'relationships', label: t('characters.relationships', 'Relationships'), icon: UsersRound },
+  { key: 'knowledge', label: t('characters.knowledge', 'Knowledge'), icon: BookOpen },
+])
 
 const characterList = ref<CharacterSummary[]>([])
 const browserCharacters = ref<StoryCharacterInfo[]>([])
+const searchQuery = ref('')
 const selectedId = ref<string | null>(null)
 const editing = ref(false)
 const isNew = ref(false)
@@ -396,6 +502,13 @@ const saving = ref(false)
 const activeTab = ref('basic')
 const statusMsg = ref<string | null>(null)
 const statusOk = ref(true)
+const browserDraft = ref(false)
+const knowledgeIds = ref<string[]>([])
+const knowledgeCatalogLoaded = ref(false)
+const failedCharacterImages = ref<Record<string, true>>({})
+const baselineSnapshot = ref('')
+const pendingAction = ref<PendingAction | null>(null)
+const discarding = ref(false)
 
 const defaultForm = (): CharForm => ({
   id: '', name: '', description: '', background: '', speech_style: '',
@@ -408,30 +521,58 @@ const defaultForm = (): CharForm => ({
 const form = reactive<CharForm>(defaultForm())
 const previewFailedRendererAssets = ref<Record<string, true>>({})
 
+const filteredCharacterList = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase()
+  if (!query) return characterList.value
+  return characterList.value.filter(character => (
+    character.id.toLowerCase().includes(query)
+    || character.name.toLowerCase().includes(query)
+    || character.description.toLowerCase().includes(query)
+  ))
+})
+
 const otherCharacters = computed(() =>
   characterList.value.filter(c => c.id !== form.id)
 )
+
+const parsedKnowledgeRefs = computed(() => splitKnowledgeRefs(form.knowledge_refs))
+const missingKnowledgeRefs = computed(() => knowledgeCatalogLoaded.value
+  ? parsedKnowledgeRefs.value.filter(id => !knowledgeIds.value.includes(id))
+  : [])
+
+const validationMessage = computed(() => {
+  if (!form.id.trim() || !form.name.trim()) return t('characters.editor.validation.required', 'Character ID and name are required.')
+  if (!/^[A-Za-z0-9_-]{1,128}$/.test(form.id.trim())) return t('characters.editor.validation.id', 'ID can use only letters, numbers, underscores, or hyphens.')
+  if (isNew.value && characterList.value.some(character => character.id === form.id.trim())) return t('characters.editor.validation.duplicate', 'This character ID already exists.')
+  if (missingKnowledgeRefs.value.length > 0) return t('characters.editor.validation.knowledge', 'Remove unknown knowledge references before saving.')
+  if (form.knowledge_entries.some(entry => !entry.topic.trim() || !entry.content.trim())) return t('characters.editor.validation.local-knowledge', 'Each private knowledge entry needs a topic and content.')
+  return ''
+})
+const canSave = computed(() => !validationMessage.value)
+const isDirty = computed(() => editing.value
+  && baselineSnapshot.value.length > 0
+  && baselineSnapshot.value !== formSnapshot())
 
 const assetDiagnostics = computed<AssetDiagnostic[]>(() => {
   const diagnostics: AssetDiagnostic[] = []
 
   for (const spec of rendererAssetSpecs) {
     const path = form[spec.key]
-    const message = rendererAssetValidationMessage(path, spec.extensions)
+    const message = localizedAssetValidationMessage(path, spec.extensions)
     if (message) {
-      diagnostics.push({ key: spec.key, label: spec.label, message, state: 'warning' })
+      diagnostics.push({ key: spec.key, label: assetLabel(spec.key), message, state: 'warning' })
     } else if (path.trim()) {
-      diagnostics.push({ key: spec.key, label: spec.label, message: 'Ready', state: 'ready' })
+      diagnostics.push({ key: spec.key, label: assetLabel(spec.key), message: t('characters.editor.asset-ready', 'Ready'), state: 'ready' })
     }
   }
 
   for (const [emotion, path] of Object.entries(cleanSpritePaths(form.sprite_paths))) {
     const key = `sprite_paths.${emotion}`
-    const message = rendererAssetValidationMessage(path, imageAssetExtensions)
+    const message = localizedAssetValidationMessage(path, imageAssetExtensions)
     diagnostics.push({
       key,
-      label: `${emotion} sprite`,
-      message: message || 'Ready',
+      label: t('characters.editor.expression-label', '{emotion} sprite', { emotion }),
+      message: message || t('characters.editor.asset-ready', 'Ready'),
       state: message ? 'warning' : 'ready',
     })
   }
@@ -444,9 +585,11 @@ const assetIssueCount = computed(() =>
 )
 
 const rendererAssetSummary = computed(() => {
-  if (assetIssueCount.value > 0) return `${assetIssueCount.value} warning${assetIssueCount.value === 1 ? '' : 's'}`
+  if (assetIssueCount.value > 0) return t('characters.editor.asset-warnings', '{count} warnings', { count: assetIssueCount.value })
   const declaredCount = assetDiagnostics.value.length
-  return declaredCount > 0 ? `${declaredCount} ready` : 'Fallback ready'
+  return declaredCount > 0
+    ? t('characters.editor.asset-ready-count', '{count} ready', { count: declaredCount })
+    : t('characters.editor.fallback-ready', 'Fallback ready')
 })
 
 const assetIssueMap = computed(() => {
@@ -491,14 +634,49 @@ const previewSpritePath = computed(() =>
 const rendererPreviewMode = computed(() => {
   if (rendererPreviewAsset.value.mode === 'live2d') return 'Live2D'
   if (rendererPreviewAsset.value.mode === 'model3d') return '3D'
-  if (rendererPreviewAsset.value.mode === 'sprite') return 'Sprite'
-  return 'Generated 3D'
+  if (rendererPreviewAsset.value.mode === 'sprite') return t('characters.editor.mode.sprite', 'Sprite')
+  return t('characters.editor.mode.generated', 'Generated 3D')
 })
+
+const confirmationTitle = computed(() => pendingAction.value?.kind === 'restore'
+  ? t('characters.editor.restore-title', 'Restore project characters?')
+  : t('characters.editor.discard-title', 'Discard unsaved changes?'))
+const confirmationCopy = computed(() => pendingAction.value?.kind === 'restore'
+  ? t('characters.editor.restore-copy', 'Browser character drafts will be removed and project files loaded again.')
+  : t('characters.editor.discard-copy', 'Your changes to this character have not been saved.'))
+const confirmationActionLabel = computed(() => pendingAction.value?.kind === 'restore'
+  ? t('characters.editor.restore-project', 'Restore project')
+  : t('characters.editor.discard', 'Discard changes'))
 
 function markPreviewRendererAssetFailed(payload: { path: string | null; message: string }) {
   const path = payload.path?.trim()
   if (!path) return
   previewFailedRendererAssets.value = { ...previewFailedRendererAssets.value, [path]: true }
+}
+
+function assetLabel(key: RendererAssetSpec['key']): string {
+  const labels: Record<RendererAssetSpec['key'], string> = {
+    live2d_model_path: 'Live2D',
+    model_3d_path: '3D',
+    portrait_path: t('characters.editor.asset.portrait', 'Portrait'),
+    sprite_path: t('characters.editor.asset.sprite', 'Fallback sprite'),
+  }
+  return labels[key]
+}
+
+function localizedAssetValidationMessage(path: string, extensions: string[]): string | null {
+  const message = rendererAssetValidationMessage(path, extensions)
+  if (!message) return null
+  if (message.startsWith('Expected ')) {
+    return t('characters.editor.asset.expected', 'Expected {extensions}', { extensions: extensions.join(', ') })
+  }
+  const messages: Record<string, string> = {
+    'Absolute paths are not portable': t('characters.editor.asset.absolute', 'Absolute paths are not portable.'),
+    'Use a project-relative path': t('characters.editor.asset.relative', 'Use a project-relative path.'),
+    'Parent traversal is not allowed': t('characters.editor.asset.traversal', 'Parent traversal is not allowed.'),
+    'Path segments must be portable': t('characters.editor.asset.portable', 'Path segments must be portable.'),
+  }
+  return messages[message] || message
 }
 
 watch(
@@ -549,6 +727,15 @@ function avatarColor(id: string): string {
   return 'hsl(' + hue + ', 55%, 45%)'
 }
 
+function characterImage(character: CharacterSummary): string | null {
+  if (failedCharacterImages.value[character.id]) return null
+  return resolveAssetUrl(character.portrait_path || character.sprite_path)
+}
+
+function markCharacterImageFailed(characterId: string) {
+  failedCharacterImages.value = { ...failedCharacterImages.value, [characterId]: true }
+}
+
 function initials(name: string): string {
   return name.trim().slice(0, 2).toUpperCase() || '??'
 }
@@ -587,139 +774,128 @@ function spritePathIssue(emotion: string): AssetDiagnostic | undefined {
 
 function resetForm() {
   Object.assign(form, defaultForm())
+  previewFailedRendererAssets.value = {}
 }
 
 function createNew() {
   resetForm()
+  selectedId.value = null
   isNew.value = true
   editing.value = true
   activeTab.value = 'basic'
+  setBaseline()
 }
 
-function cancelEdit() {
+function closeEditor() {
   editing.value = false
   isNew.value = false
   selectedId.value = null
+  baselineSnapshot.value = ''
 }
 
 async function loadList() {
   try {
     const characters = await loadStoryCharacters()
     browserCharacters.value = characters
+    browserDraft.value = !hasTauriRuntime() && loadBrowserCharacterDrafts() !== null
     characterList.value = characters.map(character => ({
       id: character.id,
       name: character.name,
       description: character.description,
       emotion: character.emotion,
       live2d_model_path: character.live2d_model_path ?? null,
+      portrait_path: character.portrait_path ?? null,
+      sprite_path: character.sprite_path ?? null,
     }))
   } catch (e) {
-    console.error('Failed to load characters:', e)
+    notify('error', t('characters.editor.notice.load-failed', 'Characters could not be loaded: {error}', { error: String(e) }))
+  }
+}
+
+async function loadKnowledgeIds() {
+  try {
+    const catalog = await loadKnowledgeAuthoringCatalog()
+    knowledgeIds.value = catalog.entries.map(entry => entry.id).sort()
+    knowledgeCatalogLoaded.value = true
+  } catch {
+    knowledgeIds.value = []
+    knowledgeCatalogLoaded.value = false
   }
 }
 
 async function selectChar(id: string) {
   try {
-    const c = hasTauriRuntime()
-      ? await invokeCommand<any>('get_character', { characterId: id })
+    const character = hasTauriRuntime()
+      ? await invokeCommand<StoryCharacterInfo>('get_character', { characterId: id })
       : browserCharacters.value.find(character => character.id === id)
-    if (!c) return
+    if (!character) return
+    resetForm()
     selectedId.value = id
     isNew.value = false
     Object.assign(form, {
-      id: c.id, name: c.name || '', description: c.description || '',
-      background: c.background || '', speech_style: c.personality?.speech_style || '',
-      default_emotion: c.emotion || 'neutral',
-      live2d_model_path: c.live2d_model_path || '', model_3d_path: c.model_3d_path || '',
-      portrait_path: c.portrait_path || '', sprite_path: c.sprite_path || '',
-      sprite_paths: normalizeSpritePaths(c.sprite_paths),
-      openness: c.personality?.openness ?? 0.5,
-      conscientiousness: c.personality?.conscientiousness ?? 0.5,
-      extraversion: c.personality?.extraversion ?? 0.5,
-      agreeableness: c.personality?.agreeableness ?? 0.5,
-      neuroticism: c.personality?.neuroticism ?? 0.5,
-      relationships: c.relationships || {},
-      knowledge_entries: c.knowledge_entries || [],
-      knowledge_refs: (c.knowledge_refs || c.knowledge || []).join(', '),
-      emotion_modifiers: c.emotion_modifiers || {},
+      id: character.id,
+      name: character.name || '',
+      description: character.description || '',
+      background: character.background || '',
+      speech_style: String(character.personality?.speech_style || ''),
+      default_emotion: character.emotion || 'neutral',
+      live2d_model_path: character.live2d_model_path || '',
+      model_3d_path: character.model_3d_path || '',
+      portrait_path: character.portrait_path || '',
+      sprite_path: character.sprite_path || '',
+      sprite_paths: normalizeSpritePaths(character.sprite_paths),
+      openness: Number(character.personality?.openness ?? 0.5),
+      conscientiousness: Number(character.personality?.conscientiousness ?? 0.5),
+      extraversion: Number(character.personality?.extraversion ?? 0.5),
+      agreeableness: Number(character.personality?.agreeableness ?? 0.5),
+      neuroticism: Number(character.personality?.neuroticism ?? 0.5),
+      relationships: cloneRecord(character.relationships),
+      knowledge_entries: cloneKnowledgeEntries(character.knowledge_entries),
+      knowledge_refs: (character.knowledge_refs || character.knowledge || []).join(', '),
+      emotion_modifiers: cloneStringRecord(character.emotion_modifiers),
     })
     editing.value = true
     activeTab.value = 'basic'
+    setBaseline()
   } catch (e) {
-    statusMsg.value = 'Failed to load character: ' + String(e)
-    statusOk.value = false
+    notify('error', t('characters.editor.notice.character-failed', 'Character could not be loaded: {error}', { error: String(e) }))
   }
 }
 
 async function save() {
-  if (!form.id.trim() || !form.name.trim()) {
-    statusMsg.value = 'ID and Name are required'
-    statusOk.value = false
+  if (!canSave.value) {
+    notify('error', validationMessage.value)
     return
   }
   saving.value = true
   try {
-    await invokeCommand('create_character', {
-      input: {
-        id: form.id,
-        name: form.name,
-        description: form.description,
-        background: form.background,
-        personality: {
-          openness: form.openness,
-          conscientiousness: form.conscientiousness,
-          extraversion: form.extraversion,
-          agreeableness: form.agreeableness,
-          neuroticism: form.neuroticism,
-          speech_style: form.speech_style,
-        },
-        default_emotion: form.default_emotion,
-        live2d_model_path: form.live2d_model_path || null,
-        model_3d_path: form.model_3d_path || null,
-        portrait_path: form.portrait_path || null,
-        sprite_path: form.sprite_path || null,
-        sprite_paths: cleanSpritePaths(form.sprite_paths),
-        relationships: form.relationships,
-        knowledge_entries: form.knowledge_entries,
-        knowledge_refs: splitKnowledgeRefs(form.knowledge_refs),
-        emotion_modifiers: form.emotion_modifiers,
-      }
-    })
-    statusMsg.value = assetIssueCount.value > 0
-      ? 'Character "' + form.name + '" saved with ' + assetIssueCount.value + ' asset warning(s)'
-      : 'Character "' + form.name + '" saved'
-    statusOk.value = assetIssueCount.value === 0
-    editing.value = false
+    const character = characterPayload()
+    if (hasTauriRuntime()) {
+      await invokeCommand('create_character', {
+        input: { ...character, default_emotion: character.emotion },
+      })
+    } else {
+      const characters = browserCharacters.value.filter(item => item.id !== character.id)
+      characters.push(character)
+      saveBrowserCharacterDrafts(characters)
+      browserDraft.value = true
+    }
     isNew.value = false
+    selectedId.value = character.id
     await loadList()
+    await selectChar(character.id)
+    notify('success', assetIssueCount.value > 0
+      ? t('characters.editor.notice.saved-warning', 'Character "{name}" saved with {count} asset warnings.', { name: character.name, count: assetIssueCount.value })
+      : t('characters.editor.notice.saved', 'Character "{name}" saved.', { name: character.name }))
   } catch (e) {
-    statusMsg.value = 'Save failed: ' + String(e)
-    statusOk.value = false
+    notify('error', t('characters.editor.notice.save-failed', 'Character could not be saved: {error}', { error: String(e) }))
   } finally {
     saving.value = false
   }
 }
 
 function exportChar() {
-  const data = {
-    id: form.id, name: form.name, description: form.description,
-    background: form.background,
-    personality: {
-      openness: form.openness, conscientiousness: form.conscientiousness,
-      extraversion: form.extraversion, agreeableness: form.agreeableness,
-      neuroticism: form.neuroticism, speech_style: form.speech_style,
-    },
-    emotion: form.default_emotion,
-    live2d_model_path: form.live2d_model_path || null,
-    model_3d_path: form.model_3d_path || null,
-    portrait_path: form.portrait_path || null,
-    sprite_path: form.sprite_path || null,
-    sprite_paths: cleanSpritePaths(form.sprite_paths),
-    relationships: form.relationships,
-    knowledge_entries: form.knowledge_entries,
-    knowledge_refs: splitKnowledgeRefs(form.knowledge_refs),
-    emotion_modifiers: form.emotion_modifiers,
-  }
+  const data = characterPayload()
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -727,10 +903,9 @@ function exportChar() {
   a.download = (form.id || 'character') + '.json'
   a.click()
   URL.revokeObjectURL(url)
-  statusMsg.value = assetIssueCount.value > 0
-    ? 'Exported with ' + assetIssueCount.value + ' asset warning(s)'
-    : 'Character JSON exported'
-  statusOk.value = assetIssueCount.value === 0
+  notify('success', assetIssueCount.value > 0
+    ? t('characters.editor.notice.export-warning', 'JSON exported with {count} asset warnings.', { count: assetIssueCount.value })
+    : t('characters.editor.notice.exported', 'Character JSON exported.'))
 }
 
 function addKnowledge() {
@@ -742,688 +917,329 @@ function removeKnowledge(i: number) {
 }
 
 function splitKnowledgeRefs(value: string): string[] {
-  return value.split(',')
+  return [...new Set(value.split(',')
     .map(ref => ref.trim())
-    .filter(Boolean)
+    .filter(Boolean))]
+}
+
+function toggleKnowledgeRef(id: string) {
+  const refs = new Set(parsedKnowledgeRefs.value)
+  if (refs.has(id)) refs.delete(id)
+  else refs.add(id)
+  form.knowledge_refs = [...refs].join(', ')
+}
+
+function characterPayload(): StoryCharacterInfo {
+  return {
+    id: form.id.trim(),
+    name: form.name.trim(),
+    description: form.description.trim(),
+    background: form.background.trim(),
+    personality: {
+      openness: clampTrait(form.openness),
+      conscientiousness: clampTrait(form.conscientiousness),
+      extraversion: clampTrait(form.extraversion),
+      agreeableness: clampTrait(form.agreeableness),
+      neuroticism: clampTrait(form.neuroticism),
+      speech_style: form.speech_style.trim(),
+    },
+    emotion: form.default_emotion || 'neutral',
+    live2d_model_path: form.live2d_model_path.trim() || null,
+    model_3d_path: form.model_3d_path.trim() || null,
+    portrait_path: form.portrait_path.trim() || null,
+    sprite_path: form.sprite_path.trim() || null,
+    sprite_paths: cleanSpritePaths(form.sprite_paths),
+    relationships: Object.fromEntries(Object.entries(form.relationships).map(([id, score]) => [id, Math.max(-1, Math.min(1, Number(score) || 0))])),
+    knowledge_entries: form.knowledge_entries.map(entry => ({ topic: entry.topic.trim(), content: entry.content.trim() })),
+    knowledge_refs: parsedKnowledgeRefs.value,
+    emotion_modifiers: cloneStringRecord(form.emotion_modifiers),
+  }
+}
+
+function formSnapshot(): string {
+  return JSON.stringify(characterPayload())
+}
+
+function setBaseline() {
+  baselineSnapshot.value = formSnapshot()
+}
+
+function clampTrait(value: number): number {
+  return Math.max(0, Math.min(1, Number(value) || 0))
+}
+
+function cloneRecord(value: Record<string, number> | undefined): Record<string, number> {
+  return value ? { ...value } : {}
+}
+
+function cloneStringRecord(value: Record<string, string> | undefined): Record<string, string> {
+  if (!value) return {}
+  return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, String(item)]))
+}
+
+function cloneKnowledgeEntries(value: KnowledgeEntry[] | undefined): KnowledgeEntry[] {
+  return (value || []).map(entry => ({ topic: String(entry.topic || ''), content: String(entry.content || '') }))
+}
+
+function requestSelect(characterId: string) {
+  if (selectedId.value === characterId && editing.value) return
+  if (isDirty.value) pendingAction.value = { kind: 'select', characterId }
+  else void selectChar(characterId)
+}
+
+function requestCreate() {
+  if (isDirty.value) pendingAction.value = { kind: 'create' }
+  else createNew()
+}
+
+function requestCancel() {
+  if (isDirty.value) pendingAction.value = { kind: 'cancel' }
+  else closeEditor()
+}
+
+function requestRestoreProject() {
+  pendingAction.value = { kind: 'restore' }
+}
+
+function cancelPendingAction() {
+  if (!discarding.value) pendingAction.value = null
+}
+
+async function confirmPendingAction() {
+  const action = pendingAction.value
+  if (!action || discarding.value) return
+  discarding.value = true
+  try {
+    pendingAction.value = null
+    if (action.kind === 'select') await selectChar(action.characterId)
+    if (action.kind === 'create') createNew()
+    if (action.kind === 'cancel') closeEditor()
+    if (action.kind === 'restore') {
+      const previousId = selectedId.value
+      resetBrowserCharacterDrafts()
+      browserDraft.value = false
+      await loadList()
+      if (previousId && characterList.value.some(character => character.id === previousId)) await selectChar(previousId)
+      else if (characterList.value.length > 0) await selectChar(characterList.value[0].id)
+      else createNew()
+      notify('success', t('characters.editor.notice.restored', 'Project characters restored.'))
+    }
+  } catch (error) {
+    notify('error', t('characters.editor.notice.restore-failed', 'Project characters could not be restored: {error}', { error: String(error) }))
+  } finally {
+    discarding.value = false
+  }
+}
+
+function notify(type: 'success' | 'error', message: string) {
+  statusOk.value = type === 'success'
+  statusMsg.value = message
 }
 
 onMounted(async () => {
-  await loadList()
+  await Promise.all([loadList(), loadKnowledgeIds()])
   if (route.query.create === '1') {
     createNew()
     return
   }
   const requestedCharacter = typeof route.query.character === 'string' ? route.query.character : ''
-  if (requestedCharacter) await selectChar(requestedCharacter)
+  if (requestedCharacter && characterList.value.some(character => character.id === requestedCharacter)) {
+    await selectChar(requestedCharacter)
+    return
+  }
+  if (characterList.value.length > 0) await selectChar(characterList.value[0].id)
+  else createNew()
 })
 </script>
 
 <style scoped>
-.editor-workbench {
-  display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
-  height: 100vh;
-  min-height: 0;
-  background: var(--surface-0);
-}
-
-.char-rail {
-  display: flex;
-  flex-direction: column;
-  border-right: 1px solid var(--border);
-  background: var(--surface-1);
-}
-
-.rail-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 16px 16px;
-  border-bottom: 1px solid var(--border);
-}
-
-.rail-header h1 {
-  color: var(--text-primary);
-  font-size: 20px;
-  font-weight: 750;
-  margin-top: 3px;
-}
-
-.eyebrow {
-  display: block;
-  color: var(--text-tertiary);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0;
-  text-transform: uppercase;
-}
-
-.char-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px;
-}
-
-.char-card {
-  width: 100%;
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  padding: 12px;
-  margin-bottom: 6px;
-  border: 1px solid transparent;
-  border-radius: var(--radius);
-  background: transparent;
-  color: var(--text-primary);
-  cursor: pointer;
-  text-align: left;
-  transition: background var(--transition-fast), border-color var(--transition-fast);
-}
-
-.char-card:hover, .char-card.selected {
-  background: var(--surface-2);
-  border-color: var(--border-light);
-}
-
-.char-card.selected {
-  border-color: var(--brand);
-}
-
-.avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: var(--radius-sm);
-  color: white;
-  font-weight: 800;
-  font-size: 13px;
-  flex-shrink: 0;
-}
-
-.char-info {
-  min-width: 0;
-  flex: 1;
-  display: grid;
-  gap: 2px;
-}
-
-.char-info strong {
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.char-info small {
-  overflow: hidden;
-  color: var(--text-tertiary);
-  font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.char-emotion {
-  font-size: 11px;
-  color: var(--text-tertiary);
-  padding: 2px 8px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  flex-shrink: 0;
-}
-
-.empty-list {
-  display: grid;
-  place-items: center;
-  gap: 8px;
-  padding: 40px 20px;
-  color: var(--text-tertiary);
-  text-align: center;
-}
-
-.empty-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 42px;
-  height: 42px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface-2);
-  color: var(--brand-light);
-  font-family: var(--font-mono);
-  font-weight: 900;
-}
-
-.editor-main {
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.editor-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 24px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface-1);
-}
-
-.toolbar-left h2 {
-  color: var(--text-primary);
-  font-size: 18px;
-  font-weight: 750;
-  margin-top: 2px;
-}
-
-.toolbar-right {
-  display: flex;
-  gap: 8px;
-}
-
-.editor-tabs {
-  display: flex;
-  gap: 2px;
-  padding: 0 24px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface-1);
-}
-
-.tab-btn {
-  padding: 10px 16px;
-  border: none;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 13px;
-  transition: color var(--transition-fast), border-color var(--transition-fast);
-}
-
-.tab-btn:hover {
-  color: var(--text-primary);
-}
-
-.tab-btn.active {
-  color: var(--brand-light);
-  border-bottom-color: var(--brand);
-}
-
-.editor-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 24px;
-}
-
-.tab-panel {
-  display: grid;
-  gap: 28px;
-  max-width: 880px;
-}
-
-.section-title {
-  display: block;
-  color: var(--text-primary);
-  font-size: 15px;
-  font-weight: 750;
-  margin-bottom: 14px;
-}
-
-.section-desc {
-  color: var(--text-tertiary);
-  font-size: 12px;
-  margin-bottom: 16px;
-  line-height: 1.5;
-}
-
-.section-heading {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
-}
-
-.section-heading .section-title {
-  margin-bottom: 0;
-}
-
-.preview-mode {
-  display: inline-flex;
-  align-items: center;
-  min-height: 26px;
-  padding: 4px 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  color: var(--brand-light);
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.renderer-preview-stage {
-  position: relative;
-  height: 360px;
-  min-height: 360px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background:
-    linear-gradient(180deg, rgba(45,212,191,0.08), transparent 52%),
-    var(--surface-0);
-}
-
-.sprite-preview {
-  display: grid;
-  place-items: end center;
-  width: 100%;
-  height: 100%;
-  padding: 20px;
-}
-
-.sprite-preview img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  filter: drop-shadow(0 18px 28px rgba(0,0,0,0.34));
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-
-.form-grid .full {
-  grid-column: 1 / -1;
-}
-
-.form-field {
-  display: grid;
-  gap: 6px;
-}
-
-.form-field span {
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.form-field.invalid .input {
-  border-color: var(--warning);
-}
-
-.field-warning {
-  color: var(--warning);
-  font-size: 11px;
-  font-weight: 650;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
-}
-
-.asset-diagnostics {
-  display: grid;
-  gap: 10px;
-  margin-top: 14px;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface-1);
-}
-
-.asset-diagnostics.warning {
-  border-color: rgba(245,158,11,0.42);
-}
-
-.asset-diag-head,
-.asset-diag-row {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.asset-diag-head span {
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.asset-diag-head strong {
-  color: var(--success);
-  font-size: 12px;
-}
-
-.asset-diag-head strong.warning {
-  color: var(--warning);
-}
-
-.asset-diag-list {
-  display: grid;
-  gap: 6px;
-}
-
-.asset-diag-row {
-  min-height: 28px;
-  padding: 6px 8px;
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-}
-
-.asset-diag-row b {
-  flex-shrink: 0;
-  color: var(--text-secondary);
-  font-size: 11px;
-}
-
-.asset-diag-row span {
-  min-width: 0;
-  color: var(--text-tertiary);
-  font-size: 11px;
-  overflow-wrap: anywhere;
-  text-align: right;
-}
-
-.asset-diag-row.warning b,
-.asset-diag-row.warning span {
-  color: var(--warning);
-}
-
-.asset-diag-empty {
-  color: var(--text-tertiary);
-  font-size: 12px;
-}
-
-.trait-columns {
-  display: grid;
-  grid-template-columns: 1fr 280px;
-  gap: 24px;
-  align-items: start;
-}
-
-.trait-list {
-  display: grid;
-  gap: 14px;
-}
-
-.trait-item {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px;
-  background: var(--surface-1);
-}
-
-.trait-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.trait-header label {
-  color: var(--text-primary);
-  font-weight: 700;
-  font-size: 13px;
-}
-
-.trait-val {
-  color: var(--brand-light);
-  font-family: var(--font-mono);
-  font-size: 14px;
-  font-weight: 800;
-}
-
-.trait-item input[type='range'] {
-  width: 100%;
-  accent-color: var(--brand);
-}
-
-.trait-desc {
-  color: var(--text-tertiary);
-  font-size: 11px;
-  margin-top: 6px;
-  line-height: 1.4;
-}
-
-.radar-chart {
-  display: flex;
-  justify-content: center;
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface-1);
-}
-
-.radar-svg {
-  width: 260px;
-  height: 260px;
-}
-
-.emotion-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 14px;
-}
-
-.emotion-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px;
-  background: var(--surface-1);
-}
-
-.emotion-header {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.emotion-icon {
-  font-size: 18px;
-  color: var(--brand-light);
-}
-
-.emotion-header strong {
-  font-size: 13px;
-}
-
-.sprite-path-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 12px;
-}
-
-.sprite-path-row {
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface-1);
-}
-
-.rel-list {
-  display: grid;
-  gap: 12px;
-}
-
-.rel-item {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface-1);
-}
-
-.rel-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 800;
-  font-size: 11px;
-  flex-shrink: 0;
-}
-
-.rel-name {
-  min-width: 100px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.rel-item input[type='range'] {
-  flex: 1;
-  accent-color: var(--brand);
-}
-
-.rel-val {
-  width: 36px;
-  text-align: right;
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--brand-light);
-}
-
-.muted {
-  color: var(--text-tertiary);
-  font-size: 13px;
-}
-
-.knowledge-editor {
-  display: grid;
-  gap: 14px;
-}
-
-.knowledge-item {
-  display: grid;
-  grid-template-columns: 200px 1fr auto;
-  gap: 12px;
-  align-items: start;
-  padding: 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface-1);
-}
-
-.knowledge-item .full {
-  grid-column: 2;
-}
-
-.btn-icon {
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-weight: 800;
-}
-
-.btn-icon.danger:hover {
-  border-color: var(--danger);
-  color: var(--danger);
-}
-
-.editor-empty {
-  display: grid;
-  place-items: center;
-  padding: 40px;
-}
-
-.empty-state {
-  text-align: center;
-  max-width: 460px;
-}
-
-.empty-state h2 {
-  color: var(--text-primary);
-  font-size: 24px;
-  margin-top: 16px;
-}
-
-.empty-state p {
-  color: var(--text-tertiary);
-  font-size: 13px;
-  margin-top: 8px;
-  line-height: 1.6;
-}
-
-.quick-stats {
-  margin-top: 20px;
-  color: var(--text-secondary);
-  font-size: 13px;
-}
-
-.quick-stats strong {
-  color: var(--brand-light);
-  font-size: 18px;
-}
-
-.status-toast {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  min-width: 300px;
-  padding: 12px 18px;
-  border: 1px solid rgba(45,212,191,0.36);
-  border-radius: var(--radius);
-  background: rgba(15,118,110,0.96);
-  color: white;
-  font-size: 13px;
-  font-weight: 600;
-  text-align: center;
-  z-index: 100;
-  box-shadow: var(--shadow-lg);
-  cursor: pointer;
-}
-
-.status-toast.error {
-  border-color: rgba(239,68,68,0.42);
-  background: rgba(127,29,29,0.96);
-}
-
-.fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
+.character-workbench { display: grid; grid-template-columns: 276px minmax(0, 1fr); height: calc(100svh - 56px); min-height: 0; overflow: hidden; background: var(--surface-0); }
+.character-browser { display: flex; min-width: 0; min-height: 0; flex-direction: column; border-right: 1px solid var(--border); background: var(--surface-1); }
+.browser-header { display: flex; min-height: 86px; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 17px 14px 12px; }
+.browser-header h1 { margin: 3px 0 0; color: var(--text-primary); font-size: 20px; line-height: 1.15; }
+.browser-header p { margin: 4px 0 0; color: var(--text-tertiary); font-size: 10px; }
+.eyebrow { display: block; color: var(--text-tertiary); font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.icon-command { display: inline-grid; width: 34px; height: 34px; flex: 0 0 34px; place-items: center; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text-secondary); cursor: pointer; }
+.icon-command:hover { border-color: var(--border-strong); color: var(--text-primary); }
+.icon-command.primary { border-color: var(--brand); background: var(--brand); color: var(--surface-0); }
+.icon-command.danger:hover { border-color: var(--danger); color: var(--danger); }
+.browser-search { display: flex; height: 34px; align-items: center; gap: 7px; margin: 0 10px 8px; padding: 0 9px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-0); color: var(--text-tertiary); }
+.browser-search:focus-within { border-color: var(--brand); color: var(--brand-light); }
+.browser-search input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: var(--text-primary); font: inherit; font-size: 11px; }
+.character-list { flex: 1; min-height: 0; overflow-y: auto; padding: 2px 8px 10px; }
+.character-row { display: grid; width: 100%; min-height: 62px; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: center; gap: 9px; margin-bottom: 4px; padding: 8px; border: 1px solid transparent; border-radius: var(--radius); background: transparent; color: inherit; cursor: pointer; font: inherit; text-align: left; }
+.character-row:hover { background: var(--surface-2); }
+.character-row.selected { border-color: color-mix(in srgb, var(--brand) 65%, var(--border)); background: var(--selection); }
+.avatar { display: inline-flex; width: 38px; height: 38px; flex: 0 0 38px; align-items: center; justify-content: center; overflow: hidden; border-radius: var(--radius-sm); color: white; font-size: 11px; font-weight: 850; }
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+.character-copy { display: grid; min-width: 0; gap: 3px; }
+.character-copy strong { overflow: hidden; color: var(--text-primary); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.character-copy small { overflow: hidden; color: var(--text-tertiary); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.emotion-chip { max-width: 68px; overflow: hidden; padding: 3px 6px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-tertiary); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.empty-list { display: grid; min-height: 220px; place-items: center; align-content: center; gap: 7px; padding: 20px; color: var(--text-tertiary); text-align: center; }
+.empty-list strong { color: var(--text-secondary); font-size: 12px; }
+.empty-list span { font-size: 10px; line-height: 1.5; }
+.browser-draft-bar { display: flex; min-height: 44px; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 10px; border-top: 1px solid var(--border); background: var(--surface-2); }
+.browser-draft-bar span { display: flex; min-width: 0; align-items: center; gap: 5px; color: var(--warning); font-size: 9px; }
+.browser-draft-bar button { flex: 0 0 auto; border: 0; background: transparent; color: var(--brand-light); cursor: pointer; font: inherit; font-size: 9px; font-weight: 750; }
+.character-editor { display: flex; min-width: 0; min-height: 0; flex-direction: column; overflow: hidden; }
+.editor-toolbar { display: flex; min-height: 66px; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 18px; border-bottom: 1px solid var(--border); background: var(--surface-1); }
+.editor-title { display: flex; min-width: 0; align-items: center; gap: 10px; }
+.editor-title > div { display: flex; min-width: 0; align-items: baseline; gap: 8px; }
+.editor-title h2 { overflow: hidden; margin: 0; color: var(--text-primary); font-size: 17px; text-overflow: ellipsis; white-space: nowrap; }
+.editor-title code { overflow: hidden; max-width: 180px; color: var(--text-tertiary); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.editor-title > .eyebrow { display: none; }
+.dirty-chip { flex: 0 0 auto; padding: 3px 7px; border: 1px solid color-mix(in srgb, var(--warning) 45%, var(--border)); border-radius: 999px; color: var(--warning); font-size: 8px; font-weight: 800; text-transform: uppercase; }
+.toolbar-actions { display: flex; flex: 0 0 auto; gap: 7px; }
+.toolbar-actions .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.editor-tabs { display: flex; min-height: 42px; flex: 0 0 auto; gap: 2px; overflow-x: auto; padding: 0 18px; border-bottom: 1px solid var(--border); background: var(--surface-1); scrollbar-width: none; }
+.editor-tabs::-webkit-scrollbar { display: none; }
+.tab-button { display: inline-flex; min-width: max-content; align-items: center; gap: 6px; padding: 10px 12px 8px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--text-secondary); cursor: pointer; font: inherit; font-size: 10px; font-weight: 750; }
+.tab-button:hover { color: var(--text-primary); }
+.tab-button.active { border-bottom-color: var(--brand); color: var(--brand-light); }
+.validation-banner { display: flex; min-height: 34px; align-items: center; gap: 7px; margin: 0; padding: 7px 18px; border-bottom: 1px solid color-mix(in srgb, var(--warning) 35%, var(--border)); background: color-mix(in srgb, var(--warning) 8%, transparent); color: var(--warning); font-size: 10px; }
+.editor-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 22px 24px 44px; }
+.tab-panel { display: grid; width: min(1120px, 100%); gap: 26px; margin: 0 auto; }
+.basic-panel { grid-template-columns: minmax(0, 1fr) 350px; align-items: start; }
+.basic-form { display: grid; gap: 28px; min-width: 0; }
+.editor-section { min-width: 0; padding-bottom: 26px; border-bottom: 1px solid var(--border); }
+.editor-section:last-child { border-bottom: 0; }
+.section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.section-heading-copy { margin-bottom: 14px; }
+.section-heading .section-heading-copy { margin-bottom: 0; }
+.section-title { display: block; color: var(--text-primary); font-size: 14px; font-weight: 800; }
+.section-heading-copy p { max-width: 680px; margin: 5px 0 0; color: var(--text-tertiary); font-size: 10px; line-height: 1.55; }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
+.form-grid .full { grid-column: 1 / -1; }
+.form-field { display: grid; min-width: 0; gap: 6px; }
+.form-field > span { color: var(--text-secondary); font-size: 10px; font-weight: 750; }
+.form-field.invalid .input { border-color: var(--warning); }
+.field-warning, .field-help { color: var(--warning); font-size: 9px; line-height: 1.4; overflow-wrap: anywhere; }
+.field-help { color: var(--text-tertiary); }
+.mono { font-family: var(--font-mono); }
+.preview-column { position: sticky; top: 0; display: grid; gap: 13px; min-width: 0; }
+.preview-section { overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); }
+.preview-header { display: flex; min-height: 54px; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.preview-header strong { display: block; max-width: 200px; margin-top: 3px; overflow: hidden; color: var(--text-primary); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.preview-mode { flex: 0 0 auto; padding: 4px 7px; border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--brand-light); font-size: 8px; font-weight: 850; text-transform: uppercase; }
+.renderer-preview-stage { position: relative; width: 100%; height: 390px; overflow: hidden; background: var(--surface-0); }
+.sprite-preview { display: grid; width: 100%; height: 100%; place-items: end center; padding: 18px; }
+.sprite-preview img { max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 16px 24px rgba(0, 0, 0, 0.32)); }
+.asset-diagnostics { display: grid; gap: 8px; padding: 11px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); }
+.asset-diagnostics.warning { border-color: color-mix(in srgb, var(--warning) 45%, var(--border)); }
+.asset-diag-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.asset-diag-head span, .asset-diag-head strong { font-size: 9px; font-weight: 800; }
+.asset-diag-head span { color: var(--text-secondary); }
+.asset-diag-head strong { color: var(--success); }
+.asset-diag-head strong.warning { color: var(--warning); }
+.asset-diag-list { display: grid; gap: 5px; }
+.asset-diag-row { display: grid; min-height: 27px; grid-template-columns: 14px auto minmax(0, 1fr); align-items: center; gap: 6px; padding: 5px 7px; border-radius: var(--radius-sm); background: var(--surface-2); color: var(--success); }
+.asset-diag-row b { color: var(--text-secondary); font-size: 8px; }
+.asset-diag-row span { overflow: hidden; color: var(--text-tertiary); font-size: 8px; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+.asset-diag-row.warning, .asset-diag-row.warning b, .asset-diag-row.warning span { color: var(--warning); }
+.asset-diag-empty { display: flex; align-items: center; gap: 6px; color: var(--text-tertiary); font-size: 9px; }
+.trait-columns { display: grid; grid-template-columns: minmax(0, 1fr) 300px; align-items: start; gap: 22px; }
+.trait-list { display: grid; gap: 9px; }
+.trait-item { padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); }
+.trait-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.trait-header label { color: var(--text-primary); font-size: 11px; font-weight: 750; }
+.trait-value { color: var(--brand-light); font-family: var(--font-mono); font-size: 11px; font-weight: 800; }
+.trait-item input[type='range'] { width: 100%; margin-top: 7px; accent-color: var(--brand); }
+.trait-item p { margin: 5px 0 0; color: var(--text-tertiary); font-size: 9px; line-height: 1.45; }
+.radar-chart { display: flex; justify-content: center; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); }
+.radar-svg { width: 260px; height: 260px; }
+.emotion-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.emotion-card { padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); }
+.emotion-header { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+.emotion-icon { display: grid; width: 29px; height: 29px; place-items: center; border-radius: var(--radius-sm); background: var(--surface-2); color: var(--brand-light); }
+.emotion-header strong { color: var(--text-primary); font-size: 11px; }
+.sprite-path-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.sprite-path-row { padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); }
+.relationship-list { display: grid; gap: 7px; }
+.relationship-row { display: grid; min-height: 54px; grid-template-columns: 32px 150px minmax(100px, 1fr) 38px; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); }
+.relationship-avatar { display: inline-flex; width: 32px; height: 32px; align-items: center; justify-content: center; border-radius: var(--radius-sm); color: white; font-size: 9px; font-weight: 800; }
+.relationship-name { display: grid; min-width: 0; }
+.relationship-name strong { overflow: hidden; color: var(--text-primary); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.relationship-name small { color: var(--text-tertiary); font-family: var(--font-mono); font-size: 8px; }
+.relationship-row input { width: 100%; accent-color: var(--brand); }
+.relationship-value { color: var(--brand-light); font-family: var(--font-mono); font-size: 10px; font-weight: 800; text-align: right; }
+.muted { margin: 0; color: var(--text-tertiary); font-size: 10px; }
+.knowledge-ref-options { display: flex; max-height: 150px; flex-wrap: wrap; gap: 5px; overflow-y: auto; margin-top: 11px; padding: 9px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); }
+.knowledge-ref-options button { display: inline-flex; align-items: center; gap: 4px; padding: 4px 7px; border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--text-tertiary); cursor: pointer; font: inherit; font-family: var(--font-mono); font-size: 8px; }
+.knowledge-ref-options button:hover, .knowledge-ref-options button.selected { border-color: var(--brand); background: var(--selection); color: var(--brand-light); }
+.knowledge-editor { display: grid; gap: 9px; }
+.knowledge-item { display: grid; grid-template-columns: 180px minmax(0, 1fr) 34px; align-items: start; gap: 10px; padding: 11px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); }
+.inline-empty { display: flex; min-height: 100px; align-items: center; justify-content: center; gap: 8px; border: 1px dashed var(--border); border-radius: var(--radius); color: var(--text-tertiary); font-size: 10px; }
+.editor-empty { display: grid; min-height: 0; place-items: center; padding: 36px; }
+.empty-state { display: grid; max-width: 430px; justify-items: center; gap: 9px; text-align: center; }
+.empty-icon { display: grid; width: 52px; height: 52px; place-items: center; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); color: var(--brand-light); }
+.empty-state h2 { margin: 4px 0 0; color: var(--text-primary); font-size: 21px; }
+.empty-state p { margin: 0; color: var(--text-tertiary); font-size: 11px; line-height: 1.6; }
+.empty-count { color: var(--text-secondary); font-size: 9px; }
+.empty-state .btn { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; }
+.modal-backdrop { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(4, 8, 15, 0.68); backdrop-filter: blur(4px); }
+.confirm-dialog { display: grid; width: min(430px, 100%); grid-template-columns: 38px minmax(0, 1fr); gap: 12px; padding: 18px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); box-shadow: var(--shadow-lg); }
+.confirm-icon { display: grid; width: 38px; height: 38px; place-items: center; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--warning) 13%, transparent); color: var(--warning); }
+.confirm-dialog h2 { margin: 5px 0 0; color: var(--text-primary); font-size: 14px; }
+.confirm-dialog p { margin: 6px 0 0; color: var(--text-secondary); font-size: 10px; line-height: 1.5; }
+.confirm-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 7px; margin-top: 6px; padding-top: 13px; border-top: 1px solid var(--border); }
+.confirm-actions .btn { display: inline-flex; align-items: center; gap: 6px; }
+.status-toast { position: fixed; z-index: 110; right: 20px; bottom: 20px; max-width: min(460px, calc(100vw - 32px)); padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--success) 45%, var(--border)); border-radius: var(--radius); background: color-mix(in srgb, var(--success) 78%, var(--surface-1)); color: white; box-shadow: var(--shadow-lg); cursor: pointer; font-size: 10px; }
+.status-toast.error { border-color: color-mix(in srgb, var(--danger) 45%, var(--border)); background: color-mix(in srgb, var(--danger) 72%, var(--surface-1)); }
+.spinner { animation: spin 0.8s linear infinite; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+.fade-enter-active, .fade-leave-active { transition: opacity 0.18s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 1100px) {
+  .basic-panel { grid-template-columns: 1fr; }
+  .preview-column { position: static; grid-row: 1; grid-template-columns: minmax(0, 1fr) minmax(240px, 0.7fr); }
+  .renderer-preview-stage { height: 320px; }
+}
 
 @media (max-width: 860px) {
-  .editor-workbench {
-    grid-template-columns: 1fr;
-  }
-  .char-rail {
-    max-height: 240px;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-  .trait-columns {
-    grid-template-columns: 1fr;
-  }
-  .renderer-preview-stage {
-    height: 300px;
-    min-height: 300px;
-  }
-  .knowledge-item {
-    grid-template-columns: 1fr;
-  }
-  .asset-diag-row {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .asset-diag-row span {
-    text-align: left;
-  }
+  .character-workbench { display: block; height: auto; min-height: calc(100svh - 114px); overflow: visible; }
+  .character-browser { max-height: none; border-right: 0; border-bottom: 1px solid var(--border); }
+  .browser-header { min-height: 72px; padding: 13px 14px 8px; }
+  .browser-search { margin-inline: 14px; }
+  .character-list { display: flex; flex: none; gap: 6px; overflow-x: auto; overflow-y: hidden; padding: 2px 14px 11px; scrollbar-width: none; }
+  .character-list::-webkit-scrollbar { display: none; }
+  .character-row { flex: 0 0 230px; margin: 0; }
+  .empty-list { width: 100%; min-height: 100px; }
+  .browser-draft-bar { min-height: 38px; padding-inline: 14px; }
+  .character-editor { overflow: visible; }
+  .editor-toolbar { align-items: flex-start; flex-direction: column; padding: 11px 14px; }
+  .toolbar-actions { width: 100%; }
+  .toolbar-actions .btn { flex: 1; }
+  .editor-tabs { padding-inline: 10px; }
+  .validation-banner { padding-inline: 14px; }
+  .editor-scroll { overflow: visible; padding: 18px 16px 40px; }
+  .preview-column { grid-template-columns: 1fr; }
+  .trait-columns { grid-template-columns: 1fr; }
+  .radar-chart { order: -1; }
+}
+
+@media (max-width: 620px) {
+  .browser-header p { display: none; }
+  .editor-title > div { display: grid; gap: 2px; }
+  .editor-title code { max-width: 130px; }
+  .toolbar-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .toolbar-actions .btn { min-width: 0; padding-inline: 7px; font-size: 9px; }
+  .tab-button { padding-inline: 10px; font-size: 9px; }
+  .form-grid, .emotion-grid, .sprite-path-grid { grid-template-columns: 1fr; }
+  .form-grid .full { grid-column: auto; }
+  .renderer-preview-stage { height: 300px; }
+  .section-heading { align-items: stretch; flex-direction: column; }
+  .section-heading > .btn { align-self: flex-start; }
+  .relationship-row { grid-template-columns: 32px minmax(0, 1fr) 38px; }
+  .relationship-row input { grid-column: 2 / -1; }
+  .knowledge-item { grid-template-columns: 1fr 34px; }
+  .knowledge-item .form-field:first-child { grid-column: 1; }
+  .knowledge-item .form-field:nth-child(2) { grid-column: 1 / -1; }
+  .knowledge-item .icon-command { grid-column: 2; grid-row: 1; }
+  .confirm-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .confirm-actions .btn { justify-content: center; }
+  .status-toast { right: 16px; bottom: 76px; }
 }
 </style>
