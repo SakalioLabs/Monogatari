@@ -225,7 +225,7 @@ pub(crate) async fn resolve_project_scene(
         .ok_or_else(|| format!("Story scene `{scene_id}` does not exist in the active project."))
 }
 
-fn build_scene_asset_catalog(project_root: &Path) -> Result<SceneAssetCatalog, String> {
+pub(crate) fn build_scene_asset_catalog(project_root: &Path) -> Result<SceneAssetCatalog, String> {
     let mut issues = Vec::new();
     let mut scenes = load_scene_metadata(project_root, &mut issues)?;
     let backgrounds = list_background_assets(project_root)?;

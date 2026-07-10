@@ -245,6 +245,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import Live2DCanvas from '../components/Live2DCanvas.vue'
 import CharacterModelView from '../components/CharacterModelView.vue'
 import { hasTauriRuntime, invokeCommand } from '../lib/tauri'
@@ -264,6 +265,7 @@ import {
 } from '../lib/storyContent'
 
 const { t } = useI18n()
+const route = useRoute()
 
 interface DialogueState {
   is_active: boolean
@@ -800,6 +802,11 @@ onMounted(async () => {
   await updateDialogueState()
   await loadSaves()
   await loadStoryLibrary()
+  const previewEndingId = route.query.previewEnding
+  if (!hasTauriRuntime() && route.query.authoring === '1' && typeof previewEndingId === 'string') {
+    const ending = storyEndings.value.find((item) => item.id === previewEndingId)
+    if (ending) await startEnding(ending)
+  }
   window.addEventListener('keydown', handleKeydown)
   
   // Auto-save every 2 minutes during active dialogue

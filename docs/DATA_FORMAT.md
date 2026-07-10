@@ -159,7 +159,11 @@ Endings are individual JSON files under project `endings/`.
 }
 ```
 
-IDs must be portable and the referenced scene and dialogue must exist. Release verification cross-checks all event unlock targets and ending references in both checked-in data roots.
+IDs must be portable and the referenced scene and dialogue must exist. Ending IDs become immutable after creation so source ownership remains stable; duplicate an ending to create a new ID. Titles are limited to 256 characters, descriptions to 2,048 characters, files to 64 KiB, and catalogs to 256 JSON files. Unknown fields and symlinked files/directories are rejected.
+
+The Ending Route editor loads `monogatari-story-ending-catalog/v1` snapshots containing source paths plus per-content and whole-catalog fingerprints. Desktop saves require the observed catalog fingerprint, validate every resulting scene/dialogue reference, and roll back failed replacements. Deletion is rejected while a Story Event contains a matching `unlock_ending` action. Browser builds keep an equivalent complete catalog draft in local storage for non-destructive preview.
+
+Release verification cross-checks all event unlock targets and ending references in both checked-in data roots.
 
 ## Workflow Format
 

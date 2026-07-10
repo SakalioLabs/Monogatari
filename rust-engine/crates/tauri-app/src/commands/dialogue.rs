@@ -48,6 +48,14 @@ pub(crate) async fn start_dialogue_inner(
     dialogue_id: &str,
 ) -> Result<DialogueState, String> {
     ensure_dialogue_access(state, dialogue_id).await?;
+    start_dialogue_authoring_inner(state, dialogue_id).await
+}
+
+/// Start a validated project dialogue for author preview without applying player unlock gates.
+pub(crate) async fn start_dialogue_authoring_inner(
+    state: &AppState,
+    dialogue_id: &str,
+) -> Result<DialogueState, String> {
     ensure_project_dialogues_loaded(state).await?;
     let mut dm = state.dialogue_manager.write().await;
     dm.start_dialogue(dialogue_id)

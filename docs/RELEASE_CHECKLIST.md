@@ -22,8 +22,8 @@
 - [ ] Web/PWA dist includes a static-hosting `_redirects` file with project asset passthrough rules and a final `/* /index.html 200` SPA fallback
 - [ ] Web/PWA dist includes an Azure Static Web Apps `staticwebapp.config.json` with SPA navigation fallback, static asset exclusions, 404 rewrite, and matching global security headers
 - [ ] Web/PWA dist includes a Vercel `vercel.json` with SPA rewrite to `index.html`, no external rewrite destinations, and matching global security headers
-- [ ] All 22 views render correctly (Dashboard, Title, Story Mode, AI Chat, Workflow, Character Editor, Scene Assets, Settings, Characters, Group Chat, Analytics, Quality, Marketplace, Plugins, Audio, Knowledge, Dialogue Editor, Story Events, Scene Editor, CG Gallery, Backlog, Achievements)
-- [ ] Sidebar navigation works for all 21 items
+- [ ] All 23 views render correctly (Dashboard, Title, Story Mode, AI Chat, Workflow, Character Editor, Scene Assets, Settings, Characters, Group Chat, Analytics, Quality, Marketplace, Plugins, Audio, Knowledge, Dialogue Editor, Story Events, Endings, Scene Editor, CG Gallery, Backlog, Achievements)
+- [ ] Sidebar navigation works for all 22 items
 - [ ] Responsive layout verified on mobile viewport (375px) and tablet (768px), with the build-time responsive shell verifier attached as release evidence
 
 ### Rust Backend
@@ -57,7 +57,7 @@
 - [ ] Story event catalogs reject unknown, malformed, duplicate, or excessive actions; real chat/workflow triggers share the atomic progress executor while previews remain side-effect free
 - [ ] Story content access gates only IDs referenced by `unlock_*` actions; Story Mode, dialogue starts, real workflow scene changes, and ending launches reject locked content and admit persisted unlocks
 - [ ] Story Event editor validates trigger rules, character scopes, typed actions, target references, and metadata; saves reject stale fingerprints and multi-document flattening and roll back failed replacements
-- [ ] Versioned ending assets reject unsafe or unknown fields and resolve existing scene/dialogue references before launch
+- [ ] Versioned ending assets reject unsafe or unknown fields, expose stable authoring fingerprints, atomically roll back rejected saves, protect Story Event references during deletion, and resolve existing scene/dialogue references before player launch or author preview
 - [ ] Character, dialogue, and knowledge loader commands read only from the active project `characters/`, `dialogue/`, and `knowledge/` directories
 - [ ] Character create/delete commands resolve through the active or discovered default project data root, validate portable character IDs, and touch only direct JSON files under `characters/`
 - [ ] Plugin listing, registration, and removal commands resolve through the active or discovered default project data root, validate portable plugin IDs, normalize optional `.rhai` script references under `plugins/`, and touch only direct manifest JSON files under `plugins/`
@@ -69,6 +69,7 @@
 - [ ] Example dialogues play through with choices
 - [ ] Both checked-in project data roots load through the real character/dialogue/knowledge/event managers, including legacy relationship-object normalization and map-key dialogue node IDs
 - [ ] Story Library lists scene/dialogue/ending lock state and Web/PWA dialogue playback follows real node choices
+- [ ] Ending Route editor binds real scene/dialogue catalogs, reports event coverage, guards dirty drafts, persists browser drafts, and previews saved routes without requiring player unlock progress
 - [ ] Knowledge base search returns relevant results
 - [ ] Scene assets validate without missing file warnings
 - [ ] Checked-in character renderer asset fields resolve to supported project-relative files or intentionally fall back to the generated 3D placeholder

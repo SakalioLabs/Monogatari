@@ -42,6 +42,15 @@ export interface StoryEndingInfo {
   access: StoryContentAccessEntry
 }
 
+export interface StoryEndingDefinition {
+  schema: string
+  id: string
+  title: string
+  description: string
+  scene_id: string
+  dialogue_id: string
+}
+
 interface WebProjectManifest {
   schema: string
   scene_files?: string[]
@@ -68,14 +77,7 @@ interface DialogueDocument {
   nodes: Record<string, WebDialogueNode>
 }
 
-interface EndingDocument {
-  schema: string
-  id: string
-  title: string
-  description: string
-  scene_id: string
-  dialogue_id: string
-}
+const BROWSER_ENDING_DRAFT_KEY = 'monogatari:story-ending-catalog:v1'
 
 function baseUrl(): URL {
   const base = import.meta.env.BASE_URL || '/'
@@ -160,9 +162,15 @@ export async function loadStoryDialogues(): Promise<StoryDialogueInfo[]> {
 export async function loadStoryEndings(): Promise<StoryEndingInfo[]> {
   if (hasTauriRuntime()) return invokeCommand<StoryEndingInfo[]>('list_story_endings')
   const access = await loadStoryContentAccess()
+  const browserDrafts = loadBrowserStoryEndingDrafts()
+  if (browserDrafts !== null) {
+    return browserDrafts
+      .map((ending) => ({ ...ending, access: contentAccess(access, 'ending', ending.id) }))
+      .sort((left, right) => left.id.localeCompare(right.id))
+  }
   try {
     const manifest = await webProjectManifest()
-    const documents = await fetchDocuments<EndingDocument>(manifest.ending_files)
+    const documents = await fetchDocuments<StoryEndingDefinition>(manifest.ending_files)
     return documents
       .filter((ending) => ending.schema === 'monogatari-story-ending/v1')
       .map((ending) => ({ ...ending, access: contentAccess(access, 'ending', ending.id) }))
@@ -173,6 +181,33 @@ export async function loadStoryEndings(): Promise<StoryEndingInfo[]> {
       access: contentAccess(access, 'ending', ending.id),
     }))
   }
+}
+
+export function loadBrowserStoryEndingDrafts(): StoryEndingDefinition[] | null {
+  if (typeof window === 'undefined') return null
+  const raw = window.localStorage.getItem(BROWSER_ENDING_DRAFT_KEY)
+  if (raw === null) return null
+  try {
+    const value = JSON.parse(raw) as unknown
+    if (!Array.isArray(value)) return null
+    const endings = value.filter(isStoryEndingDefinition)
+    return endings.length === value.length ? endings : null
+  } catch {
+    return null
+  }
+}
+
+export function saveBrowserStoryEndingDrafts(endings: StoryEndingDefinition[]): void {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(BROWSER_ENDING_DRAFT_KEY, JSON.stringify(endings))
+}
+
+function isStoryEndingDefinition(value: unknown): value is StoryEndingDefinition {
+  if (!value || typeof value !== 'object') return false
+  const ending = value as Record<string, unknown>
+  return ending.schema === 'monogatari-story-ending/v1'
+    && ['id', 'title', 'description', 'scene_id', 'dialogue_id']
+      .every((field) => typeof ending[field] === 'string')
 }
 
 function titleFromId(id: string): string {

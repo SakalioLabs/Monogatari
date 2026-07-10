@@ -4,6 +4,7 @@
 - Added a shared story-content access layer: only scene/dialogue/ending IDs referenced by typed unlock actions are gated, while all other project content stays backward-compatible and open. Story Mode, dialogue starts, real workflow scene changes, and ending launches enforce the same decisions.
 - Added the Story Event authoring workbench with catalog search, trigger thresholds, character scope, typed action editing, local validation, optimistic fingerprint concurrency, and rollback-safe single-document saves.
 - Added versioned `monogatari-story-ending/v1` assets and a gated ending launcher that resolves a real scene and dialogue before playback.
+- Added the Ending Route authoring workbench with real scene/dialogue association, event coverage diagnostics, stable catalog fingerprints, atomic save rollback, event-reference deletion protection, browser drafts, and player-gate-free author preview.
 - Added project-backed Story Library browsing for scenes, dialogues, and endings. Web/PWA builds now package and offline-cache these catalogs and run checked-in branching dialogue nodes in-browser.
 - Fixed checked-in runtime content compatibility by canonicalizing the legacy example dialogue, deriving omitted dialogue node IDs from map keys, and accepting both numeric and `{ score, type }` character relationship values.
 - Added typed `unlock_scene`, `unlock_dialogue`, `unlock_ending`, and `set_flag` story-event actions with bounded validation, legacy `data` action migration, action-bound catalog fingerprints, and shared chat/workflow execution.

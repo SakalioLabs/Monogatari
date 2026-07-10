@@ -144,12 +144,16 @@ Scene and renderer asset paths are project-relative asset references. Runtime as
 
 ## Endings
 
-Ending assets live under project `endings/`. Starting an ending checks the ending unlock and any event-derived gates on its referenced scene and dialogue, verifies both referenced assets exist, then activates the scene and dialogue.
+Ending assets live under project `endings/`. Player launch checks the ending unlock and any event-derived gates on its referenced scene and dialogue. Author saves serialize through a project content lock, compare the catalog fingerprint observed at load time, validate both references, stage a replacement and backup, reload the complete catalog, and roll back rejected writes.
 
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
 | `list_story_endings` | - | `StoryEndingCatalogEntry[]` | List versioned ending assets with access decisions |
+| `get_story_ending_catalog` | - | `StoryEndingCatalogSnapshot` | Load editable definitions, source paths, access decisions, and stable fingerprints |
+| `save_story_ending` | `{ ending, originalEndingId?, expectedCatalogFingerprint }` | `StoryEndingCatalogSnapshot` | Atomically create or replace an ending after reference and concurrency validation |
+| `delete_story_ending` | `{ endingId, expectedCatalogFingerprint }` | `StoryEndingCatalogSnapshot` | Delete an ending only after stale-write and Story Event reference checks |
 | `start_story_ending` | `{ endingId }` | `StoryEndingLaunch` | Validate and launch the ending's scene and dialogue |
+| `preview_story_ending` | `{ endingId }` | `StoryEndingLaunch` | Launch a valid author preview without requiring player unlock progress |
 
 ## Scripting
 

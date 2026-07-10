@@ -145,6 +145,7 @@ const expectedFrontendRoutes = [
   { path: '/knowledge', name: 'knowledge', component: 'KnowledgeBaseView.vue', navKey: 'nav.knowledge' },
   { path: '/dialogue-editor', name: 'dialogue-editor', component: 'DialogueEditorView.vue', navKey: 'nav.dialogues' },
   { path: '/story-events', name: 'story-events', component: 'StoryEventEditorView.vue', navKey: 'nav.events' },
+  { path: '/endings', name: 'endings', component: 'EndingEditorView.vue', navKey: 'nav.endings' },
   { path: '/scene-editor', name: 'scene-editor', component: 'SceneEditorView.vue', navKey: 'nav.scenes' },
   { path: '/cg-gallery', name: 'cg-gallery', component: 'CGGalleryView.vue', navKey: 'nav.cg-gallery' },
   { path: '/backlog', name: 'backlog', component: 'BacklogView.vue', navKey: 'nav.backlog' },
@@ -1963,6 +1964,7 @@ async function verifyFrontendSourceInvariants() {
   const storyProgressSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyProgress.ts'), 'utf8')
   const storyAccessSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyAccess.ts'), 'utf8')
   const storyContentSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyContent.ts'), 'utf8')
+  const storyEndingsSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyEndings.ts'), 'utf8')
   const live2dCanvasSource = await readFile(path.join(frontendDir, 'src', 'components', 'Live2DCanvas.vue'), 'utf8')
   const characterModelSource = await readFile(path.join(frontendDir, 'src', 'components', 'CharacterModelView.vue'), 'utf8')
   const prepareWebDistSource = await readFile(path.join(frontendDir, 'scripts', 'prepare-web-dist.mjs'), 'utf8')
@@ -1974,6 +1976,7 @@ async function verifyFrontendSourceInvariants() {
   const characterEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'CharacterEditorView.vue'), 'utf8')
   const workflowEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'WorkflowEditor.vue'), 'utf8')
   const storyEventEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'StoryEventEditorView.vue'), 'utf8')
+  const endingEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'EndingEditorView.vue'), 'utf8')
   const qualitySuiteSource = await readFile(path.join(frontendDir, 'src', 'views', 'QualitySuiteView.vue'), 'utf8')
   const audioViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'AudioView.vue'), 'utf8')
   const settingsSource = await readFile(path.join(frontendDir, 'src', 'views', 'SettingsView.vue'), 'utf8')
@@ -2137,11 +2140,21 @@ async function verifyFrontendSourceInvariants() {
     [storyContentSource, "invokeCommand<StoryDialogueInfo[]>('list_dialogues')", 'load gated dialogues from desktop projects'],
     [storyContentSource, "invokeCommand<StoryEndingInfo[]>('list_story_endings')", 'load gated endings from desktop projects'],
     [storyContentSource, 'dialogue_files', 'load packaged dialogue scripts from Web/PWA project manifests'],
+    [storyContentSource, 'loadBrowserStoryEndingDrafts()', 'load browser-authored ending drafts into Story Mode'],
+    [storyEndingsSource, "invokeCommand<StoryEndingCatalogSnapshot>('get_story_ending_catalog')", 'load editable ending catalog snapshots'],
+    [storyEndingsSource, 'expectedCatalogFingerprint', 'save and delete endings with optimistic concurrency'],
+    [storyEndingsSource, 'saveBrowserStoryEndingDrafts', 'persist browser ending authoring drafts'],
+    [endingEditorSource, 'validateStoryEndingDefinition', 'validate ending definitions before save'],
+    [endingEditorSource, 'loadStoryScenes()', 'bind endings to real project scenes'],
+    [endingEditorSource, 'loadStoryDialogues()', 'bind endings to real project dialogues'],
+    [endingEditorSource, 'confirmDiscard', 'guard dirty ending drafts during navigation'],
+    [endingEditorSource, "invokeCommand('preview_story_ending'", 'launch author previews without player unlock mutation'],
     [storyEventsSource, 'expectedCatalogFingerprint', 'save event catalogs with optimistic concurrency'],
     [storyEventEditorSource, 'validateDocument()', 'validate edited event catalogs before save'],
     [storyEventEditorSource, 'changeActionType', 'edit typed event effects'],
     [gameViewSource, 'loadStoryScenes()', 'populate Story Mode from the project scene catalog'],
     [gameViewSource, 'start_story_ending', 'launch gated ending assets from Story Mode'],
+    [gameViewSource, 'route.query.previewEnding', 'launch browser ending author previews from saved drafts'],
     [gameViewSource, 'webDialogueNodeId', 'advance packaged Web/PWA dialogue scripts with a browser cursor'],
     [chatViewSource, "listen<StoryEventApplication[]>('chat-event-applications'", 'surface applied event effects from streaming chat'],
     [chatViewSource, 'loadStoryProgress()', 'refresh persistent unlock counts in the chat workbench'],
@@ -3619,6 +3632,7 @@ async function verifyTauriPackagingConfig() {
     [tauriStateSource, 'StoryProgressState::default()', 'clear story progress across project reloads'],
     [tauriStateSource, 'changing_project_root_clears_project_runtime_state', 'test project root changes clear runtime state'],
     [tauriStateSource, 'same_root_reload_can_explicitly_clear_project_runtime_state', 'test same-root project reloads clear runtime state'],
+    [tauriStateSource, 'story_content_authoring_lock', 'serialize project content authoring mutations'],
     [tauriScenesSource, 'Ok(default_project_data_root())', 'scan scene assets from the discovered default root before explicit initialization'],
     [tauriAnalyticsSource, 'state.current_project_data_root().await', 'persist analytics under the active project root'],
     [tauriAnalyticsSource, 'project_root.join("analytics.json")', 'keep analytics files project-scoped'],
@@ -3757,10 +3771,23 @@ async function verifyTauriPackagingConfig() {
     [tauriDialogueCommandsSource, 'list_dialogues', 'expose dialogue metadata with access decisions'],
     [tauriScenesSource, 'enter_story_scene', 'separate gated Story Mode entry from author scene selection'],
     [tauriEndingCommandsSource, 'monogatari-story-ending/v1', 'version story ending assets'],
+    [tauriEndingCommandsSource, 'monogatari-story-ending-catalog/v1', 'version ending authoring catalog snapshots'],
+    [tauriEndingCommandsSource, 'story_ending_catalog_fingerprint', 'fingerprint ending catalogs for optimistic concurrency'],
+    [tauriEndingCommandsSource, 'validate_story_ending_references', 'cross-check ending scene and dialogue references before save'],
+    [tauriEndingCommandsSource, 'replace_story_ending_document', 'stage atomic ending replacements'],
+    [tauriEndingCommandsSource, 'rollback_story_ending_document', 'restore rejected ending replacements'],
+    [tauriEndingCommandsSource, 'still unlocked by event(s)', 'protect event-referenced endings from deletion'],
+    [tauriEndingCommandsSource, 'preview_story_ending_inner', 'support validated author preview without player gates'],
     [tauriEndingCommandsSource, 'start_story_ending_inner', 'validate and launch ending scene/dialogue pairs'],
     [tauriEndingCommandsSource, 'ending_launch_enforces_unlocks_then_starts_scene_and_dialogue', 'test complete ending gate and launch behavior'],
+    [tauriEndingCommandsSource, 'ending_save_is_atomic_and_rejects_stale_or_invalid_updates', 'test atomic ending saves and stale-write rejection'],
+    [tauriEndingCommandsSource, 'ending_delete_requires_event_references_to_be_removed_first', 'test ending deletion reference protection'],
     [tauriMainSource, 'commands::story_events::save_story_event_catalog', 'register event catalog authoring saves'],
     [tauriMainSource, 'commands::endings::start_story_ending', 'register gated ending launch commands'],
+    [tauriMainSource, 'commands::endings::get_story_ending_catalog', 'register ending catalog authoring reads'],
+    [tauriMainSource, 'commands::endings::save_story_ending', 'register ending authoring saves'],
+    [tauriMainSource, 'commands::endings::delete_story_ending', 'register ending authoring deletes'],
+    [tauriMainSource, 'commands::endings::preview_story_ending', 'register ending author previews'],
     [tauriWorkflowSource, 'apply_story_event_definition', 'apply real workflow trigger effects through the shared executor'],
     [tauriQualitySuiteSource, 'event_catalog: &StoryEventCatalog', 'run quality scenarios against project event rules'],
     [tauriMainSource, 'commands::story_events::get_story_event_catalog', 'register story event catalog commands'],

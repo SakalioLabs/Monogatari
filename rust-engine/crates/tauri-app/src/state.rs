@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use tokio::sync::RwLock;
+use tokio::sync::{Mutex, RwLock};
 
 use llm_ai::InferencePipeline;
 use llm_assets::{AssetManager, SaveManager};
@@ -31,6 +31,8 @@ pub struct AppState {
     pub script_engine: Arc<RwLock<ScriptEngine>>,
     pub story_event_catalog: Arc<RwLock<StoryEventCatalog>>,
     pub story_progress: Arc<RwLock<StoryProgressState>>,
+    /// Serializes project content mutations so optimistic fingerprints remain authoritative.
+    pub story_content_authoring_lock: Arc<Mutex<()>>,
     pub project_path: Arc<RwLock<Option<PathBuf>>>,
     pub initialized: Arc<RwLock<bool>>,
     /// Active authoring/runtime scene selected from the scene asset catalog.
@@ -56,6 +58,7 @@ impl AppState {
             script_engine: Arc::new(RwLock::new(ScriptEngine::new())),
             story_event_catalog: Arc::new(RwLock::new(StoryEventCatalog::default())),
             story_progress: Arc::new(RwLock::new(StoryProgressState::default())),
+            story_content_authoring_lock: Arc::new(Mutex::new(())),
             project_path: Arc::new(RwLock::new(None)),
             initialized: Arc::new(RwLock::new(false)),
             active_scene_id: Arc::new(RwLock::new(None)),

@@ -118,7 +118,7 @@ Live chat, manual scoring, workflow trigger nodes, workflow validation, Quality 
 
 The Story Event workbench converts normalized runtime definitions back into the authored v1 document shape. Saves require the fingerprint observed at load time, validate the complete candidate before filesystem mutation, reject ambiguous multi-document flattening, stage a temporary file, retain a backup during replacement, reload the project catalog, and restore the prior document if post-write validation fails.
 
-Story endings use bounded, versioned `endings/*.json` assets that bind an ending ID to a scene and dialogue. Launch verifies the ending, scene, and dialogue access decisions plus referenced asset existence before activating playback.
+Story endings use bounded, versioned `endings/*.json` assets that bind an ending ID to a scene and dialogue. The authoring catalog fingerprints normalized definitions and source paths. Mutations serialize through the project content authoring lock, reject stale fingerprints, validate scene/dialogue references before disk writes, stage temporary and backup files, reload the complete catalog, and restore prior files after post-write failure. Deletion is blocked while any project Story Event still unlocks the ending. Player launch verifies all three access decisions; author preview bypasses only those progress gates and still requires valid project assets.
 
 `StoryProgressState` is a separate project-scoped runtime ledger. The shared executor records event applications per character scope, applies unlock sets idempotently, increments repeatable event counts, updates validated script flags, and returns versioned action evidence plus a progress fingerprint. Non-streaming chat, streaming chat, and real workflow nodes use this executor. Quality Suite runs and workflow run-context previews only calculate decisions and actions, so author diagnostics cannot modify player progress.
 
@@ -159,7 +159,7 @@ Marketplace import/export commands treat template paths as project template refe
 
 Character, dialogue, and knowledge reload commands accept project content references rather than raw filesystem paths. `characters`, `dialogue`, and `knowledge` resolve to their canonical folders under the active project data root, while nested references stay under the same canonical folder. Absolute paths, drive/URI-style prefixes, empty segments, and `.`/`..` traversal are rejected before directory loading begins.
 
-Web/PWA packaging copies project scenes, dialogues, endings, events, and renderer assets into the static distribution, inventories them in `project-assets.json`, and pre-caches them through the service worker. The browser Story Library uses the same access snapshot and runs dialogue nodes through a local cursor for start, advance, and choice transitions; Tauri uses the Rust dialogue manager.
+Web/PWA packaging copies project scenes, dialogues, endings, events, and renderer assets into the static distribution, inventories them in `project-assets.json`, and pre-caches them through the service worker. The browser Story Library uses the same access snapshot and runs dialogue nodes through a local cursor for start, advance, and choice transitions; Tauri uses the Rust dialogue manager. Browser authoring stores a complete ending catalog draft in local storage, and Story Mode reads that same draft for route preview without changing packaged source files.
 
 ## Save Data Boundaries
 

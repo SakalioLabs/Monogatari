@@ -18,6 +18,7 @@ Monogatari is a development engine for creating LLM-driven text adventure games.
 - **Visual Workflow Editor** - Drag-and-drop node-based editor for designing dialogue flows, branching conditions, LLM generation nodes, evaluation triggers, and scene transitions.
 - **Workflow Validation** - Import/export and project-scoped save/load paths validate node ids, start/end structure, missing config fields, broken links, duplicate links, and unreachable nodes.
 - **Scene Asset Library** - Project scene metadata and background files are scanned, validated, listed, and selectable as the active runtime scene.
+- **Ending Route Editor** - Creators bind validated scenes and dialogues into versioned endings with event coverage diagnostics, optimistic concurrency, rollback-safe saves, reference-protected deletion, and author preview.
 - **Renderer Fallback Pipeline** - Story Mode resolves project assets across Tauri and Web builds, preferring Live2D, then GLB/GLTF 3D models, then 2D sprites or portraits, with runtime load-failure fallback and a generated 3D stage placeholder when no art is available.
 - **Project Control Panel** - Project settings, path readiness, AI backend selection, and runtime initialization are managed from one production-oriented console.
 - **Character System** - Full personality model (Big Five traits), memory system, emotion tracking, and relationship scores per character.
@@ -40,7 +41,7 @@ Monogatari is a development engine for creating LLM-driven text adventure games.
 - **CG Gallery** - Scene and character art collection viewer with grid layout, locked/unlocked states, preview modal with weather/time metadata, and color-coded thumbnails.
 - **Backlog Viewer** - Full conversation history replay with character selector, role-based filtering (player/character/system), emotion badges, and jump-to-latest.
 - **Full i18n Internationalization** - 280+ translation keys covering all views and UI strings. Complete Simplified Chinese (zh-CN), Japanese (ja-JP), and Korean (ko-KR) locale files for international deployment.
-- **i18n-Integrated Sidebar** - All 20 navigation labels render through the `t()` translation function with automatic locale switching.
+- **i18n-Integrated Sidebar** - All 22 navigation labels render through the `t()` translation function with automatic locale switching.
 - **Achievement System** - 15 unlockable milestones tracking social, relationship, creation, and gameplay progress with progress bars and category filtering.
 - **Commercial Workbench UI** - Desktop-first dashboard, streaming chat desk, story runtime, workflow authoring surface, and settings panels designed for repeated production use.
 
@@ -52,7 +53,8 @@ Verified on 2026-07-10:
 - Web/PWA production build passes with `npm run build:web`, including static-hosting SPA fallback assets, dedicated install/maskable icons, copied project sample assets, and bundle-budget verification.
 - Story Mode exposes a project-backed Story Library whose scene, dialogue, and ending entries consume the persistent event-unlock ledger. Content not referenced by an `unlock_*` action remains open for backward compatibility.
 - The Story Event workbench edits trigger thresholds, character scopes, repeat behavior, typed actions, and metadata, with fingerprint conflict detection and rollback-safe project catalog replacement.
-- Versioned ending assets bind a gated ending ID to an existing scene and dialogue, and real ending launch validates all three access decisions before playback.
+- The Ending Route workbench binds real scenes and dialogues into versioned assets, detects mismatched event coverage, rejects stale writes, protects referenced deletions, and previews valid routes without changing player unlock progress.
+- Versioned ending assets bind a gated ending ID to an existing scene and dialogue, and real player launch validates all three access decisions before playback.
 - Web/PWA builds package scene, dialogue, ending, event, and renderer assets in `project-assets.json`, cache them for offline use, and execute checked-in branching dialogue nodes with a browser-local cursor.
 - Mobile shell readiness passes with `npm run verify:mobile-readiness`, covering viewport safe-area support, iOS/PWA metadata, compact Tauri shell limits, and bottom navigation safe-area padding.
 - Responsive shell verification runs during `npm run build:web`, covering built 375px mobile and 768px tablet Web/PWA layout signals.
@@ -451,7 +453,7 @@ ONNX configuration is project-scoped and validated, but this build does not link
 - [x] Backlog viewer with conversation history replay and role-based filtering
 - [x] Comprehensive i18n system with 280+ translation keys across all views
 - [x] Full Simplified Chinese (zh-CN), Japanese (ja-JP), Korean (ko-KR) locale support
-- [x] i18n-integrated sidebar with 20 navigation items using t() function
+- [x] i18n-integrated sidebar with 22 navigation items using t() function
 - [x] Quality Suites workbench for offline character stability and prompt-injection regression checks
 - [x] Quality Suite workflow branch coverage snapshots for score-gated story QA
 - [x] Quality Suite workbench and JSON export with stable audit summaries for QA evidence handoff
