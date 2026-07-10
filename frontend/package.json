@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build && node scripts/prepare-web-dist.mjs && node scripts/verify-bundle-budget.mjs && node scripts/verify-responsive-shell.mjs",
-    "build:web": "vue-tsc --noEmit && vite build && node scripts/prepare-web-dist.mjs && node scripts/verify-bundle-budget.mjs && node scripts/verify-responsive-shell.mjs",
+    "build": "npm run verify:i18n && vue-tsc --noEmit && vite build && node scripts/prepare-web-dist.mjs && node scripts/verify-bundle-budget.mjs && node scripts/verify-responsive-shell.mjs && node scripts/verify-mobile-readiness.mjs",
+    "build:web": "npm run verify:i18n && vue-tsc --noEmit && vite build && node scripts/prepare-web-dist.mjs && node scripts/verify-bundle-budget.mjs && node scripts/verify-responsive-shell.mjs && node scripts/verify-mobile-readiness.mjs",
+    "sync:locales": "node scripts/sync-locales.mjs --write",
+    "verify:i18n": "node scripts/sync-locales.mjs && node scripts/verify-i18n-coverage.mjs",
     "verify:mobile-readiness": "node scripts/verify-mobile-readiness.mjs",
     "verify:responsive-shell": "node scripts/verify-responsive-shell.mjs",
     "verify:renderer-assets": "node scripts/verify-renderer-assets.mjs",
@@ -15,6 +17,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@lucide/vue": "^1.24.0",
     "@tauri-apps/api": "^2.0.0",
     "@tauri-apps/plugin-dialog": "2.7.1",
     "pinia": "^2.1.0",

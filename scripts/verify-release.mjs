@@ -303,6 +303,7 @@ async function main() {
   await verifyReleaseChannelPolicy()
 
   await run('git diff whitespace check', 'git', ['diff', '--check'], root)
+  await run('Frontend i18n coverage', 'npm', ['run', 'verify:i18n'], frontendDir)
   await run('Frontend renderer asset selector contract', 'npm', ['run', 'verify:renderer-assets'], frontendDir)
   await run('Frontend mobile shell readiness', 'npm', ['run', 'verify:mobile-readiness'], frontendDir)
   await run('Tauri mobile deployment preflight', 'node', ['scripts/verify-tauri-mobile-preflight.mjs'], root)
@@ -2169,6 +2170,8 @@ async function verifyFrontendSourceInvariants() {
   const issues = []
   const frontendPackageSource = await readFile(path.join(frontendDir, 'package.json'), 'utf8')
   const indexSource = await readFile(path.join(frontendDir, 'index.html'), 'utf8')
+  const appSource = await readFile(path.join(frontendDir, 'src', 'App.vue'), 'utf8')
+  const mainSource = await readFile(path.join(frontendDir, 'src', 'main.ts'), 'utf8')
   const globalStyleSource = await readFile(path.join(frontendDir, 'src', 'styles', 'main.css'), 'utf8')
   const i18nSource = await readFile(path.join(frontendDir, 'src', 'lib', 'i18n.ts'), 'utf8')
   const pwaSource = await readFile(path.join(frontendDir, 'src', 'lib', 'pwa.ts'), 'utf8')
@@ -2185,6 +2188,8 @@ async function verifyFrontendSourceInvariants() {
   const prepareWebDistSource = await readFile(path.join(frontendDir, 'scripts', 'prepare-web-dist.mjs'), 'utf8')
   const mobileReadinessSource = await readFile(path.join(frontendDir, 'scripts', 'verify-mobile-readiness.mjs'), 'utf8')
   const responsiveShellSource = await readFile(path.join(frontendDir, 'scripts', 'verify-responsive-shell.mjs'), 'utf8')
+  const syncLocalesSource = await readFile(path.join(frontendDir, 'scripts', 'sync-locales.mjs'), 'utf8')
+  const verifyI18nSource = await readFile(path.join(frontendDir, 'scripts', 'verify-i18n-coverage.mjs'), 'utf8')
   const gameViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'GameView.vue'), 'utf8')
   const chatViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'ChatView.vue'), 'utf8')
   const groupChatViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'GroupChatView.vue'), 'utf8')
@@ -2234,6 +2239,29 @@ async function verifyFrontendSourceInvariants() {
     issues.push('frontend/src/lib/i18n.ts must not fetch browser locale fallbacks from absolute /locales/ paths')
   }
 
+  const frontendI18nRequirements = [
+    [frontendPackageSource, 'verify:i18n', 'expose the i18n coverage verifier'],
+    [frontendPackageSource, 'sync:locales', 'expose deterministic locale synchronization'],
+    [frontendPackageSource, 'npm run verify:i18n && vue-tsc', 'run i18n verification before frontend compilation'],
+    [mainSource, 'await loadI18n()', 'load the selected locale before mounting the application'],
+    [i18nSource, "code: 'zh-CN'", 'expose Simplified Chinese in the locale selector'],
+    [i18nSource, "code: 'ja-JP'", 'expose Japanese in the locale selector'],
+    [i18nSource, "code: 'ko-KR'", 'expose Korean in the locale selector'],
+    [i18nSource, 'Promise.all([', 'load English fallback and target catalogs together'],
+    [i18nSource, 'requestId !== loadSequence', 'ignore stale asynchronous locale responses'],
+    [i18nSource, 'document.documentElement.lang = locale', 'synchronize the document language'],
+    [syncLocalesSource, "const writeMode = process.argv.includes('--write')", 'support explicit locale copy synchronization'],
+    [syncLocalesSource, 'embedded catalog', 'verify embedded locale copies'],
+    [verifyI18nSource, 'interpolation tokens differ from en', 'verify translated interpolation tokens'],
+    [verifyI18nSource, 'contains replacement characters or encoding damage', 'reject damaged Unicode catalogs'],
+    [verifyI18nSource, 'is referenced but missing from catalogs', 'verify translation keys referenced by source'],
+  ]
+  for (const [source, needle, description] of frontendI18nRequirements) {
+    if (!source.includes(needle)) {
+      issues.push(`Frontend i18n readiness must ${description}`)
+    }
+  }
+
   if (!pwaSource.includes('import.meta.env.BASE_URL')) {
     issues.push('frontend/src/lib/pwa.ts must use import.meta.env.BASE_URL for service worker scope')
   }
@@ -2250,7 +2278,7 @@ async function verifyFrontendSourceInvariants() {
     [indexSource, 'apple-mobile-web-app-capable', 'include iOS standalone PWA metadata'],
     [indexSource, 'apple-touch-icon', 'include an Apple touch icon'],
     [globalStyleSource, '100svh', 'use small viewport height units for mobile WebViews'],
-    [globalStyleSource, 'env(safe-area-inset-bottom', 'protect bottom UI from mobile safe areas'],
+    [appSource, 'env(safe-area-inset-bottom', 'protect bottom UI from mobile safe areas'],
     [globalStyleSource, 'touch-action: manipulation', 'use mobile-friendly touch handling'],
     [mobileReadinessSource, 'viewport-fit=cover', 'verify safe-area viewport metadata'],
     [mobileReadinessSource, 'manifest.webmanifest display must be standalone', 'verify standalone PWA display mode'],
@@ -2270,10 +2298,11 @@ async function verifyFrontendSourceInvariants() {
     [responsiveShellSource, '768', 'verify the 768px tablet shell profile'],
     [responsiveShellSource, 'dist/index.html', 'verify built root HTML shell metadata'],
     [responsiveShellSource, 'dist/404.html', 'verify built static-hosting fallback shell metadata'],
-    [responsiveShellSource, '@media (width<=480px)', 'verify built mobile CSS media output'],
-    [responsiveShellSource, '@media (max-width: 720px)', 'verify the compact App shell breakpoint'],
+    [responsiveShellSource, '@media (width<=860px)', 'verify built compact-shell CSS media output'],
+    [responsiveShellSource, '@media (max-width: 860px)', 'verify the compact App shell breakpoint'],
     [responsiveShellSource, 'min-height: 100svh', 'verify small viewport height shell rules'],
-    [responsiveShellSource, 'min-width: var(--sidebar-width)', 'verify tablet sidebar width stability'],
+    [responsiveShellSource, 'grid-template-columns: var(--sidebar-width) minmax(0, 1fr)', 'verify stable desktop sidebar and shrinkable workspace tracks'],
+    [responsiveShellSource, 'grid-template-columns: repeat(5, minmax(0, 1fr))', 'verify stable mobile navigation tracks'],
   ]
   for (const [source, needle, description] of responsiveShellRequirements) {
     if (!source.includes(needle)) {
@@ -4467,7 +4496,7 @@ function parseFrontendRoutes(source) {
 }
 
 function parseSidebarNavItems(source) {
-  const navArray = /const navItems = computed\(\(\) => \[([\s\S]*?)\]\)/.exec(source)?.[1]
+  const navArray = /const navItems = computed(?:<[^>]+>)?\(\(\) => \[([\s\S]*?)\]\)/.exec(source)?.[1]
   if (!navArray) return []
 
   const items = []

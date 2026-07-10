@@ -1,162 +1,175 @@
 <template>
-  <div class="dashboard">
-    <header class="dash-header">
+  <div class="home-page">
+    <header class="page-lead">
       <div>
-        <span class="eyebrow">Monogatari Engine v0.9.5</span>
-        <h1>{{ t('home.welcome', 'Production Desk') }}</h1>
-        <p>{{ t('home.subtitle', 'LLM-driven visual novel engine. Create characters, build stories, and let AI drive the narrative.') }}</p>
+        <span class="eyebrow">{{ t('home.workspace-eyebrow', 'Project workspace') }}</span>
+        <h1>{{ t('home.workspace-title', 'Build your story') }}</h1>
+        <p>{{ t('home.workspace-copy', 'Move from character foundations to a playable, quality-checked route without losing your place.') }}</p>
       </div>
-      <div class="dash-actions">
-        <button class="btn btn-secondary btn-sm" @click="refreshStatus">{{ t('chat.refresh', 'Refresh') }}</button>
-        <button class="btn btn-primary btn-sm" @click="$router.push('/chat')">{{ t('nav.chat', 'Open Chat') }}</button>
+      <div class="lead-actions">
+        <button class="btn btn-secondary" @click="refreshStatus">
+          <RefreshCw :size="15" :class="{ spinning: loading }" aria-hidden="true" />
+          {{ t('common.refresh', 'Refresh') }}
+        </button>
+        <button class="btn btn-primary" @click="open('/character-editor')">
+          <UserRoundPlus :size="15" aria-hidden="true" />
+          {{ t('home.new-character', 'New character') }}
+        </button>
       </div>
     </header>
 
-    <LoadingSpinner v-if="loading" text="Loading engine status..." />
-    <section v-else class="status-strip">
-      <div class="status-copy">
-        <span class="eyebrow">Runtime</span>
-        <strong>{{ statusLabel }}</strong>
+    <section class="runtime-banner" :class="{ ready: status?.initialized }">
+      <span class="runtime-icon">
+        <CircleCheck v-if="status?.initialized" :size="19" aria-hidden="true" />
+        <CircleDashed v-else :size="19" aria-hidden="true" />
+      </span>
+      <div class="runtime-copy">
+        <strong>{{ runtimeTitle }}</strong>
+        <span>{{ runtimeDescription }}</span>
       </div>
-      <div class="status-metrics">
-        <div v-for="s in stats" :key="s.label" class="stat-card">
-          <span class="stat-value">{{ s.value }}</span>
-          <span class="stat-label">{{ s.label }}</span>
-        </div>
-      </div>
-    </section>
-
-    <section class="quick-actions">
-      <span class="eyebrow">{{ t('home.quick-actions', 'Quick Actions') }}</span>
-      <div class="action-row">
-        <button class="action-btn" @click="$router.push('/chat')">
-          <span class="action-icon">&#9670;</span>
-          <span>{{ t('home.tile.chat', 'AI Chat') }}</span>
-        </button>
-        <button class="action-btn" @click="$router.push('/game')">
-          <span class="action-icon">&#9654;</span>
-          <span>{{ t('home.tile.story', 'Story Mode') }}</span>
-        </button>
-        <button class="action-btn" @click="$router.push('/title')">
-          <span class="action-icon">M</span>
-          <span>Title Screen</span>
-        </button>
-        <button class="action-btn" @click="$router.push('/backlog')">
-          <span class="action-icon">&#128214;</span>
-          <span>{{ t('nav.backlog', 'Backlog') }}</span>
-        </button>
-        <button class="action-btn" @click="$router.push('/editor')">
-          <span class="action-icon">&#8942;</span>
-          <span>{{ t('home.tile.workflow', 'Workflow') }}</span>
-        </button>
-        <button class="action-btn" @click="$router.push('/settings')">
-          <span class="action-icon">&#9881;</span>
-          <span>{{ t('home.tile.settings', 'Settings') }}</span>
+      <div class="runtime-actions">
+        <button class="text-action" @click="open('/settings')">{{ t('home.configure-project', 'Configure project') }}</button>
+        <button class="text-action primary" @click="open('/game')">
+          <Play :size="13" aria-hidden="true" />
+          {{ t('home.preview-story', 'Preview story') }}
         </button>
       </div>
     </section>
 
-    <section class="desk-grid">
-      <button v-for="f in features" :key="f.title" class="desk-tile" @click="$router.push(f.path)">
-        <span class="tile-icon" :style="{ background: f.color }">{{ f.icon }}</span>
-        <span class="tile-copy">
-          <strong>{{ f.title }}</strong>
-          <span>{{ f.desc }}</span>
+    <section class="metric-strip" :aria-label="t('home.project-metrics', 'Project metrics')">
+      <div v-for="metric in metrics" :key="metric.label" class="metric-cell">
+        <component :is="metric.icon" :size="16" aria-hidden="true" />
+        <span>
+          <small>{{ metric.label }}</small>
+          <strong>{{ loading ? '—' : metric.value }}</strong>
         </span>
-        <span class="tile-arrow">&rsaquo;</span>
-      </button>
-    </section>
-
-    <section class="ops-grid">
-      <div class="ops-panel">
-        <div class="panel-head">
-          <span class="eyebrow">Commercialization</span>
-          <strong>{{ commercialProgress }}%</strong>
-        </div>
-        <div class="progress-track"><div class="progress-fill" :style="{ width: commercialProgress + '%' }"></div></div>
-        <div class="readiness-list">
-          <span v-for="item in readinessItems" :key="item.name" :class="{ done: item.done }">
-            <b>{{ item.done ? 'Done' : 'Next' }}</b>{{ item.name }}
-          </span>
-        </div>
-      </div>
-
-      <div class="ops-panel">
-        <div class="panel-head">
-          <span class="eyebrow">Pipeline</span>
-          <strong>{{ status?.active_ai_engine || 'Unset' }}</strong>
-        </div>
-        <div class="pipeline-list">
-          <span><b>{{ t('home.stats.characters', 'Characters') }}</b>{{ status?.character_count ?? '-' }}</span>
-          <span><b>{{ t('home.stats.dialogues', 'Dialogues') }}</b>{{ status?.dialogue_count ?? '-' }}</span>
-          <span><b>{{ t('home.stats.knowledge', 'Knowledge') }}</b>{{ status?.knowledge_count ?? '-' }}</span>
-          <span><b>{{ t('home.stats.scenes', 'Scenes') }}</b>{{ sceneCount }}</span>
-          <span><b>AI Engines</b>{{ status?.ai_engines?.length ?? 0 }}</span>
-        </div>
-        <div class="pipeline-actions">
-          <button class="btn btn-secondary btn-sm" @click="$router.push('/settings')">Configure AI</button>
-          <button class="btn btn-secondary btn-sm" @click="$router.push('/assets')">Scene Assets</button>
-        </div>
       </div>
     </section>
 
-    <section class="ops-panel" style="margin-bottom:16px">
-      <div class="panel-head">
-        <span class="eyebrow">System</span>
-        <strong>Monogatari v0.9.3</strong>
-      </div>
-      <div class="pipeline-list">
-        <span><b>Characters</b>{{ status?.character_count ?? '-' }}</span>
-        <span><b>Dialogues</b>{{ status?.dialogue_count ?? '-' }}</span>
-        <span><b>Knowledge</b>{{ status?.knowledge_count ?? '-' }}</span>
-        <span><b>Scenes</b>{{ sceneCount }}</span>
-        <span><b>AI Engine</b>{{ status?.active_ai_engine || 'Not set' }}</span>
-        <span><b>Status</b><span :class="status?.initialized ? 'ok-text' : 'bad-text'">{{ status?.initialized ? 'Online' : 'Idle' }}</span></span>
-      </div>
-    </section>
-    <section class="recent-activity" v-if="recentItems.length > 0" style="margin-top:16px">
-      <div class="panel-head">
-        <span class="eyebrow">Recent</span>
-        <strong>Activity</strong>
-      </div>
-      <div class="recent-grid">
-        <div v-for="(item, i) in recentItems.slice(0, 4)" :key="i" class="recent-card" @click="$router.push(item.path)">
-          <span class="recent-icon">{{ item.icon }}</span>
-          <span class="recent-name">{{ item.name }}</span>
-          <span class="recent-meta">{{ item.type }}</span>
-        </div>
-      </div>
-    </section>
-
-
-    <section class="getting-started" v-if="!status?.initialized">
-      <div class="panel-head">
-        <span class="eyebrow">{{ t('home.setup-guide', 'Getting Started') }}</span>
-        <strong>Quick Setup Guide</strong>
-      </div>
-      <div class="steps-grid">
-        <div class="step-item" v-for="(step, i) in setupSteps" :key="i" :class="{ completed: step.done }">
-          <span class="step-num">{{ i + 1 }}</span>
-          <div class="step-content">
-            <strong>{{ step.title }}</strong>
-            <p>{{ step.desc }}</p>
+    <div class="dashboard-columns">
+      <section class="workflow-column">
+        <section class="section-block">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow">{{ t('home.creation-path', 'Creation path') }}</span>
+              <h2>{{ t('home.creation-title', 'From idea to playable route') }}</h2>
+            </div>
+            <span class="section-note">{{ t('home.creation-note', 'Four focused stages') }}</span>
           </div>
-          <button class="btn btn-sm" :class="step.done ? 'btn-secondary' : 'btn-primary'" @click="$router.push(step.route)">
-            {{ step.done ? 'View' : 'Start' }}
-          </button>
-        </div>
-      </div>
-    </section>
+
+          <div class="stage-list">
+            <article v-for="(stage, index) in creationStages" :key="stage.id" class="stage-row">
+              <span class="stage-index">{{ index + 1 }}</span>
+              <div class="stage-copy">
+                <strong>{{ stage.title }}</strong>
+                <p>{{ stage.description }}</p>
+              </div>
+              <div class="stage-tools">
+                <button v-for="tool in stage.tools" :key="tool.path" @click="open(tool.path)">
+                  <component :is="tool.icon" :size="15" aria-hidden="true" />
+                  <span>{{ tool.label }}</span>
+                  <ChevronRight :size="14" aria-hidden="true" />
+                </button>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="section-block recent-section">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow">{{ t('home.recent-eyebrow', 'Continue') }}</span>
+              <h2>{{ t('home.recent-title', 'Recent work') }}</h2>
+            </div>
+          </div>
+
+          <div v-if="recentItems.length" class="recent-list">
+            <button v-for="item in recentItems.slice(0, 5)" :key="`${item.type}-${item.name}`" @click="open(item.path)">
+              <History :size="15" aria-hidden="true" />
+              <span><strong>{{ item.name }}</strong><small>{{ item.type }}</small></span>
+              <ChevronRight :size="14" aria-hidden="true" />
+            </button>
+          </div>
+          <div v-else class="empty-recent">
+            <History :size="20" aria-hidden="true" />
+            <span>
+              <strong>{{ t('home.no-recent-title', 'No recent work yet') }}</strong>
+              <p>{{ t('home.no-recent-copy', 'Open an editor and your latest items will appear here.') }}</p>
+            </span>
+            <button class="btn btn-secondary btn-sm" @click="open('/character-editor')">{{ t('home.open-editor', 'Open editor') }}</button>
+          </div>
+        </section>
+      </section>
+
+      <aside class="status-column">
+        <section class="status-section">
+          <div class="section-heading compact">
+            <div>
+              <span class="eyebrow">{{ t('home.readiness-eyebrow', 'Readiness') }}</span>
+              <h2>{{ t('home.readiness-title', 'Project checklist') }}</h2>
+            </div>
+            <span class="readiness-count">{{ completedReadiness }}/{{ readinessItems.length }}</span>
+          </div>
+          <div class="readiness-list">
+            <button v-for="item in readinessItems" :key="item.label" @click="open(item.path)">
+              <CircleCheck v-if="item.done" :size="16" class="done-icon" aria-hidden="true" />
+              <Circle v-else :size="16" aria-hidden="true" />
+              <span><strong>{{ item.label }}</strong><small>{{ item.detail }}</small></span>
+              <ChevronRight :size="14" aria-hidden="true" />
+            </button>
+          </div>
+        </section>
+
+        <section class="status-section">
+          <div class="section-heading compact">
+            <div>
+              <span class="eyebrow">{{ t('home.quick-tools-eyebrow', 'Shortcuts') }}</span>
+              <h2>{{ t('home.quick-tools-title', 'Test and diagnose') }}</h2>
+            </div>
+          </div>
+          <div class="quick-tool-list">
+            <button @click="open('/chat')"><BotMessageSquare :size="16" aria-hidden="true" /><span>{{ t('nav.chat', 'AI Chat') }}</span><ChevronRight :size="14" aria-hidden="true" /></button>
+            <button @click="open('/quality')"><ShieldCheck :size="16" aria-hidden="true" /><span>{{ t('nav.quality', 'Quality') }}</span><ChevronRight :size="14" aria-hidden="true" /></button>
+            <button @click="open('/analytics')"><ChartNoAxesCombined :size="16" aria-hidden="true" /><span>{{ t('nav.analytics', 'Analytics') }}</span><ChevronRight :size="14" aria-hidden="true" /></button>
+          </div>
+        </section>
+
+        <section class="build-meta">
+          <span>{{ t('home.engine-version', 'Engine version') }}</span>
+          <code>0.9.5</code>
+          <span>{{ t('home.active-backend', 'Active backend') }}</span>
+          <strong>{{ status?.active_ai_engine || t('common.not-configured', 'Not configured') }}</strong>
+        </section>
+      </aside>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, type Component } from 'vue'
+import { useRouter } from 'vue-router'
+import {
+  BotMessageSquare,
+  ChartNoAxesCombined,
+  ChevronRight,
+  Circle,
+  CircleCheck,
+  CircleDashed,
+  Clapperboard,
+  History,
+  Library,
+  MessageSquareText,
+  Play,
+  RefreshCw,
+  ShieldCheck,
+  Sparkles,
+  UserRoundPlus,
+  Users,
+  Workflow,
+  Zap,
+} from '@lucide/vue'
 import { invokeCommand } from '../lib/tauri'
 import { useI18n } from '../lib/i18n'
-import LoadingSpinner from '../components/LoadingSpinner.vue'
-
-const { t } = useI18n()
 
 interface EngineStatus {
   initialized: boolean
@@ -167,184 +180,255 @@ interface EngineStatus {
   active_ai_engine: string | null
 }
 
-const status = ref<EngineStatus | null>(null)
-const sceneCount = ref(0)
-const recentItems = ref<any[]>([])
-const loading = ref(true)
-
-const statusLabel = computed(() => {
-  if (!status.value) return 'Checking engine'
-  return status.value.initialized ? 'Ready for authoring' : 'Waiting for project data'
-})
-
-const stats = computed(() => [
-  { label: t('home.stats.characters', 'Characters'), value: status.value?.character_count ?? '-' },
-  { label: t('home.stats.dialogues', 'Dialogues'), value: status.value?.dialogue_count ?? '-' },
-  { label: t('home.stats.knowledge', 'Knowledge'), value: status.value?.knowledge_count ?? '-' },
-  { label: 'Backend', value: status.value?.active_ai_engine ?? 'N/A' },
-])
-
-const features = [
-  { title: t('home.tile.chat', 'AI Chat'), desc: 'Streaming character sessions and relationship state.', path: '/chat', icon: 'C', color: 'rgba(45,212,191,0.2)' },
-  { title: t('home.tile.story', 'Story Mode'), desc: 'Branching dialogue playback with visual novel controls.', path: '/game', icon: 'S', color: 'rgba(96,165,250,0.2)' },
-  { title: t('home.tile.workflow', 'Workflow'), desc: 'Node graph authoring for story logic and triggers.', path: '/editor', icon: 'W', color: 'rgba(251,146,60,0.2)' },
-  { title: t('home.tile.characters', 'Characters'), desc: 'Professional editor with personality, emotions, knowledge.', path: '/character-editor', icon: 'E', color: 'rgba(168,85,247,0.2)' },
-  { title: t('home.tile.knowledge', 'Knowledge'), desc: 'World lore, character backgrounds, and AI context entries.', path: '/knowledge', icon: 'K', color: 'rgba(34,197,94,0.2)' },
-  { title: t('home.tile.assets', 'Scene Assets'), desc: 'Background catalog, scene metadata, and runtime selection.', path: '/assets', icon: 'A', color: 'rgba(244,114,182,0.2)' },
-  { title: t('home.tile.analytics', 'Analytics'), desc: 'Player engagement metrics and conversation patterns.', path: '/analytics', icon: 'D', color: 'rgba(56,189,248,0.2)' },
-  { title: t('nav.quality', 'Quality'), desc: 'Offline gates for character stability, scoring, and event triggers.', path: '/quality', icon: 'Q', color: 'rgba(34,197,94,0.2)' },
-  { title: t('nav.cg-gallery', 'CG Gallery'), desc: 'Scene art collection with unlock tracking and previews.', path: '/cg-gallery', icon: 'G', color: 'rgba(244,63,94,0.2)' },
-  { title: t('nav.backlog', 'Backlog'), desc: 'Conversation history replay with filtering and search.', path: '/backlog', icon: 'B', color: 'rgba(253,186,116,0.2)' },
-  { title: t('home.tile.marketplace', 'Marketplace'), desc: 'Community templates, characters, and story modules.', path: '/marketplace', icon: 'M', color: 'rgba(253,186,116,0.2)' },
-  { title: t('nav.plugins', 'Plugins'), desc: 'Custom workflow node types and event handlers.', path: '/plugins', icon: 'P', color: 'rgba(129,140,248,0.2)' },
-  { title: t('home.tile.audio', 'Audio'), desc: 'BGM, SFX, and voice management with mixer.', path: '/audio', icon: 'B', color: 'rgba(244,63,94,0.2)' },
-]
-
-const readinessItems = computed(() => [
-  { name: 'Core runtime architecture', done: true },
-  { name: 'Commercial workbench UI', done: true },
-  { name: 'Streaming chat and evaluation', done: true },
-  { name: 'Visual workflow editor', done: true },
-  { name: 'Scene asset management', done: true },
-  { name: 'Multi-character group chat', done: true },
-  { name: 'Knowledge base management', done: true },
-  { name: 'Professional character editor', done: true },
-  { name: 'Mind contract trace evidence', done: true },
-  { name: 'Title screen and CG gallery', done: true },
-  { name: 'Backlog conversation replay', done: true },
-  { name: '21 workflow node types', done: true },
-  { name: 'Analytics dashboard', done: true },
-  { name: 'Full i18n (280+ keys, 4 locales)', done: true },
-  { name: 'Plugin system for custom nodes', done: true },
-  { name: 'Cloud save sync', done: true },
-  { name: 'Distribution channel policy', done: true },
-  { name: 'Mobile Web/PWA shell readiness', done: true },
-  { name: 'Responsive Web/PWA shell verification', done: true },
-  { name: 'Tauri mobile deployment preflight', done: true },
-  { name: 'Pinned knowledge ref trace IDs', done: true },
-  { name: 'Runtime story event decisions', done: true },
-  { name: 'Manual score event diagnostics', done: true },
-  { name: 'Quality/runtime event decision parity', done: true },
-  { name: 'Production installer signing', done: false },
-  { name: 'Mobile deployment (Tauri mobile)', done: false },
-])
-
-const commercialProgress = computed(() => {
-  const done = readinessItems.value.filter((item) => item.done).length
-  return Math.round((done / readinessItems.value.length) * 100)
-})
-
-const setupSteps = computed(() => [
-  { title: 'Configure AI Backend', desc: 'Set up OpenAI-compatible API or local ONNX model in Settings.', route: '/settings', done: !!status.value?.active_ai_engine },
-  { title: 'Create Characters', desc: 'Design characters with personality, background, and knowledge.', route: '/character-editor', done: (status.value?.character_count ?? 0) > 0 },
-  { title: 'Build Knowledge Base', desc: 'Add world lore and context for AI-driven storytelling.', route: '/knowledge', done: (status.value?.knowledge_count ?? 0) > 0 },
-  { title: 'Design Workflows', desc: 'Create branching story logic with drag-and-drop nodes.', route: '/editor', done: false },
-  { title: 'Test in Chat', desc: 'Chat with characters and watch evaluation scores.', route: '/chat', done: false },
-  { title: 'Preview Story', desc: 'Run the visual novel runtime with Live2D and dialogue.', route: '/game', done: false },
-])
-
-async function refreshStatus() {
-  try {
-    status.value = await invokeCommand<EngineStatus>('get_engine_status', undefined, {
-      initialized: false, character_count: 0, dialogue_count: 0, knowledge_count: 0, ai_engines: [], active_ai_engine: null,
-    })
-    try {
-      const scenes = await invokeCommand<any[]>('list_scene_assets', undefined, [])
-      sceneCount.value = scenes.length
-    } catch { sceneCount.value = 0 }
-      } catch (e) { console.error(e) }
-  
-  
+interface RecentItem {
+  icon?: string
+  name: string
+  type: string
+  path: string
 }
 
+interface StageTool {
+  label: string
+  path: string
+  icon: Component
+}
+
+const router = useRouter()
+const { t } = useI18n()
+const status = ref<EngineStatus | null>(null)
+const sceneCount = ref(0)
+const recentItems = ref<RecentItem[]>([])
+const loading = ref(true)
+
+const runtimeTitle = computed(() => status.value?.initialized
+  ? t('home.runtime-ready', 'Runtime ready')
+  : t('home.runtime-setup', 'Project setup required'))
+const runtimeDescription = computed(() => status.value?.initialized
+  ? t('home.runtime-ready-copy', 'Content managers are loaded and the project is ready for authoring and preview.')
+  : t('home.runtime-setup-copy', 'Initialize the project and connect an AI backend before testing live story paths.'))
+
+const metrics = computed(() => [
+  { label: t('home.stats.characters', 'Characters'), value: status.value?.character_count ?? 0, icon: Users },
+  { label: t('home.stats.dialogues', 'Dialogues'), value: status.value?.dialogue_count ?? 0, icon: MessageSquareText },
+  { label: t('home.stats.knowledge', 'Knowledge'), value: status.value?.knowledge_count ?? 0, icon: Library },
+  { label: t('home.stats.scenes', 'Scenes'), value: sceneCount.value, icon: Clapperboard },
+  { label: t('home.stats.backends', 'AI backends'), value: status.value?.ai_engines?.length ?? 0, icon: Sparkles },
+])
+
+const creationStages = computed(() => [
+  {
+    id: 'foundation',
+    title: t('home.stage.foundation-title', 'Define the cast and world'),
+    description: t('home.stage.foundation-copy', 'Create character intent, personality, and the knowledge that keeps generation consistent.'),
+    tools: [
+      { label: t('nav.editor', 'Character Editor'), path: '/character-editor', icon: UserRoundPlus },
+      { label: t('nav.knowledge', 'Knowledge'), path: '/knowledge', icon: Library },
+    ] satisfies StageTool[],
+  },
+  {
+    id: 'narrative',
+    title: t('home.stage.narrative-title', 'Author scenes and dialogue'),
+    description: t('home.stage.narrative-copy', 'Build the visible stage and the dialogue graphs players will move through.'),
+    tools: [
+      { label: t('nav.scenes', 'Scenes'), path: '/scene-editor', icon: Clapperboard },
+      { label: t('nav.dialogues', 'Dialogues'), path: '/dialogue-editor', icon: MessageSquareText },
+    ] satisfies StageTool[],
+  },
+  {
+    id: 'logic',
+    title: t('home.stage.logic-title', 'Connect story logic'),
+    description: t('home.stage.logic-copy', 'Wire progression, score gates, unlocks, and reusable workflow behavior.'),
+    tools: [
+      { label: t('nav.workflow', 'Workflow'), path: '/editor', icon: Workflow },
+      { label: t('nav.events', 'Story Events'), path: '/story-events', icon: Zap },
+    ] satisfies StageTool[],
+  },
+  {
+    id: 'test',
+    title: t('home.stage.test-title', 'Preview and verify'),
+    description: t('home.stage.test-copy', 'Play the route, inspect AI behavior, and run quality gates before packaging.'),
+    tools: [
+      { label: t('home.preview-story', 'Preview story'), path: '/game', icon: Play },
+      { label: t('nav.quality', 'Quality'), path: '/quality', icon: ShieldCheck },
+    ] satisfies StageTool[],
+  },
+])
+
+const readinessItems = computed(() => [
+  {
+    label: t('home.readiness.runtime', 'Project initialized'),
+    detail: status.value?.initialized ? t('common.ready', 'Ready') : t('home.readiness.runtime-next', 'Open project settings'),
+    done: Boolean(status.value?.initialized),
+    path: '/settings',
+  },
+  {
+    label: t('home.readiness.cast', 'Cast available'),
+    detail: t('home.readiness.count', '{count} authored', { count: status.value?.character_count ?? 0 }),
+    done: (status.value?.character_count ?? 0) > 0,
+    path: '/character-editor',
+  },
+  {
+    label: t('home.readiness.dialogue', 'Dialogue available'),
+    detail: t('home.readiness.count', '{count} authored', { count: status.value?.dialogue_count ?? 0 }),
+    done: (status.value?.dialogue_count ?? 0) > 0,
+    path: '/dialogue-editor',
+  },
+  {
+    label: t('home.readiness.ai', 'AI backend connected'),
+    detail: status.value?.active_ai_engine || t('home.readiness.ai-next', 'Connect in Settings'),
+    done: Boolean(status.value?.active_ai_engine),
+    path: '/settings',
+  },
+])
+const completedReadiness = computed(() => readinessItems.value.filter((item) => item.done).length)
+
+function open(path: string) {
+  void router.push(path)
+}
+
+async function refreshStatus() {
+  loading.value = true
+  try {
+    status.value = await invokeCommand<EngineStatus>('get_engine_status', undefined, {
+      initialized: false,
+      character_count: 0,
+      dialogue_count: 0,
+      knowledge_count: 0,
+      ai_engines: [],
+      active_ai_engine: null,
+    })
+    const scenes = await invokeCommand<any[]>('list_scene_assets', undefined, []).catch(() => [])
+    sceneCount.value = scenes.length
+  } catch {
+    status.value = {
+      initialized: false,
+      character_count: 0,
+      dialogue_count: 0,
+      knowledge_count: 0,
+      ai_engines: [],
+      active_ai_engine: null,
+    }
+    sceneCount.value = 0
+  } finally {
+    loading.value = false
+  }
+}
 
 function loadRecent() {
   try {
     const stored = localStorage.getItem('monogatari-recent')
-    if (stored) recentItems.value = JSON.parse(stored)
-  } catch {}
-}
-
-// Track recent items globally
-if (typeof window !== 'undefined') {
-  (window as any).__monogatari_track = (item: { icon: string; name: string; type: string; path: string }) => {
-    let items: any[] = []
-    try {
-      const stored = localStorage.getItem('monogatari-recent')
-      if (stored) items = JSON.parse(stored)
-    } catch {}
-    items = items.filter(i => i.name !== item.name)
-    items.unshift(item)
-    if (items.length > 10) items = items.slice(0, 10)
-    localStorage.setItem('monogatari-recent', JSON.stringify(items))
-    recentItems.value = items
+    recentItems.value = stored ? JSON.parse(stored) : []
+  } catch {
+    recentItems.value = []
   }
 }
-onMounted(() => { refreshStatus(); loadRecent() })
+
+onMounted(() => {
+  void refreshStatus()
+  loadRecent()
+})
 </script>
 
 <style scoped>
-.dashboard { max-width: 1280px; margin: 0 auto; padding: 34px 40px; }
-.dash-header { display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; margin-bottom: 24px; }
-.eyebrow { display: block; color: var(--text-tertiary); font-size: 11px; font-weight: 700; letter-spacing: 0; text-transform: uppercase; }
-.dash-header h1 { margin-top: 3px; color: var(--text-primary); font-size: 28px; line-height: 1.15; }
-.dash-header p { max-width: 620px; color: var(--text-secondary); font-size: 13px; margin-top: 7px; }
-.dash-actions { display: flex; gap: 8px; flex-shrink: 0; }
-.status-strip { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 16px; align-items: stretch; margin-bottom: 16px; }
-.status-copy, .stat-card, .desk-tile, .ops-panel { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); }
-.status-copy { display: grid; align-content: center; gap: 6px; padding: 18px; }
-.status-copy strong { color: var(--brand-light); font-size: 18px; }
-.status-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-.stat-card { display: grid; align-content: center; gap: 4px; min-height: 86px; padding: 16px; }
-.stat-value { overflow: hidden; color: var(--text-primary); font-size: 24px; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
-.stat-label { color: var(--text-tertiary); font-size: 11px; font-weight: 700; text-transform: uppercase; }
-.quick-actions { margin-bottom: 16px; }
-.quick-actions > .eyebrow { margin-bottom: 10px; }
-.action-row { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
-.action-btn { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); color: var(--text-primary); cursor: pointer; font-size: 12px; font-weight: 600; transition: border-color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast); }
-.action-btn:hover { border-color: var(--brand); background: var(--surface-2); transform: translateY(-2px); }
-.action-icon { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: var(--radius-sm); background: var(--surface-3); color: var(--brand-light); font-weight: 900; font-size: 16px; }
-.desk-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
-.desk-tile { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 12px; align-items: center; min-height: 104px; padding: 16px; color: var(--text-primary); cursor: pointer; text-align: left; transition: border-color var(--transition-fast), transform var(--transition-fast), background var(--transition-fast); }
-.desk-tile:hover { border-color: var(--brand); background: var(--surface-2); transform: translateY(-1px); }
-.tile-icon { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: var(--radius-sm); color: var(--brand-light); font-weight: 900; }
-.tile-copy { min-width: 0; display: grid; gap: 4px; }
-.tile-copy strong { color: var(--text-primary); font-size: 14px; }
-.tile-copy span { color: var(--text-tertiary); font-size: 12px; line-height: 1.35; }
-.tile-arrow { color: var(--text-tertiary); font-size: 24px; }
-.ops-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; margin-bottom: 16px; }
-.ops-panel { padding: 18px; }
-.panel-head { display: flex; justify-content: space-between; gap: 16px; align-items: baseline; margin-bottom: 14px; }
-.panel-head strong { color: var(--text-primary); }
-.progress-track { height: 8px; overflow: hidden; border-radius: 999px; background: var(--surface-3); }
-.progress-fill { height: 100%; border-radius: inherit; background: var(--brand); transition: width var(--transition); }
-.readiness-list, .pipeline-list { display: grid; gap: 10px; margin-top: 16px; }
-.readiness-list span, .pipeline-list span { display: flex; justify-content: space-between; gap: 12px; color: var(--text-secondary); font-size: 13px; }
-.readiness-list b, .pipeline-list b { color: var(--text-tertiary); font-size: 12px; }
-.readiness-list .done { color: var(--text-primary); }
-.readiness-list .done b { color: var(--success); }
-.pipeline-actions { display: flex; gap: 8px; margin-top: 14px; }
-.getting-started { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); padding: 18px; }
-.steps-grid { display: grid; gap: 12px; margin-top: 14px; }
-.step-item { display: grid; grid-template-columns: 32px 1fr auto; gap: 14px; align-items: center; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); }
-.step-item.completed { border-color: rgba(34,197,94,0.28); background: rgba(34,197,94,0.05); }
-.step-num { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--surface-3); color: var(--brand-light); font-weight: 800; font-size: 14px; }
-.step-item.completed .step-num { background: var(--success); color: white; }
-.step-content strong { display: block; color: var(--text-primary); font-size: 13px; margin-bottom: 2px; }
-.step-content p { color: var(--text-tertiary); font-size: 12px; line-height: 1.3; }
-.btn { min-height: 34px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text-secondary); cursor: pointer; font: inherit; font-weight: 700; font-size: 13px; padding: 6px 14px; transition: all 0.15s; }
-.btn:hover { border-color: var(--brand); color: var(--brand-light); }
-.btn-primary { background: var(--brand); color: var(--surface-0); border-color: var(--brand); }
-.btn-primary:hover { background: var(--brand-light); }
-.btn-secondary { background: var(--surface-2); }
-.btn-sm { min-height: 30px; padding: 4px 12px; font-size: 12px; }
-@media (max-width: 1060px) { .action-row { grid-template-columns: repeat(3, minmax(0, 1fr)); } .status-strip, .ops-grid { grid-template-columns: 1fr; } .desk-grid, .status-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.recent-meta { color: var(--text-tertiary); font-size: 11px; text-transform: uppercase; }
-.recent-name { color: var(--text-primary); font-size: 13px; font-weight: 700; }
-.recent-icon { font-size: 18px; }
-.recent-card:hover { border-color: var(--brand); background: var(--surface-2); }
-.recent-card { display: grid; gap: 4px; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); cursor: pointer; transition: all 0.15s; }
-.recent-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.recent-activity { margin-bottom: 16px; }
-@media (max-width: 640px) { .dashboard { padding: 22px; } .dash-header { display: grid; } .action-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } .desk-grid, .status-metrics { grid-template-columns: 1fr; } }
+.home-page { width: min(1320px, 100%); margin: 0 auto; padding: 28px 32px 48px; }
+.page-lead { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 20px; }
+.eyebrow { display: block; color: var(--text-tertiary); font-size: 9px; font-weight: 750; text-transform: uppercase; }
+.page-lead h1 { margin-top: 5px; font-size: 27px; line-height: 1.15; }
+.page-lead p { max-width: 660px; margin-top: 7px; color: var(--text-secondary); font-size: 12px; }
+.lead-actions { display: flex; flex: 0 0 auto; gap: 7px; }
+.lead-actions .btn { min-height: 34px; }
+.spinning { animation: spin 900ms linear infinite; }
+
+.runtime-banner { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 11px; min-height: 62px; padding: 10px 13px; border: 1px solid var(--border); border-left: 3px solid var(--warning); border-radius: var(--radius); background: var(--surface-1); }
+.runtime-banner.ready { border-left-color: var(--success); }
+.runtime-icon { display: grid; width: 34px; height: 34px; place-items: center; border-radius: var(--radius-sm); background: var(--surface-2); color: var(--warning); }
+.runtime-banner.ready .runtime-icon { color: var(--success); }
+.runtime-copy { display: grid; min-width: 0; }
+.runtime-copy strong { font-size: 12px; }
+.runtime-copy span { margin-top: 3px; color: var(--text-tertiary); font-size: 10px; }
+.runtime-actions { display: flex; align-items: center; gap: 5px; }
+.text-action { display: inline-flex; min-height: 30px; align-items: center; gap: 5px; padding: 5px 8px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-secondary); cursor: pointer; font: inherit; font-size: 10px; font-weight: 650; }
+.text-action:hover { background: var(--surface-2); color: var(--text-primary); }
+.text-action.primary { color: var(--brand-strong); }
+
+.metric-strip { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin: 14px 0 22px; border-block: 1px solid var(--border); }
+.metric-cell { display: grid; min-width: 0; min-height: 67px; grid-template-columns: 24px minmax(0, 1fr); align-items: center; gap: 7px; padding: 10px 12px; }
+.metric-cell + .metric-cell { border-left: 1px solid var(--border); }
+.metric-cell > svg { color: var(--text-tertiary); }
+.metric-cell span { display: grid; min-width: 0; }
+.metric-cell small { overflow: hidden; color: var(--text-tertiary); font-size: 9px; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+.metric-cell strong { margin-top: 2px; overflow: hidden; font-size: 17px; text-overflow: ellipsis; white-space: nowrap; }
+
+.dashboard-columns { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(270px, 0.75fr); gap: 26px; align-items: start; }
+.workflow-column, .status-column { display: grid; gap: 24px; }
+.section-block, .status-section { min-width: 0; }
+.section-heading { display: flex; min-height: 42px; align-items: flex-start; justify-content: space-between; gap: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.section-heading.compact { min-height: 38px; }
+.section-heading h2 { margin-top: 3px; font-size: 14px; }
+.section-note, .readiness-count { color: var(--text-tertiary); font-family: var(--font-mono); font-size: 9px; }
+
+.stage-list { display: grid; }
+.stage-row { display: grid; min-width: 0; grid-template-columns: 28px minmax(180px, 1fr) minmax(260px, 0.95fr); align-items: center; gap: 12px; padding: 14px 4px; border-bottom: 1px solid var(--border-subtle); }
+.stage-index { display: grid; width: 24px; height: 24px; place-items: center; border: 1px solid var(--border-strong); border-radius: 50%; color: var(--text-tertiary); font: 9px var(--font-mono); }
+.stage-copy { min-width: 0; }
+.stage-copy strong { font-size: 12px; }
+.stage-copy p { margin-top: 3px; color: var(--text-tertiary); font-size: 10px; line-height: 1.45; }
+.stage-tools { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.stage-tools button, .recent-list button, .readiness-list button, .quick-tool-list button { display: grid; width: 100%; min-width: 0; align-items: center; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-1); color: var(--text-secondary); cursor: pointer; text-align: left; }
+.stage-tools button { min-height: 36px; grid-template-columns: 20px minmax(0, 1fr) 14px; gap: 6px; padding: 7px 8px; font: inherit; font-size: 10px; }
+.stage-tools button:hover, .recent-list button:hover, .readiness-list button:hover, .quick-tool-list button:hover { border-color: var(--border-strong); background: var(--surface-2); color: var(--text-primary); }
+.stage-tools button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.recent-list { display: grid; margin-top: 8px; }
+.recent-list button { grid-template-columns: 22px minmax(0, 1fr) 14px; gap: 7px; padding: 9px 8px; border-color: transparent; background: transparent; font: inherit; }
+.recent-list span { display: grid; min-width: 0; }
+.recent-list strong, .recent-list small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recent-list strong { font-size: 11px; }
+.recent-list small { margin-top: 2px; color: var(--text-tertiary); font-size: 9px; }
+.empty-recent { display: grid; min-height: 100px; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 16px 6px; color: var(--text-tertiary); }
+.empty-recent span { min-width: 0; }
+.empty-recent strong { color: var(--text-secondary); font-size: 11px; }
+.empty-recent p { margin-top: 3px; font-size: 10px; }
+
+.status-column { padding-left: 4px; }
+.readiness-list, .quick-tool-list { display: grid; margin-top: 8px; }
+.readiness-list button { grid-template-columns: 22px minmax(0, 1fr) 14px; gap: 7px; padding: 9px 7px; border-color: transparent; background: transparent; font: inherit; }
+.readiness-list button > svg:first-child { color: var(--text-tertiary); }
+.readiness-list .done-icon { color: var(--success) !important; }
+.readiness-list span { display: grid; min-width: 0; }
+.readiness-list strong { font-size: 10px; }
+.readiness-list small { margin-top: 2px; overflow: hidden; color: var(--text-tertiary); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.quick-tool-list button { grid-template-columns: 22px minmax(0, 1fr) 14px; gap: 7px; padding: 9px 7px; border-color: transparent; background: transparent; font: inherit; font-size: 10px; }
+.build-meta { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; padding: 12px 10px; border-top: 1px solid var(--border); color: var(--text-tertiary); font-size: 9px; }
+.build-meta code, .build-meta strong { max-width: 150px; overflow: hidden; color: var(--text-secondary); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 1080px) {
+  .dashboard-columns { grid-template-columns: 1fr; }
+  .status-column { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-left: 0; }
+  .build-meta { grid-column: 1 / -1; }
+}
+
+@media (max-width: 760px) {
+  .home-page { padding: 20px 16px 36px; }
+  .page-lead { display: grid; }
+  .lead-actions { width: 100%; }
+  .lead-actions .btn { flex: 1; justify-content: center; }
+  .runtime-banner { grid-template-columns: 36px minmax(0, 1fr); }
+  .runtime-actions { grid-column: 1 / -1; justify-content: flex-end; border-top: 1px solid var(--border-subtle); padding-top: 7px; }
+  .metric-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metric-cell + .metric-cell { border-left: 0; }
+  .metric-cell:nth-child(even) { border-left: 1px solid var(--border); }
+  .metric-cell:nth-child(n + 3) { border-top: 1px solid var(--border); }
+  .stage-row { grid-template-columns: 28px minmax(0, 1fr); }
+  .stage-tools { grid-column: 2; }
+  .status-column { grid-template-columns: 1fr; }
+  .build-meta { grid-column: auto; }
+}
+
+@media (max-width: 430px) {
+  .page-lead h1 { font-size: 23px; }
+  .stage-tools { grid-template-columns: 1fr; }
+  .empty-recent { grid-template-columns: 26px minmax(0, 1fr); }
+  .empty-recent .btn { grid-column: 2; justify-self: start; }
+}
 </style>

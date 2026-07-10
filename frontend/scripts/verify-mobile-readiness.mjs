@@ -6,9 +6,10 @@ const frontendDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 const repoRoot = path.resolve(frontendDir, '..')
 const issues = []
 
-const [indexHtml, globalCss, manifest, packageJson, tauriConfig] = await Promise.all([
+const [indexHtml, globalCss, appSource, manifest, packageJson, tauriConfig] = await Promise.all([
   readText(path.join(frontendDir, 'index.html')),
   readText(path.join(frontendDir, 'src', 'styles', 'main.css')),
+  readText(path.join(frontendDir, 'src', 'App.vue')),
   readJson(path.join(frontendDir, 'public', 'manifest.webmanifest')),
   readJson(path.join(frontendDir, 'package.json')),
   readJson(path.join(repoRoot, 'rust-engine', 'crates', 'tauri-app', 'tauri.conf.json')),
@@ -41,11 +42,17 @@ for (const needle of [
   '-webkit-tap-highlight-color',
   'touch-action: manipulation',
   'overscroll-behavior',
-  'env(safe-area-inset-bottom',
-  'calc(56px + env(safe-area-inset-bottom',
-  'calc(64px + env(safe-area-inset-bottom',
 ]) {
-  requireIncludes(globalCss, needle, `src/styles/main.css must include mobile shell rule: ${needle}`)
+  requireIncludes(globalCss, needle, `src/styles/main.css must include mobile readiness rule: ${needle}`)
+}
+
+for (const needle of [
+  '@media (max-width: 860px)',
+  'calc(60px + env(safe-area-inset-bottom',
+  'calc(56px + env(safe-area-inset-bottom',
+  'grid-template-columns: repeat(5, minmax(0, 1fr))',
+]) {
+  requireIncludes(appSource, needle, `src/App.vue must include compact shell rule: ${needle}`)
 }
 
 const mainWindow = tauriConfig.app?.windows?.[0] ?? {}
