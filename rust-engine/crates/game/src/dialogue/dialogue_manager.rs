@@ -104,6 +104,13 @@ impl DialogueManager {
     /// Load a dialogue script from a file.
     pub async fn load_script(&mut self, path: &Path) -> Result<()> {
         let script = DialogueScript::from_file(path).await?;
+        if self.scripts.contains_key(&script.id) {
+            return Err(llm_core::EngineError::dialogue(
+                &script.id,
+                "catalog",
+                "Duplicate dialogue id",
+            ));
+        }
         info!("Loaded dialogue script: {} ({})", script.title, script.id);
         self.scripts.insert(script.id.clone(), script);
         Ok(())
@@ -113,12 +120,17 @@ impl DialogueManager {
     pub async fn load_from_directory(&mut self, dir: &Path) -> Result<usize> {
         let mut total = 0;
         let mut entries = tokio::fs::read_dir(dir).await?;
+        let mut paths = Vec::new();
         while let Some(entry) = entries.next_entry().await? {
             let path = entry.path();
             if path.extension().is_some_and(|e| e == "json") {
-                self.load_script(&path).await?;
-                total += 1;
+                paths.push(path);
             }
+        }
+        paths.sort();
+        for path in paths {
+            self.load_script(&path).await?;
+            total += 1;
         }
         Ok(total)
     }
@@ -457,6 +469,37 @@ impl DialogueManager {
             .collect::<Vec<_>>();
         summaries.sort_by(|left, right| left.id.cmp(&right.id));
         summaries
+    }
+
+    /// Replace the loaded script catalog while retaining runtime callbacks and local state.
+    pub fn replace_scripts(&mut self, scripts: Vec<DialogueScript>) -> Result<usize> {
+        let mut replacement = HashMap::with_capacity(scripts.len());
+        for mut script in scripts {
+            script.validate_graph()?;
+            for (node_id, node) in &mut script.nodes {
+                node.id.clone_from(node_id);
+            }
+            let script_id = script.id.clone();
+            if replacement.insert(script_id.clone(), script).is_some() {
+                return Err(llm_core::EngineError::dialogue(
+                    &script_id,
+                    "catalog",
+                    "Duplicate dialogue id",
+                ));
+            }
+        }
+        let count = replacement.len();
+        self.scripts = replacement;
+        self.active_script_id = None;
+        self.current_node_id = None;
+        Ok(count)
+    }
+
+    /// Clone scripts in deterministic id order for authoring and catalog verification.
+    pub fn scripts(&self) -> Vec<DialogueScript> {
+        let mut scripts = self.scripts.values().cloned().collect::<Vec<_>>();
+        scripts.sort_by(|left, right| left.id.cmp(&right.id));
+        scripts
     }
 
     pub fn has_script(&self, script_id: &str) -> bool {

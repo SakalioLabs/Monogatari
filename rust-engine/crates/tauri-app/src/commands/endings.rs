@@ -2,13 +2,11 @@
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicU64, Ordering};
 
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use tauri::State;
-use tokio::io::AsyncWriteExt;
 
 use crate::commands::dialogue::{
     ensure_project_dialogues_loaded, start_dialogue_authoring_inner, start_dialogue_inner,
@@ -16,6 +14,9 @@ use crate::commands::dialogue::{
 };
 use crate::commands::scenes::{
     build_scene_asset_catalog, resolve_project_scene, set_scene_inner, SceneInfo,
+};
+use crate::content_authoring::{
+    ensure_regular_project_directory, stage_json_deletion, stage_json_replacement,
 };
 use crate::state::AppState;
 use crate::story_access::{
@@ -29,7 +30,6 @@ const STORY_ENDING_SCHEMA_V1: &str = "monogatari-story-ending/v1";
 const STORY_ENDING_CATALOG_SCHEMA_V1: &str = "monogatari-story-ending-catalog/v1";
 const MAX_ENDING_FILES: usize = 256;
 const MAX_ENDING_FILE_BYTES: u64 = 64 * 1024;
-static ENDING_STAGE_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -280,7 +280,8 @@ async fn save_story_ending_inner(
     validate_ending(&ending, Path::new("<authoring-request>"))?;
     validate_story_ending_references(&project_root, std::slice::from_ref(&ending)).await?;
 
-    let ending_root = ensure_story_ending_directory(&project_root).await?;
+    let ending_root =
+        ensure_regular_project_directory(&project_root, "endings", "story ending").await?;
     let target_path = match original_ending_id {
         Some(original_id) => {
             if original_id != ending.id {
@@ -321,15 +322,18 @@ async fn save_story_ending_inner(
         ));
     }
 
-    let staged = ending_stage_paths(&target_path)?;
-    let had_target =
-        replace_story_ending_document(&target_path, &staged.0, &staged.1, content.as_bytes())
-            .await?;
+    let staged = stage_json_replacement(
+        &target_path,
+        content.as_bytes(),
+        MAX_ENDING_FILE_BYTES,
+        "story ending",
+    )
+    .await?;
 
     let loaded = match load_story_ending_sources(&project_root) {
         Ok(loaded) => loaded,
         Err(error) => {
-            rollback_story_ending_document(&target_path, &staged.1, had_target).await?;
+            staged.rollback().await?;
             return Err(format!(
                 "Saved story ending failed project reload and was rolled back: {error}"
             ));
@@ -340,19 +344,19 @@ async fn save_story_ending_inner(
         .map(|loaded| loaded.ending.clone())
         .collect::<Vec<_>>();
     if let Err(error) = validate_story_ending_references(&project_root, &definitions).await {
-        rollback_story_ending_document(&target_path, &staged.1, had_target).await?;
+        staged.rollback().await?;
         return Err(format!(
             "Saved story ending failed content validation and was rolled back: {error}"
         ));
     }
     if !loaded.iter().any(|loaded| loaded.ending == ending) {
-        rollback_story_ending_document(&target_path, &staged.1, had_target).await?;
+        staged.rollback().await?;
         return Err(
             "Saved story ending changed during replacement; the original was restored.".to_string(),
         );
     }
 
-    cleanup_story_ending_backup(&staged.1).await;
+    staged.commit().await?;
     ending_catalog_snapshot_from_loaded(state, loaded).await
 }
 
@@ -393,34 +397,26 @@ async fn delete_story_ending_inner(
         ));
     }
 
-    let (_, backup_path) = ending_stage_paths(&target.absolute_path)?;
-    tokio::fs::rename(&target.absolute_path, &backup_path)
-        .await
-        .map_err(|error| {
-            format!(
-                "Failed to stage story ending `{}` for deletion: {error}",
-                target.absolute_path.display()
-            )
-        })?;
+    let staged = stage_json_deletion(&target.absolute_path, "story ending").await?;
 
     let loaded = match load_story_ending_sources(&project_root) {
         Ok(loaded) if !loaded.iter().any(|loaded| loaded.ending.id == ending_id) => loaded,
         Ok(_) => {
-            restore_deleted_story_ending(&target.absolute_path, &backup_path).await?;
+            staged.rollback().await?;
             return Err(
                 "Deleted story ending remained in the project catalog; the file was restored."
                     .to_string(),
             );
         }
         Err(error) => {
-            restore_deleted_story_ending(&target.absolute_path, &backup_path).await?;
+            staged.rollback().await?;
             return Err(format!(
                 "Deleting story ending broke the project catalog and was rolled back: {error}"
             ));
         }
     };
 
-    cleanup_story_ending_backup(&backup_path).await;
+    staged.commit().await?;
     ending_catalog_snapshot_from_loaded(state, loaded).await
 }
 
@@ -474,165 +470,9 @@ async fn validate_story_ending_references(
     Ok(())
 }
 
-async fn ensure_story_ending_directory(project_root: &Path) -> Result<PathBuf, String> {
-    let ending_root = project_root.join("endings");
-    tokio::fs::create_dir_all(&ending_root)
-        .await
-        .map_err(|error| {
-            format!(
-                "Failed to create story ending directory `{}`: {error}",
-                ending_root.display()
-            )
-        })?;
-    let metadata = std::fs::symlink_metadata(&ending_root).map_err(|error| {
-        format!(
-            "Failed to inspect story ending directory `{}`: {error}",
-            ending_root.display()
-        )
-    })?;
-    if metadata.file_type().is_symlink() || !metadata.is_dir() {
-        return Err(format!(
-            "Story ending path must be a regular directory: {}",
-            ending_root.display()
-        ));
-    }
-    ending_root.canonicalize().map_err(|error| {
-        format!(
-            "Failed to resolve story ending directory `{}`: {error}",
-            ending_root.display()
-        )
-    })
-}
-
-fn ending_stage_paths(target_path: &Path) -> Result<(PathBuf, PathBuf), String> {
-    let parent = target_path
-        .parent()
-        .ok_or_else(|| "Story ending target has no parent directory.".to_string())?;
-    let file_name = target_path
-        .file_name()
-        .and_then(|name| name.to_str())
-        .ok_or_else(|| "Story ending target filename is not valid UTF-8.".to_string())?;
-    let nonce = ENDING_STAGE_COUNTER.fetch_add(1, Ordering::Relaxed);
-    let stem = format!(".{file_name}.{}.{}", std::process::id(), nonce);
-    Ok((
-        parent.join(format!("{stem}.tmp")),
-        parent.join(format!("{stem}.bak")),
-    ))
-}
-
-async fn replace_story_ending_document(
-    target_path: &Path,
-    temp_path: &Path,
-    backup_path: &Path,
-    content: &[u8],
-) -> Result<bool, String> {
-    let mut file = tokio::fs::OpenOptions::new()
-        .create_new(true)
-        .write(true)
-        .open(temp_path)
-        .await
-        .map_err(|error| {
-            format!(
-                "Failed to stage story ending `{}`: {error}",
-                temp_path.display()
-            )
-        })?;
-    if let Err(error) = file.write_all(content).await {
-        drop(file);
-        let _ = tokio::fs::remove_file(temp_path).await;
-        return Err(format!(
-            "Failed to write staged story ending `{}`: {error}",
-            temp_path.display()
-        ));
-    }
-    if let Err(error) = file.flush().await {
-        drop(file);
-        let _ = tokio::fs::remove_file(temp_path).await;
-        return Err(format!(
-            "Failed to flush staged story ending `{}`: {error}",
-            temp_path.display()
-        ));
-    }
-    if let Err(error) = file.sync_all().await {
-        drop(file);
-        let _ = tokio::fs::remove_file(temp_path).await;
-        return Err(format!(
-            "Failed to sync staged story ending `{}`: {error}",
-            temp_path.display()
-        ));
-    }
-    drop(file);
-
-    let had_target = target_path.exists();
-    if had_target {
-        if let Err(error) = tokio::fs::rename(target_path, backup_path).await {
-            let _ = tokio::fs::remove_file(temp_path).await;
-            return Err(format!(
-                "Failed to back up story ending `{}`: {error}",
-                target_path.display()
-            ));
-        }
-    }
-    if let Err(error) = tokio::fs::rename(temp_path, target_path).await {
-        if had_target {
-            let _ = tokio::fs::rename(backup_path, target_path).await;
-        }
-        let _ = tokio::fs::remove_file(temp_path).await;
-        return Err(format!(
-            "Failed to replace story ending `{}`: {error}",
-            target_path.display()
-        ));
-    }
-    Ok(had_target)
-}
-
-async fn rollback_story_ending_document(
-    target_path: &Path,
-    backup_path: &Path,
-    had_target: bool,
-) -> Result<(), String> {
-    if target_path.exists() {
-        tokio::fs::remove_file(target_path).await.map_err(|error| {
-            format!(
-                "Failed to remove rejected story ending `{}`: {error}",
-                target_path.display()
-            )
-        })?;
-    }
-    if had_target {
-        tokio::fs::rename(backup_path, target_path)
-            .await
-            .map_err(|error| {
-                format!(
-                    "Failed to restore story ending `{}`: {error}",
-                    target_path.display()
-                )
-            })?;
-    }
-    Ok(())
-}
-
-async fn restore_deleted_story_ending(
-    target_path: &Path,
-    backup_path: &Path,
-) -> Result<(), String> {
-    tokio::fs::rename(backup_path, target_path)
-        .await
-        .map_err(|error| {
-            format!(
-                "Failed to restore deleted story ending `{}`: {error}",
-                target_path.display()
-            )
-        })
-}
-
-async fn cleanup_story_ending_backup(backup_path: &Path) {
-    if backup_path.exists() {
-        let _ = tokio::fs::remove_file(backup_path).await;
-    }
-}
-
-fn load_story_endings(project_root: &Path) -> Result<Vec<StoryEndingDefinition>, String> {
+pub(crate) fn load_story_endings(
+    project_root: &Path,
+) -> Result<Vec<StoryEndingDefinition>, String> {
     Ok(load_story_ending_sources(project_root)?
         .into_iter()
         .map(|loaded| loaded.ending)
@@ -824,6 +664,7 @@ fn source_label(project_root: &Path, path: &Path) -> String {
 mod tests {
     use super::*;
     use crate::story_events::StoryEventCatalog;
+    use std::sync::atomic::{AtomicU64, Ordering};
 
     static TEST_ROOT_COUNTER: AtomicU64 = AtomicU64::new(0);
 

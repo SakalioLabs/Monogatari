@@ -58,6 +58,8 @@
 - [ ] Story content access gates only IDs referenced by `unlock_*` actions; Story Mode, dialogue starts, real workflow scene changes, and ending launches reject locked content and admit persisted unlocks
 - [ ] Story Event editor validates trigger rules, character scopes, typed actions, target references, and metadata; saves reject stale fingerprints and multi-document flattening and roll back failed replacements
 - [ ] Versioned ending assets reject unsafe or unknown fields, expose stable authoring fingerprints, atomically roll back rejected saves, protect Story Event references during deletion, and resolve existing scene/dialogue references before player launch or author preview
+- [ ] Scene authoring catalogs merge metadata and inferred backgrounds, reject stale or invalid writes, roll back failed replacements, preserve background files during metadata deletion, and protect Story Event, ending, and workflow references
+- [ ] Dialogue authoring catalogs reject unknown fields, broken or unreachable graphs, unknown speakers/relationship targets, invalid deltas, unsafe scripts/prompts, and stale writes; successful saves hot-reload runtime scripts and protected deletes scan Story Events and endings
 - [ ] Character, dialogue, and knowledge loader commands read only from the active project `characters/`, `dialogue/`, and `knowledge/` directories
 - [ ] Character create/delete commands resolve through the active or discovered default project data root, validate portable character IDs, and touch only direct JSON files under `characters/`
 - [ ] Plugin listing, registration, and removal commands resolve through the active or discovered default project data root, validate portable plugin IDs, normalize optional `.rhai` script references under `plugins/`, and touch only direct manifest JSON files under `plugins/`
@@ -69,6 +71,8 @@
 - [ ] Example dialogues play through with choices
 - [ ] Both checked-in project data roots load through the real character/dialogue/knowledge/event managers, including legacy relationship-object normalization and map-key dialogue node IDs
 - [ ] Story Library lists scene/dialogue/ending lock state and Web/PWA dialogue playback follows real node choices
+- [ ] Scene and Dialogue editors guard dirty drafts, persist browser catalogs, display real project diagnostics, and preview saved drafts through Story Mode on desktop and Web/PWA
+- [ ] Release dialogue validation passes for both checked-in data roots with matching catalogs, reachable nodes, valid targets, known characters, and bounded relationship changes
 - [ ] Ending Route editor binds real scene/dialogue catalogs, reports event coverage, guards dirty drafts, persists browser drafts, and previews saved routes without requiring player unlock progress
 - [ ] Knowledge base search returns relevant results
 - [ ] Scene assets validate without missing file warnings

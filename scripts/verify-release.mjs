@@ -72,6 +72,7 @@ const requiredEventRules = [
   'super_dedicated',
 ]
 const storyEventControlPattern = /[\u0000-\u001f\u007f]/
+const dialogueControlPattern = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/
 
 const requiredWebDistFiles = [
   'index.html',
@@ -159,6 +160,7 @@ const releaseCriticalRustFiles = [
   'crates/assets/src/asset_manager.rs',
   'crates/assets/src/save_manager.rs',
   'crates/game/src/dialogue/dialogue_manager.rs',
+  'crates/game/src/dialogue/dialogue_node.rs',
   'crates/game/src/dialogue/dialogue_script.rs',
   'crates/scripting/src/lib.rs',
   'crates/tauri-app/src/main.rs',
@@ -166,6 +168,8 @@ const releaseCriticalRustFiles = [
   'crates/tauri-app/src/story_access.rs',
   'crates/tauri-app/src/story_events.rs',
   'crates/tauri-app/src/story_progress.rs',
+  'crates/tauri-app/src/content_authoring.rs',
+  'crates/tauri-app/src/content_references.rs',
   'crates/tauri-app/src/commands/ai.rs',
   'crates/tauri-app/src/commands/engine.rs',
   'crates/tauri-app/src/commands/endings.rs',
@@ -269,6 +273,7 @@ async function main() {
 
   await verifyJsonFiles()
   await verifyStoryEventCatalogs()
+  await verifyDialogueCatalogs()
   await verifyWorkflowFiles()
   await verifyRendererAssets()
   await verifyKnowledgeRefs()
@@ -477,6 +482,187 @@ async function verifyStoryEventCatalogs() {
   }
 
   console.log(`[release] Story event catalogs OK (${fileCount} file(s), ${catalogs[0]?.catalog.events.size ?? 0} events, catalog ${catalogs[0]?.catalog.catalogFingerprint.slice(0, 12) ?? 'missing'})`)
+}
+
+async function verifyDialogueCatalogs() {
+  const issues = []
+  const catalogs = []
+  let fileCount = 0
+  let nodeCount = 0
+  let choiceCount = 0
+  const topFields = new Set(['id', 'title', 'description', 'start_node_id', 'nodes', 'variables'])
+  const nodeFields = new Set([
+    'id', 'speaker_id', 'text', 'next_node_id', 'choices', 'condition', 'script', 'emotion',
+    'use_llm', 'llm_prompt', 'llm_system_prompt', 'is_ending', 'ending_type',
+  ])
+  const choiceFields = new Set(['text', 'next_node_id', 'relationship_changes', 'condition'])
+
+  for (const dataRoot of rendererDataRoots) {
+    const characterIds = new Set()
+    for (const file of await jsonFilesInDir(path.join(dataRoot.dir, 'characters'), issues)) {
+      const value = JSON.parse(await readFile(file, 'utf8'))
+      const characters = Array.isArray(value) ? value : [value]
+      for (const character of characters) {
+        if (portableStoryEventId(character?.id, 128)) characterIds.add(character.id)
+      }
+    }
+
+    const files = await jsonFilesInDir(path.join(dataRoot.dir, 'dialogue'), issues)
+    const ids = new Set()
+    const documents = []
+    fileCount += files.length
+    for (const file of files) {
+      const label = relative(file)
+      const dialogue = JSON.parse(await readFile(file, 'utf8'))
+      const unknownTopFields = Object.keys(dialogue ?? {}).filter((field) => !topFields.has(field))
+      if (unknownTopFields.length > 0) issues.push(`${label}: unknown dialogue fields ${unknownTopFields.join(', ')}`)
+      if (!portableStoryEventId(dialogue?.id, 128)) issues.push(`${label}: id must be a portable identifier`)
+      else if (ids.has(dialogue.id)) issues.push(`${dataRoot.label}: duplicate dialogue id ${dialogue.id}`)
+      else ids.add(dialogue.id)
+      if (!nonEmptyString(dialogue?.title) || dialogue.title.length > 256 || dialogueControlPattern.test(dialogue.title)) {
+        issues.push(`${label}: title must contain 1 to 256 supported characters`)
+      }
+      if (dialogue?.description !== undefined
+        && (!nonEmptyString(dialogue.description) || dialogue.description.length > 2048 || dialogueControlPattern.test(dialogue.description))) {
+        issues.push(`${label}: description must contain 1 to 2048 supported characters`)
+      }
+      if (!dialogue?.nodes || typeof dialogue.nodes !== 'object' || Array.isArray(dialogue.nodes)) {
+        issues.push(`${label}: nodes must be an object`)
+        continue
+      }
+      const nodeIds = Object.keys(dialogue.nodes)
+      const nodeSet = new Set(nodeIds)
+      nodeCount += nodeIds.length
+      if (nodeIds.length < 1 || nodeIds.length > 2048) issues.push(`${label}: must contain 1 to 2048 nodes`)
+      if (!portableStoryEventId(dialogue.start_node_id, 128) || !nodeSet.has(dialogue.start_node_id)) {
+        issues.push(`${label}: start_node_id must identify an existing node`)
+      }
+      const variables = dialogue.variables ?? {}
+      if (!variables || typeof variables !== 'object' || Array.isArray(variables)) {
+        issues.push(`${label}: variables must be an object`)
+      } else {
+        const variableIds = Object.keys(variables)
+        if (variableIds.length > 512) issues.push(`${label}: variables cannot exceed 512 entries`)
+        for (const variableId of variableIds) {
+          if (!portableStoryEventId(variableId, 128)) issues.push(`${label}: invalid variable id ${variableId}`)
+        }
+      }
+
+      for (const [nodeId, node] of Object.entries(dialogue.nodes)) {
+        const nodeLabel = `${label}:${nodeId}`
+        if (!portableStoryEventId(nodeId, 128)) issues.push(`${nodeLabel}: node id must be portable`)
+        if (!node || typeof node !== 'object' || Array.isArray(node)) {
+          issues.push(`${nodeLabel}: node must be an object`)
+          continue
+        }
+        const unknownNodeFields = Object.keys(node).filter((field) => !nodeFields.has(field))
+        if (unknownNodeFields.length > 0) issues.push(`${nodeLabel}: unknown fields ${unknownNodeFields.join(', ')}`)
+        if (node.id !== undefined && node.id !== nodeId) issues.push(`${nodeLabel}: embedded id must match the node map key`)
+        if (!nonEmptyString(node.text) || node.text.length > 16384 || dialogueControlPattern.test(node.text)) {
+          issues.push(`${nodeLabel}: text must contain 1 to 16384 supported characters`)
+        }
+        if (node.speaker_id !== undefined && node.speaker_id !== null) {
+          if (!portableStoryEventId(node.speaker_id, 128)) issues.push(`${nodeLabel}: speaker_id must be portable`)
+          else if (!characterIds.has(node.speaker_id)) issues.push(`${nodeLabel}: unknown speaker ${node.speaker_id}`)
+        }
+        const choices = node.choices ?? []
+        if (!Array.isArray(choices)) {
+          issues.push(`${nodeLabel}: choices must be an array`)
+          continue
+        }
+        choiceCount += choices.length
+        if (choices.length > 32) issues.push(`${nodeLabel}: choices cannot exceed 32 entries`)
+        if (node.next_node_id !== undefined && node.next_node_id !== null && choices.length > 0) {
+          issues.push(`${nodeLabel}: cannot combine next_node_id with choices`)
+        }
+        if (node.next_node_id !== undefined && node.next_node_id !== null && !nodeSet.has(node.next_node_id)) {
+          issues.push(`${nodeLabel}: missing next node ${String(node.next_node_id)}`)
+        }
+        if (node.is_ending !== undefined && typeof node.is_ending !== 'boolean') {
+          issues.push(`${nodeLabel}: is_ending must be boolean`)
+        }
+        if (node.is_ending === true && (node.next_node_id != null || choices.length > 0)) {
+          issues.push(`${nodeLabel}: ending nodes cannot have outgoing transitions`)
+        }
+        if (node.ending_type !== undefined && node.ending_type !== null) {
+          if (node.is_ending !== true) issues.push(`${nodeLabel}: ending_type requires is_ending=true`)
+          if (!nonEmptyString(node.ending_type) || node.ending_type.length > 64 || dialogueControlPattern.test(node.ending_type)) {
+            issues.push(`${nodeLabel}: ending_type must contain 1 to 64 supported characters`)
+          }
+        }
+        if (node.use_llm !== undefined && typeof node.use_llm !== 'boolean') issues.push(`${nodeLabel}: use_llm must be boolean`)
+        if (node.use_llm === true && !nonEmptyString(node.llm_prompt)) issues.push(`${nodeLabel}: use_llm requires llm_prompt`)
+        for (const [field, maxLength] of [['condition', 2000], ['script', 20000], ['llm_prompt', 20000], ['llm_system_prompt', 20000]]) {
+          if (node[field] !== undefined && node[field] !== null
+            && (!nonEmptyString(node[field]) || node[field].length > maxLength || dialogueControlPattern.test(node[field]))) {
+            issues.push(`${nodeLabel}: ${field} must contain 1 to ${maxLength} supported characters`)
+          }
+        }
+
+        choices.forEach((choice, index) => {
+          const choiceLabel = `${nodeLabel}:choice-${index + 1}`
+          if (!choice || typeof choice !== 'object' || Array.isArray(choice)) {
+            issues.push(`${choiceLabel}: choice must be an object`)
+            return
+          }
+          const unknownChoiceFields = Object.keys(choice).filter((field) => !choiceFields.has(field))
+          if (unknownChoiceFields.length > 0) issues.push(`${choiceLabel}: unknown fields ${unknownChoiceFields.join(', ')}`)
+          if (!nonEmptyString(choice.text) || choice.text.length > 2048 || dialogueControlPattern.test(choice.text)) {
+            issues.push(`${choiceLabel}: text must contain 1 to 2048 supported characters`)
+          }
+          if (!portableStoryEventId(choice.next_node_id, 128) || !nodeSet.has(choice.next_node_id)) {
+            issues.push(`${choiceLabel}: target must identify an existing node`)
+          }
+          if (choice.condition !== undefined && choice.condition !== null
+            && (!nonEmptyString(choice.condition) || choice.condition.length > 2000 || dialogueControlPattern.test(choice.condition))) {
+            issues.push(`${choiceLabel}: condition must contain 1 to 2000 supported characters`)
+          }
+          const changes = choice.relationship_changes ?? {}
+          if (!changes || typeof changes !== 'object' || Array.isArray(changes)) {
+            issues.push(`${choiceLabel}: relationship_changes must be an object`)
+          } else {
+            if (Object.keys(changes).length > 128) issues.push(`${choiceLabel}: relationship_changes cannot exceed 128 entries`)
+            for (const [characterId, delta] of Object.entries(changes)) {
+              if (!characterIds.has(characterId)) issues.push(`${choiceLabel}: unknown relationship character ${characterId}`)
+              if (!Number.isFinite(delta) || delta < -1 || delta > 1) {
+                issues.push(`${choiceLabel}: relationship delta for ${characterId} must be between -1 and 1`)
+              }
+            }
+          }
+        })
+      }
+
+      if (nodeSet.has(dialogue.start_node_id)) {
+        const reachable = new Set()
+        const queue = [dialogue.start_node_id]
+        while (queue.length > 0) {
+          const nodeId = queue.shift()
+          if (reachable.has(nodeId) || !dialogue.nodes[nodeId]) continue
+          reachable.add(nodeId)
+          const node = dialogue.nodes[nodeId]
+          if (typeof node.next_node_id === 'string') queue.push(node.next_node_id)
+          if (Array.isArray(node.choices)) {
+            for (const choice of node.choices) {
+              if (typeof choice?.next_node_id === 'string') queue.push(choice.next_node_id)
+            }
+          }
+        }
+        const unreachable = nodeIds.filter((nodeId) => !reachable.has(nodeId))
+        if (unreachable.length > 0) issues.push(`${label}: unreachable nodes ${unreachable.join(', ')}`)
+      }
+      documents.push(dialogue)
+    }
+    documents.sort((left, right) => String(left.id).localeCompare(String(right.id)))
+    catalogs.push({ label: dataRoot.label, documents })
+  }
+
+  if (catalogs.length === 2 && stableStringify(catalogs[0].documents) !== stableStringify(catalogs[1].documents)) {
+    issues.push(`${catalogs[0].label} and ${catalogs[1].label} dialogue catalogs must match`)
+  }
+  if (issues.length > 0) {
+    throw new Error(`Dialogue catalog verification failed:\n${issues.join('\n')}`)
+  }
+  console.log(`[release] Dialogue catalogs OK (${fileCount} files, ${nodeCount} nodes, ${choiceCount} choices)`)
 }
 
 async function loadStoryContentInventory(dataRoot, issues) {
@@ -1965,6 +2151,8 @@ async function verifyFrontendSourceInvariants() {
   const storyAccessSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyAccess.ts'), 'utf8')
   const storyContentSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyContent.ts'), 'utf8')
   const storyEndingsSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyEndings.ts'), 'utf8')
+  const sceneAuthoringSource = await readFile(path.join(frontendDir, 'src', 'lib', 'sceneAuthoring.ts'), 'utf8')
+  const dialogueAuthoringSource = await readFile(path.join(frontendDir, 'src', 'lib', 'dialogueAuthoring.ts'), 'utf8')
   const live2dCanvasSource = await readFile(path.join(frontendDir, 'src', 'components', 'Live2DCanvas.vue'), 'utf8')
   const characterModelSource = await readFile(path.join(frontendDir, 'src', 'components', 'CharacterModelView.vue'), 'utf8')
   const prepareWebDistSource = await readFile(path.join(frontendDir, 'scripts', 'prepare-web-dist.mjs'), 'utf8')
@@ -1977,6 +2165,8 @@ async function verifyFrontendSourceInvariants() {
   const workflowEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'WorkflowEditor.vue'), 'utf8')
   const storyEventEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'StoryEventEditorView.vue'), 'utf8')
   const endingEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'EndingEditorView.vue'), 'utf8')
+  const sceneEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'SceneEditorView.vue'), 'utf8')
+  const dialogueEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'DialogueEditorView.vue'), 'utf8')
   const qualitySuiteSource = await readFile(path.join(frontendDir, 'src', 'views', 'QualitySuiteView.vue'), 'utf8')
   const audioViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'AudioView.vue'), 'utf8')
   const settingsSource = await readFile(path.join(frontendDir, 'src', 'views', 'SettingsView.vue'), 'utf8')
@@ -2140,7 +2330,24 @@ async function verifyFrontendSourceInvariants() {
     [storyContentSource, "invokeCommand<StoryDialogueInfo[]>('list_dialogues')", 'load gated dialogues from desktop projects'],
     [storyContentSource, "invokeCommand<StoryEndingInfo[]>('list_story_endings')", 'load gated endings from desktop projects'],
     [storyContentSource, 'dialogue_files', 'load packaged dialogue scripts from Web/PWA project manifests'],
+    [storyContentSource, 'loadBrowserSceneDrafts()', 'load browser-authored scene drafts into Story Mode'],
+    [storyContentSource, 'loadBrowserDialogueDrafts()', 'load browser-authored dialogue drafts into Story Mode'],
     [storyContentSource, 'loadBrowserStoryEndingDrafts()', 'load browser-authored ending drafts into Story Mode'],
+    [sceneAuthoringSource, "invokeCommand<SceneAuthoringCatalogSnapshot>('get_scene_authoring_catalog')", 'load editable scene catalog snapshots'],
+    [sceneAuthoringSource, 'expectedCatalogFingerprint', 'save and delete scenes with optimistic concurrency'],
+    [sceneAuthoringSource, 'saveBrowserSceneDrafts', 'persist browser scene authoring drafts'],
+    [sceneEditorSource, 'validateSceneDefinition', 'validate scene definitions before save'],
+    [sceneEditorSource, 'confirmDiscard', 'guard dirty scene drafts during navigation'],
+    [sceneEditorSource, 'resolveAssetUrl', 'preview real scene background assets'],
+    [sceneEditorSource, "invokeCommand('set_scene'", 'launch desktop scene author previews'],
+    [dialogueAuthoringSource, "invokeCommand<DialogueAuthoringCatalogSnapshot>('get_dialogue_authoring_catalog')", 'load editable dialogue catalog snapshots'],
+    [dialogueAuthoringSource, 'expectedCatalogFingerprint', 'save and delete dialogues with optimistic concurrency'],
+    [dialogueAuthoringSource, 'saveBrowserDialogueDrafts', 'persist browser dialogue authoring drafts'],
+    [dialogueAuthoringSource, 'validateDialogueDefinition', 'validate complete dialogue graphs before save'],
+    [dialogueEditorSource, 'renameNode', 'rename nodes while preserving graph references'],
+    [dialogueEditorSource, 'relationship_changes', 'edit per-character choice relationship effects'],
+    [dialogueEditorSource, 'confirmDiscard', 'guard dirty dialogue drafts during navigation'],
+    [dialogueEditorSource, "invokeCommand('preview_dialogue'", 'launch desktop dialogue author previews'],
     [storyEndingsSource, "invokeCommand<StoryEndingCatalogSnapshot>('get_story_ending_catalog')", 'load editable ending catalog snapshots'],
     [storyEndingsSource, 'expectedCatalogFingerprint', 'save and delete endings with optimistic concurrency'],
     [storyEndingsSource, 'saveBrowserStoryEndingDrafts', 'persist browser ending authoring drafts'],
@@ -2155,6 +2362,8 @@ async function verifyFrontendSourceInvariants() {
     [gameViewSource, 'loadStoryScenes()', 'populate Story Mode from the project scene catalog'],
     [gameViewSource, 'start_story_ending', 'launch gated ending assets from Story Mode'],
     [gameViewSource, 'route.query.previewEnding', 'launch browser ending author previews from saved drafts'],
+    [gameViewSource, 'route.query.previewScene', 'launch browser scene author previews from saved drafts'],
+    [gameViewSource, 'route.query.previewDialogue', 'launch browser dialogue author previews from saved drafts'],
     [gameViewSource, 'webDialogueNodeId', 'advance packaged Web/PWA dialogue scripts with a browser cursor'],
     [chatViewSource, "listen<StoryEventApplication[]>('chat-event-applications'", 'surface applied event effects from streaming chat'],
     [chatViewSource, 'loadStoryProgress()', 'refresh persistent unlock counts in the chat workbench'],
@@ -3477,11 +3686,14 @@ async function verifyTauriPackagingConfig() {
   const tauriStoryEventsSource = await readFile(path.join(tauriAppDir, 'src', 'story_events.rs'), 'utf8')
   const tauriStoryProgressSource = await readFile(path.join(tauriAppDir, 'src', 'story_progress.rs'), 'utf8')
   const tauriStoryAccessSource = await readFile(path.join(tauriAppDir, 'src', 'story_access.rs'), 'utf8')
+  const tauriContentAuthoringSource = await readFile(path.join(tauriAppDir, 'src', 'content_authoring.rs'), 'utf8')
+  const tauriContentReferencesSource = await readFile(path.join(tauriAppDir, 'src', 'content_references.rs'), 'utf8')
   const tauriStoryEventCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'story_events.rs'), 'utf8')
   const tauriEndingCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'endings.rs'), 'utf8')
   const tauriDialogueCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'dialogue.rs'), 'utf8')
   const gameCharacterSource = await readFile(path.join(rustDir, 'crates', 'game', 'src', 'characters', 'character.rs'), 'utf8')
   const gameDialogueScriptSource = await readFile(path.join(rustDir, 'crates', 'game', 'src', 'dialogue', 'dialogue_script.rs'), 'utf8')
+  const gameDialogueNodeSource = await readFile(path.join(rustDir, 'crates', 'game', 'src', 'dialogue', 'dialogue_node.rs'), 'utf8')
   const tauriEngineSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'engine.rs'), 'utf8')
   const tauriProjectSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'project.rs'), 'utf8')
   const tauriScenesSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'scenes.rs'), 'utf8')
@@ -3633,6 +3845,13 @@ async function verifyTauriPackagingConfig() {
     [tauriStateSource, 'changing_project_root_clears_project_runtime_state', 'test project root changes clear runtime state'],
     [tauriStateSource, 'same_root_reload_can_explicitly_clear_project_runtime_state', 'test same-root project reloads clear runtime state'],
     [tauriStateSource, 'story_content_authoring_lock', 'serialize project content authoring mutations'],
+    [tauriContentAuthoringSource, 'pub struct StagedContentMutation', 'share rollback-capable content mutations across authoring catalogs'],
+    [tauriContentAuthoringSource, 'stage_json_replacement', 'stage bounded atomic JSON replacements'],
+    [tauriContentAuthoringSource, 'stage_json_deletion', 'stage rollback-capable JSON deletions'],
+    [tauriContentAuthoringSource, 'replacements_commit_or_restore_the_previous_document', 'test shared content replacement rollback'],
+    [tauriContentReferencesSource, 'scene_references', 'scan scene references before metadata deletion'],
+    [tauriContentReferencesSource, 'dialogue_references', 'scan dialogue references before script deletion'],
+    [tauriContentReferencesSource, 'workflow_scene_references', 'include workflow scene transitions in reference protection'],
     [tauriScenesSource, 'Ok(default_project_data_root())', 'scan scene assets from the discovered default root before explicit initialization'],
     [tauriAnalyticsSource, 'state.current_project_data_root().await', 'persist analytics under the active project root'],
     [tauriAnalyticsSource, 'project_root.join("analytics.json")', 'keep analytics files project-scoped'],
@@ -3681,6 +3900,9 @@ async function verifyTauriPackagingConfig() {
     [tauriProjectSource, '("endings", "endings")', 'include story ending catalogs in project exports'],
     [gameCharacterSource, 'deserialize_relationships', 'migrate numeric and detailed legacy relationship values'],
     [gameDialogueScriptSource, 'node.id.clone_from(node_id)', 'treat dialogue node map keys as authoritative IDs'],
+    [gameDialogueScriptSource, 'validate_graph', 'reject broken or unreachable dialogue graphs during runtime loading'],
+    [gameDialogueNodeSource, 'pub is_ending: bool', 'preserve authored dialogue ending metadata'],
+    [gameDialogueNodeSource, 'pub ending_type: Option<String>', 'preserve authored dialogue ending classifications'],
   ]
   for (const [source, needle, description] of runtimeDataRootRequirements) {
     if (!source.includes(needle)) {
@@ -3769,13 +3991,28 @@ async function verifyTauriPackagingConfig() {
     [tauriStoryAccessSource, 'content_not_referenced_by_an_unlock_action_is_open', 'preserve access to legacy unreferenced content'],
     [tauriDialogueCommandsSource, 'ensure_dialogue_access', 'enforce dialogue unlocks before playback'],
     [tauriDialogueCommandsSource, 'list_dialogues', 'expose dialogue metadata with access decisions'],
+    [tauriDialogueCommandsSource, 'monogatari-dialogue-authoring-catalog/v1', 'version dialogue authoring catalog snapshots'],
+    [tauriDialogueCommandsSource, 'dialogue_authoring_catalog_fingerprint', 'fingerprint complete dialogue catalogs for optimistic concurrency'],
+    [tauriDialogueCommandsSource, 'validate_dialogue_script', 'validate dialogue graph, character, script, and relationship references'],
+    [tauriDialogueCommandsSource, 'stage_json_replacement', 'atomically stage dialogue saves'],
+    [tauriDialogueCommandsSource, 'dialogue_references', 'protect event- and ending-referenced dialogues from deletion'],
+    [tauriDialogueCommandsSource, 'replace_scripts(runtime_scripts)', 'hot-reload validated dialogue catalogs into runtime state'],
+    [tauriDialogueCommandsSource, 'dialogue_save_is_atomic_rejects_stale_graphs_and_hot_reloads_runtime', 'test atomic dialogue save and hot reload behavior'],
+    [tauriDialogueCommandsSource, 'dialogue_delete_requires_event_and_ending_references_to_be_removed', 'test dialogue deletion reference protection'],
+    [tauriDialogueCommandsSource, 'preview_dialogue', 'support author dialogue preview without player gates'],
     [tauriScenesSource, 'enter_story_scene', 'separate gated Story Mode entry from author scene selection'],
+    [tauriScenesSource, 'monogatari-scene-authoring-catalog/v1', 'version scene authoring catalog snapshots'],
+    [tauriScenesSource, 'scene_authoring_catalog_fingerprint', 'fingerprint authored and inferred scenes for optimistic concurrency'],
+    [tauriScenesSource, 'stage_json_replacement', 'atomically stage scene metadata saves'],
+    [tauriScenesSource, 'scene_references', 'protect referenced scene metadata from deletion'],
+    [tauriScenesSource, 'scene_save_promotes_inferred_assets_and_rejects_stale_or_invalid_updates', 'test inferred scene promotion and stale-write rejection'],
+    [tauriScenesSource, 'scene_delete_requires_event_ending_and_workflow_references_to_be_removed', 'test scene deletion reference protection'],
     [tauriEndingCommandsSource, 'monogatari-story-ending/v1', 'version story ending assets'],
     [tauriEndingCommandsSource, 'monogatari-story-ending-catalog/v1', 'version ending authoring catalog snapshots'],
     [tauriEndingCommandsSource, 'story_ending_catalog_fingerprint', 'fingerprint ending catalogs for optimistic concurrency'],
     [tauriEndingCommandsSource, 'validate_story_ending_references', 'cross-check ending scene and dialogue references before save'],
-    [tauriEndingCommandsSource, 'replace_story_ending_document', 'stage atomic ending replacements'],
-    [tauriEndingCommandsSource, 'rollback_story_ending_document', 'restore rejected ending replacements'],
+    [tauriEndingCommandsSource, 'stage_json_replacement', 'stage atomic ending replacements through the shared content transaction'],
+    [tauriEndingCommandsSource, 'staged.rollback().await?', 'restore rejected ending replacements'],
     [tauriEndingCommandsSource, 'still unlocked by event(s)', 'protect event-referenced endings from deletion'],
     [tauriEndingCommandsSource, 'preview_story_ending_inner', 'support validated author preview without player gates'],
     [tauriEndingCommandsSource, 'start_story_ending_inner', 'validate and launch ending scene/dialogue pairs'],
@@ -3788,6 +4025,13 @@ async function verifyTauriPackagingConfig() {
     [tauriMainSource, 'commands::endings::save_story_ending', 'register ending authoring saves'],
     [tauriMainSource, 'commands::endings::delete_story_ending', 'register ending authoring deletes'],
     [tauriMainSource, 'commands::endings::preview_story_ending', 'register ending author previews'],
+    [tauriMainSource, 'commands::scenes::get_scene_authoring_catalog', 'register scene authoring reads'],
+    [tauriMainSource, 'commands::scenes::save_scene_definition', 'register scene authoring saves'],
+    [tauriMainSource, 'commands::scenes::delete_scene_definition', 'register scene authoring deletes'],
+    [tauriMainSource, 'commands::dialogue::get_dialogue_authoring_catalog', 'register dialogue authoring reads'],
+    [tauriMainSource, 'commands::dialogue::save_dialogue_definition', 'register dialogue authoring saves'],
+    [tauriMainSource, 'commands::dialogue::delete_dialogue_definition', 'register dialogue authoring deletes'],
+    [tauriMainSource, 'commands::dialogue::preview_dialogue', 'register dialogue author previews'],
     [tauriWorkflowSource, 'apply_story_event_definition', 'apply real workflow trigger effects through the shared executor'],
     [tauriQualitySuiteSource, 'event_catalog: &StoryEventCatalog', 'run quality scenarios against project event rules'],
     [tauriMainSource, 'commands::story_events::get_story_event_catalog', 'register story event catalog commands'],

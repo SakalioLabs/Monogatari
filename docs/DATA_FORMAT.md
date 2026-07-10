@@ -45,6 +45,7 @@ Dialogues are stored in `rust-engine/data/dialogue/`.
 {
   "id": "dialogue_id",
   "title": "Dialogue Title",
+  "description": "Optional author-facing synopsis",
   "start_node_id": "start",
   "nodes": {
     "start": {
@@ -61,7 +62,9 @@ Dialogues are stored in `rust-engine/data/dialogue/`.
     "response_node": {
       "speaker_id": "character_id",
       "text": "Response text",
-      "choices": []
+      "choices": [],
+      "is_ending": true,
+      "ending_type": "good"
     }
   }
 }
@@ -71,8 +74,11 @@ Dialogues are stored in `rust-engine/data/dialogue/`.
 - `text`: Player-facing choice text
 - `next_node_id`: Node to transition to
 - `relationship_changes`: Map of character_id to delta (-1.0 to 1.0)
+- `condition`: Optional bounded read-only condition expression
 
-Dialogue node map keys are authoritative node IDs. An optional nested `id` is accepted for compatibility and normalized to the map key. Character `relationships` values may be numeric scores or legacy objects containing a numeric `score`; runtime values are clamped to `-1..1`.
+Dialogue node map keys are authoritative node IDs. An optional nested `id` is accepted only when it matches the map key and is omitted from canonical author saves. Every linear and choice target must exist, all nodes must be reachable from `start_node_id`, a node cannot combine `next_node_id` with choices, and an explicit ending cannot have outgoing transitions. Speakers and relationship targets must reference project characters; relationship deltas are finite values in `-1..1`. Node and choice conditions, entry scripts, text, variables, and LLM prompts are bounded. `use_llm: true` requires `llm_prompt`. Unknown fields are rejected.
+
+The Dialogue Editor consumes `monogatari-dialogue-authoring-catalog/v1` snapshots. Desktop saves compare the observed whole-catalog fingerprint, stage a bounded JSON replacement, reload and validate every script, roll back failures, then hot-reload the runtime catalog while retaining dialogue-local flags and variables. Deletion is rejected while a Story Event unlocks the dialogue or an ending references it. Browser builds persist a complete local dialogue draft catalog that Story Mode can play directly.
 
 ## Knowledge Format
 
@@ -103,6 +109,8 @@ Scenes are stored in `rust-engine/data/scenes/`.
   "tags": ["outdoor", "calm", "demo"]
 }
 ```
+
+Scene IDs and asset paths are portable. Backgrounds must use a supported image extension and resolve to an existing project file; BGM references use supported audio extensions. The `monogatari-scene-authoring-catalog/v1` snapshot includes both JSON-authored scenes and virtual scenes inferred from unclaimed background files. Saving an inferred entry promotes it into `scenes/<id>.json`. Deleting removes only that metadata document and never deletes the background asset; deletion is blocked by matching Story Event, ending, or workflow scene references. Desktop writes use an expected catalog fingerprint and rollback-capable replacement, while browser builds keep a complete local draft read by Story Mode.
 
 ## Story Event Catalog Format
 
@@ -163,7 +171,7 @@ IDs must be portable and the referenced scene and dialogue must exist. Ending ID
 
 The Ending Route editor loads `monogatari-story-ending-catalog/v1` snapshots containing source paths plus per-content and whole-catalog fingerprints. Desktop saves require the observed catalog fingerprint, validate every resulting scene/dialogue reference, and roll back failed replacements. Deletion is rejected while a Story Event contains a matching `unlock_ending` action. Browser builds keep an equivalent complete catalog draft in local storage for non-destructive preview.
 
-Release verification cross-checks all event unlock targets and ending references in both checked-in data roots.
+Release verification cross-checks all event unlock targets, ending references, strict dialogue graphs, character references, and matching dialogue catalogs in both checked-in data roots.
 
 ## Workflow Format
 

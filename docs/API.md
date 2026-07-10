@@ -70,7 +70,11 @@ Dialogue loader `directory` values resolve under the active project `dialogue/` 
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
 | `start_dialogue` | `{ dialogueId }` | `DialogueState` | Begin an accessible dialogue tree, lazily loading project dialogue assets when needed |
+| `preview_dialogue` | `{ dialogueId }` | `DialogueState` | Start a validated author preview without requiring player unlock progress |
 | `list_dialogues` | - | `DialogueCatalogEntry[]` | List deterministic dialogue metadata with event-derived access decisions |
+| `get_dialogue_authoring_catalog` | - | `DialogueAuthoringCatalogSnapshot` | Load complete normalized graphs, source paths, access decisions, and stable fingerprints |
+| `save_dialogue_definition` | `{ dialogue, originalDialogueId?, expectedCatalogFingerprint }` | `DialogueAuthoringCatalogSnapshot` | Atomically create or replace a dialogue, validate the complete catalog, and hot-reload runtime scripts |
+| `delete_dialogue_definition` | `{ dialogueId, expectedCatalogFingerprint }` | `DialogueAuthoringCatalogSnapshot` | Delete only after stale-write plus Story Event and ending reference checks |
 | `advance_dialogue` | - | `void` | Next dialogue node |
 | `select_choice` | `{ choiceIndex }` | `void` | Player picks choice |
 | `get_dialogue_state` | - | `DialogueState` | Current dialogue state |
@@ -138,6 +142,9 @@ Scene and renderer asset paths are project-relative asset references. Runtime as
 |---------|------|---------|-------------|
 | `list_scene_assets` | - | `SceneAssetCatalog` | List all scenes, backgrounds, and diagnostics |
 | `list_story_scenes` | - | `StorySceneInfo[]` | List scenes with event-derived access decisions |
+| `get_scene_authoring_catalog` | - | `SceneAuthoringCatalogSnapshot` | Load authored and background-inferred scenes with source, access, asset, and fingerprint evidence |
+| `save_scene_definition` | `{ scene, originalSceneId?, expectedCatalogFingerprint }` | `SceneAuthoringCatalogSnapshot` | Atomically create, update, or promote inferred scene metadata |
+| `delete_scene_definition` | `{ sceneId, expectedCatalogFingerprint }` | `SceneAuthoringCatalogSnapshot` | Delete metadata only after Story Event, ending, and workflow reference checks; background files remain untouched |
 | `get_current_scene` | - | `ActiveScene` | Current active scene |
 | `set_scene` | `{ sceneId }` | `SceneInfo` | Set an authoring/runtime scene without player gate enforcement |
 | `enter_story_scene` | `{ sceneId }` | `SceneInfo` | Enter a scene through Story Mode with unlock enforcement |

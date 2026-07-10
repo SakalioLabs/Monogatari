@@ -196,7 +196,7 @@
         },
         {
           "text": "The shop is alive because of you, not despite you.",
-          "next_node_id": "ending_alive",
+          "next_node_id": "ending_growth",
           "relationship_changes": {
             "hana": 0.25
           }

@@ -1,6 +1,11 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Added project-backed Scene and Dialogue authoring catalogs with stable content/catalog fingerprints, optimistic concurrency, shared rollback-capable JSON transactions, dirty-draft guards, browser-local catalogs, and Story Mode author preview.
+- Added strict dialogue document and graph validation for unknown fields, authoritative map-key IDs, transition targets, reachability, character references, choice relationship deltas, conditions, scripts, terminal metadata, and LLM prompts, plus post-save runtime hot reload.
+- Added cross-catalog deletion protection: scenes scan Story Events, endings, and workflows; dialogues scan Story Events and endings; inferred scene metadata deletion never removes source background assets.
+- Added release-gate validation for complete checked-in dialogue graphs and parity between root and Rust project data catalogs.
+- Fixed the Whispering Leaf dialogue branch that targeted the missing `ending_alive` node.
 - Added a shared story-content access layer: only scene/dialogue/ending IDs referenced by typed unlock actions are gated, while all other project content stays backward-compatible and open. Story Mode, dialogue starts, real workflow scene changes, and ending launches enforce the same decisions.
 - Added the Story Event authoring workbench with catalog search, trigger thresholds, character scope, typed action editing, local validation, optimistic fingerprint concurrency, and rollback-safe single-document saves.
 - Added versioned `monogatari-story-ending/v1` assets and a gated ending launcher that resolves a real scene and dialogue before playback.

@@ -4,14 +4,24 @@ use std::collections::{HashMap, HashSet};
 use std::path::{Component, Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 use tauri::State;
 
+use crate::content_authoring::{
+    ensure_regular_project_directory, sha256_json, source_label, stage_json_deletion,
+    stage_json_replacement,
+};
+use crate::content_references::scene_references;
 use crate::state::{default_project_data_root, AppState};
 use crate::story_access::{
     ensure_story_content_access, story_content_access, StoryContentAccessEntry, StoryContentKind,
 };
 
 const BACKGROUND_EXTENSIONS: &[&str] = &["png", "jpg", "jpeg", "webp", "bmp", "gif", "svg"];
+const SCENE_AUTHORING_CATALOG_SCHEMA_V1: &str = "monogatari-scene-authoring-catalog/v1";
+const MAX_SCENE_FILES: usize = 512;
+const MAX_SCENE_FILE_BYTES: u64 = 64 * 1024;
+const MAX_SCENE_TAGS: usize = 64;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SceneInfo {
@@ -40,6 +50,53 @@ pub struct StorySceneInfo {
     #[serde(flatten)]
     pub scene: SceneInfo,
     pub access: StoryContentAccessEntry,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct SceneDefinition {
+    pub id: String,
+    pub name: String,
+    #[serde(default, alias = "backgroundPath")]
+    pub background_path: Option<String>,
+    #[serde(default, alias = "bgmPath")]
+    pub bgm_path: Option<String>,
+    #[serde(default)]
+    pub weather: Option<String>,
+    #[serde(default)]
+    pub time_of_day: Option<String>,
+    #[serde(default)]
+    pub tags: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SceneAuthoringEntry {
+    #[serde(flatten)]
+    pub scene: SceneDefinition,
+    pub source_path: Option<String>,
+    pub content_fingerprint: String,
+    pub metadata_authored: bool,
+    pub background_exists: bool,
+    pub absolute_background_path: Option<String>,
+    pub access: StoryContentAccessEntry,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SceneAuthoringCatalogSnapshot {
+    pub schema: String,
+    pub catalog_fingerprint: String,
+    pub scene_count: usize,
+    pub metadata_scene_count: usize,
+    pub inferred_scene_count: usize,
+    pub scenes: Vec<SceneAuthoringEntry>,
+    pub issues: Vec<SceneAssetIssue>,
+}
+
+#[derive(Debug, Clone)]
+struct LoadedSceneDefinition {
+    scene: SceneDefinition,
+    source_path: String,
+    absolute_path: PathBuf,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -106,6 +163,41 @@ pub async fn list_story_scenes(state: State<'_, AppState>) -> Result<Vec<StorySc
             scene,
         })
         .collect())
+}
+
+/// Return full editable scene definitions with stable catalog fingerprints.
+#[tauri::command]
+pub async fn get_scene_authoring_catalog(
+    state: State<'_, AppState>,
+) -> Result<SceneAuthoringCatalogSnapshot, String> {
+    scene_authoring_catalog_snapshot(&state).await
+}
+
+/// Atomically create, promote, or update one scene metadata document.
+#[tauri::command]
+pub async fn save_scene_definition(
+    state: State<'_, AppState>,
+    scene: SceneDefinition,
+    original_scene_id: Option<String>,
+    expected_catalog_fingerprint: String,
+) -> Result<SceneAuthoringCatalogSnapshot, String> {
+    save_scene_definition_inner(
+        &state,
+        scene,
+        original_scene_id.as_deref(),
+        &expected_catalog_fingerprint,
+    )
+    .await
+}
+
+/// Delete scene metadata after checking project event, ending, and workflow references.
+#[tauri::command]
+pub async fn delete_scene_definition(
+    state: State<'_, AppState>,
+    scene_id: String,
+    expected_catalog_fingerprint: String,
+) -> Result<SceneAuthoringCatalogSnapshot, String> {
+    delete_scene_definition_inner(&state, &scene_id, &expected_catalog_fingerprint).await
 }
 
 /// Get the currently active scene selected by the authoring UI/runtime.
@@ -225,6 +317,367 @@ pub(crate) async fn resolve_project_scene(
         .ok_or_else(|| format!("Story scene `{scene_id}` does not exist in the active project."))
 }
 
+async fn scene_authoring_catalog_snapshot(
+    state: &AppState,
+) -> Result<SceneAuthoringCatalogSnapshot, String> {
+    let project_root = project_root_inner(state).await?;
+    let (loaded, catalog, _) = load_scene_authoring_state(&project_root)?;
+    scene_authoring_snapshot_from_parts(state, loaded, catalog).await
+}
+
+async fn scene_authoring_snapshot_from_parts(
+    state: &AppState,
+    loaded: Vec<LoadedSceneDefinition>,
+    catalog: SceneAssetCatalog,
+) -> Result<SceneAuthoringCatalogSnapshot, String> {
+    let catalog_fingerprint = scene_authoring_catalog_fingerprint(&loaded, &catalog);
+    let authored = loaded
+        .iter()
+        .map(|loaded| (loaded.scene.id.as_str(), loaded))
+        .collect::<HashMap<_, _>>();
+    let event_catalog = state.story_event_catalog.read().await;
+    let progress = state.story_progress.read().await;
+    let mut scenes = catalog
+        .scenes
+        .iter()
+        .map(|scene| {
+            let definition = scene_definition_from_info(scene);
+            let source = authored.get(definition.id.as_str());
+            SceneAuthoringEntry {
+                content_fingerprint: scene_content_fingerprint(&definition),
+                access: story_content_access(
+                    &event_catalog,
+                    &progress,
+                    StoryContentKind::Scene,
+                    &definition.id,
+                ),
+                source_path: source.map(|loaded| loaded.source_path.clone()),
+                metadata_authored: source.is_some(),
+                background_exists: scene.background_exists,
+                absolute_background_path: scene.absolute_background_path.clone(),
+                scene: definition,
+            }
+        })
+        .collect::<Vec<_>>();
+    scenes.sort_by(|left, right| left.scene.id.cmp(&right.scene.id));
+    let metadata_scene_count = scenes
+        .iter()
+        .filter(|scene| scene.metadata_authored)
+        .count();
+    Ok(SceneAuthoringCatalogSnapshot {
+        schema: SCENE_AUTHORING_CATALOG_SCHEMA_V1.to_string(),
+        catalog_fingerprint,
+        scene_count: scenes.len(),
+        metadata_scene_count,
+        inferred_scene_count: scenes.len().saturating_sub(metadata_scene_count),
+        scenes,
+        issues: catalog.issues,
+    })
+}
+
+async fn save_scene_definition_inner(
+    state: &AppState,
+    scene: SceneDefinition,
+    original_scene_id: Option<&str>,
+    expected_catalog_fingerprint: &str,
+) -> Result<SceneAuthoringCatalogSnapshot, String> {
+    let _authoring_guard = state.story_content_authoring_lock.lock().await;
+    let project_root = project_root_inner(state).await?;
+    let scene = normalize_scene_definition(scene);
+    validate_scene_definition(&project_root, &scene)?;
+
+    let (current, current_catalog, fingerprint) = load_scene_authoring_state(&project_root)?;
+    ensure_scene_catalog_fingerprint(&fingerprint, expected_catalog_fingerprint)?;
+    let scene_root =
+        ensure_regular_project_directory(&project_root, "scenes", "scene metadata").await?;
+    let target_path = match original_scene_id {
+        Some(original_id) => {
+            if original_id != scene.id {
+                return Err(
+                    "Scene ids are immutable after metadata creation; duplicate the scene to use a new id."
+                        .to_string(),
+                );
+            }
+            current
+                .iter()
+                .find(|loaded| loaded.scene.id == original_id)
+                .map(|loaded| loaded.absolute_path.clone())
+                .ok_or_else(|| {
+                    format!(
+                        "Scene metadata `{original_id}` no longer exists; reload before saving."
+                    )
+                })?
+        }
+        None => {
+            if current.iter().any(|loaded| loaded.scene.id == scene.id) {
+                return Err(format!(
+                    "Scene metadata `{}` already exists; reload it before editing.",
+                    scene.id
+                ));
+            }
+            scene_root.join(format!("{}.json", scene.id))
+        }
+    };
+    drop(current_catalog);
+
+    let mut content = serde_json::to_string_pretty(&scene)
+        .map_err(|error| format!("Unable to serialize scene metadata: {error}"))?;
+    content.push('\n');
+    let staged = stage_json_replacement(
+        &target_path,
+        content.as_bytes(),
+        MAX_SCENE_FILE_BYTES,
+        "scene metadata",
+    )
+    .await?;
+
+    let (loaded, catalog, _) = match load_scene_authoring_state(&project_root) {
+        Ok(state) => state,
+        Err(error) => {
+            staged.rollback().await?;
+            return Err(format!(
+                "Saved scene metadata failed project reload and was rolled back: {error}"
+            ));
+        }
+    };
+    if !loaded.iter().any(|loaded| loaded.scene == scene) {
+        staged.rollback().await?;
+        return Err(
+            "Saved scene metadata changed during replacement; the original was restored."
+                .to_string(),
+        );
+    }
+    staged.commit().await?;
+    scene_authoring_snapshot_from_parts(state, loaded, catalog).await
+}
+
+async fn delete_scene_definition_inner(
+    state: &AppState,
+    scene_id: &str,
+    expected_catalog_fingerprint: &str,
+) -> Result<SceneAuthoringCatalogSnapshot, String> {
+    let _authoring_guard = state.story_content_authoring_lock.lock().await;
+    let project_root = project_root_inner(state).await?;
+    let (current, _, fingerprint) = load_scene_authoring_state(&project_root)?;
+    ensure_scene_catalog_fingerprint(&fingerprint, expected_catalog_fingerprint)?;
+    let target = current
+        .iter()
+        .find(|loaded| loaded.scene.id == scene_id)
+        .ok_or_else(|| {
+            format!(
+                "Scene `{scene_id}` is inferred from a background asset and has no metadata document to delete."
+            )
+        })?;
+    let references = scene_references(&project_root, scene_id)?;
+    if !references.is_empty() {
+        return Err(format!(
+            "Scene `{scene_id}` is still referenced by: {}. Remove those references before deleting its metadata.",
+            references.join(", ")
+        ));
+    }
+
+    let staged = stage_json_deletion(&target.absolute_path, "scene metadata").await?;
+    let (loaded, catalog, _) = match load_scene_authoring_state(&project_root) {
+        Ok(state) if !state.0.iter().any(|loaded| loaded.scene.id == scene_id) => state,
+        Ok(_) => {
+            staged.rollback().await?;
+            return Err(
+                "Deleted scene metadata remained in the authored catalog; the file was restored."
+                    .to_string(),
+            );
+        }
+        Err(error) => {
+            staged.rollback().await?;
+            return Err(format!(
+                "Deleting scene metadata broke the project catalog and was rolled back: {error}"
+            ));
+        }
+    };
+    staged.commit().await?;
+
+    if state.active_scene_id.read().await.as_deref() == Some(scene_id) {
+        *state.active_scene_id.write().await = None;
+    }
+    state
+        .scene_history
+        .write()
+        .await
+        .retain(|history_id| history_id != scene_id);
+    scene_authoring_snapshot_from_parts(state, loaded, catalog).await
+}
+
+fn load_scene_authoring_state(
+    project_root: &Path,
+) -> Result<(Vec<LoadedSceneDefinition>, SceneAssetCatalog, String), String> {
+    let loaded = load_scene_documents(project_root)?;
+    let catalog = build_scene_asset_catalog(project_root)?;
+    let fingerprint = scene_authoring_catalog_fingerprint(&loaded, &catalog);
+    Ok((loaded, catalog, fingerprint))
+}
+
+fn ensure_scene_catalog_fingerprint(actual: &str, expected: &str) -> Result<(), String> {
+    if actual != expected {
+        return Err(format!(
+            "Scene catalog changed since it was opened; expected `{expected}`, current `{actual}`. Reload before saving."
+        ));
+    }
+    Ok(())
+}
+
+fn scene_authoring_catalog_fingerprint(
+    loaded: &[LoadedSceneDefinition],
+    catalog: &SceneAssetCatalog,
+) -> String {
+    let sources = loaded
+        .iter()
+        .map(|loaded| (loaded.scene.id.as_str(), loaded.source_path.as_str()))
+        .collect::<HashMap<_, _>>();
+    let mut scenes = catalog
+        .scenes
+        .iter()
+        .map(|scene| {
+            let definition = scene_definition_from_info(scene);
+            json!({
+                "source_path": sources.get(definition.id.as_str()),
+                "metadata_authored": sources.contains_key(definition.id.as_str()),
+                "scene": definition,
+            })
+        })
+        .collect::<Vec<Value>>();
+    scenes.sort_by(|left, right| {
+        left["scene"]["id"]
+            .as_str()
+            .cmp(&right["scene"]["id"].as_str())
+    });
+    sha256_json(&json!({
+        "schema": SCENE_AUTHORING_CATALOG_SCHEMA_V1,
+        "scenes": scenes,
+    }))
+}
+
+fn scene_content_fingerprint(scene: &SceneDefinition) -> String {
+    sha256_json(&json!({
+        "schema": "monogatari-scene-content-fingerprint/v1",
+        "scene": scene,
+    }))
+}
+
+fn scene_definition_from_info(scene: &SceneInfo) -> SceneDefinition {
+    SceneDefinition {
+        id: scene.id.clone(),
+        name: scene.name.clone(),
+        background_path: scene.background_path.clone(),
+        bgm_path: scene.bgm_path.clone(),
+        weather: scene.weather.clone(),
+        time_of_day: scene.time_of_day.clone(),
+        tags: scene.tags.clone(),
+    }
+}
+
+fn normalize_scene_definition(mut scene: SceneDefinition) -> SceneDefinition {
+    scene.id = scene.id.trim().to_string();
+    scene.name = scene.name.trim().to_string();
+    scene.background_path = normalize_optional_text(scene.background_path);
+    scene.bgm_path = normalize_optional_text(scene.bgm_path);
+    scene.weather = normalize_optional_text(scene.weather);
+    scene.time_of_day = normalize_optional_text(scene.time_of_day);
+    scene.tags = scene
+        .tags
+        .into_iter()
+        .map(|tag| tag.trim().to_string())
+        .filter(|tag| !tag.is_empty())
+        .collect();
+    scene.tags.sort();
+    scene.tags.dedup();
+    scene
+}
+
+fn normalize_optional_text(value: Option<String>) -> Option<String> {
+    value
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+}
+
+fn validate_scene_definition(project_root: &Path, scene: &SceneDefinition) -> Result<(), String> {
+    if !is_portable_scene_id(&scene.id) {
+        return Err(format!("Scene id `{}` is not a portable id.", scene.id));
+    }
+    validate_bounded_scene_text(&scene.name, "name", 1, 256, &scene.id)?;
+    for (label, value) in [
+        ("weather", scene.weather.as_deref()),
+        ("time_of_day", scene.time_of_day.as_deref()),
+    ] {
+        if let Some(value) = value {
+            validate_bounded_scene_text(value, label, 1, 64, &scene.id)?;
+        }
+    }
+    if scene.tags.len() > MAX_SCENE_TAGS {
+        return Err(format!(
+            "Scene `{}` has {} tags; the limit is {MAX_SCENE_TAGS}.",
+            scene.id,
+            scene.tags.len()
+        ));
+    }
+    for tag in &scene.tags {
+        validate_bounded_scene_text(tag, "tag", 1, 64, &scene.id)?;
+    }
+    if let Some(background_path) = scene.background_path.as_deref() {
+        let resolved = resolve_project_relative(project_root, background_path)?;
+        if !is_supported_background(Path::new(background_path)) {
+            return Err(format!(
+                "Scene `{}` background uses an unsupported file type: {background_path}",
+                scene.id
+            ));
+        }
+        if !resolved.is_file() {
+            return Err(format!(
+                "Scene `{}` background does not exist: {background_path}",
+                scene.id
+            ));
+        }
+    }
+    if let Some(bgm_path) = scene.bgm_path.as_deref() {
+        resolve_project_relative(project_root, bgm_path)?;
+        let extension = Path::new(bgm_path)
+            .extension()
+            .and_then(|extension| extension.to_str())
+            .unwrap_or_default()
+            .to_ascii_lowercase();
+        if !["mp3", "ogg", "wav", "m4a", "aac", "flac"].contains(&extension.as_str()) {
+            return Err(format!(
+                "Scene `{}` BGM uses an unsupported file type: {bgm_path}",
+                scene.id
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_bounded_scene_text(
+    value: &str,
+    label: &str,
+    min: usize,
+    max: usize,
+    scene_id: &str,
+) -> Result<(), String> {
+    let count = value.chars().count();
+    if count < min || count > max || value.chars().any(char::is_control) {
+        return Err(format!(
+            "Scene `{scene_id}` {label} must contain {min} to {max} non-control characters."
+        ));
+    }
+    Ok(())
+}
+
+fn is_portable_scene_id(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 128
+        && value.trim() == value
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-' | b'.'))
+}
+
 pub(crate) fn build_scene_asset_catalog(project_root: &Path) -> Result<SceneAssetCatalog, String> {
     let mut issues = Vec::new();
     let mut scenes = load_scene_metadata(project_root, &mut issues)?;
@@ -339,6 +792,113 @@ fn link_backgrounds_to_scenes(
         backgrounds,
         issues,
     })
+}
+
+fn load_scene_documents(project_root: &Path) -> Result<Vec<LoadedSceneDefinition>, String> {
+    let scene_root = project_root.join("scenes");
+    if !scene_root.exists() {
+        return Ok(Vec::new());
+    }
+    let root_metadata = std::fs::symlink_metadata(&scene_root).map_err(|error| {
+        format!(
+            "Failed to inspect scene metadata directory `{}`: {error}",
+            scene_root.display()
+        )
+    })?;
+    if root_metadata.file_type().is_symlink() || !root_metadata.is_dir() {
+        return Err(format!(
+            "Scene metadata path must be a regular directory: {}",
+            scene_root.display()
+        ));
+    }
+    let canonical_root = scene_root.canonicalize().map_err(|error| {
+        format!(
+            "Failed to resolve scene metadata directory `{}`: {error}",
+            scene_root.display()
+        )
+    })?;
+    let mut paths = std::fs::read_dir(&scene_root)
+        .map_err(|error| {
+            format!(
+                "Failed to read scene metadata directory `{}`: {error}",
+                scene_root.display()
+            )
+        })?
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .filter(|path| {
+            path.extension()
+                .and_then(|extension| extension.to_str())
+                .is_some_and(|extension| extension.eq_ignore_ascii_case("json"))
+        })
+        .collect::<Vec<_>>();
+    paths.sort();
+    if paths.len() > MAX_SCENE_FILES {
+        return Err(format!(
+            "Scene metadata directory contains {} JSON files; the limit is {MAX_SCENE_FILES}.",
+            paths.len()
+        ));
+    }
+
+    let mut seen = HashSet::new();
+    let mut loaded = Vec::with_capacity(paths.len());
+    for path in paths {
+        let metadata = std::fs::symlink_metadata(&path).map_err(|error| {
+            format!(
+                "Failed to inspect scene metadata `{}`: {error}",
+                path.display()
+            )
+        })?;
+        if metadata.file_type().is_symlink() || !metadata.is_file() {
+            return Err(format!(
+                "Scene metadata must be a regular file: {}",
+                path.display()
+            ));
+        }
+        if metadata.len() > MAX_SCENE_FILE_BYTES {
+            return Err(format!(
+                "Scene metadata `{}` is {} bytes; the limit is {MAX_SCENE_FILE_BYTES} bytes.",
+                path.display(),
+                metadata.len()
+            ));
+        }
+        let canonical_path = path.canonicalize().map_err(|error| {
+            format!(
+                "Failed to resolve scene metadata `{}`: {error}",
+                path.display()
+            )
+        })?;
+        if !canonical_path.starts_with(&canonical_root) {
+            return Err(format!(
+                "Scene metadata escapes the project scene directory: {}",
+                path.display()
+            ));
+        }
+        let content = std::fs::read_to_string(&canonical_path).map_err(|error| {
+            format!(
+                "Failed to read scene metadata `{}`: {error}",
+                path.display()
+            )
+        })?;
+        let scene: SceneDefinition = serde_json::from_str(&content).map_err(|error| {
+            format!(
+                "Invalid scene metadata JSON in `{}`: {error}",
+                path.display()
+            )
+        })?;
+        let scene = normalize_scene_definition(scene);
+        validate_scene_definition(project_root, &scene)?;
+        if !seen.insert(scene.id.clone()) {
+            return Err(format!("Duplicate scene id `{}`.", scene.id));
+        }
+        loaded.push(LoadedSceneDefinition {
+            scene,
+            source_path: source_label(project_root, &path),
+            absolute_path: canonical_path,
+        });
+    }
+    loaded.sort_by(|left, right| left.scene.id.cmp(&right.scene.id));
+    Ok(loaded)
 }
 
 fn load_scene_metadata(
@@ -479,6 +1039,19 @@ fn is_supported_background(path: &Path) -> bool {
 }
 
 fn resolve_project_relative(project_root: &Path, relative: &str) -> Result<PathBuf, String> {
+    if relative.is_empty()
+        || relative.trim() != relative
+        || relative.contains('\\')
+        || relative.contains(':')
+        || relative.chars().any(char::is_control)
+        || relative
+            .split('/')
+            .any(|segment| segment.is_empty() || matches!(segment, "." | ".."))
+    {
+        return Err(
+            "Asset paths must use portable non-empty project-relative segments.".to_string(),
+        );
+    }
     let relative_path = Path::new(relative);
     if relative_path.is_absolute() {
         return Err("Asset paths must be relative to the project root.".to_string());
@@ -571,11 +1144,63 @@ fn default_scene_source() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::story_events::StoryEventCatalog;
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    static TEST_ROOT_COUNTER: AtomicU64 = AtomicU64::new(0);
+
+    fn temp_root(label: &str) -> PathBuf {
+        std::env::temp_dir().join(format!(
+            "monogatari_scene_authoring_{label}_{}_{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos(),
+            TEST_ROOT_COUNTER.fetch_add(1, Ordering::Relaxed)
+        ))
+    }
+
+    fn write_authoring_project(root: &Path) {
+        for directory in [
+            "characters",
+            "knowledge",
+            "events",
+            "endings",
+            "scenes",
+            "dialogue",
+            "workflows",
+            "assets/backgrounds",
+        ] {
+            std::fs::create_dir_all(root.join(directory)).unwrap();
+        }
+        std::fs::write(
+            root.join("events").join("events.json"),
+            r#"{"schema":"monogatari-story-event-catalog/v1","events":[]}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            root.join("assets").join("backgrounds").join("park.svg"),
+            r#"<svg xmlns="http://www.w3.org/2000/svg" width="16" height="9"></svg>"#,
+        )
+        .unwrap();
+    }
+
+    async fn authoring_state(root: &Path) -> AppState {
+        let state = AppState::new();
+        state.set_project_data_root(root.to_path_buf()).await;
+        *state.story_event_catalog.write().await =
+            StoryEventCatalog::load_from_project_root(root).unwrap();
+        state
+    }
 
     #[test]
     fn rejects_paths_that_escape_project_root() {
         let root = PathBuf::from("project");
         assert!(resolve_project_relative(&root, "../secrets.png").is_err());
+        assert!(resolve_project_relative(&root, "assets\\backgrounds\\park.png").is_err());
+        assert!(resolve_project_relative(&root, "assets/./park.png").is_err());
+        assert!(resolve_project_relative(&root, "assets//park.png").is_err());
+        assert!(resolve_project_relative(&root, "https://example.com/park.png").is_err());
         assert!(resolve_project_relative(&root, "assets/backgrounds/park.png").is_ok());
     }
 
@@ -603,13 +1228,7 @@ mod tests {
 
     #[test]
     fn builds_catalog_from_scene_metadata_and_backgrounds() {
-        let root = std::env::temp_dir().join(format!(
-            "monogatari_scene_catalog_{}",
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos()
-        ));
+        let root = temp_root("catalog");
         let scenes_dir = root.join("scenes");
         let backgrounds_dir = root.join("assets").join("backgrounds");
         std::fs::create_dir_all(&scenes_dir).unwrap();
@@ -634,6 +1253,151 @@ mod tests {
             Some("sakura_park")
         );
 
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[tokio::test]
+    async fn scene_save_promotes_inferred_assets_and_rejects_stale_or_invalid_updates() {
+        let root = temp_root("save");
+        write_authoring_project(&root);
+        let state = authoring_state(&root).await;
+        let before = scene_authoring_catalog_snapshot(&state).await.unwrap();
+        assert_eq!(before.scene_count, 1);
+        assert_eq!(before.metadata_scene_count, 0);
+        assert_eq!(before.inferred_scene_count, 1);
+        assert_eq!(before.scenes[0].scene.id, "park");
+        assert!(!before.scenes[0].metadata_authored);
+
+        let definition = SceneDefinition {
+            id: "park".to_string(),
+            name: "Moonlit Park".to_string(),
+            background_path: Some("assets/backgrounds/park.svg".to_string()),
+            bgm_path: Some("assets/audio/moon.ogg".to_string()),
+            weather: Some("clear".to_string()),
+            time_of_day: Some("night".to_string()),
+            tags: vec![
+                "romance".to_string(),
+                "night".to_string(),
+                "night".to_string(),
+            ],
+        };
+        let saved = save_scene_definition_inner(
+            &state,
+            definition.clone(),
+            None,
+            &before.catalog_fingerprint,
+        )
+        .await
+        .unwrap();
+        assert_eq!(saved.metadata_scene_count, 1);
+        assert_eq!(saved.inferred_scene_count, 0);
+        assert!(saved.scenes[0].metadata_authored);
+        assert_eq!(saved.scenes[0].scene.tags, vec!["night", "romance"]);
+        let path = root.join("scenes").join("park.json");
+        let saved_file = std::fs::read_to_string(&path).unwrap();
+        assert!(saved_file.contains("Moonlit Park"));
+
+        let mut stale = definition.clone();
+        stale.name = "Stale Park".to_string();
+        assert!(save_scene_definition_inner(
+            &state,
+            stale,
+            Some("park"),
+            &before.catalog_fingerprint,
+        )
+        .await
+        .unwrap_err()
+        .contains("changed since it was opened"));
+
+        let mut invalid = definition;
+        invalid.background_path = Some("assets/backgrounds/missing.svg".to_string());
+        assert!(save_scene_definition_inner(
+            &state,
+            invalid,
+            Some("park"),
+            &saved.catalog_fingerprint,
+        )
+        .await
+        .unwrap_err()
+        .contains("does not exist"));
+        assert_eq!(std::fs::read_to_string(path).unwrap(), saved_file);
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[tokio::test]
+    async fn scene_delete_requires_event_ending_and_workflow_references_to_be_removed() {
+        let root = temp_root("delete");
+        write_authoring_project(&root);
+        std::fs::write(
+            root.join("scenes").join("park.json"),
+            r#"{"id":"park","name":"Park","background_path":"assets/backgrounds/park.svg"}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            root.join("events").join("events.json"),
+            r#"{
+              "schema":"monogatari-story-event-catalog/v1",
+              "events":[{
+                "event_id":"unlock_park","event_type":"unlock","description":"Unlock park",
+                "actions":[{"type":"unlock_scene","scene_id":"park"}]
+              }]
+            }"#,
+        )
+        .unwrap();
+        std::fs::write(
+            root.join("endings").join("park_ending.json"),
+            r#"{
+              "schema":"monogatari-story-ending/v1","id":"park_ending","title":"Park Ending",
+              "description":"An ending in the park.","scene_id":"park","dialogue_id":"park_finale"
+            }"#,
+        )
+        .unwrap();
+        std::fs::write(
+            root.join("workflows").join("park_route.json"),
+            r#"{
+              "id":"park_route","name":"Park Route","start_node_id":"scene",
+              "nodes":[{
+                "id":"scene","node_type":"scene_change","label":"Park","x":0.0,"y":0.0,
+                "config":{"scene_id":"park"},"connections":[]
+              }]
+            }"#,
+        )
+        .unwrap();
+        let state = authoring_state(&root).await;
+        *state.active_scene_id.write().await = Some("park".to_string());
+        state
+            .scene_history
+            .write()
+            .await
+            .extend(["intro".to_string(), "park".to_string()]);
+        let before = scene_authoring_catalog_snapshot(&state).await.unwrap();
+
+        let error = delete_scene_definition_inner(&state, "park", &before.catalog_fingerprint)
+            .await
+            .unwrap_err();
+        assert!(error.contains("event:unlock_park"), "{error}");
+        assert!(error.contains("ending:park_ending"), "{error}");
+        assert!(error.contains("workflow:park_route/scene"), "{error}");
+        assert!(root.join("scenes").join("park.json").is_file());
+
+        std::fs::write(
+            root.join("events").join("events.json"),
+            r#"{"schema":"monogatari-story-event-catalog/v1","events":[]}"#,
+        )
+        .unwrap();
+        std::fs::remove_file(root.join("endings").join("park_ending.json")).unwrap();
+        std::fs::remove_file(root.join("workflows").join("park_route.json")).unwrap();
+
+        let after = delete_scene_definition_inner(&state, "park", &before.catalog_fingerprint)
+            .await
+            .unwrap();
+        assert_eq!(after.scene_count, 1);
+        assert_eq!(after.metadata_scene_count, 0);
+        assert_eq!(after.inferred_scene_count, 1);
+        assert!(!after.scenes[0].metadata_authored);
+        assert!(!root.join("scenes").join("park.json").exists());
+        assert!(state.active_scene_id.read().await.is_none());
+        assert_eq!(state.scene_history.read().await.as_slice(), ["intro"]);
         std::fs::remove_dir_all(root).unwrap();
     }
 }

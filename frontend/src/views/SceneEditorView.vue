@@ -1,481 +1,820 @@
 <template>
   <div class="scene-editor">
     <header class="editor-header">
-      <div>
-        <span class="eyebrow">Authoring</span>
-        <h1>{{ t("scene.title", "Scene Editor") }}</h1>
-        <p>{{ scenes.length }} scenes in project</p>
+      <div class="header-copy">
+        <span class="eyebrow">World Design</span>
+        <h1>Scene Catalog</h1>
+        <p>
+          {{ snapshot?.scene_count || 0 }} scenes ·
+          {{ snapshot?.metadata_scene_count || 0 }} authored ·
+          {{ snapshot?.inferred_scene_count || 0 }} inferred
+        </p>
       </div>
       <div class="header-actions">
-        <div class="search-bar">
-          <input class="input" v-model="searchQuery" placeholder="Search scenes..." />
-        </div>
-        <select class="input input-sm" v-model="viewMode">
-          <option value="grid">Grid</option>
-          <option value="list">List</option>
-        </select>
-        <button class="btn btn-primary btn-sm" @click="createScene">+ New Scene</button>
+        <button class="btn btn-secondary btn-sm" :disabled="busy" @click="reloadCatalog">Reload</button>
+        <button class="btn btn-secondary btn-sm" :disabled="busy" @click="createScene">New</button>
+        <button class="btn btn-secondary btn-sm" :disabled="!draft || busy" @click="duplicateScene">Duplicate</button>
+        <button class="btn btn-secondary btn-sm" :disabled="!canPreview || busy" @click="previewScene">Story Mode</button>
+        <button class="btn btn-primary btn-sm" :disabled="!canSave || busy" @click="saveScene">
+          {{ busy ? 'Working' : selectedEntry && !selectedEntry.metadata_authored ? 'Promote' : 'Save' }}
+        </button>
       </div>
     </header>
 
-    <main class="editor-layout">
-      <section class="scene-grid" :class="viewMode">
-        <div
-          v-for="scene in filteredScenes"
-          :key="scene.id"
-          class="scene-card"
-          :class="{ selected: selectedScene?.id === scene.id }"
-          @click="selectScene(scene)"
-        >
-          <div class="scene-preview" :style="{ background: sceneBackground(scene) }">
-            <div class="scene-overlay">
-              <span class="scene-badge">{{ scene.time_of_day || 'any' }}</span>
-              <span v-if="scene.weather" class="scene-badge weather">{{ scene.weather }}</span>
-            </div>
-          </div>
-          <div class="scene-info">
-            <strong>{{ scene.name }}</strong>
-            <small>{{ scene.id }}</small>
-            <div class="scene-tags">
-              <span v-for="tag in (scene.tags || []).slice(0, 3)" :key="tag" class="tag">{{ tag }}</span>
-            </div>
-          </div>
-        </div>
-        <div v-if="filteredScenes.length === 0" class="empty-state">
-          <span class="empty-mark">SE</span>
-          <h2>No scenes found</h2>
-          <p>Create a new scene or adjust your search filter.</p>
-        </div>
-      </section>
+    <div class="catalog-strip">
+      <span><strong>{{ filteredScenes.length }}</strong> visible</span>
+      <span><strong>{{ gatedCount }}</strong> gated</span>
+      <span><strong>{{ errorCount }}</strong> errors</span>
+      <span><strong>{{ snapshot?.catalog_fingerprint.slice(0, 12) || 'unavailable' }}</strong> catalog</span>
+      <span v-if="dirty" class="dirty-indicator">Unsaved changes</span>
+    </div>
 
-      <aside v-if="selectedScene" class="scene-detail">
-        <div class="detail-header">
-          <span class="eyebrow">Scene Properties</span>
-          <button class="btn-icon" @click="selectedScene = null" title="Close">x</button>
+    <main class="editor-workspace">
+      <aside class="scene-list" aria-label="Scene catalog">
+        <div class="list-toolbar">
+          <label class="search-field">
+            <span class="sr-only">Search scenes</span>
+            <input v-model.trim="search" class="input" type="search" placeholder="Search scenes" />
+          </label>
+          <select v-model="filter" class="input filter-select" aria-label="Scene source filter">
+            <option value="all">All</option>
+            <option value="authored">Authored</option>
+            <option value="inferred">Inferred</option>
+          </select>
         </div>
 
-        <div class="detail-preview" :style="{ background: sceneBackground(selectedScene) }">
-          <div class="preview-label">{{ selectedScene.name }}</div>
-        </div>
-
-        <div class="detail-form">
-          <label class="form-field">
-            <span>Scene ID</span>
-            <input class="input" v-model="selectedScene.id" disabled />
-          </label>
-          <label class="form-field">
-            <span>Name</span>
-            <input class="input" v-model="selectedScene.name" />
-          </label>
-          <label class="form-field">
-            <span>Background Path</span>
-            <input class="input" v-model="selectedScene.background_path" placeholder="assets/backgrounds/scene.svg" />
-          </label>
-          <label class="form-field">
-            <span>BGM Path</span>
-            <input class="input" v-model="selectedScene.bgm_path" placeholder="assets/bgm/theme.mp3" />
-          </label>
-          <div class="form-row">
-            <label class="form-field">
-              <span>Weather</span>
-              <select class="input" v-model="selectedScene.weather">
-                <option value="">None</option>
-                <option value="clear">Clear</option>
-                <option value="spring">Spring</option>
-                <option value="rain">Rain</option>
-                <option value="snow">Snow</option>
-                <option value="fog">Fog</option>
-                <option value="storm">Storm</option>
-              </select>
-            </label>
-            <label class="form-field">
-              <span>Time of Day</span>
-              <select class="input" v-model="selectedScene.time_of_day">
-                <option value="">Any</option>
-                <option value="dawn">Dawn</option>
-                <option value="day">Day</option>
-                <option value="sunset">Sunset</option>
-                <option value="night">Night</option>
-                <option value="midnight">Midnight</option>
-              </select>
-            </label>
-          </div>
-          <label class="form-field">
-            <span>Tags (comma-separated)</span>
-            <input class="input" v-model="tagsInput" placeholder="outdoor, calm, forest" />
-          </label>
-        </div>
-
-        <div class="detail-actions">
-          <button class="btn btn-primary" @click="saveScene">Save Changes</button>
-          <button class="btn btn-danger btn-sm" @click="deleteScene">Delete</button>
+        <div class="scene-items">
+          <button
+            v-for="scene in filteredScenes"
+            :key="scene.id"
+            class="scene-item"
+            :class="{ active: selectedCatalogId === scene.id }"
+            @click="selectScene(scene)"
+          >
+            <span class="scene-thumb">
+              <img v-if="sceneImage(scene)" :src="sceneImage(scene) || ''" :alt="scene.name" />
+              <span v-else>SC</span>
+            </span>
+            <span class="scene-item-copy">
+              <strong>{{ scene.name }}</strong>
+              <small>{{ scene.id }}</small>
+              <span class="item-meta">
+                <b :class="scene.metadata_authored ? 'authored' : 'inferred'">
+                  {{ scene.metadata_authored ? 'Authored' : 'Inferred' }}
+                </b>
+                <b :class="scene.access.gated ? 'gated' : 'open'">
+                  {{ scene.access.gated ? 'Gated' : 'Open' }}
+                </b>
+              </span>
+            </span>
+          </button>
+          <div v-if="filteredScenes.length === 0" class="empty-list">No scenes</div>
         </div>
       </aside>
+
+      <section v-if="draft" class="scene-form">
+        <div class="scene-stage">
+          <img
+            v-if="previewUrl && !previewFailed"
+            :src="previewUrl"
+            :alt="draft.name || draft.id"
+            @error="previewFailed = true"
+          />
+          <div v-else class="stage-empty">
+            <span>SC</span>
+            <strong>{{ draft.background_path ? 'Background unavailable' : 'No background assigned' }}</strong>
+          </div>
+          <div class="stage-shade"></div>
+          <div class="stage-caption">
+            <span>{{ draft.time_of_day || 'Any time' }}</span>
+            <h2>{{ draft.name || 'Untitled scene' }}</h2>
+            <p>{{ draft.background_path || 'No background path' }}</p>
+          </div>
+          <span class="source-badge" :class="selectedEntry?.metadata_authored ? 'authored' : 'inferred'">
+            {{ selectedEntry?.metadata_authored ? 'Metadata' : selectedEntry ? 'Background inferred' : 'New scene' }}
+          </span>
+        </div>
+
+        <div v-if="validationIssues.length" class="validation-banner error" role="alert">
+          <strong>{{ validationIssues.length }} blocking issue{{ validationIssues.length === 1 ? '' : 's' }}</strong>
+          <span>{{ validationIssues[0] }}</span>
+        </div>
+        <div v-else-if="warnings.length" class="validation-banner warning">
+          <strong>{{ warnings.length }} warning{{ warnings.length === 1 ? '' : 's' }}</strong>
+          <span>{{ warnings[0] }}</span>
+        </div>
+        <div v-else class="validation-banner valid">
+          <strong>Scene valid</strong>
+          <span>{{ selectedEntry?.background_exists ? 'Background resolved' : 'Ready for project validation' }}</span>
+        </div>
+
+        <div class="form-scroll">
+          <section class="form-section">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Identity</span>
+                <h2>Scene definition</h2>
+              </div>
+              <span class="source-path">{{ sourcePath }}</span>
+            </div>
+            <div class="field-grid identity-grid">
+              <label class="form-field">
+                <span>Scene ID</span>
+                <input v-model.trim="draft.id" class="input mono" :disabled="selectedCatalogId !== null" maxlength="128" />
+              </label>
+              <label class="form-field">
+                <span>Name</span>
+                <input v-model="draft.name" class="input" maxlength="256" />
+              </label>
+            </div>
+          </section>
+
+          <section class="form-section">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Assets</span>
+                <h2>Stage media</h2>
+              </div>
+              <span class="state-label" :class="selectedEntry?.background_exists ? 'ready' : 'pending'">
+                {{ selectedEntry?.background_exists ? 'Resolved' : 'Pending' }}
+              </span>
+            </div>
+            <div class="field-grid">
+              <label class="form-field full-field">
+                <span>Background path</span>
+                <input v-model="draft.background_path" class="input mono" placeholder="assets/backgrounds/scene.svg" />
+              </label>
+              <label class="form-field full-field">
+                <span>BGM path</span>
+                <input v-model="draft.bgm_path" class="input mono" placeholder="assets/audio/theme.ogg" />
+              </label>
+            </div>
+          </section>
+
+          <section class="form-section">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Atmosphere</span>
+                <h2>Environment metadata</h2>
+              </div>
+            </div>
+            <div class="field-grid atmosphere-grid">
+              <label class="form-field">
+                <span>Weather</span>
+                <input v-model="draft.weather" class="input" maxlength="64" placeholder="clear" />
+              </label>
+              <label class="form-field">
+                <span>Time of day</span>
+                <input v-model="draft.time_of_day" class="input" maxlength="64" placeholder="golden_hour" />
+              </label>
+              <label class="form-field full-field">
+                <span>Tags</span>
+                <input v-model="tagsText" class="input" placeholder="outdoor, calm, route-a" />
+                <small>{{ draft.tags.length }} tags</small>
+              </label>
+            </div>
+          </section>
+        </div>
+
+        <footer class="form-footer">
+          <div class="footer-status">
+            <span :class="validationIssues.length ? 'invalid-text' : 'valid-text'">
+              {{ validationIssues.length ? `${validationIssues.length} issues` : dirty ? 'Unsaved changes' : 'Saved' }}
+            </span>
+            <small>{{ selectedEntry?.metadata_authored ? 'Project metadata' : selectedEntry ? 'Inferred asset' : 'New asset' }}</small>
+          </div>
+          <div class="footer-actions">
+            <button
+              class="btn btn-danger btn-sm"
+              :disabled="!selectedEntry?.metadata_authored || busy"
+              :title="selectedEntry && !selectedEntry.metadata_authored ? 'Inferred scenes have no metadata file to delete' : 'Delete scene metadata'"
+              @click="removeScene"
+            >Delete</button>
+            <button class="btn btn-primary" :disabled="!canSave || busy" @click="saveScene">
+              {{ selectedEntry && !selectedEntry.metadata_authored ? 'Promote Scene' : 'Save Scene' }}
+            </button>
+          </div>
+        </footer>
+      </section>
+
+      <section v-else class="empty-editor">
+        <span class="empty-mark">SC</span>
+        <h2>No scene selected</h2>
+      </section>
+
+      <aside class="scene-inspector" aria-label="Scene diagnostics">
+        <section class="inspector-section">
+          <span class="eyebrow">Runtime Access</span>
+          <div class="metric-row"><span>Status</span><strong>{{ accessStatus }}</strong></div>
+          <div class="metric-row"><span>Unlock events</span><strong>{{ selectedEntry?.access.unlock_event_ids.length || 0 }}</strong></div>
+          <p v-if="selectedEntry?.access.unlock_event_ids.length" class="event-list">
+            {{ selectedEntry.access.unlock_event_ids.join(', ') }}
+          </p>
+        </section>
+        <section class="inspector-section">
+          <span class="eyebrow">Document</span>
+          <div class="metric-row"><span>Source</span><strong>{{ selectedEntry?.metadata_authored ? 'JSON' : selectedEntry ? 'Asset' : 'Draft' }}</strong></div>
+          <div class="metric-row"><span>Background</span><strong>{{ selectedEntry?.background_exists ? 'Found' : 'Unchecked' }}</strong></div>
+          <div class="fingerprint">{{ selectedEntry?.content_fingerprint || 'Not saved' }}</div>
+        </section>
+        <section class="inspector-section issue-section">
+          <span class="eyebrow">Diagnostics</span>
+          <div v-for="issue in relevantIssues" :key="`${issue.code}:${issue.path}`" class="diagnostic" :class="issue.severity">
+            <strong>{{ issue.code }}</strong>
+            <span>{{ issue.message }}</span>
+          </div>
+          <p v-if="relevantIssues.length === 0" class="clean-state">No catalog diagnostics</p>
+        </section>
+      </aside>
     </main>
+
+    <Transition name="fade">
+      <button v-if="notice" class="notice" :class="notice.type" @click="notice = null">
+        <strong>{{ notice.title }}</strong>
+        <span>{{ notice.message }}</span>
+      </button>
+    </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import { invokeCommand } from '../lib/tauri'
-import { useI18n } from '../lib/i18n'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { onBeforeRouteLeave, useRouter } from 'vue-router'
+import { resolveAssetUrl } from '../lib/assets'
+import {
+  deleteSceneDefinition,
+  loadSceneAuthoringCatalog,
+  normalizeSceneDefinition,
+  saveSceneDefinition,
+  validateSceneDefinition,
+  type SceneAuthoringCatalogSnapshot,
+  type SceneAuthoringEntry,
+} from '../lib/sceneAuthoring'
+import type { SceneDefinition } from '../lib/storyContent'
+import { hasTauriRuntime, invokeCommand } from '../lib/tauri'
 
-const { t } = useI18n()
-
-interface Scene {
-  id: string
-  name: string
-  background_path: string | null
-  bgm_path: string | null
-  weather: string | null
-  time_of_day: string | null
-  tags: string[]
-  source?: string
-  background_exists?: boolean
-  absolute_background_path?: string | null
+interface BackgroundAsset {
+  relative_path: string
+  absolute_path: string
 }
 
-const scenes = ref<Scene[]>([])
-const selectedScene = ref<Scene | null>(null)
-const searchQuery = ref('')
-const viewMode = ref<'grid' | 'list'>('grid')
-const tagsInput = ref('')
+interface SceneAssetCatalog {
+  backgrounds: BackgroundAsset[]
+}
+
+const router = useRouter()
+const snapshot = ref<SceneAuthoringCatalogSnapshot | null>(null)
+const draft = ref<SceneDefinition | null>(null)
+const selectedCatalogId = ref<string | null>(null)
+const baseline = ref('')
+const search = ref('')
+const filter = ref<'all' | 'authored' | 'inferred'>('all')
+const busy = ref(false)
+const previewFailed = ref(false)
+const backgroundPaths = ref<Record<string, string>>({})
+const notice = ref<{ type: 'success' | 'error'; title: string; message: string } | null>(null)
 
 const filteredScenes = computed(() => {
-  let result = scenes.value
-  if (searchQuery.value.trim()) {
-    const q = searchQuery.value.toLowerCase()
-    result = result.filter(s =>
-      s.name.toLowerCase().includes(q) ||
-      s.id.toLowerCase().includes(q) ||
-      (s.tags || []).some(t => t.toLowerCase().includes(q))
-    )
+  const query = search.value.toLowerCase()
+  return (snapshot.value?.scenes || []).filter((scene) => {
+    const sourceMatches = filter.value === 'all'
+      || (filter.value === 'authored' && scene.metadata_authored)
+      || (filter.value === 'inferred' && !scene.metadata_authored)
+    return sourceMatches && (!query
+      || scene.id.toLowerCase().includes(query)
+      || scene.name.toLowerCase().includes(query)
+      || scene.tags.some((tag) => tag.toLowerCase().includes(query)))
+  })
+})
+
+const selectedEntry = computed(() => (snapshot.value?.scenes || [])
+  .find((scene) => scene.id === selectedCatalogId.value) || null)
+const serializedDraft = computed(() => draft.value ? JSON.stringify(draft.value) : '')
+const dirty = computed(() => serializedDraft.value !== baseline.value)
+const gatedCount = computed(() => (snapshot.value?.scenes || []).filter((scene) => scene.access.gated).length)
+const errorCount = computed(() => (snapshot.value?.issues || []).filter((issue) => issue.severity === 'error').length)
+const sourcePath = computed(() => selectedEntry.value?.source_path || `scenes/${draft.value?.id || 'new'}.json`)
+const accessStatus = computed(() => {
+  const access = selectedEntry.value?.access
+  if (!access) return 'Draft'
+  if (!access.gated) return 'Open'
+  return access.unlocked ? 'Unlocked' : 'Locked'
+})
+const tagsText = computed({
+  get: () => draft.value?.tags.join(', ') || '',
+  set: (value: string) => {
+    if (draft.value) draft.value.tags = value.split(',').map((tag) => tag.trim()).filter(Boolean)
+  },
+})
+const validationIssues = computed(() => {
+  if (!draft.value) return ['No scene selected.']
+  const normalized = normalizeSceneDefinition(draft.value)
+  const issues = validateSceneDefinition(normalized)
+  if (!selectedCatalogId.value && snapshot.value?.scenes.some((scene) => scene.id === normalized.id)) {
+    issues.push(`Scene "${normalized.id}" already exists.`)
+  }
+  return issues
+})
+const warnings = computed(() => {
+  if (!draft.value) return []
+  const result: string[] = []
+  if (!draft.value.background_path?.trim()) result.push('No background is assigned to this scene.')
+  if (selectedEntry.value?.background_path === draft.value.background_path && !selectedEntry.value.background_exists) {
+    result.push('The saved background path does not resolve to a project file.')
   }
   return result
 })
-
-watch(selectedScene, (scene) => {
-  tagsInput.value = scene ? (scene.tags || []).join(', ') : ''
+const relevantIssues = computed(() => (snapshot.value?.issues || []).filter((issue) =>
+  !issue.scene_id || issue.scene_id === selectedCatalogId.value))
+const previewUrl = computed(() => {
+  const path = draft.value?.background_path?.trim()
+  if (!path) return null
+  return resolveAssetUrl(backgroundPaths.value[path] || selectedEntry.value?.absolute_background_path || path)
 })
+const canSave = computed(() => Boolean(draft.value && snapshot.value && dirty.value && validationIssues.value.length === 0))
+const canPreview = computed(() => Boolean(selectedCatalogId.value && !dirty.value && validationIssues.value.length === 0))
 
-function sceneBackground(scene: Scene): string {
-  const hue = Array.from(scene.id).reduce((s, c) => s + c.charCodeAt(0), 0) * 37 % 360
-  return 'linear-gradient(180deg, hsl(' + hue + ' 40% 22%), hsl(' + ((hue + 40) % 360) + ' 35% 12%))'
+watch(previewUrl, () => { previewFailed.value = false })
+
+function sceneImage(scene: SceneAuthoringEntry): string | null {
+  const path = scene.background_path
+  if (!path) return null
+  return resolveAssetUrl(backgroundPaths.value[path] || scene.absolute_background_path || path)
 }
 
-function selectScene(scene: Scene) {
-  selectedScene.value = scene
+function definitionFrom(entry: SceneAuthoringEntry): SceneDefinition {
+  return {
+    id: entry.id,
+    name: entry.name,
+    background_path: entry.background_path,
+    bgm_path: entry.bgm_path,
+    weather: entry.weather,
+    time_of_day: entry.time_of_day,
+    tags: [...entry.tags],
+  }
+}
+
+function setDraft(definition: SceneDefinition, catalogId: string | null, isSaved = true) {
+  draft.value = { ...definition, tags: [...definition.tags] }
+  selectedCatalogId.value = catalogId
+  baseline.value = isSaved ? JSON.stringify(draft.value) : ''
+  previewFailed.value = false
+}
+
+function confirmDiscard(): boolean {
+  return !dirty.value || window.confirm('Discard unsaved scene changes?')
+}
+
+function selectScene(entry: SceneAuthoringEntry) {
+  if (entry.id === selectedCatalogId.value) return
+  if (!confirmDiscard()) return
+  setDraft(definitionFrom(entry), entry.id)
+}
+
+function nextSceneId(base = 'new_scene'): string {
+  const ids = new Set(snapshot.value?.scenes.map((scene) => scene.id) || [])
+  if (!ids.has(base)) return base
+  let index = 2
+  while (ids.has(`${base}_${index}`)) index += 1
+  return `${base}_${index}`
 }
 
 function createScene() {
-  const id = 'scene_' + Date.now()
-  const scene: Scene = {
-    id,
+  if (!confirmDiscard()) return
+  setDraft({
+    id: nextSceneId(),
     name: 'New Scene',
     background_path: null,
     bgm_path: null,
     weather: null,
-    time_of_day: 'day',
+    time_of_day: null,
     tags: [],
+  }, null, false)
+}
+
+function duplicateScene() {
+  if (!draft.value || !confirmDiscard()) return
+  setDraft({
+    ...draft.value,
+    id: nextSceneId(`${draft.value.id}_copy`),
+    name: `${draft.value.name} Copy`,
+    tags: [...draft.value.tags],
+  }, null, false)
+}
+
+async function loadBackgroundPaths() {
+  if (!hasTauriRuntime()) {
+    backgroundPaths.value = {}
+    return
   }
-  scenes.value.push(scene)
-  selectedScene.value = scene
+  const catalog = await invokeCommand<SceneAssetCatalog>('list_scene_assets')
+  backgroundPaths.value = Object.fromEntries(catalog.backgrounds.map((asset) => [asset.relative_path, asset.absolute_path]))
 }
 
-function saveScene() {
-  if (!selectedScene.value) return
-  selectedScene.value.tags = tagsInput.value.split(',').map(s => s.trim()).filter(Boolean)
-}
-
-function deleteScene() {
-  if (!selectedScene.value) return
-  scenes.value = scenes.value.filter(s => s.id !== selectedScene.value!.id)
-  selectedScene.value = null
-}
-
-async function loadScenes() {
+async function loadCatalog(preferredId?: string | null) {
+  busy.value = true
   try {
-    const result = await invokeCommand<Scene[]>('list_scene_assets', undefined, [])
-    scenes.value = result
-  } catch (e) {
-    console.error('Failed to load scenes:', e)
-    scenes.value = []
+    const [nextSnapshot] = await Promise.all([
+      loadSceneAuthoringCatalog(),
+      loadBackgroundPaths(),
+    ])
+    snapshot.value = nextSnapshot
+    const target = nextSnapshot.scenes.find((scene) => scene.id === preferredId) || nextSnapshot.scenes[0]
+    if (target) setDraft(definitionFrom(target), target.id)
+    else {
+      draft.value = null
+      selectedCatalogId.value = null
+      baseline.value = ''
+    }
+  } catch (error) {
+    showNotice('error', 'Catalog unavailable', String(error))
+  } finally {
+    busy.value = false
   }
 }
 
-onMounted(loadScenes)
+async function reloadCatalog() {
+  if (!confirmDiscard()) return
+  await loadCatalog(selectedCatalogId.value)
+  showNotice('success', 'Catalog reloaded', 'Scene definitions and asset diagnostics are current.')
+}
+
+async function saveScene() {
+  if (!draft.value || !snapshot.value || !canSave.value) return
+  busy.value = true
+  try {
+    const scene = normalizeSceneDefinition(draft.value)
+    const originalId = selectedEntry.value?.metadata_authored ? selectedEntry.value.id : null
+    const next = await saveSceneDefinition(scene, originalId, snapshot.value.catalog_fingerprint)
+    snapshot.value = next
+    await loadBackgroundPaths()
+    const saved = next.scenes.find((entry) => entry.id === scene.id)
+    if (saved) setDraft(definitionFrom(saved), saved.id)
+    showNotice('success', originalId ? 'Scene saved' : 'Scene created', `${scene.name} passed project reload validation.`)
+  } catch (error) {
+    showNotice('error', 'Save rejected', String(error))
+  } finally {
+    busy.value = false
+  }
+}
+
+async function removeScene() {
+  if (!selectedEntry.value?.metadata_authored || !snapshot.value) return
+  const sceneId = selectedEntry.value.id
+  if (!window.confirm(`Delete scene metadata "${sceneId}"?`)) return
+  busy.value = true
+  try {
+    const next = await deleteSceneDefinition(sceneId, snapshot.value.catalog_fingerprint)
+    snapshot.value = next
+    await loadBackgroundPaths()
+    const target = next.scenes.find((scene) => scene.id === sceneId) || next.scenes[0]
+    if (target) setDraft(definitionFrom(target), target.id)
+    else {
+      draft.value = null
+      selectedCatalogId.value = null
+      baseline.value = ''
+    }
+    showNotice('success', 'Metadata deleted', target?.id === sceneId
+      ? `${sceneId} remains available from its background asset.`
+      : `${sceneId} was removed from the scene catalog.`)
+  } catch (error) {
+    showNotice('error', 'Delete rejected', String(error))
+  } finally {
+    busy.value = false
+  }
+}
+
+async function previewScene() {
+  if (!selectedCatalogId.value || !canPreview.value) return
+  busy.value = true
+  try {
+    if (hasTauriRuntime()) {
+      await invokeCommand('set_scene', { sceneId: selectedCatalogId.value })
+      await router.push('/game')
+    } else {
+      await router.push({ path: '/game', query: { previewScene: selectedCatalogId.value, authoring: '1' } })
+    }
+  } catch (error) {
+    showNotice('error', 'Preview unavailable', String(error))
+  } finally {
+    busy.value = false
+  }
+}
+
+function showNotice(type: 'success' | 'error', title: string, message: string) {
+  notice.value = { type, title, message }
+}
+
+function handleBeforeUnload(event: BeforeUnloadEvent) {
+  if (!dirty.value) return
+  event.preventDefault()
+  event.returnValue = ''
+}
+
+function handleKeydown(event: KeyboardEvent) {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+    event.preventDefault()
+    void saveScene()
+  }
+}
+
+onBeforeRouteLeave(() => confirmDiscard())
+
+onMounted(async () => {
+  window.addEventListener('beforeunload', handleBeforeUnload)
+  window.addEventListener('keydown', handleKeydown)
+  await loadCatalog()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+  window.removeEventListener('keydown', handleKeydown)
+})
 </script>
 
 <style scoped>
 .scene-editor {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 34px 40px;
+  height: 100vh;
+  height: 100svh;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface-0);
+  color: var(--text-primary);
 }
 
 .editor-header {
   display: flex;
-  justify-content: space-between;
-  gap: 18px;
   align-items: flex-start;
-  margin-bottom: 24px;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 26px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-1);
 }
-
-.editor-header h1 {
-  color: var(--text-primary);
-  font-size: 28px;
-  line-height: 1.15;
-  margin-top: 3px;
-}
-
-.editor-header p {
-  color: var(--text-tertiary);
-  font-size: 13px;
-  margin-top: 4px;
-}
+.header-copy { min-width: 0; }
+.header-copy h1 { margin-top: 3px; font-size: 26px; line-height: 1.15; }
+.header-copy p { margin-top: 5px; color: var(--text-tertiary); font-size: 13px; }
+.header-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 
 .eyebrow {
   display: block;
   color: var(--text-tertiary);
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 800;
   letter-spacing: 0;
   text-transform: uppercase;
 }
 
-.header-actions {
+.catalog-strip {
+  min-height: 40px;
   display: flex;
-  gap: 8px;
   align-items: center;
-  flex-shrink: 0;
-}
-
-.search-bar .input {
-  min-width: 200px;
-}
-
-.input-sm {
-  min-width: 80px;
-}
-
-.editor-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
-  gap: 18px;
-  align-items: start;
-}
-
-.scene-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 14px;
-}
-
-.scene-grid.list {
-  grid-template-columns: 1fr;
-}
-
-.scene-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface-1);
-  cursor: pointer;
-  overflow: hidden;
-  transition: all var(--transition-fast);
-}
-
-.scene-card:hover, .scene-card.selected {
-  border-color: var(--brand);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow);
-}
-
-.scene-preview {
-  height: 120px;
-  position: relative;
-  border-radius: var(--radius) var(--radius) 0 0;
-}
-
-.scene-overlay {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  display: flex;
-  gap: 6px;
-}
-
-.scene-badge {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(0,0,0,0.5);
-  color: white;
-  font-size: 10px;
-  font-weight: 700;
-  backdrop-filter: blur(4px);
-}
-
-.scene-badge.weather {
-  background: rgba(96,165,250,0.4);
-}
-
-.scene-info {
-  padding: 12px;
-}
-
-.scene-info strong {
-  display: block;
-  color: var(--text-primary);
-  font-size: 13px;
-  margin-bottom: 2px;
-}
-
-.scene-info small {
+  gap: 20px;
+  padding: 7px 26px;
+  border-bottom: 1px solid var(--border);
   color: var(--text-tertiary);
-  font-size: 11px;
-  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.catalog-strip strong { color: var(--text-secondary); font-family: var(--font-mono); }
+.dirty-indicator { margin-left: auto; color: var(--warning); font-weight: 800; }
+
+.editor-workspace {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(230px, 270px) minmax(440px, 1fr) minmax(230px, 270px);
 }
 
-.scene-tags {
+.scene-list {
+  min-height: 0;
   display: flex;
-  gap: 4px;
-  margin-top: 8px;
-  flex-wrap: wrap;
-}
-
-.tag {
-  padding: 2px 8px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  font-size: 10px;
-  color: var(--text-secondary);
-}
-
-.scene-detail {
-  position: sticky;
-  top: 18px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  flex-direction: column;
+  border-right: 1px solid var(--border);
   background: var(--surface-1);
-  overflow: hidden;
 }
-
-.detail-header {
-  display: flex;
-  justify-content: space-between;
+.list-toolbar {
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px;
   align-items: center;
-  padding: 14px 16px;
+  gap: 8px;
+  padding: 10px;
   border-bottom: 1px solid var(--border);
 }
-
-.detail-preview {
-  height: 140px;
-  display: flex;
-  align-items: flex-end;
-  padding: 12px;
-  position: relative;
-}
-
-.preview-label {
-  padding: 4px 12px;
-  background: rgba(0,0,0,0.5);
-  border-radius: var(--radius-sm);
-  color: white;
-  font-weight: 700;
-  font-size: 14px;
-  backdrop-filter: blur(4px);
-}
-
-.detail-form {
-  padding: 16px;
+.search-field { min-width: 0; }
+.filter-select { padding-left: 9px; padding-right: 6px; }
+.scene-items { min-height: 0; overflow-y: auto; padding: 7px; }
+.scene-item {
+  width: 100%;
+  min-height: 78px;
   display: grid;
-  gap: 12px;
-}
-
-.form-field {
-  display: grid;
-  gap: 5px;
-}
-
-.form-field span {
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.detail-actions {
-  display: flex;
-  gap: 8px;
-  padding: 14px 16px;
-  border-top: 1px solid var(--border);
-}
-
-.btn-icon {
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-weight: 800;
-  font-size: 16px;
-}
-
-.btn-icon:hover {
-  border-color: var(--brand);
-  color: var(--brand-light);
-}
-
-.empty-state {
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 60px 20px;
-}
-
-.empty-state h2 {
-  color: var(--text-primary);
-  font-size: 22px;
-  margin-top: 12px;
-}
-
-.empty-state p {
-  color: var(--text-tertiary);
-  font-size: 13px;
-  margin-top: 6px;
-}
-
-.empty-mark {
-  display: inline-flex;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 10px;
   align-items: center;
-  justify-content: center;
-  min-width: 44px;
-  height: 44px;
+  padding: 7px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+.scene-item:hover { background: var(--surface-2); border-color: var(--border); }
+.scene-item.active { background: var(--surface-3); border-color: var(--brand); }
+.scene-thumb {
+  width: 72px;
+  aspect-ratio: 16 / 10;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface-2);
-  color: var(--brand-light);
+  border-radius: 4px;
+  background: var(--surface-0);
+  color: var(--text-tertiary);
   font-family: var(--font-mono);
-  font-weight: 900;
+  font-size: 11px;
+  font-weight: 800;
+}
+.scene-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.scene-item-copy { min-width: 0; display: block; }
+.scene-item-copy strong,
+.scene-item-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scene-item-copy strong { font-size: 12px; }
+.scene-item-copy small { margin-top: 2px; color: var(--text-tertiary); font-family: var(--font-mono); font-size: 10px; }
+.item-meta { display: flex; gap: 5px; margin-top: 7px; }
+.item-meta b,
+.source-badge {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+.authored { background: rgba(45, 212, 191, 0.14); color: var(--brand-light); }
+.inferred { background: rgba(96, 165, 250, 0.15); color: var(--info); }
+.gated { background: rgba(245, 158, 11, 0.14); color: var(--warning); }
+.open { background: var(--surface-4); color: var(--text-secondary); }
+.empty-list { padding: 28px 12px; color: var(--text-tertiary); text-align: center; }
+
+.scene-form { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--surface-0); }
+.scene-stage {
+  position: relative;
+  flex: 0 0 clamp(190px, 31vh, 330px);
+  min-height: 190px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+  background: #11151b;
+}
+.scene-stage > img { width: 100%; height: 100%; object-fit: cover; }
+.stage-empty { position: absolute; inset: 0; display: grid; place-content: center; gap: 8px; color: var(--text-tertiary); text-align: center; }
+.stage-empty span { font-family: var(--font-mono); font-size: 26px; font-weight: 900; }
+.stage-empty strong { font-size: 12px; }
+.stage-shade { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(8, 10, 14, 0.88), transparent 65%); pointer-events: none; }
+.stage-caption { position: absolute; left: 24px; right: 24px; bottom: 20px; min-width: 0; }
+.stage-caption span { color: var(--brand-light); font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.stage-caption h2 { margin-top: 3px; overflow: hidden; color: white; font-size: 22px; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+.stage-caption p { margin-top: 3px; overflow: hidden; color: rgba(255, 255, 255, 0.68); font-family: var(--font-mono); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.source-badge { position: absolute; top: 14px; right: 14px; font-weight: 800; }
+
+.validation-banner {
+  min-height: 46px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 9px 20px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+}
+.validation-banner strong { font-size: 11px; }
+.validation-banner span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.validation-banner.error { background: rgba(239, 68, 68, 0.08); color: #fca5a5; }
+.validation-banner.warning { background: rgba(245, 158, 11, 0.08); color: #fcd34d; }
+.validation-banner.valid { background: rgba(34, 197, 94, 0.07); color: #86efac; }
+
+.form-scroll { flex: 1; min-height: 0; overflow-y: auto; }
+.form-section { padding: 20px 24px 22px; border-bottom: 1px solid var(--border); }
+.section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.section-heading h2 { margin-top: 2px; font-size: 16px; line-height: 1.25; }
+.source-path { max-width: 52%; overflow: hidden; color: var(--text-tertiary); font-family: var(--font-mono); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+.identity-grid { grid-template-columns: minmax(180px, 0.75fr) minmax(240px, 1.25fr); }
+.atmosphere-grid { grid-template-columns: 1fr 1fr; }
+.form-field { min-width: 0; display: grid; gap: 5px; }
+.form-field > span { color: var(--text-secondary); font-size: 11px; font-weight: 800; }
+.form-field small { color: var(--text-tertiary); font-size: 10px; }
+.full-field { grid-column: 1 / -1; }
+.mono { font-family: var(--font-mono); }
+.input:disabled { opacity: 0.68; cursor: not-allowed; }
+.state-label { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 800; }
+.state-label.ready { background: rgba(34, 197, 94, 0.12); color: #86efac; }
+.state-label.pending { background: var(--surface-3); color: var(--text-tertiary); }
+
+.form-footer {
+  min-height: 66px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-1);
+}
+.footer-status span,
+.footer-status small { display: block; }
+.footer-status span { font-size: 11px; font-weight: 800; }
+.footer-status small { margin-top: 2px; color: var(--text-tertiary); font-size: 10px; }
+.footer-actions { display: flex; gap: 8px; }
+.valid-text { color: var(--success); }
+.invalid-text { color: var(--danger); }
+
+.scene-inspector {
+  min-height: 0;
+  overflow-y: auto;
+  border-left: 1px solid var(--border);
+  background: var(--surface-1);
+}
+.inspector-section { padding: 18px 16px; border-bottom: 1px solid var(--border); }
+.metric-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 11px; color: var(--text-tertiary); font-size: 11px; }
+.metric-row strong { color: var(--text-secondary); font-size: 11px; }
+.event-list { margin-top: 10px; overflow-wrap: anywhere; color: var(--warning); font-family: var(--font-mono); font-size: 10px; }
+.fingerprint { margin-top: 12px; overflow-wrap: anywhere; color: var(--text-tertiary); font-family: var(--font-mono); font-size: 9px; line-height: 1.5; }
+.diagnostic { display: grid; gap: 3px; margin-top: 10px; padding-left: 9px; border-left: 2px solid var(--border-light); }
+.diagnostic strong { overflow-wrap: anywhere; font-family: var(--font-mono); font-size: 9px; }
+.diagnostic span { color: var(--text-tertiary); font-size: 10px; line-height: 1.45; }
+.diagnostic.error { border-color: var(--danger); }
+.diagnostic.warning { border-color: var(--warning); }
+.clean-state { margin-top: 12px; color: var(--text-tertiary); font-size: 11px; }
+
+.empty-editor { min-width: 0; display: grid; place-content: center; gap: 10px; color: var(--text-tertiary); text-align: center; }
+.empty-editor h2 { color: var(--text-secondary); font-size: 17px; }
+.empty-mark { display: inline-grid; min-width: 44px; height: 44px; place-items: center; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); color: var(--brand-light); font-family: var(--font-mono); font-weight: 900; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+
+.notice {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 80;
+  width: min(360px, calc(100vw - 44px));
+  display: grid;
+  gap: 3px;
+  padding: 13px 15px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  background: var(--surface-3);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-lg);
+  text-align: left;
+  cursor: pointer;
+}
+.notice strong { font-size: 12px; }
+.notice span { color: var(--text-secondary); font-size: 11px; }
+.notice.success { border-color: rgba(34, 197, 94, 0.55); }
+.notice.error { border-color: rgba(239, 68, 68, 0.65); }
+
+@media (max-width: 1180px) {
+  .editor-workspace { grid-template-columns: minmax(220px, 250px) minmax(420px, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  .scene-inspector { grid-column: 1 / -1; max-height: 170px; display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--border); border-left: none; }
+  .inspector-section { border-right: 1px solid var(--border); border-bottom: none; }
 }
 
-@media (max-width: 1060px) {
-  .editor-layout {
-    grid-template-columns: 1fr;
-  }
-  .scene-detail {
-    position: static;
-  }
+@media (max-width: 760px) {
+  .scene-editor { height: auto; min-height: 100svh; overflow: visible; }
+  .editor-header { flex-direction: column; padding: 18px 16px 14px; }
+  .header-actions { width: 100%; justify-content: flex-start; }
+  .catalog-strip { flex-wrap: wrap; gap: 8px 16px; padding: 7px 16px; }
+  .dirty-indicator { width: 100%; margin-left: 0; }
+  .editor-workspace { display: block; }
+  .scene-list { height: 244px; border-right: none; border-bottom: 1px solid var(--border); }
+  .scene-form { min-height: 720px; }
+  .scene-stage { flex-basis: 230px; }
+  .scene-inspector { max-height: none; display: block; border-top: 1px solid var(--border); }
+  .inspector-section { border-right: none; border-bottom: 1px solid var(--border); }
+  .field-grid,
+  .identity-grid,
+  .atmosphere-grid { grid-template-columns: 1fr; }
+  .full-field { grid-column: auto; }
+  .form-footer { align-items: flex-start; }
+  .footer-actions { flex-wrap: wrap; justify-content: flex-end; }
 }
 
-@media (max-width: 640px) {
-  .scene-editor { padding: 22px; }
-  .editor-header { flex-direction: column; }
-  .scene-grid { grid-template-columns: 1fr; }
+@media (max-width: 480px) {
+  .header-actions .btn { flex: 1 1 auto; justify-content: center; }
+  .catalog-strip span:nth-child(4) { display: none; }
+  .scene-stage { min-height: 190px; flex-basis: 190px; }
+  .stage-caption { left: 16px; right: 16px; bottom: 14px; }
+  .stage-caption h2 { font-size: 18px; }
+  .validation-banner { grid-template-columns: 1fr; gap: 2px; padding: 9px 14px; }
+  .validation-banner span { white-space: normal; }
+  .form-section { padding: 18px 16px 20px; }
+  .section-heading { flex-direction: column; gap: 5px; }
+  .source-path { max-width: 100%; }
+  .form-footer { flex-direction: column; }
+  .footer-actions { width: 100%; }
+  .footer-actions .btn { flex: 1; justify-content: center; }
+  .notice { bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
 }
 </style>

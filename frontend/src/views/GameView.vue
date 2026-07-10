@@ -802,10 +802,20 @@ onMounted(async () => {
   await updateDialogueState()
   await loadSaves()
   await loadStoryLibrary()
+  const previewSceneId = route.query.previewScene
+  const previewDialogueId = route.query.previewDialogue
   const previewEndingId = route.query.previewEnding
-  if (!hasTauriRuntime() && route.query.authoring === '1' && typeof previewEndingId === 'string') {
-    const ending = storyEndings.value.find((item) => item.id === previewEndingId)
-    if (ending) await startEnding(ending)
+  if (!hasTauriRuntime() && route.query.authoring === '1') {
+    if (typeof previewSceneId === 'string') {
+      const scene = storyScenes.value.find((item) => item.id === previewSceneId)
+      if (scene) await enterScene(scene)
+    } else if (typeof previewDialogueId === 'string') {
+      const dialogue = storyDialogues.value.find((item) => item.id === previewDialogueId)
+      if (dialogue) await startStoryDialogue(dialogue)
+    } else if (typeof previewEndingId === 'string') {
+      const ending = storyEndings.value.find((item) => item.id === previewEndingId)
+      if (ending) await startEnding(ending)
+    }
   }
   window.addEventListener('keydown', handleKeydown)
   

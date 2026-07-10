@@ -18,10 +18,19 @@ export interface StorySceneInfo {
 export interface StoryDialogueInfo {
   id: string
   title: string
+  description?: string | null
   start_node_id: string
   node_count: number
   nodes?: Record<string, WebDialogueNode>
+  variables?: Record<string, unknown>
   access: StoryContentAccessEntry
+}
+
+export interface WebDialogueChoice {
+  text: string
+  next_node_id: string
+  relationship_changes?: Record<string, number>
+  condition?: string | null
 }
 
 export interface WebDialogueNode {
@@ -29,7 +38,23 @@ export interface WebDialogueNode {
   text: string
   emotion?: string | null
   next_node_id?: string | null
-  choices?: Array<{ text: string; next_node_id: string }>
+  choices?: WebDialogueChoice[]
+  condition?: string | null
+  script?: string | null
+  use_llm?: boolean
+  llm_prompt?: string | null
+  llm_system_prompt?: string | null
+  is_ending?: boolean
+  ending_type?: string | null
+}
+
+export interface DialogueDefinition {
+  id: string
+  title: string
+  description: string | null
+  start_node_id: string
+  nodes: Record<string, WebDialogueNode>
+  variables: Record<string, unknown>
 }
 
 export interface StoryEndingInfo {
@@ -58,19 +83,24 @@ interface WebProjectManifest {
   ending_files?: string[]
 }
 
-interface SceneDocument {
+export interface SceneDefinition {
   id: string
   name: string
-  background_path?: string | null
-  backgroundPath?: string | null
-  bgm_path?: string | null
-  bgmPath?: string | null
-  weather?: string | null
-  time_of_day?: string | null
-  tags?: string[]
+  background_path: string | null
+  bgm_path: string | null
+  weather: string | null
+  time_of_day: string | null
+  tags: string[]
 }
 
-interface DialogueDocument {
+interface SceneDocument extends Partial<SceneDefinition> {
+  id: string
+  name: string
+  backgroundPath?: string | null
+  bgmPath?: string | null
+}
+
+interface DialogueDocument extends Partial<DialogueDefinition> {
   id: string
   title: string
   start_node_id: string
@@ -78,6 +108,8 @@ interface DialogueDocument {
 }
 
 const BROWSER_ENDING_DRAFT_KEY = 'monogatari:story-ending-catalog:v1'
+const BROWSER_SCENE_DRAFT_KEY = 'monogatari:scene-authoring-catalog:v1'
+const BROWSER_DIALOGUE_DRAFT_KEY = 'monogatari:dialogue-authoring-catalog:v1'
 
 function baseUrl(): URL {
   const base = import.meta.env.BASE_URL || '/'
@@ -110,12 +142,18 @@ async function fetchDocuments<T>(paths: string[] | undefined): Promise<T[]> {
 export async function loadStoryScenes(): Promise<StorySceneInfo[]> {
   if (hasTauriRuntime()) return invokeCommand<StorySceneInfo[]>('list_story_scenes')
   const access = await loadStoryContentAccess()
+  const browserDrafts = loadBrowserSceneDrafts()
+  if (browserDrafts !== null) {
+    return browserDrafts
+      .map((scene) => storySceneInfo(scene, 'browser_draft', access))
+      .sort((left, right) => left.id.localeCompare(right.id))
+  }
   try {
     const manifest = await webProjectManifest()
     const documents = await fetchDocuments<SceneDocument>(manifest.scene_files)
     return documents.map((scene) => {
       const backgroundPath = scene.background_path ?? scene.backgroundPath ?? null
-      return {
+      return storySceneInfo({
         id: scene.id,
         name: scene.name,
         background_path: backgroundPath,
@@ -123,11 +161,7 @@ export async function loadStoryScenes(): Promise<StorySceneInfo[]> {
         weather: scene.weather ?? null,
         time_of_day: scene.time_of_day ?? null,
         tags: Array.isArray(scene.tags) ? scene.tags : [],
-        source: 'web_project',
-        background_exists: Boolean(backgroundPath),
-        absolute_background_path: null,
-        access: contentAccess(access, 'scene', scene.id),
-      }
+      }, 'web_project', access)
     }).sort((left, right) => left.id.localeCompare(right.id))
   } catch {
     return browserSceneFallback.map((scene) => ({
@@ -137,26 +171,69 @@ export async function loadStoryScenes(): Promise<StorySceneInfo[]> {
   }
 }
 
+export function loadBrowserSceneDrafts(): SceneDefinition[] | null {
+  if (typeof window === 'undefined') return null
+  const raw = window.localStorage.getItem(BROWSER_SCENE_DRAFT_KEY)
+  if (raw === null) return null
+  try {
+    const value = JSON.parse(raw) as unknown
+    if (!Array.isArray(value)) return null
+    const scenes = value.filter(isSceneDefinition)
+    return scenes.length === value.length ? scenes : null
+  } catch {
+    return null
+  }
+}
+
+export function saveBrowserSceneDrafts(scenes: SceneDefinition[]): void {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(BROWSER_SCENE_DRAFT_KEY, JSON.stringify(scenes))
+}
+
 export async function loadStoryDialogues(): Promise<StoryDialogueInfo[]> {
   if (hasTauriRuntime()) return invokeCommand<StoryDialogueInfo[]>('list_dialogues')
   const access = await loadStoryContentAccess()
+  const browserDrafts = loadBrowserDialogueDrafts()
+  if (browserDrafts !== null) {
+    return browserDrafts.map((dialogue) => storyDialogueInfo(dialogue, access))
+      .sort((left, right) => left.id.localeCompare(right.id))
+  }
   try {
     const manifest = await webProjectManifest()
     const documents = await fetchDocuments<DialogueDocument>(manifest.dialogue_files)
-    return documents.map((dialogue) => ({
+    return documents.map((dialogue) => storyDialogueInfo({
       id: dialogue.id,
       title: dialogue.title,
+      description: dialogue.description ?? null,
       start_node_id: dialogue.start_node_id,
-      node_count: Object.keys(dialogue.nodes || {}).length,
       nodes: dialogue.nodes || {},
-      access: contentAccess(access, 'dialogue', dialogue.id),
-    })).sort((left, right) => left.id.localeCompare(right.id))
+      variables: dialogue.variables || {},
+    }, access)).sort((left, right) => left.id.localeCompare(right.id))
   } catch {
     return browserDialogueFallback.map((dialogue) => ({
       ...dialogue,
       access: contentAccess(access, 'dialogue', dialogue.id),
     }))
   }
+}
+
+export function loadBrowserDialogueDrafts(): DialogueDefinition[] | null {
+  if (typeof window === 'undefined') return null
+  const raw = window.localStorage.getItem(BROWSER_DIALOGUE_DRAFT_KEY)
+  if (raw === null) return null
+  try {
+    const value = JSON.parse(raw) as unknown
+    if (!Array.isArray(value)) return null
+    const dialogues = value.filter(isDialogueDefinition)
+    return dialogues.length === value.length ? dialogues : null
+  } catch {
+    return null
+  }
+}
+
+export function saveBrowserDialogueDrafts(dialogues: DialogueDefinition[]): void {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(BROWSER_DIALOGUE_DRAFT_KEY, JSON.stringify(dialogues))
 }
 
 export async function loadStoryEndings(): Promise<StoryEndingInfo[]> {
@@ -210,6 +287,53 @@ function isStoryEndingDefinition(value: unknown): value is StoryEndingDefinition
       .every((field) => typeof ending[field] === 'string')
 }
 
+function isSceneDefinition(value: unknown): value is SceneDefinition {
+  if (!value || typeof value !== 'object') return false
+  const scene = value as Record<string, unknown>
+  return typeof scene.id === 'string'
+    && typeof scene.name === 'string'
+    && ['background_path', 'bgm_path', 'weather', 'time_of_day']
+      .every((field) => scene[field] === null || typeof scene[field] === 'string')
+    && Array.isArray(scene.tags)
+    && scene.tags.every((tag) => typeof tag === 'string')
+}
+
+function isDialogueDefinition(value: unknown): value is DialogueDefinition {
+  if (!value || typeof value !== 'object') return false
+  const dialogue = value as Record<string, unknown>
+  return typeof dialogue.id === 'string'
+    && typeof dialogue.title === 'string'
+    && (dialogue.description === null || typeof dialogue.description === 'string')
+    && typeof dialogue.start_node_id === 'string'
+    && Boolean(dialogue.nodes) && typeof dialogue.nodes === 'object' && !Array.isArray(dialogue.nodes)
+    && Boolean(dialogue.variables) && typeof dialogue.variables === 'object' && !Array.isArray(dialogue.variables)
+}
+
+function storySceneInfo(
+  scene: SceneDefinition,
+  source: string,
+  access: Awaited<ReturnType<typeof loadStoryContentAccess>>,
+): StorySceneInfo {
+  return {
+    ...scene,
+    source,
+    background_exists: Boolean(scene.background_path),
+    absolute_background_path: null,
+    access: contentAccess(access, 'scene', scene.id),
+  }
+}
+
+function storyDialogueInfo(
+  dialogue: DialogueDefinition,
+  access: Awaited<ReturnType<typeof loadStoryContentAccess>>,
+): StoryDialogueInfo {
+  return {
+    ...dialogue,
+    node_count: Object.keys(dialogue.nodes).length,
+    access: contentAccess(access, 'dialogue', dialogue.id),
+  }
+}
+
 function titleFromId(id: string): string {
   return id.split('_').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }
@@ -243,9 +367,11 @@ const browserDialogueFallback: Omit<StoryDialogueInfo, 'access'>[] = [
 ].map((id) => ({
   id,
   title: titleFromId(id),
+  description: null,
   start_node_id: 'start',
   node_count: 1,
   nodes: { start: { text: `Browser fallback for ${titleFromId(id)}.`, choices: [] } },
+  variables: {},
 }))
 
 const browserEndingFallback: Omit<StoryEndingInfo, 'access'>[] = [{

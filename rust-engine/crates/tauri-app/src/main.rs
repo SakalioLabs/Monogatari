@@ -6,6 +6,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod commands;
+mod content_authoring;
+mod content_references;
 mod state;
 mod story_access;
 mod story_events;
@@ -78,7 +80,11 @@ fn main() {
             commands::characters::get_character,
             commands::characters::load_characters,
             commands::dialogue::start_dialogue,
+            commands::dialogue::preview_dialogue,
             commands::dialogue::list_dialogues,
+            commands::dialogue::get_dialogue_authoring_catalog,
+            commands::dialogue::save_dialogue_definition,
+            commands::dialogue::delete_dialogue_definition,
             commands::dialogue::advance_dialogue,
             commands::dialogue::select_choice,
             commands::dialogue::get_dialogue_state,
@@ -112,6 +118,9 @@ fn main() {
             commands::save::delete_save,
             commands::scenes::list_scene_assets,
             commands::scenes::list_story_scenes,
+            commands::scenes::get_scene_authoring_catalog,
+            commands::scenes::save_scene_definition,
+            commands::scenes::delete_scene_definition,
             commands::scenes::get_current_scene,
             commands::scenes::set_scene,
             commands::scenes::enter_story_scene,

@@ -3,7 +3,8 @@
 use serde::{Deserialize, Serialize};
 
 /// A choice presented to the player during dialogue.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Choice {
     /// Display text for this choice.
     pub text: String,
@@ -18,10 +19,11 @@ pub struct Choice {
 }
 
 /// A single node in a dialogue tree.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct DialogueNode {
     /// Unique node identifier within the dialogue.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "String::is_empty")]
     pub id: String,
     /// ID of the character speaking (if any).
     #[serde(default)]
@@ -52,4 +54,10 @@ pub struct DialogueNode {
     /// System prompt override for LLM.
     #[serde(default)]
     pub llm_system_prompt: Option<String>,
+    /// Explicitly marks a terminal node for route authoring and analytics.
+    #[serde(default)]
+    pub is_ending: bool,
+    /// Optional project-defined ending classification such as `good` or `best`.
+    #[serde(default)]
+    pub ending_type: Option<String>,
 }
