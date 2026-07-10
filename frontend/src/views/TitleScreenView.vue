@@ -1,283 +1,296 @@
 <template>
   <div class="title-screen">
-    <div class="title-bg">
-      <div class="title-particles" ref="particlesRef"></div>
-    </div>
+    <section class="title-hero">
+      <img v-if="sceneImageUrl && !backgroundFailed" class="title-background" :src="sceneImageUrl" :alt="activeScene?.name || t('title.preview-scene', 'Preview scene')" @error="backgroundFailed = true" />
+      <div class="title-scrim"></div>
 
-    <div class="title-content">
-      <div class="title-brand">
-        <div class="title-logo">M</div>
-        <h1 class="title-name">Monogatari</h1>
-        <p class="title-tagline">LLM-Powered Visual Novel Engine</p>
-        <span class="title-ver">v0.9.5</span>
+      <header class="title-utility">
+        <span class="engine-version">v0.9.5</span>
+        <label class="language-control">
+          <Languages :size="14" />
+          <select :value="locale" :aria-label="t('settings.language', 'Language')" @change="changeLocale">
+            <option v-for="option in supportedLocales" :key="option.code" :value="option.code">{{ option.label }}</option>
+          </select>
+        </label>
+      </header>
+
+      <div class="title-content">
+        <div class="title-brand">
+          <span class="brand-mark">M</span>
+          <h1>{{ t('title.brand', 'Monogatari') }}</h1>
+          <p>{{ t('title.tagline', 'Stories begin here.') }}</p>
+        </div>
+
+        <nav class="title-menu" :aria-label="t('title.menu', 'Main menu')">
+          <button class="title-command primary" @click="openRoute('/game')"><Play :size="17" /><span>{{ t('title.start', 'Start Game') }}</span><ArrowRight :size="15" /></button>
+          <button class="title-command" @click="openRoute('/chat')"><MessageCircle :size="16" /><span>{{ t('nav.chat', 'AI Chat') }}</span><ArrowRight :size="14" /></button>
+          <button class="title-command" @click="openRoute('/editor')"><Workflow :size="16" /><span>{{ t('nav.workflow', 'Workflow') }}</span><ArrowRight :size="14" /></button>
+          <button class="title-command" @click="openRoute('/characters')"><Images :size="16" /><span>{{ t('title.gallery', 'Gallery') }}</span><ArrowRight :size="14" /></button>
+          <button class="title-command" @click="openRoute('/settings')"><Settings :size="16" /><span>{{ t('title.settings', 'Settings') }}</span><ArrowRight :size="14" /></button>
+        </nav>
       </div>
+    </section>
 
-      <nav class="title-menu">
-        <button class="title-btn primary" @click="$router.push('/game')">
-          <span class="btn-icon">&#9654;</span>
-          <span class="btn-label">{{ t('title.start', 'Start Game') }}</span>
-        </button>
-        <button class="title-btn" @click="$router.push('/chat')">
-          <span class="btn-icon">&#9670;</span>
-          <span class="btn-label">{{ t('title.continue', 'Continue') }}</span>
-        </button>
-        <button class="title-btn" @click="$router.push('/editor')">
-          <span class="btn-icon">&#8942;</span>
-          <span class="btn-label">{{ t('nav.workflow', 'Workflow') }}</span>
-        </button>
-        <button class="title-btn" @click="$router.push('/characters')">
-          <span class="btn-icon">&#9786;</span>
-          <span class="btn-label">{{ t('title.gallery', 'Gallery') }}</span>
-        </button>
-        <button class="title-btn" @click="$router.push('/settings')">
-          <span class="btn-icon">&#9881;</span>
-          <span class="btn-label">{{ t('title.settings', 'Settings') }}</span>
-        </button>
-      </nav>
-
-      <footer class="title-footer">
+    <footer class="title-status">
+      <div class="scene-status">
+        <span class="status-dot"></span>
+        <span>{{ t('title.active-scene', 'Active scene') }}</span>
+        <strong>{{ activeScene?.name || t('title.preview-scene', 'Preview scene') }}</strong>
+      </div>
+      <div class="title-meta">
         <span>{{ t('title.credits', 'Credits') }}</span>
-        <span class="sep">|</span>
         <span>{{ t('title.version', 'Version') }} 0.9.5</span>
-        <span class="sep">|</span>
-        <span>MIT License</span>
-      </footer>
-    </div>
-
-    <div class="title-scene-info" v-if="activeScene">
-      <span class="scene-label">{{ activeScene.name }}</span>
-    </div>
+        <span>{{ t('title.license', 'MIT License') }}</span>
+      </div>
+    </footer>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
+import { ArrowRight, Images, Languages, MessageCircle, Play, Settings, Workflow } from '@lucide/vue'
+import { useRouter } from 'vue-router'
+import { resolveAssetUrl } from '../lib/assets'
 import { useI18n } from '../lib/i18n'
 import { invokeCommand } from '../lib/tauri'
-
-const { t } = useI18n()
 
 interface SceneInfo {
   id: string
   name: string
   background_path: string | null
+  absolute_background_path?: string | null
 }
 
+const previewScene: SceneInfo = {
+  id: 'studio_night',
+  name: 'Studio Night',
+  background_path: 'assets/backgrounds/studio_night.svg',
+  absolute_background_path: null,
+}
+
+const router = useRouter()
+const { locale, setLocale, supportedLocales, t } = useI18n()
 const activeScene = ref<SceneInfo | null>(null)
-const particlesRef = ref<HTMLDivElement>()
+const backgroundFailed = ref(false)
+const sceneImageUrl = computed(() => resolveAssetUrl(activeScene.value?.absolute_background_path || activeScene.value?.background_path || previewScene.background_path))
 
 async function loadScene() {
   try {
-    const active = await invokeCommand<{ scene: SceneInfo | null }>('get_current_scene', undefined, { scene: null })
-    if (active.scene) activeScene.value = active.scene
-  } catch {}
-}
-
-function spawnParticles() {
-  if (!particlesRef.value) return
-  for (let i = 0; i < 30; i++) {
-    const p = document.createElement('span')
-    p.className = 'particle'
-    p.style.left = Math.random() * 100 + '%'
-    p.style.animationDelay = Math.random() * 8 + 's'
-    p.style.animationDuration = 6 + Math.random() * 8 + 's'
-    p.style.opacity = String(0.15 + Math.random() * 0.35)
-    p.style.width = p.style.height = 2 + Math.random() * 4 + 'px'
-    particlesRef.value.appendChild(p)
+    const active = await invokeCommand<{ scene: SceneInfo | null }>('get_current_scene', undefined, { scene: previewScene })
+    activeScene.value = active.scene || previewScene
+  } catch {
+    activeScene.value = previewScene
   }
 }
 
-onMounted(() => {
-  loadScene()
-  spawnParticles()
-})
+async function changeLocale(event: Event) {
+  await setLocale((event.target as HTMLSelectElement).value)
+}
+
+function openRoute(path: string) {
+  void router.push(path)
+}
+
+onMounted(loadScene)
 </script>
 
 <style scoped>
 .title-screen {
-  position: relative;
   width: 100%;
-  height: 100vh;
+  min-height: 100svh;
   overflow: hidden;
+  background: #0b1015;
+  color: white;
+}
+
+.title-hero {
+  position: relative;
+  display: grid;
+  min-height: calc(100svh - 70px);
+  align-items: center;
+  overflow: hidden;
+}
+
+.title-background,
+.title-scrim {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.title-background { object-fit: cover; }
+.title-scrim { background: rgba(5, 9, 13, 0.62); }
+
+.title-utility {
+  position: absolute;
+  z-index: 2;
+  top: 18px;
+  right: 20px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: var(--surface-0);
+  gap: 8px;
 }
 
-.title-bg {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse at 30% 20%, rgba(45,212,191,0.12), transparent 50%),
-    radial-gradient(ellipse at 70% 80%, rgba(96,165,250,0.10), transparent 50%),
-    linear-gradient(180deg, rgba(15,17,21,0.9), var(--surface-0));
+.engine-version,
+.language-control {
+  min-height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  background: rgba(7, 12, 17, 0.72);
+  color: rgba(255, 255, 255, 0.76);
 }
 
-.title-particles {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
+.engine-version {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 9px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 800;
 }
 
-.title-particles :deep(.particle) {
-  position: absolute;
-  bottom: -10px;
-  border-radius: 50%;
-  background: var(--brand);
-  animation: floatUp linear infinite;
+.language-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 7px;
 }
 
-@keyframes floatUp {
-  0% { transform: translateY(0) scale(1); opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { transform: translateY(-100vh) scale(0.3); opacity: 0; }
+.language-control select {
+  max-width: 120px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 9px;
+  font-weight: 700;
 }
+
+.language-control option { background: #111820; color: white; }
 
 .title-content {
   position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 48px;
-  text-align: center;
+  z-index: 1;
+  display: grid;
+  width: min(560px, calc(100% - 48px));
+  gap: 26px;
+  margin-left: clamp(28px, 8vw, 112px);
+  padding: 62px 0 34px;
 }
 
-.title-brand {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-
-.title-logo {
-  width: 72px;
-  height: 72px;
-  border-radius: 16px;
-  background: var(--brand);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.title-brand { display: grid; justify-items: start; gap: 9px; }
+.brand-mark {
+  display: inline-grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 6px;
+  background: rgba(7, 12, 17, 0.62);
+  color: white;
+  font-size: 20px;
   font-weight: 900;
-  font-size: 36px;
-  color: var(--surface-0);
-  box-shadow: 0 8px 32px rgba(45,212,191,0.25);
-  animation: logoGlow 3s ease-in-out infinite alternate;
 }
 
-@keyframes logoGlow {
-  from { box-shadow: 0 8px 32px rgba(45,212,191,0.25); }
-  to { box-shadow: 0 8px 48px rgba(45,212,191,0.45); }
-}
-
-.title-name {
-  font-size: 56px;
+.title-brand h1 {
+  margin: 0;
+  color: white;
+  font-size: 52px;
   font-weight: 900;
-  color: var(--text-primary);
-  letter-spacing: -1px;
+  letter-spacing: 0;
   line-height: 1;
-  margin: 0;
 }
 
-.title-tagline {
-  font-size: 16px;
-  color: var(--text-tertiary);
-  font-weight: 500;
+.title-brand p {
   margin: 0;
-}
-
-.title-ver {
-  font-size: 11px;
-  color: var(--brand-light);
-  font-weight: 700;
-  padding: 2px 10px;
-  border: 1px solid rgba(45,212,191,0.3);
-  border-radius: 100px;
-  background: rgba(45,212,191,0.08);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .title-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 280px;
+  display: grid;
+  width: min(440px, 100%);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
 }
 
-.title-btn {
-  display: flex;
+.title-command {
+  display: grid;
+  min-width: 0;
+  min-height: 40px;
+  grid-template-columns: 20px minmax(0, 1fr) 16px;
   align-items: center;
-  gap: 14px;
-  padding: 14px 20px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: rgba(21,25,34,0.85);
-  color: var(--text-secondary);
-  cursor: pointer;
+  gap: 7px;
+  padding: 0 11px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  background: rgba(7, 12, 17, 0.72);
+  color: rgba(255, 255, 255, 0.82);
   font: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(12px);
+  font-size: 10px;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
 }
 
-.title-btn:hover {
-  border-color: var(--brand);
-  color: var(--brand-light);
-  background: rgba(45,212,191,0.08);
-  transform: translateX(4px);
-}
+.title-command span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.title-command > svg:last-child { color: rgba(255, 255, 255, 0.4); }
+.title-command:hover { border-color: rgba(255, 255, 255, 0.46); background: rgba(7, 12, 17, 0.9); color: white; }
+.title-command.primary { min-height: 46px; grid-column: 1 / -1; border-color: var(--brand); background: color-mix(in srgb, var(--brand) 86%, #071018); color: #071018; }
+.title-command.primary > svg:last-child { color: rgba(7, 16, 24, 0.58); }
+.title-command.primary:hover { background: var(--brand-light); }
 
-.title-btn.primary {
-  border-color: var(--brand);
-  background: rgba(45,212,191,0.15);
-  color: var(--brand-light);
-  font-weight: 700;
-}
-
-.title-btn.primary:hover {
-  background: rgba(45,212,191,0.25);
-}
-
-.btn-icon {
-  font-size: 18px;
-  width: 24px;
-  text-align: center;
-  flex-shrink: 0;
-}
-
-.title-footer {
+.title-status {
+  position: relative;
+  z-index: 3;
   display: flex;
-  gap: 12px;
+  min-height: 70px;
   align-items: center;
-  color: var(--text-tertiary);
-  font-size: 12px;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 10px clamp(20px, 4vw, 56px);
+  border-top: 1px solid rgba(255, 255, 255, 0.13);
+  background: #0b1015;
 }
 
-.title-footer .sep {
-  opacity: 0.4;
+.scene-status,
+.title-meta {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
 }
 
-.title-scene-info {
-  position: absolute;
-  bottom: 24px;
-  right: 24px;
-  z-index: 2;
+.scene-status { color: rgba(255, 255, 255, 0.48); font-size: 9px; text-transform: uppercase; }
+.scene-status strong { overflow: hidden; color: rgba(255, 255, 255, 0.84); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; text-transform: none; }
+.status-dot { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 15%, transparent); }
+.title-meta { color: rgba(255, 255, 255, 0.48); font-size: 9px; }
+.title-meta span + span { padding-left: 10px; border-left: 1px solid rgba(255, 255, 255, 0.14); }
+
+@media (max-width: 700px) {
+  .title-hero { min-height: calc(100svh - 58px); align-items: end; }
+  .title-utility { top: 12px; right: 12px; }
+  .engine-version { display: none; }
+  .title-content { width: calc(100% - 28px); gap: 19px; margin: 0 14px; padding: 76px 0 22px; }
+  .brand-mark { width: 36px; height: 36px; font-size: 17px; }
+  .title-brand h1 { font-size: 36px; }
+  .title-brand p { font-size: 11px; }
+  .title-menu { width: 100%; }
+  .title-command { min-height: 38px; }
+  .title-command.primary { min-height: 44px; }
+  .title-status { min-height: 58px; padding: 8px 14px; }
+  .title-meta { display: none; }
+  .scene-status { width: 100%; }
 }
 
-.scene-label {
-  font-size: 11px;
-  color: var(--text-tertiary);
-  padding: 4px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: rgba(21,25,34,0.7);
-}
-
-@media (max-width: 480px) {
-  .title-name { font-size: 36px; }
-  .title-menu { width: 240px; }
-  .title-btn { padding: 12px 16px; font-size: 14px; }
+@media (max-height: 620px) {
+  .title-content { gap: 16px; padding-top: 52px; }
+  .brand-mark { display: none; }
+  .title-brand h1 { font-size: 36px; }
+  .title-menu { gap: 5px; }
+  .title-command, .title-command.primary { min-height: 36px; }
 }
 </style>

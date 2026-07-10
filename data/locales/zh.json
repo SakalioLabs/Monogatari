@@ -1844,6 +1844,12 @@
     "plugins.notice.disabled": "插件“{name}”已禁用。",
     "plugins.notice.update-failed": "无法更新插件：{error}",
     "plugins.notice.removed": "插件“{name}”已移除。",
-    "plugins.notice.remove-failed": "无法移除插件：{error}"
+    "plugins.notice.remove-failed": "无法移除插件：{error}",
+    "title.brand": "Monogatari",
+    "title.tagline": "故事，从这里开始。",
+    "title.menu": "主菜单",
+    "title.active-scene": "活动场景",
+    "title.preview-scene": "预览场景",
+    "title.license": "MIT 许可证"
   }
 }

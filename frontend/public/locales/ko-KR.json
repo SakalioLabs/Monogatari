@@ -1844,6 +1844,12 @@
     "plugins.notice.disabled": "플러그인 \"{name}\"을 비활성화했습니다.",
     "plugins.notice.update-failed": "플러그인을 업데이트할 수 없습니다: {error}",
     "plugins.notice.removed": "플러그인 \"{name}\"을 제거했습니다.",
-    "plugins.notice.remove-failed": "플러그인을 제거할 수 없습니다: {error}"
+    "plugins.notice.remove-failed": "플러그인을 제거할 수 없습니다: {error}",
+    "title.brand": "Monogatari",
+    "title.tagline": "이야기는 여기서 시작됩니다.",
+    "title.menu": "메인 메뉴",
+    "title.active-scene": "활성 장면",
+    "title.preview-scene": "미리보기 장면",
+    "title.license": "MIT 라이선스"
   }
 }

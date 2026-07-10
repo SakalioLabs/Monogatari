@@ -1844,6 +1844,12 @@
     "plugins.notice.disabled": "プラグイン「{name}」を無効にしました。",
     "plugins.notice.update-failed": "プラグインを更新できませんでした: {error}",
     "plugins.notice.removed": "プラグイン「{name}」を削除しました。",
-    "plugins.notice.remove-failed": "プラグインを削除できませんでした: {error}"
+    "plugins.notice.remove-failed": "プラグインを削除できませんでした: {error}",
+    "title.brand": "Monogatari",
+    "title.tagline": "物語はここから始まる。",
+    "title.menu": "メインメニュー",
+    "title.active-scene": "アクティブシーン",
+    "title.preview-scene": "プレビューシーン",
+    "title.license": "MIT ライセンス"
   }
 }

@@ -1844,6 +1844,12 @@
     "plugins.notice.disabled": "Plugin \"{name}\" disabled.",
     "plugins.notice.update-failed": "Plugin could not be updated: {error}",
     "plugins.notice.removed": "Plugin \"{name}\" removed.",
-    "plugins.notice.remove-failed": "Plugin could not be removed: {error}"
+    "plugins.notice.remove-failed": "Plugin could not be removed: {error}",
+    "title.brand": "Monogatari",
+    "title.tagline": "Stories begin here.",
+    "title.menu": "Main menu",
+    "title.active-scene": "Active scene",
+    "title.preview-scene": "Preview scene",
+    "title.license": "MIT License"
   }
 }

@@ -614,6 +614,7 @@ onUnmounted(() => {
   .locale-control { width: 34px; padding: 0; justify-content: center; overflow: hidden; }
   .locale-control svg { position: absolute; pointer-events: none; }
   .app-main { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
+  .fullscreen-route .app-main { padding-bottom: 0; }
   .mobile-bottom-nav {
     position: fixed;
     right: 0;
