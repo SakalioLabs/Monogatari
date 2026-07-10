@@ -116,6 +116,7 @@ const strictLocalizedSurfaces = [
   'src/views/HomeView.vue',
   'src/views/KnowledgeBaseView.vue',
   'src/views/QualitySuiteView.vue',
+  'src/views/SceneAssetsView.vue',
   'src/views/SceneEditorView.vue',
   'src/views/SettingsView.vue',
   'src/views/StoryEventEditorView.vue',
