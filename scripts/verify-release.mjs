@@ -313,9 +313,7 @@ async function main() {
   await run('Rust scripting tests', 'cargo', ['test', '--locked', '-p', 'llm-scripting'], rustDir)
   await run('Rust game tests', 'cargo', ['test', '--locked', '-p', 'llm-game'], rustDir)
   await run('Rust Tauri command tests', 'cargo', ['test', '--locked', '-p', 'llm-galgame-app'], rustDir, {
-    env: process.platform === 'win32'
-      ? { CARGO_INCREMENTAL: '0', CARGO_PROFILE_TEST_DEBUG: '0' }
-      : { CARGO_INCREMENTAL: '0' },
+    env: { CARGO_INCREMENTAL: '0' },
   })
   await run('Rust Tauri app check', 'cargo', ['check', '--locked', '-p', 'llm-galgame-app'], rustDir)
   await run(
@@ -3726,6 +3724,8 @@ async function verifyTauriPackagingConfig() {
   const cargoWorkspace = await readFile(path.join(rustDir, 'Cargo.toml'), 'utf8')
   const tauriCargoSource = await readFile(path.join(tauriAppDir, 'Cargo.toml'), 'utf8')
   const tauriBuildSource = await readFile(path.join(tauriAppDir, 'build.rs'), 'utf8')
+  const rustToolchainSource = await readFile(path.join(rustDir, 'rust-toolchain.toml'), 'utf8')
+  const releaseVerifierSource = await readFile(path.join(root, 'scripts', 'verify-release.mjs'), 'utf8')
   const mobilePreflightSource = await readFile(path.join(root, 'scripts', 'verify-tauri-mobile-preflight.mjs'), 'utf8')
   const mobileDeploymentDocs = await readFile(path.join(root, 'docs', 'MOBILE_DEPLOYMENT.md'), 'utf8')
   const tauriMainSource = await readFile(path.join(tauriAppDir, 'src', 'main.rs'), 'utf8')
@@ -4294,6 +4294,22 @@ async function verifyTauriPackagingConfig() {
     if (!tauriBuildSource.includes(needle)) {
       issues.push(`Tauri build metadata must ${description}`)
     }
+  }
+
+  const rustToolchainRequirements = [
+    [rustToolchainSource, 'channel = "nightly-2026-07-03"', 'pin the verified Rust nightly by exact date'],
+    [rustToolchainSource, 'profile = "minimal"', 'keep release toolchain installation minimal'],
+    [rustToolchainSource, 'components = ["rustfmt"]', 'install the formatter used by release verification'],
+    [releaseVerifierSource, "env: { CARGO_INCREMENTAL: '0' }", 'disable incremental Tauri test compilation deterministically'],
+  ]
+  for (const [source, needle, description] of rustToolchainRequirements) {
+    if (!source.includes(needle)) {
+      issues.push(`Rust release toolchain must ${description}`)
+    }
+  }
+  const forbiddenTestProfileOverride = ['CARGO', 'PROFILE', 'TEST', 'DEBUG'].join('_')
+  if (releaseVerifierSource.includes(forbiddenTestProfileOverride)) {
+    issues.push('Rust release verification must not override the Tauri test debug-profile environment')
   }
 
   for (const [source, file] of [

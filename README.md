@@ -137,7 +137,7 @@ Verified on 2026-07-10:
 - Locale JSON files validate across project data and frontend fallback directories, including key coverage and Web/PWA fallback parity.
 - i18n locale commands validate portable locale IDs before loading or listing JSON files under the active project `locales/` directory.
 - Live2D remains on `pixi-live2d-display@0.4.0`; its transitive `gh-pages` dependency is pinned to the safe `6.3.0` line through npm overrides.
-- Rust desktop dependencies are pinned through `rust-engine/Cargo.lock` for reproducible Tauri builds.
+- Rust desktop dependencies are pinned through `rust-engine/Cargo.lock`, and the compiler/formatter toolchain is fixed to `nightly-2026-07-03`, for reproducible Tauri builds.
 - Tauri desktop packaging configuration declares Windows MSI/NSIS targets, a pinned WiX upgrade identity, installer metadata, icons, WebView2 bootstrap behavior, and bundled sample project data, all checked by the release verifier.
 - Installed Tauri builds discover bundled sample `data/` resources at startup and bind them as the default project root when no development data root is available.
 - Windows release-candidate audits query MSI/NSIS metadata, the stable MSI upgrade identity, and Authenticode status for both installers plus the extracted application, administratively extract the MSI, compare every bundled project file by SHA-256, and run the production executable's headless runtime verifier with build-commit provenance.

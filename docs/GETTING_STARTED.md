@@ -3,8 +3,9 @@
 ## Quick Setup
 
 1. Clone the repository
-2. Install frontend dependencies: `cd frontend && npm install`
-3. Run the dev server: `cd rust-engine/crates/tauri-app && cargo tauri dev`
+2. Install the pinned Rust toolchain: `rustup toolchain install nightly-2026-07-03 --profile minimal --component rustfmt`
+3. Install frontend dependencies: `cd frontend && npm install`
+4. Run the dev server: `cd rust-engine/crates/tauri-app && cargo tauri dev`
 
 ## First Steps After Launch
 
@@ -166,4 +167,4 @@ Use the generated `dist/` directory as the deploy root. The service worker scope
 
 - **No characters loading**: Check that JSON files are in `rust-engine/data/characters/`
 - **AI not responding**: Verify API key in Settings > AI Backend
-- **Build fails**: Run `npm audit fix` and ensure Rust toolchain is up to date
+- **Build fails**: Run `npm audit` and reinstall the pinned `nightly-2026-07-03` toolchain instead of advancing to an unverified nightly

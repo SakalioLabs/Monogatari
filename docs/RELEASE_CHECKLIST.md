@@ -4,6 +4,7 @@
 
 ### Automated Gate
 - [ ] `node scripts/verify-release.mjs` passes from the repository root, covering JSON assets, workflow files, score-gate workflow execution regressions, renderer asset contracts, pinned knowledge-ref contracts, all quality suites, workflow branch coverage snapshots, locale coverage, sensitive token scans, frontend UI text artifact scans, frontend source invariants, legacy C# AI prompt/API invariants, AI backend config, engine project root, asset/save-manager, script command and state-key invariants, i18n locale, workflow command, content loader, character manager, plugin manager, marketplace, Live2D model, TTS output/error/log-privacy invariants, frontend route/sidebar coverage, Tauri desktop packaging and installed-runtime verification, available Windows installer audits, Rust core/AI/scripting/game/assets/Tauri checks/tests, frontend audit, root and subpath Web/PWA builds, Web/PWA dist assets, release artifact manifest checks, preview route smoke checks, and legacy C# tests
+- [ ] `rust-engine/rust-toolchain.toml` remains pinned to `nightly-2026-07-03` with the minimal profile and rustfmt component; release tests do not override `CARGO_PROFILE_TEST_DEBUG`
 
 ### Frontend
 - [ ] `cd frontend && npm run build` passes with zero errors
