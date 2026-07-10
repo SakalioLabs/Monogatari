@@ -22,6 +22,7 @@ const MAX_INSTALLED_JSON_FILES: usize = 4_000;
 const MAX_INSTALLED_JSON_BYTES: u64 = 64 * 1024 * 1024;
 const MAX_REPORT_BYTES: usize = 1024 * 1024;
 const MAX_TREE_DEPTH: usize = 32;
+const EXPECTED_PROJECT_WARNING_CODES: &[&str] = &["api_key_missing"];
 
 static REPORT_STAGE_COUNTER: AtomicU64 = AtomicU64::new(0);
 
@@ -51,6 +52,7 @@ pub struct InstallationVerificationReport {
     pub resource_root: String,
     pub project_config_valid: bool,
     pub project_warning_count: usize,
+    pub project_warning_codes: Vec<String>,
     pub data_file_count: usize,
     pub json_file_count: usize,
     pub data_total_bytes: u64,
@@ -152,6 +154,23 @@ pub(crate) async fn verify_installed_application(
             "Bundled project configuration is invalid: {errors}"
         ));
     }
+    let mut project_warning_codes = project_state
+        .issues
+        .iter()
+        .filter(|issue| issue.severity == "warning")
+        .map(|issue| issue.code.clone())
+        .collect::<Vec<_>>();
+    project_warning_codes.sort();
+    let expected_warning_codes = EXPECTED_PROJECT_WARNING_CODES
+        .iter()
+        .map(|code| (*code).to_string())
+        .collect::<Vec<_>>();
+    if project_warning_codes != expected_warning_codes {
+        return Err(format!(
+            "Bundled project has unexpected configuration warnings: {}.",
+            project_warning_codes.join(", ")
+        ));
+    }
 
     let (characters, dialogues, knowledge, events) =
         engine::load_project_content(&project_root).await?;
@@ -240,6 +259,7 @@ pub(crate) async fn verify_installed_application(
         resource_root: project_root.to_string_lossy().to_string(),
         project_config_valid: true,
         project_warning_count: project_state.warning_count,
+        project_warning_codes,
         data_file_count: tree_inventory.file_count,
         json_file_count: tree_inventory.json_file_count,
         data_total_bytes: tree_inventory.total_bytes,
@@ -667,6 +687,7 @@ mod tests {
         assert_eq!(report.git_commit, env!("MONOGATARI_GIT_COMMIT"));
         assert_eq!(report.git_short_commit, env!("MONOGATARI_GIT_SHORT_COMMIT"));
         assert_eq!(report.data_file_count, 97);
+        assert_eq!(report.project_warning_codes, ["api_key_missing"]);
         assert!(report.counts.characters > 0);
         assert!(report.counts.dialogues > 0);
         assert!(report.counts.story_events > 0);

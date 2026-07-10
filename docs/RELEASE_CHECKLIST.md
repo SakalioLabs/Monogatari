@@ -159,7 +159,7 @@
 - [ ] Installed Tauri build resolves bundled sample `data/` resources at startup when no development project data root is available
 - [ ] `node scripts/verify-windows-installers.mjs --check` passes for public Windows artifacts, proving MSI/NSIS identity, version, stable MSI upgrade code, hashes, size bounds, expected-publisher Authenticode signatures on both installers and the extracted application, exact MSI payload parity, and extracted runtime verification
 - [ ] Internal/alpha unsigned candidates use the explicit `--allow-unsigned` audit only; their audit reports `release_ready: false` and is not reused as stable/beta evidence
-- [ ] Extracted production executable writes a verified `monogatari-installation-verification/v1` report with current engine/build Git provenance, 97-file project inventory, runtime content counts, and a valid project content fingerprint
+- [ ] Extracted production executable writes a verified `monogatari-installation-verification/v1` report with current engine/build Git provenance, only the expected `api_key_missing` runtime-credential warning, 97-file project inventory, runtime content counts, and a valid project content fingerprint
 - [ ] Installed Tauri build writes analytics, sync manifests, saves, and generated system/API TTS assets under the active project data root with sanitized output filenames
 - [ ] Azure and ElevenLabs TTS provider errors redact token-shaped values, API-key assignments, authorization headers, sensitive provider headers, and response bodies before reaching frontend status surfaces
 - [ ] TTS synthesis logs record text length metadata instead of raw spoken dialogue, prompt text, or token-shaped content

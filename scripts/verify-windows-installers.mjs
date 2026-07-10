@@ -298,6 +298,10 @@ async function verifyAdministrativeImage(
   if (envelope.report.engine_version !== version) {
     throw new Error(`Extracted application reports engine version ${envelope.report.engine_version}, expected ${version}.`)
   }
+  if (envelope.report.project_warning_count !== 1
+      || JSON.stringify(envelope.report.project_warning_codes) !== JSON.stringify(['api_key_missing'])) {
+    throw new Error('Extracted application reported unexpected project configuration warnings.')
+  }
   if (envelope.report.data_file_count !== sourceData.file_count) {
     throw new Error('Extracted runtime data file count does not match source data.')
   }
