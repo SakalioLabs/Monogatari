@@ -17,6 +17,7 @@ pub mod marketplace;
 pub mod multi_chat;
 pub mod plugin;
 pub mod project;
+pub mod project_archive;
 pub mod prompt_guard;
 pub mod quality_suite;
 pub mod save;

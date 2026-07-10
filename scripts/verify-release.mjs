@@ -174,6 +174,7 @@ const releaseCriticalRustFiles = [
   'crates/tauri-app/src/commands/engine.rs',
   'crates/tauri-app/src/commands/endings.rs',
   'crates/tauri-app/src/commands/project.rs',
+  'crates/tauri-app/src/commands/project_archive.rs',
   'crates/tauri-app/src/commands/scenes.rs',
   'crates/tauri-app/src/commands/analytics.rs',
   'crates/tauri-app/src/commands/cloud_sync.rs',
@@ -2170,6 +2171,7 @@ async function verifyFrontendSourceInvariants() {
   const qualitySuiteSource = await readFile(path.join(frontendDir, 'src', 'views', 'QualitySuiteView.vue'), 'utf8')
   const audioViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'AudioView.vue'), 'utf8')
   const settingsSource = await readFile(path.join(frontendDir, 'src', 'views', 'SettingsView.vue'), 'utf8')
+  const projectArchiveSource = await readFile(path.join(frontendDir, 'src', 'lib', 'projectArchive.ts'), 'utf8')
   const serviceWorkerSource = await readFile(path.join(frontendDir, 'public', 'sw.js'), 'utf8')
   const frontendRuntimeFiles = (await walkFiles(path.join(frontendDir, 'src'))).filter((file) =>
     frontendSourceExtensions.has(path.extname(file)),
@@ -2601,6 +2603,23 @@ async function verifyFrontendSourceInvariants() {
   for (const [needle, description] of projectExportRequirements) {
     if (!settingsSource.includes(needle)) {
       issues.push(`frontend/src/views/SettingsView.vue must ${description}`)
+    }
+  }
+  const projectPackageRequirements = [
+    [projectArchiveSource, "import('@tauri-apps/plugin-dialog')", 'load native project package dialogs only when needed'],
+    [projectArchiveSource, 'export_project_archive', 'invoke verified project package exports'],
+    [projectArchiveSource, 'inspect_project_archive', 'verify packages before choosing an import destination'],
+    [projectArchiveSource, 'import_project_archive', 'invoke transactional project package imports'],
+    [projectArchiveSource, "extensions: ['monogatari']", 'filter native dialogs to .monogatari packages'],
+    [projectArchiveSource, 'projectPackagesAvailable', 'gate native package workflows outside Tauri'],
+    [settingsSource, 'Export Package', 'surface project package exports in Settings'],
+    [settingsSource, 'Import Package', 'surface project package imports in Settings'],
+    [settingsSource, 'archiveSummary', 'surface verified package fingerprints and sizes'],
+    [settingsSource, "invokeCommand<void>('initialize_engine'", 'activate validated imported projects'],
+  ]
+  for (const [source, needle, description] of projectPackageRequirements) {
+    if (!source.includes(needle)) {
+      issues.push(`Project package frontend integration must ${description}`)
     }
   }
   if (settingsSource.includes("setConfigValue(config, ['ai', 'api', 'api_key'], apiKey.value)")) {
@@ -3696,6 +3715,8 @@ async function verifyTauriPackagingConfig() {
   const gameDialogueNodeSource = await readFile(path.join(rustDir, 'crates', 'game', 'src', 'dialogue', 'dialogue_node.rs'), 'utf8')
   const tauriEngineSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'engine.rs'), 'utf8')
   const tauriProjectSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'project.rs'), 'utf8')
+  const tauriProjectArchiveSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'project_archive.rs'), 'utf8')
+  const defaultCapabilitySource = await readFile(path.join(tauriAppDir, 'capabilities', 'default.json'), 'utf8')
   const tauriScenesSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'scenes.rs'), 'utf8')
   const tauriChatSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'chat.rs'), 'utf8')
   const tauriPromptGuardSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'prompt_guard.rs'), 'utf8')
@@ -3739,6 +3760,9 @@ async function verifyTauriPackagingConfig() {
     [viteConfigSource, 'hmr: mobileDevHost', 'configure mobile HMR when a Tauri host is provided'],
     [tauriCargoSource, 'tauri = { version = "2"', 'stay on the Tauri v2 mobile-capable line'],
     [tauriCargoSource, 'tauri-plugin-shell = "2"', 'stay on the v2 shell plugin line'],
+    [tauriCargoSource, 'tauri-plugin-dialog = "2.7.1"', 'pin the native project package dialog plugin'],
+    [cargoWorkspace, 'zip = { version = "8.6.0"', 'pin the project package ZIP implementation'],
+    [JSON.stringify(frontendPackage), '@tauri-apps/plugin-dialog', 'ship the native project package dialog frontend'],
     [mobilePreflightSource, 'cargo tauri android init', 'verify Android init documentation'],
     [mobilePreflightSource, 'cargo tauri ios init', 'verify iOS init documentation'],
     [mobilePreflightSource, 'ANDROID_HOME', 'verify Android SDK environment documentation'],
@@ -3865,6 +3889,7 @@ async function verifyTauriPackagingConfig() {
     [tauriTtsSource, 'state.current_project_data_root().await', 'write generated TTS assets under the active project root'],
     [tauriTtsSource, 'project_root.join("assets").join("tts")', 'keep generated TTS files project-scoped'],
     [tauriProjectSource, 'monogatari-project-export@1', 'emit a versioned project export manifest schema'],
+    [tauriProjectSource, '"project_path": "."', 'avoid leaking author filesystem paths in project handoff manifests'],
     [tauriProjectSource, 'project_export_metadata', 'centralize project export build provenance metadata'],
     [tauriProjectSource, 'CARGO_PKG_VERSION', 'bind project exports to the engine package version'],
     [tauriProjectSource, 'MONOGATARI_GIT_COMMIT', 'bind project exports to the build git commit'],
@@ -3888,6 +3913,13 @@ async function verifyTauriPackagingConfig() {
     [tauriProjectSource, 'content_sha256', 'emit package content fingerprints in project export manifests'],
     [tauriProjectSource, 'sanitize_export_config', 'redact sensitive settings in project export manifests'],
     [tauriProjectSource, 'scrub_runtime_secret_config(&config)', 'scrub runtime secrets before saving or returning project settings'],
+    [tauriProjectSource, 'MAX_PROJECT_SETTINGS_BYTES', 'bound project settings payloads'],
+    [tauriProjectSource, 'stage_json_replacement(', 'atomically stage project settings saves'],
+    [tauriProjectSource, 'staged.rollback().await?', 'restore previous settings after rejected staged saves'],
+    [tauriProjectSource, 'settings_not_regular_file', 'reject non-regular and symlinked project settings'],
+    [tauriProjectSource, 'settings_too_large', 'reject oversized project settings before reading them'],
+    [tauriProjectSource, 'build_state_rejects_non_regular_settings_paths', 'test non-regular project settings rejection'],
+    [tauriProjectSource, 'build_state_rejects_oversized_settings_before_reading', 'test bounded project settings reads'],
     [tauriProjectSource, 'scrub_runtime_secret_string', 'scrub token-like and assignment-shaped secrets inside project setting string values'],
     [tauriProjectSource, 'scrub_token_like_values', 'scrub token-shaped values from project settings payloads'],
     [tauriProjectSource, 'scrub_secret_assignments', 'scrub secret assignments from project settings payloads'],
@@ -3898,6 +3930,35 @@ async function verifyTauriPackagingConfig() {
     [tauriProjectSource, 'EXPORT_DIRECTORIES', 'declare exportable project directories explicitly'],
     [tauriProjectSource, '("events", "events")', 'include story event catalogs in project exports'],
     [tauriProjectSource, '("endings", "endings")', 'include story ending catalogs in project exports'],
+    [tauriProjectSource, 'project_export_settings_bytes', 'fingerprint the same sanitized settings bytes written into project packages'],
+    [tauriProjectSource, 'Project exports cannot include symbolic links', 'reject symlinked project export sources'],
+    [tauriProjectSource, 'MAX_PROJECT_EXPORT_FILES', 'bound project inventory file counts before hashing'],
+    [tauriProjectSource, 'MAX_PROJECT_EXPORT_DIRECTORIES', 'bound project inventory directory traversal'],
+    [tauriProjectSource, 'validate_project_export_path_shape', 'bound export path depth and length before hashing'],
+    [tauriProjectSource, 'MAX_PROJECT_EXPORT_TOTAL_BYTES', 'bound project inventory bytes before packaging'],
+    [tauriProjectSource, 'checksum_export_file', 'stream project inventory checksums with fixed memory'],
+    [tauriProjectArchiveSource, 'ARCHIVE_MANIFEST_PATH', 'pin the project package manifest path'],
+    [tauriProjectArchiveSource, 'MAX_ARCHIVE_TOTAL_BYTES', 'bound expanded project package sizes'],
+    [tauriProjectArchiveSource, 'MAX_ARCHIVE_FILE_BYTES', 'bound individual project package files'],
+    [tauriProjectArchiveSource, 'MAX_ARCHIVE_FILES', 'bound project package file counts'],
+    [tauriProjectArchiveSource, 'validate_portable_path', 'reject traversal and non-portable archive paths'],
+    [tauriProjectArchiveSource, 'reject_non_regular_zip_entry', 'reject symlink and special ZIP entries'],
+    [tauriProjectArchiveSource, 'verify_and_extract_entry', 'stream and verify project package contents during import'],
+    [tauriProjectArchiveSource, 'write_export_record', 'stream project files into ZIP output with fixed memory'],
+    [tauriProjectArchiveSource, 'writer.write_all(&buffer[..read])', 'write project package assets incrementally'],
+    [tauriProjectArchiveSource, 'SHA-256 mismatch', 'reject tampered package files'],
+    [tauriProjectArchiveSource, 'scrub_runtime_secret_config(&settings) != settings', 'reject imported settings containing runtime secrets'],
+    [tauriProjectArchiveSource, 'atomic_replace_archive', 'replace exported project packages atomically'],
+    [tauriProjectArchiveSource, 'remove_import_staging', 'remove rejected project import staging directories'],
+    [tauriProjectArchiveSource, 'load_project_content(&staging_root)', 'validate imported runtime content before committing it'],
+    [tauriProjectArchiveSource, 'checked_in_project_packages_reload_as_runtime_content', 'round-trip checked-in project content through a real package'],
+    [tauriProjectArchiveSource, 'failed_archive_exports_preserve_existing_packages', 'test atomic package export rollback'],
+    [tauriMainSource, 'tauri_plugin_dialog::init()', 'register the native project package dialog plugin'],
+    [tauriMainSource, 'commands::project_archive::export_project_archive', 'register project package exports'],
+    [tauriMainSource, 'commands::project_archive::inspect_project_archive', 'register project package inspection'],
+    [tauriMainSource, 'commands::project_archive::import_project_archive', 'register project package imports'],
+    [defaultCapabilitySource, 'dialog:allow-open', 'allow project package selection dialogs'],
+    [defaultCapabilitySource, 'dialog:allow-save', 'allow project package save dialogs'],
     [gameCharacterSource, 'deserialize_relationships', 'migrate numeric and detailed legacy relationship values'],
     [gameDialogueScriptSource, 'node.id.clone_from(node_id)', 'treat dialogue node map keys as authoritative IDs'],
     [gameDialogueScriptSource, 'validate_graph', 'reject broken or unreachable dialogue graphs during runtime loading'],

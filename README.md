@@ -22,6 +22,7 @@ Monogatari is a development engine for creating LLM-driven text adventure games.
 - **Scene Catalog Editor** - Creators promote background-inferred scenes into metadata, preview real assets, diagnose event access, and save or delete metadata with optimistic concurrency and cross-catalog reference protection.
 - **Renderer Fallback Pipeline** - Story Mode resolves project assets across Tauri and Web builds, preferring Live2D, then GLB/GLTF 3D models, then 2D sprites or portraits, with runtime load-failure fallback and a generated 3D stage placeholder when no art is available.
 - **Project Control Panel** - Project settings, path readiness, AI backend selection, and runtime initialization are managed from one production-oriented console.
+- **Verified Project Packages** - Desktop authors export and import complete `.monogatari` ZIP packages with sanitized settings, deterministic inventories, SHA-256 verification, portable-path enforcement, bounded extraction, and transactional installation into a new project directory.
 - **Character System** - Full personality model (Big Five traits), memory system, emotion tracking, and relationship scores per character.
 - **Knowledge Base** - Keyword-indexed world lore, pinned character references, and release-verified context anchors that feed into AI prompts for consistent storytelling.
 - **Branching Dialogue** - Pre-scripted dialogue trees with choices, relationship changes, and flag-based conditional branching.
@@ -69,7 +70,7 @@ Verified on 2026-07-10:
 - The shared Rust AI prompt builder sanitizes embedded role-boundary markers, attributed XML-like role tags, Markdown role-code-fence blocks, comment-wrapped role headers, and punctuation-free role headings in message history and context sections so reusable integrations cannot accidentally reintroduce `[System]`/`[User]`/`[Assistant]` prompt-boundary injection.
 - The legacy C# AI path mirrors role-boundary sanitization for bracket, fullwidth, XML/header, attributed XML-like, Markdown role-code-fence, comment-wrapped, punctuation-free heading, and JSON-shaped role spoofing, and redacts provider-error API secrets while the legacy solution remains part of the release gate.
 - OpenAI-compatible API configuration debug output and API error surfaces redact API keys, bearer tokens, sensitive custom headers, and provider-echoed secret assignments before logs or frontend error reports can expose them.
-- Project settings save/load paths scrub API keys, tokens, authorization headers, token-shaped values, query-secret assignments, and legacy persisted secret fields so provider credentials remain runtime-only instead of landing in `settings.json`.
+- Project settings save/load paths scrub API keys, tokens, authorization headers, token-shaped values, query-secret assignments, and legacy persisted secret fields so provider credentials remain runtime-only instead of landing in `settings.json`; bounded atomic replacement rejects symlinked or non-regular settings targets.
 - Azure and ElevenLabs TTS provider errors redact token-shaped values, API-key assignments, authorization headers, and provider response bodies before Settings or speech-generation failures expose credentials.
 - TTS synthesis runtime logs record spoken-text length metadata instead of raw dialogue, prompt text, or token-shaped content.
 - Frontend runtime source ships without `console.log`/`console.debug` debug output, with release-gate coverage to keep production browser/Tauri consoles clean.
@@ -144,7 +145,7 @@ Verified on 2026-07-10:
 - Story-event rules now execute bounded typed actions for scene, dialogue, ending, and script-flag unlocks. Applied effects live in a project-scoped, fingerprinted progress ledger; chat and real workflow runs share the executor while Quality Suites and author previews remain side-effect free.
 - Rust runtime saves use the backward-compatible `monogatari-game-save/v3` schema to restore scene history, dialogue cursor/local state, typed Rhai variables, character emotion/relationships/full memory, chat history, evaluations, safety traces, triggered-event state, and persistent story unlocks. V1/v2 saves migrate known triggered events into the new progress ledger. Quick-save and auto-save use bounded stable slots with staged overwrite recovery instead of accumulating random files, and save reads/writes enforce a 32 MiB limit.
 - Settings Cloud Sync status now consumes the backend manifest contract directly, showing local save file counts, pending upload/download work, cross-device conflicts, and remote preflight readiness while keeping sync tokens runtime-only.
-- Project export emits a versioned manifest with engine/build provenance, content category summaries and fingerprints, an explicit whole-package SHA-256 fingerprint algorithm, file inventory, per-file SHA-256 and legacy MD5 checksums, generated asset coverage, and redacted sensitive settings for package handoff.
+- Project export emits a versioned manifest with engine/build provenance, content category summaries and fingerprints, an explicit whole-package SHA-256 fingerprint algorithm, file inventory, per-file SHA-256 and legacy MD5 checksums, generated asset coverage, and redacted sensitive settings. Installed apps can embed that manifest and its exact sanitized content in a verified `.monogatari` package for transactional handoff and recovery.
 - Release artifact manifests can be generated with `node scripts/create-release-manifest.mjs` to capture Web/PWA and desktop installer artifact paths, SHA-256 checksums, checked-in Quality Suite source evidence plus aggregate suite-set fingerprints, checked-in workflow source evidence plus aggregate workflow-set fingerprints, checked-in project content source evidence plus aggregate and per-category content-set fingerprints, checked-in release channel policy metadata, git source-state evidence, missing installer expectations, and verified installer signing evidence.
 - One-command release verification passes with `node scripts/verify-release.mjs`, including all quality suite files, Rust core/state-key tests, Rust AI prompt/API/pipeline tests, Rust scripting and asset management tests, legacy C# AI prompt/API invariants, AI backend config, engine project root, asset/save-manager, script command, i18n locale, workflow command, content loader, character manager, plugin manager, marketplace, Live2D model, and TTS output/error/log-privacy invariants, structured role-block prompt-injection regressions, renderer asset contract checks, pinned knowledge-ref checks, locale coverage, frontend UI text artifact scanning, cloud-sync status contract checks, frontend source invariants, frontend route/sidebar coverage, Tauri packaging preflight, root and subpath Web/PWA builds, Web/PWA dist asset checks, release artifact manifest checks, and preview route smoke checks.
 - Commercial release gates are tracked in `docs/RELEASE_CHECKLIST.md`.
@@ -280,6 +281,7 @@ The web build emits `dist/404.html` for SPA fallback, `dist/.nojekyll` for GitHu
 2. Set the project data path, title, target FPS, and content directory mappings
 3. Review readiness diagnostics for characters, dialogue, knowledge, story events, scenes, assets, and saves
 4. Save `settings.json`, configure the AI backend with the runtime API key, then initialize the runtime
+5. Use Export Package for a complete `.monogatari` handoff, or Import Package to verify and install a package into a new project directory
 
 ### Node Types
 
@@ -489,7 +491,7 @@ ONNX configuration is project-scoped and validated, but this build does not link
 - [x] Cloud save sync with local manifest and checksum tracking
 - [x] Analytics dashboard with engagement metrics and JSON export
 - [x] Dialogue Editor view with visual branching node tree and inline editing
-- [x] Project export command for distributable packaging
+- [x] Verified `.monogatari` project package export, inspection, and transactional import
 - [x] Knowledge Base Manager view with CRUD and filtering
 - [x] Professional Character Editor with 5 tabs and radar chart
 - [x] Frontend data sync with rust-engine content

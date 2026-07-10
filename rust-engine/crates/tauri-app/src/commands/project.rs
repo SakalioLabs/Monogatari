@@ -1,6 +1,8 @@
 //! Project configuration commands for commercial authoring readiness.
 
 use std::collections::{BTreeMap, HashSet};
+use std::fs::File;
+use std::io::Read;
 use std::path::{Component, Path, PathBuf};
 
 use chrono::Utc;
@@ -9,6 +11,7 @@ use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use tauri::State;
 
+use crate::content_authoring::stage_json_replacement;
 use crate::state::{default_project_data_root, AppState};
 
 #[derive(Debug, Clone, Serialize)]
@@ -108,7 +111,7 @@ const PROJECT_PATHS: &[PathDefinition] = &[
     },
 ];
 
-const EXPORT_DIRECTORIES: &[(&str, &str)] = &[
+pub(crate) const EXPORT_DIRECTORIES: &[(&str, &str)] = &[
     ("characters", "characters"),
     ("dialogue", "dialogue"),
     ("knowledge", "knowledge"),
@@ -136,6 +139,14 @@ const SECRET_CONFIG_KEYS: &[&str] = &[
     "password",
 ];
 
+const MAX_PROJECT_EXPORT_FILES: usize = 20_000;
+const MAX_PROJECT_EXPORT_DIRECTORIES: usize = 4_000;
+const MAX_PROJECT_EXPORT_TOTAL_BYTES: u64 = 16 * 1024 * 1024 * 1024;
+const MAX_PROJECT_EXPORT_FILE_BYTES: u64 = 4 * 1024 * 1024 * 1024;
+const MAX_PROJECT_EXPORT_PATH_BYTES: usize = 512;
+const MAX_PROJECT_EXPORT_PATH_SEGMENTS: usize = 32;
+const MAX_PROJECT_SETTINGS_BYTES: u64 = 1024 * 1024;
+
 /// Load project settings and readiness diagnostics.
 #[tauri::command]
 pub async fn get_project_config(
@@ -157,55 +168,105 @@ pub async fn save_project_config(
     if !root.exists() {
         return Err(format!("Project path does not exist: {}", root.display()));
     }
-    if !root.is_dir() {
+    let root_metadata = std::fs::symlink_metadata(&root).map_err(|error| error.to_string())?;
+    if root_metadata.file_type().is_symlink() || !root_metadata.is_dir() {
         return Err(format!(
-            "Project path is not a directory: {}",
+            "Project path must be a regular directory: {}",
             root.display()
         ));
     }
+    let root = root.canonicalize().map_err(|error| error.to_string())?;
     if !config.is_object() {
         return Err("Project config must be a JSON object.".to_string());
     }
 
     let config = scrub_runtime_secret_config(&config);
     let settings_path = root.join("settings.json");
-    let json = serde_json::to_string_pretty(&config).map_err(|e| e.to_string())?;
-    tokio::fs::write(&settings_path, json)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    build_project_config_state(&root)
+    let json = serde_json::to_vec_pretty(&config).map_err(|e| e.to_string())?;
+    let staged = stage_json_replacement(
+        &settings_path,
+        &json,
+        MAX_PROJECT_SETTINGS_BYTES,
+        "project settings",
+    )
+    .await?;
+    match build_project_config_state(&root) {
+        Ok(project_state) => {
+            staged.commit().await?;
+            Ok(project_state)
+        }
+        Err(error) => {
+            staged.rollback().await?;
+            Err(error)
+        }
+    }
 }
 
-fn build_project_config_state(project_root: &Path) -> Result<ProjectConfigState, String> {
+pub(crate) fn build_project_config_state(
+    project_root: &Path,
+) -> Result<ProjectConfigState, String> {
     let settings_path = project_root.join("settings.json");
-    let settings_exists = settings_path.exists();
     let mut issues = Vec::new();
-    let config = if settings_exists {
-        match std::fs::read_to_string(&settings_path)
-            .map_err(|e| e.to_string())
-            .and_then(|content| serde_json::from_str::<Value>(&content).map_err(|e| e.to_string()))
-        {
-            Ok(value) if value.is_object() => merge_with_default_config(value),
-            Ok(_) => {
-                push_issue(
-                    &mut issues,
-                    "error",
-                    "settings_not_object",
-                    Some("settings.json".to_string()),
-                    "settings.json must contain a JSON object.",
-                );
-                default_project_config()
-            }
-            Err(error) => {
-                push_issue(
-                    &mut issues,
-                    "error",
-                    "settings_invalid_json",
-                    Some("settings.json".to_string()),
-                    format!("Unable to parse settings.json: {error}"),
-                );
-                default_project_config()
+    let settings_metadata = match std::fs::symlink_metadata(&settings_path) {
+        Ok(metadata) => Some(metadata),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+        Err(error) => {
+            return Err(format!(
+                "Unable to inspect project settings `{}`: {error}",
+                settings_path.display()
+            ));
+        }
+    };
+    let settings_exists = settings_metadata.is_some();
+    let config = if let Some(metadata) = settings_metadata {
+        if metadata.file_type().is_symlink() || !metadata.is_file() {
+            push_issue(
+                &mut issues,
+                "error",
+                "settings_not_regular_file",
+                Some("settings.json".to_string()),
+                "settings.json must be a regular file inside the project root.",
+            );
+            default_project_config()
+        } else if metadata.len() > MAX_PROJECT_SETTINGS_BYTES {
+            push_issue(
+                &mut issues,
+                "error",
+                "settings_too_large",
+                Some("settings.json".to_string()),
+                format!(
+                    "settings.json is {} bytes; the limit is {MAX_PROJECT_SETTINGS_BYTES} bytes.",
+                    metadata.len()
+                ),
+            );
+            default_project_config()
+        } else {
+            match std::fs::read_to_string(&settings_path)
+                .map_err(|e| e.to_string())
+                .and_then(|content| {
+                    serde_json::from_str::<Value>(&content).map_err(|e| e.to_string())
+                }) {
+                Ok(value) if value.is_object() => merge_with_default_config(value),
+                Ok(_) => {
+                    push_issue(
+                        &mut issues,
+                        "error",
+                        "settings_not_object",
+                        Some("settings.json".to_string()),
+                        "settings.json must contain a JSON object.",
+                    );
+                    default_project_config()
+                }
+                Err(error) => {
+                    push_issue(
+                        &mut issues,
+                        "error",
+                        "settings_invalid_json",
+                        Some("settings.json".to_string()),
+                        format!("Unable to parse settings.json: {error}"),
+                    );
+                    default_project_config()
+                }
             }
         }
     } else {
@@ -439,7 +500,9 @@ fn default_project_config() -> Value {
             "scenes": "scenes",
             "assets": "assets",
             "events": "events",
-            "saves": "saves"
+            "endings": "endings",
+            "saves": "saves",
+            "quality_suites": "quality_suites"
         }
     })
 }
@@ -465,7 +528,7 @@ fn count_directory_items(path: &Path) -> usize {
         .unwrap_or(0)
 }
 
-async fn resolve_project_root(
+pub(crate) async fn resolve_project_root(
     state: &State<'_, AppState>,
     project_path: Option<String>,
 ) -> Result<PathBuf, String> {
@@ -564,7 +627,7 @@ pub async fn export_project(
     )
 }
 
-fn build_project_export_manifest(
+pub(crate) fn build_project_export_manifest(
     project_root: &Path,
     loaded_characters: Vec<String>,
     loaded_dialogues: Vec<String>,
@@ -584,6 +647,7 @@ fn build_project_export_manifest(
     let file_knowledge = collect_json_ids(&knowledge_path);
     let file_scenes = collect_json_ids(&scenes_path);
     let files = collect_project_file_inventory(project_root, &config)?;
+    let directories = collect_project_export_directories(project_root, &config)?;
     let total_bytes: u64 = files
         .iter()
         .filter_map(|file| file.get("size_bytes").and_then(Value::as_u64))
@@ -597,7 +661,7 @@ fn build_project_export_manifest(
         "version": "1.0",
         "exported_at": Utc::now().to_rfc3339(),
         "export_metadata": project_export_metadata(),
-        "project_path": project_root.to_string_lossy(),
+        "project_path": ".",
         "settings": sanitize_export_config(&config),
         "content": {
             "characters": if file_characters.is_empty() { loaded_characters } else { file_characters },
@@ -613,8 +677,14 @@ fn build_project_export_manifest(
             "total_bytes": total_bytes,
             "fingerprint_algorithm": "sha256:path-size-file-sha256-v1",
             "content_sha256": content_sha256,
+            "directories": directories,
             "files": files,
             "excluded": ["saves", "analytics.json", ".sync_manifest.json"]
+        },
+        "archive": {
+            "format": "zip",
+            "manifest_path": "monogatari-project.json",
+            "extension": ".monogatari"
         }
     }))
 }
@@ -647,22 +717,47 @@ fn collect_project_file_inventory(
 ) -> Result<Vec<Value>, String> {
     let mut files = Vec::new();
     let mut seen_paths = HashSet::new();
+    let mut total_bytes = 0u64;
+    let mut directory_count = 0usize;
 
-    let settings_path = project_root.join("settings.json");
-    if settings_path.is_file() {
-        push_export_file(
-            project_root,
-            "settings",
-            &settings_path,
-            &mut seen_paths,
-            &mut files,
-        )?;
-    }
+    let settings_bytes = project_export_settings_bytes(config)?;
+    push_export_bytes(
+        "settings",
+        "settings.json".to_string(),
+        &settings_bytes,
+        &mut seen_paths,
+        &mut files,
+        &mut total_bytes,
+    )?;
 
     for (key, fallback) in EXPORT_DIRECTORIES {
         let dir = configured_project_path(project_root, config, key, fallback)?;
-        if dir.is_dir() {
-            collect_export_files(project_root, key, &dir, &mut seen_paths, &mut files)?;
+        let metadata = match std::fs::symlink_metadata(&dir) {
+            Ok(metadata) => Some(metadata),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+            Err(error) => {
+                return Err(format!(
+                    "Unable to inspect export directory `{}`: {error}",
+                    dir.display()
+                ));
+            }
+        };
+        if let Some(metadata) = metadata {
+            if metadata.file_type().is_symlink() || !metadata.is_dir() {
+                return Err(format!(
+                    "Project export directories must be regular directories: {}",
+                    dir.display()
+                ));
+            }
+            collect_export_files(
+                project_root,
+                key,
+                &dir,
+                &mut seen_paths,
+                &mut files,
+                &mut total_bytes,
+                &mut directory_count,
+            )?;
         }
     }
 
@@ -680,15 +775,64 @@ fn collect_export_files(
     dir: &Path,
     seen_paths: &mut HashSet<String>,
     files: &mut Vec<Value>,
+    total_bytes: &mut u64,
+    directory_count: &mut usize,
 ) -> Result<(), String> {
+    *directory_count += 1;
+    if *directory_count > MAX_PROJECT_EXPORT_DIRECTORIES {
+        return Err(format!(
+            "Project export exceeds the {MAX_PROJECT_EXPORT_DIRECTORIES} directory limit."
+        ));
+    }
+    let relative_directory = project_relative_path(project_root, dir);
+    validate_project_export_path_shape(&relative_directory, "directory")?;
     for entry in std::fs::read_dir(dir).map_err(|e| e.to_string())? {
         let entry = entry.map_err(|e| e.to_string())?;
         let path = entry.path();
-        if path.is_dir() {
-            collect_export_files(project_root, category, &path, seen_paths, files)?;
-        } else if path.is_file() {
-            push_export_file(project_root, category, &path, seen_paths, files)?;
+        let metadata = std::fs::symlink_metadata(&path).map_err(|error| {
+            format!(
+                "Unable to inspect export source `{}`: {error}",
+                path.display()
+            )
+        })?;
+        if metadata.file_type().is_symlink() {
+            return Err(format!(
+                "Project exports cannot include symbolic links: {}",
+                path.display()
+            ));
         }
+        if metadata.is_dir() {
+            collect_export_files(
+                project_root,
+                category,
+                &path,
+                seen_paths,
+                files,
+                total_bytes,
+                directory_count,
+            )?;
+        } else if metadata.is_file() {
+            push_export_file(
+                project_root,
+                category,
+                &path,
+                seen_paths,
+                files,
+                total_bytes,
+            )?;
+        }
+    }
+    Ok(())
+}
+
+fn validate_project_export_path_shape(path: &str, label: &str) -> Result<(), String> {
+    if path.is_empty()
+        || path.len() > MAX_PROJECT_EXPORT_PATH_BYTES
+        || path.split('/').count() > MAX_PROJECT_EXPORT_PATH_SEGMENTS
+    {
+        return Err(format!(
+            "Project export {label} `{path}` exceeds portable path depth or length limits."
+        ));
     }
     Ok(())
 }
@@ -699,23 +843,154 @@ fn push_export_file(
     path: &Path,
     seen_paths: &mut HashSet<String>,
     files: &mut Vec<Value>,
+    total_bytes: &mut u64,
 ) -> Result<(), String> {
+    let canonical_root = project_root.canonicalize().map_err(|error| {
+        format!(
+            "Unable to resolve project root `{}`: {error}",
+            project_root.display()
+        )
+    })?;
+    let canonical_path = path.canonicalize().map_err(|error| {
+        format!(
+            "Unable to resolve export source `{}`: {error}",
+            path.display()
+        )
+    })?;
+    if !canonical_path.starts_with(&canonical_root) {
+        return Err(format!(
+            "Project export source escapes the project root: {}",
+            path.display()
+        ));
+    }
     let relative = project_relative_path(project_root, path);
-    if !seen_paths.insert(relative.clone()) {
+    validate_project_export_path_shape(&relative, "file")?;
+    if seen_paths.contains(&relative) {
         return Ok(());
     }
-    let metadata = std::fs::metadata(path).map_err(|e| e.to_string())?;
-    let bytes = std::fs::read(path).map_err(|e| e.to_string())?;
-    let checksum_md5 = format!("{:x}", md5::compute(&bytes));
-    let checksum_sha256 = checksum_sha256(&bytes);
+    let size_bytes = std::fs::metadata(&canonical_path)
+        .map_err(|error| error.to_string())?
+        .len();
+    ensure_export_inventory_capacity(files.len(), *total_bytes, size_bytes, &relative)?;
+    let (read_bytes, checksum_md5, checksum_sha256) = checksum_export_file(&canonical_path)?;
+    if read_bytes != size_bytes {
+        return Err(format!(
+            "Project export source `{relative}` changed size while it was being inventoried."
+        ));
+    }
+    seen_paths.insert(relative.clone());
+    *total_bytes += size_bytes;
     files.push(json!({
         "category": category,
         "path": relative,
-        "size_bytes": metadata.len(),
+        "size_bytes": size_bytes,
         "checksum_md5": checksum_md5,
         "checksum_sha256": checksum_sha256,
     }));
     Ok(())
+}
+
+fn push_export_bytes(
+    category: &str,
+    relative: String,
+    bytes: &[u8],
+    seen_paths: &mut HashSet<String>,
+    files: &mut Vec<Value>,
+    total_bytes: &mut u64,
+) -> Result<(), String> {
+    if !seen_paths.insert(relative.clone()) {
+        return Ok(());
+    }
+    let size_bytes = bytes.len() as u64;
+    ensure_export_inventory_capacity(files.len(), *total_bytes, size_bytes, &relative)?;
+    *total_bytes += size_bytes;
+    let checksum_md5 = format!("{:x}", md5::compute(bytes));
+    let checksum_sha256 = checksum_sha256(bytes);
+    files.push(json!({
+        "category": category,
+        "path": relative,
+        "size_bytes": size_bytes,
+        "checksum_md5": checksum_md5,
+        "checksum_sha256": checksum_sha256,
+    }));
+    Ok(())
+}
+
+pub(crate) fn project_export_settings_bytes(config: &Value) -> Result<Vec<u8>, String> {
+    serde_json::to_vec_pretty(&scrub_runtime_secret_config(config))
+        .map_err(|error| error.to_string())
+}
+
+fn ensure_export_inventory_capacity(
+    current_files: usize,
+    current_bytes: u64,
+    next_bytes: u64,
+    relative_path: &str,
+) -> Result<(), String> {
+    if current_files >= MAX_PROJECT_EXPORT_FILES {
+        return Err(format!(
+            "Project export exceeds the {MAX_PROJECT_EXPORT_FILES} file limit."
+        ));
+    }
+    if next_bytes > MAX_PROJECT_EXPORT_FILE_BYTES {
+        return Err(format!(
+            "Project export source `{relative_path}` exceeds the per-file limit of {MAX_PROJECT_EXPORT_FILE_BYTES} bytes."
+        ));
+    }
+    let next_total = current_bytes
+        .checked_add(next_bytes)
+        .ok_or_else(|| "Project export size overflowed.".to_string())?;
+    if next_total > MAX_PROJECT_EXPORT_TOTAL_BYTES {
+        return Err(format!(
+            "Project export exceeds the total size limit of {MAX_PROJECT_EXPORT_TOTAL_BYTES} bytes."
+        ));
+    }
+    Ok(())
+}
+
+fn checksum_export_file(path: &Path) -> Result<(u64, String, String), String> {
+    let mut file = File::open(path)
+        .map_err(|error| format!("Unable to open export source `{}`: {error}", path.display()))?;
+    let mut md5 = md5::Context::new();
+    let mut sha256 = Sha256::new();
+    let mut total = 0u64;
+    let mut buffer = [0u8; 64 * 1024];
+    loop {
+        let read = file.read(&mut buffer).map_err(|error| {
+            format!("Unable to read export source `{}`: {error}", path.display())
+        })?;
+        if read == 0 {
+            break;
+        }
+        total = total
+            .checked_add(read as u64)
+            .ok_or_else(|| "Project export source size overflowed.".to_string())?;
+        if total > MAX_PROJECT_EXPORT_FILE_BYTES {
+            return Err(format!(
+                "Project export source `{}` exceeds the per-file limit of {MAX_PROJECT_EXPORT_FILE_BYTES} bytes.",
+                path.display()
+            ));
+        }
+        md5.consume(&buffer[..read]);
+        sha256.update(&buffer[..read]);
+    }
+    Ok((total, format!("{:x}", md5.compute()), finish_sha256(sha256)))
+}
+
+pub(crate) fn collect_project_export_directories(
+    project_root: &Path,
+    config: &Value,
+) -> Result<Vec<String>, String> {
+    let mut directories = EXPORT_DIRECTORIES
+        .iter()
+        .map(|(key, fallback)| {
+            configured_project_path(project_root, config, key, fallback)
+                .map(|path| project_relative_path(project_root, &path))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    directories.sort();
+    directories.dedup();
+    Ok(directories)
 }
 
 fn project_content_summary(files: &[Value]) -> Value {
@@ -822,7 +1097,7 @@ fn project_relative_path(project_root: &Path, path: &Path) -> String {
         .replace('\\', "/")
 }
 
-fn sanitize_export_config(config: &Value) -> Value {
+pub(crate) fn sanitize_export_config(config: &Value) -> Value {
     match config {
         Value::Object(map) => Value::Object(
             map.iter()
@@ -840,7 +1115,7 @@ fn sanitize_export_config(config: &Value) -> Value {
     }
 }
 
-fn scrub_runtime_secret_config(config: &Value) -> Value {
+pub(crate) fn scrub_runtime_secret_config(config: &Value) -> Value {
     match config {
         Value::Object(map) => Value::Object(
             map.iter()
@@ -1140,6 +1415,61 @@ mod tests {
         assert_eq!(state.paths.len(), PROJECT_PATHS.len());
         assert!(state.paths.iter().any(|path| path.key == "characters"));
 
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn build_state_rejects_non_regular_settings_paths() {
+        let root = std::env::temp_dir().join(format!(
+            "monogatari_project_settings_path_{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        for dir in [
+            "characters",
+            "dialogue",
+            "knowledge",
+            "assets",
+            "settings.json",
+        ] {
+            std::fs::create_dir_all(root.join(dir)).unwrap();
+        }
+
+        let state = build_project_config_state(&root).unwrap();
+
+        assert!(!state.valid);
+        assert!(state
+            .issues
+            .iter()
+            .any(|issue| issue.code == "settings_not_regular_file"));
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn build_state_rejects_oversized_settings_before_reading() {
+        let root = std::env::temp_dir().join(format!(
+            "monogatari_project_settings_size_{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        for dir in ["characters", "dialogue", "knowledge", "assets"] {
+            std::fs::create_dir_all(root.join(dir)).unwrap();
+        }
+        let file = std::fs::File::create(root.join("settings.json")).unwrap();
+        file.set_len(MAX_PROJECT_SETTINGS_BYTES + 1).unwrap();
+        drop(file);
+
+        let state = build_project_config_state(&root).unwrap();
+
+        assert!(!state.valid);
+        assert!(state
+            .issues
+            .iter()
+            .any(|issue| issue.code == "settings_too_large"));
         std::fs::remove_dir_all(root).unwrap();
     }
 

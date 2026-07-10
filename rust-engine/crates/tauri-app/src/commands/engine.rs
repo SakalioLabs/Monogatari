@@ -57,7 +57,7 @@ pub async fn initialize_engine(
     Ok("Engine initialized successfully".to_string())
 }
 
-async fn load_project_content(
+pub(crate) async fn load_project_content(
     path: &Path,
 ) -> Result<
     (

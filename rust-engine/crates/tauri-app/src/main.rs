@@ -26,6 +26,7 @@ fn main() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_dialog::init())
         .manage(AppState::new())
         .setup(|app| {
             let development_root = state::default_project_data_root();
@@ -76,6 +77,9 @@ fn main() {
             commands::project::get_project_config,
             commands::project::save_project_config,
             commands::project::export_project,
+            commands::project_archive::export_project_archive,
+            commands::project_archive::inspect_project_archive,
+            commands::project_archive::import_project_archive,
             commands::characters::get_characters,
             commands::characters::get_character,
             commands::characters::load_characters,

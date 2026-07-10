@@ -39,7 +39,7 @@
 - [ ] Rust API engine rejects blank runtime API keys/models, non-local plaintext HTTP provider URLs, embedded URL credentials, query strings, and fragments before the backend can become active
 - [ ] Rust API engine rejects standard and streaming 200 responses that omit non-blank generated text before reporting inference success
 - [ ] Shared AI inference pipeline retries or rejects unsuccessful provider result envelopes before chat, streaming, or workflow LLM callers consume generated text
-- [ ] Project settings save/load paths scrub API keys, tokens, authorization headers, token-shaped values, query-secret assignments, and legacy persisted secret fields before writing `settings.json` or returning project config state to the frontend
+- [ ] Project settings save/load paths scrub API keys, tokens, authorization headers, token-shaped values, query-secret assignments, and legacy persisted secret fields; enforce the 1 MiB limit; atomically replace regular `settings.json` files; and reject symlink/non-regular targets
 - [ ] ONNX backend configuration accepts only project-relative `.onnx` model and `.json` tokenizer references and activates the ONNX engine after registration
 - [ ] Engine initialization stages fresh character/dialogue/knowledge managers before activation, replaces rather than merges previous project content, and clears mutable runtime state on same-root reloads and project switches
 - [ ] Engine initialization stages the versioned story event catalog with character-reference validation, and failed loads or hot reloads leave the active catalog unchanged
@@ -161,6 +161,10 @@
 - [ ] Azure and ElevenLabs TTS provider errors redact token-shaped values, API-key assignments, authorization headers, sensitive provider headers, and response bodies before reaching frontend status surfaces
 - [ ] TTS synthesis logs record text length metadata instead of raw spoken dialogue, prompt text, or token-shaped content
 - [ ] Project export manifest includes a versioned schema marker, engine/build provenance, content category summaries/fingerprints, explicit whole-package SHA-256 fingerprint algorithm, file inventory, per-file SHA-256 and legacy MD5 checksums, generated assets, and redacted sensitive settings
+- [ ] `.monogatari` export contains the root manifest plus the exact sanitized inventoried files, preserves an existing destination on failure, and round-trips checked-in project content through runtime loaders
+- [ ] Package inspection/import rejects traversal, non-portable or case-colliding paths, symbolic/special ZIP entries, undeclared files, malformed JSON, runtime secrets, checksum/fingerprint mismatches, and declared file/count/expanded-size bombs
+- [ ] Package import stages under the selected parent, validates project/runtime/scene/ending content, commits to a fresh directory without overwriting, and removes rejected staging directories
+- [ ] Tauri capabilities grant only `dialog:allow-open` and `dialog:allow-save` for native project package selection; dedicated Rust commands retain filesystem validation
 - [ ] Release artifact manifest generated from a clean tracked git worktree with SHA-256 checksums, checked-in Quality Suite, workflow, and project content source evidence plus aggregate and per-category source-set fingerprints, checked-in release channel policy metadata, source-state evidence, installer expectations, and signing evidence
 - [ ] `scripts/release-channel-policy.json` confirms stable/beta releases require Windows MSI/NSIS installers and verified signing evidence, with missing-installer preflight exceptions explicitly policy-gated
 - [ ] `docs/MOBILE_DEPLOYMENT.md` reviewed before Android/iOS project generation

@@ -7,9 +7,6 @@
         <p>{{ projectState?.project_path || projectPath }}</p>
       </div>
       <div class="header-actions">
-        <button class="btn btn-secondary btn-sm" :disabled="exportingProject" @click="exportProjectManifest">
-          {{ exportingProject ? 'Exporting...' : 'Export Manifest' }}
-        </button>
         <button class="btn btn-secondary btn-sm" @click="refreshAll">{{ t('chat.refresh', 'Refresh') }}</button>
         <button class="btn btn-primary btn-sm" :disabled="savingProject" @click="saveProject">
           {{ savingProject ? t('common.loading', 'Saving') : t('settings.save-btn', 'Save Project') }}
@@ -62,6 +59,46 @@
               <span>Target FPS</span>
               <input v-model.number="targetFps" type="number" min="15" max="240" class="input" />
             </label>
+          </div>
+        </div>
+
+        <div class="panel package-panel">
+          <div class="panel-head package-head">
+            <div>
+              <span class="eyebrow">Distribution</span>
+              <strong>Project Package</strong>
+            </div>
+            <span class="package-state" :class="{ ready: archiveSummary }">
+              {{ archiveSummary ? 'Verified' : projectPackagesEnabled ? 'Ready' : 'Web manifest' }}
+            </span>
+          </div>
+          <div class="package-actions">
+            <button
+              class="btn btn-primary btn-sm"
+              :disabled="!projectPackagesEnabled || packagingProject || importingProject || projectState?.valid === false"
+              title="Export a verified .monogatari project package"
+              @click="exportProjectPackageFile"
+            >
+              {{ packagingProject ? 'Packaging...' : 'Export Package' }}
+            </button>
+            <button
+              class="btn btn-secondary btn-sm"
+              :disabled="!projectPackagesEnabled || packagingProject || importingProject"
+              title="Import a verified .monogatari project package"
+              @click="importProjectPackageFile"
+            >
+              {{ importingProject ? 'Importing...' : 'Import Package' }}
+            </button>
+            <button class="btn btn-secondary btn-sm" :disabled="exportingProject" @click="exportProjectManifest">
+              {{ exportingProject ? 'Exporting...' : 'Export Manifest' }}
+            </button>
+          </div>
+          <div v-if="archiveSummary" class="package-summary">
+            <div><span>Project</span><strong>{{ archiveSummary.project_title }}</strong></div>
+            <div><span>Files</span><strong>{{ archiveSummary.file_count }}</strong></div>
+            <div><span>Content</span><strong>{{ formatBytes(archiveSummary.total_bytes) }}</strong></div>
+            <div><span>Package</span><strong>{{ formatBytes(archiveSummary.archive_bytes) }}</strong></div>
+            <code :title="archiveSummary.content_sha256">{{ archiveSummary.content_sha256.slice(0, 16) }}</code>
           </div>
         </div>
 
@@ -269,6 +306,13 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { invokeCommand } from '../lib/tauri'
 import { loadI18n, useI18n } from '../lib/i18n'
+import {
+  exportProjectPackage,
+  importProjectPackage,
+  projectPackagesAvailable,
+  type ProjectArchiveExportResult,
+  type ProjectArchiveInspection,
+} from '../lib/projectArchive'
 
 const { t } = useI18n()
 
@@ -329,9 +373,13 @@ const engineStatus = ref<EngineStatus | null>(null)
 const savingProject = ref(false)
 const savingAI = ref(false)
 const exportingProject = ref(false)
+const packagingProject = ref(false)
+const importingProject = ref(false)
 const initializing = ref(false)
 const statusMessage = ref('')
 const statusOk = ref(true)
+const projectPackagesEnabled = projectPackagesAvailable()
+const archiveSummary = ref<(ProjectArchiveExportResult | ProjectArchiveInspection) | null>(null)
 
 const projectTitle = ref('LLM Galgame Engine')
 const targetFps = ref(60)
@@ -458,7 +506,10 @@ const pathEdits = reactive<Record<string, string>>({
   knowledge: 'knowledge',
   scenes: 'scenes',
   assets: 'assets',
+  events: 'events',
+  endings: 'endings',
   saves: 'saves',
+  quality_suites: 'quality_suites',
 })
 
 const previewState: ProjectConfigState = {
@@ -482,7 +533,10 @@ const previewState: ProjectConfigState = {
       knowledge: 'knowledge',
       scenes: 'scenes',
       assets: 'assets',
+      events: 'events',
+      endings: 'endings',
       saves: 'saves',
+      quality_suites: 'quality_suites',
     },
   },
   paths: [
@@ -491,7 +545,10 @@ const previewState: ProjectConfigState = {
     { key: 'knowledge', label: 'Knowledge', relative_path: 'knowledge', absolute_path: '', exists: true, item_count: 1, required: true },
     { key: 'scenes', label: 'Scenes', relative_path: 'scenes', absolute_path: '', exists: true, item_count: 2, required: false },
     { key: 'assets', label: 'Assets', relative_path: 'assets', absolute_path: '', exists: true, item_count: 1, required: true },
+    { key: 'events', label: 'Story Events', relative_path: 'events', absolute_path: '', exists: true, item_count: 1, required: false },
+    { key: 'endings', label: 'Story Endings', relative_path: 'endings', absolute_path: '', exists: true, item_count: 1, required: false },
     { key: 'saves', label: 'Saves', relative_path: 'saves', absolute_path: '', exists: false, item_count: 0, required: false },
+    { key: 'quality_suites', label: 'Quality Suites', relative_path: 'quality_suites', absolute_path: '', exists: true, item_count: 1, required: false },
   ],
   issues: [{ severity: 'warning', code: 'api_key_missing', path: 'ai.api.api_key', message: 'API key is not configured.' }],
 }
@@ -604,6 +661,53 @@ async function initEngine() {
   }
 }
 
+async function exportProjectPackageFile() {
+  packagingProject.value = true
+  try {
+    const result = await exportProjectPackage(projectPath.value, projectTitle.value)
+    if (!result) return
+    archiveSummary.value = result
+    statusMessage.value = `Project package exported: ${result.archive_path}`
+    statusOk.value = true
+  } catch (e) {
+    statusMessage.value = `Project package export failed: ${String(e)}`
+    statusOk.value = false
+  } finally {
+    packagingProject.value = false
+  }
+}
+
+async function importProjectPackageFile() {
+  importingProject.value = true
+  try {
+    const flow = await importProjectPackage()
+    if (!flow) return
+    archiveSummary.value = flow.inspection
+    if (!flow.imported) {
+      statusMessage.value = 'Project package verified; import destination was not selected'
+      statusOk.value = true
+      return
+    }
+
+    projectPath.value = flow.imported.project_path
+    await loadProjectConfig()
+    try {
+      await invokeCommand<void>('initialize_engine', { projectPath: flow.imported.project_path })
+      await refreshStatus()
+      statusMessage.value = `Imported and initialized ${flow.imported.project_title}`
+      statusOk.value = true
+    } catch (e) {
+      statusMessage.value = `Project imported to ${flow.imported.project_path}, but initialization failed: ${String(e)}`
+      statusOk.value = false
+    }
+  } catch (e) {
+    statusMessage.value = `Project package import failed: ${String(e)}`
+    statusOk.value = false
+  } finally {
+    importingProject.value = false
+  }
+}
+
 async function exportProjectManifest() {
   exportingProject.value = true
   try {
@@ -631,14 +735,20 @@ async function exportProjectManifest() {
           category_bytes: {},
           category_fingerprint_algorithm: 'sha256:path-size-file-sha256-v1',
           category_fingerprints: {},
-          exported_categories: ['characters', 'dialogue', 'knowledge', 'scenes', 'assets', 'locales', 'quality_suites', 'workflows'],
+          exported_categories: ['characters', 'dialogue', 'knowledge', 'scenes', 'assets', 'events', 'endings', 'locales', 'quality_suites', 'workflows'],
         },
         package: {
           file_count: 0,
           total_bytes: 0,
           fingerprint_algorithm: 'sha256:path-size-file-sha256-v1',
           content_sha256: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+          directories: ['assets', 'characters', 'dialogue', 'endings', 'events', 'knowledge', 'locales', 'quality_suites', 'scenes', 'workflows'],
           files: [],
+        },
+        archive: {
+          format: 'zip',
+          manifest_path: 'monogatari-project.json',
+          extension: '.monogatari',
         },
       })
     )
@@ -745,6 +855,14 @@ function downloadJson(filename: string, value: unknown) {
 
 function safeFileName(value: string) {
   return value.trim().replace(/[^a-z0-9._-]+/gi, '-').replace(/^-+|-+$/g, '') || 'monogatari-project'
+}
+
+function formatBytes(value: number) {
+  if (!Number.isFinite(value) || value <= 0) return '0 B'
+  const units = ['B', 'KiB', 'MiB', 'GiB']
+  const unit = Math.min(Math.floor(Math.log(value) / Math.log(1024)), units.length - 1)
+  const amount = value / (1024 ** unit)
+  return `${amount >= 10 || unit === 0 ? amount.toFixed(0) : amount.toFixed(1)} ${units[unit]}`
 }
 
 function sanitizeManifestSettings(value: any): any {
@@ -970,6 +1088,67 @@ onMounted(() => { applyTheme(); refreshAll() })
   accent-color: var(--brand);
 }
 
+.package-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.package-state {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 5px 8px;
+  text-transform: uppercase;
+}
+
+.package-state.ready {
+  border-color: rgba(34, 197, 94, 0.4);
+  color: var(--success);
+}
+
+.package-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) repeat(3, minmax(80px, 1fr));
+  gap: 8px;
+}
+
+.package-summary div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  padding: 10px;
+}
+
+.package-summary span {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.package-summary strong {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.package-summary code {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 select.input {
   cursor: pointer;
 }
@@ -1082,8 +1261,14 @@ select.input {
 
   .status-strip,
   .form-grid.two,
-  .path-grid {
+  .path-grid,
+  .package-summary {
     grid-template-columns: 1fr;
+  }
+
+  .package-actions .btn {
+    justify-content: center;
+    flex: 1 1 140px;
   }
 }
 .sync-status { display: grid; gap: 10px; }

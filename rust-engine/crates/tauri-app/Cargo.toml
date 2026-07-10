@@ -10,6 +10,7 @@ tauri-build = { version = "2", features = [] }
 # Tauri
 tauri = { version = "2", features = [] }
 tauri-plugin-shell = "2"
+tauri-plugin-dialog = "2.7.1"
 
 # Internal crates
 llm-core = { workspace = true }
@@ -44,3 +45,4 @@ once_cell = { workspace = true }
 hostname = { workspace = true }
 md5 = { workspace = true }
 sha2 = { workspace = true }
+zip = { workspace = true }

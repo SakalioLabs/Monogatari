@@ -1,6 +1,11 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Added complete `.monogatari` ZIP project packages with native cross-platform save/open dialogs, embedded versioned manifests, deterministic project inventories, sanitized `settings.json`, and exact content/category fingerprints.
+- Added fixed-buffer streaming export, hashing, ZIP writing, and package verification for portable paths, case-insensitive collisions, file/count/expanded-size limits, regular ZIP entries, JSON syntax, per-file SHA-256/MD5 checksums, and whole-package fingerprints.
+- Added transactional project import into a new non-overwriting directory, followed by project config, character, dialogue, knowledge, event, scene, and ending reload validation before the staged directory is committed.
+- Added project-package regression coverage for checked-in runtime round trips, traversal and ZIP-bomb declarations, content tampering, secret removal, stable destination naming, and failed-export rollback that preserves an existing package.
+- Hardened project settings persistence with a 1 MiB bound, shared atomic replacement/rollback, regular-directory enforcement, and rejection of non-regular or symlinked `settings.json` paths and export directories; handoff manifests no longer expose the author's absolute project path.
 - Added project-backed Scene and Dialogue authoring catalogs with stable content/catalog fingerprints, optimistic concurrency, shared rollback-capable JSON transactions, dirty-draft guards, browser-local catalogs, and Story Mode author preview.
 - Added strict dialogue document and graph validation for unknown fields, authoritative map-key IDs, transition targets, reachability, character references, choice relationship deltas, conditions, scripts, terminal metadata, and LLM prompts, plus post-save runtime hot reload.
 - Added cross-catalog deletion protection: scenes scan Story Events, endings, and workflows; dialogues scan Story Events and endings; inferred scene metadata deletion never removes source background assets.

@@ -239,6 +239,12 @@ Marketplace `templatePath` and `outputPath` values are project template referenc
 |---------|------|---------|-------------|
 | `get_project_config` | `{ projectPath }` | `ProjectConfig` | Get project settings |
 | `save_project_config` | `{ projectPath, config }` | `ProjectConfig` | Save project settings with runtime secret fields and embedded token/query secrets scrubbed before writing `settings.json` |
+| `export_project` | `{ projectPath? }` | `ProjectExportManifest` | Build the versioned sanitized inventory used by manifest downloads and project packages |
+| `export_project_archive` | `{ projectPath?, destinationPath }` | `ProjectArchiveExportResult` | Atomically write a verified `.monogatari` ZIP package; an existing regular package is preserved if export fails |
+| `inspect_project_archive` | `{ archivePath }` | `ProjectArchiveInspection` | Stream and verify a package without extracting it |
+| `import_project_archive` | `{ archivePath, destinationParent }` | `ProjectArchiveImportResult` | Verify and stage a package, validate runtime catalogs, then commit it to a new non-overwriting project directory |
+
+Archive paths must be local `.monogatari` files. Imports reject traversal, absolute/backslash paths, Windows-reserved names, case-insensitive collisions, symbolic/special ZIP entries, undeclared files, malformed JSON, checksum/fingerprint mismatches, runtime secrets, oversized manifests/files/packages, and nested destinations under the active project. The native dialog plugin grants only open/save dialog access; project bytes are read and written by the dedicated bounded commands.
 
 ## Live2D
 

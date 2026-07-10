@@ -1,5 +1,41 @@
 # Monogatari Data Format Reference
 
+## Project Package Format
+
+Complete desktop project handoffs use the `.monogatari` extension. The file is a ZIP archive with one root manifest, `monogatari-project.json`, followed by the project files declared by that manifest. `settings.json` is regenerated with runtime credentials removed rather than copied from disk.
+
+```json
+{
+  "format": "monogatari-project",
+  "schema": "monogatari-project-export@1",
+  "version": "1.0",
+  "settings": { "render": { "title": "My Story" } },
+  "package": {
+    "file_count": 3,
+    "total_bytes": 2048,
+    "fingerprint_algorithm": "sha256:path-size-file-sha256-v1",
+    "content_sha256": "<64 lowercase hex characters>",
+    "directories": ["assets", "characters", "dialogue"],
+    "files": [
+      {
+        "category": "settings",
+        "path": "settings.json",
+        "size_bytes": 512,
+        "checksum_md5": "<32 hex characters>",
+        "checksum_sha256": "<64 lowercase hex characters>"
+      }
+    ]
+  },
+  "archive": {
+    "format": "zip",
+    "manifest_path": "monogatari-project.json",
+    "extension": ".monogatari"
+  }
+}
+```
+
+File records are sorted by path. The package fingerprint hashes each record as `path`, NUL, decimal size, NUL, lowercase SHA-256, newline. Paths use forward-slash relative segments and cannot contain traversal, empty/current segments, backslashes, control characters, platform-reserved characters/names, trailing dots/spaces, case-insensitive duplicates, or the manifest path itself. Imports require exactly the declared files and directories, validate every JSON document and checksum while streaming, and reject settings containing runtime secrets. Saves, analytics, and cloud-sync manifests are intentionally excluded.
+
 ## Character Format
 
 Characters are stored as JSON files in `rust-engine/data/characters/`.
