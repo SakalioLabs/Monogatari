@@ -1,12 +1,21 @@
 import { defineConfig, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { createReadStream, statSync } from 'node:fs'
+import { createReadStream, readdirSync, statSync } from 'node:fs'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const mobileDevHost = process.env.TAURI_DEV_HOST
 const frontendDir = fileURLToPath(new URL('.', import.meta.url))
-const projectAssetDir = path.resolve(frontendDir, '..', 'data', 'assets')
+const projectDataDir = path.resolve(frontendDir, '..', 'data')
+const projectDataRoots = {
+  assets: path.join(projectDataDir, 'assets'),
+  events: path.join(projectDataDir, 'events'),
+  scenes: path.join(projectDataDir, 'scenes'),
+  dialogue: path.join(projectDataDir, 'dialogue'),
+  endings: path.join(projectDataDir, 'endings'),
+  characters: path.join(projectDataDir, 'characters'),
+} as const
 
 const assetContentTypes: Record<string, string> = {
   '.gif': 'image/gif',
@@ -31,33 +40,64 @@ function normalizeBasePath(value: string | undefined) {
   return withLeadingSlash.endsWith('/') ? withLeadingSlash : `${withLeadingSlash}/`
 }
 
-function projectAssetsDevPlugin(): Plugin {
+function projectFiles(directory: string, routePrefix: string): string[] {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const entryPath = path.join(directory, entry.name)
+    if (entry.isDirectory()) return projectFiles(entryPath, `${routePrefix}/${entry.name}`)
+    return entry.isFile() ? [`${routePrefix}/${entry.name}`] : []
+  }).sort()
+}
+
+function serveProjectFile(rootDir: string) {
+  return (request: IncomingMessage, response: ServerResponse, next: (error?: unknown) => void) => {
+    const requestPath = decodeURIComponent((request.url || '/').split('?')[0]).replace(/^\/+/, '')
+    const filePath = path.resolve(rootDir, requestPath)
+    const staysInsideRoot = filePath === rootDir || filePath.startsWith(`${rootDir}${path.sep}`)
+    if (!staysInsideRoot) return next()
+
+    try {
+      if (!statSync(filePath).isFile()) return next()
+      response.setHeader('Content-Type', assetContentTypes[path.extname(filePath).toLowerCase()] || 'application/octet-stream')
+      response.setHeader('Cache-Control', 'no-cache')
+      createReadStream(filePath).on('error', next).pipe(response)
+    } catch {
+      next()
+    }
+  }
+}
+
+function projectDataDevPlugin(): Plugin {
   return {
-    name: 'monogatari-project-assets-dev',
+    name: 'monogatari-project-data-dev',
     apply: 'serve' as const,
     configureServer(server) {
-      server.middlewares.use('/assets', (request, response, next) => {
-        const requestPath = decodeURIComponent((request.url || '/').split('?')[0]).replace(/^\/+/, '')
-        const filePath = path.resolve(projectAssetDir, requestPath)
-        const staysInsideAssetRoot = filePath === projectAssetDir || filePath.startsWith(`${projectAssetDir}${path.sep}`)
-        if (!staysInsideAssetRoot) return next()
-
-        try {
-          if (!statSync(filePath).isFile()) return next()
-          response.setHeader('Content-Type', assetContentTypes[path.extname(filePath).toLowerCase()] || 'application/octet-stream')
-          response.setHeader('Cache-Control', 'no-cache')
-          createReadStream(filePath).on('error', next).pipe(response)
-        } catch {
-          next()
+      server.middlewares.use('/project-assets.json', (request, response, next) => {
+        if ((request.url || '/').split('?')[0] !== '/') return next()
+        const manifest = {
+          schema: 'monogatari-web-project-assets/v1',
+          generated_by: 'frontend/vite.config.ts',
+          assets: projectFiles(projectDataRoots.assets, '/assets'),
+          event_catalogs: projectFiles(projectDataRoots.events, '/events'),
+          scene_files: projectFiles(projectDataRoots.scenes, '/scenes'),
+          dialogue_files: projectFiles(projectDataRoots.dialogue, '/dialogue'),
+          ending_files: projectFiles(projectDataRoots.endings, '/endings'),
+          character_files: projectFiles(projectDataRoots.characters, '/characters'),
         }
+        response.setHeader('Content-Type', 'application/json; charset=utf-8')
+        response.setHeader('Cache-Control', 'no-cache')
+        response.end(JSON.stringify(manifest))
       })
+
+      for (const [route, rootDir] of Object.entries(projectDataRoots)) {
+        server.middlewares.use(`/${route}`, serveProjectFile(rootDir))
+      }
     },
   }
 }
 
 export default defineConfig({
   base: normalizeBasePath(process.env.VITE_BASE_PATH),
-  plugins: [projectAssetsDevPlugin(), vue()],
+  plugins: [projectDataDevPlugin(), vue()],
   clearScreen: false,
   server: {
     host: mobileDevHost || false,

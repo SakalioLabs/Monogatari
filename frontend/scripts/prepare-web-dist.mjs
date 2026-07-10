@@ -15,6 +15,8 @@ const projectDialoguesDir = path.join(rootDir, 'data', 'dialogue')
 const distProjectDialoguesDir = path.join(distDir, 'dialogue')
 const projectEndingsDir = path.join(rootDir, 'data', 'endings')
 const distProjectEndingsDir = path.join(distDir, 'endings')
+const projectCharactersDir = path.join(rootDir, 'data', 'characters')
+const distProjectCharactersDir = path.join(distDir, 'characters')
 const projectAssetManifestPath = path.join(distDir, 'project-assets.json')
 const staticHostingHeadersPath = path.join(distDir, '_headers')
 const staticHostingRedirectsPath = path.join(distDir, '_redirects')
@@ -71,6 +73,7 @@ function staticHostingRedirects() {
     '/scenes/* /scenes/:splat 200',
     '/dialogue/* /dialogue/:splat 200',
     '/endings/* /endings/:splat 200',
+    '/characters/* /characters/:splat 200',
     '/icons/* /icons/:splat 200',
     '/locales/* /locales/:splat 200',
     '/manifest.webmanifest /manifest.webmanifest 200',
@@ -93,6 +96,7 @@ function azureStaticWebAppConfig() {
         '/scenes/*',
         '/dialogue/*',
         '/endings/*',
+        '/characters/*',
         '/icons/*',
         '/locales/*',
         '/manifest.webmanifest',
@@ -159,6 +163,9 @@ async function projectAssetManifest() {
   const endingFiles = (await walkFiles(projectEndingsDir, []))
     .map((file) => `/endings/${path.relative(projectEndingsDir, file).replaceAll(path.sep, '/')}`)
     .sort()
+  const characterFiles = (await walkFiles(projectCharactersDir, []))
+    .map((file) => `/characters/${path.relative(projectCharactersDir, file).replaceAll(path.sep, '/')}`)
+    .sort()
 
   return {
     schema: 'monogatari-web-project-assets/v1',
@@ -168,6 +175,7 @@ async function projectAssetManifest() {
     scene_files: sceneFiles,
     dialogue_files: dialogueFiles,
     ending_files: endingFiles,
+    character_files: characterFiles,
   }
 }
 
@@ -190,10 +198,11 @@ await cp(projectEventsDir, distProjectEventsDir, { recursive: true, force: true 
 await cp(projectScenesDir, distProjectScenesDir, { recursive: true, force: true })
 await cp(projectDialoguesDir, distProjectDialoguesDir, { recursive: true, force: true })
 await cp(projectEndingsDir, distProjectEndingsDir, { recursive: true, force: true })
+await cp(projectCharactersDir, distProjectCharactersDir, { recursive: true, force: true })
 await writeFile(projectAssetManifestPath, `${JSON.stringify(await projectAssetManifest(), null, 2)}\n`)
 await writeFile(staticHostingHeadersPath, staticHostingHeaders())
 await writeFile(staticHostingRedirectsPath, staticHostingRedirects())
 await writeFile(azureStaticWebAppConfigPath, `${JSON.stringify(azureStaticWebAppConfig(), null, 2)}\n`)
 await writeFile(vercelConfigPath, `${JSON.stringify(vercelConfig(), null, 2)}\n`)
 
-console.log('[web-dist] Static hosting assets ready: shell, PWA metadata, project assets, scenes, dialogues, endings, story events, and project asset manifest')
+console.log('[web-dist] Static hosting assets ready: shell, PWA metadata, project assets, scenes, dialogues, endings, characters, story events, and project asset manifest')

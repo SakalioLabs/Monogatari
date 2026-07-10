@@ -15,6 +15,19 @@ export interface StorySceneInfo {
   access: StoryContentAccessEntry
 }
 
+export interface StoryCharacterInfo {
+  id: string
+  name: string
+  description: string
+  background?: string
+  emotion: string
+  personality?: Record<string, unknown>
+  portrait_path: string | null
+  sprite_path: string | null
+  live2d_model_path?: string | null
+  model_3d_path?: string | null
+}
+
 export interface StoryDialogueInfo {
   id: string
   title: string
@@ -81,6 +94,7 @@ interface WebProjectManifest {
   scene_files?: string[]
   dialogue_files?: string[]
   ending_files?: string[]
+  character_files?: string[]
 }
 
 export interface SceneDefinition {
@@ -169,6 +183,34 @@ export async function loadStoryScenes(): Promise<StorySceneInfo[]> {
       access: contentAccess(access, 'scene', scene.id),
     }))
   }
+}
+
+export async function loadStoryCharacters(): Promise<StoryCharacterInfo[]> {
+  if (hasTauriRuntime()) {
+    return normalizeStoryCharacters(await invokeCommand<StoryCharacterInfo[]>('get_characters'))
+  }
+  try {
+    const manifest = await webProjectManifest()
+    const documents = await fetchDocuments<StoryCharacterInfo>(manifest.character_files)
+    return normalizeStoryCharacters(documents)
+  } catch {
+    return browserCharacterFallback.map((character) => ({ ...character }))
+  }
+}
+
+function normalizeStoryCharacters(documents: StoryCharacterInfo[]): StoryCharacterInfo[] {
+  const byId = new Map<string, StoryCharacterInfo>()
+  for (const character of documents) {
+    if (!character.id || !character.name) continue
+    byId.set(character.id, {
+      ...character,
+      description: character.description || '',
+      emotion: character.emotion || 'neutral',
+      portrait_path: character.portrait_path || null,
+      sprite_path: character.sprite_path || null,
+    })
+  }
+  return [...byId.values()].sort((left, right) => left.id.localeCompare(right.id))
 }
 
 export function loadBrowserSceneDrafts(): SceneDefinition[] | null {
@@ -382,3 +424,22 @@ const browserEndingFallback: Omit<StoryEndingInfo, 'access'>[] = [{
   scene_id: 'festival_night',
   dialogue_id: 'observatory_night',
 }]
+
+const browserCharacterFallback: StoryCharacterInfo[] = [
+  {
+    id: 'sakura',
+    name: 'Sakura',
+    description: 'A cheerful, nature-loving artist.',
+    emotion: 'happy',
+    portrait_path: 'assets/characters/sakura_portrait.svg',
+    sprite_path: 'assets/characters/sakura_sprite.svg',
+  },
+  {
+    id: 'luna',
+    name: 'Luna',
+    description: 'A quiet observer drawn to the night sky.',
+    emotion: 'neutral',
+    portrait_path: 'assets/characters/luna_portrait.svg',
+    sprite_path: 'assets/characters/luna_sprite.svg',
+  },
+]

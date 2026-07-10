@@ -72,7 +72,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (path.startsWith("/events/") || path.startsWith("/scenes/") || path.startsWith("/dialogue/") || path.startsWith("/endings/")) {
+  if (path.startsWith("/events/") || path.startsWith("/scenes/") || path.startsWith("/dialogue/") || path.startsWith("/endings/") || path.startsWith("/characters/")) {
     event.respondWith(staleWhileRevalidate(request));
     return;
   }
@@ -95,9 +95,10 @@ async function cacheProjectAssets() {
       ...(Array.isArray(manifest.event_catalogs) ? manifest.event_catalogs : []),
       ...(Array.isArray(manifest.scene_files) ? manifest.scene_files : []),
       ...(Array.isArray(manifest.dialogue_files) ? manifest.dialogue_files : []),
-      ...(Array.isArray(manifest.ending_files) ? manifest.ending_files : [])
+      ...(Array.isArray(manifest.ending_files) ? manifest.ending_files : []),
+      ...(Array.isArray(manifest.character_files) ? manifest.character_files : [])
     ]
-      .filter((assetPath) => typeof assetPath === "string" && ["/assets/", "/events/", "/scenes/", "/dialogue/", "/endings/"].some((prefix) => assetPath.startsWith(prefix)))
+      .filter((assetPath) => typeof assetPath === "string" && ["/assets/", "/events/", "/scenes/", "/dialogue/", "/endings/", "/characters/"].some((prefix) => assetPath.startsWith(prefix)))
       .map(withBase);
     if (projectAssets.length === 0) return;
 

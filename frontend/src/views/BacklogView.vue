@@ -2,16 +2,19 @@
   <div class="backlog-view">
     <header class="backlog-header">
       <div>
-        <span class="eyebrow">{{ t('backlog.title', 'Backlog') }}</span>
-        <h1>Conversation History</h1>
+        <span class="eyebrow">{{ t('backlog.eyebrow', 'Playback history') }}</span>
+        <h1>{{ t('backlog.heading', 'Conversation History') }}</h1>
       </div>
       <div class="header-actions">
-        <div class="filter-group">
+        <div class="filter-group" role="group" :aria-label="t('backlog.filter-label', 'Message filter')">
           <button class="filter-btn" :class="{ active: filter === 'all' }" @click="filter = 'all'">{{ t('backlog.filter-all', 'All') }}</button>
           <button class="filter-btn" :class="{ active: filter === 'player' }" @click="filter = 'player'">{{ t('backlog.filter-player', 'Player Only') }}</button>
           <button class="filter-btn" :class="{ active: filter === 'character' }" @click="filter = 'character'">{{ t('backlog.filter-character', 'Character Only') }}</button>
         </div>
-        <button class="btn btn-secondary btn-sm" @click="$router.push('/game')">{{ t('common.back', 'Back') }}</button>
+        <button class="btn btn-secondary btn-sm" @click="$router.push('/game')">
+          <ArrowLeft :size="14" />
+          {{ t('common.back', 'Back') }}
+        </button>
       </div>
     </header>
 
@@ -30,9 +33,12 @@
 
     <main class="backlog-body" ref="bodyRef">
       <div v-if="filteredMessages.length === 0" class="empty-backlog">
-        <span class="empty-icon">&#128214;</span>
+        <BookOpen :size="32" />
         <p>{{ t('backlog.empty', 'No conversation history yet.') }}</p>
-        <button class="btn btn-primary btn-sm" @click="$router.push('/chat')">{{ t('nav.chat', 'Start Chatting') }}</button>
+        <button class="btn btn-primary btn-sm" @click="$router.push('/chat')">
+          <MessageCircle :size="14" />
+          {{ t('backlog.start-chat', 'Start chatting') }}
+        </button>
       </div>
 
       <article
@@ -56,18 +62,22 @@
     </main>
 
     <footer class="backlog-footer" v-if="filteredMessages.length > 0">
-      <span class="entry-count">{{ filteredMessages.length }} entries</span>
-      <button class="btn btn-secondary btn-sm" @click="scrollToBottom">{{ t('backlog.jump', 'Jump to Latest') }}</button>
+      <span class="entry-count">{{ t('backlog.entries', '{count} entries', { count: filteredMessages.length }) }}</span>
+      <button class="btn btn-secondary btn-sm" @click="scrollToBottom">
+        <ArrowDown :size="14" />
+        {{ t('backlog.jump-latest', 'Jump to latest') }}
+      </button>
     </footer>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { ArrowDown, ArrowLeft, BookOpen, MessageCircle } from '@lucide/vue'
 import { useI18n } from '../lib/i18n'
 import { invokeCommand } from '../lib/tauri'
 
-const { t } = useI18n()
+const { locale, t } = useI18n()
 
 interface ChatMessage {
   role: string
@@ -129,7 +139,7 @@ function roleName(msg: ChatMessage): string {
 }
 
 function formatTime(ts: string): string {
-  try { return new Date(ts).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) }
+  try { return new Date(ts).toLocaleTimeString(locale.value, { hour: '2-digit', minute: '2-digit' }) }
   catch { return '' }
 }
 
@@ -163,7 +173,7 @@ watch(filter, () => nextTick(scrollToBottom))
 .backlog-view {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: calc(100dvh - 54px);
   background: var(--surface-0);
 }
 
@@ -357,6 +367,10 @@ watch(filter, () => nextTick(scrollToBottom))
 .entry-count { font-size: 12px; color: var(--text-tertiary); }
 
 .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   min-height: 34px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -376,8 +390,12 @@ watch(filter, () => nextTick(scrollToBottom))
 .btn-sm { min-height: 30px; padding: 4px 12px; font-size: 12px; }
 
 @media (max-width: 640px) {
+  .backlog-view { height: calc(100dvh - 112px); }
   .backlog-header, .backlog-body, .backlog-footer { padding-left: 16px; padding-right: 16px; }
+  .backlog-header { align-items: stretch; flex-direction: column; gap: 14px; }
   .character-select { padding: 10px 16px; }
-  .header-actions { flex-direction: column; align-items: flex-end; gap: 8px; }
+  .header-actions { align-items: stretch; gap: 8px; overflow-x: auto; }
+  .filter-group { flex: 1 0 auto; }
+  .filter-btn { flex: 1; padding-inline: 10px; white-space: nowrap; }
 }
 </style>

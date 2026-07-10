@@ -5,18 +5,18 @@
     </div>
 
     <header class="game-topbar">
-      <button class="control-btn" title="Dashboard" @click="$router.push('/')">{{ t('game.home', 'Home') }}</button>
+      <button class="control-btn icon-control" :title="t('game.home', 'Home')" :aria-label="t('game.home', 'Home')" @click="$router.push('/')"><House :size="16" /></button>
       <div class="scene-meta">
         <span class="eyebrow">{{ t('game.story-mode', 'Story Mode') }}</span>
-        <strong>{{ dialogueState?.speaker || currentCharacter?.name || activeScene?.name || 'Demo Scene' }}</strong>
+        <strong>{{ dialogueState?.speaker || currentCharacter?.name || activeScene?.name || t('game.demo-scene', 'Demo Scene') }}</strong>
       </div>
       <div class="top-actions">
-        <button class="control-btn library-trigger" title="Story library" @click="openStoryLibrary">&#9776;</button>
-        <button class="control-btn" title="Save" @click="saveGame">{{ t('game.save', 'Save') }}</button>
-        <button class="control-btn" title="Load" @click="openLoadDialog">{{ t('game.load', 'Load') }}</button>
-        <button class="control-btn" title="Backlog" @click="$router.push('/backlog')">{{ t('nav.backlog', 'Backlog') }}</button>
-        <button class="control-btn" title="Settings" @click="toggleSettings">{{ t('game.tune', 'Tune') }}</button>
-        <span v-if="dialogueState?.is_active" class="auto-save-badge" title="Auto-save active">&#128190;</span>
+        <button class="control-btn library-trigger" :title="t('game.story-library', 'Story library')" :aria-label="t('game.story-library', 'Story library')" @click="openStoryLibrary"><LibraryBig :size="16" /></button>
+        <button class="control-btn" @click="saveGame"><Save :size="15" />{{ t('game.save', 'Save') }}</button>
+        <button class="control-btn" @click="openLoadDialog"><FolderOpen :size="15" />{{ t('game.load', 'Load') }}</button>
+        <button class="control-btn" @click="$router.push('/backlog')"><History :size="15" />{{ t('nav.backlog', 'Backlog') }}</button>
+        <button class="control-btn" @click="toggleSettings"><SlidersHorizontal :size="15" />{{ t('game.tune', 'Tune') }}</button>
+        <span v-if="dialogueState?.is_active" class="auto-save-badge" :title="t('game.auto-save-active', 'Auto-save active')"><Cloud :size="15" /></span>
       </div>
     </header>
 
@@ -37,7 +37,7 @@
           @load-error="markRendererAssetFailed"
         />
         <div v-else-if="currentSpritePath" class="sprite-stage">
-          <img :src="currentSpritePath" :alt="currentCharacter?.name || 'Character sprite'" />
+          <img :src="currentSpritePath" :alt="currentCharacter?.name || t('game.character-sprite', 'Character sprite')" />
         </div>
         <CharacterModelView
           v-else-if="currentCharacter"
@@ -84,11 +84,12 @@
 
         <div v-else class="scene-empty">
           <span class="empty-mark">M</span>
-          <h1>Monogatari Runtime</h1>
-          <p>{{ activeScene ? activeScene.background_path || 'Active scene is ready.' : t('game.runtime-desc', 'AI-ready visual novel playback with dialogue state, Live2D staging, and saves.') }}</p>
+          <h1>{{ t('game.monogatari-runtime', 'Monogatari Runtime') }}</h1>
+          <p>{{ activeScene ? activeScene.background_path || t('game.active-scene-ready', 'Active scene is ready.') : t('game.runtime-desc', 'AI-ready visual novel playback with dialogue state, Live2D staging, and saves.') }}</p>
           <button class="btn btn-primary btn-lg" :disabled="isLoading" @click="openStoryLibrary">
             <span v-if="isLoading" class="loading-spinner"></span>
-            <span>{{ isLoading ? t('game.loading', 'Loading') : 'Choose Story' }}</span>
+            <LibraryBig v-else :size="16" />
+            <span>{{ isLoading ? t('game.loading', 'Loading') : t('game.choose-story', 'Choose story') }}</span>
           </button>
         </div>
       </section>
@@ -103,15 +104,15 @@
         <div class="modal story-library-modal">
           <div class="modal-head">
             <div>
-              <span class="eyebrow">Story library</span>
-              <strong>{{ storyAccess.unlocked_gated_content_count }} / {{ storyAccess.gated_content_count }} gated unlocks</strong>
+              <span class="eyebrow">{{ t('game.story-library', 'Story library') }}</span>
+              <strong>{{ t('game.gated-unlocks', '{unlocked} / {total} gated unlocks', { unlocked: storyAccess.unlocked_gated_content_count, total: storyAccess.gated_content_count }) }}</strong>
             </div>
-            <button class="close-btn" @click="showStoryLibrary = false">{{ t('common.close', 'Close') }}</button>
+            <button class="close-btn" :title="t('common.close', 'Close')" :aria-label="t('common.close', 'Close')" @click="showStoryLibrary = false"><X :size="16" /></button>
           </div>
-          <div class="library-tabs" role="tablist" aria-label="Story content type">
-            <button :class="{ active: libraryTab === 'scenes' }" @click="libraryTab = 'scenes'">Scenes</button>
-            <button :class="{ active: libraryTab === 'dialogues' }" @click="libraryTab = 'dialogues'">Dialogues</button>
-            <button :class="{ active: libraryTab === 'endings' }" @click="libraryTab = 'endings'">Endings</button>
+          <div class="library-tabs" role="tablist" :aria-label="t('game.story-content-type', 'Story content type')">
+            <button :class="{ active: libraryTab === 'scenes' }" @click="libraryTab = 'scenes'">{{ t('game.scenes', 'Scenes') }}</button>
+            <button :class="{ active: libraryTab === 'dialogues' }" @click="libraryTab = 'dialogues'">{{ t('game.dialogues', 'Dialogues') }}</button>
+            <button :class="{ active: libraryTab === 'endings' }" @click="libraryTab = 'endings'">{{ t('game.endings', 'Endings') }}</button>
           </div>
           <div class="story-content-list">
             <button
@@ -127,7 +128,7 @@
                 <strong>{{ scene.name }}</strong>
                 <small>{{ scene.id }}<template v-if="scene.access.gated"> · {{ unlockHint(scene.access) }}</template></small>
               </span>
-              <span class="content-status">{{ activeScene?.id === scene.id ? 'Active' : scene.access.unlocked ? 'Enter' : 'Locked' }}</span>
+              <span class="content-status">{{ activeScene?.id === scene.id ? t('game.active', 'Active') : scene.access.unlocked ? t('game.enter', 'Enter') : t('game.locked', 'Locked') }}</span>
             </button>
             <button
               v-for="dialogue in libraryTab === 'dialogues' ? storyDialogues : []"
@@ -140,9 +141,9 @@
               <span class="content-mark">{{ dialogue.access.unlocked ? 'DL' : 'LK' }}</span>
               <span class="content-copy">
                 <strong>{{ dialogue.title }}</strong>
-                <small>{{ dialogue.node_count }} nodes<template v-if="dialogue.access.gated"> · {{ unlockHint(dialogue.access) }}</template></small>
+                <small>{{ t('game.node-count', '{count} nodes', { count: dialogue.node_count }) }}<template v-if="dialogue.access.gated"> · {{ unlockHint(dialogue.access) }}</template></small>
               </span>
-              <span class="content-status">{{ dialogue.access.unlocked ? 'Play' : 'Locked' }}</span>
+              <span class="content-status">{{ dialogue.access.unlocked ? t('game.play', 'Play') : t('game.locked', 'Locked') }}</span>
             </button>
             <button
               v-for="ending in libraryTab === 'endings' ? storyEndings : []"
@@ -157,9 +158,9 @@
                 <strong>{{ ending.title }}</strong>
                 <small>{{ ending.description }}<template v-if="ending.access.gated"> · {{ unlockHint(ending.access) }}</template></small>
               </span>
-              <span class="content-status">{{ ending.access.unlocked ? 'View' : 'Locked' }}</span>
+              <span class="content-status">{{ ending.access.unlocked ? t('game.view', 'View') : t('game.locked', 'Locked') }}</span>
             </button>
-            <p v-if="activeLibraryItems === 0" class="no-saves">No {{ libraryTab }} are available in this project.</p>
+            <p v-if="activeLibraryItems === 0" class="no-saves">{{ t('game.empty-library', 'No {type} are available in this project.', { type: libraryTypeLabel(libraryTab) }) }}</p>
           </div>
         </div>
       </div>
@@ -174,7 +175,7 @@
         <div class="modal">
           <div class="modal-head">
             <span class="eyebrow">{{ t('game.saves', 'Saves') }}</span>
-            <button class="close-btn" @click="showLoadDialog = false">{{ t('common.close', 'Close') }}</button>
+            <button class="close-btn" :title="t('common.close', 'Close')" :aria-label="t('common.close', 'Close')" @click="showLoadDialog = false"><X :size="16" /></button>
           </div>
           <div class="save-list">
             <button v-for="save in saves" :key="save.save_id" class="save-item" @click="loadGame(save.save_id)">
@@ -190,14 +191,14 @@
     <Transition name="fade">
       <div v-if="showPause" class="pause-overlay" @click.self="showPause = false">
         <div class="pause-panel">
-          <div class="pause-title">Paused</div>
+          <div class="pause-title">{{ t('game.paused', 'Paused') }}</div>
           <div class="pause-actions">
-            <button class="pause-btn primary" @click="showPause = false">Resume</button>
-            <button class="pause-btn" @click="saveGame(); showPause = false">Save</button>
-            <button class="pause-btn" @click="openLoadDialog(); showPause = false">Load</button>
-            <button class="pause-btn" @click="$router.push('/backlog')">Backlog</button>
-            <button class="pause-btn" @click="showSettings = true; showPause = false">Settings</button>
-            <button class="pause-btn secondary" @click="$router.push('/title')">Title Screen</button>
+            <button class="pause-btn primary" @click="showPause = false"><Play :size="15" />{{ t('game.resume', 'Resume') }}</button>
+            <button class="pause-btn" @click="saveGame(); showPause = false"><Save :size="15" />{{ t('game.save', 'Save') }}</button>
+            <button class="pause-btn" @click="openLoadDialog(); showPause = false"><FolderOpen :size="15" />{{ t('game.load', 'Load') }}</button>
+            <button class="pause-btn" @click="$router.push('/backlog')"><History :size="15" />{{ t('nav.backlog', 'Backlog') }}</button>
+            <button class="pause-btn" @click="showSettings = true; showPause = false"><SlidersHorizontal :size="15" />{{ t('game.settings', 'Settings') }}</button>
+            <button class="pause-btn secondary" @click="$router.push('/title')"><PanelsTopLeft :size="15" />{{ t('game.title-screen', 'Title screen') }}</button>
           </div>
         </div>
       </div>
@@ -210,7 +211,7 @@
             <span class="eyebrow">{{ t('game.playback', 'Playback') }}</span>
             <h3>{{ t('game.settings', 'Settings') }}</h3>
           </div>
-          <button class="close-btn" @click="showSettings = false">{{ t('common.close', 'Close') }}</button>
+          <button class="close-btn" :title="t('common.close', 'Close')" :aria-label="t('common.close', 'Close')" @click="showSettings = false"><X :size="16" /></button>
         </div>
         <div class="settings-content">
           <label class="setting-group">
@@ -246,6 +247,18 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import {
+  Cloud,
+  FolderOpen,
+  History,
+  House,
+  LibraryBig,
+  PanelsTopLeft,
+  Play,
+  Save,
+  SlidersHorizontal,
+  X,
+} from '@lucide/vue'
 import Live2DCanvas from '../components/Live2DCanvas.vue'
 import CharacterModelView from '../components/CharacterModelView.vue'
 import { hasTauriRuntime, invokeCommand } from '../lib/tauri'
@@ -257,6 +270,7 @@ import { loadStoryContentAccess, type StoryContentAccessEntry, type StoryContent
 import {
   loadStoryDialogues,
   loadStoryEndings,
+  loadStoryCharacters,
   loadStoryScenes,
   type StoryDialogueInfo,
   type StoryEndingInfo,
@@ -264,7 +278,7 @@ import {
   type WebDialogueNode,
 } from '../lib/storyContent'
 
-const { t } = useI18n()
+const { locale, t } = useI18n()
 const route = useRoute()
 
 interface DialogueState {
@@ -416,7 +430,7 @@ const activeLibraryItems = computed(() => libraryTab.value === 'scenes'
 
 function formatTime(timestamp: string): string {
   try {
-    return new Date(timestamp).toLocaleString('zh-CN')
+    return new Date(timestamp).toLocaleString(locale.value)
   } catch {
     return timestamp
   }
@@ -426,7 +440,7 @@ function markRendererAssetFailed(payload: { path: string | null; message: string
   const path = payload.path?.trim()
   if (!path) return
   failedRendererAssets.value = { ...failedRendererAssets.value, [path]: true }
-  errorMessage.value = `${payload.message}; falling back to the next renderer asset.`
+  errorMessage.value = t('game.renderer-fallback', '{message}; using the next available renderer asset.', { message: payload.message })
 }
 
 watch(() => currentCharacter.value?.id, () => {
@@ -456,30 +470,22 @@ function previewActiveScene(): ActiveScene {
 
 async function loadCharacters() {
   try {
-    characters.value = await invokeCommand<CharacterInfo[]>('get_characters', undefined, previewCharacters)
+    characters.value = (await loadStoryCharacters()).map(character => ({
+      ...character,
+      live2d_model_path: character.live2d_model_path ?? null,
+      model_3d_path: character.model_3d_path ?? null,
+      portrait_path: character.portrait_path ?? null,
+      sprite_path: character.sprite_path ?? null,
+    }))
     if (!currentCharacter.value && characters.value.length > 0) {
-      currentCharacter.value = characters.value[0]
+      currentCharacter.value = characters.value.find(character => (
+        character.live2d_model_path || character.model_3d_path || character.sprite_path
+      )) || characters.value[0]
       currentExpression.value = currentCharacter.value.emotion || 'neutral'
     }
   } catch (e) {
     console.error(e)
   }
-}
-
-function previewCharacters(): CharacterInfo[] {
-  return [
-    {
-      id: 'sakura',
-      name: 'Sakura',
-      description: 'Browser preview character for renderer fallback checks.',
-      emotion: 'happy',
-      live2d_model_path: null,
-      model_3d_path: null,
-      portrait_path: null,
-      sprite_path: null,
-      sprite_paths: {},
-    },
-  ]
 }
 
 function syncCurrentCharacter() {
@@ -562,7 +568,15 @@ function browserDialogue(dialogue: StoryDialogueInfo, nodeId = dialogue.start_no
 }
 
 function unlockHint(access: StoryContentAccessEntry): string {
-  return access.unlocked ? 'Unlocked' : `Requires ${access.unlock_event_ids.join(', ')}`
+  return access.unlocked
+    ? t('game.unlocked', 'Unlocked')
+    : t('game.requires-events', 'Requires {events}', { events: access.unlock_event_ids.join(', ') })
+}
+
+function libraryTypeLabel(type: 'scenes' | 'dialogues' | 'endings'): string {
+  if (type === 'scenes') return t('game.scenes', 'scenes')
+  if (type === 'dialogues') return t('game.dialogues', 'dialogues')
+  return t('game.endings', 'endings')
 }
 
 async function loadStoryLibrary() {
@@ -579,7 +593,7 @@ async function loadStoryLibrary() {
     storyEndings.value = endings
     storyAccess.value = access
   } catch (error) {
-    errorMessage.value = `Unable to load story library: ${error}`
+    errorMessage.value = t('game.unable-load-library', 'Unable to load story library: {error}', { error: String(error) })
   }
 }
 
@@ -597,7 +611,7 @@ async function enterScene(scene: StorySceneInfo) {
     activeScene.value = await invokeCommand<SceneInfo>('enter_story_scene', { sceneId: scene.id }, scene)
     localStorage.setItem(activeSceneStorageKey, JSON.stringify(activeScene.value))
     showStoryLibrary.value = false
-    toastMessage.value = `Entered ${scene.name}`
+    toastMessage.value = t('game.entered-scene', 'Entered {scene}', { scene: scene.name })
   } catch (error) {
     errorMessage.value = String(error)
   } finally {
@@ -621,7 +635,7 @@ async function startStoryDialogue(dialogue: StoryDialogueInfo) {
     typewriterEffect(dialogueState.value.text)
     showStoryLibrary.value = false
   } catch (e) {
-    errorMessage.value = `Unable to start dialogue: ${e}`
+    errorMessage.value = t('game.unable-start-dialogue', 'Unable to start dialogue: {error}', { error: String(e) })
   } finally {
     isLoading.value = false
   }
@@ -632,9 +646,9 @@ async function startEnding(ending: StoryEndingInfo) {
   errorMessage.value = null
   try {
     const fallbackScene = storyScenes.value.find((scene) => scene.id === ending.scene_id) || activeScene.value
-    if (!fallbackScene) throw new Error(`Ending scene ${ending.scene_id} is unavailable`)
+    if (!fallbackScene) throw new Error(t('game.ending-scene-unavailable', 'Ending scene {id} is unavailable', { id: ending.scene_id }))
     const fallbackDialogue = storyDialogues.value.find((dialogue) => dialogue.id === ending.dialogue_id)
-    if (!fallbackDialogue) throw new Error(`Ending dialogue ${ending.dialogue_id} is unavailable`)
+    if (!fallbackDialogue) throw new Error(t('game.ending-dialogue-unavailable', 'Ending dialogue {id} is unavailable', { id: ending.dialogue_id }))
     const launch = await invokeCommand<StoryEndingLaunch>('start_story_ending', { endingId: ending.id }, {
       ending,
       scene: fallbackScene,
@@ -650,7 +664,7 @@ async function startEnding(ending: StoryEndingInfo) {
     syncCurrentCharacter()
     typewriterEffect(launch.dialogue.text)
     showStoryLibrary.value = false
-    toastMessage.value = `Ending: ${ending.title}`
+    toastMessage.value = t('game.ending-started', 'Ending: {title}', { title: ending.title })
   } catch (error) {
     errorMessage.value = String(error)
   } finally {
@@ -663,7 +677,7 @@ async function selectChoice(index: number) {
     if (!hasTauriRuntime() && webActiveDialogue.value) {
       const node = webDialogueNode(webActiveDialogue.value, webDialogueNodeId.value)
       const target = node?.choices?.[index]?.next_node_id
-      if (!target) throw new Error(`Choice ${index + 1} has no target node`)
+      if (!target) throw new Error(t('game.choice-missing-target', 'Choice {index} has no target node', { index: index + 1 }))
       webDialogueNodeId.value = target
       dialogueState.value = browserDialogue(webActiveDialogue.value, target)
       syncCurrentCharacter()
@@ -716,25 +730,25 @@ const AUTO_SAVE_ID = 'auto_save_0'
 
 async function saveQuick() {
   try {
-    await invokeCommand<string>('save_game', { saveName: 'Quick Save', saveId: QUICK_SAVE_ID })
-    toastMessage.value = 'Quick saved'
+    await invokeCommand<string>('save_game', { saveName: t('game.quick-save-name', 'Quick Save'), saveId: QUICK_SAVE_ID })
+    toastMessage.value = t('game.quick-saved', 'Quick saved')
   } catch (e) { errorMessage.value = String(e) }
 }
 
 async function quickLoad() {
   try {
     await loadGame(QUICK_SAVE_ID)
-    toastMessage.value = 'Quick loaded'
+    toastMessage.value = t('game.quick-loaded', 'Quick save loaded')
   } catch (e) {
-    errorMessage.value = 'No quick save found'
+    errorMessage.value = t('game.no-quick-save', 'No quick save found')
   }
 }
 
 async function saveGame() {
   try {
-    const name = `Save ${new Date().toLocaleString('zh-CN')}`
+    const name = t('game.save-name', 'Save {date}', { date: new Date().toLocaleString(locale.value) })
     const saveId = await invokeCommand<string>('save_game', { saveName: name })
-    toastMessage.value = `Saved ${saveId}`
+    toastMessage.value = t('game.saved-id', 'Saved {id}', { id: saveId })
     await loadSaves()
   } catch (e) {
     errorMessage.value = String(e)
@@ -745,7 +759,7 @@ async function loadGame(saveId: string) {
   try {
     await invokeCommand<void>('load_game', { saveId })
     showLoadDialog.value = false
-    toastMessage.value = 'Save loaded'
+    toastMessage.value = t('game.save-loaded', 'Save loaded')
     await loadActiveScene()
     await updateDialogueState()
     await loadStoryLibrary()
@@ -823,7 +837,9 @@ onMounted(async () => {
   autoSaveTimer = window.setInterval(async () => {
     if (dialogueState.value?.is_active) {
       try {
-        const name = 'Auto-save ' + new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+        const name = t('game.auto-save-name', 'Auto-save {time}', {
+          time: new Date().toLocaleTimeString(locale.value, { hour: '2-digit', minute: '2-digit' }),
+        })
         await invokeCommand<string>('save_game', { saveName: name, saveId: AUTO_SAVE_ID })
       } catch (e) { console.error('Auto-save failed:', e) }
     }
@@ -906,6 +922,10 @@ onUnmounted(() => {
 
 .control-btn,
 .close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   min-height: 34px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -926,7 +946,20 @@ onUnmounted(() => {
 .library-trigger {
   width: 34px;
   padding-inline: 0;
-  font-size: 17px;
+}
+
+.icon-control,
+.close-btn {
+  width: 34px;
+  padding-inline: 0;
+}
+
+.auto-save-badge {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  color: var(--success);
 }
 
 .stage {
@@ -1285,6 +1318,58 @@ onUnmounted(() => {
   font-size: 12px;
 }
 
+.pause-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+}
+
+.pause-panel {
+  width: min(340px, calc(100vw - 32px));
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-lg);
+}
+
+.pause-title {
+  margin-bottom: 14px;
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 850;
+}
+
+.pause-actions {
+  display: grid;
+  gap: 7px;
+}
+
+.pause-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 40px;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  text-align: left;
+}
+
+.pause-btn:hover { border-color: var(--brand); color: var(--text-primary); }
+.pause-btn.primary { border-color: var(--brand); background: var(--brand); color: var(--surface-0); }
+.pause-btn.secondary { margin-top: 4px; background: transparent; }
+
 .toast,
 .error-toast {
   position: fixed;
@@ -1365,12 +1450,20 @@ onUnmounted(() => {
 
 @media (max-width: 720px) {
   .game-topbar {
-    grid-template-columns: 1fr;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px;
+    padding: 9px 10px;
   }
 
   .top-actions {
-    flex-wrap: wrap;
+    grid-column: 1 / -1;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
   }
+
+  .top-actions .control-btn { flex: 0 0 auto; }
+  .stage { height: calc(100dvh - 108px); }
 
   .dialogue-area {
     padding: 12px;

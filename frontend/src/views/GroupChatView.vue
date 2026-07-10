@@ -1,26 +1,59 @@
 <template>
   <div class="group-chat">
-    <header class="group-chat-header">
-      <h2>Group Chat</h2>
+    <header class="page-header">
+      <div>
+        <span class="eyebrow">{{ t('group.eyebrow', 'Live test') }}</span>
+        <h1>{{ t('group.title', 'Group Chat') }}</h1>
+        <p>{{ t('group.subtitle', 'Test how multiple characters respond, relate, and stay in voice together.') }}</p>
+      </div>
       <div class="session-controls">
-        <button v-if="!session" class="btn btn-primary" :disabled="selectedIds.length < 2" @click="startSession">Start Group Chat</button>
-        <button v-else class="btn btn-danger" @click="endSession">End Session</button>
+        <button v-if="!session" class="btn btn-primary" :disabled="selectedIds.length < 2" @click="startSession">
+          <Play :size="15" />
+          {{ t('group.start', 'Start Group Chat') }}
+        </button>
+        <button v-else class="btn btn-danger" @click="endSession">
+          <LogOut :size="15" />
+          {{ t('group.end', 'End session') }}
+        </button>
       </div>
     </header>
     <div v-if="errorMessage" class="group-error" @click="errorMessage = null">{{ errorMessage }}</div>
 
-    <div v-if="!session" class="character-select">
-      <p class="select-hint">Select 2 or more characters to start a group conversation.</p>
+    <section v-if="!session" class="character-select">
+      <div class="selection-head">
+        <div>
+          <span class="eyebrow">{{ t('group.setup', 'Session setup') }}</span>
+          <strong>{{ t('group.select-chars', 'Select characters') }}</strong>
+        </div>
+        <span class="selection-count">{{ t('group.selected-count', '{count} selected', { count: selectedIds.length }) }}</span>
+      </div>
+      <p class="select-hint">{{ t('group.select-hint', 'Select at least two characters to start a group conversation.') }}</p>
       <div class="character-grid">
-        <div v-for="c in available" :key="c[0]" class="char-card" :class="{ selected: selectedIds.includes(c[0]) }" @click="toggle(c[0])">
-          <div class="char-avatar">{{ c[1].charAt(0) }}</div>
-          <span class="char-name">{{ c[1] }}</span>
+        <button
+          v-for="character in available"
+          :key="character[0]"
+          class="char-card"
+          :class="{ selected: selectedIds.includes(character[0]) }"
+          :aria-pressed="selectedIds.includes(character[0])"
+          @click="toggle(character[0])"
+        >
+          <span class="char-avatar">{{ character[1].charAt(0) }}</span>
+          <span class="char-copy">
+            <strong>{{ character[1] }}</strong>
+            <small>{{ character[0] }}</small>
+          </span>
+          <Check v-if="selectedIds.includes(character[0])" class="selected-mark" :size="15" />
+        </button>
+        <div v-if="available.length === 0" class="empty-state">
+          <UsersRound :size="28" />
+          <span>{{ t('group.empty', 'No characters are available for group chat.') }}</span>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div v-else class="chat-area">
+    <section v-else class="chat-area">
       <div class="participants-bar">
+        <span class="participants-label">{{ t('group.characters', 'Participants') }}</span>
         <span v-for="id in session.character_ids" :key="id" class="participant-tag">
           <span class="participant-dot"></span>{{ id }}
           <span v-if="relationshipScores[id]" class="rel-score">{{ relationshipScores[id]?.toFixed(1) }}</span>
@@ -44,22 +77,27 @@
           </div>
         </div>
         <div v-if="loading" class="message system">
-          <div class="msg-content"><span class="spinner"></span> Characters are thinking...</div>
+          <div class="msg-content"><LoaderCircle class="spinner" :size="15" />{{ t('group.thinking', 'Characters are thinking...') }}</div>
         </div>
       </div>
       <div class="input-area">
-        <input v-model="input" class="input" placeholder="Type a message to the group..." @keyup.enter="send" :disabled="loading" />
-        <button class="btn btn-primary" @click="send" :disabled="!input.trim() || loading">{{ t("group.send", "Send") }}</button>
+        <input v-model="input" class="input" :placeholder="t('group.placeholder', 'Message the group...')" @keyup.enter="send" :disabled="loading" />
+        <button class="btn btn-primary" @click="send" :disabled="!input.trim() || loading">
+          <Send :size="15" />
+          {{ t('group.send', 'Send') }}
+        </button>
       </div>
-    </div>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, nextTick, onMounted, onUnmounted } from 'vue'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { invokeCommand } from '../lib/tauri'
+import { Check, LoaderCircle, LogOut, Play, Send, UsersRound } from '@lucide/vue'
+import { hasTauriRuntime, invokeCommand } from '../lib/tauri'
 import { useI18n } from '../lib/i18n'
+import { loadStoryCharacters } from '../lib/storyContent'
 
 const { t } = useI18n()
 
@@ -112,14 +150,13 @@ let streamUnlisteners: UnlistenFn[] = []
 async function loadCharacters() {
   try {
     errorMessage.value = null
-    available.value = await invokeCommand<[string, string][]>('get_group_chat_characters', {}, [])
+    const characters = await loadStoryCharacters()
+    available.value = characters.map(character => [character.id, character.name])
   } catch (e) {
     available.value = []
     errorMessage.value = String(e)
   }
 }
-loadCharacters()
-
 function cleanupStreamListeners() {
   for (const u of streamUnlisteners) u()
   streamUnlisteners = []
@@ -154,7 +191,12 @@ async function startSession() {
   if (selectedIds.value.length < 2) return
   try {
     errorMessage.value = null
-    session.value = await invokeCommand<GroupSession>('start_group_chat', { characterIds: selectedIds.value })
+    session.value = await invokeCommand<GroupSession>('start_group_chat', { characterIds: selectedIds.value }, {
+      session_id: 'browser-preview',
+      character_ids: [...selectedIds.value],
+      messages: [],
+      active: true,
+    })
   } catch (e) {
     errorMessage.value = String(e)
   }
@@ -164,22 +206,23 @@ function endSession() { session.value = null }
 
 function groupSafetyFlags(trace: ChatSafetyTrace) {
   return [
-    { key: 'mind', label: 'Mind', active: !!trace.mind_contract_applied },
-    { key: 'knowledge', label: 'Knowledge', active: !!trace.knowledge_context_pinned },
-    { key: 'input', label: 'Input', active: trace.input_prompt_injection_detected || trace.input_private_reasoning_request_detected },
-    { key: 'response', label: 'Response', active: trace.response_guard_applied },
-    { key: 'memory', label: 'Memory', active: trace.memory_guard_applied },
-    { key: 'relation', label: 'Relation', active: trace.relationship_delta_blocked },
+    { key: 'mind', label: t('group.safety.mind', 'Mind'), active: !!trace.mind_contract_applied },
+    { key: 'knowledge', label: t('group.safety.knowledge', 'Knowledge'), active: !!trace.knowledge_context_pinned },
+    { key: 'input', label: t('group.safety.input', 'Input'), active: trace.input_prompt_injection_detected || trace.input_private_reasoning_request_detected },
+    { key: 'response', label: t('group.safety.response', 'Response'), active: trace.response_guard_applied },
+    { key: 'memory', label: t('group.safety.memory', 'Memory'), active: trace.memory_guard_applied },
+    { key: 'relation', label: t('group.safety.relation', 'Relation'), active: trace.relationship_delta_blocked },
   ]
 }
 
 function groupSafetySummary(trace: ChatSafetyTrace) {
   const notes = trace.guard_notes || []
   const refSummary = trace.pinned_knowledge_ref_ids?.length
-    ? `Refs ${trace.pinned_knowledge_ref_ids.join(', ')}`
+    ? t('group.safety.refs', 'Refs {refs}', { refs: trace.pinned_knowledge_ref_ids.join(', ') })
     : ''
   if (!notes.length || notes.includes('no_runtime_safety_interventions')) {
-    return refSummary ? `No interventions / ${refSummary}` : 'No interventions'
+    const clear = t('group.safety.clear', 'No interventions')
+    return refSummary ? `${clear} / ${refSummary}` : clear
   }
   return [...notes.map(formatSafetyNote), refSummary].filter(Boolean).join(' / ')
 }
@@ -195,7 +238,12 @@ async function send() {
   loading.value = true
   errorMessage.value = null
   try {
-    session.value = await invokeCommand<GroupSession>('send_group_message', { session: session.value, message: input.value })
+    const message = input.value.trim()
+    session.value = await invokeCommand<GroupSession>(
+      'send_group_message',
+      { session: session.value, message },
+      () => browserGroupReply(session.value as GroupSession, message),
+    )
     input.value = ''
     await nextTick()
     if (messagesEl.value) messagesEl.value.scrollTop = messagesEl.value.scrollHeight
@@ -205,24 +253,77 @@ async function send() {
     loading.value = false
   }
 }
+
+function browserGroupReply(currentSession: GroupSession, message: string): GroupSession {
+  const timestamp = new Date().toISOString()
+  return {
+    ...currentSession,
+    messages: [
+      ...currentSession.messages,
+      {
+        role: 'player',
+        character_id: null,
+        character_name: t('backlog.player', 'Player'),
+        content: message,
+        emotion: null,
+        timestamp,
+      },
+      {
+        role: 'system',
+        character_id: null,
+        character_name: t('backlog.system', 'System'),
+        content: t('group.preview-response', 'Browser preview received the message. Use the desktop runtime for model responses.'),
+        emotion: null,
+        timestamp,
+      },
+    ],
+  }
+}
+
+onMounted(async () => {
+  await loadCharacters()
+  if (hasTauriRuntime()) await attachGroupStreamListeners()
+})
 </script>
 
 <style scoped>
-.group-chat { height: 100%; display: flex; flex-direction: column; padding: 24px; gap: 16px; }
-.group-chat-header { display: flex; align-items: center; justify-content: space-between; }
-.group-chat-header h2 { font-size: 20px; font-weight: 700; }
+.group-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: min(1180px, 100%);
+  min-height: calc(100dvh - 54px);
+  margin: 0 auto;
+  padding: 32px 36px 48px;
+}
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.page-header h1 { margin: 3px 0 0; color: var(--text-primary); font-size: 28px; line-height: 1.15; }
+.page-header p { max-width: 640px; margin: 7px 0 0; color: var(--text-secondary); font-size: 13px; line-height: 1.55; }
+.eyebrow { display: block; color: var(--text-tertiary); font-size: 11px; font-weight: 800; text-transform: uppercase; }
+.session-controls { flex-shrink: 0; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
 .group-error { padding: 10px 12px; border: 1px solid rgba(239,68,68,0.28); background: rgba(239,68,68,0.08); color: var(--danger); border-radius: var(--radius); font-size: 12px; cursor: pointer; overflow-wrap: anywhere; }
-.select-hint { color: var(--text-secondary); margin-bottom: 16px; font-size: 13px; }
-.character-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
-.char-card { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface-1); cursor: pointer; transition: all var(--transition-fast); }
+.character-select { display: grid; gap: 14px; }
+.selection-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.selection-head strong { display: block; margin-top: 3px; color: var(--text-primary); font-size: 16px; }
+.selection-count { color: var(--text-tertiary); font-size: 11px; font-weight: 700; }
+.select-hint { margin: 0; color: var(--text-secondary); font-size: 12px; }
+.character-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.char-card { position: relative; display: grid; grid-template-columns: 42px minmax(0, 1fr) 18px; align-items: center; gap: 11px; min-height: 72px; padding: 13px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); cursor: pointer; font: inherit; text-align: left; transition: all var(--transition-fast); }
 .char-card:hover { border-color: var(--border-light); background: var(--surface-2); }
 .char-card.selected { border-color: var(--brand); background: rgba(45,212,191,0.08); }
-.char-avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--surface-3); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; color: var(--brand-light); }
-.char-name { font-size: 13px; font-weight: 600; }
-.chat-area { flex: 1; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
-.participants-bar { display: flex; gap: 6px; flex-wrap: wrap; }
+.char-avatar { width: 42px; height: 42px; border-radius: var(--radius); background: var(--surface-3); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 17px; color: var(--brand-light); }
+.char-copy { display: grid; gap: 3px; min-width: 0; }
+.char-copy strong, .char-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.char-copy strong { font-size: 13px; }
+.char-copy small { color: var(--text-tertiary); font-family: var(--font-mono); font-size: 10px; }
+.selected-mark { color: var(--brand-light); }
+.empty-state { grid-column: 1 / -1; display: grid; place-items: center; gap: 8px; min-height: 220px; color: var(--text-tertiary); font-size: 12px; text-align: center; }
+.chat-area { flex: 1; display: flex; flex-direction: column; gap: 12px; min-height: 520px; }
+.participants-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.participants-label { margin-right: 3px; color: var(--text-tertiary); font-size: 10px; font-weight: 800; text-transform: uppercase; }
 .participant-tag { padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 600; background: var(--surface-3); color: var(--text-secondary); text-transform: uppercase; }
-.messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 8px 0; }
+.messages { flex: 1; min-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 8px 2px; }
 .message { max-width: 80%; padding: 10px 14px; border-radius: var(--radius); }
 .message.player { align-self: flex-end; background: rgba(45,212,191,0.12); border: 1px solid rgba(45,212,191,0.2); }
 .message.character { align-self: flex-start; background: var(--surface-2); border: 1px solid var(--border); }
@@ -257,8 +358,8 @@ async function send() {
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
-.input-area { display: flex; gap: 8px; }
-.input-area .input { flex: 1; }
+.input-area { display: flex; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
+.input-area .input { flex: 1; min-width: 0; }
 .participant-dot {
   display: inline-block; width: 6px; height: 6px; border-radius: 50%;
   background: var(--success); margin-right: 4px;
@@ -273,10 +374,25 @@ async function send() {
   background: var(--warning); margin-right: 4px;
 }
 .spinner {
-  display: inline-block; width: 14px; height: 14px;
-  border: 2px solid rgba(255,255,255,0.3); border-top-color: white;
-  border-radius: 50%; animation: spin 0.8s linear infinite;
-  margin-right: 8px; vertical-align: middle;
+  display: inline-block;
+  margin-right: 7px;
+  vertical-align: -3px;
+  animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 720px) {
+  .group-chat { min-height: calc(100dvh - 54px); padding: 22px 16px 96px; }
+  .page-header p { display: none; }
+  .session-controls .btn { min-height: 34px; }
+  .character-grid { grid-template-columns: 1fr; }
+  .chat-area { min-height: 620px; }
+  .message { max-width: 92%; }
+}
+
+@media (max-width: 440px) {
+  .page-header { flex-direction: column; }
+  .session-controls, .session-controls .btn { width: 100%; }
+  .input-area .btn { width: 42px; padding-inline: 0; font-size: 0; }
+}
 </style>

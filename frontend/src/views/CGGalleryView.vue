@@ -2,15 +2,15 @@
   <div class="cg-gallery">
     <header class="cg-header">
       <div>
-        <span class="eyebrow">{{ t('cg.title', 'CG Gallery') }}</span>
-        <h1>Scene Collection</h1>
+        <span class="eyebrow">{{ t('cg.eyebrow', 'Playback collection') }}</span>
+        <h1>{{ t('cg.heading', 'Scene Collection') }}</h1>
       </div>
       <div class="cg-stats">
-        <span class="stat-pill">{{ unlockedCount }} / {{ scenes.length }} {{ t('cg.unlocked', 'Unlocked') }}</span>
+        <span class="stat-pill">{{ t('cg.unlocked-count', '{unlocked} / {total} unlocked', { unlocked: unlockedCount, total: scenes.length }) }}</span>
       </div>
     </header>
 
-    <div class="cg-tabs">
+    <div class="cg-tabs" role="tablist" :aria-label="t('cg.collection-type', 'Collection type')">
       <button class="tab-btn" :class="{ active: activeTab === 'scenes' }" @click="activeTab = 'scenes'">
         {{ t('cg.scenes', 'Scenes') }}
       </button>
@@ -20,52 +20,56 @@
     </div>
 
     <main v-if="activeTab === 'scenes'" class="cg-grid">
-      <div
+      <button
         v-for="scene in scenes"
         :key="scene.id"
+        type="button"
         class="cg-card"
         :class="{ locked: !scene.unlocked }"
+        :disabled="!scene.unlocked"
         @click="openPreview(scene)"
       >
         <div class="cg-thumb" :style="thumbStyle(scene)">
           <div v-if="!scene.unlocked" class="lock-overlay">
-            <span class="lock-icon">&#128274;</span>
+            <LockKeyhole :size="24" />
             <span class="lock-text">{{ t('cg.locked', 'Locked') }}</span>
           </div>
-          <div v-else class="cg-badge">&#10003;</div>
+          <div v-else class="cg-badge"><Check :size="14" /></div>
         </div>
         <div class="cg-info">
           <strong>{{ scene.unlocked ? scene.name : '???' }}</strong>
-          <span class="cg-meta">{{ scene.weather || 'Unknown' }} / {{ scene.time_of_day || 'Any' }}</span>
+          <span class="cg-meta">{{ scene.weather || t('cg.unknown', 'Unknown') }} / {{ scene.time_of_day || t('cg.any-time', 'Any time') }}</span>
         </div>
-      </div>
+      </button>
 
       <div v-if="scenes.length === 0" class="empty-state">
-        <span class="empty-icon">&#127912;</span>
+        <Images :size="32" />
         <p>{{ t('cg.empty', 'No CGs unlocked yet. Keep playing to discover scenes!') }}</p>
       </div>
     </main>
 
     <main v-else class="cg-grid">
-      <div
+      <button
         v-for="char in characters"
         :key="char.id"
+        type="button"
         class="cg-card"
         :class="{ locked: !char.unlocked }"
+        :disabled="!char.unlocked"
         @click="openCharPreview(char)"
       >
         <div class="cg-thumb char-thumb" :style="charThumbStyle(char)">
           <div v-if="!char.unlocked" class="lock-overlay">
-            <span class="lock-icon">&#128274;</span>
+            <LockKeyhole :size="24" />
             <span class="lock-text">{{ t('cg.locked', 'Locked') }}</span>
           </div>
-          <div v-else class="cg-initials">{{ initials(char.name) }}</div>
+          <div v-else-if="!characterAssetUrl(char)" class="cg-initials">{{ initials(char.name) }}</div>
         </div>
         <div class="cg-info">
           <strong>{{ char.unlocked ? char.name : '???' }}</strong>
-          <span class="cg-meta">{{ char.description || 'Character' }}</span>
+          <span class="cg-meta">{{ char.description || t('cg.character-fallback', 'Character') }}</span>
         </div>
-      </div>
+      </button>
     </main>
 
     <Transition name="fade">
@@ -81,7 +85,22 @@
             </div>
             <p v-if="previewScene.background_path" class="preview-path">{{ previewScene.background_path }}</p>
           </div>
-          <button class="close-btn" @click="previewScene = null">{{ t('common.close', 'Close') }}</button>
+          <button class="close-btn" :title="t('common.close', 'Close')" :aria-label="t('common.close', 'Close')" @click="previewScene = null"><X :size="16" /></button>
+        </div>
+      </div>
+    </Transition>
+
+    <Transition name="fade">
+      <div v-if="previewCharacter" class="preview-overlay" @click.self="previewCharacter = null">
+        <div class="preview-panel character-preview-panel">
+          <div class="preview-bg character-preview-bg" :style="charThumbStyle(previewCharacter)">
+            <span v-if="!characterAssetUrl(previewCharacter)" class="preview-initials">{{ initials(previewCharacter.name) }}</span>
+          </div>
+          <div class="preview-info">
+            <h2>{{ previewCharacter.name }}</h2>
+            <p>{{ previewCharacter.description || t('cg.character-fallback', 'Character') }}</p>
+          </div>
+          <button class="close-btn" :title="t('common.close', 'Close')" :aria-label="t('common.close', 'Close')" @click="previewCharacter = null"><X :size="16" /></button>
         </div>
       </div>
     </Transition>
@@ -90,8 +109,10 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { Check, Images, LockKeyhole, X } from '@lucide/vue'
 import { useI18n } from '../lib/i18n'
-import { invokeCommand } from '../lib/tauri'
+import { resolveAssetUrl } from '../lib/assets'
+import { loadStoryCharacters, loadStoryScenes } from '../lib/storyContent'
 
 const { t } = useI18n()
 
@@ -110,6 +131,8 @@ interface CharacterData {
   name: string
   description: string
   emotion: string
+  portrait_path?: string | null
+  sprite_path?: string | null
   unlocked?: boolean
 }
 
@@ -117,6 +140,7 @@ const activeTab = ref<'scenes' | 'characters'>('scenes')
 const scenes = ref<SceneData[]>([])
 const characters = ref<CharacterData[]>([])
 const previewScene = ref<SceneData | null>(null)
+const previewCharacter = ref<CharacterData | null>(null)
 
 const unlockedCount = computed(() => scenes.value.filter(s => s.unlocked).length)
 
@@ -137,27 +161,33 @@ function initials(name: string): string {
 
 function thumbStyle(scene: SceneData) {
   const c = colorForId(scene.id)
+  const imageUrl = resolveAssetUrl(scene.background_path)
   return {
-    background: scene.unlocked
-      ? `linear-gradient(135deg, ${c}33, ${c}11)`
-      : 'var(--surface-3)',
+    backgroundColor: scene.unlocked ? `${c}22` : 'var(--surface-3)',
+    backgroundImage: scene.unlocked && imageUrl ? `url("${imageUrl}")` : undefined,
   }
 }
 
 function charThumbStyle(char: CharacterData) {
   const c = colorForId(char.id)
+  const imageUrl = characterAssetUrl(char)
   return {
-    background: char.unlocked
-      ? `linear-gradient(135deg, ${c}44, ${c}22)`
-      : 'var(--surface-3)',
+    backgroundColor: char.unlocked ? `${c}22` : 'var(--surface-3)',
+    backgroundImage: char.unlocked && imageUrl ? `url("${imageUrl}")` : undefined,
   }
+}
+
+function characterAssetUrl(char: CharacterData): string | null {
+  return resolveAssetUrl(char.portrait_path || char.sprite_path)
 }
 
 const previewBgStyle = computed(() => {
   if (!previewScene.value) return {}
   const c = colorForId(previewScene.value.id)
+  const imageUrl = resolveAssetUrl(previewScene.value.background_path)
   return {
-    background: `linear-gradient(180deg, ${c}22, transparent 60%), radial-gradient(circle at 50% 60%, ${c}18, transparent 50%)`,
+    backgroundColor: `${c}22`,
+    backgroundImage: imageUrl ? `url("${imageUrl}")` : undefined,
   }
 })
 
@@ -168,18 +198,19 @@ function openPreview(scene: SceneData) {
 
 function openCharPreview(char: CharacterData) {
   if (!char.unlocked) return
+  previewCharacter.value = char
 }
 
 async function loadData() {
   try {
-    const sceneList = await invokeCommand<SceneData[]>('list_scene_assets', undefined, [])
-    scenes.value = sceneList.map(s => ({ ...s, unlocked: true }))
+    const sceneList = await loadStoryScenes()
+    scenes.value = sceneList.map(scene => ({ ...scene, unlocked: scene.access.unlocked }))
   } catch {
     scenes.value = []
   }
   try {
-    const charList = await invokeCommand<CharacterData[]>('get_characters', undefined, [])
-    characters.value = charList.map(c => ({ ...c, unlocked: true }))
+    const charList = await loadStoryCharacters()
+    characters.value = charList.map(character => ({ ...character, unlocked: true }))
   } catch {
     characters.value = []
   }
@@ -264,11 +295,15 @@ onMounted(loadData)
 }
 
 .cg-card {
+  padding: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-1);
+  color: inherit;
   overflow: hidden;
   cursor: pointer;
+  font: inherit;
+  text-align: left;
   transition: all 0.2s;
 }
 
@@ -279,6 +314,7 @@ onMounted(loadData)
 }
 
 .cg-card.locked { opacity: 0.5; cursor: default; }
+.cg-card:disabled { color: inherit; }
 
 .cg-thumb {
   position: relative;
@@ -286,6 +322,9 @@ onMounted(loadData)
   display: flex;
   align-items: center;
   justify-content: center;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
 .char-thumb { border-radius: 0; }
@@ -373,7 +412,15 @@ onMounted(loadData)
   overflow: hidden;
 }
 
-.preview-bg { height: 400px; }
+.preview-bg {
+  height: 400px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.character-preview-bg { display: grid; place-items: center; background-size: contain; }
+.preview-initials { color: var(--brand-light); font-size: 42px; font-weight: 850; }
 
 .preview-info {
   padding: 24px;
@@ -384,6 +431,8 @@ onMounted(loadData)
   font-size: 24px;
   margin: 0 0 8px;
 }
+
+.preview-info p { margin: 0; color: var(--text-secondary); font-size: 13px; line-height: 1.55; }
 
 .preview-meta {
   display: flex;
@@ -412,7 +461,11 @@ onMounted(loadData)
   position: absolute;
   top: 16px;
   right: 16px;
-  padding: 8px 16px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: rgba(21,25,34,0.9);
@@ -430,7 +483,9 @@ onMounted(loadData)
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 
 @media (max-width: 640px) {
-  .cg-gallery { padding: 16px; }
+  .cg-gallery { padding: 22px 16px 96px; }
+  .cg-header { align-items: flex-start; gap: 12px; }
+  .stat-pill { display: inline-block; padding-inline: 10px; font-size: 11px; }
   .cg-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
   .cg-thumb { height: 120px; }
   .preview-bg { height: 250px; }

@@ -2255,6 +2255,7 @@ async function verifyFrontendSourceInvariants() {
     [verifyI18nSource, 'interpolation tokens differ from en', 'verify translated interpolation tokens'],
     [verifyI18nSource, 'contains replacement characters or encoding damage', 'reject damaged Unicode catalogs'],
     [verifyI18nSource, 'is referenced but missing from catalogs', 'verify translation keys referenced by source'],
+    [verifyI18nSource, 'strictLocalizedSurfaces', 'scan strict UI surfaces for untranslated visible text'],
   ]
   for (const [source, needle, description] of frontendI18nRequirements) {
     if (!source.includes(needle)) {
@@ -2323,7 +2324,9 @@ async function verifyFrontendSourceInvariants() {
     ['manifest.scene_files', 'cache project scene catalogs during service worker install'],
     ['manifest.dialogue_files', 'cache project dialogue scripts during service worker install'],
     ['manifest.ending_files', 'cache project ending catalogs during service worker install'],
+    ['manifest.character_files', 'cache project character definitions during service worker install'],
     ['path.startsWith("/events/")', 'serve project story events through an offline-aware strategy'],
+    ['path.startsWith("/characters/")', 'serve project character definitions through an offline-aware strategy'],
     ['monogatari-web-project-assets/v1', 'validate the project asset manifest schema before caching'],
     ['function withBase', 'define withBase helper'],
     ['function routePath', 'define routePath helper'],
@@ -2343,6 +2346,7 @@ async function verifyFrontendSourceInvariants() {
     ["'data', 'scenes'", 'copy checked-in scene catalogs from data/scenes'],
     ["'data', 'dialogue'", 'copy checked-in dialogue scripts from data/dialogue'],
     ["'data', 'endings'", 'copy checked-in ending catalogs from data/endings'],
+    ["'data', 'characters'", 'copy checked-in character definitions from data/characters'],
     ['distProjectAssetsDir', 'target copied project assets into dist/assets'],
     ['projectAssetManifestPath', 'write a generated project asset manifest into dist'],
     ['staticHostingHeadersPath', 'write static-hosting security headers into dist'],
@@ -2364,6 +2368,7 @@ async function verifyFrontendSourceInvariants() {
     ['cp(projectScenesDir, distProjectScenesDir', 'merge scene catalogs into the Web/PWA dist tree'],
     ['cp(projectDialoguesDir, distProjectDialoguesDir', 'merge dialogue scripts into the Web/PWA dist tree'],
     ['cp(projectEndingsDir, distProjectEndingsDir', 'merge ending catalogs into the Web/PWA dist tree'],
+    ['cp(projectCharactersDir, distProjectCharactersDir', 'merge character definitions into the Web/PWA dist tree'],
     ['event_catalogs', 'inventory story event catalogs in the Web/PWA project manifest'],
     ['project asset manifest', 'report the generated project asset manifest in the Web/PWA preparation output'],
   ]
@@ -2387,6 +2392,7 @@ async function verifyFrontendSourceInvariants() {
     [storyContentSource, "invokeCommand<StoryDialogueInfo[]>('list_dialogues')", 'load gated dialogues from desktop projects'],
     [storyContentSource, "invokeCommand<StoryEndingInfo[]>('list_story_endings')", 'load gated endings from desktop projects'],
     [storyContentSource, 'dialogue_files', 'load packaged dialogue scripts from Web/PWA project manifests'],
+    [storyContentSource, 'character_files', 'load packaged character definitions from Web/PWA project manifests'],
     [storyContentSource, 'loadBrowserSceneDrafts()', 'load browser-authored scene drafts into Story Mode'],
     [storyContentSource, 'loadBrowserDialogueDrafts()', 'load browser-authored dialogue drafts into Story Mode'],
     [storyContentSource, 'loadBrowserStoryEndingDrafts()', 'load browser-authored ending drafts into Story Mode'],
@@ -4748,6 +4754,7 @@ async function verifyWebProjectAssets(distDir, projectAssetManifest, issues) {
     { directory: 'scenes', manifestField: 'scene_files', prefix: '/scenes/' },
     { directory: 'dialogue', manifestField: 'dialogue_files', prefix: '/dialogue/' },
     { directory: 'endings', manifestField: 'ending_files', prefix: '/endings/' },
+    { directory: 'characters', manifestField: 'character_files', prefix: '/characters/' },
   ]) {
     const manifestPaths = projectAssetManifest[content.manifestField]
     if (!Array.isArray(manifestPaths)) {
