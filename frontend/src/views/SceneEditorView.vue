@@ -2,44 +2,45 @@
   <div class="scene-editor">
     <header class="editor-header">
       <div class="header-copy">
-        <span class="eyebrow">World Design</span>
-        <h1>Scene Catalog</h1>
-        <p>
-          {{ snapshot?.scene_count || 0 }} scenes ·
-          {{ snapshot?.metadata_scene_count || 0 }} authored ·
-          {{ snapshot?.inferred_scene_count || 0 }} inferred
-        </p>
+        <span class="eyebrow">{{ t('scene.editor-eyebrow', 'World Design') }}</span>
+        <h1>{{ t('scene.catalog-title', 'Scene Catalog') }}</h1>
+        <p>{{ t('scene.catalog-summary', '{total} scenes · {authored} authored · {inferred} inferred', {
+          total: snapshot?.scene_count || 0,
+          authored: snapshot?.metadata_scene_count || 0,
+          inferred: snapshot?.inferred_scene_count || 0,
+        }) }}</p>
       </div>
       <div class="header-actions">
-        <button class="btn btn-secondary btn-sm" :disabled="busy" @click="reloadCatalog">Reload</button>
-        <button class="btn btn-secondary btn-sm" :disabled="busy" @click="createScene">New</button>
-        <button class="btn btn-secondary btn-sm" :disabled="!draft || busy" @click="duplicateScene">Duplicate</button>
-        <button class="btn btn-secondary btn-sm" :disabled="!canPreview || busy" @click="previewScene">Story Mode</button>
+        <button class="btn btn-secondary btn-sm" :disabled="busy" @click="createScene"><Plus :size="14" />{{ t('authoring.new', 'New') }}</button>
+        <button class="btn btn-secondary btn-sm" :disabled="!draft || busy" @click="duplicateScene"><Copy :size="14" />{{ t('authoring.duplicate', 'Duplicate') }}</button>
+        <button class="btn btn-secondary btn-sm" :disabled="busy" @click="reloadCatalog"><RotateCcw :size="14" />{{ t('authoring.reload', 'Reload') }}</button>
+        <button class="btn btn-secondary btn-sm" :disabled="!canPreview || busy" @click="previewScene"><Play :size="14" />{{ t('authoring.story-mode', 'Story Mode') }}</button>
         <button class="btn btn-primary btn-sm" :disabled="!canSave || busy" @click="saveScene">
-          {{ busy ? 'Working' : selectedEntry && !selectedEntry.metadata_authored ? 'Promote' : 'Save' }}
+          <Save :size="14" />
+          {{ busy ? t('authoring.working', 'Working') : selectedEntry && !selectedEntry.metadata_authored ? t('scene.promote', 'Promote') : t('common.save', 'Save') }}
         </button>
       </div>
     </header>
 
     <div class="catalog-strip">
-      <span><strong>{{ filteredScenes.length }}</strong> visible</span>
-      <span><strong>{{ gatedCount }}</strong> gated</span>
-      <span><strong>{{ errorCount }}</strong> errors</span>
-      <span><strong>{{ snapshot?.catalog_fingerprint.slice(0, 12) || 'unavailable' }}</strong> catalog</span>
-      <span v-if="dirty" class="dirty-indicator">Unsaved changes</span>
+      <span><strong>{{ filteredScenes.length }}</strong> {{ t('authoring.visible', 'visible') }}</span>
+      <span><strong>{{ gatedCount }}</strong> {{ t('authoring.gated', 'gated') }}</span>
+      <span><strong>{{ errorCount }}</strong> {{ t('authoring.errors', 'errors') }}</span>
+      <span><strong>{{ snapshot?.catalog_fingerprint.slice(0, 12) || t('authoring.unavailable', 'unavailable') }}</strong> {{ t('authoring.catalog', 'catalog') }}</span>
+      <span v-if="dirty" class="dirty-indicator">{{ t('authoring.unsaved-changes', 'Unsaved changes') }}</span>
     </div>
 
     <main class="editor-workspace">
-      <aside class="scene-list" aria-label="Scene catalog">
+      <aside class="scene-list" :aria-label="t('scene.catalog-aria', 'Scene catalog')">
         <div class="list-toolbar">
           <label class="search-field">
-            <span class="sr-only">Search scenes</span>
-            <input v-model.trim="search" class="input" type="search" placeholder="Search scenes" />
+            <span class="sr-only">{{ t('scene.search', 'Search scenes') }}</span>
+            <input v-model.trim="search" class="input" type="search" :placeholder="t('scene.search', 'Search scenes')" />
           </label>
-          <select v-model="filter" class="input filter-select" aria-label="Scene source filter">
-            <option value="all">All</option>
-            <option value="authored">Authored</option>
-            <option value="inferred">Inferred</option>
+          <select v-model="filter" class="input filter-select" :aria-label="t('scene.source-filter', 'Scene source filter')">
+            <option value="all">{{ t('knowledge.all', 'All') }}</option>
+            <option value="authored">{{ t('authoring.authored', 'Authored') }}</option>
+            <option value="inferred">{{ t('authoring.inferred', 'Inferred') }}</option>
           </select>
         </div>
 
@@ -60,15 +61,15 @@
               <small>{{ scene.id }}</small>
               <span class="item-meta">
                 <b :class="scene.metadata_authored ? 'authored' : 'inferred'">
-                  {{ scene.metadata_authored ? 'Authored' : 'Inferred' }}
+                  {{ scene.metadata_authored ? t('authoring.authored', 'Authored') : t('authoring.inferred', 'Inferred') }}
                 </b>
                 <b :class="scene.access.gated ? 'gated' : 'open'">
-                  {{ scene.access.gated ? 'Gated' : 'Open' }}
+                  {{ scene.access.gated ? t('authoring.gated-label', 'Gated') : t('authoring.open', 'Open') }}
                 </b>
               </span>
             </span>
           </button>
-          <div v-if="filteredScenes.length === 0" class="empty-list">No scenes</div>
+          <div v-if="filteredScenes.length === 0" class="empty-list">{{ t('scene.no-scenes', 'No scenes') }}</div>
         </div>
       </aside>
 
@@ -82,48 +83,48 @@
           />
           <div v-else class="stage-empty">
             <span>SC</span>
-            <strong>{{ draft.background_path ? 'Background unavailable' : 'No background assigned' }}</strong>
+            <strong>{{ draft.background_path ? t('scene.background-unavailable', 'Background unavailable') : t('scene.no-background-assigned', 'No background assigned') }}</strong>
           </div>
           <div class="stage-shade"></div>
           <div class="stage-caption">
-            <span>{{ draft.time_of_day || 'Any time' }}</span>
-            <h2>{{ draft.name || 'Untitled scene' }}</h2>
-            <p>{{ draft.background_path || 'No background path' }}</p>
+            <span>{{ draft.time_of_day || t('scene.any-time', 'Any time') }}</span>
+            <h2>{{ draft.name || t('scene.untitled', 'Untitled scene') }}</h2>
+            <p>{{ draft.background_path || t('scene.no-background-path', 'No background path') }}</p>
           </div>
           <span class="source-badge" :class="selectedEntry?.metadata_authored ? 'authored' : 'inferred'">
-            {{ selectedEntry?.metadata_authored ? 'Metadata' : selectedEntry ? 'Background inferred' : 'New scene' }}
+            {{ selectedEntry?.metadata_authored ? t('scene.metadata', 'Metadata') : selectedEntry ? t('scene.background-inferred', 'Background inferred') : t('scene.new-scene', 'New scene') }}
           </span>
         </div>
 
         <div v-if="validationIssues.length" class="validation-banner error" role="alert">
-          <strong>{{ validationIssues.length }} blocking issue{{ validationIssues.length === 1 ? '' : 's' }}</strong>
+          <strong>{{ t('authoring.blocking-issues', '{count} blocking issues', { count: validationIssues.length }) }}</strong>
           <span>{{ validationIssues[0] }}</span>
         </div>
         <div v-else-if="warnings.length" class="validation-banner warning">
-          <strong>{{ warnings.length }} warning{{ warnings.length === 1 ? '' : 's' }}</strong>
+          <strong>{{ t('authoring.warnings-count', '{count} warnings', { count: warnings.length }) }}</strong>
           <span>{{ warnings[0] }}</span>
         </div>
         <div v-else class="validation-banner valid">
-          <strong>Scene valid</strong>
-          <span>{{ selectedEntry?.background_exists ? 'Background resolved' : 'Ready for project validation' }}</span>
+          <strong>{{ t('scene.valid', 'Scene valid') }}</strong>
+          <span>{{ selectedEntry?.background_exists ? t('scene.background-resolved', 'Background resolved') : t('scene.ready-validation', 'Ready for project validation') }}</span>
         </div>
 
         <div class="form-scroll">
           <section class="form-section">
             <div class="section-heading">
               <div>
-                <span class="eyebrow">Identity</span>
-                <h2>Scene definition</h2>
+                <span class="eyebrow">{{ t('authoring.identity', 'Identity') }}</span>
+                <h2>{{ t('scene.definition', 'Scene definition') }}</h2>
               </div>
               <span class="source-path">{{ sourcePath }}</span>
             </div>
             <div class="field-grid identity-grid">
               <label class="form-field">
-                <span>Scene ID</span>
+                <span>{{ t('scene.id', 'Scene ID') }}</span>
                 <input v-model.trim="draft.id" class="input mono" :disabled="selectedCatalogId !== null" maxlength="128" />
               </label>
               <label class="form-field">
-                <span>Name</span>
+                <span>{{ t('common.name', 'Name') }}</span>
                 <input v-model="draft.name" class="input" maxlength="256" />
               </label>
             </div>
@@ -132,20 +133,20 @@
           <section class="form-section">
             <div class="section-heading">
               <div>
-                <span class="eyebrow">Assets</span>
-                <h2>Stage media</h2>
+                <span class="eyebrow">{{ t('scene.assets', 'Assets') }}</span>
+                <h2>{{ t('scene.stage-media', 'Stage media') }}</h2>
               </div>
               <span class="state-label" :class="selectedEntry?.background_exists ? 'ready' : 'pending'">
-                {{ selectedEntry?.background_exists ? 'Resolved' : 'Pending' }}
+                {{ selectedEntry?.background_exists ? t('authoring.resolved', 'Resolved') : t('authoring.pending', 'Pending') }}
               </span>
             </div>
             <div class="field-grid">
               <label class="form-field full-field">
-                <span>Background path</span>
+                <span>{{ t('scene.background-path', 'Background path') }}</span>
                 <input v-model="draft.background_path" class="input mono" placeholder="assets/backgrounds/scene.svg" />
               </label>
               <label class="form-field full-field">
-                <span>BGM path</span>
+                <span>{{ t('scene.bgm', 'BGM path') }}</span>
                 <input v-model="draft.bgm_path" class="input mono" placeholder="assets/audio/theme.ogg" />
               </label>
             </div>
@@ -154,23 +155,23 @@
           <section class="form-section">
             <div class="section-heading">
               <div>
-                <span class="eyebrow">Atmosphere</span>
-                <h2>Environment metadata</h2>
+                <span class="eyebrow">{{ t('scene.atmosphere', 'Atmosphere') }}</span>
+                <h2>{{ t('scene.environment-metadata', 'Environment metadata') }}</h2>
               </div>
             </div>
             <div class="field-grid atmosphere-grid">
               <label class="form-field">
-                <span>Weather</span>
+                <span>{{ t('scene.weather', 'Weather') }}</span>
                 <input v-model="draft.weather" class="input" maxlength="64" placeholder="clear" />
               </label>
               <label class="form-field">
-                <span>Time of day</span>
+                <span>{{ t('scene.time-of-day', 'Time of day') }}</span>
                 <input v-model="draft.time_of_day" class="input" maxlength="64" placeholder="golden_hour" />
               </label>
               <label class="form-field full-field">
-                <span>Tags</span>
+                <span>{{ t('scene.tags', 'Tags') }}</span>
                 <input v-model="tagsText" class="input" placeholder="outdoor, calm, route-a" />
-                <small>{{ draft.tags.length }} tags</small>
+                <small>{{ t('scene.tags-count', '{count} tags', { count: draft.tags.length }) }}</small>
               </label>
             </div>
           </section>
@@ -179,19 +180,20 @@
         <footer class="form-footer">
           <div class="footer-status">
             <span :class="validationIssues.length ? 'invalid-text' : 'valid-text'">
-              {{ validationIssues.length ? `${validationIssues.length} issues` : dirty ? 'Unsaved changes' : 'Saved' }}
+              {{ validationIssues.length ? t('authoring.issues-count', '{count} issues', { count: validationIssues.length }) : dirty ? t('authoring.unsaved-changes', 'Unsaved changes') : t('authoring.saved', 'Saved') }}
             </span>
-            <small>{{ selectedEntry?.metadata_authored ? 'Project metadata' : selectedEntry ? 'Inferred asset' : 'New asset' }}</small>
+            <small>{{ selectedEntry?.metadata_authored ? t('scene.project-metadata', 'Project metadata') : selectedEntry ? t('scene.inferred-asset', 'Inferred asset') : t('authoring.new-asset', 'New asset') }}</small>
           </div>
           <div class="footer-actions">
             <button
               class="btn btn-danger btn-sm"
               :disabled="!selectedEntry?.metadata_authored || busy"
-              :title="selectedEntry && !selectedEntry.metadata_authored ? 'Inferred scenes have no metadata file to delete' : 'Delete scene metadata'"
+              :title="selectedEntry && !selectedEntry.metadata_authored ? t('scene.inferred-delete-help', 'Inferred scenes have no metadata file to delete') : t('scene.delete-metadata', 'Delete scene metadata')"
               @click="removeScene"
-            >Delete</button>
+            ><Trash2 :size="14" />{{ t('common.delete', 'Delete') }}</button>
             <button class="btn btn-primary" :disabled="!canSave || busy" @click="saveScene">
-              {{ selectedEntry && !selectedEntry.metadata_authored ? 'Promote Scene' : 'Save Scene' }}
+              <Save :size="15" />
+              {{ selectedEntry && !selectedEntry.metadata_authored ? t('scene.promote-scene', 'Promote Scene') : t('scene.save-scene', 'Save Scene') }}
             </button>
           </div>
         </footer>
@@ -199,31 +201,31 @@
 
       <section v-else class="empty-editor">
         <span class="empty-mark">SC</span>
-        <h2>No scene selected</h2>
+        <h2>{{ t('scene.no-selection', 'No scene selected') }}</h2>
       </section>
 
-      <aside class="scene-inspector" aria-label="Scene diagnostics">
+      <aside class="scene-inspector" :aria-label="t('scene.diagnostics-aria', 'Scene diagnostics')">
         <section class="inspector-section">
-          <span class="eyebrow">Runtime Access</span>
-          <div class="metric-row"><span>Status</span><strong>{{ accessStatus }}</strong></div>
-          <div class="metric-row"><span>Unlock events</span><strong>{{ selectedEntry?.access.unlock_event_ids.length || 0 }}</strong></div>
+          <span class="eyebrow">{{ t('authoring.runtime-access', 'Runtime Access') }}</span>
+          <div class="metric-row"><span>{{ t('common.status', 'Status') }}</span><strong>{{ accessStatus }}</strong></div>
+          <div class="metric-row"><span>{{ t('authoring.unlock-events', 'Unlock events') }}</span><strong>{{ selectedEntry?.access.unlock_event_ids.length || 0 }}</strong></div>
           <p v-if="selectedEntry?.access.unlock_event_ids.length" class="event-list">
             {{ selectedEntry.access.unlock_event_ids.join(', ') }}
           </p>
         </section>
         <section class="inspector-section">
-          <span class="eyebrow">Document</span>
-          <div class="metric-row"><span>Source</span><strong>{{ selectedEntry?.metadata_authored ? 'JSON' : selectedEntry ? 'Asset' : 'Draft' }}</strong></div>
-          <div class="metric-row"><span>Background</span><strong>{{ selectedEntry?.background_exists ? 'Found' : 'Unchecked' }}</strong></div>
-          <div class="fingerprint">{{ selectedEntry?.content_fingerprint || 'Not saved' }}</div>
+          <span class="eyebrow">{{ t('authoring.document', 'Document') }}</span>
+          <div class="metric-row"><span>{{ t('authoring.source', 'Source') }}</span><strong>{{ selectedEntry?.metadata_authored ? 'JSON' : selectedEntry ? t('authoring.asset', 'Asset') : t('authoring.draft', 'Draft') }}</strong></div>
+          <div class="metric-row"><span>{{ t('scene.background', 'Background') }}</span><strong>{{ selectedEntry?.background_exists ? t('authoring.found', 'Found') : t('authoring.unchecked', 'Unchecked') }}</strong></div>
+          <div class="fingerprint">{{ selectedEntry?.content_fingerprint || t('authoring.not-saved', 'Not saved') }}</div>
         </section>
         <section class="inspector-section issue-section">
-          <span class="eyebrow">Diagnostics</span>
+          <span class="eyebrow">{{ t('authoring.diagnostics', 'Diagnostics') }}</span>
           <div v-for="issue in relevantIssues" :key="`${issue.code}:${issue.path}`" class="diagnostic" :class="issue.severity">
             <strong>{{ issue.code }}</strong>
             <span>{{ issue.message }}</span>
           </div>
-          <p v-if="relevantIssues.length === 0" class="clean-state">No catalog diagnostics</p>
+          <p v-if="relevantIssues.length === 0" class="clean-state">{{ t('scene.no-diagnostics', 'No catalog diagnostics') }}</p>
         </section>
       </aside>
     </main>
@@ -240,7 +242,9 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
+import { Copy, Play, Plus, RotateCcw, Save, Trash2 } from '@lucide/vue'
 import { resolveAssetUrl } from '../lib/assets'
+import { useI18n } from '../lib/i18n'
 import {
   deleteSceneDefinition,
   loadSceneAuthoringCatalog,
@@ -263,6 +267,7 @@ interface SceneAssetCatalog {
 }
 
 const router = useRouter()
+const { t } = useI18n()
 const snapshot = ref<SceneAuthoringCatalogSnapshot | null>(null)
 const draft = ref<SceneDefinition | null>(null)
 const selectedCatalogId = ref<string | null>(null)
@@ -296,9 +301,9 @@ const errorCount = computed(() => (snapshot.value?.issues || []).filter((issue) 
 const sourcePath = computed(() => selectedEntry.value?.source_path || `scenes/${draft.value?.id || 'new'}.json`)
 const accessStatus = computed(() => {
   const access = selectedEntry.value?.access
-  if (!access) return 'Draft'
-  if (!access.gated) return 'Open'
-  return access.unlocked ? 'Unlocked' : 'Locked'
+  if (!access) return t('authoring.draft', 'Draft')
+  if (!access.gated) return t('authoring.open', 'Open')
+  return access.unlocked ? t('authoring.unlocked', 'Unlocked') : t('authoring.locked', 'Locked')
 })
 const tagsText = computed({
   get: () => draft.value?.tags.join(', ') || '',
@@ -307,20 +312,20 @@ const tagsText = computed({
   },
 })
 const validationIssues = computed(() => {
-  if (!draft.value) return ['No scene selected.']
+  if (!draft.value) return [t('scene.error.no-selection', 'No scene selected.')]
   const normalized = normalizeSceneDefinition(draft.value)
   const issues = validateSceneDefinition(normalized)
   if (!selectedCatalogId.value && snapshot.value?.scenes.some((scene) => scene.id === normalized.id)) {
-    issues.push(`Scene "${normalized.id}" already exists.`)
+    issues.push(t('scene.error.already-exists', 'Scene "{id}" already exists.', { id: normalized.id }))
   }
   return issues
 })
 const warnings = computed(() => {
   if (!draft.value) return []
   const result: string[] = []
-  if (!draft.value.background_path?.trim()) result.push('No background is assigned to this scene.')
+  if (!draft.value.background_path?.trim()) result.push(t('scene.warning.no-background', 'No background is assigned to this scene.'))
   if (selectedEntry.value?.background_path === draft.value.background_path && !selectedEntry.value.background_exists) {
-    result.push('The saved background path does not resolve to a project file.')
+    result.push(t('scene.warning.unresolved-background', 'The saved background path does not resolve to a project file.'))
   }
   return result
 })
@@ -362,7 +367,7 @@ function setDraft(definition: SceneDefinition, catalogId: string | null, isSaved
 }
 
 function confirmDiscard(): boolean {
-  return !dirty.value || window.confirm('Discard unsaved scene changes?')
+  return !dirty.value || window.confirm(t('scene.confirm.discard', 'Discard unsaved scene changes?'))
 }
 
 function selectScene(entry: SceneAuthoringEntry) {
@@ -383,7 +388,7 @@ function createScene() {
   if (!confirmDiscard()) return
   setDraft({
     id: nextSceneId(),
-    name: 'New Scene',
+    name: t('scene.new-scene', 'New scene'),
     background_path: null,
     bgm_path: null,
     weather: null,
@@ -397,7 +402,7 @@ function duplicateScene() {
   setDraft({
     ...draft.value,
     id: nextSceneId(`${draft.value.id}_copy`),
-    name: `${draft.value.name} Copy`,
+    name: t('authoring.copy-name', '{name} Copy', { name: draft.value.name }),
     tags: [...draft.value.tags],
   }, null, false)
 }
@@ -427,7 +432,7 @@ async function loadCatalog(preferredId?: string | null) {
       baseline.value = ''
     }
   } catch (error) {
-    showNotice('error', 'Catalog unavailable', String(error))
+    showNotice('error', t('authoring.catalog-unavailable', 'Catalog unavailable'), String(error))
   } finally {
     busy.value = false
   }
@@ -436,7 +441,7 @@ async function loadCatalog(preferredId?: string | null) {
 async function reloadCatalog() {
   if (!confirmDiscard()) return
   await loadCatalog(selectedCatalogId.value)
-  showNotice('success', 'Catalog reloaded', 'Scene definitions and asset diagnostics are current.')
+  showNotice('success', t('authoring.catalog-reloaded', 'Catalog reloaded'), t('scene.notice.reloaded', 'Scene definitions and asset diagnostics are current.'))
 }
 
 async function saveScene() {
@@ -450,9 +455,9 @@ async function saveScene() {
     await loadBackgroundPaths()
     const saved = next.scenes.find((entry) => entry.id === scene.id)
     if (saved) setDraft(definitionFrom(saved), saved.id)
-    showNotice('success', originalId ? 'Scene saved' : 'Scene created', `${scene.name} passed project reload validation.`)
+    showNotice('success', originalId ? t('scene.notice.saved-title', 'Scene saved') : t('scene.notice.created-title', 'Scene created'), t('scene.notice.saved-message', '{name} passed project reload validation.', { name: scene.name }))
   } catch (error) {
-    showNotice('error', 'Save rejected', String(error))
+    showNotice('error', t('authoring.save-rejected', 'Save rejected'), String(error))
   } finally {
     busy.value = false
   }
@@ -461,7 +466,7 @@ async function saveScene() {
 async function removeScene() {
   if (!selectedEntry.value?.metadata_authored || !snapshot.value) return
   const sceneId = selectedEntry.value.id
-  if (!window.confirm(`Delete scene metadata "${sceneId}"?`)) return
+  if (!window.confirm(t('scene.confirm.delete', 'Delete scene metadata "{id}"?', { id: sceneId }))) return
   busy.value = true
   try {
     const next = await deleteSceneDefinition(sceneId, snapshot.value.catalog_fingerprint)
@@ -474,11 +479,11 @@ async function removeScene() {
       selectedCatalogId.value = null
       baseline.value = ''
     }
-    showNotice('success', 'Metadata deleted', target?.id === sceneId
-      ? `${sceneId} remains available from its background asset.`
-      : `${sceneId} was removed from the scene catalog.`)
+    showNotice('success', t('scene.notice.deleted-title', 'Metadata deleted'), target?.id === sceneId
+      ? t('scene.notice.asset-remains', '{id} remains available from its background asset.', { id: sceneId })
+      : t('scene.notice.removed', '{id} was removed from the scene catalog.', { id: sceneId }))
   } catch (error) {
-    showNotice('error', 'Delete rejected', String(error))
+    showNotice('error', t('authoring.delete-rejected', 'Delete rejected'), String(error))
   } finally {
     busy.value = false
   }
@@ -495,7 +500,7 @@ async function previewScene() {
       await router.push({ path: '/game', query: { previewScene: selectedCatalogId.value, authoring: '1' } })
     }
   } catch (error) {
-    showNotice('error', 'Preview unavailable', String(error))
+    showNotice('error', t('authoring.preview-unavailable', 'Preview unavailable'), String(error))
   } finally {
     busy.value = false
   }

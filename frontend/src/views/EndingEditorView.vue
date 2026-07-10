@@ -2,34 +2,38 @@
   <div class="ending-editor">
     <header class="editor-header">
       <div class="header-copy">
-        <span class="eyebrow">Story Design</span>
-        <h1>Ending Routes</h1>
-        <p>{{ snapshot?.ending_count || 0 }} endings · {{ gatedCount }} event-gated · {{ openCount }} open</p>
+        <span class="eyebrow">{{ t('ending.editor-eyebrow', 'Story Design') }}</span>
+        <h1>{{ t('ending.routes-title', 'Ending Routes') }}</h1>
+        <p>{{ t('ending.catalog-summary', '{total} endings · {gated} event-gated · {open} open', {
+          total: snapshot?.ending_count || 0,
+          gated: gatedCount,
+          open: openCount,
+        }) }}</p>
       </div>
       <div class="header-actions">
-        <button class="btn btn-secondary btn-sm" :disabled="busy" @click="reloadCatalog">Reload</button>
-        <button class="btn btn-secondary btn-sm" :disabled="busy" @click="createEnding">New</button>
-        <button class="btn btn-secondary btn-sm" :disabled="!canDuplicate || busy" @click="duplicateEnding">Duplicate</button>
-        <button class="btn btn-secondary btn-sm" :disabled="!canPreview || busy" @click="previewEnding">Preview</button>
+        <button class="btn btn-secondary btn-sm" :disabled="busy" @click="createEnding"><Plus :size="14" />{{ t('authoring.new', 'New') }}</button>
+        <button class="btn btn-secondary btn-sm" :disabled="!canDuplicate || busy" @click="duplicateEnding"><Copy :size="14" />{{ t('authoring.duplicate', 'Duplicate') }}</button>
+        <button class="btn btn-secondary btn-sm" :disabled="busy" @click="reloadCatalog"><RotateCcw :size="14" />{{ t('authoring.reload', 'Reload') }}</button>
+        <button class="btn btn-secondary btn-sm" :disabled="!canPreview || busy" @click="previewEnding"><Play :size="14" />{{ t('common.preview', 'Preview') }}</button>
         <button class="btn btn-primary btn-sm" :disabled="!canSave || busy" @click="saveEnding">
-          {{ busy ? 'Working' : 'Save' }}
+          <Save :size="14" />{{ busy ? t('authoring.working', 'Working') : t('common.save', 'Save') }}
         </button>
       </div>
     </header>
 
     <div class="catalog-strip">
-      <span><strong>{{ scenes.length }}</strong> scenes</span>
-      <span><strong>{{ dialogues.length }}</strong> dialogues</span>
-      <span><strong>{{ snapshot?.catalog_fingerprint.slice(0, 12) || 'unavailable' }}</strong> catalog</span>
-      <span v-if="dirty" class="dirty-indicator">Unsaved changes</span>
+      <span><strong>{{ scenes.length }}</strong> {{ t('ending.scenes', 'scenes') }}</span>
+      <span><strong>{{ dialogues.length }}</strong> {{ t('ending.dialogues', 'dialogues') }}</span>
+      <span><strong>{{ snapshot?.catalog_fingerprint.slice(0, 12) || t('authoring.unavailable', 'unavailable') }}</strong> {{ t('authoring.catalog', 'catalog') }}</span>
+      <span v-if="dirty" class="dirty-indicator">{{ t('authoring.unsaved-changes', 'Unsaved changes') }}</span>
     </div>
 
     <main class="editor-workspace">
-      <aside class="ending-list" aria-label="Ending catalog">
+      <aside class="ending-list" :aria-label="t('ending.catalog-aria', 'Ending catalog')">
         <div class="list-toolbar">
           <label class="search-field">
-            <span class="sr-only">Search endings</span>
-            <input v-model.trim="search" class="input" type="search" placeholder="Search endings" />
+            <span class="sr-only">{{ t('ending.search', 'Search endings') }}</span>
+            <input v-model.trim="search" class="input" type="search" :placeholder="t('ending.search', 'Search endings')" />
           </label>
           <span>{{ filteredEndings.length }}</span>
         </div>
@@ -47,76 +51,76 @@
               <small>{{ ending.id }}</small>
             </span>
             <span class="access-dot" :class="ending.access.gated ? 'gated' : 'open'">
-              {{ ending.access.gated ? 'Gated' : 'Open' }}
+              {{ ending.access.gated ? t('authoring.gated-label', 'Gated') : t('authoring.open', 'Open') }}
             </span>
           </button>
-          <div v-if="filteredEndings.length === 0" class="empty-list">No endings</div>
+          <div v-if="filteredEndings.length === 0" class="empty-list">{{ t('ending.no-endings', 'No endings') }}</div>
         </div>
       </aside>
 
       <section v-if="draft" class="ending-form">
-        <div class="route-map" aria-label="Ending route association">
+        <div class="route-map" :aria-label="t('ending.route-association', 'Ending route association')">
           <div class="route-step scene-step">
             <span class="step-number">1</span>
             <span class="step-copy">
-              <small>Scene</small>
-              <strong>{{ selectedScene?.name || draft.scene_id || 'Not selected' }}</strong>
-              <span>{{ selectedScene?.id || 'Missing association' }}</span>
+              <small>{{ t('ending.scene', 'Scene') }}</small>
+              <strong>{{ selectedScene?.name || draft.scene_id || t('authoring.not-selected', 'Not selected') }}</strong>
+              <span>{{ selectedScene?.id || t('ending.missing-association', 'Missing association') }}</span>
             </span>
           </div>
           <span class="route-connector" aria-hidden="true"></span>
           <div class="route-step dialogue-step">
             <span class="step-number">2</span>
             <span class="step-copy">
-              <small>Dialogue</small>
-              <strong>{{ selectedDialogue?.title || draft.dialogue_id || 'Not selected' }}</strong>
-              <span>{{ selectedDialogue?.node_count || 0 }} nodes</span>
+              <small>{{ t('ending.dialogue', 'Dialogue') }}</small>
+              <strong>{{ selectedDialogue?.title || draft.dialogue_id || t('authoring.not-selected', 'Not selected') }}</strong>
+              <span>{{ t('ending.nodes-count', '{count} nodes', { count: selectedDialogue?.node_count || 0 }) }}</span>
             </span>
           </div>
           <span class="route-connector" aria-hidden="true"></span>
           <div class="route-step ending-step">
             <span class="step-number">3</span>
             <span class="step-copy">
-              <small>Ending</small>
-              <strong>{{ draft.title || 'Untitled ending' }}</strong>
-              <span>{{ draft.id || 'Missing id' }}</span>
+              <small>{{ t('ending.ending', 'Ending') }}</small>
+              <strong>{{ draft.title || t('ending.untitled', 'Untitled ending') }}</strong>
+              <span>{{ draft.id || t('ending.missing-id', 'Missing ID') }}</span>
             </span>
           </div>
         </div>
 
         <div v-if="validationIssues.length" class="validation-banner error" role="alert">
-          <strong>{{ validationIssues.length }} blocking issue{{ validationIssues.length === 1 ? '' : 's' }}</strong>
+          <strong>{{ t('authoring.blocking-issues', '{count} blocking issues', { count: validationIssues.length }) }}</strong>
           <span>{{ validationIssues[0] }}</span>
         </div>
         <div v-else-if="warnings.length" class="validation-banner warning">
-          <strong>{{ warnings.length }} route warning{{ warnings.length === 1 ? '' : 's' }}</strong>
+          <strong>{{ t('ending.route-warnings', '{count} route warnings', { count: warnings.length }) }}</strong>
           <span>{{ warnings[0] }}</span>
         </div>
         <div v-else class="validation-banner valid">
-          <strong>Route valid</strong>
-          <span>Scene, dialogue, and ending references are consistent.</span>
+          <strong>{{ t('ending.route-valid', 'Route valid') }}</strong>
+          <span>{{ t('ending.route-valid-copy', 'Scene, dialogue, and ending references are consistent.') }}</span>
         </div>
 
         <div class="form-scroll">
           <section class="form-section identity-section">
             <div class="section-heading">
               <div>
-                <span class="eyebrow">Identity</span>
-                <h2>Ending definition</h2>
+                <span class="eyebrow">{{ t('authoring.identity', 'Identity') }}</span>
+                <h2>{{ t('ending.definition', 'Ending definition') }}</h2>
               </div>
               <span class="source-path">{{ sourcePath }}</span>
             </div>
             <div class="field-grid">
               <label class="form-field id-field">
-                <span>Ending ID</span>
+                <span>{{ t('ending.id', 'Ending ID') }}</span>
                 <input v-model.trim="draft.id" class="input mono" :disabled="originalEndingId !== null" />
               </label>
               <label class="form-field title-field">
-                <span>Title</span>
+                <span>{{ t('ending.title-label', 'Title') }}</span>
                 <input v-model="draft.title" class="input" maxlength="256" />
               </label>
               <label class="form-field description-field">
-                <span>Description</span>
+                <span>{{ t('common.description', 'Description') }}</span>
                 <textarea v-model="draft.description" class="input" rows="4" maxlength="2048"></textarea>
                 <small>{{ draft.description.trim().length }} / 2048</small>
               </label>
@@ -126,75 +130,75 @@
           <section class="form-section association-section">
             <div class="section-heading">
               <div>
-                <span class="eyebrow">Stage</span>
-                <h2>Scene association</h2>
+                <span class="eyebrow">{{ t('ending.stage', 'Stage') }}</span>
+                <h2>{{ t('ending.scene-association', 'Scene association') }}</h2>
               </div>
               <span class="state-label" :class="selectedScene?.access.unlocked ? 'ready' : 'locked'">
-                {{ selectedScene ? accessLabel(selectedScene.access) : 'Missing' }}
+                {{ selectedScene ? accessLabel(selectedScene.access) : t('authoring.missing', 'Missing') }}
               </span>
             </div>
             <label class="form-field">
-              <span>Scene</span>
+              <span>{{ t('ending.scene', 'Scene') }}</span>
               <select v-model="draft.scene_id" class="input">
-                <option value="">Select scene</option>
+                <option value="">{{ t('ending.select-scene', 'Select scene') }}</option>
                 <option v-for="scene in scenes" :key="scene.id" :value="scene.id">
                   {{ scene.name }} · {{ scene.id }}
                 </option>
               </select>
             </label>
             <div v-if="selectedScene" class="reference-details">
-              <span><strong>Background</strong>{{ selectedScene.background_path || 'Not set' }}</span>
-              <span><strong>Time</strong>{{ selectedScene.time_of_day || 'Any' }}</span>
-              <span><strong>Tags</strong>{{ selectedScene.tags.join(', ') || 'None' }}</span>
+              <span><strong>{{ t('scene.background', 'Background') }}</strong>{{ selectedScene.background_path || t('authoring.not-set', 'Not set') }}</span>
+              <span><strong>{{ t('ending.time', 'Time') }}</strong>{{ selectedScene.time_of_day || t('ending.any', 'Any') }}</span>
+              <span><strong>{{ t('scene.tags', 'Tags') }}</strong>{{ selectedScene.tags.join(', ') || t('authoring.none', 'None') }}</span>
             </div>
           </section>
 
           <section class="form-section association-section">
             <div class="section-heading">
               <div>
-                <span class="eyebrow">Sequence</span>
-                <h2>Dialogue association</h2>
+                <span class="eyebrow">{{ t('ending.sequence', 'Sequence') }}</span>
+                <h2>{{ t('ending.dialogue-association', 'Dialogue association') }}</h2>
               </div>
               <span class="state-label" :class="selectedDialogue?.access.unlocked ? 'ready' : 'locked'">
-                {{ selectedDialogue ? accessLabel(selectedDialogue.access) : 'Missing' }}
+                {{ selectedDialogue ? accessLabel(selectedDialogue.access) : t('authoring.missing', 'Missing') }}
               </span>
             </div>
             <label class="form-field">
-              <span>Dialogue</span>
+              <span>{{ t('ending.dialogue', 'Dialogue') }}</span>
               <select v-model="draft.dialogue_id" class="input">
-                <option value="">Select dialogue</option>
+                <option value="">{{ t('ending.select-dialogue', 'Select dialogue') }}</option>
                 <option v-for="dialogue in dialogues" :key="dialogue.id" :value="dialogue.id">
                   {{ dialogue.title }} · {{ dialogue.id }}
                 </option>
               </select>
             </label>
             <div v-if="selectedDialogue" class="reference-details">
-              <span><strong>Start node</strong>{{ selectedDialogue.start_node_id }}</span>
-              <span><strong>Node count</strong>{{ selectedDialogue.node_count }}</span>
-              <span><strong>Runtime</strong>{{ accessLabel(selectedDialogue.access) }}</span>
+              <span><strong>{{ t('ending.start-node', 'Start node') }}</strong>{{ selectedDialogue.start_node_id }}</span>
+              <span><strong>{{ t('ending.node-count', 'Node count') }}</strong>{{ selectedDialogue.node_count }}</span>
+              <span><strong>{{ t('ending.runtime', 'Runtime') }}</strong>{{ accessLabel(selectedDialogue.access) }}</span>
             </div>
           </section>
 
           <section class="form-section coverage-section">
             <div class="section-heading">
               <div>
-                <span class="eyebrow">Progression</span>
-                <h2>Unlock coverage</h2>
+                <span class="eyebrow">{{ t('ending.progression', 'Progression') }}</span>
+                <h2>{{ t('ending.unlock-coverage', 'Unlock coverage') }}</h2>
               </div>
-              <button class="btn btn-secondary btn-sm" @click="router.push('/story-events')">Story Events</button>
+              <button class="btn btn-secondary btn-sm" @click="router.push('/story-events')">{{ t('nav.events', 'Story Events') }}</button>
             </div>
             <div class="coverage-grid">
               <div class="coverage-row">
-                <span>Ending</span>
-                <strong>{{ endingEvents.join(', ') || 'Available from start' }}</strong>
+                <span>{{ t('ending.ending', 'Ending') }}</span>
+                <strong>{{ endingEvents.join(', ') || t('ending.available-from-start', 'Available from start') }}</strong>
               </div>
               <div class="coverage-row">
-                <span>Scene</span>
-                <strong>{{ selectedScene?.access.unlock_event_ids.join(', ') || 'Available from start' }}</strong>
+                <span>{{ t('ending.scene', 'Scene') }}</span>
+                <strong>{{ selectedScene?.access.unlock_event_ids.join(', ') || t('ending.available-from-start', 'Available from start') }}</strong>
               </div>
               <div class="coverage-row">
-                <span>Dialogue</span>
-                <strong>{{ selectedDialogue?.access.unlock_event_ids.join(', ') || 'Available from start' }}</strong>
+                <span>{{ t('ending.dialogue', 'Dialogue') }}</span>
+                <strong>{{ selectedDialogue?.access.unlock_event_ids.join(', ') || t('ending.available-from-start', 'Available from start') }}</strong>
               </div>
             </div>
           </section>
@@ -203,20 +207,20 @@
         <footer class="form-footer">
           <div class="footer-status">
             <span :class="validationIssues.length ? 'invalid-text' : 'valid-text'">
-              {{ validationIssues.length ? `${validationIssues.length} issues` : 'Ready to save' }}
+              {{ validationIssues.length ? t('authoring.issues-count', '{count} issues', { count: validationIssues.length }) : t('authoring.ready-to-save', 'Ready to save') }}
             </span>
-            <small>{{ originalEndingId ? 'Existing asset' : 'New asset' }}</small>
+            <small>{{ originalEndingId ? t('authoring.existing-asset', 'Existing asset') : t('authoring.new-asset', 'New asset') }}</small>
           </div>
           <div class="footer-actions">
-            <button class="btn btn-danger btn-sm" :disabled="originalEndingId === null || busy" @click="removeEnding">Delete</button>
-            <button class="btn btn-primary" :disabled="!canSave || busy" @click="saveEnding">Save Ending</button>
+            <button class="btn btn-danger btn-sm" :disabled="originalEndingId === null || busy" @click="removeEnding"><Trash2 :size="14" />{{ t('common.delete', 'Delete') }}</button>
+            <button class="btn btn-primary" :disabled="!canSave || busy" @click="saveEnding"><Save :size="15" />{{ t('ending.save-ending', 'Save Ending') }}</button>
           </div>
         </footer>
       </section>
 
       <section v-else class="empty-editor">
         <span class="empty-mark">ER</span>
-        <h2>No ending selected</h2>
+        <h2>{{ t('ending.no-selection', 'No ending selected') }}</h2>
       </section>
     </main>
 
@@ -232,6 +236,8 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
+import { Copy, Play, Plus, RotateCcw, Save, Trash2 } from '@lucide/vue'
+import { useI18n } from '../lib/i18n'
 import { hasTauriRuntime, invokeCommand } from '../lib/tauri'
 import {
   deleteStoryEnding,
@@ -252,6 +258,7 @@ import {
 import type { StoryContentAccessEntry } from '../lib/storyAccess'
 
 const router = useRouter()
+const { t } = useI18n()
 const snapshot = ref<StoryEndingCatalogSnapshot | null>(null)
 const scenes = ref<StorySceneInfo[]>([])
 const dialogues = ref<StoryDialogueInfo[]>([])
@@ -282,12 +289,12 @@ const endingEvents = computed(() => selectedEntry.value?.access.unlock_event_ids
 const sourcePath = computed(() => selectedEntry.value?.source_path || `endings/${draft.value?.id || 'new'}.json`)
 
 const validationIssues = computed(() => {
-  if (!draft.value) return ['No ending selected.']
+  if (!draft.value) return [t('ending.error.no-selection', 'No ending selected.')]
   const issues = validateStoryEndingDefinition(draft.value)
-  if (draft.value.scene_id && !selectedScene.value) issues.push(`Scene "${draft.value.scene_id}" does not exist.`)
-  if (draft.value.dialogue_id && !selectedDialogue.value) issues.push(`Dialogue "${draft.value.dialogue_id}" does not exist.`)
+  if (draft.value.scene_id && !selectedScene.value) issues.push(t('ending.error.scene-missing', 'Scene "{id}" does not exist.', { id: draft.value.scene_id }))
+  if (draft.value.dialogue_id && !selectedDialogue.value) issues.push(t('ending.error.dialogue-missing', 'Dialogue "{id}" does not exist.', { id: draft.value.dialogue_id }))
   if (!originalEndingId.value && snapshot.value?.endings.some((ending) => ending.id === draft.value?.id)) {
-    issues.push(`Ending "${draft.value.id}" already exists.`)
+    issues.push(t('ending.error.already-exists', 'Ending "{id}" already exists.', { id: draft.value.id }))
   }
   return issues
 })
@@ -296,14 +303,14 @@ const warnings = computed(() => {
   if (!draft.value) return []
   const result: string[] = []
   if (originalEndingId.value && endingEvents.value.length === 0) {
-    result.push('No Story Event unlocks this ending, so it is available from the start.')
+    result.push(t('ending.warning.no-unlock', 'No Story Event unlocks this ending, so it is available from the start.'))
   }
   for (const eventId of endingEvents.value) {
     if (!selectedScene.value?.access.unlock_event_ids.includes(eventId)) {
-      result.push(`Event "${eventId}" does not unlock scene "${draft.value.scene_id}".`)
+      result.push(t('ending.warning.scene-not-unlocked', 'Event "{event}" does not unlock scene "{scene}".', { event: eventId, scene: draft.value.scene_id }))
     }
     if (!selectedDialogue.value?.access.unlock_event_ids.includes(eventId)) {
-      result.push(`Event "${eventId}" does not unlock dialogue "${draft.value.dialogue_id}".`)
+      result.push(t('ending.warning.dialogue-not-unlocked', 'Event "{event}" does not unlock dialogue "{dialogue}".', { event: eventId, dialogue: draft.value.dialogue_id }))
     }
   }
   return result
@@ -331,7 +338,7 @@ function setDraft(definition: StoryEndingDefinition, originalId: string | null) 
 }
 
 function confirmDiscard(): boolean {
-  return !dirty.value || window.confirm('Discard unsaved ending changes?')
+  return !dirty.value || window.confirm(t('ending.confirm.discard', 'Discard unsaved ending changes?'))
 }
 
 function selectEnding(entry: StoryEndingAuthoringEntry) {
@@ -353,8 +360,8 @@ function createEnding() {
   setDraft({
     schema: STORY_ENDING_SCHEMA,
     id: nextEndingId(),
-    title: 'New Ending',
-    description: 'A new story conclusion.',
+    title: t('ending.new-ending', 'New Ending'),
+    description: t('ending.new-description', 'A new story conclusion.'),
     scene_id: scenes.value[0]?.id || '',
     dialogue_id: dialogues.value[0]?.id || '',
   }, null)
@@ -363,7 +370,7 @@ function createEnding() {
 
 function duplicateEnding() {
   if (!draft.value || !confirmDiscard()) return
-  const copy = { ...draft.value, id: nextEndingId(`${draft.value.id}_copy`), title: `${draft.value.title} Copy` }
+  const copy = { ...draft.value, id: nextEndingId(`${draft.value.id}_copy`), title: t('authoring.copy-name', '{name} Copy', { name: draft.value.title }) }
   setDraft(copy, null)
   baseline.value = ''
 }
@@ -388,7 +395,7 @@ async function loadCatalog(preferredId?: string | null) {
       baseline.value = ''
     }
   } catch (error) {
-    showNotice('error', 'Catalog unavailable', String(error))
+    showNotice('error', t('authoring.catalog-unavailable', 'Catalog unavailable'), String(error))
   } finally {
     busy.value = false
   }
@@ -397,7 +404,7 @@ async function loadCatalog(preferredId?: string | null) {
 async function reloadCatalog() {
   if (!confirmDiscard()) return
   await loadCatalog(originalEndingId.value)
-  showNotice('success', 'Catalog reloaded', 'Ending definitions and project references are current.')
+  showNotice('success', t('authoring.catalog-reloaded', 'Catalog reloaded'), t('ending.notice.reloaded', 'Ending definitions and project references are current.'))
 }
 
 async function saveEnding() {
@@ -416,9 +423,9 @@ async function saveEnding() {
     snapshot.value = next
     const saved = next.endings.find((entry) => entry.id === ending.id)
     if (saved) setDraft(definitionFrom(saved), saved.id)
-    showNotice('success', 'Ending saved', `${ending.title} passed project reload and reference validation.`)
+    showNotice('success', t('ending.notice.saved-title', 'Ending saved'), t('ending.notice.saved-message', '{title} passed project reload and reference validation.', { title: ending.title }))
   } catch (error) {
-    showNotice('error', 'Save rejected', String(error))
+    showNotice('error', t('authoring.save-rejected', 'Save rejected'), String(error))
   } finally {
     busy.value = false
   }
@@ -427,7 +434,7 @@ async function saveEnding() {
 async function removeEnding() {
   if (!originalEndingId.value || !snapshot.value) return
   const endingId = originalEndingId.value
-  if (!window.confirm(`Delete ending "${endingId}"?`)) return
+  if (!window.confirm(t('ending.confirm.delete', 'Delete ending "{id}"?', { id: endingId }))) return
   busy.value = true
   try {
     const next = await deleteStoryEnding(endingId, snapshot.value.catalog_fingerprint)
@@ -439,9 +446,9 @@ async function removeEnding() {
       originalEndingId.value = null
       baseline.value = ''
     }
-    showNotice('success', 'Ending deleted', `${endingId} was removed from the project catalog.`)
+    showNotice('success', t('ending.notice.deleted-title', 'Ending deleted'), t('ending.notice.deleted-message', '{id} was removed from the project catalog.', { id: endingId }))
   } catch (error) {
-    showNotice('error', 'Delete rejected', String(error))
+    showNotice('error', t('authoring.delete-rejected', 'Delete rejected'), String(error))
   } finally {
     busy.value = false
   }
@@ -458,15 +465,15 @@ async function previewEnding() {
       await router.push({ path: '/game', query: { previewEnding: originalEndingId.value, authoring: '1' } })
     }
   } catch (error) {
-    showNotice('error', 'Preview unavailable', String(error))
+    showNotice('error', t('authoring.preview-unavailable', 'Preview unavailable'), String(error))
   } finally {
     busy.value = false
   }
 }
 
 function accessLabel(access: StoryContentAccessEntry): string {
-  if (!access.gated) return 'Open'
-  return access.unlocked ? 'Unlocked' : 'Locked'
+  if (!access.gated) return t('authoring.open', 'Open')
+  return access.unlocked ? t('authoring.unlocked', 'Unlocked') : t('authoring.locked', 'Locked')
 }
 
 function showNotice(type: 'success' | 'error', title: string, message: string) {

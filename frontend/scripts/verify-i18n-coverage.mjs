@@ -70,6 +70,8 @@ const localizedSurfaces = [
   'src/views/CharacterEditorView.vue',
   'src/views/CharacterGalleryView.vue',
   'src/views/ChatView.vue',
+  'src/views/DialogueEditorView.vue',
+  'src/views/EndingEditorView.vue',
   'src/views/GameView.vue',
   'src/views/GroupChatView.vue',
   'src/views/HomeView.vue',
@@ -78,15 +80,53 @@ const localizedSurfaces = [
   'src/views/PluginView.vue',
   'src/views/QualitySuiteView.vue',
   'src/views/SceneAssetsView.vue',
+  'src/views/SceneEditorView.vue',
   'src/views/SettingsView.vue',
+  'src/views/StoryEventEditorView.vue',
   'src/views/TitleScreenView.vue',
   'src/views/WorkflowEditor.vue',
+]
+
+const strictLocalizedSurfaces = [
+  'src/App.vue',
+  'src/components/GlobalSearch.vue',
+  'src/views/DialogueEditorView.vue',
+  'src/views/EndingEditorView.vue',
+  'src/views/HomeView.vue',
+  'src/views/SceneEditorView.vue',
+  'src/views/StoryEventEditorView.vue',
 ]
 
 for (const relativePath of localizedSurfaces) {
   const source = await readFile(path.join(frontendDir, relativePath), 'utf8')
   if (!source.includes('useI18n')) {
     issues.push(`${relativePath} is a localized surface but no longer uses useI18n`)
+  }
+}
+
+for (const relativePath of strictLocalizedSurfaces) {
+  const source = await readFile(path.join(frontendDir, relativePath), 'utf8')
+  const template = /<template>([\s\S]*?)<\/template>/.exec(source)?.[1] ?? ''
+
+  for (const textNode of extractTemplateTextNodes(template)) {
+    const text = textNode.replace(/\{\{[\s\S]*?\}\}/g, '').replace(/\s+/g, ' ').trim()
+    if (/[A-Za-z]{2,}/.test(text) && !isAllowedStaticUiText(text)) {
+      issues.push(`${relativePath} contains untranslated visible text: ${text}`)
+    }
+  }
+
+  for (const match of template.matchAll(/(?:^|\s)(aria-label|placeholder|title)="([^"]*[A-Za-z][^"]*)"/g)) {
+    const [, attribute, value] = match
+    if (!isAllowedTechnicalAttribute(value)) {
+      issues.push(`${relativePath} contains untranslated ${attribute}: ${value}`)
+    }
+  }
+
+  if (/window\.confirm\(\s*['"`]/.test(source)) {
+    issues.push(`${relativePath} contains a confirmation message outside i18n`)
+  }
+  if (/showNotice\([^,\n]+,\s*['"`]/.test(source)) {
+    issues.push(`${relativePath} contains a notice title outside i18n`)
   }
 }
 
@@ -113,7 +153,7 @@ if (issues.length > 0) {
   throw new Error(`i18n coverage verification failed:\n${issues.join('\n')}`)
 }
 
-console.log(`[i18n] OK: ${localeNames.length} catalogs, ${englishKeys.length} keys, ${referencedKeys.size} referenced keys, and ${localizedSurfaces.length} localized surfaces verified`)
+console.log(`[i18n] OK: ${localeNames.length} catalogs, ${englishKeys.length} keys, ${referencedKeys.size} referenced keys, ${localizedSurfaces.length} localized surfaces, and ${strictLocalizedSurfaces.length} strict UI surfaces verified`)
 
 async function readJson(filePath) {
   return JSON.parse(await readFile(filePath, 'utf8'))
@@ -132,4 +172,45 @@ async function collectSourceFiles(directory) {
 function interpolationTokens(value) {
   if (typeof value !== 'string') return []
   return [...value.matchAll(/\{([a-zA-Z0-9_]+)\}/g)].map((match) => match[1]).sort()
+}
+
+function isAllowedStaticUiText(value) {
+  return /^(?:M|SC|DL|EV|ER|LLM|JSON|Ctrl K|Esc|Monogatari|v?0\.9\.5)$/i.test(value)
+}
+
+function isAllowedTechnicalAttribute(value) {
+  return /^(?:neutral|good|clear|golden_hour|scene_id|dialogue_id|ending_id|story\.flag|assets\/|hasFlag\(|setFlag\(|outdoor, calm, route-a)/.test(value)
+}
+
+function extractTemplateTextNodes(template) {
+  const textNodes = []
+  let current = ''
+  let inTag = false
+  let quote = ''
+
+  for (const character of template) {
+    if (!inTag) {
+      if (character === '<') {
+        if (current) textNodes.push(current)
+        current = ''
+        inTag = true
+      } else {
+        current += character
+      }
+      continue
+    }
+
+    if (quote) {
+      if (character === quote) quote = ''
+      continue
+    }
+    if (character === '"' || character === "'") {
+      quote = character
+    } else if (character === '>') {
+      inTag = false
+    }
+  }
+
+  if (current) textNodes.push(current)
+  return textNodes
 }

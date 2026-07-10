@@ -2,17 +2,17 @@
   <div class="event-editor">
     <header class="event-toolbar">
       <div class="title-block">
-        <span class="eyebrow">Authoring</span>
-        <h1>Story Events</h1>
+        <span class="eyebrow">{{ t('event.editor-eyebrow', 'Event Authoring') }}</span>
+        <h1>{{ t('event.title', 'Story Events') }}</h1>
         <span class="fingerprint" :title="catalogFingerprint">{{ shortFingerprint }}</span>
       </div>
       <div class="toolbar-actions">
-        <button class="icon-btn" title="New event" @click="addEvent">+</button>
-        <button class="btn btn-secondary btn-sm" :disabled="!selectedEvent" @click="duplicateEvent">Duplicate</button>
-        <button class="btn btn-secondary btn-sm" :disabled="!dirty" @click="reloadCatalog">Reload</button>
-        <button class="btn btn-secondary btn-sm" @click="runValidation">Validate</button>
+        <button class="icon-btn" :title="t('event.new-event', 'New event')" :aria-label="t('event.new-event', 'New event')" @click="addEvent"><Plus :size="16" /></button>
+        <button class="btn btn-secondary btn-sm" :disabled="!selectedEvent" @click="duplicateEvent"><Copy :size="14" />{{ t('authoring.duplicate', 'Duplicate') }}</button>
+        <button class="btn btn-secondary btn-sm" :disabled="!dirty" @click="reloadCatalog"><RotateCcw :size="14" />{{ t('authoring.reload', 'Reload') }}</button>
+        <button class="btn btn-secondary btn-sm" @click="runValidation"><ShieldCheck :size="14" />{{ t('dialogue.validate', 'Validate') }}</button>
         <button class="btn btn-primary btn-sm" :disabled="saving || !dirty || issues.length > 0" @click="saveCatalog">
-          {{ saving ? 'Saving' : 'Save catalog' }}
+          <Save :size="14" />{{ saving ? t('event.saving', 'Saving') : t('event.save-catalog', 'Save catalog') }}
         </button>
       </div>
     </header>
@@ -22,15 +22,15 @@
     <main class="event-workbench">
       <aside class="event-list-panel">
         <div class="list-controls">
-          <input v-model.trim="search" class="input" type="search" placeholder="Search events" aria-label="Search events" />
-          <select v-model="typeFilter" class="input" aria-label="Filter event type">
-            <option value="">All types</option>
+          <input v-model.trim="search" class="input" type="search" :placeholder="t('event.search', 'Search events')" :aria-label="t('event.search', 'Search events')" />
+          <select v-model="typeFilter" class="input" :aria-label="t('event.type-filter', 'Filter event type')">
+            <option value="">{{ t('event.all-types', 'All types') }}</option>
             <option v-for="type in eventTypes" :key="type" :value="type">{{ type }}</option>
           </select>
         </div>
         <div class="list-summary">
           <span>{{ filteredEvents.length }} / {{ editableDocument.events.length }}</span>
-          <span>{{ issues.length }} errors</span>
+          <span>{{ t('authoring.errors-count', '{count} errors', { count: issues.length }) }}</span>
         </div>
         <div class="event-list">
           <button
@@ -41,41 +41,41 @@
             @click="selectedIndex = item.index"
           >
             <span class="event-row-main">
-              <strong>{{ item.event.event_id || 'untitled_event' }}</strong>
-              <small>{{ item.event.description || 'No description' }}</small>
+              <strong>{{ item.event.event_id || t('event.untitled-id', 'untitled_event') }}</strong>
+              <small>{{ item.event.description || t('authoring.no-description', 'No description') }}</small>
             </span>
             <span class="event-row-meta">
-              <span>{{ item.event.event_type || 'type' }}</span>
+              <span>{{ item.event.event_type || t('event.type', 'type') }}</span>
               <b>{{ item.event.actions?.length || 0 }}</b>
             </span>
           </button>
-          <div v-if="filteredEvents.length === 0" class="empty-list">No matching events</div>
+          <div v-if="filteredEvents.length === 0" class="empty-list">{{ t('event.no-matches', 'No matching events') }}</div>
         </div>
       </aside>
 
       <section v-if="selectedEvent" class="event-inspector">
         <div class="inspector-heading">
           <div>
-            <span class="eyebrow">Event definition</span>
-            <h2>{{ selectedEvent.event_id || 'Untitled event' }}</h2>
+            <span class="eyebrow">{{ t('event.definition', 'Event definition') }}</span>
+            <h2>{{ selectedEvent.event_id || t('event.untitled', 'Untitled event') }}</h2>
           </div>
-          <button class="icon-btn danger" title="Delete event" @click="deleteEvent">x</button>
+          <button class="icon-btn danger" :title="t('event.delete-event', 'Delete event')" :aria-label="t('event.delete-event', 'Delete event')" @click="deleteEvent"><Trash2 :size="15" /></button>
         </div>
 
         <section class="form-section identity-section">
           <label class="field">
-            <span>Event ID</span>
+            <span>{{ t('event.id', 'Event ID') }}</span>
             <input v-model.trim="selectedEvent.event_id" class="input mono" autocomplete="off" />
           </label>
           <label class="field">
-            <span>Event type</span>
+            <span>{{ t('event.event-type', 'Event type') }}</span>
             <input v-model.trim="selectedEvent.event_type" class="input mono" list="event-type-options" autocomplete="off" />
             <datalist id="event-type-options">
               <option v-for="type in eventTypes" :key="type" :value="type" />
             </datalist>
           </label>
           <label class="field wide">
-            <span>Description</span>
+            <span>{{ t('common.description', 'Description') }}</span>
             <textarea v-model="selectedEvent.description" class="input" rows="3" maxlength="2048"></textarea>
           </label>
         </section>
@@ -83,18 +83,18 @@
         <section class="form-section">
           <div class="section-heading">
             <div>
-              <span class="eyebrow">Trigger</span>
-              <h3>Score and relationship gates</h3>
+              <span class="eyebrow">{{ t('event.trigger', 'Trigger') }}</span>
+              <h3>{{ t('event.trigger-gates', 'Score and relationship gates') }}</h3>
             </div>
             <label class="toggle-line">
-              <span>Repeatable</span>
+              <span>{{ t('event.repeatable', 'Repeatable') }}</span>
               <input v-model="selectedEvent.repeatable" type="checkbox" />
             </label>
           </div>
           <div class="gate-grid">
             <div class="gate-control">
               <label class="toggle-line">
-                <span>Relationship</span>
+                <span>{{ t('event.relationship', 'Relationship') }}</span>
                 <input type="checkbox" :checked="hasRelationshipGate" @change="toggleRelationshipGate" />
               </label>
               <input
@@ -106,27 +106,27 @@
                 max="1"
                 step="0.05"
               />
-              <span v-else class="gate-off">Not required</span>
+              <span v-else class="gate-off">{{ t('event.not-required', 'Not required') }}</span>
             </div>
             <div class="gate-control score-control">
               <label class="toggle-line">
-                <span>Conversation score</span>
+                <span>{{ t('event.conversation-score', 'Conversation score') }}</span>
                 <input type="checkbox" :checked="hasScoreGate" @change="toggleScoreGate" />
               </label>
               <template v-if="hasScoreGate">
                 <select v-model="selectedEvent.rule!.score_metric" class="input">
-                  <option value="friendliness">Friendliness</option>
-                  <option value="engagement">Engagement</option>
-                  <option value="creativity">Creativity</option>
-                  <option value="overall">Overall</option>
+                  <option value="friendliness">{{ t('quality.friendliness', 'Friendliness') }}</option>
+                  <option value="engagement">{{ t('quality.engagement', 'Engagement') }}</option>
+                  <option value="creativity">{{ t('quality.creativity', 'Creativity') }}</option>
+                  <option value="overall">{{ t('quality.overall', 'Overall') }}</option>
                 </select>
                 <input v-model.number="selectedEvent.rule!.min_score" class="input" type="number" min="0" max="1" step="0.05" />
               </template>
-              <span v-else class="gate-off">Not required</span>
+              <span v-else class="gate-off">{{ t('event.not-required', 'Not required') }}</span>
             </div>
             <div class="gate-control">
               <label class="toggle-line">
-                <span>Evaluation count</span>
+                <span>{{ t('event.evaluation-count', 'Evaluation count') }}</span>
                 <input type="checkbox" :checked="hasEvaluationGate" @change="toggleEvaluationGate" />
               </label>
               <input
@@ -138,7 +138,7 @@
                 max="1000000"
                 step="1"
               />
-              <span v-else class="gate-off">Not required</span>
+              <span v-else class="gate-off">{{ t('event.not-required', 'Not required') }}</span>
             </div>
           </div>
         </section>
@@ -146,10 +146,10 @@
         <section class="form-section scope-section">
           <div class="section-heading">
             <div>
-              <span class="eyebrow">Scope</span>
-              <h3>Characters</h3>
+              <span class="eyebrow">{{ t('event.scope', 'Scope') }}</span>
+              <h3>{{ t('characters.title', 'Characters') }}</h3>
             </div>
-            <span class="scope-mode">{{ selectedEvent.character_ids?.length ? `${selectedEvent.character_ids.length} selected` : 'Global' }}</span>
+            <span class="scope-mode">{{ selectedEvent.character_ids?.length ? t('event.selected-count', '{count} selected', { count: selectedEvent.character_ids.length }) : t('event.global', 'Global') }}</span>
           </div>
           <div class="character-scopes">
             <label v-for="character in characters" :key="character.id" class="scope-option">
@@ -161,34 +161,34 @@
               <span>{{ character.name }}</span>
               <small>{{ character.id }}</small>
             </label>
-            <span v-if="characters.length === 0" class="gate-off">No project characters loaded</span>
+            <span v-if="characters.length === 0" class="gate-off">{{ t('event.no-characters', 'No project characters loaded') }}</span>
           </div>
         </section>
 
         <section class="form-section actions-section">
           <div class="section-heading">
             <div>
-              <span class="eyebrow">Effects</span>
-              <h3>Actions</h3>
+              <span class="eyebrow">{{ t('event.effects', 'Effects') }}</span>
+              <h3>{{ t('event.actions', 'Actions') }}</h3>
             </div>
             <div class="add-action">
-              <select v-model="newActionType" class="input" aria-label="New action type">
-                <option value="unlock_scene">Unlock scene</option>
-                <option value="unlock_dialogue">Unlock dialogue</option>
-                <option value="unlock_ending">Unlock ending</option>
-                <option value="set_flag">Set flag</option>
+              <select v-model="newActionType" class="input" :aria-label="t('event.new-action-type', 'New action type')">
+                <option value="unlock_scene">{{ t('event.unlock-scene', 'Unlock scene') }}</option>
+                <option value="unlock_dialogue">{{ t('event.unlock-dialogue', 'Unlock dialogue') }}</option>
+                <option value="unlock_ending">{{ t('event.unlock-ending', 'Unlock ending') }}</option>
+                <option value="set_flag">{{ t('event.set-flag', 'Set flag') }}</option>
               </select>
-              <button class="icon-btn" title="Add action" @click="addAction">+</button>
+              <button class="icon-btn" :title="t('event.add-action', 'Add action')" :aria-label="t('event.add-action', 'Add action')" @click="addAction"><Plus :size="16" /></button>
             </div>
           </div>
           <div class="action-list">
             <div v-for="(action, index) in selectedEvent.actions" :key="index" class="action-row">
               <span class="action-index">{{ index + 1 }}</span>
               <select class="input" :value="action.type" @change="changeActionType(index, ($event.target as HTMLSelectElement).value)">
-                <option value="unlock_scene">Unlock scene</option>
-                <option value="unlock_dialogue">Unlock dialogue</option>
-                <option value="unlock_ending">Unlock ending</option>
-                <option value="set_flag">Set flag</option>
+                <option value="unlock_scene">{{ t('event.unlock-scene', 'Unlock scene') }}</option>
+                <option value="unlock_dialogue">{{ t('event.unlock-dialogue', 'Unlock dialogue') }}</option>
+                <option value="unlock_ending">{{ t('event.unlock-ending', 'Unlock ending') }}</option>
+                <option value="set_flag">{{ t('event.set-flag', 'Set flag') }}</option>
               </select>
               <template v-if="action.type === 'unlock_scene'">
                 <input v-model.trim="action.scene_id" class="input mono" list="scene-options" placeholder="scene_id" />
@@ -203,12 +203,12 @@
                 <input v-model.trim="action.flag" class="input mono" placeholder="story.flag" />
                 <label class="boolean-value">
                   <input v-model="action.value" type="checkbox" />
-                  <span>{{ action.value ? 'True' : 'False' }}</span>
+                  <span>{{ action.value ? t('event.true', 'True') : t('event.false', 'False') }}</span>
                 </label>
               </template>
-              <button class="icon-btn danger" title="Remove action" @click="removeAction(index)">x</button>
+              <button class="icon-btn danger" :title="t('event.remove-action', 'Remove action')" :aria-label="t('event.remove-action', 'Remove action')" @click="removeAction(index)"><Trash2 :size="15" /></button>
             </div>
-            <div v-if="!selectedEvent.actions?.length" class="empty-actions">No effects configured</div>
+            <div v-if="!selectedEvent.actions?.length" class="empty-actions">{{ t('event.no-effects', 'No effects configured') }}</div>
           </div>
           <datalist id="scene-options">
             <option v-for="scene in scenes" :key="scene.id" :value="scene.id">{{ scene.name }}</option>
@@ -224,8 +224,8 @@
         <section class="form-section metadata-section">
           <div class="section-heading">
             <div>
-              <span class="eyebrow">Payload</span>
-              <h3>Metadata JSON</h3>
+              <span class="eyebrow">{{ t('event.payload', 'Payload') }}</span>
+              <h3>{{ t('event.metadata-json', 'Metadata JSON') }}</h3>
             </div>
           </div>
           <textarea
@@ -241,24 +241,24 @@
 
       <section v-else class="empty-inspector">
         <span class="empty-mark">EV</span>
-        <h2>No event selected</h2>
-        <button class="btn btn-primary" @click="addEvent">Create event</button>
+        <h2>{{ t('event.no-selection', 'No event selected') }}</h2>
+        <button class="btn btn-primary" @click="addEvent"><Plus :size="15" />{{ t('event.create-event', 'Create event') }}</button>
       </section>
 
       <aside class="validation-panel">
         <div class="validation-heading">
-          <span class="eyebrow">Catalog health</span>
-          <strong :class="issues.length ? 'has-errors' : 'is-valid'">{{ issues.length ? `${issues.length} errors` : 'Valid' }}</strong>
+          <span class="eyebrow">{{ t('event.catalog-health', 'Catalog health') }}</span>
+          <strong :class="issues.length ? 'has-errors' : 'is-valid'">{{ issues.length ? t('authoring.errors-count', '{count} errors', { count: issues.length }) : t('event.valid', 'Valid') }}</strong>
         </div>
         <div class="validation-list">
           <div v-for="issue in issues" :key="issue" class="validation-item error">{{ issue }}</div>
           <div v-for="warning in warnings" :key="warning" class="validation-item warning">{{ warning }}</div>
-          <div v-if="issues.length === 0 && warnings.length === 0" class="validation-empty">Catalog is ready to save.</div>
+          <div v-if="issues.length === 0 && warnings.length === 0" class="validation-empty">{{ t('event.catalog-ready', 'Catalog is ready to save.') }}</div>
         </div>
         <div class="catalog-metrics">
-          <span><b>{{ editableDocument.events.length }}</b> events</span>
-          <span><b>{{ totalActions }}</b> actions</span>
-          <span><b>{{ lockedTargetCount }}</b> gated targets</span>
+          <span><b>{{ editableDocument.events.length }}</b> {{ t('event.events', 'events') }}</span>
+          <span><b>{{ totalActions }}</b> {{ t('event.actions-lower', 'actions') }}</span>
+          <span><b>{{ lockedTargetCount }}</b> {{ t('event.gated-targets', 'gated targets') }}</span>
         </div>
       </aside>
     </main>
@@ -268,6 +268,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
+import { Copy, Plus, RotateCcw, Save, ShieldCheck, Trash2 } from '@lucide/vue'
+import { useI18n } from '../lib/i18n'
 import { invokeCommand } from '../lib/tauri'
 import { loadStoryDialogues, loadStoryEndings, loadStoryScenes } from '../lib/storyContent'
 import {
@@ -285,6 +287,7 @@ interface SceneSummary { id: string; name: string }
 interface DialogueSummary { id: string; title: string; node_count: number }
 interface EndingSummary { id: string; title: string }
 
+const { t } = useI18n()
 const editableDocument = ref<StoryEventDocument>({ schema: STORY_EVENT_CATALOG_SCHEMA_V1, events: [] })
 const catalogFingerprint = ref('')
 const baseline = ref('')
@@ -304,7 +307,7 @@ const saving = ref(false)
 
 const selectedEvent = computed(() => editableDocument.value.events[selectedIndex.value] || null)
 const dirty = computed(() => JSON.stringify(editableDocument.value) !== baseline.value)
-const shortFingerprint = computed(() => catalogFingerprint.value ? catalogFingerprint.value.slice(0, 12) : 'browser draft')
+const shortFingerprint = computed(() => catalogFingerprint.value ? catalogFingerprint.value.slice(0, 12) : t('event.browser-draft', 'browser draft'))
 const eventTypes = computed(() => [...new Set([
   'relationship_milestone',
   'special_dialogue',
@@ -347,7 +350,7 @@ function normalizeDraft(event: StoryEventDraft): StoryEventDraft {
 }
 
 async function loadCatalog(force = false) {
-  if (dirty.value && !force && !window.confirm('Discard unsaved Story Event changes?')) return
+  if (dirty.value && !force && !window.confirm(t('event.confirm.discard', 'Discard unsaved Story Event changes?'))) return
   statusMessage.value = null
   try {
     characters.value = await invokeCommand<CharacterSummary[]>('get_characters', undefined, [
@@ -368,7 +371,7 @@ async function loadCatalog(force = false) {
     catalogFingerprint.value = snapshot.catalog_fingerprint
     baseline.value = JSON.stringify(document)
     selectedIndex.value = document.events.length ? 0 : -1
-    statusMessage.value = `Loaded ${document.events.length} events`
+    statusMessage.value = t('event.status.loaded', 'Loaded {count} events', { count: document.events.length })
     statusKind.value = 'success'
   } catch (error) {
     statusMessage.value = String(error)
@@ -392,7 +395,7 @@ function addEvent() {
   const event: StoryEventDraft = normalizeDraft({
     event_id: uniqueEventId(),
     event_type: 'special_dialogue',
-    description: 'Describe the player-facing story milestone.',
+    description: t('event.new-description', 'Describe the player-facing story milestone.'),
     actions: [],
     rule: { min_relationship: 0.5 },
   })
@@ -409,7 +412,7 @@ function duplicateEvent() {
 }
 
 function deleteEvent() {
-  if (!selectedEvent.value || !window.confirm(`Delete event ${selectedEvent.value.event_id}?`)) return
+  if (!selectedEvent.value || !window.confirm(t('event.confirm.delete', 'Delete event {id}?', { id: selectedEvent.value.event_id }))) return
   editableDocument.value.events.splice(selectedIndex.value, 1)
   selectedIndex.value = Math.min(selectedIndex.value, editableDocument.value.events.length - 1)
 }
@@ -479,7 +482,7 @@ function applyMetadata() {
   if (!selectedEvent.value) return
   try {
     const value = JSON.parse(metadataText.value)
-    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Metadata must be a JSON object')
+    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(t('event.error.metadata-object', 'Metadata must be a JSON object'))
     selectedEvent.value.data = value
     metadataError.value = null
   } catch (error) {
@@ -495,32 +498,32 @@ function validateDocument(): string[] {
   const dialogueIds = new Set(dialogues.value.map((dialogue) => dialogue.id))
   const endingIds = new Set(endings.value.map((ending) => ending.id))
   const characterIds = new Set(characters.value.map((character) => character.id))
-  if (metadataError.value) result.push(`Metadata: ${metadataError.value}`)
-  if (editableDocument.value.events.length > 512) result.push('Catalog exceeds 512 events')
+  if (metadataError.value) result.push(t('event.error.metadata', 'Metadata: {message}', { message: metadataError.value }))
+  if (editableDocument.value.events.length > 512) result.push(t('event.error.catalog-limit', 'Catalog exceeds 512 events'))
   for (const event of editableDocument.value.events) {
-    const label = event.event_id || 'untitled_event'
-    if (!portable.test(event.event_id) || event.event_id.length > 128) result.push(`${label}: invalid event ID`)
-    if (ids.has(event.event_id)) result.push(`${label}: duplicate event ID`)
+    const label = event.event_id || t('event.untitled-id', 'untitled_event')
+    if (!portable.test(event.event_id) || event.event_id.length > 128) result.push(t('event.error.invalid-id', '{label}: invalid event ID', { label }))
+    if (ids.has(event.event_id)) result.push(t('event.error.duplicate-id', '{label}: duplicate event ID', { label }))
     ids.add(event.event_id)
-    if (!portable.test(event.event_type) || event.event_type.length > 128) result.push(`${label}: invalid event type`)
-    if (!event.description?.trim() || event.description.length > 2048) result.push(`${label}: description is required and limited to 2048 characters`)
+    if (!portable.test(event.event_type) || event.event_type.length > 128) result.push(t('event.error.invalid-type', '{label}: invalid event type', { label }))
+    if (!event.description?.trim() || event.description.length > 2048) result.push(t('event.error.description', '{label}: description is required and limited to 2048 characters', { label }))
     const scopes = event.character_ids || []
-    if (new Set(scopes).size !== scopes.length) result.push(`${label}: duplicate character scope`)
-    for (const characterId of scopes) if (!characterIds.has(characterId)) result.push(`${label}: unknown character ${characterId}`)
+    if (new Set(scopes).size !== scopes.length) result.push(t('event.error.duplicate-scope', '{label}: duplicate character scope', { label }))
+    for (const characterId of scopes) if (!characterIds.has(characterId)) result.push(t('event.error.unknown-character', '{label}: unknown character {id}', { label, id: characterId }))
     const rule = event.rule || {}
-    if (rule.min_relationship !== undefined && (!Number.isFinite(rule.min_relationship) || rule.min_relationship < -1 || rule.min_relationship > 1)) result.push(`${label}: relationship threshold must be between -1 and 1`)
-    if ((rule.score_metric === undefined) !== (rule.min_score === undefined)) result.push(`${label}: score metric and threshold must be configured together`)
-    if (rule.min_score !== undefined && (!Number.isFinite(rule.min_score) || rule.min_score < 0 || rule.min_score > 1)) result.push(`${label}: score threshold must be between 0 and 1`)
-    if (rule.min_evaluation_count !== undefined && (!Number.isInteger(rule.min_evaluation_count) || rule.min_evaluation_count < 0 || rule.min_evaluation_count > 1_000_000)) result.push(`${label}: evaluation count is invalid`)
+    if (rule.min_relationship !== undefined && (!Number.isFinite(rule.min_relationship) || rule.min_relationship < -1 || rule.min_relationship > 1)) result.push(t('event.error.relationship-threshold', '{label}: relationship threshold must be between -1 and 1', { label }))
+    if ((rule.score_metric === undefined) !== (rule.min_score === undefined)) result.push(t('event.error.score-pair', '{label}: score metric and threshold must be configured together', { label }))
+    if (rule.min_score !== undefined && (!Number.isFinite(rule.min_score) || rule.min_score < 0 || rule.min_score > 1)) result.push(t('event.error.score-threshold', '{label}: score threshold must be between 0 and 1', { label }))
+    if (rule.min_evaluation_count !== undefined && (!Number.isInteger(rule.min_evaluation_count) || rule.min_evaluation_count < 0 || rule.min_evaluation_count > 1_000_000)) result.push(t('event.error.evaluation-count', '{label}: evaluation count is invalid', { label }))
     const actionKeys = new Set<string>()
     for (const action of event.actions || []) {
       const key = JSON.stringify(action)
-      if (actionKeys.has(key)) result.push(`${label}: duplicate action ${action.type}`)
+      if (actionKeys.has(key)) result.push(t('event.error.duplicate-action', '{label}: duplicate action {type}', { label, type: action.type }))
       actionKeys.add(key)
-      if (action.type === 'unlock_scene' && !sceneIds.has(action.scene_id)) result.push(`${label}: unknown scene ${action.scene_id}`)
-      if (action.type === 'unlock_dialogue' && !dialogueIds.has(action.dialogue_id)) result.push(`${label}: unknown dialogue ${action.dialogue_id}`)
-      if (action.type === 'unlock_ending' && !endingIds.has(action.ending_id)) result.push(`${label}: unknown ending ${action.ending_id}`)
-      if (action.type === 'set_flag' && !portable.test(action.flag)) result.push(`${label}: invalid flag name`)
+      if (action.type === 'unlock_scene' && !sceneIds.has(action.scene_id)) result.push(t('event.error.unknown-scene', '{label}: unknown scene {id}', { label, id: action.scene_id }))
+      if (action.type === 'unlock_dialogue' && !dialogueIds.has(action.dialogue_id)) result.push(t('event.error.unknown-dialogue', '{label}: unknown dialogue {id}', { label, id: action.dialogue_id }))
+      if (action.type === 'unlock_ending' && !endingIds.has(action.ending_id)) result.push(t('event.error.unknown-ending', '{label}: unknown ending {id}', { label, id: action.ending_id }))
+      if (action.type === 'set_flag' && !portable.test(action.flag)) result.push(t('event.error.invalid-flag', '{label}: invalid flag name', { label }))
     }
   }
   return result
@@ -530,9 +533,9 @@ function documentWarnings(): string[] {
   const result: string[] = []
   for (const event of editableDocument.value.events) {
     const rule = event.rule || {}
-    if (!(event.actions?.length)) result.push(`${event.event_id}: no effects configured`)
+    if (!(event.actions?.length)) result.push(t('event.warning.no-effects', '{id}: no effects configured', { id: event.event_id }))
     if (rule.min_relationship === undefined && rule.min_score === undefined && rule.min_evaluation_count === undefined) {
-      result.push(`${event.event_id}: no trigger gate; eligible immediately`)
+      result.push(t('event.warning.no-trigger', '{id}: no trigger gate; eligible immediately', { id: event.event_id }))
     }
   }
   return result
@@ -540,7 +543,7 @@ function documentWarnings(): string[] {
 
 function runValidation() {
   applyMetadata()
-  statusMessage.value = issues.value.length ? issues.value[0] : `Validation passed with ${warnings.value.length} warnings`
+  statusMessage.value = issues.value.length ? issues.value[0] : t('event.status.validation-passed', 'Validation passed with {count} warnings', { count: warnings.value.length })
   statusKind.value = issues.value.length ? 'error' : 'success'
 }
 
@@ -559,7 +562,7 @@ async function saveCatalog() {
     catalogFingerprint.value = snapshot.catalog_fingerprint
     baseline.value = JSON.stringify(document)
     selectedIndex.value = Math.min(selectedIndex.value, document.events.length - 1)
-    statusMessage.value = `Saved ${snapshot.event_count} events`
+    statusMessage.value = t('event.status.saved', 'Saved {count} events', { count: snapshot.event_count })
     statusKind.value = 'success'
   } catch (error) {
     statusMessage.value = String(error)
@@ -575,7 +578,7 @@ function beforeUnload(event: BeforeUnloadEvent) {
   event.returnValue = ''
 }
 
-onBeforeRouteLeave(() => !dirty.value || window.confirm('Leave without saving Story Event changes?'))
+onBeforeRouteLeave(() => !dirty.value || window.confirm(t('event.confirm.leave', 'Leave without saving Story Event changes?')))
 onMounted(() => {
   window.addEventListener('beforeunload', beforeUnload)
   loadCatalog(true)

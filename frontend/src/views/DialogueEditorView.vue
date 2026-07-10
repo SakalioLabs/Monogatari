@@ -2,39 +2,39 @@
   <div class="dialogue-editor">
     <header class="editor-header">
       <div class="header-copy">
-        <span class="eyebrow">Narrative Design</span>
-        <h1>Dialogue Graph</h1>
-        <p>
-          {{ snapshot?.dialogue_count || 0 }} dialogues ·
-          {{ snapshot?.node_count || 0 }} nodes ·
-          {{ snapshot?.choice_count || 0 }} choices
-        </p>
+        <span class="eyebrow">{{ t('dialogue.editor-eyebrow', 'Narrative Design') }}</span>
+        <h1>{{ t('dialogue.graph-title', 'Dialogue Graph') }}</h1>
+        <p>{{ t('dialogue.catalog-summary', '{dialogues} dialogues · {nodes} nodes · {choices} choices', {
+          dialogues: snapshot?.dialogue_count || 0,
+          nodes: snapshot?.node_count || 0,
+          choices: snapshot?.choice_count || 0,
+        }) }}</p>
       </div>
       <div class="header-actions">
-        <button class="btn btn-secondary btn-sm" :disabled="busy" @click="reloadCatalog">Reload</button>
-        <button class="btn btn-secondary btn-sm" :disabled="busy" @click="createDialogue">New</button>
-        <button class="btn btn-secondary btn-sm" :disabled="!draft || busy" @click="duplicateDialogue">Duplicate</button>
-        <button class="btn btn-secondary btn-sm" :disabled="!canPreview || busy" @click="previewDialogue">Story Mode</button>
+        <button class="btn btn-secondary btn-sm" :disabled="busy" @click="createDialogue"><Plus :size="14" />{{ t('authoring.new', 'New') }}</button>
+        <button class="btn btn-secondary btn-sm" :disabled="!draft || busy" @click="duplicateDialogue"><Copy :size="14" />{{ t('authoring.duplicate', 'Duplicate') }}</button>
+        <button class="btn btn-secondary btn-sm" :disabled="busy" @click="reloadCatalog"><RotateCcw :size="14" />{{ t('authoring.reload', 'Reload') }}</button>
+        <button class="btn btn-secondary btn-sm" :disabled="!canPreview || busy" @click="previewDialogue"><Play :size="14" />{{ t('authoring.story-mode', 'Story Mode') }}</button>
         <button class="btn btn-primary btn-sm" :disabled="!canSave || busy" @click="saveDialogue">
-          {{ busy ? 'Working' : 'Save' }}
+          <Save :size="14" />{{ busy ? t('authoring.working', 'Working') : t('common.save', 'Save') }}
         </button>
       </div>
     </header>
 
     <div class="catalog-strip">
-      <span><strong>{{ filteredDialogues.length }}</strong> visible</span>
-      <span><strong>{{ snapshot?.llm_node_count || 0 }}</strong> LLM nodes</span>
-      <span><strong>{{ gatedCount }}</strong> gated</span>
-      <span><strong>{{ snapshot?.catalog_fingerprint.slice(0, 12) || 'unavailable' }}</strong> catalog</span>
-      <span v-if="dirty" class="dirty-indicator">Unsaved changes</span>
+      <span><strong>{{ filteredDialogues.length }}</strong> {{ t('authoring.visible', 'visible') }}</span>
+      <span><strong>{{ snapshot?.llm_node_count || 0 }}</strong> {{ t('dialogue.llm-nodes', 'LLM nodes') }}</span>
+      <span><strong>{{ gatedCount }}</strong> {{ t('authoring.gated', 'gated') }}</span>
+      <span><strong>{{ snapshot?.catalog_fingerprint.slice(0, 12) || t('authoring.unavailable', 'unavailable') }}</strong> {{ t('authoring.catalog', 'catalog') }}</span>
+      <span v-if="dirty" class="dirty-indicator">{{ t('authoring.unsaved-changes', 'Unsaved changes') }}</span>
     </div>
 
     <main class="editor-workspace">
-      <aside class="dialogue-list" aria-label="Dialogue catalog">
+      <aside class="dialogue-list" :aria-label="t('dialogue.catalog-aria', 'Dialogue catalog')">
         <div class="list-toolbar">
           <label class="search-field">
-            <span class="sr-only">Search dialogues</span>
-            <input v-model.trim="search" class="input" type="search" placeholder="Search dialogues" />
+            <span class="sr-only">{{ t('dialogue.search', 'Search dialogues') }}</span>
+            <input v-model.trim="search" class="input" type="search" :placeholder="t('dialogue.search', 'Search dialogues')" />
           </label>
           <span>{{ filteredDialogues.length }}</span>
         </div>
@@ -51,12 +51,12 @@
               <strong>{{ dialogue.title }}</strong>
               <small>{{ dialogue.id }}</small>
               <span>
-                {{ Object.keys(dialogue.nodes).length }} nodes ·
-                {{ dialogue.access.gated ? 'Gated' : 'Open' }}
+                {{ t('dialogue.nodes-count', '{count} nodes', { count: Object.keys(dialogue.nodes).length }) }} ·
+                {{ dialogue.access.gated ? t('authoring.gated-label', 'Gated') : t('authoring.open', 'Open') }}
               </span>
             </span>
           </button>
-          <div v-if="filteredDialogues.length === 0" class="empty-list">No dialogues</div>
+          <div v-if="filteredDialogues.length === 0" class="empty-list">{{ t('dialogue.no-dialogues', 'No dialogues') }}</div>
         </div>
       </aside>
 
@@ -64,28 +64,28 @@
         <div class="graph-header">
           <div class="graph-title">
             <span class="eyebrow">{{ sourcePath }}</span>
-            <h2>{{ draft.title || 'Untitled dialogue' }}</h2>
-            <p>{{ draft.description || 'No description' }}</p>
+            <h2>{{ draft.title || t('dialogue.untitled', 'Untitled dialogue') }}</h2>
+            <p>{{ draft.description || t('authoring.no-description', 'No description') }}</p>
           </div>
           <div class="graph-actions">
             <span :class="validationIssues.length ? 'graph-state invalid' : 'graph-state valid'">
-              {{ validationIssues.length ? `${validationIssues.length} issues` : `${nodeOrder.length} reachable` }}
+              {{ validationIssues.length ? t('authoring.issues-count', '{count} issues', { count: validationIssues.length }) : t('dialogue.reachable-count', '{count} reachable', { count: nodeOrder.length }) }}
             </span>
-            <button class="btn btn-secondary btn-sm" @click="addNode">Add Node</button>
+            <button class="btn btn-secondary btn-sm" @click="addNode"><Plus :size="14" />{{ t('dialogue.add-node', 'Add Node') }}</button>
           </div>
         </div>
 
         <div v-if="validationIssues.length" class="validation-banner error" role="alert">
-          <strong>{{ validationIssues.length }} blocking issue{{ validationIssues.length === 1 ? '' : 's' }}</strong>
+          <strong>{{ t('authoring.blocking-issues', '{count} blocking issues', { count: validationIssues.length }) }}</strong>
           <span>{{ validationIssues[0] }}</span>
         </div>
         <div v-else-if="warnings.length" class="validation-banner warning">
-          <strong>{{ warnings.length }} warning{{ warnings.length === 1 ? '' : 's' }}</strong>
+          <strong>{{ t('authoring.warnings-count', '{count} warnings', { count: warnings.length }) }}</strong>
           <span>{{ warnings[0] }}</span>
         </div>
         <div v-else class="validation-banner valid">
-          <strong>Graph valid</strong>
-          <span>All nodes and transition targets are reachable.</span>
+          <strong>{{ t('dialogue.graph-valid', 'Graph valid') }}</strong>
+          <span>{{ t('dialogue.graph-valid-copy', 'All nodes and transition targets are reachable.') }}</span>
         </div>
 
         <div class="graph-scroll">
@@ -105,21 +105,21 @@
             <span class="node-content">
               <span class="node-heading">
                 <b>{{ nodeId }}</b>
-                <em v-if="draft.start_node_id === nodeId">Start</em>
+                <em v-if="draft.start_node_id === nodeId">{{ t('dialogue.start', 'Start') }}</em>
                 <em v-if="draft.nodes[nodeId].use_llm" class="llm">LLM</em>
-                <em v-if="flowMode(draft.nodes[nodeId]) === 'end'" class="end">End</em>
-                <small>{{ draft.nodes[nodeId].speaker_id || 'Narrator' }}</small>
+                <em v-if="flowMode(draft.nodes[nodeId]) === 'end'" class="end">{{ t('dialogue.end', 'End') }}</em>
+                <small>{{ draft.nodes[nodeId].speaker_id || t('dialogue.narrator', 'Narrator') }}</small>
               </span>
-              <span class="node-text">{{ truncate(draft.nodes[nodeId].text, 150) || 'Empty node' }}</span>
+              <span class="node-text">{{ truncate(draft.nodes[nodeId].text, 150) || t('dialogue.empty-node', 'Empty node') }}</span>
               <span class="node-flow">
                 <template v-if="draft.nodes[nodeId].next_node_id">
-                  Next · {{ draft.nodes[nodeId].next_node_id }}
+                  {{ t('dialogue.next-label', 'Next') }} · {{ draft.nodes[nodeId].next_node_id }}
                 </template>
                 <template v-else-if="draft.nodes[nodeId].choices.length">
-                  {{ draft.nodes[nodeId].choices.length }} choices ·
-                  {{ draft.nodes[nodeId].choices.map((choice) => choice.next_node_id || 'Missing').join(', ') }}
+                  {{ t('dialogue.choices-count', '{count} choices', { count: draft.nodes[nodeId].choices.length }) }} ·
+                  {{ draft.nodes[nodeId].choices.map((choice) => choice.next_node_id || t('authoring.missing', 'Missing')).join(', ') }}
                 </template>
-                <template v-else>No outgoing transition</template>
+                <template v-else>{{ t('dialogue.no-transition', 'No outgoing transition') }}</template>
               </span>
             </span>
           </button>
@@ -128,66 +128,66 @@
         <footer class="graph-footer">
           <div>
             <strong>{{ selectedEntry?.access.unlock_event_ids.length || 0 }}</strong>
-            <span>unlock events</span>
+            <span>{{ t('authoring.unlock-events', 'unlock events') }}</span>
           </div>
           <div>
             <strong>{{ terminalCount }}</strong>
-            <span>terminal nodes</span>
+            <span>{{ t('dialogue.terminal-nodes', 'terminal nodes') }}</span>
           </div>
           <div>
-            <strong>{{ selectedEntry?.content_fingerprint.slice(0, 10) || 'draft' }}</strong>
-            <span>content</span>
+            <strong>{{ selectedEntry?.content_fingerprint.slice(0, 10) || t('authoring.draft', 'draft') }}</strong>
+            <span>{{ t('dialogue.content', 'content') }}</span>
           </div>
         </footer>
       </section>
 
       <section v-else class="empty-editor">
         <span class="empty-mark">DL</span>
-        <h2>No dialogue selected</h2>
+        <h2>{{ t('dialogue.no-selection', 'No dialogue selected') }}</h2>
       </section>
 
-      <aside v-if="draft" class="property-panel" aria-label="Dialogue properties">
-        <div class="property-tabs" role="tablist" aria-label="Property scope">
-          <button :class="{ active: propertyTab === 'node' }" @click="propertyTab = 'node'">Node</button>
-          <button :class="{ active: propertyTab === 'script' }" @click="propertyTab = 'script'">Script</button>
+      <aside v-if="draft" class="property-panel" :aria-label="t('dialogue.properties-aria', 'Dialogue properties')">
+        <div class="property-tabs" role="tablist" :aria-label="t('dialogue.property-scope', 'Property scope')">
+          <button :class="{ active: propertyTab === 'node' }" @click="propertyTab = 'node'">{{ t('dialogue.node', 'Node') }}</button>
+          <button :class="{ active: propertyTab === 'script' }" @click="propertyTab = 'script'">{{ t('dialogue.script-tab', 'Script') }}</button>
         </div>
 
         <div v-if="propertyTab === 'script'" class="property-scroll">
           <section class="property-section">
-            <span class="eyebrow">Identity</span>
+            <span class="eyebrow">{{ t('authoring.identity', 'Identity') }}</span>
             <label class="form-field">
-              <span>Dialogue ID</span>
+              <span>{{ t('dialogue.id', 'Dialogue ID') }}</span>
               <input v-model.trim="draft.id" class="input mono" :disabled="selectedDialogueId !== null" maxlength="128" />
             </label>
             <label class="form-field">
-              <span>Title</span>
+              <span>{{ t('ending.title-label', 'Title') }}</span>
               <input v-model="draft.title" class="input" maxlength="256" />
             </label>
             <label class="form-field">
-              <span>Description</span>
+              <span>{{ t('common.description', 'Description') }}</span>
               <textarea v-model="draft.description" class="input" rows="4" maxlength="2048"></textarea>
             </label>
           </section>
 
           <section class="property-section">
-            <span class="eyebrow">Graph</span>
+            <span class="eyebrow">{{ t('dialogue.graph', 'Graph') }}</span>
             <label class="form-field">
-              <span>Start node</span>
+              <span>{{ t('ending.start-node', 'Start node') }}</span>
               <select v-model="draft.start_node_id" class="input">
                 <option v-for="nodeId in Object.keys(draft.nodes)" :key="nodeId" :value="nodeId">{{ nodeId }}</option>
               </select>
             </label>
             <label class="form-field">
-              <span>Variables JSON</span>
+              <span>{{ t('dialogue.variables-json', 'Variables JSON') }}</span>
               <textarea v-model="variablesText" class="input mono variables-input" rows="9" spellcheck="false"></textarea>
-              <small>{{ parsedVariables ? `${Object.keys(parsedVariables).length} variables` : 'Invalid JSON object' }}</small>
+              <small>{{ parsedVariables ? t('dialogue.variables-count', '{count} variables', { count: Object.keys(parsedVariables).length }) : t('dialogue.invalid-json', 'Invalid JSON object') }}</small>
             </label>
           </section>
 
           <section class="property-section access-section">
-            <span class="eyebrow">Runtime Access</span>
-            <div class="metric-row"><span>Status</span><strong>{{ accessStatus }}</strong></div>
-            <div class="metric-row"><span>Events</span><strong>{{ selectedEntry?.access.unlock_event_ids.length || 0 }}</strong></div>
+            <span class="eyebrow">{{ t('authoring.runtime-access', 'Runtime Access') }}</span>
+            <div class="metric-row"><span>{{ t('common.status', 'Status') }}</span><strong>{{ accessStatus }}</strong></div>
+            <div class="metric-row"><span>{{ t('dialogue.events', 'Events') }}</span><strong>{{ selectedEntry?.access.unlock_event_ids.length || 0 }}</strong></div>
             <p v-if="selectedEntry?.access.unlock_event_ids.length">{{ selectedEntry.access.unlock_event_ids.join(', ') }}</p>
           </section>
         </div>
@@ -195,56 +195,56 @@
         <div v-else-if="selectedNode" class="property-scroll">
           <section class="property-section identity-section">
             <div class="section-heading">
-              <span class="eyebrow">Node Identity</span>
-              <button class="text-button" :disabled="draft.start_node_id === selectedNodeId" @click="setStartNode">Set Start</button>
+              <span class="eyebrow">{{ t('dialogue.node-identity', 'Node Identity') }}</span>
+              <button class="text-button" :disabled="draft.start_node_id === selectedNodeId" @click="setStartNode">{{ t('dialogue.set-start', 'Set Start') }}</button>
             </div>
             <div class="rename-row">
               <input v-model.trim="nodeIdInput" class="input mono" maxlength="128" />
-              <button class="btn btn-secondary btn-sm" :disabled="nodeIdInput === selectedNodeId" @click="renameNode">Rename</button>
+              <button class="btn btn-secondary btn-sm" :disabled="nodeIdInput === selectedNodeId" @click="renameNode">{{ t('dialogue.rename', 'Rename') }}</button>
             </div>
             <div class="field-grid">
               <label class="form-field">
-                <span>Speaker</span>
+                <span>{{ t('dialogue.speaker', 'Speaker') }}</span>
                 <select v-model="selectedNode.speaker_id" class="input">
-                  <option :value="null">Narrator</option>
+                  <option :value="null">{{ t('dialogue.narrator', 'Narrator') }}</option>
                   <option v-for="character in characters" :key="character.id" :value="character.id">
                     {{ character.name }} · {{ character.id }}
                   </option>
                 </select>
               </label>
               <label class="form-field">
-                <span>Emotion</span>
+                <span>{{ t('dialogue.emotion', 'Emotion') }}</span>
                 <input v-model="selectedNode.emotion" class="input" maxlength="64" placeholder="neutral" />
               </label>
             </div>
             <label class="form-field">
-              <span>Dialogue text</span>
+              <span>{{ t('dialogue.dialogue-text', 'Dialogue text') }}</span>
               <textarea v-model="selectedNode.text" class="input node-textarea" rows="6" maxlength="16384"></textarea>
               <small>{{ selectedNode.text.length }} / 16384</small>
             </label>
           </section>
 
           <section class="property-section">
-            <span class="eyebrow">Flow</span>
-            <div class="segmented-control" role="group" aria-label="Node flow mode">
-              <button :class="{ active: flowMode(selectedNode) === 'linear' }" @click="setFlowMode('linear')">Linear</button>
-              <button :class="{ active: flowMode(selectedNode) === 'choices' }" @click="setFlowMode('choices')">Choices</button>
-              <button :class="{ active: flowMode(selectedNode) === 'end' }" @click="setFlowMode('end')">End</button>
+            <span class="eyebrow">{{ t('dialogue.flow', 'Flow') }}</span>
+            <div class="segmented-control" role="group" :aria-label="t('dialogue.flow-mode', 'Node flow mode')">
+              <button :class="{ active: flowMode(selectedNode) === 'linear' }" @click="setFlowMode('linear')">{{ t('dialogue.linear', 'Linear') }}</button>
+              <button :class="{ active: flowMode(selectedNode) === 'choices' }" @click="setFlowMode('choices')">{{ t('dialogue.choices', 'Choices') }}</button>
+              <button :class="{ active: flowMode(selectedNode) === 'end' }" @click="setFlowMode('end')">{{ t('dialogue.end', 'End') }}</button>
             </div>
             <label v-if="flowMode(selectedNode) === 'linear'" class="form-field">
-              <span>Next node</span>
+              <span>{{ t('dialogue.next', 'Next node') }}</span>
               <select v-model="selectedNode.next_node_id" class="input">
-                <option :value="null">Select target</option>
+                <option :value="null">{{ t('dialogue.select-target', 'Select target') }}</option>
                 <option v-for="nodeId in targetNodeIds" :key="nodeId" :value="nodeId">{{ nodeId }}</option>
               </select>
             </label>
             <template v-else-if="flowMode(selectedNode) === 'end'">
               <label class="check-field">
                 <input v-model="selectedNode.is_ending" type="checkbox" />
-                <span>Mark as authored ending</span>
+                <span>{{ t('dialogue.mark-ending', 'Mark as authored ending') }}</span>
               </label>
               <label v-if="selectedNode.is_ending" class="form-field">
-                <span>Ending type</span>
+                <span>{{ t('dialogue.ending-type', 'Ending type') }}</span>
                 <input v-model="selectedNode.ending_type" class="input" maxlength="64" placeholder="good" />
               </label>
             </template>
@@ -252,31 +252,31 @@
 
           <section v-if="flowMode(selectedNode) === 'choices'" class="property-section choices-section">
             <div class="section-heading">
-              <span class="eyebrow">Choices · {{ selectedNode.choices.length }}</span>
-              <button class="text-button" :disabled="selectedNode.choices.length >= 32" @click="addChoice">Add Choice</button>
+              <span class="eyebrow">{{ t('dialogue.choices-heading', 'Choices · {count}', { count: selectedNode.choices.length }) }}</span>
+              <button class="text-button" :disabled="selectedNode.choices.length >= 32" @click="addChoice">{{ t('dialogue.add-choice', 'Add Choice') }}</button>
             </div>
             <article v-for="(choice, choiceIndex) in selectedNode.choices" :key="choiceIndex" class="choice-editor">
               <div class="choice-heading">
-                <strong>Choice {{ choiceIndex + 1 }}</strong>
-                <button class="text-button danger" @click="removeChoice(choiceIndex)">Remove</button>
+                <strong>{{ t('dialogue.choice-number', 'Choice {count}', { count: choiceIndex + 1 }) }}</strong>
+                <button class="text-button danger" @click="removeChoice(choiceIndex)">{{ t('dialogue.remove', 'Remove') }}</button>
               </div>
               <label class="form-field">
-                <span>Text</span>
+                <span>{{ t('dialogue.text', 'Text') }}</span>
                 <textarea v-model="choice.text" class="input" rows="3" maxlength="2048"></textarea>
               </label>
               <label class="form-field">
-                <span>Target node</span>
+                <span>{{ t('dialogue.target-node', 'Target node') }}</span>
                 <select v-model="choice.next_node_id" class="input">
-                  <option value="">Select target</option>
+                  <option value="">{{ t('dialogue.select-target', 'Select target') }}</option>
                   <option v-for="nodeId in targetNodeIds" :key="nodeId" :value="nodeId">{{ nodeId }}</option>
                 </select>
               </label>
               <label class="form-field">
-                <span>Condition</span>
+                <span>{{ t('dialogue.condition', 'Condition') }}</span>
                 <input v-model="choice.condition" class="input mono" maxlength="2000" placeholder="hasFlag(&quot;route_open&quot;)" />
               </label>
               <div class="relationship-editor">
-                <span class="field-label">Relationship changes</span>
+                <span class="field-label">{{ t('dialogue.relationship-changes', 'Relationship changes') }}</span>
                 <div
                   v-for="([characterId, delta]) in relationshipEntries(choice)"
                   :key="characterId"
@@ -294,55 +294,55 @@
                     step="0.05"
                     @input="setRelationshipDelta(choice, characterId, $event)"
                   />
-                  <button class="remove-symbol" title="Remove relationship change" @click="removeRelationship(choice, characterId)">×</button>
+                  <button class="remove-symbol" :title="t('dialogue.remove-relationship', 'Remove relationship change')" @click="removeRelationship(choice, characterId)"><Trash2 :size="13" /></button>
                 </div>
                 <button class="btn btn-secondary btn-sm" :disabled="availableRelationshipCharacters(choice).length === 0" @click="addRelationship(choice)">
-                  Add Relationship
+                  {{ t('dialogue.add-relationship', 'Add Relationship') }}
                 </button>
               </div>
             </article>
           </section>
 
           <section class="property-section">
-            <span class="eyebrow">Logic</span>
+            <span class="eyebrow">{{ t('dialogue.logic', 'Logic') }}</span>
             <label class="form-field">
-              <span>Node condition</span>
+              <span>{{ t('dialogue.node-condition', 'Node condition') }}</span>
               <input v-model="selectedNode.condition" class="input mono" maxlength="2000" placeholder="hasFlag(&quot;chapter_open&quot;)" />
             </label>
             <label class="form-field">
-              <span>Entry script</span>
+              <span>{{ t('dialogue.entry-script', 'Entry script') }}</span>
               <textarea v-model="selectedNode.script" class="input mono" rows="3" maxlength="20000" placeholder="setFlag('visited', true)"></textarea>
             </label>
           </section>
 
           <section class="property-section">
-            <span class="eyebrow">LLM Generation</span>
+            <span class="eyebrow">{{ t('dialogue.llm-generation', 'LLM Generation') }}</span>
             <label class="check-field">
               <input v-model="selectedNode.use_llm" type="checkbox" />
-              <span>Generate node text at runtime</span>
+              <span>{{ t('dialogue.generate-runtime', 'Generate node text at runtime') }}</span>
             </label>
             <template v-if="selectedNode.use_llm">
               <label class="form-field">
-                <span>Prompt</span>
+                <span>{{ t('dialogue.prompt', 'Prompt') }}</span>
                 <textarea v-model="selectedNode.llm_prompt" class="input" rows="4" maxlength="20000"></textarea>
               </label>
               <label class="form-field">
-                <span>System prompt override</span>
+                <span>{{ t('dialogue.system-prompt', 'System prompt override') }}</span>
                 <textarea v-model="selectedNode.llm_system_prompt" class="input" rows="4" maxlength="20000"></textarea>
               </label>
             </template>
           </section>
 
           <section class="property-section danger-section">
-            <button class="btn btn-danger btn-sm" :disabled="Object.keys(draft.nodes).length <= 1" @click="deleteNode">Delete Node</button>
+            <button class="btn btn-danger btn-sm" :disabled="Object.keys(draft.nodes).length <= 1" @click="deleteNode"><Trash2 :size="14" />{{ t('dialogue.delete-node', 'Delete Node') }}</button>
           </section>
         </div>
 
-        <div v-else class="empty-properties">Select a node</div>
+        <div v-else class="empty-properties">{{ t('dialogue.select-node', 'Select a node') }}</div>
 
         <footer class="property-footer">
-          <button class="btn btn-danger btn-sm" :disabled="!selectedEntry || busy" @click="removeDialogue">Delete Dialogue</button>
-          <button class="btn btn-primary" :disabled="!canSave || busy" @click="saveDialogue">Save Dialogue</button>
+          <button class="btn btn-danger btn-sm" :disabled="!selectedEntry || busy" @click="removeDialogue"><Trash2 :size="14" />{{ t('dialogue.delete-dialogue', 'Delete Dialogue') }}</button>
+          <button class="btn btn-primary" :disabled="!canSave || busy" @click="saveDialogue"><Save :size="15" />{{ t('dialogue.save-dialogue', 'Save Dialogue') }}</button>
         </footer>
       </aside>
     </main>
@@ -359,6 +359,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
+import { Copy, Play, Plus, RotateCcw, Save, Trash2 } from '@lucide/vue'
 import {
   deleteDialogueDefinition,
   loadDialogueAuthoringCatalog,
@@ -372,6 +373,7 @@ import {
   type DialogueNodeDefinition,
 } from '../lib/dialogueAuthoring'
 import { hasTauriRuntime, invokeCommand } from '../lib/tauri'
+import { useI18n } from '../lib/i18n'
 
 interface CharacterInfo {
   id: string
@@ -379,6 +381,7 @@ interface CharacterInfo {
 }
 
 const router = useRouter()
+const { t } = useI18n()
 const snapshot = ref<DialogueAuthoringCatalogSnapshot | null>(null)
 const draft = ref<DialogueDefinition | null>(null)
 const selectedDialogueId = ref<string | null>(null)
@@ -419,12 +422,12 @@ const parsedVariables = computed<Record<string, unknown> | null>(() => {
   }
 })
 const validationIssues = computed(() => {
-  if (!draft.value) return ['No dialogue selected.']
-  if (!parsedVariables.value) return ['Variables must be a valid JSON object.']
+  if (!draft.value) return [t('dialogue.error.no-selection', 'No dialogue selected.')]
+  if (!parsedVariables.value) return [t('dialogue.error.variables-json', 'Variables must be a valid JSON object.')]
   const candidate = { ...draft.value, variables: parsedVariables.value }
   const issues = validateDialogueDefinition(candidate, characters.value.map((character) => character.id))
   if (!selectedDialogueId.value && snapshot.value?.dialogues.some((dialogue) => dialogue.id === candidate.id.trim())) {
-    issues.push(`Dialogue "${candidate.id.trim()}" already exists.`)
+    issues.push(t('dialogue.error.already-exists', 'Dialogue "{id}" already exists.', { id: candidate.id.trim() }))
   }
   return issues
 })
@@ -434,7 +437,7 @@ const warnings = computed(() => {
     .filter(([, node]) => !node.next_node_id && node.choices.length === 0 && !node.is_ending)
     .map(([nodeId]) => nodeId)
   return implicitTerminals.length > 0
-    ? [`Terminal nodes without an ending marker: ${implicitTerminals.join(', ')}.`]
+    ? [t('dialogue.warning.implicit-terminals', 'Terminal nodes without an ending marker: {nodes}.', { nodes: implicitTerminals.join(', ') })]
     : []
 })
 const nodeOrder = computed(() => {
@@ -461,9 +464,9 @@ const gatedCount = computed(() => (snapshot.value?.dialogues || []).filter((dial
 const sourcePath = computed(() => selectedEntry.value?.source_path || `dialogue/${draft.value?.id || 'new'}.json`)
 const accessStatus = computed(() => {
   const access = selectedEntry.value?.access
-  if (!access) return 'Draft'
-  if (!access.gated) return 'Open'
-  return access.unlocked ? 'Unlocked' : 'Locked'
+  if (!access) return t('authoring.draft', 'Draft')
+  if (!access.gated) return t('authoring.open', 'Open')
+  return access.unlocked ? t('authoring.unlocked', 'Unlocked') : t('authoring.locked', 'Locked')
 })
 const canSave = computed(() => Boolean(draft.value && snapshot.value && dirty.value && validationIssues.value.length === 0))
 const canPreview = computed(() => Boolean(selectedDialogueId.value && !dirty.value && validationIssues.value.length === 0))
@@ -492,7 +495,7 @@ function setDraft(definition: DialogueDefinition, dialogueId: string | null, isS
 }
 
 function confirmDiscard(): boolean {
-  return !dirty.value || window.confirm('Discard unsaved dialogue changes?')
+  return !dirty.value || window.confirm(t('dialogue.confirm.discard', 'Discard unsaved dialogue changes?'))
 }
 
 function selectDialogue(entry: DialogueAuthoringEntry) {
@@ -520,10 +523,10 @@ function createDialogue() {
   const speaker = characters.value[0]?.id || null
   setDraft({
     id: nextDialogueId(),
-    title: 'New Dialogue',
+    title: t('dialogue.new-dialogue', 'New Dialogue'),
     description: null,
     start_node_id: 'start',
-    nodes: { start: emptyNode(speaker, 'New dialogue line.') },
+    nodes: { start: emptyNode(speaker, t('dialogue.new-line', 'New dialogue line.')) },
     variables: {},
   }, null, false)
 }
@@ -532,7 +535,7 @@ function duplicateDialogue() {
   if (!draft.value || !confirmDiscard()) return
   const copy = cloneDefinition(draft.value)
   copy.id = nextDialogueId(`${draft.value.id}_copy`)
-  copy.title = `${draft.value.title} Copy`
+  copy.title = t('authoring.copy-name', '{name} Copy', { name: draft.value.title })
   setDraft(copy, null, false)
 }
 
@@ -573,11 +576,11 @@ function renameNode() {
   const before = selectedNodeId.value
   const after = nodeIdInput.value.trim()
   if (!/^[A-Za-z0-9_.-]{1,128}$/.test(after)) {
-    showNotice('error', 'Rename rejected', 'Node ID must be a portable 1-128 character id.')
+    showNotice('error', t('dialogue.notice.rename-rejected', 'Rename rejected'), t('dialogue.error.node-id', 'Node ID must be a portable 1-128 character ID.'))
     return
   }
   if (after !== before && draft.value.nodes[after]) {
-    showNotice('error', 'Rename rejected', `Node "${after}" already exists.`)
+    showNotice('error', t('dialogue.notice.rename-rejected', 'Rename rejected'), t('dialogue.error.node-exists', 'Node "{id}" already exists.', { id: after }))
     return
   }
   if (after === before) return
@@ -603,11 +606,11 @@ function deleteNode() {
     if (node.choices.some((choice) => choice.next_node_id === nodeId)) references.push(sourceId)
   }
   if (references.length > 0) {
-    showNotice('error', 'Node is referenced', `Remove transitions from: ${[...new Set(references)].join(', ')}.`)
+    showNotice('error', t('dialogue.notice.node-referenced', 'Node is referenced'), t('dialogue.error.remove-transitions', 'Remove transitions from: {nodes}.', { nodes: [...new Set(references)].join(', ') }))
     return
   }
   if (draft.value.start_node_id === nodeId) {
-    showNotice('error', 'Start node protected', 'Choose another start node before deleting this node.')
+    showNotice('error', t('dialogue.notice.start-protected', 'Start node protected'), t('dialogue.error.choose-start', 'Choose another start node before deleting this node.'))
     return
   }
   delete draft.value.nodes[nodeId]
@@ -649,7 +652,7 @@ function addChoice() {
   selectedNode.value.is_ending = false
   selectedNode.value.ending_type = null
   selectedNode.value.choices.push({
-    text: 'New choice',
+    text: t('dialogue.new-choice', 'New choice'),
     next_node_id: targetNodeIds.value.find((nodeId) => nodeId !== selectedNodeId.value) || '',
     relationship_changes: {},
     condition: null,
@@ -724,7 +727,7 @@ async function loadCatalog(preferredId?: string | null) {
       baseline.value = ''
     }
   } catch (error) {
-    showNotice('error', 'Catalog unavailable', String(error))
+    showNotice('error', t('authoring.catalog-unavailable', 'Catalog unavailable'), String(error))
   } finally {
     busy.value = false
   }
@@ -733,7 +736,7 @@ async function loadCatalog(preferredId?: string | null) {
 async function reloadCatalog() {
   if (!confirmDiscard()) return
   await loadCatalog(selectedDialogueId.value)
-  showNotice('success', 'Catalog reloaded', 'Dialogue graphs and character references are current.')
+  showNotice('success', t('authoring.catalog-reloaded', 'Catalog reloaded'), t('dialogue.notice.reloaded', 'Dialogue graphs and character references are current.'))
 }
 
 async function saveDialogue() {
@@ -751,9 +754,9 @@ async function saveDialogue() {
     snapshot.value = next
     const saved = next.dialogues.find((entry) => entry.id === dialogue.id)
     if (saved) setDraft(definitionFrom(saved), saved.id)
-    showNotice('success', wasExisting ? 'Dialogue saved' : 'Dialogue created', `${dialogue.title} passed graph and project validation.`)
+    showNotice('success', wasExisting ? t('dialogue.notice.saved-title', 'Dialogue saved') : t('dialogue.notice.created-title', 'Dialogue created'), t('dialogue.notice.saved-message', '{title} passed graph and project validation.', { title: dialogue.title }))
   } catch (error) {
-    showNotice('error', 'Save rejected', String(error))
+    showNotice('error', t('authoring.save-rejected', 'Save rejected'), String(error))
   } finally {
     busy.value = false
   }
@@ -762,7 +765,7 @@ async function saveDialogue() {
 async function removeDialogue() {
   if (!selectedDialogueId.value || !snapshot.value) return
   const dialogueId = selectedDialogueId.value
-  if (!window.confirm(`Delete dialogue "${dialogueId}"?`)) return
+  if (!window.confirm(t('dialogue.confirm.delete', 'Delete dialogue "{id}"?', { id: dialogueId }))) return
   busy.value = true
   try {
     const next = await deleteDialogueDefinition(dialogueId, snapshot.value.catalog_fingerprint)
@@ -775,9 +778,9 @@ async function removeDialogue() {
       selectedNodeId.value = null
       baseline.value = ''
     }
-    showNotice('success', 'Dialogue deleted', `${dialogueId} was removed and the runtime catalog was reloaded.`)
+    showNotice('success', t('dialogue.notice.deleted-title', 'Dialogue deleted'), t('dialogue.notice.deleted-message', '{id} was removed and the runtime catalog was reloaded.', { id: dialogueId }))
   } catch (error) {
-    showNotice('error', 'Delete rejected', String(error))
+    showNotice('error', t('authoring.delete-rejected', 'Delete rejected'), String(error))
   } finally {
     busy.value = false
   }
@@ -794,7 +797,7 @@ async function previewDialogue() {
       await router.push({ path: '/game', query: { previewDialogue: selectedDialogueId.value, authoring: '1' } })
     }
   } catch (error) {
-    showNotice('error', 'Preview unavailable', String(error))
+    showNotice('error', t('authoring.preview-unavailable', 'Preview unavailable'), String(error))
   } finally {
     busy.value = false
   }
