@@ -8,6 +8,7 @@
 mod commands;
 mod content_authoring;
 mod content_references;
+mod installation_verifier;
 mod state;
 mod story_access;
 mod story_events;
@@ -18,6 +19,10 @@ use tauri::Manager;
 use tracing_subscriber::EnvFilter;
 
 fn main() {
+    if let Some(exit_code) = installation_verifier::run_requested_verification() {
+        std::process::exit(exit_code);
+    }
+
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env().add_directive("info".parse().unwrap()))
         .init();

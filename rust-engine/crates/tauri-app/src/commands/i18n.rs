@@ -54,7 +54,10 @@ fn normalize_locale_id(locale: &str) -> Result<String, String> {
     Ok(id.to_string())
 }
 
-fn load_locale_from_project(project_root: &Path, locale: &str) -> Result<LocaleData, String> {
+pub(crate) fn load_locale_from_project(
+    project_root: &Path,
+    locale: &str,
+) -> Result<LocaleData, String> {
     let (locale_id, path) = locale_file_path(project_root, locale)?;
     if !path.exists() {
         return Ok(LocaleData {

@@ -103,6 +103,14 @@ cd frontend && npm run build:web
 cd rust-engine/crates/tauri-app && cargo tauri build
 ```
 
+On Windows, verify both installer formats, the exact MSI payload, and the extracted production runtime before publication:
+
+```powershell
+node scripts/verify-windows-installers.mjs --check
+```
+
+Public stable and beta audits require valid Authenticode signatures. For an unsigned internal/alpha release candidate, use `--allow-unsigned`; the resulting audit remains explicitly not release-ready. An extracted or installed executable can be checked independently with `llm-galgame-app.exe --verify-installation <absolute-report.json>`.
+
 ## Web Preview / PWA Build
 
 Before cutting a release, run the automated gate from the repository root:
@@ -111,7 +119,7 @@ Before cutting a release, run the automated gate from the repository root:
 node scripts/verify-release.mjs
 ```
 
-This validates JSON assets, story event catalog schemas/fingerprints, checked-in workflow event references, all quality suite files, workflow branch coverage snapshots, locale coverage, frontend UI text artifacts, frontend source invariants, legacy C# AI prompt/API invariants, AI backend config, engine project root, asset/save-manager, script command and state-key invariants, i18n locale, workflow command, content loader, character manager, plugin manager, marketplace, Live2D model, and TTS output/error invariants, mobile shell readiness, Tauri mobile deployment preflight, Rust core/AI/scripting/game/assets/Tauri checks and tests, frontend audit, the Web/PWA build, generated dist assets, responsive shell layout signals, release artifact manifest checks, and legacy C# tests.
+This validates JSON assets, story event catalog schemas/fingerprints, checked-in workflow event references, all quality suite files, workflow branch coverage snapshots, locale coverage, frontend UI text artifacts, frontend source invariants, legacy C# AI prompt/API invariants, AI backend config, engine project root, asset/save-manager, script command and state-key invariants, i18n locale, workflow command, content loader, character manager, plugin manager, marketplace, Live2D model, TTS output/error invariants, installed-runtime and Windows installer audit contracts, mobile shell readiness, Tauri mobile deployment preflight, Rust core/AI/scripting/game/assets/Tauri checks and tests, frontend audit, the Web/PWA build, generated dist assets, responsive shell layout signals, release artifact manifest checks, and legacy C# tests. When Windows installers already exist, their live audit also runs under the selected `MONOGATARI_RELEASE_CHANNEL` policy.
 
 ```bash
 node scripts/verify-tauri-mobile-preflight.mjs

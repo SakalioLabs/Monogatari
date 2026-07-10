@@ -50,6 +50,9 @@
     },
     "windows": {
       "allowDowngrades": false,
+      "wix": {
+        "upgradeCode": "c4c2d20f-f307-5c7b-91e6-5edeea14fdd0"
+      },
       "webviewInstallMode": {
         "type": "downloadBootstrapper",
         "silent": true

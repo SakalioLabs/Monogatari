@@ -433,7 +433,7 @@ fn ensure_expected_catalog_fingerprint(
     Ok(())
 }
 
-async fn validate_story_ending_references(
+pub(crate) async fn validate_story_ending_references(
     project_root: &Path,
     endings: &[StoryEndingDefinition],
 ) -> Result<(), String> {

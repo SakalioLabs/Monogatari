@@ -3,7 +3,7 @@
 ## Pre-Release Verification
 
 ### Automated Gate
-- [ ] `node scripts/verify-release.mjs` passes from the repository root, covering JSON assets, workflow files, score-gate workflow execution regressions, renderer asset contracts, pinned knowledge-ref contracts, all quality suites, workflow branch coverage snapshots, locale coverage, sensitive token scans, frontend UI text artifact scans, frontend source invariants, legacy C# AI prompt/API invariants, AI backend config, engine project root, asset/save-manager, script command and state-key invariants, i18n locale, workflow command, content loader, character manager, plugin manager, marketplace, Live2D model, and TTS output/error/log-privacy invariants, frontend route/sidebar coverage, Tauri desktop packaging configuration, Rust core/AI/scripting/game/assets/Tauri checks/tests, frontend audit, root and subpath Web/PWA builds, Web/PWA dist assets, release artifact manifest checks, preview route smoke checks, and legacy C# tests
+- [ ] `node scripts/verify-release.mjs` passes from the repository root, covering JSON assets, workflow files, score-gate workflow execution regressions, renderer asset contracts, pinned knowledge-ref contracts, all quality suites, workflow branch coverage snapshots, locale coverage, sensitive token scans, frontend UI text artifact scans, frontend source invariants, legacy C# AI prompt/API invariants, AI backend config, engine project root, asset/save-manager, script command and state-key invariants, i18n locale, workflow command, content loader, character manager, plugin manager, marketplace, Live2D model, TTS output/error/log-privacy invariants, frontend route/sidebar coverage, Tauri desktop packaging and installed-runtime verification, available Windows installer audits, Rust core/AI/scripting/game/assets/Tauri checks/tests, frontend audit, root and subpath Web/PWA builds, Web/PWA dist assets, release artifact manifest checks, preview route smoke checks, and legacy C# tests
 
 ### Frontend
 - [ ] `cd frontend && npm run build` passes with zero errors
@@ -148,7 +148,7 @@
 - [ ] Version bumped in rust-engine/Cargo.toml
 - [ ] CHANGELOG.md updated with release notes
 - [ ] README.md version and features updated
-- [ ] Tauri bundle config declares installer metadata, Windows MSI/NSIS targets, icon assets, WebView2 install mode, and bundled sample `data/` resources
+- [ ] Tauri bundle config declares installer metadata, Windows MSI/NSIS targets, the pinned `c4c2d20f-f307-5c7b-91e6-5edeea14fdd0` WiX upgrade code, icon assets, WebView2 install mode, and bundled sample `data/` resources
 - [ ] Tauri app security declares a production CSP instead of `csp: null`, keeps `script-src 'self'`, blocks `unsafe-eval`, and allows only required local asset, blob/data media, HTTPS, and localhost dev sources
 - [ ] Web/PWA app-shell security declares a CSP meta tag in source and generated static fallback output, keeps `script-src 'self'`, blocks `unsafe-eval`, and allows only required app asset, blob/data media, HTTPS, and localhost preview sources
 - [ ] Web/PWA static-hosting security headers are generated for response-header capable hosts and release-verified for CSP, MIME sniffing, referrer, and browser permission surfaces
@@ -157,6 +157,9 @@
 - [ ] Web/PWA Vercel configuration is generated and release-verified for SPA fallback routing, local rewrite targets, and global security headers
 - [ ] Web/PWA dist includes `events/story_events.json`, inventories event catalogs in `project-assets.json`, and serves/caches them correctly at root and subpath bases
 - [ ] Installed Tauri build resolves bundled sample `data/` resources at startup when no development project data root is available
+- [ ] `node scripts/verify-windows-installers.mjs --check` passes for public Windows artifacts, proving MSI/NSIS identity, version, stable MSI upgrade code, hashes, size bounds, expected-publisher Authenticode signatures on both installers and the extracted application, exact MSI payload parity, and extracted runtime verification
+- [ ] Internal/alpha unsigned candidates use the explicit `--allow-unsigned` audit only; their audit reports `release_ready: false` and is not reused as stable/beta evidence
+- [ ] Extracted production executable writes a verified `monogatari-installation-verification/v1` report with current engine/build Git provenance, 97-file project inventory, runtime content counts, and a valid project content fingerprint
 - [ ] Installed Tauri build writes analytics, sync manifests, saves, and generated system/API TTS assets under the active project data root with sanitized output filenames
 - [ ] Azure and ElevenLabs TTS provider errors redact token-shaped values, API-key assignments, authorization headers, sensitive provider headers, and response bodies before reaching frontend status surfaces
 - [ ] TTS synthesis logs record text length metadata instead of raw spoken dialogue, prompt text, or token-shaped content

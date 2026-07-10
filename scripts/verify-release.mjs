@@ -164,6 +164,7 @@ const releaseCriticalRustFiles = [
   'crates/game/src/dialogue/dialogue_script.rs',
   'crates/scripting/src/lib.rs',
   'crates/tauri-app/src/main.rs',
+  'crates/tauri-app/src/installation_verifier.rs',
   'crates/tauri-app/src/state.rs',
   'crates/tauri-app/src/story_access.rs',
   'crates/tauri-app/src/story_events.rs',
@@ -335,6 +336,7 @@ async function main() {
   await run('Frontend Web/PWA build', 'npm', ['run', 'build:web'], frontendDir)
   await verifyWebDist({ basePath: '/' })
   await verifyWebPreview({ basePath: '/' })
+  await verifyWindowsInstallersIfPresent()
   await run('Release artifact manifest check', 'node', ['scripts/create-release-manifest.mjs', '--check', '--allow-missing-installers'], root)
   await run('Legacy C# tests', 'dotnet', ['test', 'LLMAssistant.sln', '--no-restore'], root)
 
@@ -379,6 +381,32 @@ async function runOnce(label, command, args, cwd, options = {}) {
       }
     })
   })
+}
+
+async function verifyWindowsInstallersIfPresent() {
+  if (process.platform !== 'win32') return
+
+  const config = JSON.parse(await readFile(path.join(tauriAppDir, 'tauri.conf.json'), 'utf8'))
+  const bundleDir = path.join(rustDir, 'target', 'release', 'bundle')
+  const expectedInstallers = [
+    path.join(bundleDir, 'msi', `Monogatari_${config.version}_x64_en-US.msi`),
+    path.join(bundleDir, 'nsis', `Monogatari_${config.version}_x64-setup.exe`),
+  ]
+  const presence = await Promise.all(expectedInstallers.map(fileExists))
+  if (!presence.some(Boolean)) return
+
+  const policy = JSON.parse(await readFile(releasePolicyPath, 'utf8'))
+  const channel = (process.env.MONOGATARI_RELEASE_CHANNEL ?? 'stable').trim().toLowerCase()
+  const channelPolicy = policy.channels?.[channel]
+  if (!channelPolicy) {
+    throw new Error(`Unknown MONOGATARI_RELEASE_CHANNEL: ${channel}`)
+  }
+
+  const installerArgs = ['scripts/verify-windows-installers.mjs', '--check']
+  if (channelPolicy.preflight?.allow_unsigned_installers === true) {
+    installerArgs.push('--allow-unsigned')
+  }
+  await run(`Windows installer audit (${channel})`, 'node', installerArgs, root)
 }
 
 function delay(ms) {
@@ -3701,6 +3729,7 @@ async function verifyTauriPackagingConfig() {
   const mobilePreflightSource = await readFile(path.join(root, 'scripts', 'verify-tauri-mobile-preflight.mjs'), 'utf8')
   const mobileDeploymentDocs = await readFile(path.join(root, 'docs', 'MOBILE_DEPLOYMENT.md'), 'utf8')
   const tauriMainSource = await readFile(path.join(tauriAppDir, 'src', 'main.rs'), 'utf8')
+  const tauriInstallationVerifierSource = await readFile(path.join(tauriAppDir, 'src', 'installation_verifier.rs'), 'utf8')
   const tauriStateSource = await readFile(path.join(tauriAppDir, 'src', 'state.rs'), 'utf8')
   const tauriStoryEventsSource = await readFile(path.join(tauriAppDir, 'src', 'story_events.rs'), 'utf8')
   const tauriStoryProgressSource = await readFile(path.join(tauriAppDir, 'src', 'story_progress.rs'), 'utf8')
@@ -3726,6 +3755,7 @@ async function verifyTauriPackagingConfig() {
   const tauriAnalyticsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'analytics.rs'), 'utf8')
   const tauriCloudSyncSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'cloud_sync.rs'), 'utf8')
   const tauriTtsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'tts.rs'), 'utf8')
+  const windowsInstallerVerifierSource = await readFile(path.join(root, 'scripts', 'verify-windows-installers.mjs'), 'utf8')
   const workspaceVersion = cargoWorkspace.match(/\[workspace\.package\][\s\S]*?\nversion\s*=\s*"([^"]+)"/)?.[1]
 
   if (config.productName !== 'Monogatari') {
@@ -3839,11 +3869,52 @@ async function verifyTauriPackagingConfig() {
   if (windows.allowDowngrades !== false) {
     issues.push('tauri.conf.json bundle.windows.allowDowngrades must be false for commercial release safety')
   }
+  if (windows.wix?.upgradeCode !== 'c4c2d20f-f307-5c7b-91e6-5edeea14fdd0') {
+    issues.push('tauri.conf.json bundle.windows.wix.upgradeCode must pin the established Monogatari MSI upgrade identity')
+  }
   if (windows.webviewInstallMode?.type !== 'downloadBootstrapper') {
     issues.push('tauri.conf.json bundle.windows.webviewInstallMode.type must be downloadBootstrapper for normal public Windows installers')
   }
   if (windows.webviewInstallMode?.silent !== true) {
     issues.push('tauri.conf.json bundle.windows.webviewInstallMode.silent must be true')
+  }
+
+  const installationVerificationRequirements = [
+    [tauriMainSource, 'installation_verifier::run_requested_verification()', 'run headless installation verification before opening Tauri'],
+    [tauriInstallationVerifierSource, 'monogatari-installation-verification/v1', 'version the installed-runtime report schema'],
+    [tauriInstallationVerifierSource, '--verify-installation', 'expose an explicit installed-runtime verification flag'],
+    [tauriInstallationVerifierSource, 'discover_bundled_project_data_root', 'resolve data from the installed executable resource directory'],
+    [tauriInstallationVerifierSource, 'project::scrub_runtime_secret_config', 'reject bundled runtime secrets'],
+    [tauriInstallationVerifierSource, 'engine::load_project_content', 'load bundled content through real runtime managers'],
+    [tauriInstallationVerifierSource, 'validate_story_ending_references', 'validate bundled ending references'],
+    [tauriInstallationVerifierSource, 'load_workflow_from_project', 'validate bundled workflows through the runtime loader'],
+    [tauriInstallationVerifierSource, 'parse_quality_suite', 'validate bundled Quality Suite schemas'],
+    [tauriInstallationVerifierSource, 'load_locale_from_project', 'validate bundled locale schemas'],
+    [tauriInstallationVerifierSource, 'build_project_export_manifest', 'fingerprint the complete bundled project inventory'],
+    [tauriInstallationVerifierSource, 'MONOGATARI_GIT_COMMIT', 'bind reports to the binary build commit'],
+    [tauriInstallationVerifierSource, 'write_envelope', 'write a structured success or failure report'],
+    [tauriInstallationVerifierSource, 'std::fs::rename(&stage_path, report_path)', 'atomically replace the verification report'],
+    [tauriInstallationVerifierSource, 'checked_in_data_passes_installed_runtime_verification', 'test checked-in data through installed-runtime verification'],
+    [windowsInstallerVerifierSource, 'monogatari-windows-installer-audit/v1', 'version Windows installer audit evidence'],
+    [windowsInstallerVerifierSource, 'WindowsInstaller.Installer', 'query MSI package metadata through the Windows Installer API'],
+    [windowsInstallerVerifierSource, 'Get-AuthenticodeSignature', 'inspect real Authenticode status'],
+    [windowsInstallerVerifierSource, 'application_signature: applicationSignature', 'inspect the extracted application signature'],
+    [windowsInstallerVerifierSource, "signature.status === 'NotSigned'", 'limit unsigned exceptions to genuinely unsigned files'],
+    [windowsInstallerVerifierSource, 'expectedSignerFragment', 'bind valid signatures to the expected publisher identity'],
+    [windowsInstallerVerifierSource, 'expectedMsiUpgradeCode', 'verify the stable MSI upgrade identity'],
+    [windowsInstallerVerifierSource, 'createReadStream', 'hash release artifacts with bounded streaming reads'],
+    [windowsInstallerVerifierSource, "spawnSync('msiexec.exe'", 'administratively extract MSI payloads'],
+    [windowsInstallerVerifierSource, 'compareContentSets(sourceData, installedData)', 'compare source and installed resource hashes'],
+    [windowsInstallerVerifierSource, "['--verify-installation', reportPath]", 'run the extracted production executable verifier'],
+    [windowsInstallerVerifierSource, 'envelope.report.git_commit !== sourceState.git_commit', 'reject stale clean-worktree binaries'],
+    [windowsInstallerVerifierSource, "'--untracked-files=all'", 'reject untracked source content from persisted audit evidence'],
+    [windowsInstallerVerifierSource, "argSet.has('--allow-unsigned')", 'make unsigned internal audits explicit'],
+    [windowsInstallerVerifierSource, "status !== 'Valid'", 'block public audits without valid signatures'],
+  ]
+  for (const [source, needle, description] of installationVerificationRequirements) {
+    if (!source.includes(needle)) {
+      issues.push(`Installed desktop verification must ${description}`)
+    }
   }
 
   const runtimeDataRootRequirements = [

@@ -138,8 +138,9 @@ Verified on 2026-07-10:
 - i18n locale commands validate portable locale IDs before loading or listing JSON files under the active project `locales/` directory.
 - Live2D remains on `pixi-live2d-display@0.4.0`; its transitive `gh-pages` dependency is pinned to the safe `6.3.0` line through npm overrides.
 - Rust desktop dependencies are pinned through `rust-engine/Cargo.lock` for reproducible Tauri builds.
-- Tauri desktop packaging configuration declares Windows MSI/NSIS targets, installer metadata, icons, WebView2 bootstrap behavior, and bundled sample project data, all checked by the release verifier.
+- Tauri desktop packaging configuration declares Windows MSI/NSIS targets, a pinned WiX upgrade identity, installer metadata, icons, WebView2 bootstrap behavior, and bundled sample project data, all checked by the release verifier.
 - Installed Tauri builds discover bundled sample `data/` resources at startup and bind them as the default project root when no development data root is available.
+- Windows release-candidate audits query MSI/NSIS metadata, the stable MSI upgrade identity, and Authenticode status for both installers plus the extracted application, administratively extract the MSI, compare every bundled project file by SHA-256, and run the production executable's headless runtime verifier with build-commit provenance.
 - Analytics logs, cloud-sync manifests, and generated system/API TTS assets are written under the active project data root with sanitized filenames for portable installed desktop builds.
 - Rust and legacy C# asset managers validate project-relative asset paths before file access, and save managers validate save IDs before save/load/delete/list operations, so local asset and save APIs cannot escape the active project data root through traversal-shaped input.
 - Story-event rules now execute bounded typed actions for scene, dialogue, ending, and script-flag unlocks. Applied effects live in a project-scoped, fingerprinted progress ledger; chat and real workflow runs share the executor while Quality Suites and author previews remain side-effect free.
@@ -214,6 +215,20 @@ npm run build:web
 
 cd rust-engine/crates/tauri-app
 cargo tauri build
+```
+
+On Windows, audit the resulting MSI and NSIS before distribution:
+
+```powershell
+node scripts/verify-windows-installers.mjs --check
+```
+
+This requires valid Authenticode signatures. Internal or alpha QA may inspect an unsigned release candidate explicitly with `--allow-unsigned`; that flag does not make the audit release-ready and must not be used for stable or beta publication. When installers are present, `verify-release.mjs` runs this audit automatically and derives the unsigned policy from `MONOGATARI_RELEASE_CHANNEL`.
+
+The installed production executable also supports a windowless resource and runtime check. The report path must be an absolute `.json` path:
+
+```powershell
+& 'C:\Program Files\Monogatari\llm-galgame-app.exe' --verify-installation 'C:\Temp\monogatari-installation-report.json'
 ```
 
 After Web/PWA and installer builds are available, generate the distributable checksum manifest:

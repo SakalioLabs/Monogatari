@@ -63,6 +63,12 @@ Script execution is treated as bounded authoring logic. Tauri script commands va
 - **Azure Static Web Apps Config**: Web/PWA dist preparation emits `staticwebapp.config.json` with SPA navigation fallback to `index.html`, explicit asset/service-worker exclusions, a `404.html` rewrite, and matching global security headers so Azure Static Web Apps deployments share the same browser enforcement and route behavior.
 - **Vercel Static Config**: Web/PWA dist preparation emits `vercel.json` with a static SPA rewrite to `index.html` and matching security headers, and release verification rejects missing headers, external rewrite targets, or missing fallback routing.
 
+## Installed Desktop Verification
+
+The Windows release audit treats installer output as a separate trust boundary. It reads MSI properties through the Windows Installer API, reads NSIS PE version metadata, records SHA-256 hashes and Authenticode status for both formats, and administratively extracts the MSI into a uniquely owned temporary directory. The extracted `data/` tree must match the checked-in source tree exactly by portable relative path, byte length, and SHA-256 hash before the application executable is trusted.
+
+Before Tauri initializes a window, the production binary recognizes `--verify-installation <absolute-report.json>`. This path resolves bundled resources beside the executable, rejects secret-bearing settings and non-regular filesystem entries, loads characters, dialogues, knowledge, and events through the real runtime managers, validates scenes, endings, workflows, locales, and Quality Suites, and rebuilds the complete project export inventory fingerprint. The atomic JSON report includes engine version and build Git commit, allowing a clean-worktree installer audit to reject stale binaries that were produced from another revision. Stable and beta channels require valid Authenticode signatures; internal, alpha, and nightly channels may explicitly audit unsigned candidates without marking them release-ready.
+
 ## i18n Locale Boundaries
 
 i18n backend commands treat locale values as portable locale IDs rather than filenames or paths. Locale IDs resolve to direct JSON files under the active project `locales/` directory, listed locales are filtered through the same validator, and slashes, dots, URI/drive-style prefixes, empty hyphen segments, control characters, and non-portable characters are rejected before filesystem access.

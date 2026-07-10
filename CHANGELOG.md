@@ -1,6 +1,10 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Added a Windows installer audit that validates exact MSI/NSIS identity and version metadata, the pinned MSI upgrade identity, installer SHA-256 hashes, size bounds, MSI database properties, Authenticode status for installers and the extracted application, signer identity, and release-channel signing policy.
+- Added MSI administrative-image verification that compares every bundled `data/` path, size, and SHA-256 hash with the checked-in project before running the extracted production executable.
+- Added `--verify-installation <absolute-report.json>` headless production-binary verification for bundled settings, runtime characters/dialogues/knowledge/events, scenes, endings, workflows, locales, Quality Suites, complete project inventory, content fingerprint, and build Git provenance.
+- Added release-gate coverage for installed-runtime verification and an explicit internal-only unsigned installer audit path; stable and beta audits still require valid Authenticode signatures.
 - Added complete `.monogatari` ZIP project packages with native cross-platform save/open dialogs, embedded versioned manifests, deterministic project inventories, sanitized `settings.json`, and exact content/category fingerprints.
 - Added fixed-buffer streaming export, hashing, ZIP writing, and package verification for portable paths, case-insensitive collisions, file/count/expanded-size limits, regular ZIP entries, JSON syntax, per-file SHA-256/MD5 checksums, and whole-package fingerprints.
 - Added transactional project import into a new non-overwriting directory, followed by project config, character, dialogue, knowledge, event, scene, and ending reload validation before the staged directory is committed.

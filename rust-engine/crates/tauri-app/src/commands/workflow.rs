@@ -1639,7 +1639,7 @@ pub async fn load_workflow(state: State<'_, AppState>, path: String) -> Result<W
     load_workflow_from_project(&project_root, &path).await
 }
 
-async fn load_workflow_from_project(
+pub(crate) async fn load_workflow_from_project(
     project_root: &Path,
     requested_path: &str,
 ) -> Result<Workflow, String> {

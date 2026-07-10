@@ -419,7 +419,7 @@ fn quality_suite_sha256(content: &str) -> String {
     digest.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
-fn parse_quality_suite(content: &str) -> Result<QualitySuite, String> {
+pub(crate) fn parse_quality_suite(content: &str) -> Result<QualitySuite, String> {
     let suite: QualitySuite = serde_json::from_str(content).map_err(|e| e.to_string())?;
     let issues = validate_quality_suite_shape(&suite);
     if !issues.is_empty() {
