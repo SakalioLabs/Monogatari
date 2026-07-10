@@ -1,84 +1,95 @@
 <template>
   <Transition name="fade">
     <div v-if="show" class="wn-overlay" @click.self="dismiss">
-      <div class="wn-panel">
-        <div class="wn-header">
-          <span class="wn-version">v{{ currentVersion }}</span>
-          <h2>What's New</h2>
-          <button class="close-btn" @click="dismiss">Close</button>
-        </div>
+      <section class="wn-panel" role="dialog" aria-modal="true" aria-labelledby="whats-new-title">
+        <header class="wn-header">
+          <div class="wn-heading">
+            <span class="eyebrow"><Sparkles :size="13" />{{ t('whats-new.eyebrow', 'Release notes') }}</span>
+            <div><h2 id="whats-new-title">{{ t('whats-new.title', "What's new") }}</h2><code>v{{ currentVersion }}</code></div>
+          </div>
+          <button class="icon-command" :title="t('common.close', 'Close')" :aria-label="t('common.close', 'Close')" @click="dismiss">
+            <X :size="17" />
+          </button>
+        </header>
+
         <div class="wn-body">
-          <div v-for="(release, i) in releases" :key="i" class="wn-release">
-            <div class="wn-release-header">
-              <strong class="wn-tag">{{ release.version }}</strong>
-              <span class="wn-date">{{ release.date }}</span>
-            </div>
-            <ul class="wn-items">
+          <section v-for="release in releases" :key="release.version" class="wn-release">
+            <header class="wn-release-header">
+              <strong>{{ release.version }}</strong>
+              <time :datetime="release.date">{{ release.date }}</time>
+            </header>
+            <ul>
               <li v-for="item in release.items" :key="item">{{ item }}</li>
             </ul>
-          </div>
+          </section>
         </div>
-        <div class="wn-footer">
-          <button class="btn btn-primary" @click="dismiss">Got it</button>
-        </div>
-      </div>
+
+        <footer class="wn-footer">
+          <span><Check :size="14" />{{ t('whats-new.up-to-date', 'This workspace is up to date.') }}</span>
+          <button class="btn btn-primary btn-sm" @click="dismiss"><Check :size="14" />{{ t('whats-new.acknowledge', 'Got it') }}</button>
+        </footer>
+      </section>
     </div>
   </Transition>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { Check, Sparkles, X } from '@lucide/vue'
+import { useI18n } from '../lib/i18n'
 
+const { t } = useI18n()
 const show = ref(false)
 const currentVersion = '0.9.5'
 
-const releases = [
+const releases = computed(() => [
   {
-    version: '0.9.5', date: '2026-07-08',
+    version: '0.9.5',
+    date: '2026-07-08',
     items: [
-      'Tauri desktop build restored with locked Rust dependencies',
-      'Locale JSON repaired for en, zh-CN, ja-JP, and ko-KR with browser fallback files',
-      'i18n loader now supports Tauri locale payloads and non-Tauri public locale files',
-      'TTS configuration now feeds system, Azure, and ElevenLabs synthesis paths',
-      'Project export manifest scans project content inventory for distributable packaging',
-    ]
+      t('whats-new.release-095-1', 'Tauri desktop build restored with locked Rust dependencies'),
+      t('whats-new.release-095-2', 'Locale catalogs repaired for English, Chinese, Japanese, and Korean'),
+      t('whats-new.release-095-3', 'The i18n loader now supports desktop and Web/PWA locale files'),
+      t('whats-new.release-095-4', 'TTS configuration now supports system, Azure, and ElevenLabs providers'),
+      t('whats-new.release-095-5', 'Project export now inventories distributable content'),
+    ],
   },
   {
-    version: '0.9.2', date: '2026-07-07',
+    version: '0.9.2',
+    date: '2026-07-07',
     items: [
-      'Nori the postmaster with 12-node branching dialogue and town history',
-      'Achievement unlock toast notifications when milestones are reached',
-      'GameView pause menu (Escape key) with Resume, Save, Load, Backlog, Title',
-      'Quick save (S) and quick load (L) during gameplay',
-      'Keyboard shortcuts help modal (press ?)',
-      'Sora the astronomer with 12-node dialogue and observatory lore',
-      'Full i18n in all 20 views with 280+ translation keys in 4 locales',
-    ]
+      t('whats-new.release-092-1', 'Nori joins the cast with a branching dialogue and town history'),
+      t('whats-new.release-092-2', 'Achievement notifications appear when milestones are reached'),
+      t('whats-new.release-092-3', 'Story Mode includes pause, save, load, backlog, and title actions'),
+      t('whats-new.release-092-4', 'Quick save and quick load are available during gameplay'),
+      t('whats-new.release-092-5', 'Keyboard shortcut help is available from the question mark key'),
+      t('whats-new.release-092-6', 'Sora joins the cast with observatory dialogue and lore'),
+      t('whats-new.release-092-7', 'Core views support English, Chinese, Japanese, and Korean'),
+    ],
   },
   {
-    version: '0.9.1', date: '2026-07-07',
+    version: '0.9.1',
+    date: '2026-07-07',
     items: [
-      'Achievements system with 15 unlockable milestones',
-      'Hana tea shop owner with 13-node dialogue and lore',
-      'Kai wandering musician with 12-node dialogue and songs',
-    ]
+      t('whats-new.release-091-1', 'Achievements include 15 unlockable milestones'),
+      t('whats-new.release-091-2', 'Hana joins the cast with tea shop dialogue and lore'),
+      t('whats-new.release-091-3', 'Kai joins the cast with musician dialogue and songs'),
+    ],
   },
   {
-    version: '0.9.0', date: '2026-07-07',
+    version: '0.9.0',
+    date: '2026-07-07',
     items: [
-      'Title Screen, CG Gallery, Backlog viewer',
-      'Mio festival organizer with 15-node dialogue',
-      'Auto-save during gameplay and SVG scene backgrounds',
-      'SVG favicon, OpenGraph meta tags, and SEO polish',
-    ]
-  }
-]
+      t('whats-new.release-090-1', 'Title Screen, CG Gallery, and Backlog are available'),
+      t('whats-new.release-090-2', 'Mio joins the cast with a branching festival dialogue'),
+      t('whats-new.release-090-3', 'Story Mode supports autosave and project scene backgrounds'),
+      t('whats-new.release-090-4', 'App metadata, social previews, and the favicon were refreshed'),
+    ],
+  },
+])
 
 function checkVersion() {
-  const seen = localStorage.getItem('monogatari-version-seen')
-  if (seen !== currentVersion) {
-    show.value = true
-  }
+  if (localStorage.getItem('monogatari-version-seen') !== currentVersion) show.value = true
 }
 
 function dismiss() {
@@ -90,34 +101,35 @@ onMounted(checkVersion)
 </script>
 
 <style scoped>
-.wn-overlay {
-  position: fixed; inset: 0; z-index: 110;
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
-}
-.wn-panel {
-  width: min(640px, calc(100vw - 32px));
-  max-height: calc(100vh - 80px); overflow-y: auto;
-  border: 1px solid var(--border); border-radius: var(--radius-lg);
-  background: var(--surface-1);
-}
-.wn-header { display: flex; align-items: center; gap: 14px; padding: 20px 24px; border-bottom: 1px solid var(--border); }
-.wn-header h2 { flex: 1; color: var(--text-primary); font-size: 20px; margin: 0; }
-.wn-version { padding: 2px 10px; border: 1px solid var(--brand); border-radius: 100px; background: rgba(45,212,191,0.1); color: var(--brand-light); font-size: 12px; font-weight: 800; }
-.close-btn { padding: 6px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text-secondary); cursor: pointer; font: inherit; font-weight: 700; font-size: 13px; }
-.close-btn:hover { border-color: var(--brand); color: var(--brand-light); }
-.wn-body { padding: 16px 24px; display: grid; gap: 20px; }
-.wn-release { display: grid; gap: 8px; }
-.wn-release-header { display: flex; gap: 12px; align-items: baseline; }
-.wn-tag { color: var(--brand-light); font-size: 14px; }
-.wn-date { color: var(--text-tertiary); font-size: 12px; }
-.wn-items { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
-.wn-items li { color: var(--text-secondary); font-size: 13px; line-height: 1.5; }
-.wn-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; }
-.btn { min-height: 36px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text-secondary); cursor: pointer; font: inherit; font-weight: 700; padding: 8px 20px; transition: all 0.15s; }
-.btn:hover { border-color: var(--brand); color: var(--brand-light); }
-.btn-primary { background: var(--brand); color: var(--surface-0); border-color: var(--brand); }
-.btn-primary:hover { background: var(--brand-light); }
-.fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
+.wn-overlay { position: fixed; inset: 0; z-index: 110; display: grid; place-items: center; padding: 16px; background: rgba(4, 6, 9, 0.76); backdrop-filter: blur(5px); }
+.wn-panel { display: grid; width: min(650px, 100%); max-height: min(760px, calc(100svh - 32px)); grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-1); box-shadow: var(--shadow-lg); }
+.wn-header { display: flex; min-height: 72px; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+.wn-heading { display: grid; min-width: 0; gap: 5px; }
+.eyebrow { display: flex; align-items: center; gap: 6px; color: var(--text-tertiary); font-size: 9px; font-weight: 800; text-transform: uppercase; }
+.wn-heading > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 9px; }
+.wn-heading h2 { margin: 0; color: var(--text-primary); font-size: 18px; line-height: 1.2; }
+.wn-heading code { color: var(--brand-light); font-size: 10px; }
+.icon-command { display: inline-grid; width: 34px; height: 34px; flex: 0 0 34px; place-items: center; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text-secondary); cursor: pointer; }
+.icon-command:hover { border-color: var(--border-strong); color: var(--text-primary); }
+.wn-body { display: grid; overflow-y: auto; padding: 4px 16px; }
+.wn-release { display: grid; gap: 9px; padding: 15px 2px; border-bottom: 1px solid var(--border); }
+.wn-release:last-child { border-bottom: 0; }
+.wn-release-header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.wn-release-header strong { color: var(--brand-light); font-family: var(--font-mono); font-size: 11px; }
+.wn-release-header time { color: var(--text-tertiary); font-family: var(--font-mono); font-size: 9px; }
+.wn-release ul { display: grid; gap: 6px; margin: 0; padding-left: 18px; }
+.wn-release li { padding-left: 2px; color: var(--text-secondary); font-size: 11px; line-height: 1.45; }
+.wn-release li::marker { color: var(--border-strong); }
+.wn-footer { display: flex; min-height: 58px; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 16px; border-top: 1px solid var(--border); background: var(--surface-2); }
+.wn-footer > span { display: flex; min-width: 0; align-items: center; gap: 6px; color: var(--text-tertiary); font-size: 9px; }
+.wn-footer > span svg { flex: 0 0 auto; color: var(--success); }
+.wn-footer .btn { display: inline-flex; align-items: center; gap: 6px; }
+.fade-enter-active, .fade-leave-active { transition: opacity 0.16s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
+@media (max-width: 520px) {
+  .wn-overlay { align-items: end; padding: 0; }
+  .wn-panel { max-height: calc(100svh - 56px); border-right: 0; border-bottom: 0; border-left: 0; border-radius: var(--radius) var(--radius) 0 0; }
+  .wn-footer > span { display: none; }
+  .wn-footer { justify-content: flex-end; padding-bottom: calc(11px + env(safe-area-inset-bottom)); }
+}
 </style>

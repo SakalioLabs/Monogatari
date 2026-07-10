@@ -85,6 +85,7 @@ const requiredWebDistFiles = [
   'manifest.webmanifest',
   'sw.js',
   'offline.html',
+  'offline-i18n.js',
   'project-assets.json',
   'events/story_events.json',
   'favicon.svg',
@@ -248,6 +249,7 @@ const requiredAzureStaticWebAppFallbackExcludes = [
   '/manifest.webmanifest',
   '/sw.js',
   '/offline.html',
+  '/offline-i18n.js',
   '/project-assets.json',
   '/favicon.svg',
 ]
@@ -259,6 +261,7 @@ const requiredStaticRedirectPassthroughs = [
   ['/manifest.webmanifest', '/manifest.webmanifest'],
   ['/sw.js', '/sw.js'],
   ['/offline.html', '/offline.html'],
+  ['/offline-i18n.js', '/offline-i18n.js'],
   ['/project-assets.json', '/project-assets.json'],
   ['/favicon.svg', '/favicon.svg'],
 ]
@@ -2186,6 +2189,8 @@ async function verifyFrontendSourceInvariants() {
   const dialogueAuthoringSource = await readFile(path.join(frontendDir, 'src', 'lib', 'dialogueAuthoring.ts'), 'utf8')
   const live2dCanvasSource = await readFile(path.join(frontendDir, 'src', 'components', 'Live2DCanvas.vue'), 'utf8')
   const characterModelSource = await readFile(path.join(frontendDir, 'src', 'components', 'CharacterModelView.vue'), 'utf8')
+  const offlineSource = await readFile(path.join(frontendDir, 'public', 'offline.html'), 'utf8')
+  const offlineI18nSource = await readFile(path.join(frontendDir, 'public', 'offline-i18n.js'), 'utf8')
   const prepareWebDistSource = await readFile(path.join(frontendDir, 'scripts', 'prepare-web-dist.mjs'), 'utf8')
   const mobileReadinessSource = await readFile(path.join(frontendDir, 'scripts', 'verify-mobile-readiness.mjs'), 'utf8')
   const responsiveShellSource = await readFile(path.join(frontendDir, 'scripts', 'verify-responsive-shell.mjs'), 'utf8')
@@ -2195,6 +2200,7 @@ async function verifyFrontendSourceInvariants() {
   const chatViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'ChatView.vue'), 'utf8')
   const groupChatViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'GroupChatView.vue'), 'utf8')
   const characterEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'CharacterEditorView.vue'), 'utf8')
+  const analyticsViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'AnalyticsView.vue'), 'utf8')
   const workflowEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'WorkflowEditor.vue'), 'utf8')
   const storyEventEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'StoryEventEditorView.vue'), 'utf8')
   const endingEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'EndingEditorView.vue'), 'utf8')
@@ -2314,11 +2320,14 @@ async function verifyFrontendSourceInvariants() {
   }
 
   const serviceWorkerRequirements = [
+    ['__APP_VERSION__', 'reserve a production package version placeholder for build-time cache identity'],
+    ['__BUILD_FINGERPRINT__', 'reserve a production content fingerprint placeholder for build-time cache identity'],
     ['self.registration.scope', 'derive the service worker base path from registration scope'],
     ['const BASE_PATH', 'declare BASE_PATH for subpath deployments'],
     ['APP_SHELL_PATHS.map(withBase)', 'apply withBase to app shell paths'],
     ['/icons/app-icon.svg', 'precache the dedicated PWA app icon'],
     ['/icons/maskable-icon.svg', 'precache the dedicated maskable PWA icon'],
+    ['/offline-i18n.js', 'precache the CSP-compatible offline localization script'],
     ['PROJECT_ASSET_MANIFEST_PATH', 'declare the generated project asset manifest path'],
     ['/project-assets.json', 'precache the generated project asset manifest'],
     ['cacheProjectAssets()', 'cache generated project assets during service worker install'],
@@ -2345,6 +2354,10 @@ async function verifyFrontendSourceInvariants() {
   }
 
   const webDistPackagingRequirements = [
+    ["from 'node:crypto'", 'use a cryptographic digest for deterministic PWA cache identity'],
+    ['injectServiceWorkerBuildId()', 'inject a content-derived service worker cache identity after packaging'],
+    ['distServiceWorkerPath', 'target the built service worker without mutating the source template'],
+    ["'offline-i18n.js'", 'package the CSP-compatible offline localization script'],
     ["'data', 'assets'", 'copy checked-in project assets from data/assets'],
     ["'data', 'events'", 'copy checked-in story event catalogs from data/events'],
     ["'data', 'scenes'", 'copy checked-in scene catalogs from data/scenes'],
@@ -2485,6 +2498,29 @@ async function verifyFrontendSourceInvariants() {
   }
   if (characterEditorSource.includes('window.confirm')) {
     issues.push('frontend/src/views/CharacterEditorView.vue must not block author workflows with native browser confirmation dialogs')
+  }
+
+  const analyticsFrontendRequirements = [
+    [analyticsViewSource, 'hasTauriRuntime()', 'distinguish project analytics from the Web/PWA sample dataset'],
+    [analyticsViewSource, "dataSource.value = 'project'", 'identify analytics loaded from the active desktop project'],
+    [analyticsViewSource, "dataSource.value = 'sample'", 'identify sample analytics in browser previews'],
+    [analyticsViewSource, "dataSource.value = 'unavailable'", 'surface unavailable project analytics without substituting sample metrics'],
+    [analyticsViewSource, "source: 'sample'", 'label exported Web/PWA analytics as sample data'],
+    [analyticsViewSource, 'summary: summary.value', 'export the analytics summary currently visible in Web/PWA previews'],
+    [offlineSource, 'src="./offline-i18n.js"', 'load offline localization from a CSP-compatible same-origin script'],
+    [offlineI18nSource, "localStorage.getItem('monogatari-locale')", 'reuse the selected app locale on the offline fallback page'],
+    [offlineI18nSource, "'zh-CN':", 'provide Chinese offline fallback copy'],
+    [offlineI18nSource, "'ja-JP':", 'provide Japanese offline fallback copy'],
+    [offlineI18nSource, "'ko-KR':", 'provide Korean offline fallback copy'],
+  ]
+  for (const [source, needle, description] of analyticsFrontendRequirements) {
+    if (!source.includes(needle)) issues.push(`Analytics and offline frontend integration must ${description}`)
+  }
+  if (analyticsViewSource.includes("get_analytics_summary', {}, previewSummary")) {
+    issues.push('frontend/src/views/AnalyticsView.vue must not silently replace failed desktop analytics with sample data')
+  }
+  if (/<script(?![^>]*\bsrc=)[^>]*>/i.test(offlineSource)) {
+    issues.push('frontend/public/offline.html must not use inline scripts blocked by the static-hosting CSP')
   }
   if (workflowEditorSource.includes('const rules: Record<string, Record<string, any>>')) {
     issues.push('frontend/src/views/WorkflowEditor.vue must not keep a second hardcoded story event rule catalog')
@@ -4696,6 +4732,12 @@ async function verifyWebDist({ basePath = '/' } = {}) {
     const packageJson = JSON.parse(await readFile(path.join(frontendDir, 'package.json'), 'utf8'))
     if (!serviceWorker.includes(`monogatari-web-v${packageJson.version}`)) {
       issues.push('sw.js cache name must include the frontend package version')
+    }
+    if (serviceWorker.includes('__APP_VERSION__') || serviceWorker.includes('__BUILD_FINGERPRINT__')) {
+      issues.push('sw.js production cache identity placeholders must be replaced')
+    }
+    if (!new RegExp(`monogatari-web-v${packageJson.version.replaceAll('.', '\\.')}-[a-f0-9]{12}`).test(serviceWorker)) {
+      issues.push('sw.js cache name must include a 12-character production content fingerprint')
     }
     for (const locale of requiredLocales) {
       if (!serviceWorker.includes(`/locales/${locale}`)) {

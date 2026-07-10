@@ -62,7 +62,12 @@ for (const [key, files] of referencedKeys) {
 
 const localizedSurfaces = [
   'src/App.vue',
+  'src/components/CharacterModelView.vue',
+  'src/components/ErrorBoundary.vue',
   'src/components/GlobalSearch.vue',
+  'src/components/KeyboardShortcutsHelp.vue',
+  'src/components/Live2DCanvas.vue',
+  'src/components/WhatsNew.vue',
   'src/views/AchievementsView.vue',
   'src/views/AnalyticsView.vue',
   'src/views/AudioView.vue',
@@ -91,8 +96,14 @@ const localizedSurfaces = [
 
 const strictLocalizedSurfaces = [
   'src/App.vue',
+  'src/components/CharacterModelView.vue',
+  'src/components/ErrorBoundary.vue',
   'src/components/GlobalSearch.vue',
+  'src/components/KeyboardShortcutsHelp.vue',
+  'src/components/Live2DCanvas.vue',
+  'src/components/WhatsNew.vue',
   'src/views/AchievementsView.vue',
+  'src/views/AnalyticsView.vue',
   'src/views/AudioView.vue',
   'src/views/BacklogView.vue',
   'src/views/CGGalleryView.vue',
@@ -185,7 +196,7 @@ function interpolationTokens(value) {
 }
 
 function isAllowedStaticUiText(value) {
-  return /^(?:M|VN|SC|DL|EV|ER|EN|LK|BGM|SFX|LLM|JSON|Ctrl K|Esc|Monogatari|v?0\.9\.5)$/i.test(value)
+  return /^(?:M|VN|SC|DL|EV|ER|EN|LK|BGM|SFX|LLM|L2D|3D|JSON|Ctrl K|Esc|Monogatari|v?0\.9\.5)$/i.test(value)
 }
 
 function isAllowedTechnicalAttribute(value) {

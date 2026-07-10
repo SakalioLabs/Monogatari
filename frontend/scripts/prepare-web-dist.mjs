@@ -1,4 +1,5 @@
-import { copyFile, cp, readdir, stat, writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
+import { copyFile, cp, readFile, readdir, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -20,6 +21,8 @@ const distProjectCharactersDir = path.join(distDir, 'characters')
 const projectKnowledgeDir = path.join(rootDir, 'data', 'knowledge')
 const distProjectKnowledgeDir = path.join(distDir, 'knowledge')
 const projectAssetManifestPath = path.join(distDir, 'project-assets.json')
+const distServiceWorkerPath = path.join(distDir, 'sw.js')
+const frontendPackagePath = path.resolve(scriptDir, '..', 'package.json')
 const staticHostingHeadersPath = path.join(distDir, '_headers')
 const staticHostingRedirectsPath = path.join(distDir, '_redirects')
 const azureStaticWebAppConfigPath = path.join(distDir, 'staticwebapp.config.json')
@@ -32,6 +35,7 @@ const requiredFiles = [
   'manifest.webmanifest',
   'sw.js',
   'offline.html',
+  'offline-i18n.js',
   'icons/app-icon.svg',
   'icons/maskable-icon.svg',
 ]
@@ -55,6 +59,35 @@ async function walkFiles(dir, files = []) {
     }
   }
   return files
+}
+
+async function injectServiceWorkerBuildId() {
+  const packageDocument = JSON.parse(await readFile(frontendPackagePath, 'utf8'))
+  const files = (await walkFiles(distDir, []))
+    .filter((file) => path.resolve(file) !== path.resolve(distServiceWorkerPath))
+    .sort((left, right) => left.localeCompare(right))
+  const hash = createHash('sha256')
+
+  for (const file of files) {
+    const relativePath = path.relative(distDir, file).replaceAll(path.sep, '/')
+    hash.update(relativePath)
+    hash.update('\0')
+    hash.update(await readFile(file))
+    hash.update('\0')
+  }
+
+  const buildFingerprint = hash.digest('hex').slice(0, 12)
+  const source = await readFile(distServiceWorkerPath, 'utf8')
+  const output = source
+    .replace('__APP_VERSION__', String(packageDocument.version))
+    .replace('__BUILD_FINGERPRINT__', buildFingerprint)
+
+  if (output.includes('__APP_VERSION__') || output.includes('__BUILD_FINGERPRINT__')) {
+    throw new Error('Service worker build identity placeholders were not replaced')
+  }
+
+  await writeFile(distServiceWorkerPath, output)
+  return `v${packageDocument.version}-${buildFingerprint}`
 }
 
 function staticHostingHeaders() {
@@ -82,6 +115,7 @@ function staticHostingRedirects() {
     '/manifest.webmanifest /manifest.webmanifest 200',
     '/sw.js /sw.js 200',
     '/offline.html /offline.html 200',
+    '/offline-i18n.js /offline-i18n.js 200',
     '/project-assets.json /project-assets.json 200',
     '/favicon.svg /favicon.svg 200',
     '/* /index.html 200',
@@ -106,6 +140,7 @@ function azureStaticWebAppConfig() {
         '/manifest.webmanifest',
         '/sw.js',
         '/offline.html',
+        '/offline-i18n.js',
         '/project-assets.json',
         '/favicon.svg',
       ],
@@ -213,5 +248,6 @@ await writeFile(staticHostingHeadersPath, staticHostingHeaders())
 await writeFile(staticHostingRedirectsPath, staticHostingRedirects())
 await writeFile(azureStaticWebAppConfigPath, `${JSON.stringify(azureStaticWebAppConfig(), null, 2)}\n`)
 await writeFile(vercelConfigPath, `${JSON.stringify(vercelConfig(), null, 2)}\n`)
+const serviceWorkerBuildId = await injectServiceWorkerBuildId()
 
-console.log('[web-dist] Static hosting assets ready: shell, PWA metadata, project assets, scenes, dialogues, endings, characters, knowledge, story events, and project asset manifest')
+console.log(`[web-dist] Static hosting assets ready (${serviceWorkerBuildId}): shell, PWA metadata, project assets, scenes, dialogues, endings, characters, knowledge, story events, and project asset manifest`)

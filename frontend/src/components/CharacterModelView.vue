@@ -1,19 +1,22 @@
 <template>
   <div class="character-model-view" ref="containerRef">
-    <div v-if="!modelLoaded" class="model-loading">
+    <div v-if="!modelLoaded && !modelError" class="model-loading" role="status">
       <span class="spinner"></span>
-      <span>Loading 3D model...</span>
+      <span>{{ t('renderer.model3d.loading', 'Loading 3D model...') }}</span>
     </div>
-    <div v-if="modelError" class="model-error">
+    <div v-else-if="modelError" class="model-error">
       <span class="error-mark">3D</span>
-      <strong>{{ modelError }}</strong>
-      <span class="error-hint">Supported formats: .glb, .gltf</span>
+      <strong>{{ modelErrorDisplay }}</strong>
+      <span class="error-hint">{{ t('renderer.model3d.hint', 'Supported formats: .glb, .gltf') }}</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
+import { useI18n } from '../lib/i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   modelPath?: string | null
@@ -28,6 +31,7 @@ const emit = defineEmits<{
 const containerRef = ref<HTMLDivElement>()
 const modelLoaded = ref(false)
 const modelError = ref<string | null>(null)
+const modelErrorDisplay = computed(() => t('renderer.model3d.load-failed', 'Could not load the 3D model'))
 
 let renderer: any = null
 let scene: any = null

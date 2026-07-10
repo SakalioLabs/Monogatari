@@ -19,12 +19,15 @@
       main {
         width: min(520px, calc(100vw - 32px));
         display: grid;
-        gap: 18px;
-        padding: 28px;
+        grid-template-columns: 48px minmax(0, 1fr);
+        gap: 18px 16px;
+        padding: 24px;
         border: 1px solid rgba(148, 163, 184, 0.22);
         border-radius: 8px;
         background: #151922;
       }
+      .copy { display: grid; gap: 6px; min-width: 0; }
+      .status { margin: 0; color: #5eead4; font-size: 11px; font-weight: 800; text-transform: uppercase; }
       .mark {
         width: 48px;
         height: 48px;
@@ -36,22 +39,40 @@
         font-size: 24px;
         font-weight: 900;
       }
-      h1 { margin: 0; font-size: 24px; line-height: 1.2; }
+      h1 { margin: 0; font-size: 22px; line-height: 1.2; }
       p { margin: 0; color: #94a3b8; line-height: 1.55; }
       a {
+        grid-column: 2;
         width: fit-content;
+        min-height: 34px;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 0 11px;
+        border: 1px solid rgba(94, 234, 212, 0.38);
+        border-radius: 6px;
+        background: rgba(45, 212, 191, 0.08);
         color: #5eead4;
         font-weight: 800;
+        font-size: 12px;
         text-decoration: none;
+      }
+      @media (max-width: 460px) {
+        main { grid-template-columns: 1fr; }
+        a { grid-column: 1; width: 100%; justify-content: center; }
       }
     </style>
   </head>
   <body>
     <main>
       <div class="mark">M</div>
-      <h1>Monogatari is offline</h1>
-      <p>The web workbench shell is cached, but this page needs a network connection or a previously cached route.</p>
-      <a href=".">Return to the workbench</a>
+      <div class="copy">
+        <p id="status" class="status">Offline mode</p>
+        <h1 id="title">Monogatari is offline</h1>
+        <p id="description">The workbench shell is cached, but this route needs a connection or a previously cached response.</p>
+      </div>
+      <a href="."><span aria-hidden="true">&#8635;</span><span id="return-label">Return to the workbench</span></a>
     </main>
+    <script src="./offline-i18n.js"></script>
   </body>
 </html>

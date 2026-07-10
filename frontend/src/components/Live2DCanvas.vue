@@ -1,19 +1,23 @@
 <template>
   <div class="live2d-container" ref="containerRef">
     <canvas ref="canvasRef" class="live2d-canvas"></canvas>
-    <div v-if="loading" class="loading-overlay">
-      <p>Loading model...</p>
+    <div v-if="loading" class="loading-overlay" role="status">
+      <span class="spinner"></span>
+      <p>{{ t('renderer.live2d.loading', 'Loading Live2D model...') }}</p>
     </div>
     <div v-else-if="loadError" class="error-overlay">
       <span class="error-mark">L2D</span>
-      <strong>{{ loadError }}</strong>
-      <span class="error-hint">Check the model path and Live2D runtime files.</span>
+      <strong>{{ loadErrorDisplay }}</strong>
+      <span class="error-hint">{{ t('renderer.live2d.hint', 'Check the model path and Live2D runtime files.') }}</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
+import { useI18n } from '../lib/i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   modelPath: string | null
@@ -29,6 +33,9 @@ const containerRef = ref<HTMLDivElement>()
 const canvasRef = ref<HTMLCanvasElement>()
 const loading = ref(false)
 const loadError = ref<string | null>(null)
+const loadErrorDisplay = computed(() => loadError.value === 'Could not initialize Live2D runtime'
+  ? t('renderer.live2d.init-failed', 'Could not initialize the Live2D runtime')
+  : t('renderer.live2d.load-failed', 'Could not load the Live2D model'))
 
 // Live2D model state
 let app: any = null
@@ -196,11 +203,15 @@ onUnmounted(() => {
   right: 0;
   bottom: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 9px;
   background: rgba(0,0,0,0.5);
   color: var(--text-muted);
 }
+.loading-overlay p { margin: 0; font-size: 11px; }
+.spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.18); border-top-color: var(--brand); border-radius: 50%; animation: spin 0.8s linear infinite; }
 .error-overlay {
   position: absolute;
   inset: 0;
@@ -236,4 +247,5 @@ onUnmounted(() => {
   color: var(--text-tertiary);
   font-size: 11px;
 }
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
