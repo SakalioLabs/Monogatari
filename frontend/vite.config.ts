@@ -15,6 +15,7 @@ const projectDataRoots = {
   dialogue: path.join(projectDataDir, 'dialogue'),
   endings: path.join(projectDataDir, 'endings'),
   characters: path.join(projectDataDir, 'characters'),
+  knowledge: path.join(projectDataDir, 'knowledge'),
 } as const
 
 const assetContentTypes: Record<string, string> = {
@@ -82,6 +83,7 @@ function projectDataDevPlugin(): Plugin {
           dialogue_files: projectFiles(projectDataRoots.dialogue, '/dialogue'),
           ending_files: projectFiles(projectDataRoots.endings, '/endings'),
           character_files: projectFiles(projectDataRoots.characters, '/characters'),
+          knowledge_files: projectFiles(projectDataRoots.knowledge, '/knowledge'),
         }
         response.setHeader('Content-Type', 'application/json; charset=utf-8')
         response.setHeader('Cache-Control', 'no-cache')

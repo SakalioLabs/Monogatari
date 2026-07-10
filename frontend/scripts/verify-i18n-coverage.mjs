@@ -77,6 +77,7 @@ const localizedSurfaces = [
   'src/views/GroupChatView.vue',
   'src/views/HomeView.vue',
   'src/views/KnowledgeBaseView.vue',
+  'src/views/KnowledgeBaseView.vue',
   'src/views/MarketplaceView.vue',
   'src/views/PluginView.vue',
   'src/views/QualitySuiteView.vue',
@@ -92,8 +93,10 @@ const strictLocalizedSurfaces = [
   'src/App.vue',
   'src/components/GlobalSearch.vue',
   'src/views/AchievementsView.vue',
+  'src/views/AudioView.vue',
   'src/views/BacklogView.vue',
   'src/views/CGGalleryView.vue',
+  'src/views/CharacterGalleryView.vue',
   'src/views/DialogueEditorView.vue',
   'src/views/EndingEditorView.vue',
   'src/views/GameView.vue',
@@ -181,7 +184,7 @@ function interpolationTokens(value) {
 }
 
 function isAllowedStaticUiText(value) {
-  return /^(?:M|VN|SC|DL|EV|ER|EN|LK|LLM|JSON|Ctrl K|Esc|Monogatari|v?0\.9\.5)$/i.test(value)
+  return /^(?:M|VN|SC|DL|EV|ER|EN|LK|BGM|SFX|LLM|JSON|Ctrl K|Esc|Monogatari|v?0\.9\.5)$/i.test(value)
 }
 
 function isAllowedTechnicalAttribute(value) {

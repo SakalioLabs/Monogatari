@@ -2,12 +2,16 @@
 
 use std::path::Path;
 
+use llm_game::characters::Character;
+
 use crate::commands::endings::load_story_endings;
 use crate::commands::workflow::Workflow;
 use crate::story_events::{StoryEventAction, StoryEventCatalog};
 
 const MAX_WORKFLOW_REFERENCE_FILES: usize = 512;
 const MAX_WORKFLOW_REFERENCE_BYTES: u64 = 1024 * 1024;
+const MAX_CHARACTER_REFERENCE_FILES: usize = 512;
+const MAX_CHARACTER_REFERENCE_BYTES: u64 = 2 * 1024 * 1024;
 
 pub fn scene_references(project_root: &Path, scene_id: &str) -> Result<Vec<String>, String> {
     let mut references = event_references(
@@ -33,6 +37,96 @@ pub fn dialogue_references(project_root: &Path, dialogue_id: &str) -> Result<Vec
     for ending in load_story_endings(project_root)? {
         if ending.dialogue_id == dialogue_id {
             references.push(format!("ending:{}", ending.id));
+        }
+    }
+    references.sort();
+    references.dedup();
+    Ok(references)
+}
+
+pub fn knowledge_references(
+    project_root: &Path,
+    knowledge_id: &str,
+) -> Result<Vec<String>, String> {
+    let character_root = project_root.join("characters");
+    if !character_root.exists() {
+        return Ok(Vec::new());
+    }
+    let root_metadata = std::fs::symlink_metadata(&character_root).map_err(|error| {
+        format!(
+            "Failed to inspect character directory `{}`: {error}",
+            character_root.display()
+        )
+    })?;
+    if root_metadata.file_type().is_symlink() || !root_metadata.is_dir() {
+        return Err("Character reference path must be a regular directory.".to_string());
+    }
+
+    let mut paths = std::fs::read_dir(&character_root)
+        .map_err(|error| {
+            format!(
+                "Failed to read character directory `{}`: {error}",
+                character_root.display()
+            )
+        })?
+        .map(|entry| entry.map(|value| value.path()))
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|error| format!("Failed to enumerate character files: {error}"))?;
+    paths.retain(|path| {
+        path.extension()
+            .and_then(|extension| extension.to_str())
+            .is_some_and(|extension| extension.eq_ignore_ascii_case("json"))
+    });
+    paths.sort();
+    if paths.len() > MAX_CHARACTER_REFERENCE_FILES {
+        return Err(format!(
+            "Character directory contains {} JSON files; the reference-scan limit is {MAX_CHARACTER_REFERENCE_FILES}.",
+            paths.len()
+        ));
+    }
+
+    let mut references = Vec::new();
+    for path in paths {
+        let metadata = std::fs::symlink_metadata(&path).map_err(|error| {
+            format!("Failed to inspect character `{}`: {error}", path.display())
+        })?;
+        if metadata.file_type().is_symlink() || !metadata.is_file() {
+            return Err(format!(
+                "Character must be a regular file: {}",
+                path.display()
+            ));
+        }
+        if metadata.len() > MAX_CHARACTER_REFERENCE_BYTES {
+            return Err(format!(
+                "Character `{}` is {} bytes; the reference-scan limit is {MAX_CHARACTER_REFERENCE_BYTES} bytes.",
+                path.display(),
+                metadata.len()
+            ));
+        }
+        let source = std::fs::read_to_string(&path)
+            .map_err(|error| format!("Failed to read character `{}`: {error}", path.display()))?;
+        let value: serde_json::Value = serde_json::from_str(&source)
+            .map_err(|error| format!("Invalid character JSON in `{}`: {error}", path.display()))?;
+        let values = match value {
+            serde_json::Value::Object(_) => vec![value],
+            serde_json::Value::Array(values) => values,
+            _ => {
+                return Err(format!(
+                    "Character file `{}` must contain an object or array.",
+                    path.display()
+                ))
+            }
+        };
+        for value in values {
+            let character: Character = serde_json::from_value(value)
+                .map_err(|error| format!("Invalid character in `{}`: {error}", path.display()))?;
+            if character
+                .knowledge_refs
+                .iter()
+                .any(|reference| reference.trim() == knowledge_id)
+            {
+                references.push(format!("character:{}", character.id));
+            }
         }
     }
     references.sort();
@@ -111,4 +205,37 @@ fn workflow_scene_references(project_root: &Path, scene_id: &str) -> Result<Vec<
         }
     }
     Ok(references)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    static NEXT_TEMP_ROOT: AtomicU64 = AtomicU64::new(0);
+
+    fn temp_root(label: &str) -> std::path::PathBuf {
+        std::env::temp_dir().join(format!(
+            "monogatari-content-references-{label}-{}-{}",
+            std::process::id(),
+            NEXT_TEMP_ROOT.fetch_add(1, Ordering::Relaxed)
+        ))
+    }
+
+    #[test]
+    fn knowledge_references_find_character_pins() {
+        let root = temp_root("knowledge");
+        let characters = root.join("characters");
+        std::fs::create_dir_all(&characters).unwrap();
+        std::fs::write(
+            characters.join("cast.json"),
+            r#"[{"id":"aoi","name":"Aoi","knowledge_refs":["herbal_lore"]},{"id":"sora","name":"Sora","knowledge_refs":["star_lore"]}]"#,
+        )
+        .unwrap();
+
+        let references = knowledge_references(&root, "herbal_lore").unwrap();
+        let _ = std::fs::remove_dir_all(&root);
+
+        assert_eq!(references, vec!["character:aoi"]);
+    }
 }

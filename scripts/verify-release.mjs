@@ -2180,6 +2180,7 @@ async function verifyFrontendSourceInvariants() {
   const storyProgressSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyProgress.ts'), 'utf8')
   const storyAccessSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyAccess.ts'), 'utf8')
   const storyContentSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyContent.ts'), 'utf8')
+  const knowledgeContentSource = await readFile(path.join(frontendDir, 'src', 'lib', 'knowledgeContent.ts'), 'utf8')
   const storyEndingsSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyEndings.ts'), 'utf8')
   const sceneAuthoringSource = await readFile(path.join(frontendDir, 'src', 'lib', 'sceneAuthoring.ts'), 'utf8')
   const dialogueAuthoringSource = await readFile(path.join(frontendDir, 'src', 'lib', 'dialogueAuthoring.ts'), 'utf8')
@@ -2201,6 +2202,7 @@ async function verifyFrontendSourceInvariants() {
   const dialogueEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'DialogueEditorView.vue'), 'utf8')
   const qualitySuiteSource = await readFile(path.join(frontendDir, 'src', 'views', 'QualitySuiteView.vue'), 'utf8')
   const audioViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'AudioView.vue'), 'utf8')
+  const knowledgeBaseViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'KnowledgeBaseView.vue'), 'utf8')
   const settingsSource = await readFile(path.join(frontendDir, 'src', 'views', 'SettingsView.vue'), 'utf8')
   const projectArchiveSource = await readFile(path.join(frontendDir, 'src', 'lib', 'projectArchive.ts'), 'utf8')
   const serviceWorkerSource = await readFile(path.join(frontendDir, 'public', 'sw.js'), 'utf8')
@@ -2325,8 +2327,10 @@ async function verifyFrontendSourceInvariants() {
     ['manifest.dialogue_files', 'cache project dialogue scripts during service worker install'],
     ['manifest.ending_files', 'cache project ending catalogs during service worker install'],
     ['manifest.character_files', 'cache project character definitions during service worker install'],
+    ['manifest.knowledge_files', 'cache project knowledge entries during service worker install'],
     ['path.startsWith("/events/")', 'serve project story events through an offline-aware strategy'],
     ['path.startsWith("/characters/")', 'serve project character definitions through an offline-aware strategy'],
+    ['path.startsWith("/knowledge/")', 'serve project knowledge entries through an offline-aware strategy'],
     ['monogatari-web-project-assets/v1', 'validate the project asset manifest schema before caching'],
     ['function withBase', 'define withBase helper'],
     ['function routePath', 'define routePath helper'],
@@ -2347,6 +2351,7 @@ async function verifyFrontendSourceInvariants() {
     ["'data', 'dialogue'", 'copy checked-in dialogue scripts from data/dialogue'],
     ["'data', 'endings'", 'copy checked-in ending catalogs from data/endings'],
     ["'data', 'characters'", 'copy checked-in character definitions from data/characters'],
+    ["'data', 'knowledge'", 'copy checked-in knowledge entries from data/knowledge'],
     ['distProjectAssetsDir', 'target copied project assets into dist/assets'],
     ['projectAssetManifestPath', 'write a generated project asset manifest into dist'],
     ['staticHostingHeadersPath', 'write static-hosting security headers into dist'],
@@ -2369,6 +2374,7 @@ async function verifyFrontendSourceInvariants() {
     ['cp(projectDialoguesDir, distProjectDialoguesDir', 'merge dialogue scripts into the Web/PWA dist tree'],
     ['cp(projectEndingsDir, distProjectEndingsDir', 'merge ending catalogs into the Web/PWA dist tree'],
     ['cp(projectCharactersDir, distProjectCharactersDir', 'merge character definitions into the Web/PWA dist tree'],
+    ['cp(projectKnowledgeDir, distProjectKnowledgeDir', 'merge knowledge entries into the Web/PWA dist tree'],
     ['event_catalogs', 'inventory story event catalogs in the Web/PWA project manifest'],
     ['project asset manifest', 'report the generated project asset manifest in the Web/PWA preparation output'],
   ]
@@ -2444,6 +2450,29 @@ async function verifyFrontendSourceInvariants() {
     if (!source.includes(needle)) {
       issues.push(`Story event frontend integration must ${description}`)
     }
+  }
+
+  const knowledgeAuthoringFrontendRequirements = [
+    [knowledgeContentSource, 'knowledge_files', 'load packaged knowledge documents from the Web/PWA project manifest'],
+    [knowledgeContentSource, "invokeCommand<KnowledgeCatalogSnapshot>('get_knowledge_authoring_catalog')", 'load editable desktop knowledge catalog snapshots'],
+    [knowledgeContentSource, "invokeCommand<KnowledgeCatalogSnapshot>('save_knowledge_entry_definition'", 'save desktop knowledge entries through the authoring command'],
+    [knowledgeContentSource, "invokeCommand<KnowledgeCatalogSnapshot>('delete_knowledge_entry_definition'", 'delete desktop knowledge entries through the authoring command'],
+    [knowledgeContentSource, 'expectedCatalogFingerprint', 'save and delete knowledge entries with optimistic concurrency'],
+    [knowledgeContentSource, 'window.localStorage.setItem(browserDraftKey', 'persist Web/PWA knowledge authoring drafts'],
+    [knowledgeContentSource, 'resetBrowserKnowledgeDrafts', 'restore packaged project knowledge after browser authoring'],
+    [knowledgeContentSource, 'loadBrowserCharacterKnowledgeReferences', 'protect character-pinned knowledge from browser draft deletion'],
+    [knowledgeContentSource, 'validateKnowledgeRelations', 'validate related knowledge ids in browser authoring'],
+    [knowledgeBaseViewSource, 'saveKnowledgeEntryDefinition(entry', 'wire the knowledge editor save path to real catalog persistence'],
+    [knowledgeBaseViewSource, 'deleteKnowledgeEntryDefinition(pending.entry.id', 'wire the knowledge editor delete path to real catalog persistence'],
+    [knowledgeBaseViewSource, 'pendingConfirmation', 'keep destructive knowledge actions inside the application confirmation flow'],
+  ]
+  for (const [source, needle, description] of knowledgeAuthoringFrontendRequirements) {
+    if (!source.includes(needle)) {
+      issues.push(`Knowledge authoring frontend integration must ${description}`)
+    }
+  }
+  if (knowledgeBaseViewSource.includes('window.confirm')) {
+    issues.push('frontend/src/views/KnowledgeBaseView.vue must not block author previews with native browser confirmation dialogs')
   }
   if (workflowEditorSource.includes('const rules: Record<string, Record<string, any>>')) {
     issues.push('frontend/src/views/WorkflowEditor.vue must not keep a second hardcoded story event rule catalog')
@@ -3774,6 +3803,7 @@ async function verifyTauriPackagingConfig() {
   const tauriStoryEventCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'story_events.rs'), 'utf8')
   const tauriEndingCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'endings.rs'), 'utf8')
   const tauriDialogueCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'dialogue.rs'), 'utf8')
+  const tauriKnowledgeCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'knowledge.rs'), 'utf8')
   const gameCharacterSource = await readFile(path.join(rustDir, 'crates', 'game', 'src', 'characters', 'character.rs'), 'utf8')
   const gameDialogueScriptSource = await readFile(path.join(rustDir, 'crates', 'game', 'src', 'dialogue', 'dialogue_script.rs'), 'utf8')
   const gameDialogueNodeSource = await readFile(path.join(rustDir, 'crates', 'game', 'src', 'dialogue', 'dialogue_node.rs'), 'utf8')
@@ -4169,6 +4199,18 @@ async function verifyTauriPackagingConfig() {
     [tauriDialogueCommandsSource, 'dialogue_save_is_atomic_rejects_stale_graphs_and_hot_reloads_runtime', 'test atomic dialogue save and hot reload behavior'],
     [tauriDialogueCommandsSource, 'dialogue_delete_requires_event_and_ending_references_to_be_removed', 'test dialogue deletion reference protection'],
     [tauriDialogueCommandsSource, 'preview_dialogue', 'support author dialogue preview without player gates'],
+    [tauriKnowledgeCommandsSource, 'get_knowledge_authoring_catalog', 'expose editable knowledge catalog snapshots'],
+    [tauriKnowledgeCommandsSource, 'save_knowledge_entry_definition', 'support validated optimistic-concurrency knowledge saves'],
+    [tauriKnowledgeCommandsSource, 'delete_knowledge_entry_definition', 'support knowledge entry deletion'],
+    [tauriKnowledgeCommandsSource, 'knowledge_catalog_fingerprint', 'fingerprint knowledge catalogs for optimistic concurrency'],
+    [tauriKnowledgeCommandsSource, 'stage_json_replacement', 'stage atomic knowledge document replacements'],
+    [tauriKnowledgeCommandsSource, 'staged.rollback().await?', 'restore rejected knowledge document replacements'],
+    [tauriKnowledgeCommandsSource, 'knowledge_references(&project_root', 'protect referenced knowledge entries from deletion'],
+    [tauriKnowledgeCommandsSource, 'validate_knowledge_relations', 'validate related knowledge ids before catalog activation'],
+    [tauriKnowledgeCommandsSource, 'authoring_loader_supports_single_and_array_documents', 'test single-entry and array knowledge documents'],
+    [tauriKnowledgeCommandsSource, 'validation_rejects_non_portable_ids_and_out_of_range_importance', 'test knowledge authoring validation boundaries'],
+    [tauriContentReferencesSource, 'pub fn knowledge_references', 'discover character-pinned knowledge references'],
+    [tauriContentReferencesSource, 'knowledge_references_find_character_pins', 'test character-pinned knowledge reference discovery'],
     [tauriScenesSource, 'enter_story_scene', 'separate gated Story Mode entry from author scene selection'],
     [tauriScenesSource, 'monogatari-scene-authoring-catalog/v1', 'version scene authoring catalog snapshots'],
     [tauriScenesSource, 'scene_authoring_catalog_fingerprint', 'fingerprint authored and inferred scenes for optimistic concurrency'],
@@ -4201,6 +4243,9 @@ async function verifyTauriPackagingConfig() {
     [tauriMainSource, 'commands::dialogue::save_dialogue_definition', 'register dialogue authoring saves'],
     [tauriMainSource, 'commands::dialogue::delete_dialogue_definition', 'register dialogue authoring deletes'],
     [tauriMainSource, 'commands::dialogue::preview_dialogue', 'register dialogue author previews'],
+    [tauriMainSource, 'commands::knowledge::get_knowledge_authoring_catalog', 'register knowledge authoring reads'],
+    [tauriMainSource, 'commands::knowledge::save_knowledge_entry_definition', 'register knowledge authoring saves'],
+    [tauriMainSource, 'commands::knowledge::delete_knowledge_entry_definition', 'register knowledge authoring deletes'],
     [tauriWorkflowSource, 'apply_story_event_definition', 'apply real workflow trigger effects through the shared executor'],
     [tauriQualitySuiteSource, 'event_catalog: &StoryEventCatalog', 'run quality scenarios against project event rules'],
     [tauriMainSource, 'commands::story_events::get_story_event_catalog', 'register story event catalog commands'],
@@ -4755,6 +4800,7 @@ async function verifyWebProjectAssets(distDir, projectAssetManifest, issues) {
     { directory: 'dialogue', manifestField: 'dialogue_files', prefix: '/dialogue/' },
     { directory: 'endings', manifestField: 'ending_files', prefix: '/endings/' },
     { directory: 'characters', manifestField: 'character_files', prefix: '/characters/' },
+    { directory: 'knowledge', manifestField: 'knowledge_files', prefix: '/knowledge/' },
   ]) {
     const manifestPaths = projectAssetManifest[content.manifestField]
     if (!Array.isArray(manifestPaths)) {

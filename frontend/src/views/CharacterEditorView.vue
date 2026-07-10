@@ -298,6 +298,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import Live2DCanvas from '../components/Live2DCanvas.vue'
 import CharacterModelView from '../components/CharacterModelView.vue'
 import {
@@ -308,10 +309,12 @@ import {
   selectCharacterRendererAsset,
   type RendererAssetSpec,
 } from '../lib/rendererAssets'
-import { invokeCommand } from '../lib/tauri'
+import { hasTauriRuntime, invokeCommand } from '../lib/tauri'
 import { useI18n } from '../lib/i18n'
+import { loadStoryCharacters, type StoryCharacterInfo } from '../lib/storyContent'
 
 const { t } = useI18n()
+const route = useRoute()
 
 interface KnowledgeEntry {
   topic: string
@@ -385,6 +388,7 @@ const tabs = [
 ]
 
 const characterList = ref<CharacterSummary[]>([])
+const browserCharacters = ref<StoryCharacterInfo[]>([])
 const selectedId = ref<string | null>(null)
 const editing = ref(false)
 const isNew = ref(false)
@@ -600,8 +604,15 @@ function cancelEdit() {
 
 async function loadList() {
   try {
-    const chars = await invokeCommand<CharacterSummary[]>('get_characters', undefined, [])
-    characterList.value = chars
+    const characters = await loadStoryCharacters()
+    browserCharacters.value = characters
+    characterList.value = characters.map(character => ({
+      id: character.id,
+      name: character.name,
+      description: character.description,
+      emotion: character.emotion,
+      live2d_model_path: character.live2d_model_path ?? null,
+    }))
   } catch (e) {
     console.error('Failed to load characters:', e)
   }
@@ -609,7 +620,9 @@ async function loadList() {
 
 async function selectChar(id: string) {
   try {
-    const c = await invokeCommand<any>('get_character', { characterId: id })
+    const c = hasTauriRuntime()
+      ? await invokeCommand<any>('get_character', { characterId: id })
+      : browserCharacters.value.find(character => character.id === id)
     if (!c) return
     selectedId.value = id
     isNew.value = false
@@ -734,7 +747,15 @@ function splitKnowledgeRefs(value: string): string[] {
     .filter(Boolean)
 }
 
-onMounted(loadList)
+onMounted(async () => {
+  await loadList()
+  if (route.query.create === '1') {
+    createNew()
+    return
+  }
+  const requestedCharacter = typeof route.query.character === 'string' ? route.query.character : ''
+  if (requestedCharacter) await selectChar(requestedCharacter)
+})
 </script>
 
 <style scoped>

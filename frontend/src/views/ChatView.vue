@@ -207,8 +207,10 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { useRoute } from 'vue-router'
 import { invokeCommand } from '../lib/tauri'
 import { useI18n } from '../lib/i18n'
+import { loadStoryCharacters } from '../lib/storyContent'
 import type { StoryEventAction } from '../lib/storyEvents'
 import {
   loadStoryProgress,
@@ -219,6 +221,7 @@ import {
 import LoadingSpinner from '../components/LoadingSpinner.vue'
 
 const { t } = useI18n()
+const route = useRoute()
 
 interface ChatMessage {
   role: string
@@ -475,13 +478,13 @@ async function selectCharacter(char: CharacterInfo) {
   try {
     const [history, audit] = await Promise.all([
       invokeCommand<ChatMessage[]>('get_chat_history', { characterId: char.id }, []),
-      invokeCommand<ChatSessionAuditReport>('get_chat_session_audit', { characterId: char.id }),
+      invokeCommand<ChatSessionAuditReport | null>('get_chat_session_audit', { characterId: char.id }, null),
     ])
     messages.value = history
-    relationshipScore.value = audit.relationship_score
-    evaluation.value = audit.last_evaluation || null
-    safetyTrace.value = audit.last_safety_trace || null
-    eventDecisions.value = audit.event_trigger_decisions || []
+    relationshipScore.value = audit?.relationship_score || 0
+    evaluation.value = audit?.last_evaluation || null
+    safetyTrace.value = audit?.last_safety_trace || null
+    eventDecisions.value = audit?.event_trigger_decisions || []
   } catch (e) {
     errorMessage.value = String(e)
   }
@@ -656,11 +659,20 @@ async function clearChat() {
 onMounted(async () => {
   try {
     const [loadedCharacters, progress] = await Promise.all([
-      invokeCommand<CharacterInfo[]>('get_characters', undefined, []),
+      loadStoryCharacters(),
       loadStoryProgress(),
     ])
-    characters.value = loadedCharacters
+    characters.value = loadedCharacters.map(character => ({
+      id: character.id,
+      name: character.name,
+      description: character.description,
+      emotion: character.emotion,
+      live2d_model_path: character.live2d_model_path ?? null,
+    }))
     storyProgress.value = progress
+    const requestedCharacter = typeof route.query.character === 'string' ? route.query.character : ''
+    const initialCharacter = characters.value.find(character => character.id === requestedCharacter)
+    if (initialCharacter) await selectCharacter(initialCharacter)
   } catch (e) {
     errorMessage.value = String(e)
   }
