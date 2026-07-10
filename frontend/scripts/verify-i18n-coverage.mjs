@@ -115,6 +115,8 @@ const strictLocalizedSurfaces = [
   'src/views/GroupChatView.vue',
   'src/views/HomeView.vue',
   'src/views/KnowledgeBaseView.vue',
+  'src/views/MarketplaceView.vue',
+  'src/views/PluginView.vue',
   'src/views/QualitySuiteView.vue',
   'src/views/SceneAssetsView.vue',
   'src/views/SceneEditorView.vue',
