@@ -2608,7 +2608,7 @@ async function verifyFrontendSourceInvariants() {
     ['nodeRunDetail(node)', 'render compact workflow run details on canvas nodes'],
     ['run-executed', 'keep a stable style hook for executed canvas nodes'],
     ['node-run-badge', 'keep a stable style hook for canvas node run badges'],
-    ['Preview Context', 'expose author-controlled workflow preview context controls'],
+    ['workflow.preview-context', 'expose localized author-controlled workflow preview context controls'],
     ['workflowRunContextPayload()', 'send author preview context to workflow execution'],
     ['function clampScore', 'clamp workflow preview context scores before sending them to the backend'],
     ['function clampRelationship', 'clamp workflow preview context relationship values before sending them to the backend'],
@@ -3509,6 +3509,7 @@ async function verifyScriptCommandInvariants() {
 async function verifyWorkflowCommandInvariants() {
   const issues = []
   const workflowSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'workflow.rs'), 'utf8')
+  const mainSource = await readFile(path.join(tauriAppDir, 'src', 'main.rs'), 'utf8')
 
   const workflowRequirements = [
     ['state.current_project_data_root().await', 'resolve workflow commands against the active project root'],
@@ -3541,11 +3542,19 @@ async function verifyWorkflowCommandInvariants() {
     ['workflow_paths_resolve_under_project_workflows', 'test compatible project workflow path resolution'],
     ['workflow_paths_reject_escape_attempts', 'test workflow path traversal and absolute path rejection'],
     ['save_and_load_workflow_stay_inside_project_workflows', 'test workflow save/load containment under project workflows'],
+    ['list_workflow_summaries', 'list only project-scoped loadable workflow files'],
+    ['WORKFLOW_LIST_MAX_FILES', 'bound workflow file discovery'],
+    ['WORKFLOW_LIST_MAX_DEPTH', 'bound recursive workflow discovery'],
+    ['workflow_listing_is_sorted_scoped_and_skips_invalid_files', 'test sorted scoped workflow discovery'],
   ]
   for (const [needle, description] of workflowRequirements) {
     if (!workflowSource.includes(needle)) {
       issues.push(`Workflow commands must ${description}`)
     }
+  }
+
+  if (!mainSource.includes('commands::workflow::list_workflows')) {
+    issues.push('Workflow commands must register list_workflows with the Tauri command handler')
   }
 
   if (issues.length > 0) {

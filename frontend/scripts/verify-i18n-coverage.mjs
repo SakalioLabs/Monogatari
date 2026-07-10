@@ -116,6 +116,7 @@ const strictLocalizedSurfaces = [
   'src/views/SceneEditorView.vue',
   'src/views/SettingsView.vue',
   'src/views/StoryEventEditorView.vue',
+  'src/views/WorkflowEditor.vue',
 ]
 
 for (const relativePath of localizedSurfaces) {

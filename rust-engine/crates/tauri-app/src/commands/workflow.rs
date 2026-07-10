@@ -16,6 +16,9 @@ use crate::story_events::{EventScoreSnapshot, StoryEventCatalog, StoryEventDefin
 
 const DEFAULT_WORKFLOW_MAX_STEPS: usize = 64;
 const WORKFLOW_MAX_STEPS_LIMIT: usize = 256;
+const WORKFLOW_LIST_MAX_FILES: usize = 1_000;
+const WORKFLOW_LIST_MAX_DEPTH: usize = 8;
+const WORKFLOW_LIST_MAX_FILE_BYTES: u64 = 2 * 1024 * 1024;
 
 /// A workflow node in the visual editor.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -45,6 +48,14 @@ pub struct WorkflowNodeTypeInfo {
     pub description: String,
     pub category: String,
     pub configurable_fields: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct WorkflowFileSummary {
+    pub path: String,
+    pub workflow_id: String,
+    pub name: String,
+    pub node_count: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1607,6 +1618,94 @@ pub async fn save_workflow(
     save_workflow_to_project(&project_root, &workflow, &path).await
 }
 
+/// List loadable workflow files inside the active project's workflows directory.
+#[tauri::command]
+pub async fn list_workflows(
+    state: State<'_, AppState>,
+) -> Result<Vec<WorkflowFileSummary>, String> {
+    let project_root = state.current_project_data_root().await;
+    list_workflow_summaries(&project_root)
+}
+
+fn list_workflow_summaries(project_root: &Path) -> Result<Vec<WorkflowFileSummary>, String> {
+    let workflow_root = project_root.join("workflows");
+    if !workflow_root.exists() {
+        return Ok(Vec::new());
+    }
+    let metadata = std::fs::symlink_metadata(&workflow_root).map_err(|error| error.to_string())?;
+    if metadata.file_type().is_symlink() || !metadata.is_dir() {
+        return Err("Project workflows path must be a regular directory.".to_string());
+    }
+
+    let mut summaries = Vec::new();
+    collect_workflow_summaries(&workflow_root, &workflow_root, 0, &mut summaries)?;
+    summaries.sort_by(|left, right| left.path.cmp(&right.path));
+    Ok(summaries)
+}
+
+fn collect_workflow_summaries(
+    workflow_root: &Path,
+    directory: &Path,
+    depth: usize,
+    summaries: &mut Vec<WorkflowFileSummary>,
+) -> Result<(), String> {
+    if depth > WORKFLOW_LIST_MAX_DEPTH || summaries.len() >= WORKFLOW_LIST_MAX_FILES {
+        return Ok(());
+    }
+
+    let mut entries = std::fs::read_dir(directory)
+        .map_err(|error| error.to_string())?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|error| error.to_string())?;
+    entries.sort_by_key(|entry| entry.file_name());
+
+    for entry in entries {
+        if summaries.len() >= WORKFLOW_LIST_MAX_FILES {
+            break;
+        }
+        let path = entry.path();
+        let metadata = std::fs::symlink_metadata(&path).map_err(|error| error.to_string())?;
+        if metadata.file_type().is_symlink() {
+            continue;
+        }
+        if metadata.is_dir() {
+            collect_workflow_summaries(workflow_root, &path, depth + 1, summaries)?;
+            continue;
+        }
+        if !metadata.is_file()
+            || metadata.len() > WORKFLOW_LIST_MAX_FILE_BYTES
+            || path
+                .extension()
+                .and_then(|extension| extension.to_str())
+                .map(|extension| !extension.eq_ignore_ascii_case("json"))
+                .unwrap_or(true)
+        {
+            continue;
+        }
+
+        let content = match std::fs::read_to_string(&path) {
+            Ok(content) => content,
+            Err(_) => continue,
+        };
+        let workflow = match serde_json::from_str::<Workflow>(&content) {
+            Ok(workflow) => workflow,
+            Err(_) => continue,
+        };
+        let relative = path
+            .strip_prefix(workflow_root)
+            .map_err(|error| error.to_string())?
+            .to_string_lossy()
+            .replace('\\', "/");
+        summaries.push(WorkflowFileSummary {
+            path: relative,
+            workflow_id: workflow.id,
+            name: workflow.name,
+            node_count: workflow.nodes.len(),
+        });
+    }
+    Ok(())
+}
+
 async fn save_workflow_to_project(
     project_root: &Path,
     workflow: &Workflow,
@@ -2369,6 +2468,39 @@ mod tests {
                 "{path} should be rejected"
             );
         }
+    }
+
+    #[test]
+    fn workflow_listing_is_sorted_scoped_and_skips_invalid_files() {
+        let root = temp_root("list_scope");
+        let workflow_root = root.join("workflows");
+        std::fs::create_dir_all(workflow_root.join("nested")).unwrap();
+
+        let first = simple_workflow();
+        let mut second = simple_workflow();
+        second.id = "wf_nested".to_string();
+        second.name = "Nested Workflow".to_string();
+        std::fs::write(
+            workflow_root.join("zeta.json"),
+            serde_json::to_vec_pretty(&first).unwrap(),
+        )
+        .unwrap();
+        std::fs::write(
+            workflow_root.join("nested").join("alpha.json"),
+            serde_json::to_vec_pretty(&second).unwrap(),
+        )
+        .unwrap();
+        std::fs::write(workflow_root.join("broken.json"), "not json").unwrap();
+        std::fs::write(root.join("outside.json"), "not a workflow").unwrap();
+
+        let summaries = list_workflow_summaries(&root).unwrap();
+        assert_eq!(summaries.len(), 2);
+        assert_eq!(summaries[0].path, "nested/alpha.json");
+        assert_eq!(summaries[0].workflow_id, "wf_nested");
+        assert_eq!(summaries[0].node_count, 2);
+        assert_eq!(summaries[1].path, "zeta.json");
+
+        std::fs::remove_dir_all(root).unwrap();
     }
 
     #[tokio::test]

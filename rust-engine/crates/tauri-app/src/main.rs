@@ -140,6 +140,7 @@ fn main() {
             commands::workflow::execute_workflow,
             commands::workflow::execute_workflow_node,
             commands::workflow::validate_workflow,
+            commands::workflow::list_workflows,
             commands::workflow::save_workflow,
             commands::workflow::load_workflow,
             commands::quality_suite::list_quality_suites,
