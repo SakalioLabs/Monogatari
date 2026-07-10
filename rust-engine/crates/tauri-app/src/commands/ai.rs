@@ -42,6 +42,13 @@ fn onnx_model_config_in_project(
     })
 }
 
+fn apply_onnx_runtime_options(mut config: ModelConfig, use_directml: Option<bool>) -> ModelConfig {
+    if let Some(use_directml) = use_directml {
+        config.use_directml = use_directml;
+    }
+    config
+}
+
 fn onnx_file_path_in_project(
     project_root: &Path,
     file_ref: &str,
@@ -174,9 +181,13 @@ pub async fn configure_onnx(
     state: State<'_, AppState>,
     model_path: String,
     tokenizer_path: String,
+    use_directml: Option<bool>,
 ) -> Result<String, String> {
     let project_root = state.current_project_data_root().await;
-    let config = onnx_model_config_in_project(&project_root, &model_path, &tokenizer_path)?;
+    let config = apply_onnx_runtime_options(
+        onnx_model_config_in_project(&project_root, &model_path, &tokenizer_path)?,
+        use_directml,
+    );
     let mut pipeline = state.inference_pipeline.write().await;
     register_onnx_engine(&mut pipeline, config)?;
 
@@ -275,6 +286,17 @@ mod tests {
 
         assert_eq!(pipeline.active_engine_name(), Some("ONNX"));
         assert!(pipeline.engine_names().contains(&"ONNX"));
+    }
+
+    #[test]
+    fn configure_onnx_applies_directml_preference() {
+        let root = PathBuf::from("project-data");
+        let config =
+            onnx_model_config_in_project(&root, "models/model.onnx", "models/tokenizer.json")
+                .unwrap();
+
+        assert!(apply_onnx_runtime_options(config.clone(), None).use_directml);
+        assert!(!apply_onnx_runtime_options(config, Some(false)).use_directml);
     }
 
     #[test]

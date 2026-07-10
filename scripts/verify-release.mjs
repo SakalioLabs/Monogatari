@@ -2730,7 +2730,7 @@ async function verifyFrontendSourceInvariants() {
     ['content_sha256', 'include whole-package content fingerprints in browser preview export manifests'],
     ['downloadJson(', 'download project export manifests as JSON'],
     ['sanitizeManifestSettings', 'redact sensitive settings in browser preview export manifests'],
-    ['Export Manifest', 'surface a project manifest export control'],
+    ['@click="exportProjectManifest"', 'surface a project manifest export control'],
     ['runtimeSecretSettingKeys', 'centralize frontend runtime secret setting keys'],
     ['scrubRuntimeSecretSettings', 'scrub runtime secrets before saving project settings'],
     ['scrubRuntimeSecretString', 'scrub token-like and assignment-shaped secrets inside setting string values'],
@@ -2750,8 +2750,8 @@ async function verifyFrontendSourceInvariants() {
     [projectArchiveSource, 'import_project_archive', 'invoke transactional project package imports'],
     [projectArchiveSource, "extensions: ['monogatari']", 'filter native dialogs to .monogatari packages'],
     [projectArchiveSource, 'projectPackagesAvailable', 'gate native package workflows outside Tauri'],
-    [settingsSource, 'Export Package', 'surface project package exports in Settings'],
-    [settingsSource, 'Import Package', 'surface project package imports in Settings'],
+    [settingsSource, '@click="exportProjectPackageFile"', 'surface project package exports in Settings'],
+    [settingsSource, '@click="importProjectPackageFile"', 'surface project package imports in Settings'],
     [settingsSource, 'archiveSummary', 'surface verified package fingerprints and sizes'],
     [settingsSource, "invokeCommand<void>('initialize_engine'", 'activate validated imported projects'],
   ]
@@ -3178,12 +3178,22 @@ async function verifyAiBackendConfigInvariants() {
   }
 
   const settingsRequirements = [
-    ["invokeCommand<void>('configure_onnx', { modelPath: modelPath.value, tokenizerPath: tokenizerPath.value })", 'send modelPath and tokenizerPath through the backend ONNX command contract'],
+    ["invokeCommand<void>('configure_onnx'", 'invoke the backend ONNX command contract'],
+    ['modelPath: modelPath.value', 'send the project-relative model path'],
+    ['tokenizerPath: tokenizerPath.value', 'send the project-relative tokenizer path'],
+    ['useDirectml: useDirectML.value', 'send the DirectML preference through the backend command contract'],
   ]
   for (const [needle, description] of settingsRequirements) {
     if (!settingsViewSource.includes(needle)) {
       issues.push(`Settings AI backend UI must ${description}`)
     }
+  }
+
+  if (!aiCommandSource.includes('apply_onnx_runtime_options') || !aiCommandSource.includes('use_directml: Option<bool>')) {
+    issues.push('AI backend configuration must apply the optional DirectML preference')
+  }
+  if (!aiCommandSource.includes('configure_onnx_applies_directml_preference')) {
+    issues.push('AI backend configuration must test the DirectML preference contract')
   }
 
   if (issues.length > 0) {

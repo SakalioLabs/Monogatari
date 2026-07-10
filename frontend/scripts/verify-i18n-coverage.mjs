@@ -82,7 +82,6 @@ const localizedSurfaces = [
   'src/views/GroupChatView.vue',
   'src/views/HomeView.vue',
   'src/views/KnowledgeBaseView.vue',
-  'src/views/KnowledgeBaseView.vue',
   'src/views/MarketplaceView.vue',
   'src/views/PluginView.vue',
   'src/views/QualitySuiteView.vue',
@@ -115,6 +114,7 @@ const strictLocalizedSurfaces = [
   'src/views/GroupChatView.vue',
   'src/views/HomeView.vue',
   'src/views/SceneEditorView.vue',
+  'src/views/SettingsView.vue',
   'src/views/StoryEventEditorView.vue',
 ]
 
