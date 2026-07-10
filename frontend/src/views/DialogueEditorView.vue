@@ -14,7 +14,7 @@
         <button class="btn btn-secondary btn-sm" :disabled="busy" @click="createDialogue"><Plus :size="14" />{{ t('authoring.new', 'New') }}</button>
         <button class="btn btn-secondary btn-sm" :disabled="!draft || busy" @click="duplicateDialogue"><Copy :size="14" />{{ t('authoring.duplicate', 'Duplicate') }}</button>
         <button class="btn btn-secondary btn-sm" :disabled="busy" @click="reloadCatalog"><RotateCcw :size="14" />{{ t('authoring.reload', 'Reload') }}</button>
-        <button class="btn btn-secondary btn-sm" :disabled="!canPreview || busy" @click="previewDialogue"><Play :size="14" />{{ t('authoring.story-mode', 'Story Mode') }}</button>
+        <button class="btn btn-secondary btn-sm" :disabled="!canPreview || busy" @click="previewDialogue"><Play :size="14" />{{ t('authoring.story-mode', 'Playtest') }}</button>
         <button class="btn btn-primary btn-sm" :disabled="!canSave || busy" @click="saveDialogue">
           <Save :size="14" />{{ busy ? t('authoring.working', 'Working') : t('common.save', 'Save') }}
         </button>

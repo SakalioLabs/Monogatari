@@ -44,15 +44,15 @@ const shortcutGroups = computed(() => [
     items: [
       { keys: '?', desc: t('shortcuts.show-help', 'Show keyboard shortcuts') },
       { keys: 'Esc', desc: t('shortcuts.close-panels', 'Close modals and panels') },
-      { keys: 'G + C', desc: t('shortcuts.go-chat', 'Go to AI Chat') },
-      { keys: 'G + S', desc: t('shortcuts.go-story', 'Go to Story Mode') },
+      { keys: 'G + C', desc: t('shortcuts.go-chat', 'Go to Character Test') },
+      { keys: 'G + S', desc: t('shortcuts.go-story', 'Go to Playtest') },
       { keys: 'G + E', desc: t('shortcuts.go-workflow', 'Go to Workflow Editor') },
       { keys: 'G + R', desc: t('shortcuts.go-characters', 'Go to Characters') },
       { keys: 'G + T', desc: t('shortcuts.go-settings', 'Go to Settings') },
     ],
   },
   {
-    name: t('shortcuts.group-story', 'Story Mode'),
+    name: t('shortcuts.group-story', 'Playtest'),
     items: [
       { keys: 'Space', desc: t('shortcuts.advance-dialogue', 'Advance dialogue') },
       { keys: 'Enter', desc: t('shortcuts.select-choice', 'Select a choice') },

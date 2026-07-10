@@ -31,7 +31,7 @@ router.afterEach(() => {
 }
 .progress-fill {
   width: 0; height: 100%;
-  background: linear-gradient(90deg, var(--brand-light), var(--brand), var(--info));
+  background: var(--brand);
   transition: width 0.3s ease;
 }
 .progress-bar.active .progress-fill {

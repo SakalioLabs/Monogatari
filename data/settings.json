@@ -1,6 +1,6 @@
 {
     "engine": {
-        "title": "LLM Galgame Engine",
+        "title": "Monogatari Engine",
         "width": 1280,
         "height": 720,
         "targetFps": 60,
@@ -18,7 +18,7 @@
         "defaultBackgroundAlpha": 200
     },
     "ai": {
-        "provider": "api",
+        "provider": "onnx",
         "api": {
             "baseUrl": "https://api.openai.com/v1",
             "apiKey": "",
@@ -31,6 +31,13 @@
             "tokenizerPath": "models/tokenizer.json",
             "useDirectML": true,
             "maxSequenceLength": 2048
+        },
+        "webgpu": {
+            "modelId": "onnx-community/Qwen2.5-0.5B-Instruct",
+            "dtype": "q4",
+            "maxNewTokens": 256,
+            "temperature": 0.7,
+            "topP": 0.9
         }
     },
     "paths": {

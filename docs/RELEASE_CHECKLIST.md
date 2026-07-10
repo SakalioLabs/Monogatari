@@ -8,7 +8,8 @@
 
 ### Frontend
 - [ ] `cd frontend && npm run build` passes with zero errors
-- [ ] `cd frontend && npm run build:web` emits manifest, service worker, offline fallback, `404.html`, `.nojekyll`, `_headers`, `_redirects`, `staticwebapp.config.json`, `vercel.json`, and `project-assets.json` assets
+- [ ] `cd frontend && npm run build:web` emits manifest, service worker, offline fallback, `404.html`, `.nojekyll`, `_headers`, `_redirects`, `staticwebapp.config.json`, `vercel.json`, `project-assets.json`, and `inference-runtime.json` assets
+- [ ] `cd frontend && npm run verify:inference-runtime` proves the Web/PWA package declares WebGPU, a supported precision, a bounded generation limit, CSP support, and service-worker caching without runtime secrets
 - [ ] Web/PWA dist includes copied `data/assets` project sample backgrounds and character sprites under `dist/assets`
 - [ ] Web/PWA manifest includes dedicated install and maskable icons, and `sw.js` precaches those icon assets plus generated project sample assets for offline install surfaces
 - [ ] `cd frontend && npm run verify:mobile-readiness` passes, proving safe-area viewport metadata, iOS/PWA install metadata, bottom navigation safe-area padding, and compact Tauri shell limits
@@ -18,13 +19,13 @@
 - [ ] `npm audit` shows zero vulnerabilities
 - [ ] Frontend runtime source contains no `console.log` or `console.debug` debug output before Web/PWA or Tauri packaging
 - [ ] Frontend runtime source contains no `v-html` or direct `innerHTML`/`outerHTML` assignment before Web/PWA or Tauri packaging
-- [ ] Web/PWA `index.html` and `404.html` include a Content Security Policy meta tag that blocks object/frame/form/`unsafe-eval` surfaces while allowing required app assets, blob/data media, HTTPS providers, and localhost preview tooling
+- [ ] Web/PWA `index.html` and `404.html` include a Content Security Policy meta tag that blocks object/frame/form and JavaScript `unsafe-eval` surfaces while allowing the explicit `wasm-unsafe-eval` needed by ONNX Runtime Web
 - [ ] Web/PWA dist includes a static-hosting `_headers` file with CSP, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, and a restrictive browser `Permissions-Policy`
 - [ ] Web/PWA dist includes a static-hosting `_redirects` file with project asset passthrough rules and a final `/* /index.html 200` SPA fallback
 - [ ] Web/PWA dist includes an Azure Static Web Apps `staticwebapp.config.json` with SPA navigation fallback, static asset exclusions, 404 rewrite, and matching global security headers
 - [ ] Web/PWA dist includes a Vercel `vercel.json` with SPA rewrite to `index.html`, no external rewrite destinations, and matching global security headers
-- [ ] All 23 views render correctly (Dashboard, Title, Story Mode, AI Chat, Workflow, Character Editor, Scene Assets, Settings, Characters, Group Chat, Analytics, Quality, Marketplace, Plugins, Audio, Knowledge, Dialogue Editor, Story Events, Endings, Scene Editor, CG Gallery, Backlog, Achievements)
-- [ ] Sidebar navigation works for all 22 items
+- [ ] All 22 views render correctly (Dashboard, Title Preview, Playtest, Character Test, Story Flow, Character Editor, Asset Diagnostics, Settings, Cast Preview, Ensemble Test, Runtime Analytics, Quality Gates, Marketplace, Plugins, Audio, Knowledge, Dialogue Editor, Story Events, Endings, Scene Editor, Visual Review, Transcript)
+- [ ] Sidebar navigation works for all 21 engine items, with no engine-level achievement or player-progression surface
 - [ ] Responsive layout verified on mobile viewport (375px) and tablet (768px), with the build-time responsive shell verifier attached as release evidence
 
 ### Rust Backend
@@ -41,7 +42,7 @@
 - [ ] Rust API engine rejects standard and streaming 200 responses that omit non-blank generated text before reporting inference success
 - [ ] Shared AI inference pipeline retries or rejects unsuccessful provider result envelopes before chat, streaming, or workflow LLM callers consume generated text
 - [ ] Project settings save/load paths scrub API keys, tokens, authorization headers, token-shaped values, query-secret assignments, and legacy persisted secret fields; enforce the 1 MiB limit; atomically replace regular `settings.json` files; and reject symlink/non-regular targets
-- [ ] ONNX backend configuration accepts only project-relative `.onnx` model and `.json` tokenizer references and activates the ONNX engine after registration
+- [ ] Windows ONNX configuration accepts only project-relative `.onnx` model and `.json` tokenizer references, requires DirectML without CPU fallback, validates supported causal-LM inputs and float32 logits, and activates only after initialization succeeds
 - [ ] Engine initialization stages fresh character/dialogue/knowledge managers before activation, replaces rather than merges previous project content, and clears mutable runtime state on same-root reloads and project switches
 - [ ] Engine initialization stages the versioned story event catalog with character-reference validation, and failed loads or hot reloads leave the active catalog unchanged
 - [ ] Saving project `settings.json` does not switch the active project root without loading the matching content managers
@@ -56,7 +57,7 @@
 - [ ] Workflow validation, desktop execution, browser preview, chat scoring, and Quality Suites resolve trigger nodes from the same project story event catalog
 - [ ] Story event catalogs reject invalid schemas, duplicate IDs, unsafe configured paths, symlinks, unsupported metrics, out-of-range thresholds, oversized content, and unknown scoped characters
 - [ ] Story event catalogs reject unknown, malformed, duplicate, or excessive actions; real chat/workflow triggers share the atomic progress executor while previews remain side-effect free
-- [ ] Story content access gates only IDs referenced by `unlock_*` actions; Story Mode, dialogue starts, real workflow scene changes, and ending launches reject locked content and admit persisted unlocks
+- [ ] Story content access gates only IDs referenced by `unlock_*` actions; Playtest, dialogue starts, real workflow scene changes, and ending launches reject locked content and admit persisted unlocks
 - [ ] Story Event editor validates trigger rules, character scopes, typed actions, target references, and metadata; saves reject stale fingerprints and multi-document flattening and roll back failed replacements
 - [ ] Versioned ending assets reject unsafe or unknown fields, expose stable authoring fingerprints, atomically roll back rejected saves, protect Story Event references during deletion, and resolve existing scene/dialogue references before player launch or author preview
 - [ ] Scene authoring catalogs merge metadata and inferred backgrounds, reject stale or invalid writes, roll back failed replacements, preserve background files during metadata deletion, and protect Story Event, ending, and workflow references
@@ -72,7 +73,7 @@
 - [ ] Example dialogues play through with choices
 - [ ] Both checked-in project data roots load through the real character/dialogue/knowledge/event managers, including legacy relationship-object normalization and map-key dialogue node IDs
 - [ ] Story Library lists scene/dialogue/ending lock state and Web/PWA dialogue playback follows real node choices
-- [ ] Scene and Dialogue editors guard dirty drafts, persist browser catalogs, display real project diagnostics, and preview saved drafts through Story Mode on desktop and Web/PWA
+- [ ] Scene and Dialogue editors guard dirty drafts, persist browser catalogs, display real project diagnostics, and preview saved drafts through Playtest on desktop and Web/PWA
 - [ ] Release dialogue validation passes for both checked-in data roots with matching catalogs, reachable nodes, valid targets, known characters, and bounded relationship changes
 - [ ] Ending Route editor binds real scene/dialogue catalogs, reports event coverage, guards dirty drafts, persists browser drafts, and previews saved routes without requiring player unlock progress
 - [ ] Knowledge base search returns relevant results
@@ -80,15 +81,16 @@
 - [ ] Checked-in character renderer asset fields resolve to supported project-relative files or intentionally fall back to the generated 3D placeholder
 - [ ] Core sample characters Sakura, Luna, and Kenji declare checked-in portrait/sprite renderer assets in both data roots
 - [ ] Character Editor renderer asset diagnostics flag unsupported extensions, absolute paths, external URLs, and parent traversal before saving/exporting character JSON
-- [ ] Character Editor renderer preview follows Story Mode priority for Live2D, GLB/GLTF, sprite/portrait, and generated 3D fallback states
-- [ ] Story Mode and Character Editor preview both derive renderer priority from the shared frontend renderer asset selector
+- [ ] Character Editor renderer preview follows Playtest priority for Live2D, GLB/GLTF, sprite/portrait, and generated 3D fallback states
+- [ ] Playtest and Character Editor preview both derive renderer priority from the shared frontend renderer asset selector
 - [ ] `npm run verify:renderer-assets` passes, proving shared renderer selector priority, expression sprite resolution, validation skips, and generated fallback behavior
-- [ ] Story Mode renderer fallback verified for Live2D, GLB/GLTF, sprite/portrait, assetless character states, and runtime Live2D/GLB/GLTF load failures that must skip to the next valid candidate
+- [ ] Playtest renderer fallback verified for Live2D, GLB/GLTF, sprite/portrait, assetless character states, and runtime Live2D/GLB/GLTF load failures that must skip to the next valid candidate
 - [ ] Checked-in character `knowledge_refs`, legacy `knowledge`, and `knowledgeRefs` resolve to existing knowledge entries in both project data roots
 
 ### AI Integration
 - [ ] API mode: streaming chat with OpenAI-compatible endpoint
-- [ ] ONNX mode: local model inference (if applicable)
+- [ ] Web/PWA mode: character and ensemble tests generate through the packaged Transformers.js WebGPU runtime
+- [ ] Windows mode: a compatible full-sequence causal-LM ONNX model initializes and generates through DirectML on device 0
 - [ ] Evaluation triggers fire at correct intervals
 - [ ] Relationship milestones unlock events correctly
 - [ ] Workflow LLM nodes guard generated output and replace blank or guard-only results with stable failure text before it is used by downstream story nodes
@@ -160,7 +162,7 @@
 - [ ] Installed Tauri build resolves bundled sample `data/` resources at startup when no development project data root is available
 - [ ] `node scripts/verify-windows-installers.mjs --check` passes for public Windows artifacts, proving MSI/NSIS identity, version, stable MSI upgrade code, hashes, size bounds, expected-publisher Authenticode signatures on both installers and the extracted application, exact MSI payload parity, and extracted runtime verification
 - [ ] Internal/alpha unsigned candidates use the explicit `--allow-unsigned` audit only; their audit reports `release_ready: false` and is not reused as stable/beta evidence
-- [ ] Extracted production executable writes a verified `monogatari-installation-verification/v1` report with current engine/build Git provenance, only the expected `api_key_missing` runtime-credential warning, 97-file project inventory, runtime content counts, and a valid project content fingerprint
+- [ ] Extracted production executable writes a verified `monogatari-installation-verification/v1` report with current engine/build Git provenance, no bundled DirectML project warnings, 97-file project inventory, runtime content counts, and a valid project content fingerprint
 - [ ] Installed Tauri build writes analytics, sync manifests, saves, and generated system/API TTS assets under the active project data root with sanitized output filenames
 - [ ] Azure and ElevenLabs TTS provider errors redact token-shaped values, API-key assignments, authorization headers, sensitive provider headers, and response bodies before reaching frontend status surfaces
 - [ ] TTS synthesis logs record text length metadata instead of raw spoken dialogue, prompt text, or token-shaped content

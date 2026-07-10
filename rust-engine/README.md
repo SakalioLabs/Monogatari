@@ -1,39 +1,38 @@
-# LLM Galgame Engine (Rust + Tauri)
+# Monogatari Engine Runtime (Rust + Tauri)
 
-A powerful visual novel / galgame engine powered by Large Language Models, built with Rust and Tauri.
+The native runtime and command layer for the Monogatari low-code game development engine.
 
 ## Features
 
 - **LLM-Powered Characters**: AI-driven characters with personality, memory, and emotional states
 - **Live2D Support**: Animated character models using Live2D Cubism SDK
 - **Visual Workflow Editor**: Create stories visually without coding (Dify-style)
-- **Multiple AI Backends**: Support for OpenAI-compatible APIs plus project-scoped ONNX configuration preflight with explicit runtime-unavailable guards until local ONNX execution is linked
+- **Targeted AI Backends**: Windows ONNX inference through required DirectML, plus OpenAI-compatible development APIs
 - **Dialogue System**: Branching dialogue trees with choices and relationship tracking
 - **Knowledge Base**: World lore and context system for consistent storytelling
 - **Save/Load System**: Full game state persistence
 - **Scripting Engine**: Rhai-based scripting for advanced logic
-- **Cross-Platform**: Runs on Windows, macOS, and Linux via Tauri
+- **Windows Runtime**: DirectML-backed local inference for packaged Windows projects; other native targets remain future work
 
 ## Architecture
 
 ```
 rust-engine/
-├── crates/
-│   ├── core/          # Engine foundation (EventBus, ServiceLocator, GameClock)
-│   ├── ai/            # LLM inference (API engine, ONNX engine, Pipeline)
-│   ├── game/          # Game logic (Characters, Dialogue, Knowledge, Scenes)
-│   ├── assets/        # Asset and save management
-│   ├── scripting/     # Rhai scripting engine
-│   └── tauri-app/     # Tauri desktop application
-├── data/              # Game data (characters, dialogues, knowledge)
-└── frontend/          # Vue.js frontend with Live2D support
+|-- crates/
+|   |-- core/          # Engine foundation
+|   |-- ai/            # API and DirectML inference
+|   |-- game/          # Runtime characters, dialogue, knowledge, and scenes
+|   |-- assets/        # Asset and save management
+|   |-- scripting/     # Rhai scripting engine
+|   `-- tauri-app/     # Tauri desktop application
+`-- data/              # Bundled project data
 ```
 
 ## Quick Start
 
 ### Prerequisites
 
-- Rust 1.70+
+- The toolchain pinned in `rust-toolchain.toml`
 - Node.js 18+
 - npm or yarn
 
@@ -91,15 +90,17 @@ dm.start_dialogue("meeting_sakura").await?;
     "provider": "api",
     "api": {
       "base_url": "https://api.openai.com/v1",
-      "api_key": "your-key-here",
+      "api_key": "",
       "model": "gpt-3.5-turbo"
     }
   }
 }
 ```
 
-#### ONNX Mode (Local)
-ONNX configuration is project-scoped and validated, but this build does not link an ONNX Runtime executor yet. ONNX inference and streaming fail with an explicit runtime-unavailable error instead of returning placeholder character text; use the API backend for production dialogue until the local runtime integration is enabled.
+API credentials are supplied at runtime through Settings and are scrubbed from project files.
+
+#### Windows DirectML Mode
+Windows packages load a project-relative ONNX model and standard Hugging Face `tokenizer.json`. The runtime requires DirectML, rejects CPU fallback, accepts full-sequence causal-LM graphs with supported token inputs and float32 `logits`, and activates only after initialization succeeds.
 
 ```json
 {

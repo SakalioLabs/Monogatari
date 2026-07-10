@@ -2,6 +2,7 @@ const CACHE_NAME = "monogatari-web-v__APP_VERSION__-__BUILD_FINGERPRINT__";
 const SCOPE_PATH = new URL(self.registration.scope).pathname;
 const BASE_PATH = SCOPE_PATH.endsWith("/") ? SCOPE_PATH.slice(0, -1) : SCOPE_PATH;
 const PROJECT_ASSET_MANIFEST_PATH = "/project-assets.json";
+const INFERENCE_RUNTIME_PATH = "/inference-runtime.json";
 const APP_SHELL_PATHS = [
   "/",
   "/index.html",
@@ -12,6 +13,7 @@ const APP_SHELL_PATHS = [
   "/icons/maskable-icon.svg",
   "/manifest.webmanifest",
   PROJECT_ASSET_MANIFEST_PATH,
+  INFERENCE_RUNTIME_PATH,
   "/locales/en.json",
   "/locales/zh-CN.json",
   "/locales/zh.json",
@@ -68,7 +70,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (path.startsWith("/assets/")) {
+  if (path.startsWith("/assets/") || path.startsWith("/ort/")) {
     event.respondWith(cacheFirst(request));
     return;
   }

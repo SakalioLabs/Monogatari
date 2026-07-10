@@ -42,10 +42,8 @@ fn onnx_model_config_in_project(
     })
 }
 
-fn apply_onnx_runtime_options(mut config: ModelConfig, use_directml: Option<bool>) -> ModelConfig {
-    if let Some(use_directml) = use_directml {
-        config.use_directml = use_directml;
-    }
+fn apply_onnx_runtime_options(mut config: ModelConfig, _use_directml: Option<bool>) -> ModelConfig {
+    config.use_directml = true;
     config
 }
 
@@ -131,14 +129,22 @@ fn normalize_onnx_file_ref(file_ref: &str) -> Result<Vec<String>, String> {
 
 fn register_onnx_engine(
     pipeline: &mut InferencePipeline,
-    config: ModelConfig,
+    engine: ONNXEngine,
 ) -> Result<(), String> {
-    let engine = ONNXEngine::new(config);
     pipeline.register_engine_with_name("ONNX", Arc::new(RwLock::new(engine)));
     pipeline
         .set_active_engine("ONNX")
         .map_err(|e| e.to_string())?;
     Ok(())
+}
+
+async fn initialize_onnx_engine(config: ModelConfig) -> Result<ONNXEngine, String> {
+    let mut engine = ONNXEngine::new(config);
+    engine
+        .initialize()
+        .await
+        .map_err(|error| error.to_string())?;
+    Ok(engine)
 }
 
 async fn register_initialized_api_engine(
@@ -188,10 +194,11 @@ pub async fn configure_onnx(
         onnx_model_config_in_project(&project_root, &model_path, &tokenizer_path)?,
         use_directml,
     );
+    let engine = initialize_onnx_engine(config).await?;
     let mut pipeline = state.inference_pipeline.write().await;
-    register_onnx_engine(&mut pipeline, config)?;
+    register_onnx_engine(&mut pipeline, engine)?;
 
-    Ok("ONNX engine configured".to_string())
+    Ok("Windows DirectML engine configured".to_string())
 }
 
 /// Generate a response from the AI.
@@ -282,21 +289,21 @@ mod tests {
                 .unwrap();
         let mut pipeline = InferencePipeline::new();
 
-        register_onnx_engine(&mut pipeline, config).unwrap();
+        register_onnx_engine(&mut pipeline, ONNXEngine::new(config)).unwrap();
 
         assert_eq!(pipeline.active_engine_name(), Some("ONNX"));
         assert!(pipeline.engine_names().contains(&"ONNX"));
     }
 
     #[test]
-    fn configure_onnx_applies_directml_preference() {
+    fn configure_onnx_enforces_directml() {
         let root = PathBuf::from("project-data");
         let config =
             onnx_model_config_in_project(&root, "models/model.onnx", "models/tokenizer.json")
                 .unwrap();
 
         assert!(apply_onnx_runtime_options(config.clone(), None).use_directml);
-        assert!(!apply_onnx_runtime_options(config, Some(false)).use_directml);
+        assert!(apply_onnx_runtime_options(config, Some(false)).use_directml);
     }
 
     #[test]
@@ -309,7 +316,7 @@ mod tests {
         let mut pipeline = InferencePipeline::new();
 
         rt.block_on(async {
-            register_onnx_engine(&mut pipeline, config).unwrap();
+            register_onnx_engine(&mut pipeline, ONNXEngine::new(config)).unwrap();
         });
 
         assert_eq!(pipeline.active_engine_name(), Some("ONNX"));

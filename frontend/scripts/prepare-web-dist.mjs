@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { copyFile, cp, readFile, readdir, stat, writeFile } from 'node:fs/promises'
+import { copyFile, cp, mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -20,6 +20,15 @@ const projectCharactersDir = path.join(rootDir, 'data', 'characters')
 const distProjectCharactersDir = path.join(distDir, 'characters')
 const projectKnowledgeDir = path.join(rootDir, 'data', 'knowledge')
 const distProjectKnowledgeDir = path.join(distDir, 'knowledge')
+const projectSettingsPath = path.join(rootDir, 'data', 'settings.json')
+const projectWebModelDir = path.join(rootDir, 'data', 'models', 'webgpu')
+const distWebModelDir = path.join(distDir, 'models', 'webgpu')
+const ortRuntimeSourceDir = path.resolve(scriptDir, '..', 'node_modules', 'onnxruntime-web', 'dist')
+const distOrtRuntimeDir = path.join(distDir, 'ort')
+const ortRuntimeFiles = [
+  'ort-wasm-simd-threaded.jsep.mjs',
+]
+const inferenceRuntimePath = path.join(distDir, 'inference-runtime.json')
 const projectAssetManifestPath = path.join(distDir, 'project-assets.json')
 const distServiceWorkerPath = path.join(distDir, 'sw.js')
 const frontendPackagePath = path.resolve(scriptDir, '..', 'package.json')
@@ -28,7 +37,7 @@ const staticHostingRedirectsPath = path.join(distDir, '_redirects')
 const azureStaticWebAppConfigPath = path.join(distDir, 'staticwebapp.config.json')
 const vercelConfigPath = path.join(distDir, 'vercel.json')
 const webSecurityCsp =
-  "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost data: blob:; media-src 'self' asset: http://asset.localhost data: blob:; font-src 'self' data:; connect-src 'self' asset: http://asset.localhost https: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-src 'none'; frame-ancestors 'none'"
+  "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost data: blob:; media-src 'self' asset: http://asset.localhost data: blob:; font-src 'self' data:; connect-src 'self' asset: http://asset.localhost https: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-src 'none'; frame-ancestors 'none'"
 const webPermissionsPolicy = 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=()'
 const requiredFiles = [
   'index.html',
@@ -44,6 +53,15 @@ async function fileExists(filePath) {
   try {
     const info = await stat(filePath)
     return info.isFile()
+  } catch {
+    return false
+  }
+}
+
+async function directoryExists(dirPath) {
+  try {
+    const info = await stat(dirPath)
+    return info.isDirectory()
   } catch {
     return false
   }
@@ -110,6 +128,8 @@ function staticHostingRedirects() {
     '/endings/* /endings/:splat 200',
     '/characters/* /characters/:splat 200',
     '/knowledge/* /knowledge/:splat 200',
+    '/models/* /models/:splat 200',
+    '/ort/* /ort/:splat 200',
     '/icons/* /icons/:splat 200',
     '/locales/* /locales/:splat 200',
     '/manifest.webmanifest /manifest.webmanifest 200',
@@ -117,6 +137,7 @@ function staticHostingRedirects() {
     '/offline.html /offline.html 200',
     '/offline-i18n.js /offline-i18n.js 200',
     '/project-assets.json /project-assets.json 200',
+    '/inference-runtime.json /inference-runtime.json 200',
     '/favicon.svg /favicon.svg 200',
     '/* /index.html 200',
     '',
@@ -135,6 +156,8 @@ function azureStaticWebAppConfig() {
         '/endings/*',
         '/characters/*',
         '/knowledge/*',
+        '/models/*',
+        '/ort/*',
         '/icons/*',
         '/locales/*',
         '/manifest.webmanifest',
@@ -142,6 +165,7 @@ function azureStaticWebAppConfig() {
         '/offline.html',
         '/offline-i18n.js',
         '/project-assets.json',
+        '/inference-runtime.json',
         '/favicon.svg',
       ],
     },
@@ -222,6 +246,21 @@ async function projectAssetManifest() {
   }
 }
 
+async function webInferenceRuntime() {
+  const settings = JSON.parse(await readFile(projectSettingsPath, 'utf8'))
+  const webgpu = settings.ai?.webgpu || {}
+  return {
+    schema: 'monogatari-inference-runtime/v1',
+    target: 'web',
+    backend: 'webgpu',
+    model_id: webgpu.model_id || webgpu.modelId || 'onnx-community/Qwen2.5-0.5B-Instruct',
+    dtype: webgpu.dtype || 'q4',
+    max_new_tokens: Number(webgpu.max_new_tokens || webgpu.maxNewTokens || 256),
+    temperature: Number(webgpu.temperature || 0.7),
+    top_p: Number(webgpu.top_p || webgpu.topP || 0.9),
+  }
+}
+
 const missing = []
 
 for (const file of requiredFiles) {
@@ -243,6 +282,14 @@ await cp(projectDialoguesDir, distProjectDialoguesDir, { recursive: true, force:
 await cp(projectEndingsDir, distProjectEndingsDir, { recursive: true, force: true })
 await cp(projectCharactersDir, distProjectCharactersDir, { recursive: true, force: true })
 await cp(projectKnowledgeDir, distProjectKnowledgeDir, { recursive: true, force: true })
+if (await directoryExists(projectWebModelDir)) {
+  await cp(projectWebModelDir, distWebModelDir, { recursive: true, force: true })
+}
+await mkdir(distOrtRuntimeDir, { recursive: true })
+for (const file of ortRuntimeFiles) {
+  await copyFile(path.join(ortRuntimeSourceDir, file), path.join(distOrtRuntimeDir, file))
+}
+await writeFile(inferenceRuntimePath, `${JSON.stringify(await webInferenceRuntime(), null, 2)}\n`)
 await writeFile(projectAssetManifestPath, `${JSON.stringify(await projectAssetManifest(), null, 2)}\n`)
 await writeFile(staticHostingHeadersPath, staticHostingHeaders())
 await writeFile(staticHostingRedirectsPath, staticHostingRedirects())
@@ -250,4 +297,4 @@ await writeFile(azureStaticWebAppConfigPath, `${JSON.stringify(azureStaticWebApp
 await writeFile(vercelConfigPath, `${JSON.stringify(vercelConfig(), null, 2)}\n`)
 const serviceWorkerBuildId = await injectServiceWorkerBuildId()
 
-console.log(`[web-dist] Static hosting assets ready (${serviceWorkerBuildId}): shell, PWA metadata, project assets, scenes, dialogues, endings, characters, knowledge, story events, and project asset manifest`)
+console.log(`[web-dist] Static hosting assets ready (${serviceWorkerBuildId}): shell, WebGPU inference contract, PWA metadata, and project content`)

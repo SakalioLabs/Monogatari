@@ -2,25 +2,25 @@
 
 ## Overview
 
-Monogatari is a desktop application built with Rust (Tauri 2.x) for the backend and Vue 3 + TypeScript for the frontend. The engine uses an AI inference pipeline to drive character conversations, with an event system that triggers plot developments based on conversation quality scores.
+Monogatari is a low-code game development engine built with Rust (Tauri 2.x) and Vue 3 + TypeScript. The workbench authors project content and validates it against the same runtime contracts used by Web/PWA and Windows packages.
 
 ## System Architecture
 
 ```
 +--------------------------------------------------+
 |                  Frontend (Vue 3)                  |
-|  Views (21) | PWA shell | Stores (Pinia)          |
+|  Views (22) | PWA shell | Stores (Pinia)          |
 +--------------------------------------------------+
 |            Tauri IPC Bridge (invokeCommand)        |
 +--------------------------------------------------+
 |                  Rust Backend                      |
-|  22 Command Modules | State (AppState)             |
+|  25 Command Modules | State (AppState)             |
 +--------------------------------------------------+
 |           Core Crates                             |
 |  core/ | ai/ | game/ | assets/ | scripting/       |
 +--------------------------------------------------+
-|           External Services                        |
-|  OpenAI API | ONNX Preflight | TTS Providers       |
+|           Inference Runtimes                       |
+|  WebGPU (Web) | DirectML (Windows) | Dev API       |
 +--------------------------------------------------+
 ```
 
@@ -39,25 +39,25 @@ Script execution is treated as bounded authoring logic. Tauri script commands va
 
 ## Data Flow
 
-1. **Player sends message** via ChatView -> invokeCommand("send_chat_message")
-2. **Backend builds context** from character personality, knowledge base, conversation history
-3. **AI pipeline generates response** via OpenAI-compatible API; ONNX mode is project-scoped configuration preflight until a local runtime executor is linked
-4. **Response streamed** back via Tauri events (chat-chunk, chat-complete)
+1. **Developer starts a character test** from ChatView or GroupChatView
+2. **Runtime builds context** from character personality, knowledge base, conversation history
+3. **Target runtime generates output** through Transformers.js WebGPU in browser packages or Rust ONNX Runtime DirectML in Windows packages; a remote API may be selected for development
+4. **Response streams** directly in the browser or through Tauri events (`chat-chunk`, `chat-complete`)
 5. **Evaluation triggered** every 5 messages - scores friendliness, engagement, creativity
 6. **Events triggered** based on cumulative scores and relationship milestones
 
 ## Frontend Architecture
 
-- **Router**: 21 routes with lazy-loaded views
+- **Router**: 22 routes with lazy-loaded views
 - **State**: Pinia store for game state (saves, scenes, relationships)
 - **i18n**: Nested key resolution with localStorage persistence (zh-CN, ja-JP, ko-KR)
 - **Tauri Bridge**: Browser-compatible `invokeCommand()` with fallback for non-Tauri environments
 - **Web Distribution**: Production browser builds register a service worker, manifest, and offline fallback; Tauri runtime disables service worker registration.
-- **Renderer Asset Pipeline**: Story Mode resolves scene and character assets through a shared frontend resolver. Character staging prefers Live2D models, then GLB/GLTF 3D models, then 2D sprites or portraits, and falls back to a generated Three.js placeholder for assetless characters.
+- **Renderer Asset Pipeline**: Playtest resolves scene and character assets through a shared frontend resolver. Character staging prefers Live2D models, then GLB/GLTF 3D models, then 2D sprites or portraits, and falls back to a generated Three.js placeholder for assetless characters.
 - **Runtime Log Hygiene**: Production frontend source avoids `console.log` and `console.debug` debug output; release verification scans `frontend/src` while preserving warning/error reporting for real failures.
 - **DOM Injection Boundaries**: The frontend shell renders navigation symbols through normal text bindings, and release verification rejects `v-html` plus direct raw-HTML assignments in runtime source.
 - **Desktop CSP**: Packaged Tauri WebViews use an explicit Content Security Policy that allows local app assets, Tauri asset URLs, blob/data media, HTTPS provider connectivity, and localhost dev tooling while blocking object, frame, form, wildcard default, and `unsafe-eval` surfaces.
-- **Web/PWA CSP**: Static browser builds ship a matching `index.html` Content Security Policy meta tag, copied into the `404.html` SPA fallback, so hosted previews block object, frame, form, wildcard default, and `unsafe-eval` surfaces while still allowing required project assets, blobs, media, HTTPS providers, and localhost preview tooling.
+- **Web/PWA CSP**: Static browser builds ship a matching `index.html` Content Security Policy meta tag, copied into the `404.html` SPA fallback. It blocks JavaScript `unsafe-eval`, object, frame, form, and wildcard defaults while explicitly allowing `wasm-unsafe-eval` for ONNX Runtime Web.
 - **Static Hosting Headers**: Web/PWA dist preparation also emits a `_headers` file for Netlify/Cloudflare-style hosts with CSP, `X-Content-Type-Options`, `Referrer-Policy`, and `Permissions-Policy` headers; release verification checks both the generated file and the source script so response-header capable hosts get stronger browser enforcement without breaking GitHub Pages fallback.
 - **Static Hosting Redirects**: Web/PWA dist preparation emits a `_redirects` file for Netlify/Cloudflare-style hosts with explicit project asset passthrough rewrites before the final `index.html` SPA fallback, keeping static renderer assets and locale files reachable on hosts that evaluate redirects before normal file serving.
 - **Azure Static Web Apps Config**: Web/PWA dist preparation emits `staticwebapp.config.json` with SPA navigation fallback to `index.html`, explicit asset/service-worker exclusions, a `404.html` rewrite, and matching global security headers so Azure Static Web Apps deployments share the same browser enforcement and route behavior.
@@ -67,7 +67,7 @@ Script execution is treated as bounded authoring logic. Tauri script commands va
 
 The Windows release audit treats installer output as a separate trust boundary. It reads MSI properties through the Windows Installer API, reads NSIS PE version metadata, records SHA-256 hashes and Authenticode status for both formats, and administratively extracts the MSI into a uniquely owned temporary directory. The extracted `data/` tree must match the checked-in source tree exactly by portable relative path, byte length, and SHA-256 hash before the application executable is trusted.
 
-Before Tauri initializes a window, the production binary recognizes `--verify-installation <absolute-report.json>`. This path resolves bundled resources beside the executable, rejects secret-bearing settings and non-regular filesystem entries, loads characters, dialogues, knowledge, and events through the real runtime managers, validates scenes, endings, workflows, locales, and Quality Suites, and rebuilds the complete project export inventory fingerprint. The only accepted project warning is `api_key_missing`, which proves the sample API credential remains runtime-only; any additional warning fails verification. The atomic JSON report includes engine version and build Git commit, allowing a clean-worktree installer audit to reject stale binaries that were produced from another revision. Stable and beta channels require valid Authenticode signatures; internal, alpha, and nightly channels may explicitly audit unsigned candidates without marking them release-ready.
+Before Tauri initializes a window, the production binary recognizes `--verify-installation <absolute-report.json>`. This path resolves bundled resources beside the executable, rejects secret-bearing settings and non-regular filesystem entries, loads characters, dialogues, knowledge, and events through the real runtime managers, validates scenes, endings, workflows, locales, and Quality Suites, and rebuilds the complete project export inventory fingerprint. The bundled DirectML sample must verify without configuration warnings; API-based custom projects may report only the runtime-only `api_key_missing` warning. The atomic JSON report includes engine version and build Git commit, allowing a clean-worktree installer audit to reject stale binaries that were produced from another revision. Stable and beta channels require valid Authenticode signatures; internal, alpha, and nightly channels may explicitly audit unsigned candidates without marking them release-ready.
 
 ## i18n Locale Boundaries
 
@@ -75,13 +75,14 @@ i18n backend commands treat locale values as portable locale IDs rather than fil
 
 ## Live2D Model Boundaries
 
-Live2D backend commands treat model paths as project-relative model file references. `.model3.json` and `.json` files resolve under the active project data root, sidecar expressions and motions are discovered next to that model file, and absolute paths, drive/URI-style prefixes, empty segments, `.`/`..` traversal, unsupported extensions, and non-portable segments are rejected before filesystem access. Story Mode uses the same shared renderer asset validator before passing character art paths to Live2D, GLB/GLTF, or sprite renderers.
+Live2D backend commands treat model paths as project-relative model file references. `.model3.json` and `.json` files resolve under the active project data root, sidecar expressions and motions are discovered next to that model file, and absolute paths, drive/URI-style prefixes, empty segments, `.`/`..` traversal, unsupported extensions, and non-portable segments are rejected before filesystem access. Playtest uses the same shared renderer asset validator before passing character art paths to Live2D, GLB/GLTF, or sprite renderers.
 
 ## AI Pipeline
 
-The `InferencePipeline` supports two backends:
-1. **API Engine**: OpenAI-compatible endpoints (GPT-4, Claude, etc.)
-2. **ONNX Engine**: Project-scoped local model/tokenizer configuration preflight with explicit runtime-unavailable errors until ONNX Runtime execution is linked
+Inference follows the package target:
+1. **WebGPU Runtime**: Web/PWA builds lazy-load a pinned Transformers.js text-generation pipeline from `inference-runtime.json`, require a secure WebGPU context, and stream output in Character and Ensemble Test.
+2. **DirectML Runtime**: Windows builds load a project-relative ONNX model and standard `tokenizer.json`, require the DirectML execution provider without CPU fallback, validate full-sequence causal-LM inputs plus float32 logits, and run bounded autoregressive generation off the async runtime thread.
+3. **Development API**: OpenAI-compatible endpoints remain available for authoring and integration testing.
 
 Character responses use a structured prompt system:
 - System prompt with character personality, background, and emotion
@@ -99,7 +100,7 @@ API backend configuration treats provider credentials as runtime-only secrets. P
 
 The shared inference pipeline treats unsuccessful `InferenceResult` envelopes as inference failures instead of successful empty generations. Active-engine calls retry these provider failure envelopes, while direct engine and streaming calls reject them before chat, workflow LLM nodes, or stream completion handlers can consume empty or stale generated text.
 
-ONNX backend configuration treats `modelPath` and `tokenizerPath` as project-relative file references under the active project data root. Model references must be `.onnx`, tokenizer references must be `.json`, path-shaped or non-portable input is rejected before engine registration, and successful ONNX configuration activates the ONNX engine so Settings cannot silently leave an older backend selected. Until a real ONNX Runtime executor is linked, ONNX initialization, inference, and streaming return an explicit runtime-unavailable error and AI status reports the backend as not ready, preventing placeholder text from entering character dialogue or scoring flows.
+Windows ONNX configuration treats `modelPath` and `tokenizerPath` as project-relative file references under the active project data root. Model references must be `.onnx`, tokenizer references must be `.json`, and path-shaped or non-portable input is rejected before initialization. A DirectML session disables parallel execution and memory patterns as required by the provider, rejects unsupported KV-cache graph inputs, and registers as active only after model and tokenizer initialization succeed.
 
 The legacy C# AI path mirrors the same boundary-sanitization intent for bracket, fullwidth, XML/header, attributed XML-like, Markdown role-code-fence, comment-wrapped, punctuation-free heading, and JSON-shaped role spoofing, and redacts token-shaped values plus JSON/header/query secret assignments from provider error bodies and request exceptions while the legacy solution remains in the release gate.
 
@@ -120,7 +121,7 @@ Workflows are validated for: node IDs, start/end structure, missing config, brok
 
 Live chat, manual scoring, workflow trigger nodes, workflow validation, Quality Suites, and browser workflow previews consume the same event definitions. Rules combine optional relationship, normalized score, and evaluation-count thresholds; can target explicit character IDs; and can opt into repeatable triggering. Typed actions unlock scenes, dialogues, endings, or set validated script flags. Legacy unlock fields under `data` normalize into the same actions. Default rule behavior retains v1 fingerprints pinned by Quality Suites, while scoped or repeatable behavior uses v2 fingerprints. A catalog fingerprint binds event descriptions, payload data, typed actions, and rule fingerprints for project/release audits.
 
-`StoryContentAccess` derives gates directly from catalog actions: referenced content requires a matching progress unlock, while unreferenced content stays open. Dialogue start, Story Mode scene entry, real workflow scene changes, and ending launch call the shared guard. Author previews may inspect decisions without mutating or blocking their local simulation. `StoryContentAccessSnapshot` exposes gate sources and progress/catalog fingerprints for frontend diagnostics.
+`StoryContentAccess` derives gates directly from catalog actions: referenced content requires a matching progress unlock, while unreferenced content stays open. Dialogue start, Playtest scene entry, real workflow scene changes, and ending launch call the shared guard. Author previews may inspect decisions without mutating or blocking their local simulation. `StoryContentAccessSnapshot` exposes gate sources and progress/catalog fingerprints for frontend diagnostics.
 
 The Story Event workbench converts normalized runtime definitions back into the authored v1 document shape. Saves require the fingerprint observed at load time, validate the complete candidate before filesystem mutation, reject ambiguous multi-document flattening, stage a temporary file, retain a backup during replacement, reload the project catalog, and restore the prior document if post-write validation fails.
 
@@ -173,7 +174,7 @@ Marketplace import/export commands treat template paths as project template refe
 
 Character, dialogue, and knowledge reload commands accept project content references rather than raw filesystem paths. `characters`, `dialogue`, and `knowledge` resolve to their canonical folders under the active project data root, while nested references stay under the same canonical folder. Absolute paths, drive/URI-style prefixes, empty segments, and `.`/`..` traversal are rejected before directory loading begins.
 
-Web/PWA packaging copies project scenes, dialogues, endings, events, and renderer assets into the static distribution, inventories them in `project-assets.json`, and pre-caches them through the service worker. The browser Story Library uses the same access snapshot and runs dialogue nodes through a local cursor for start, advance, and choice transitions; Tauri uses the Rust dialogue manager. Browser authoring stores complete scene, dialogue, and ending catalog drafts in local storage, and Story Mode reads those same drafts for preview without changing packaged source files.
+Web/PWA packaging copies project scenes, dialogues, endings, events, renderer assets, and an optional `data/models/webgpu` model directory into the static distribution, inventories project content in `project-assets.json`, and emits `inference-runtime.json` with the WebGPU model contract. The service worker pre-caches both manifests and project content; Transformers.js maintains its browser model cache. The browser Story Library uses the same access snapshot and runs dialogue nodes through a local cursor for start, advance, and choice transitions; Tauri uses the Rust dialogue manager. Browser authoring stores complete scene, dialogue, and ending catalog drafts in local storage, and Playtest reads those same drafts without changing packaged source files.
 
 ## Save Data Boundaries
 

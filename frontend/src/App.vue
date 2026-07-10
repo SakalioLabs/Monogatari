@@ -138,12 +138,6 @@
     </nav>
 
     <ToastNotification />
-    <Transition name="fade">
-      <button v-if="achievementToastVisible" class="achievement-toast" @click="achievementToastVisible = false">
-        <Trophy :size="18" aria-hidden="true" />
-        <span>{{ achievementToast }}</span>
-      </button>
-    </Transition>
     <KeyboardShortcutsHelp :visible="showShortcuts" @close="showShortcuts = false" />
     <WhatsNew />
     <BackToTop />
@@ -180,7 +174,6 @@ import {
   ShieldCheck,
   Store,
   Sun,
-  Trophy,
   UserRoundPen,
   Users,
   Workflow as WorkflowIcon,
@@ -195,6 +188,8 @@ import GlobalSearch from './components/GlobalSearch.vue'
 import BackToTop from './components/BackToTop.vue'
 import ProgressBar from './components/ProgressBar.vue'
 import { useI18n } from './lib/i18n'
+import { hasTauriRuntime } from './lib/tauri'
+import { loadPackagedWebGpuConfig } from './lib/webgpuInference'
 
 type NavGroupId = 'overview' | 'create' | 'test' | 'manage'
 
@@ -212,39 +207,41 @@ const { locale, supportedLocales, t, setLocale } = useI18n()
 const sidebarCollapsed = ref(localStorage.getItem('monogatari-sidebar') === 'collapsed')
 const mobileNavigationOpen = ref(false)
 const showShortcuts = ref(false)
-const achievementToast = ref('')
-const achievementToastVisible = ref(false)
-const currentTheme = ref(localStorage.getItem('monogatari-theme') || 'dark')
+const themeDesignVersion = 'pale-monochrome-v1'
+const storedTheme = localStorage.getItem('monogatari-theme')
+const currentTheme = ref(
+  localStorage.getItem('monogatari-theme-design') === themeDesignVersion && (storedTheme === 'light' || storedTheme === 'dark')
+    ? storedTheme
+    : 'light',
+)
 const expandedGroups = reactive<Record<NavGroupId, boolean>>({
   overview: true,
   create: true,
   test: false,
   manage: false,
 })
-let achievementToastTimer: number | null = null
 
 const showShell = computed(() => route.name !== 'game' && route.name !== 'title')
 
 const navItems = computed<NavItem[]>(() => [
   { path: '/', label: t('nav.dashboard', 'Dashboard'), mobileLabel: t('nav.mobile.home', 'Home'), icon: LayoutDashboard, group: 'overview' },
+  { path: '/editor', label: t('nav.workflow', 'Story Flow'), mobileLabel: t('nav.mobile.flow', 'Flow'), icon: WorkflowIcon, group: 'create' },
   { path: '/character-editor', label: t('nav.editor', 'Character Editor'), mobileLabel: t('nav.mobile.create', 'Create'), icon: UserRoundPen, group: 'create' },
   { path: '/scene-editor', label: t('nav.scenes', 'Scenes'), mobileLabel: t('nav.scenes', 'Scenes'), icon: Clapperboard, group: 'create' },
   { path: '/dialogue-editor', label: t('nav.dialogues', 'Dialogues'), mobileLabel: t('nav.dialogues', 'Dialogues'), icon: MessageSquareText, group: 'create' },
   { path: '/story-events', label: t('nav.events', 'Story Events'), mobileLabel: t('nav.events', 'Events'), icon: Zap, group: 'create' },
   { path: '/endings', label: t('nav.endings', 'Endings'), mobileLabel: t('nav.endings', 'Endings'), icon: Flag, group: 'create' },
-  { path: '/editor', label: t('nav.workflow', 'Workflow'), mobileLabel: t('nav.mobile.flow', 'Flow'), icon: WorkflowIcon, group: 'create' },
   { path: '/knowledge', label: t('nav.knowledge', 'Knowledge'), mobileLabel: t('nav.knowledge', 'Knowledge'), icon: Library, group: 'create' },
   { path: '/audio', label: t('nav.audio', 'Audio'), mobileLabel: t('nav.audio', 'Audio'), icon: AudioLines, group: 'create' },
-  { path: '/game', label: t('nav.story', 'Story Mode'), mobileLabel: t('nav.mobile.preview', 'Preview'), icon: Play, group: 'test' },
-  { path: '/chat', label: t('nav.chat', 'AI Chat'), mobileLabel: t('nav.mobile.test', 'Test'), icon: BotMessageSquare, group: 'test', badge: t('badge.live', 'Live') },
-  { path: '/group-chat', label: t('nav.group', 'Group Chat'), mobileLabel: t('nav.group', 'Group'), icon: MessagesSquare, group: 'test' },
-  { path: '/quality', label: t('nav.quality', 'Quality'), mobileLabel: t('nav.quality', 'Quality'), icon: ShieldCheck, group: 'test', badge: t('badge.gate', 'Gate') },
-  { path: '/analytics', label: t('nav.analytics', 'Analytics'), mobileLabel: t('nav.analytics', 'Analytics'), icon: ChartNoAxesCombined, group: 'test' },
-  { path: '/assets', label: t('nav.assets', 'Scene Assets'), mobileLabel: t('nav.assets', 'Assets'), icon: Images, group: 'manage' },
-  { path: '/characters', label: t('nav.characters', 'Characters'), mobileLabel: t('nav.characters', 'Characters'), icon: Users, group: 'manage' },
-  { path: '/cg-gallery', label: t('nav.cg-gallery', 'CG Gallery'), mobileLabel: t('nav.cg-gallery', 'Gallery'), icon: ImageIcon, group: 'manage' },
-  { path: '/backlog', label: t('nav.backlog', 'Backlog'), mobileLabel: t('nav.backlog', 'Backlog'), icon: History, group: 'manage' },
-  { path: '/achievements', label: t('nav.achievements', 'Achievements'), mobileLabel: t('nav.achievements', 'Goals'), icon: Trophy, group: 'manage' },
+  { path: '/game', label: t('nav.story', 'Playtest'), mobileLabel: t('nav.mobile.preview', 'Preview'), icon: Play, group: 'test' },
+  { path: '/chat', label: t('nav.chat', 'Character Test'), mobileLabel: t('nav.mobile.test', 'Test'), icon: BotMessageSquare, group: 'test' },
+  { path: '/group-chat', label: t('nav.group', 'Ensemble Test'), mobileLabel: t('nav.group', 'Ensemble'), icon: MessagesSquare, group: 'test' },
+  { path: '/quality', label: t('nav.quality', 'Quality Gates'), mobileLabel: t('nav.quality', 'Quality'), icon: ShieldCheck, group: 'test' },
+  { path: '/analytics', label: t('nav.analytics', 'Runtime Analytics'), mobileLabel: t('nav.analytics', 'Analytics'), icon: ChartNoAxesCombined, group: 'test' },
+  { path: '/assets', label: t('nav.assets', 'Asset Diagnostics'), mobileLabel: t('nav.assets', 'Assets'), icon: Images, group: 'manage' },
+  { path: '/characters', label: t('nav.characters', 'Cast Preview'), mobileLabel: t('nav.characters', 'Cast'), icon: Users, group: 'manage' },
+  { path: '/cg-gallery', label: t('nav.cg-gallery', 'Visual Review'), mobileLabel: t('nav.cg-gallery', 'Visuals'), icon: ImageIcon, group: 'manage' },
+  { path: '/backlog', label: t('nav.backlog', 'Transcript'), mobileLabel: t('nav.backlog', 'Transcript'), icon: History, group: 'manage' },
   { path: '/marketplace', label: t('nav.marketplace', 'Marketplace'), mobileLabel: t('nav.marketplace', 'Market'), icon: Store, group: 'manage' },
   { path: '/plugins', label: t('nav.plugins', 'Plugins'), mobileLabel: t('nav.plugins', 'Plugins'), icon: Blocks, group: 'manage' },
   { path: '/settings', label: t('nav.settings', 'Settings'), mobileLabel: t('nav.mobile.settings', 'Settings'), icon: SettingsIcon, group: 'manage' },
@@ -262,7 +259,7 @@ const currentPageLabel = computed(() => activeNavItem.value?.label || t('app.tit
 const currentGroupLabel = computed(() => (
   navGroups.value.find((group) => group.id === activeNavItem.value?.group)?.label || t('nav.group.overview', 'Overview')
 ))
-const mobilePrimaryItems = computed(() => ['/', '/character-editor', '/chat', '/settings']
+const mobilePrimaryItems = computed(() => ['/', '/editor', '/character-editor', '/game']
   .map((path) => navItems.value.find((item) => item.path === path))
   .filter((item): item is NavItem => Boolean(item)))
 
@@ -291,22 +288,12 @@ async function changeLocale(event: Event) {
 function applyTheme() {
   document.documentElement.setAttribute('data-theme', currentTheme.value)
   localStorage.setItem('monogatari-theme', currentTheme.value)
+  localStorage.setItem('monogatari-theme-design', themeDesignVersion)
 }
 
 function toggleTheme() {
   currentTheme.value = currentTheme.value === 'dark' ? 'light' : 'dark'
   applyTheme()
-}
-
-function handleAchievement(event: Event) {
-  const detail = (event as CustomEvent<{ id?: string; name?: string }>).detail || {}
-  const name = detail.name || detail.id || t('app.achievement', 'Achievement')
-  achievementToast.value = t('app.achievement-unlocked', 'Achievement unlocked: {name}', { name })
-  achievementToastVisible.value = true
-  if (achievementToastTimer) window.clearTimeout(achievementToastTimer)
-  achievementToastTimer = window.setTimeout(() => {
-    achievementToastVisible.value = false
-  }, 4000)
 }
 
 function handleGlobalKeydown(event: KeyboardEvent) {
@@ -322,14 +309,12 @@ function handleGlobalKeydown(event: KeyboardEvent) {
 
 onMounted(() => {
   applyTheme()
+  if (!hasTauriRuntime()) void loadPackagedWebGpuConfig()
   window.addEventListener('keydown', handleGlobalKeydown)
-  window.addEventListener('achievement-unlock', handleAchievement)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleGlobalKeydown)
-  window.removeEventListener('achievement-unlock', handleAchievement)
-  if (achievementToastTimer) window.clearTimeout(achievementToastTimer)
 })
 </script>
 
@@ -552,28 +537,6 @@ onUnmounted(() => {
 .app-main { min-width: 0; min-height: 0; overflow: auto; }
 .mobile-menu, .mobile-close, .mobile-bottom-nav, .mobile-nav-backdrop { display: none; }
 
-.achievement-toast {
-  position: fixed;
-  top: 70px;
-  left: 50%;
-  z-index: 200;
-  display: flex;
-  max-width: min(420px, calc(100vw - 32px));
-  align-items: center;
-  gap: 9px;
-  padding: 11px 14px;
-  transform: translateX(-50%);
-  border: 1px solid color-mix(in srgb, var(--success) 55%, var(--border));
-  border-radius: var(--radius);
-  background: var(--surface-2);
-  box-shadow: var(--shadow-lg);
-  color: var(--text-primary);
-  cursor: pointer;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 650;
-}
-.achievement-toast svg { color: var(--warning); }
 .page-enter-active, .page-leave-active { transition: opacity 120ms ease; }
 .page-enter-from, .page-leave-to { opacity: 0; }
 

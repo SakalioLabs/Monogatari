@@ -55,8 +55,9 @@
 - Added finalized guarded workflow output evidence to Quality Suite reports and exports so QA can inspect the safe story text consumed after workflow LLM output sanitization.
 - Added runtime renderer fallback handling so Story Mode and Character Editor skip failed Live2D/GLB/GLTF loads and continue to the next valid 3D, sprite, portrait, or generated placeholder candidate.
 - Added buffered OpenAI-compatible SSE stream parsing so API streaming responses survive split JSON lines, split UTF-8 content, `[DONE]` markers, and final lines without trailing newlines.
-- Added ONNX runtime-unavailable guards and real AI backend readiness reporting so local ONNX configuration cannot emit placeholder character text or appear ready before a runtime executor is linked.
-- Added async-safe initialized backend registration so Settings-configured OpenAI-compatible providers are ready for chat and streaming immediately after configuration, and ONNX registration no longer blocks inside Tauri commands.
+- Added a linked Windows DirectML executor with standard tokenizer loading, causal-LM graph validation, bounded autoregressive generation, streaming output, and real backend readiness reporting.
+- Added async-safe initialized backend registration so API and DirectML engines become active only after their runtime initialization succeeds.
+- Added a Transformers.js WebGPU text-generation runtime for Web/PWA character and ensemble tests, plus a versioned packaged inference contract, CSP support, service-worker caching, and release verification.
 - Added API backend runtime configuration validation so blank keys/models, unsafe base URLs, embedded credentials, and query/fragment-bearing provider URLs are rejected before a backend can become active.
 - Added OpenAI-compatible SSE stream error-frame handling so provider error payloads and malformed data frames abort streaming inference instead of being silently ignored.
 - Added content loader path isolation tests and release-gate invariants so character, dialogue, and knowledge reload commands resolve only under the active project content directories.
@@ -207,6 +208,9 @@
 - Cleared stale example character sprite paths that pointed at missing files so browser Story Mode falls back cleanly to the generated 3D placeholder.
 
 ### Changed
+- Removed engine-level achievements, achievement tracking, and milestone notifications so gamification remains an authored project choice rather than part of the development workspace.
+- Reframed runtime-facing navigation as playtest, character test, visual review, and transcript tooling around the low-code authoring workflow.
+- Changed the default workspace theme to a pale white monochrome design system with an optional grayscale dark mode.
 - Project export manifests now scan project JSON content directories for characters, dialogues, knowledge, and scenes, making exports useful before runtime managers are initialized.
 - Character loading now accepts one-character JSON files, legacy sprite field names, and partial personality definitions with stable defaults.
 - Single-character and group chat prompts now share the character mind contract and guarded response path for stronger role stability, including AI/ChatGPT identity drift and customer-support/tool-style drift replacement.

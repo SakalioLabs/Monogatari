@@ -38,8 +38,9 @@ reqwest-eventsource = "0.6"
 futures = "0.3"
 
 # ONNX Runtime
-ort = { version = "2", features = ["directml"] }
-ndarray = "0.16"
+ort = { version = "=2.0.0-rc.12", features = ["directml"] }
+ndarray = "0.17"
+tokenizers = { version = "0.23.1", default-features = false, features = ["fancy-regex"] }
 
 # Scripting
 rhai = { version = "1", features = ["sync", "serde"] }

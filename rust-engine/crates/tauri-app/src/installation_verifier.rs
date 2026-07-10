@@ -22,7 +22,7 @@ const MAX_INSTALLED_JSON_FILES: usize = 4_000;
 const MAX_INSTALLED_JSON_BYTES: u64 = 64 * 1024 * 1024;
 const MAX_REPORT_BYTES: usize = 1024 * 1024;
 const MAX_TREE_DEPTH: usize = 32;
-const EXPECTED_PROJECT_WARNING_CODES: &[&str] = &["api_key_missing"];
+const ALLOWED_PROJECT_WARNING_CODES: &[&str] = &["api_key_missing"];
 
 static REPORT_STAGE_COUNTER: AtomicU64 = AtomicU64::new(0);
 
@@ -161,14 +161,15 @@ pub(crate) async fn verify_installed_application(
         .map(|issue| issue.code.clone())
         .collect::<Vec<_>>();
     project_warning_codes.sort();
-    let expected_warning_codes = EXPECTED_PROJECT_WARNING_CODES
+    let unexpected_warning_codes = project_warning_codes
         .iter()
-        .map(|code| (*code).to_string())
+        .filter(|code| !ALLOWED_PROJECT_WARNING_CODES.contains(&code.as_str()))
+        .cloned()
         .collect::<Vec<_>>();
-    if project_warning_codes != expected_warning_codes {
+    if !unexpected_warning_codes.is_empty() {
         return Err(format!(
             "Bundled project has unexpected configuration warnings: {}.",
-            project_warning_codes.join(", ")
+            unexpected_warning_codes.join(", ")
         ));
     }
 
@@ -687,7 +688,7 @@ mod tests {
         assert_eq!(report.git_commit, env!("MONOGATARI_GIT_COMMIT"));
         assert_eq!(report.git_short_commit, env!("MONOGATARI_GIT_SHORT_COMMIT"));
         assert_eq!(report.data_file_count, 97);
-        assert_eq!(report.project_warning_codes, ["api_key_missing"]);
+        assert!(report.project_warning_codes.is_empty());
         assert!(report.counts.characters > 0);
         assert!(report.counts.dialogues > 0);
         assert!(report.counts.story_events > 0);

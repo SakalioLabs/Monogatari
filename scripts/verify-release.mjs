@@ -87,6 +87,8 @@ const requiredWebDistFiles = [
   'offline.html',
   'offline-i18n.js',
   'project-assets.json',
+  'inference-runtime.json',
+  'ort/ort-wasm-simd-threaded.jsep.mjs',
   'events/story_events.json',
   'favicon.svg',
   'icons/app-icon.svg',
@@ -151,7 +153,6 @@ const expectedFrontendRoutes = [
   { path: '/scene-editor', name: 'scene-editor', component: 'SceneEditorView.vue', navKey: 'nav.scenes' },
   { path: '/cg-gallery', name: 'cg-gallery', component: 'CGGalleryView.vue', navKey: 'nav.cg-gallery' },
   { path: '/backlog', name: 'backlog', component: 'BacklogView.vue', navKey: 'nav.backlog' },
-  { path: '/achievements', name: 'achievements', component: 'AchievementsView.vue', navKey: 'nav.achievements' },
 ]
 
 const releaseCriticalRustFiles = [
@@ -230,8 +231,8 @@ const sharedCspFragments = [
   "form-action 'none'",
 ]
 const requiredTauriCspFragments = [...sharedCspFragments, "frame-ancestors 'none'"]
-const requiredWebCspFragments = [...sharedCspFragments, "frame-src 'none'"]
-const requiredWebHeaderCspFragments = [...sharedCspFragments, "frame-src 'none'", "frame-ancestors 'none'"]
+const requiredWebCspFragments = [...sharedCspFragments, "script-src 'self' 'wasm-unsafe-eval'", "frame-src 'none'"]
+const requiredWebHeaderCspFragments = [...sharedCspFragments, "script-src 'self' 'wasm-unsafe-eval'", "frame-src 'none'", "frame-ancestors 'none'"]
 const requiredPermissionsPolicyFragments = [
   'camera=()',
   'microphone=()',
@@ -244,6 +245,8 @@ const requiredPermissionsPolicyFragments = [
 const requiredAzureStaticWebAppFallbackExcludes = [
   '/assets/*',
   '/events/*',
+  '/models/*',
+  '/ort/*',
   '/icons/*',
   '/locales/*',
   '/manifest.webmanifest',
@@ -251,11 +254,14 @@ const requiredAzureStaticWebAppFallbackExcludes = [
   '/offline.html',
   '/offline-i18n.js',
   '/project-assets.json',
+  '/inference-runtime.json',
   '/favicon.svg',
 ]
 const requiredStaticRedirectPassthroughs = [
   ['/assets/*', '/assets/:splat'],
   ['/events/*', '/events/:splat'],
+  ['/models/*', '/models/:splat'],
+  ['/ort/*', '/ort/:splat'],
   ['/icons/*', '/icons/:splat'],
   ['/locales/*', '/locales/:splat'],
   ['/manifest.webmanifest', '/manifest.webmanifest'],
@@ -263,6 +269,7 @@ const requiredStaticRedirectPassthroughs = [
   ['/offline.html', '/offline.html'],
   ['/offline-i18n.js', '/offline-i18n.js'],
   ['/project-assets.json', '/project-assets.json'],
+  ['/inference-runtime.json', '/inference-runtime.json'],
   ['/favicon.svg', '/favicon.svg'],
 ]
 const requiredVercelSecurityHeaders = [
@@ -2330,6 +2337,9 @@ async function verifyFrontendSourceInvariants() {
     ['/offline-i18n.js', 'precache the CSP-compatible offline localization script'],
     ['PROJECT_ASSET_MANIFEST_PATH', 'declare the generated project asset manifest path'],
     ['/project-assets.json', 'precache the generated project asset manifest'],
+    ['INFERENCE_RUNTIME_PATH', 'declare the packaged inference runtime path'],
+    ['/inference-runtime.json', 'precache the packaged inference runtime contract'],
+    ['path.startsWith("/ort/")', 'cache the same-origin ONNX runtime module after first use'],
     ['cacheProjectAssets()', 'cache generated project assets during service worker install'],
     ['manifest.event_catalogs', 'cache project story event catalogs during service worker install'],
     ['manifest.scene_files', 'cache project scene catalogs during service worker install'],
@@ -2365,8 +2375,11 @@ async function verifyFrontendSourceInvariants() {
     ["'data', 'endings'", 'copy checked-in ending catalogs from data/endings'],
     ["'data', 'characters'", 'copy checked-in character definitions from data/characters'],
     ["'data', 'knowledge'", 'copy checked-in knowledge entries from data/knowledge'],
+    ["'data', 'models', 'webgpu'", 'support optional packaged WebGPU model artifacts'],
     ['distProjectAssetsDir', 'target copied project assets into dist/assets'],
     ['projectAssetManifestPath', 'write a generated project asset manifest into dist'],
+    ['inferenceRuntimePath', 'write a generated WebGPU inference contract into dist'],
+    ['webInferenceRuntime()', 'derive the WebGPU contract from project settings'],
     ['staticHostingHeadersPath', 'write static-hosting security headers into dist'],
     ['staticHostingRedirectsPath', 'write static-hosting SPA redirect rules into dist'],
     ['azureStaticWebAppConfigPath', 'write Azure Static Web Apps configuration into dist'],
@@ -2380,6 +2393,7 @@ async function verifyFrontendSourceInvariants() {
     ['Permissions-Policy', 'emit a browser permissions policy for static-hosting responses'],
     ['/* /index.html 200', 'emit a static-hosting SPA fallback rewrite'],
     ['monogatari-web-project-assets/v1', 'version the generated project asset manifest schema'],
+    ['monogatari-inference-runtime/v1', 'version the generated inference runtime schema'],
     ['walkFiles(projectAssetsDir', 'inventory copied project assets for offline PWA caching'],
     ['cp(projectAssetsDir, distProjectAssetsDir', 'merge project assets into the Web/PWA dist asset tree'],
     ['cp(projectEventsDir, distProjectEventsDir', 'merge story event catalogs into the Web/PWA dist tree'],
@@ -2388,8 +2402,10 @@ async function verifyFrontendSourceInvariants() {
     ['cp(projectEndingsDir, distProjectEndingsDir', 'merge ending catalogs into the Web/PWA dist tree'],
     ['cp(projectCharactersDir, distProjectCharactersDir', 'merge character definitions into the Web/PWA dist tree'],
     ['cp(projectKnowledgeDir, distProjectKnowledgeDir', 'merge knowledge entries into the Web/PWA dist tree'],
+    ['cp(projectWebModelDir, distWebModelDir', 'copy optional WebGPU model artifacts into the Web/PWA package'],
+    ['copyFile(path.join(ortRuntimeSourceDir, file)', 'copy the ONNX runtime module into the Web/PWA package'],
     ['event_catalogs', 'inventory story event catalogs in the Web/PWA project manifest'],
-    ['project asset manifest', 'report the generated project asset manifest in the Web/PWA preparation output'],
+    ['WebGPU inference contract', 'report the generated inference runtime in the Web/PWA preparation output'],
   ]
   for (const [needle, description] of webDistPackagingRequirements) {
     if (!prepareWebDistSource.includes(needle)) {
@@ -3039,6 +3055,10 @@ async function verifyAiBackendConfigInvariants() {
   const rustPipelineSource = await readFile(path.join(rustDir, 'crates', 'ai', 'src', 'pipeline.rs'), 'utf8')
   const rustPipelineTests = await readFile(path.join(rustDir, 'crates', 'ai', 'tests', 'pipeline_tests.rs'), 'utf8')
   const settingsViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'SettingsView.vue'), 'utf8')
+  const chatViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'ChatView.vue'), 'utf8')
+  const webGpuSource = await readFile(path.join(frontendDir, 'src', 'lib', 'webgpuInference.ts'), 'utf8')
+  const webDistSource = await readFile(path.join(frontendDir, 'scripts', 'prepare-web-dist.mjs'), 'utf8')
+  const frontendPackage = JSON.parse(await readFile(path.join(frontendDir, 'package.json'), 'utf8'))
 
   const aiRequirements = [
     ['onnx_model_config_in_project', 'centralize project-scoped ONNX config construction'],
@@ -3052,6 +3072,7 @@ async function verifyAiBackendConfigInvariants() {
     ['path.starts_with(project_root)', 'prove ONNX file references stay under the project root'],
     ['register_initialized_api_engine', 'centralize initialized API registration'],
     ['engine.initialize().await', 'initialize the API backend before marking it active'],
+    ['initialize_onnx_engine', 'initialize the DirectML backend before registration'],
     ['register_engine_with_name', 'register configured backends without blocking inside async commands'],
     ['register_onnx_engine', 'reuse the guarded ONNX registration helper'],
     ['set_active_engine("ONNX")', 'activate the ONNX backend after configuration'],
@@ -3114,20 +3135,51 @@ async function verifyAiBackendConfigInvariants() {
     }
   }
 
-  const onnxRuntimeGuardRequirements = [
-    ['ONNX_RUNTIME_UNAVAILABLE_MESSAGE', 'declare a single unavailable-runtime message'],
-    ['Err(Self::runtime_unavailable_error())', 'fail explicitly instead of returning placeholder inference text'],
-    ['onnx_initialize_reports_runtime_unavailable_without_ready_state', 'test ONNX initialization remains not ready without runtime linkage'],
-    ['onnx_infer_reports_runtime_unavailable_without_placeholder_success', 'test ONNX inference cannot masquerade as successful placeholder output'],
-    ['onnx_stream_reports_runtime_unavailable_without_chunks', 'test ONNX streaming does not emit placeholder chunks'],
+  const directmlRuntimeRequirements = [
+    ['ep::DirectML::default()', 'create an ONNX Runtime DirectML execution provider'],
+    ['error_on_failure()', 'reject missing DirectML support instead of silently falling back to CPU'],
+    ['with_parallel_execution(false)', 'use DirectML-compatible sequential execution'],
+    ['with_memory_pattern(false)', 'disable memory patterns required by DirectML'],
+    ['Tokenizer::from_file', 'load a standard tokenizer.json artifact'],
+    ['validate_model_contract', 'validate supported causal-LM model inputs and logits output'],
+    ['.run(inputs)', 'execute the ONNX graph for generated tokens'],
+    ['try_extract_tensor::<f32>()', 'read model logits from ONNX Runtime'],
+    ['sample_token', 'sample generated tokens with runtime inference options'],
+    ['tokio::task::spawn_blocking', 'keep blocking DirectML work off async runtime threads'],
+    ['onnx_engine_enforces_directml_contract', 'test that Windows local inference cannot disable DirectML'],
+    ['onnx_initialize_rejects_invalid_model_without_ready_state', 'test invalid models never report a ready runtime'],
+    ['onnx_infer_requires_initialized_runtime', 'test inference rejects an uninitialized runtime'],
   ]
-  for (const [needle, description] of onnxRuntimeGuardRequirements) {
+  for (const [needle, description] of directmlRuntimeRequirements) {
     if (!rustOnnxEngineSource.includes(needle)) {
-      issues.push(`Rust ONNX runtime guard must ${description}`)
+      issues.push(`Windows DirectML runtime must ${description}`)
     }
   }
   if (rustOnnxEngineSource.includes('[ONNX inference placeholder - model not loaded]')) {
-    issues.push('Rust ONNX runtime guard must not return placeholder text as a successful inference result')
+    issues.push('Windows DirectML runtime must not return placeholder text as a successful inference result')
+  }
+
+  const webGpuRuntimeRequirements = [
+    [webGpuSource, "pipeline('text-generation'", 'create a browser text-generation pipeline'],
+    [webGpuSource, "device: 'webgpu'", 'force browser model execution through WebGPU'],
+    [webGpuSource, 'TextStreamer', 'stream browser-generated text'],
+    [webGpuSource, 'detectWebGpuSupport', 'detect secure-context and WebGPU availability'],
+    [webGpuSource, "packagedAssetUrl('inference-runtime.json')", 'load the packaged WebGPU runtime contract relative to the deployment base'],
+    [webGpuSource, 'wasm.wasmPaths', 'override the Transformers.js CDN default with packaged ONNX runtime assets'],
+    [webGpuSource, "packagedAssetUrl('ort/ort-wasm-simd-threaded.jsep.mjs')", 'load the ONNX runtime module from the same origin'],
+    [webGpuSource, "onnxruntime-web/dist/ort-wasm-simd-threaded.jsep.wasm", 'bundle the ONNX WebGPU WASM binary with Vite'],
+    [chatViewSource, 'generateWebGpuChat', 'use WebGPU generation in browser character tests'],
+    [webDistSource, "schema: 'monogatari-inference-runtime/v1'", 'emit a versioned web inference contract'],
+    [webDistSource, "backend: 'webgpu'", 'mark web packages as WebGPU runtimes'],
+    [webDistSource, "'wasm-unsafe-eval'", 'allow the packaged ONNX WebAssembly bootstrap under CSP'],
+  ]
+  for (const [source, needle, description] of webGpuRuntimeRequirements) {
+    if (!source.includes(needle)) {
+      issues.push(`WebGPU runtime must ${description}`)
+    }
+  }
+  if (frontendPackage.dependencies?.['@huggingface/transformers'] !== '3.8.1') {
+    issues.push('WebGPU runtime must pin the verified Transformers.js runtime version')
   }
 
   const aiStatusRequirements = [
@@ -3181,7 +3233,10 @@ async function verifyAiBackendConfigInvariants() {
     ["invokeCommand<void>('configure_onnx'", 'invoke the backend ONNX command contract'],
     ['modelPath: modelPath.value', 'send the project-relative model path'],
     ['tokenizerPath: tokenizerPath.value', 'send the project-relative tokenizer path'],
-    ['useDirectml: useDirectML.value', 'send the DirectML preference through the backend command contract'],
+    ['initializeWebGpuRuntime', 'initialize the browser WebGPU runtime'],
+    ['webGpuModelId', 'configure the packaged WebGPU model ID'],
+    ['webGpuDtype', 'configure WebGPU model precision'],
+    ["setConfigValue(config, ['ai', 'onnx', 'use_directml'], true)", 'persist DirectML as a required Windows runtime'],
   ]
   for (const [needle, description] of settingsRequirements) {
     if (!settingsViewSource.includes(needle)) {
@@ -3189,11 +3244,11 @@ async function verifyAiBackendConfigInvariants() {
     }
   }
 
-  if (!aiCommandSource.includes('apply_onnx_runtime_options') || !aiCommandSource.includes('use_directml: Option<bool>')) {
-    issues.push('AI backend configuration must apply the optional DirectML preference')
+  if (!aiCommandSource.includes('apply_onnx_runtime_options') || !aiCommandSource.includes('config.use_directml = true')) {
+    issues.push('AI backend configuration must enforce DirectML for Windows local inference')
   }
-  if (!aiCommandSource.includes('configure_onnx_applies_directml_preference')) {
-    issues.push('AI backend configuration must test the DirectML preference contract')
+  if (!aiCommandSource.includes('configure_onnx_enforces_directml')) {
+    issues.push('AI backend configuration must test the required DirectML contract')
   }
 
   if (issues.length > 0) {
@@ -4017,7 +4072,7 @@ async function verifyTauriPackagingConfig() {
     [tauriInstallationVerifierSource, '--verify-installation', 'expose an explicit installed-runtime verification flag'],
     [tauriInstallationVerifierSource, 'discover_bundled_project_data_root', 'resolve data from the installed executable resource directory'],
     [tauriInstallationVerifierSource, 'project::scrub_runtime_secret_config', 'reject bundled runtime secrets'],
-    [tauriInstallationVerifierSource, 'EXPECTED_PROJECT_WARNING_CODES', 'allow only the expected runtime-credential readiness warning'],
+    [tauriInstallationVerifierSource, 'ALLOWED_PROJECT_WARNING_CODES', 'reject every warning outside the allowed runtime-credential set'],
     [tauriInstallationVerifierSource, 'engine::load_project_content', 'load bundled content through real runtime managers'],
     [tauriInstallationVerifierSource, 'validate_story_ending_references', 'validate bundled ending references'],
     [tauriInstallationVerifierSource, 'load_workflow_from_project', 'validate bundled workflows through the runtime loader'],
@@ -4039,7 +4094,7 @@ async function verifyTauriPackagingConfig() {
     [windowsInstallerVerifierSource, "spawnSync('msiexec.exe'", 'administratively extract MSI payloads'],
     [windowsInstallerVerifierSource, 'compareContentSets(sourceData, installedData)', 'compare source and installed resource hashes'],
     [windowsInstallerVerifierSource, "['--verify-installation', reportPath]", 'run the extracted production executable verifier'],
-    [windowsInstallerVerifierSource, "JSON.stringify(['api_key_missing'])", 'reject unexpected installed project warnings'],
+    [windowsInstallerVerifierSource, 'JSON.stringify([])', 'require the bundled DirectML project to install without configuration warnings'],
     [windowsInstallerVerifierSource, 'envelope.report.git_commit !== sourceState.git_commit', 'reject stale clean-worktree binaries'],
     [windowsInstallerVerifierSource, "'--untracked-files=all'", 'reject untracked source content from persisted audit evidence'],
     [windowsInstallerVerifierSource, "argSet.has('--allow-unsigned')", 'make unsigned internal audits explicit'],
@@ -4664,7 +4719,9 @@ async function verifyWebDist({ basePath = '/' } = {}) {
   const vercelConfig = await readJsonMaybe(path.join(distDir, 'vercel.json'))
   const manifest = await readJsonMaybe(path.join(distDir, 'manifest.webmanifest'))
   const projectAssetManifest = await readJsonMaybe(path.join(distDir, 'project-assets.json'))
+  const inferenceRuntime = await readJsonMaybe(path.join(distDir, 'inference-runtime.json'))
   const serviceWorker = await readMaybe(path.join(distDir, 'sw.js'))
+  const bundledAssets = await readdir(path.join(distDir, 'assets')).catch(() => [])
 
   if (indexHtml && fallbackHtml && indexHtml !== fallbackHtml) {
     issues.push('404.html must match index.html for static-hosting SPA fallback')
@@ -4747,6 +4804,30 @@ async function verifyWebDist({ basePath = '/' } = {}) {
   }
   await verifyWebProjectAssets(distDir, projectAssetManifest, issues)
 
+  if (!bundledAssets.some((file) => /^ort-wasm-simd-threaded\.jsep-[A-Za-z0-9_-]+\.wasm$/.test(file))) {
+    issues.push('Missing bundled WebGPU ONNX runtime WASM asset')
+  }
+
+  if (!inferenceRuntime) {
+    issues.push('Missing Web/PWA inference runtime contract: inference-runtime.json')
+  } else {
+    if (inferenceRuntime.schema !== 'monogatari-inference-runtime/v1') {
+      issues.push('inference-runtime.json must use schema monogatari-inference-runtime/v1')
+    }
+    if (inferenceRuntime.target !== 'web' || inferenceRuntime.backend !== 'webgpu') {
+      issues.push('inference-runtime.json must bind Web/PWA packages to WebGPU')
+    }
+    if (!nonEmptyString(inferenceRuntime.model_id)) {
+      issues.push('inference-runtime.json model_id is required')
+    }
+    if (!['q4', 'q4f16', 'q8', 'fp16', 'fp32'].includes(inferenceRuntime.dtype)) {
+      issues.push('inference-runtime.json dtype is unsupported')
+    }
+    if (!Number.isInteger(inferenceRuntime.max_new_tokens) || inferenceRuntime.max_new_tokens < 1 || inferenceRuntime.max_new_tokens > 2048) {
+      issues.push('inference-runtime.json max_new_tokens must be an integer from 1 to 2048')
+    }
+  }
+
   if (serviceWorker) {
     const packageJson = JSON.parse(await readFile(path.join(frontendDir, 'package.json'), 'utf8'))
     if (!serviceWorker.includes(`monogatari-web-v${packageJson.version}`)) {
@@ -4770,6 +4851,12 @@ async function verifyWebDist({ basePath = '/' } = {}) {
     }
     if (!serviceWorker.includes('/project-assets.json')) {
       issues.push('sw.js app shell must include /project-assets.json')
+    }
+    if (!serviceWorker.includes('/inference-runtime.json')) {
+      issues.push('sw.js app shell must include /inference-runtime.json')
+    }
+    if (!serviceWorker.includes('path.startsWith("/ort/")')) {
+      issues.push('sw.js must cache same-origin ONNX runtime modules')
     }
     if (!serviceWorker.includes('cacheProjectAssets()')) {
       issues.push('sw.js install flow must cache project assets from the generated manifest')

@@ -64,7 +64,7 @@ Characters are stored as JSON files in `rust-engine/data/characters/`.
 }
 ```
 
-Renderer paths must be project-relative, portable, stay inside the active data root, and use supported extensions. Absolute paths, URI-like prefixes, empty segments, `.`/`..` traversal, and non-portable path segments are rejected by renderer diagnostics. Story Mode and Character Editor resolve Live2D first, then GLB/GLTF 3D models, emotion-specific sprites, fallback sprites, portraits, and finally the generated placeholder. Live2D backend commands load only `.model3.json`/`.json` files from the active project data root.
+Renderer paths must be project-relative, portable, stay inside the active data root, and use supported extensions. Absolute paths, URI-like prefixes, empty segments, `.`/`..` traversal, and non-portable path segments are rejected by renderer diagnostics. Playtest and Character Editor resolve Live2D first, then GLB/GLTF 3D models, emotion-specific sprites, fallback sprites, portraits, and finally the generated placeholder. Live2D backend commands load only `.model3.json`/`.json` files from the active project data root.
 
 ### Personality Traits (0.0 - 1.0)
 - **openness**: Curiosity, creativity, willingness to try new things
@@ -114,7 +114,7 @@ Dialogues are stored in `rust-engine/data/dialogue/`.
 
 Dialogue node map keys are authoritative node IDs. An optional nested `id` is accepted only when it matches the map key and is omitted from canonical author saves. Every linear and choice target must exist, all nodes must be reachable from `start_node_id`, a node cannot combine `next_node_id` with choices, and an explicit ending cannot have outgoing transitions. Speakers and relationship targets must reference project characters; relationship deltas are finite values in `-1..1`. Node and choice conditions, entry scripts, text, variables, and LLM prompts are bounded. `use_llm: true` requires `llm_prompt`. Unknown fields are rejected.
 
-The Dialogue Editor consumes `monogatari-dialogue-authoring-catalog/v1` snapshots. Desktop saves compare the observed whole-catalog fingerprint, stage a bounded JSON replacement, reload and validate every script, roll back failures, then hot-reload the runtime catalog while retaining dialogue-local flags and variables. Deletion is rejected while a Story Event unlocks the dialogue or an ending references it. Browser builds persist a complete local dialogue draft catalog that Story Mode can play directly.
+The Dialogue Editor consumes `monogatari-dialogue-authoring-catalog/v1` snapshots. Desktop saves compare the observed whole-catalog fingerprint, stage a bounded JSON replacement, reload and validate every script, roll back failures, then hot-reload the runtime catalog while retaining dialogue-local flags and variables. Deletion is rejected while a Story Event unlocks the dialogue or an ending references it. Browser builds persist a complete local dialogue draft catalog that Playtest can play directly.
 
 ## Knowledge Format
 
@@ -146,7 +146,7 @@ Scenes are stored in `rust-engine/data/scenes/`.
 }
 ```
 
-Scene IDs and asset paths are portable. Backgrounds must use a supported image extension and resolve to an existing project file; BGM references use supported audio extensions. The `monogatari-scene-authoring-catalog/v1` snapshot includes both JSON-authored scenes and virtual scenes inferred from unclaimed background files. Saving an inferred entry promotes it into `scenes/<id>.json`. Deleting removes only that metadata document and never deletes the background asset; deletion is blocked by matching Story Event, ending, or workflow scene references. Desktop writes use an expected catalog fingerprint and rollback-capable replacement, while browser builds keep a complete local draft read by Story Mode.
+Scene IDs and asset paths are portable. Backgrounds must use a supported image extension and resolve to an existing project file; BGM references use supported audio extensions. The `monogatari-scene-authoring-catalog/v1` snapshot includes both JSON-authored scenes and virtual scenes inferred from unclaimed background files. Saving an inferred entry promotes it into `scenes/<id>.json`. Deleting removes only that metadata document and never deletes the background asset; deletion is blocked by matching Story Event, ending, or workflow scene references. Desktop writes use an expected catalog fingerprint and rollback-capable replacement, while browser builds keep a complete local draft read by Playtest.
 
 ## Story Event Catalog Format
 

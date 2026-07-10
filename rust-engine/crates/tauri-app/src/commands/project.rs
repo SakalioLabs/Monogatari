@@ -375,7 +375,7 @@ fn collect_path_statuses(
 }
 
 fn validate_ai_config(config: &Value, issues: &mut Vec<ProjectConfigIssue>) {
-    let provider = get_string(config, &["ai", "provider"]).unwrap_or_else(|| "api".to_string());
+    let provider = get_string(config, &["ai", "provider"]).unwrap_or_else(|| "onnx".to_string());
     match provider.as_str() {
         "api" => {
             if get_string(config, &["ai", "api", "base_url"])
@@ -423,12 +423,28 @@ fn validate_ai_config(config: &Value, issues: &mut Vec<ProjectConfigIssue>) {
                 );
             }
         }
+        "webgpu" => {
+            if get_string(config, &["ai", "webgpu", "model_id"])
+                .or_else(|| get_string(config, &["ai", "webgpu", "modelId"]))
+                .unwrap_or_default()
+                .trim()
+                .is_empty()
+            {
+                push_issue(
+                    issues,
+                    "warning",
+                    "webgpu_model_missing",
+                    Some("ai.webgpu.model_id".to_string()),
+                    "WebGPU model ID is empty.",
+                );
+            }
+        }
         _ => push_issue(
             issues,
             "error",
             "ai_provider_invalid",
             Some("ai.provider".to_string()),
-            "AI provider must be `api` or `onnx`.",
+            "AI provider must be `api`, `onnx`, or `webgpu`.",
         ),
     }
 }
@@ -468,7 +484,7 @@ fn default_project_config() -> Value {
             "width": 1280,
             "height": 720,
             "fullscreen": false,
-            "title": "LLM Galgame Engine"
+            "title": "Monogatari Engine"
         },
         "dialogue": {
             "typewriter_speed_ms": 30,
@@ -477,7 +493,7 @@ fn default_project_config() -> Value {
             "name_font_size": 16
         },
         "ai": {
-            "provider": "api",
+            "provider": "onnx",
             "api": {
                 "base_url": "https://api.openai.com/v1",
                 "api_key": "",
@@ -491,6 +507,13 @@ fn default_project_config() -> Value {
                 "tokenizer_path": "models/tokenizer.json",
                 "max_sequence_length": 2048,
                 "use_directml": true
+            },
+            "webgpu": {
+                "model_id": "onnx-community/Qwen2.5-0.5B-Instruct",
+                "dtype": "q4",
+                "max_new_tokens": 256,
+                "temperature": 0.7,
+                "top_p": 0.9
             }
         },
         "paths": {

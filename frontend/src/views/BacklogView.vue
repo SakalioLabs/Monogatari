@@ -256,7 +256,7 @@ watch(filter, () => nextTick(scrollToBottom))
 }
 
 .char-chip:hover { border-color: var(--brand); }
-.char-chip.active { border-color: var(--brand); background: rgba(45,212,191,0.1); color: var(--brand-light); }
+.char-chip.active { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 8%, var(--surface-1)); color: var(--text-primary); }
 
 .chip-avatar {
   width: 22px;
@@ -339,7 +339,7 @@ watch(filter, () => nextTick(scrollToBottom))
   font-size: 11px;
   color: var(--brand-light);
   padding: 1px 8px;
-  border: 1px solid rgba(45,212,191,0.3);
+  border: 1px solid color-mix(in srgb, var(--brand) 28%, var(--border));
   border-radius: 100px;
 }
 

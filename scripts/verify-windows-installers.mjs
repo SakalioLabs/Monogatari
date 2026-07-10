@@ -298,8 +298,8 @@ async function verifyAdministrativeImage(
   if (envelope.report.engine_version !== version) {
     throw new Error(`Extracted application reports engine version ${envelope.report.engine_version}, expected ${version}.`)
   }
-  if (envelope.report.project_warning_count !== 1
-      || JSON.stringify(envelope.report.project_warning_codes) !== JSON.stringify(['api_key_missing'])) {
+  if (envelope.report.project_warning_count !== 0
+      || JSON.stringify(envelope.report.project_warning_codes) !== JSON.stringify([])) {
     throw new Error('Extracted application reported unexpected project configuration warnings.')
   }
   if (envelope.report.data_file_count !== sourceData.file_count) {

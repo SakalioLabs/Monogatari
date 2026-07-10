@@ -14,7 +14,7 @@
         <button class="btn btn-secondary btn-sm" :disabled="busy" @click="createScene"><Plus :size="14" />{{ t('authoring.new', 'New') }}</button>
         <button class="btn btn-secondary btn-sm" :disabled="!draft || busy" @click="duplicateScene"><Copy :size="14" />{{ t('authoring.duplicate', 'Duplicate') }}</button>
         <button class="btn btn-secondary btn-sm" :disabled="busy" @click="reloadCatalog"><RotateCcw :size="14" />{{ t('authoring.reload', 'Reload') }}</button>
-        <button class="btn btn-secondary btn-sm" :disabled="!canPreview || busy" @click="previewScene"><Play :size="14" />{{ t('authoring.story-mode', 'Story Mode') }}</button>
+        <button class="btn btn-secondary btn-sm" :disabled="!canPreview || busy" @click="previewScene"><Play :size="14" />{{ t('authoring.story-mode', 'Playtest') }}</button>
         <button class="btn btn-primary btn-sm" :disabled="!canSave || busy" @click="saveScene">
           <Save :size="14" />
           {{ busy ? t('authoring.working', 'Working') : selectedEntry && !selectedEntry.metadata_authored ? t('scene.promote', 'Promote') : t('common.save', 'Save') }}
@@ -657,7 +657,7 @@ onUnmounted(() => {
   line-height: 1.4;
   text-transform: uppercase;
 }
-.authored { background: rgba(45, 212, 191, 0.14); color: var(--brand-light); }
+.authored { background: color-mix(in srgb, var(--brand) 11%, var(--surface-1)); color: var(--text-primary); }
 .inferred { background: rgba(96, 165, 250, 0.15); color: var(--info); }
 .gated { background: rgba(245, 158, 11, 0.14); color: var(--warning); }
 .open { background: var(--surface-4); color: var(--text-secondary); }
@@ -676,7 +676,7 @@ onUnmounted(() => {
 .stage-empty { position: absolute; inset: 0; display: grid; place-content: center; gap: 8px; color: var(--text-tertiary); text-align: center; }
 .stage-empty span { font-family: var(--font-mono); font-size: 26px; font-weight: 900; }
 .stage-empty strong { font-size: 12px; }
-.stage-shade { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(8, 10, 14, 0.88), transparent 65%); pointer-events: none; }
+.stage-shade { position: absolute; inset: 0; background: rgba(8, 10, 14, 0.34); pointer-events: none; }
 .stage-caption { position: absolute; left: 24px; right: 24px; bottom: 20px; min-width: 0; }
 .stage-caption span { color: var(--brand-light); font-size: 10px; font-weight: 800; text-transform: uppercase; }
 .stage-caption h2 { margin-top: 3px; overflow: hidden; color: white; font-size: 22px; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }

@@ -98,7 +98,7 @@
         </div>
         <div v-else class="inline-empty">
           <ListChecks :size="22" />
-          <span>{{ t('analytics.choices-empty', 'Player choice counts will appear after Story Mode branches are selected.') }}</span>
+          <span>{{ t('analytics.choices-empty', 'Player choice counts will appear after playtest branches are selected.') }}</span>
         </div>
       </section>
 
@@ -399,7 +399,7 @@ onUnmounted(() => {
 .relationship-scale { display: grid; align-content: center; gap: 8px; padding: 8px 2px; }
 .scale-copy, .scale-values { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--text-tertiary); font-size: 8px; }
 .scale-copy strong { color: var(--text-secondary); font-size: 9px; }
-.scale-track { position: relative; height: 5px; border-radius: 999px; background: linear-gradient(90deg, var(--danger), var(--surface-3) 50%, var(--success)); }
+.scale-track { position: relative; height: 5px; border-radius: 999px; background: var(--surface-3); }
 .scale-marker { position: absolute; top: 50%; width: 10px; height: 10px; border: 2px solid var(--surface-1); border-radius: 50%; background: var(--text-primary); transform: translate(-50%, -50%); }
 .scale-values { font-family: var(--font-mono); }
 .analytics-toast { position: fixed; right: 20px; bottom: 20px; z-index: 80; display: flex; max-width: min(420px, calc(100vw - 32px)); align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text-primary); box-shadow: var(--shadow-lg); font-size: 11px; }

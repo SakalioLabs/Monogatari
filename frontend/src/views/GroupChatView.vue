@@ -3,13 +3,13 @@
     <header class="page-header">
       <div>
         <span class="eyebrow">{{ t('group.eyebrow', 'Live test') }}</span>
-        <h1>{{ t('group.title', 'Group Chat') }}</h1>
+        <h1>{{ t('group.title', 'Ensemble Test') }}</h1>
         <p>{{ t('group.subtitle', 'Test how multiple characters respond, relate, and stay in voice together.') }}</p>
       </div>
       <div class="session-controls">
         <button v-if="!session" class="btn btn-primary" :disabled="selectedIds.length < 2" @click="startSession">
           <Play :size="15" />
-          {{ t('group.start', 'Start Group Chat') }}
+          {{ t('group.start', 'Start Test') }}
         </button>
         <button v-else class="btn btn-danger" @click="endSession">
           <LogOut :size="15" />
@@ -46,7 +46,7 @@
         </button>
         <div v-if="available.length === 0" class="empty-state">
           <UsersRound :size="28" />
-          <span>{{ t('group.empty', 'No characters are available for group chat.') }}</span>
+          <span>{{ t('group.empty', 'No characters are available for an ensemble test.') }}</span>
         </div>
       </div>
     </section>
@@ -98,8 +98,9 @@ import { Check, LoaderCircle, LogOut, Play, Send, UsersRound } from '@lucide/vue
 import { hasTauriRuntime, invokeCommand } from '../lib/tauri'
 import { useI18n } from '../lib/i18n'
 import { loadStoryCharacters } from '../lib/storyContent'
+import { generateWebGpuChat } from '../lib/webgpuInference'
 
-const { t } = useI18n()
+const { locale, t } = useI18n()
 
 interface GroupMessage {
   role: string
@@ -137,6 +138,7 @@ interface GroupSession {
 }
 
 const available = ref<[string, string][]>([])
+const characterDescriptions = ref<Record<string, string>>({})
 const selectedIds = ref<string[]>([])
 const session = ref<GroupSession | null>(null)
 const input = ref('')
@@ -152,6 +154,7 @@ async function loadCharacters() {
     errorMessage.value = null
     const characters = await loadStoryCharacters()
     available.value = characters.map(character => [character.id, character.name])
+    characterDescriptions.value = Object.fromEntries(characters.map(character => [character.id, character.description]))
   } catch (e) {
     available.value = []
     errorMessage.value = String(e)
@@ -239,11 +242,9 @@ async function send() {
   errorMessage.value = null
   try {
     const message = input.value.trim()
-    session.value = await invokeCommand<GroupSession>(
-      'send_group_message',
-      { session: session.value, message },
-      () => browserGroupReply(session.value as GroupSession, message),
-    )
+    session.value = hasTauriRuntime()
+      ? await invokeCommand<GroupSession>('send_group_message', { session: session.value, message })
+      : await browserGroupReply(session.value, message)
     input.value = ''
     await nextTick()
     if (messagesEl.value) messagesEl.value.scrollTop = messagesEl.value.scrollHeight
@@ -254,30 +255,51 @@ async function send() {
   }
 }
 
-function browserGroupReply(currentSession: GroupSession, message: string): GroupSession {
+async function browserGroupReply(currentSession: GroupSession, message: string): Promise<GroupSession> {
   const timestamp = new Date().toISOString()
-  return {
-    ...currentSession,
-    messages: [
-      ...currentSession.messages,
-      {
-        role: 'player',
-        character_id: null,
-        character_name: t('backlog.player', 'Player'),
-        content: message,
-        emotion: null,
-        timestamp,
-      },
-      {
-        role: 'system',
-        character_id: null,
-        character_name: t('backlog.system', 'System'),
-        content: t('group.preview-response', 'Browser preview received the message. Use the desktop runtime for model responses.'),
-        emotion: null,
-        timestamp,
-      },
-    ],
+  const playerMessage: GroupMessage = {
+    role: 'player',
+    character_id: null,
+    character_name: t('backlog.player', 'Player'),
+    content: message,
+    emotion: null,
+    timestamp,
   }
+  const ensembleMessage: GroupMessage = {
+    role: 'character',
+    character_id: null,
+    character_name: t('group.ensemble', 'Ensemble'),
+    content: '',
+    emotion: 'neutral',
+    timestamp,
+  }
+  const cast = currentSession.character_ids.map((id) => {
+    const name = available.value.find(([characterId]) => characterId === id)?.[1] || id
+    return `${name}: ${characterDescriptions.value[id] || ''}`
+  }).join('\n')
+  const history = currentSession.messages.slice(-12).map((entry) => ({
+    role: entry.role === 'player' ? 'user' as const : 'assistant' as const,
+    content: `${entry.character_name}: ${entry.content}`,
+  }))
+  const nextSession = {
+    ...currentSession,
+    messages: [...currentSession.messages, playerMessage, ensembleMessage],
+  }
+  session.value = nextSession
+  const generated = await generateWebGpuChat([
+    {
+      role: 'system',
+      content: `Run an ensemble character test in ${locale.value}. Reply only as members of this cast and prefix each line with the speaker name.\n${cast}`,
+    },
+    ...history,
+    { role: 'user', content: message },
+  ], {
+    onChunk: (chunk) => {
+      ensembleMessage.content += chunk
+    },
+  })
+  if (!ensembleMessage.content.trim()) ensembleMessage.content = generated
+  return nextSession
 }
 
 onMounted(async () => {
@@ -311,7 +333,7 @@ onMounted(async () => {
 .character-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
 .char-card { position: relative; display: grid; grid-template-columns: 42px minmax(0, 1fr) 18px; align-items: center; gap: 11px; min-height: 72px; padding: 13px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); cursor: pointer; font: inherit; text-align: left; transition: all var(--transition-fast); }
 .char-card:hover { border-color: var(--border-light); background: var(--surface-2); }
-.char-card.selected { border-color: var(--brand); background: rgba(45,212,191,0.08); }
+.char-card.selected { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 7%, var(--surface-1)); }
 .char-avatar { width: 42px; height: 42px; border-radius: var(--radius); background: var(--surface-3); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 17px; color: var(--brand-light); }
 .char-copy { display: grid; gap: 3px; min-width: 0; }
 .char-copy strong, .char-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -325,7 +347,7 @@ onMounted(async () => {
 .participant-tag { padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 600; background: var(--surface-3); color: var(--text-secondary); text-transform: uppercase; }
 .messages { flex: 1; min-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 8px 2px; }
 .message { max-width: 80%; padding: 10px 14px; border-radius: var(--radius); }
-.message.player { align-self: flex-end; background: rgba(45,212,191,0.12); border: 1px solid rgba(45,212,191,0.2); }
+.message.player { align-self: flex-end; background: color-mix(in srgb, var(--brand) 9%, var(--surface-1)); border: 1px solid color-mix(in srgb, var(--brand) 18%, var(--border)); }
 .message.character { align-self: flex-start; background: var(--surface-2); border: 1px solid var(--border); }
 .message.system { align-self: center; background: var(--surface-3); font-style: italic; }
 .msg-sender { font-size: 11px; font-weight: 700; color: var(--brand-light); margin-bottom: 4px; text-transform: uppercase; }
@@ -366,7 +388,7 @@ onMounted(async () => {
 }
 .rel-score {
   margin-left: 6px; padding: 1px 6px; border-radius: 100px;
-  font-size: 9px; font-weight: 800; background: rgba(45,212,191,0.12);
+  font-size: 9px; font-weight: 800; background: color-mix(in srgb, var(--brand) 9%, var(--surface-1));
   color: var(--brand-light);
 }
 .emotion-dot {

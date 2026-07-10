@@ -59,8 +59,7 @@ const releases = computed(() => [
     date: '2026-07-07',
     items: [
       t('whats-new.release-092-1', 'Nori joins the cast with a branching dialogue and town history'),
-      t('whats-new.release-092-2', 'Achievement notifications appear when milestones are reached'),
-      t('whats-new.release-092-3', 'Story Mode includes pause, save, load, backlog, and title actions'),
+      t('whats-new.release-092-3', 'Playtest includes pause, save, load, transcript, and title actions'),
       t('whats-new.release-092-4', 'Quick save and quick load are available during gameplay'),
       t('whats-new.release-092-5', 'Keyboard shortcut help is available from the question mark key'),
       t('whats-new.release-092-6', 'Sora joins the cast with observatory dialogue and lore'),
@@ -71,7 +70,6 @@ const releases = computed(() => [
     version: '0.9.1',
     date: '2026-07-07',
     items: [
-      t('whats-new.release-091-1', 'Achievements include 15 unlockable milestones'),
       t('whats-new.release-091-2', 'Hana joins the cast with tea shop dialogue and lore'),
       t('whats-new.release-091-3', 'Kai joins the cast with musician dialogue and songs'),
     ],
@@ -80,9 +78,9 @@ const releases = computed(() => [
     version: '0.9.0',
     date: '2026-07-07',
     items: [
-      t('whats-new.release-090-1', 'Title Screen, CG Gallery, and Backlog are available'),
+      t('whats-new.release-090-1', 'Title preview, Visual Review, and Transcript are available'),
       t('whats-new.release-090-2', 'Mio joins the cast with a branching festival dialogue'),
-      t('whats-new.release-090-3', 'Story Mode supports autosave and project scene backgrounds'),
+      t('whats-new.release-090-3', 'Playtest supports autosave and project scene backgrounds'),
       t('whats-new.release-090-4', 'App metadata, social previews, and the favicon were refreshed'),
     ],
   },

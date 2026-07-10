@@ -482,7 +482,7 @@ function deleteTrack(track: AudioTrack) {
 .section-head strong { display: block; margin-top: 3px; color: var(--text-primary); font-size: 14px; }
 .section-head > span, .section-head > svg { color: var(--text-tertiary); font-size: 10px; font-weight: 700; }
 .track-card { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px; margin-bottom: 8px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); transition: border-color 0.2s; }
-.track-card.playing { border-color: var(--brand); background: rgba(45,212,191,0.06); }
+.track-card.playing { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 5%, var(--surface-1)); }
 .track-card.warning { border-color: rgba(239,68,68,0.35); }
 .track-info { display: flex; gap: 10px; align-items: center; min-width: 0; }
 .track-icon { width: 34px; height: 34px; flex-shrink: 0; display: grid; place-items: center; border-radius: var(--radius-sm); background: var(--surface-3); color: var(--brand-light); }

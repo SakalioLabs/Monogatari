@@ -1,26 +1,26 @@
 # Monogatari v0.9.5
 
-An LLM-powered visual novel / galgame engine. Build interactive story experiences where AI-driven characters respond dynamically to player conversations, with automatic conversation scoring that triggers special plot events.
+A low-code game development engine for building LLM-driven visual novels and text adventures across Web/PWA and Windows packages.
 
 ## What It Is
 
-Monogatari is a development engine for creating LLM-driven text adventure games. Creators provide story presets, scene images, and character artwork (2D sprites, Live2D, 3D). Through a visual drag-and-drop workflow editor (similar to Dify/Blueprint), they pre-arrange special event nodes. Players converse with AI characters powered by large language models. The LLM evaluates conversations and scores them, triggering special storylines or guiding the narrative direction.
+Monogatari is an authoring workbench and runtime toolkit, not a game itself. Developers compose characters, scenes, dialogue graphs, story events, endings, knowledge, audio, and model behavior through visual editors and structured project files. Web packages run local model inference through WebGPU; Windows packages run compatible ONNX models through DirectML. OpenAI-compatible APIs remain available as a development connection.
 
 ## Key Features
 
-- **AI Chat Mode** - Players talk freely with LLM-driven characters. The AI stays in character using personality, background, world knowledge, streaming response events, and streamed evaluation/event notifications.
-- **Conversation Scoring** - The LLM evaluates every conversation on friendliness, engagement, and creativity. Cumulative scores unlock special events.
-- **Event Trigger System** - Relationship milestones, dialogue achievements, and cumulative progress trigger plot events, scene changes, and special dialogues.
+- **Low-Code Story Flow** - Drag-and-drop nodes compose dialogue, conditions, model generation, scoring, authored events, state changes, and scene transitions.
+- **Character and Ensemble Tests** - Developers inspect character prompts, streamed model output, evaluation traces, safety guards, relationships, and authored event decisions before packaging.
+- **Authored Event System** - Projects may define relationship, score, evaluation, and cumulative-progress rules that trigger scenes, dialogue, endings, or flags; the engine adds no global gamification layer.
 - **Quality Suites** - Offline regression scenarios validate character stability, prompt-injection resistance across structured role blocks, English, Chinese, Japanese, Korean, and Unicode-obfuscated player text, group chat runtime trace evidence, relationship and fallback scoring side-channel containment, memory-poisoning resistance, memory prompt replay safety, tool-role injection containment, identity drift, style drift, real knowledge-reference anchoring, knowledge-boundary stability against player-supplied retcons, evaluation-summary safety, workflow output safety, workflow guard-only fallback, workflow tool-call containment, workflow branch coverage, private reasoning leakage, fallback scoring, overrange score clamping, story-event trigger thresholds/idempotence, and SHA-256 event-rule fingerprint snapshots without requiring live model calls.
-- **Web/PWA Distribution** - Browser builds include a web app manifest, dedicated install/maskable icons, offline fallback page, and service worker cache for installable cross-platform previews outside Tauri.
+- **Web/PWA Distribution** - Browser builds include a versioned WebGPU inference contract, Transformers.js text generation, install metadata, offline shell, and project-content caching.
 - **Web Bundle Budgets** - Production builds verify small entry assets while allowing bounded lazy chunks for Three.js, GLTF loading, OrbitControls, and Live2D.
-- **Dialogue Editor** - Project-backed branching graph editor with atomic saves, node/edge validation, choice conditions, relationship effects, LLM prompts, protected deletion, browser drafts, and Story Mode preview.
+- **Dialogue Editor** - Project-backed branching graph editor with atomic saves, node/edge validation, choice conditions, relationship effects, LLM prompts, protected deletion, browser drafts, and Playtest preview.
 - **Visual Workflow Editor** - Drag-and-drop node-based editor for designing dialogue flows, branching conditions, LLM generation nodes, evaluation triggers, and scene transitions.
 - **Workflow Validation** - Import/export and project-scoped save/load paths validate node ids, start/end structure, missing config fields, broken links, duplicate links, and unreachable nodes.
 - **Scene Asset Library** - Project scene metadata and background files are scanned, validated, listed, and selectable as the active runtime scene.
 - **Ending Route Editor** - Creators bind validated scenes and dialogues into versioned endings with event coverage diagnostics, optimistic concurrency, rollback-safe saves, reference-protected deletion, and author preview.
 - **Scene Catalog Editor** - Creators promote background-inferred scenes into metadata, preview real assets, diagnose event access, and save or delete metadata with optimistic concurrency and cross-catalog reference protection.
-- **Renderer Fallback Pipeline** - Story Mode resolves project assets across Tauri and Web builds, preferring Live2D, then GLB/GLTF 3D models, then 2D sprites or portraits, with runtime load-failure fallback and a generated 3D stage placeholder when no art is available.
+- **Renderer Fallback Pipeline** - Playtest resolves project assets across Tauri and Web builds, preferring Live2D, then GLB/GLTF 3D models, then 2D sprites or portraits, with runtime load-failure fallback and a generated 3D stage placeholder when no art is available.
 - **Project Control Panel** - Project settings, path readiness, AI backend selection, and runtime initialization are managed from one production-oriented console.
 - **Verified Project Packages** - Desktop authors export and import complete `.monogatari` ZIP packages with sanitized settings, deterministic inventories, SHA-256 verification, portable-path enforcement, bounded extraction, and transactional installation into a new project directory.
 - **Character System** - Full personality model (Big Five traits), memory system, emotion tracking, and relationship scores per character.
@@ -30,7 +30,7 @@ Monogatari is a development engine for creating LLM-driven text adventure games.
 - **Save/Load System** - Full game state persistence including character states, flags, variables, and chat history.
 - **Rhai Scripting** - Embedded scripting engine for custom game logic, conditions, and triggers.
 - **Knowledge Base Manager** - Full CRUD interface for world lore, character backgrounds, and AI context entries with category filtering, tag cloud, and keyword search.
-- **Professional Character Editor** - 5-tab editor with Big Five personality sliders, radar chart visualization, emotion configuration, relationship management, knowledge entries, renderer asset diagnostics, Story Mode-style preview, emotion sprite mapping, and JSON export.
+- **Professional Character Editor** - 5-tab editor with Big Five personality sliders, radar chart visualization, emotion configuration, relationship management, knowledge entries, renderer asset diagnostics, Playtest preview, emotion sprite mapping, and JSON export.
 - **Audio Manager** - Manage background music, ambient sounds, and sound effects with per-track volume control and master mixer.
 - **Plugin System** - Register and manage custom workflow node types, event triggers, and action handlers through a dedicated management UI.
 - **Cloud Save Sync** - Project-scoped save manifests track local changes, pending uploads/downloads, cross-device conflicts, and remote preflight readiness without persisting sync tokens.
@@ -38,14 +38,12 @@ Monogatari is a development engine for creating LLM-driven text adventure games.
 - **Template Marketplace** - Browse, import, and export community-created templates, characters, and story modules.
 
 - **Project Export** - Export project as distributable JSON manifest with content inventory for packaging.
-- **Multiple AI Backends** - OpenAI-compatible API (GPT, Claude, etc.) plus project-scoped ONNX configuration preflight with explicit runtime-unavailable guards until local ONNX execution is linked.
-- **Title Screen** - Cinematic animated title screen with particle effects, glowing brand logo, and quick-access menu for game start, workflow editing, gallery, and settings.
-- **CG Gallery** - Scene and character art collection viewer with grid layout, locked/unlocked states, preview modal with weather/time metadata, and color-coded thumbnails.
-- **Backlog Viewer** - Full conversation history replay with character selector, role-based filtering (player/character/system), emotion badges, and jump-to-latest.
-- **Full i18n Internationalization** - 280+ translation keys covering all views and UI strings. Complete Simplified Chinese (zh-CN), Japanese (ja-JP), and Korean (ko-KR) locale files for international deployment.
-- **i18n-Integrated Sidebar** - All 22 navigation labels render through the `t()` translation function with automatic locale switching.
-- **Achievement System** - 15 unlockable milestones tracking social, relationship, creation, and gameplay progress with progress bars and category filtering.
-- **Commercial Workbench UI** - Desktop-first dashboard, streaming chat desk, story runtime, workflow authoring surface, and settings panels designed for repeated production use.
+- **Targeted Model Runtimes** - Web/PWA packages use WebGPU; Windows packages use a linked DirectML executor; an OpenAI-compatible API can be selected for development.
+- **Title Preview** - Inspect the authored title experience and launch the current project Playtest.
+- **Visual Review** - Review scene and character art, runtime metadata, and unlock-state presentation before release.
+- **Transcript** - Inspect runtime conversation history by character and role.
+- **Full i18n Internationalization** - Strictly verified English, Simplified Chinese, Japanese, and Korean catalogs cover all production UI surfaces.
+- **Commercial Workbench UI** - Desktop-first dashboard, authoring editors, test surfaces, diagnostics, and packaging controls designed for repeated production use.
 
 ## Current Development Status
 
@@ -53,13 +51,13 @@ Verified on 2026-07-10:
 
 - Frontend production build passes with `npm run build`.
 - Web/PWA production build passes with `npm run build:web`, including static-hosting SPA fallback assets, dedicated install/maskable icons, copied project sample assets, and bundle-budget verification.
-- Story Mode exposes a project-backed Story Library whose scene, dialogue, and ending entries consume the persistent event-unlock ledger. Content not referenced by an `unlock_*` action remains open for backward compatibility.
+- Playtest exposes a project-backed Story Library whose scene, dialogue, and ending entries consume the persistent event-unlock ledger. Content not referenced by an `unlock_*` action remains open for backward compatibility.
 - The Story Event workbench edits trigger thresholds, character scopes, repeat behavior, typed actions, and metadata, with fingerprint conflict detection and rollback-safe project catalog replacement.
 - The Ending Route workbench binds real scenes and dialogues into versioned assets, detects mismatched event coverage, rejects stale writes, protects referenced deletions, and previews valid routes without changing player unlock progress.
 - Scene and Dialogue workbenches now edit the active project catalog instead of temporary UI state. Saves use catalog fingerprints and rollback-capable JSON transactions; scene deletion scans Story Events, endings, and workflows, while dialogue deletion scans Story Events and endings.
 - Dialogue loading validates strict fields, authoritative node-map IDs, all transition targets, reachability, character references, relationship deltas, terminal metadata, script bounds, and LLM prompt requirements before runtime activation.
 - Versioned ending assets bind a gated ending ID to an existing scene and dialogue, and real player launch validates all three access decisions before playback.
-- Web/PWA builds package scene, dialogue, ending, event, and renderer assets in `project-assets.json`, cache them for offline use, execute checked-in branching dialogue nodes with a browser-local cursor, and let Scene/Dialogue/Ending authoring drafts feed Story Mode preview without modifying packaged source files.
+- Web/PWA builds package scene, dialogue, ending, event, and renderer assets in `project-assets.json`, cache them for offline use, execute checked-in branching dialogue nodes with a browser-local cursor, and let Scene/Dialogue/Ending authoring drafts feed Playtest preview without modifying packaged source files.
 - Mobile shell readiness passes with `npm run verify:mobile-readiness`, covering viewport safe-area support, iOS/PWA metadata, compact Tauri shell limits, and bottom navigation safe-area padding.
 - Responsive shell verification runs during `npm run build:web`, covering built 375px mobile and 768px tablet Web/PWA layout signals.
 - Tauri mobile deployment preflight passes with `node scripts/verify-tauri-mobile-preflight.mjs`, covering Android/iOS command readiness, Vite `TAURI_DEV_HOST` binding, Tauri shell config, and mobile release documentation.
@@ -97,7 +95,7 @@ Verified on 2026-07-10:
 - Group chat command boundaries trim participant IDs, reject empty or duplicate participant sets, reject inactive sessions, and refuse blank messages before they can advance a multi-character scene.
 - Settings-configured AI backends register through async-safe Tauri command paths; OpenAI-compatible API backends initialize before activation, so API chat and streaming are ready immediately after a successful configuration save.
 - OpenAI-compatible API configuration rejects blank runtime credentials or model IDs, embedded URL credentials, provider URL query strings/fragments, and non-local plaintext HTTP before a backend can become active.
-- ONNX backend configuration resolves model and tokenizer references under the active project data root, rejects raw filesystem paths, activates the ONNX engine after registration, and reports the backend as not ready instead of returning placeholder success while ONNX Runtime execution is not linked.
+- Windows ONNX configuration resolves model and tokenizer references under the active project data root, rejects raw filesystem paths, creates a required DirectML execution provider, validates the causal-LM graph, and activates the engine only after initialization succeeds.
 - Chat sessions now expose a restorable audit report with the latest safety trace, evaluation, story-event decisions, event-rule fingerprints, and triggerable events so author diagnostics survive character switching.
 - Quality Suites now export runtime safety trace evidence and guard-note count summaries, and include group chat plus block-body prompt-injection scenarios that require concrete guard notes for input wrapping, response guarding, memory guarding, relationship side-channel containment, and score/event containment.
 - Local fallback scoring ignores prompt-injection text for engagement and creativity boosts, so long meta-instructions cannot unlock score-gated story events when model evaluation is unavailable.
@@ -111,7 +109,7 @@ Verified on 2026-07-10:
 - Character authoring create/delete commands resolve through the active or discovered default project data root, validate portable character IDs before writing or removing JSON files under `characters/`, and deletion removes the runtime character from memory.
 - Plugin listing, registration, and removal commands resolve through the active or discovered default project data root, validate portable plugin IDs before touching manifest JSON files under `plugins/`, normalize optional `.rhai` script references under that plugin root, and the Plugin workbench sends the backend manifest contract directly.
 - Marketplace import/export commands resolve template references under the active project `templates/` directory, reject raw filesystem paths, and allow built-in catalog entries to import by safe catalog ID.
-- Live2D model commands load only project-relative `.model3.json`/`.json` files under the active project data root, and Story Mode validates renderer asset paths before handing them to the runtime.
+- Live2D model commands load only project-relative `.model3.json`/`.json` files under the active project data root, and Playtest validates renderer asset paths before handing them to the runtime.
 - Engine initialization validates that the selected project root is an existing local directory before loading managers or rebinding active project state.
 - Engine project reloads stage character, dialogue, and knowledge managers before activation, replace rather than merge prior content, and clear chat, scene, script, and event runtime state even when reloading the same project root.
 - Story event rules are versioned project assets under `events/*.json`. Chat scoring, workflow execution, local Web/PWA previews, and Quality Suites consume the same catalog, with validated score/relationship/evaluation thresholds, optional character scope, repeat behavior, stable rule/catalog fingerprints, and atomic author hot reloads.
@@ -266,10 +264,10 @@ The web build emits `dist/404.html` for SPA fallback, `dist/.nojekyll` for GitHu
 
 ## Usage
 
-### AI Chat Mode (Core Feature)
+### Character Test (Core Feature)
 
 1. Configure your AI backend in Settings (API key, model, base URL)
-2. Open AI Chat from the dashboard
+2. Open Character Test from the dashboard
 3. Select a character to talk with
 4. Chat freely - the character responds in personality using LLM
 5. Every 5 messages, the system evaluates your conversation quality
@@ -288,7 +286,7 @@ The web build emits `dist/404.html` for SPA fallback, `dist/.nojekyll` for GitHu
 1. Open Scene Assets from the sidebar
 2. Review project scenes from `scenes/*.json` and backgrounds from `assets/backgrounds`
 3. Fix any missing or invalid background paths shown by diagnostics
-4. Set a scene active before testing Story Mode or saving runtime state
+4. Set a scene active before testing Playtest or saving runtime state
 
 ### Project Control
 
@@ -443,14 +441,14 @@ ONNX configuration is project-scoped and validated, but this build does not link
 - [x] Knowledge base (keyword search, category/tag indexing)
 - [x] Scripting engine (Rhai-based)
 - [x] Save/load system
-- [x] Free-form AI chat mode
+- [x] Character and ensemble authoring test consoles
 - [x] Conversation evaluation and scoring
-- [x] Event trigger system (relationship milestones, achievements)
+- [x] Event trigger system (relationship milestones and project-authored progression events)
 - [x] Visual workflow editor (drag-and-drop)
 - [x] Frontend streaming chat integration via Tauri events
 - [x] Streaming evaluation and event notifications (`chat-evaluation`, `chat-event-decisions`, `chat-events`)
 - [x] Chat session lock optimization for slower LLM requests
-- [x] Commercial workbench UI refresh with 18-item sidebar navigation navigation (dashboard/chat/story/workflow/analytics/marketplace/plugins)
+- [x] Commercial workbench UI refresh with 21 engine-oriented sidebar destinations
 - [x] Browser preview fallback for non-Tauri UI review
 - [x] Frontend supply-chain audit remediation (Vite 8 + Live2D transitive override)
 - [x] Rust lockfile policy for reproducible Tauri builds
@@ -469,7 +467,7 @@ ONNX configuration is project-scoped and validated, but this build does not link
 - [x] Async-safe chat evaluation (blocking_read fix)
 - [x] Cargo dev profile optimization for faster builds
 - [x] Title Screen with cinematic animated particle effects and quick-access menu
-- [x] CG Gallery view with scene/character art collection and preview modal
+- [x] Visual Review view with scene/character art collection and preview modal
 - [x] Backlog viewer with conversation history replay and role-based filtering
 - [x] Comprehensive i18n system with 280+ translation keys across all views
 - [x] Full Simplified Chinese (zh-CN), Japanese (ja-JP), Korean (ko-KR) locale support
@@ -494,7 +492,7 @@ ONNX configuration is project-scoped and validated, but this build does not link
 
 - [x] Distribution channel policy and installer signing evidence gates
 - [ ] Production installer code-signing credentials and final signed installer publication
-- [x] Achievement system with 15 milestones, progress tracking, and localStorage persistence
+- [x] Engine-level gamification removed; progression remains an authored project concern
 - [ ] Mobile deployment (Tauri mobile)
 
 ### Planned
@@ -522,17 +520,17 @@ ONNX configuration is project-scoped and validated, but this build does not link
 - [x] GLTF/GLB 3D model loading with Three.js GLTFLoader, OrbitControls, animation playback
 - [x] i18n composable with nested key support and locale persistence
 - [x] i18n composable upgraded with nested key support and localStorage persistence
-- [x] Sidebar navigation expanded to 20 items with Quality, Analytics, Marketplace, Plugins, galleries, backlog, and achievements
-- [x] Title Screen, CG Gallery, Backlog viewer views
+- [x] Sidebar navigation organized into 21 authoring, preview, quality, and project destinations
+- [x] Title Screen, Visual Review, Backlog viewer views
 - [x] Full i18n with 280+ keys and 4 locale files (en, zh-CN, ja-JP, ko-KR)
-- [x] Achievement system with 15 milestones, progress tracking, and localStorage persistence
+- [x] Project-authored progression through story-event conditions and workflow gates
 - [ ] Mobile deployment (Tauri mobile)
 
 ## Tech Stack
 
 - **Backend**: Rust, Tauri 2.x
 - **Frontend**: Vue 3, TypeScript, Vite, Pinia
-- **AI**: OpenAI-compatible API, guarded ONNX configuration preflight for future local runtime integration
+- **AI**: Transformers.js WebGPU (Web/PWA), ONNX Runtime DirectML (Windows), optional OpenAI-compatible development API
 - **Scripting**: Rhai
 - **Rendering**: PixiJS, Live2D Cubism SDK
 - **Desktop**: Tauri (WebView2 on Windows, WebKit on macOS/Linux)

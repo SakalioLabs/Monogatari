@@ -212,7 +212,7 @@
               <div class="radar-chart" :aria-label="t('characters.personality-chart', 'Personality chart')">
                 <svg viewBox="0 0 260 260" class="radar-svg" role="img">
                   <polygon v-for="ring in 5" :key="ring" :points="radarRing(ring * 20)" fill="none" stroke="var(--border)" stroke-width="1" />
-                  <polygon :points="radarPolygon" fill="rgba(45,212,191,0.18)" stroke="var(--brand)" stroke-width="2" />
+                  <polygon :points="radarPolygon" fill="var(--selection)" stroke="var(--brand)" stroke-width="2" />
                   <circle v-for="(point, index) in radarPoints" :key="index" :cx="point.x" :cy="point.y" r="4" fill="var(--brand)" />
                   <text v-for="(label, index) in radarLabels" :key="label" :x="radarLabelPos(index).x" :y="radarLabelPos(index).y" text-anchor="middle" fill="var(--text-secondary)" font-size="10" font-weight="700">{{ label }}</text>
                 </svg>
@@ -723,8 +723,8 @@ function radarLabelPos(i: number) {
 }
 
 function avatarColor(id: string): string {
-  const hue = Array.from(id).reduce((s, c) => s + c.charCodeAt(0), 0) * 37 % 360
-  return 'hsl(' + hue + ', 55%, 45%)'
+  const lightness = 30 + (Array.from(id).reduce((sum, char) => sum + char.charCodeAt(0), 0) % 5) * 8
+  return `hsl(0, 0%, ${lightness}%)`
 }
 
 function characterImage(character: CharacterSummary): string | null {

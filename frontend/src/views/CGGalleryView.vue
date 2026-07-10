@@ -257,7 +257,7 @@ onMounted(loadData)
   font-size: 13px;
   font-weight: 700;
   color: var(--brand-light);
-  background: rgba(45,212,191,0.08);
+  background: color-mix(in srgb, var(--brand) 7%, var(--surface-1));
 }
 
 .cg-tabs {

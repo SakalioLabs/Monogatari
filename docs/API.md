@@ -147,7 +147,7 @@ Scene and renderer asset paths are project-relative asset references. Runtime as
 | `delete_scene_definition` | `{ sceneId, expectedCatalogFingerprint }` | `SceneAuthoringCatalogSnapshot` | Delete metadata only after Story Event, ending, and workflow reference checks; background files remain untouched |
 | `get_current_scene` | - | `ActiveScene` | Current active scene |
 | `set_scene` | `{ sceneId }` | `SceneInfo` | Set an authoring/runtime scene without player gate enforcement |
-| `enter_story_scene` | `{ sceneId }` | `SceneInfo` | Enter a scene through Story Mode with unlock enforcement |
+| `enter_story_scene` | `{ sceneId }` | `SceneInfo` | Enter a scene through Playtest with unlock enforcement |
 
 ## Endings
 

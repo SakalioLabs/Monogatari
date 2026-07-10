@@ -7,7 +7,7 @@
     <header class="game-topbar">
       <button class="control-btn icon-control" :title="t('game.home', 'Home')" :aria-label="t('game.home', 'Home')" @click="$router.push('/')"><House :size="16" /></button>
       <div class="scene-meta">
-        <span class="eyebrow">{{ t('game.story-mode', 'Story Mode') }}</span>
+        <span class="eyebrow">{{ t('game.story-mode', 'Playtest') }}</span>
         <strong>{{ dialogueState?.speaker || currentCharacter?.name || activeScene?.name || t('game.demo-scene', 'Demo Scene') }}</strong>
       </div>
       <div class="top-actions">
@@ -393,18 +393,14 @@ const sceneBackdropStyle = computed(() => {
 
   if (bgPath) {
     return {
-      background: 'linear-gradient(180deg, hsl(210 28% 18%), hsl(225 32% 10%))',
+      background: 'hsl(210 10% 16%)',
     }
   }
 
   const seed = Array.from(activeScene.value.id).reduce((sum, char) => sum + char.charCodeAt(0), 0)
   const hueA = (seed * 17) % 360
-  const hueB = (hueA + 44) % 360
-  const hueC = (hueA + 172) % 360
   return {
-    background:
-      `linear-gradient(180deg, hsl(${hueA} 44% 18%), hsl(${hueB} 42% 10%)), ` +
-      `radial-gradient(circle at 50% 72%, hsl(${hueC} 62% 36% / 0.36), transparent 38%)`,
+    background: `hsl(${hueA} 8% 16%)`,
   }
 })
 
@@ -874,10 +870,7 @@ onUnmounted(() => {
 }
 
 .scene-horizon {
-  background:
-    linear-gradient(180deg, rgba(96,165,250,0.16), transparent 42%),
-    radial-gradient(circle at 50% 78%, rgba(45,212,191,0.16), transparent 34%),
-    linear-gradient(180deg, rgba(21,25,34,0.28), rgba(15,17,21,0.82));
+  background: rgba(15,17,21,0.46);
 }
 
 .game-topbar {
@@ -1386,8 +1379,8 @@ onUnmounted(() => {
 
 .toast {
   top: 82px;
-  border: 1px solid rgba(45,212,191,0.36);
-  background: rgba(15,118,110,0.96);
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(32,33,36,0.96);
 }
 
 .error-toast {

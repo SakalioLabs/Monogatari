@@ -4,7 +4,7 @@
       <header class="rail-header">
         <div>
           <span class="eyebrow"><UsersRound :size="13" aria-hidden="true" />{{ t('chat.cast', 'Cast') }}</span>
-          <h1>{{ t('chat.title', 'AI Chat') }}</h1>
+          <h1>{{ t('chat.title', 'Character Test') }}</h1>
         </div>
         <strong>{{ filteredCharacters.length }}/{{ characters.length }}</strong>
       </header>
@@ -51,9 +51,9 @@
           <span class="eyebrow">{{ selectedCharacter ? t('chat.session', 'Session') : t('chat.ready', 'Ready') }}</span>
           <h2>{{ selectedCharacter?.name || t('chat.select-character', 'Select a character') }}</h2>
         </div>
-        <span class="runtime-badge" :class="{ preview: !desktopRuntimeAvailable }">
+        <span class="runtime-badge" :class="{ webgpu: !desktopRuntimeAvailable }">
           <MonitorCog :size="13" aria-hidden="true" />
-          {{ desktopRuntimeAvailable ? t('chat.desktop-runtime', 'Desktop runtime') : t('chat.browser-preview', 'Browser preview') }}
+          {{ desktopRuntimeAvailable ? t('chat.desktop-runtime', 'Windows DirectML') : t('chat.webgpu-runtime', 'WebGPU runtime') }}
         </span>
         <div v-if="selectedCharacter" class="session-metrics">
           <span class="metric-pill"><Smile :size="13" aria-hidden="true" />{{ emotionLabel(currentEmotion) }}</span>
@@ -195,7 +195,7 @@
           <div class="section-head"><span>{{ t('chat.runtime', 'Runtime') }}</span></div>
           <div class="runtime-list">
             <span><b>{{ t('chat.mode', 'Mode') }}</b>{{ isStreaming ? t('chat.streaming', 'Streaming') : t('chat.idle', 'Idle') }}</span>
-            <span><b>{{ t('chat.runtime-source', 'Source') }}</b>{{ desktopRuntimeAvailable ? t('chat.desktop-runtime', 'Desktop runtime') : t('chat.browser-preview', 'Browser preview') }}</span>
+            <span><b>{{ t('chat.runtime-source', 'Source') }}</b>{{ desktopRuntimeAvailable ? t('chat.desktop-runtime', 'Windows DirectML') : t('chat.webgpu-runtime', 'WebGPU runtime') }}</span>
             <span><b>{{ t('chat.emotion', 'Emotion') }}</b>{{ emotionLabel(currentEmotion) }}</span>
             <span><b>{{ t('chat.relation', 'Relation') }}</b>{{ relationshipScore.toFixed(2) }}</span>
             <span><b>{{ t('chat.unlocks', 'Unlocks') }}</b>{{ unlockedContentCount }}</span>
@@ -268,6 +268,7 @@ import {
 import { hasTauriRuntime, invokeCommand } from '../lib/tauri'
 import { useI18n } from '../lib/i18n'
 import { loadStoryCharacters } from '../lib/storyContent'
+import { generateWebGpuChat } from '../lib/webgpuInference'
 import type { StoryEventAction } from '../lib/storyEvents'
 import {
   loadStoryProgress,
@@ -572,16 +573,34 @@ function browserPreviewEvaluationReport(): ConversationEvaluationReport {
       engagement: Math.min(1, participation + 0.05),
       creativity: Math.max(0.35, participation - 0.04),
       overall_score: participation,
-      summary: t('chat.preview-score-summary', 'Browser preview score based on local message activity.'),
+      summary: t('chat.preview-score-summary', 'Local test score based on message activity.'),
     },
     event_trigger_decisions: [],
     triggerable_events: [],
   }
 }
 
-async function completeBrowserPreviewReply(assistantMessage: ChatMessage, character: CharacterInfo) {
-  await new Promise((resolve) => window.setTimeout(resolve, 220))
-  assistantMessage.content = t('chat.preview-reply', '{name} received the message in browser preview. Desktop AI generation is not active here.', { name: character.name })
+async function completeWebGpuReply(assistantMessage: ChatMessage, character: CharacterInfo) {
+  const conversation = messages.value
+    .filter((message) => message !== assistantMessage && message.content.trim())
+    .slice(-16)
+    .map((message) => ({
+      role: message.role === 'player' ? 'user' as const : 'assistant' as const,
+      content: message.content,
+    }))
+  const generated = await generateWebGpuChat([
+    {
+      role: 'system',
+      content: `You are ${character.name}. Stay in character and reply in ${locale.value}. Character context: ${character.description}`,
+    },
+    ...conversation,
+  ], {
+    onChunk: (chunk) => {
+      assistantMessage.content += chunk
+      scrollToBottom()
+    },
+  })
+  if (!assistantMessage.content.trim()) assistantMessage.content = generated
   assistantMessage.emotion = character.emotion || 'neutral'
   currentEmotion.value = assistantMessage.emotion || 'neutral'
   isStreaming.value = false
@@ -701,27 +720,6 @@ async function sendMessage() {
   eventDecisions.value = []
 
   messages.value.push({ role: 'player', content: text, emotion: null, timestamp: new Date().toISOString() })
-    
-    // Track message count for achievements
-    const charKey = 'monogatari-chat-count-' + character.id
-    const count = parseInt(localStorage.getItem(charKey) || '0') + 1
-    localStorage.setItem(charKey, String(count))
-    
-    // Check achievement unlocks
-    if (typeof (window as any).__monogatari_unlock === 'function') {
-      const unlock = (window as any).__monogatari_unlock
-      if (count === 1) unlock('first_chat')
-      if (count >= 10) unlock('chat_10')
-      
-      // Check total messages across all characters
-      let total = 0
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i)
-        if (k?.startsWith('monogatari-chat-count-')) total += parseInt(localStorage.getItem(k) || '0')
-      }
-      if (total >= 50) unlock('chat_50')
-      if (total >= 10) unlock('all_characters')
-    }
   const assistantMessage: ChatMessage = {
     role: 'character',
     content: '',
@@ -743,7 +741,7 @@ async function sendMessage() {
       })
       await refreshRelationship()
     } else {
-      await completeBrowserPreviewReply(assistantMessage, character)
+      await completeWebGpuReply(assistantMessage, character)
     }
   } catch (e) {
     errorMessage.value = String(e)
@@ -761,10 +759,6 @@ async function refreshRelationship() {
   if (!selectedCharacter.value) return
   try {
     relationshipScore.value = await invokeCommand<number>('get_relationship_score', { characterId: selectedCharacter.value.id }, 0)
-    // Check relationship achievement
-    if (relationshipScore.value >= 0.8 && typeof (window as any).__monogatari_unlock === 'function') {
-      (window as any).__monogatari_unlock('high_relationship')
-    }
   } catch (e) {
     console.error(e)
   }
@@ -781,10 +775,6 @@ async function refreshEvaluation() {
     )
     evaluation.value = report.evaluation
     eventDecisions.value = report.event_trigger_decisions || []
-    // Check evaluation achievement
-    if (evaluation.value && evaluation.value.overall_score > 0.8 && typeof (window as any).__monogatari_unlock === 'function') {
-      (window as any).__monogatari_unlock('eval_high')
-    }
   } catch (e) {
     errorMessage.value = String(e)
   }
@@ -1038,7 +1028,7 @@ onUnmounted(cleanupStreamListeners)
 .conversation-title { display: grid; min-width: 0; gap: 3px; }
 .runtime-badge, .metric-pill { gap: 5px; border-radius: 999px; white-space: nowrap; }
 .runtime-badge { padding: 4px 7px; border: 1px solid color-mix(in srgb, var(--success) 28%, var(--border)); color: var(--success); font-size: 8px; font-weight: 800; }
-.runtime-badge.preview { border-color: color-mix(in srgb, var(--warning) 30%, var(--border)); color: var(--warning); }
+.runtime-badge.webgpu { border-color: var(--border-strong); color: var(--text-primary); }
 .session-metrics, .header-actions { min-width: 0; gap: 5px; }
 .metric-pill { min-height: 26px; padding: 3px 7px; border: 1px solid var(--border); background: var(--surface-0); color: var(--text-secondary); font-size: 8px; font-weight: 750; }
 .metric-pill.rel-high { color: var(--success); }

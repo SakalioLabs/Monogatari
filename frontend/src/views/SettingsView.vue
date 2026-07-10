@@ -183,37 +183,53 @@
             <template v-else-if="activeSection === 'ai'">
               <header class="section-header">
                 <div>
-                  <span class="eyebrow"><Bot :size="13" />{{ t('settings.ai-backend', 'AI backend') }}</span>
+                  <span class="eyebrow"><Bot :size="13" />{{ t('settings.ai-backend', 'Inference runtime') }}</span>
                   <h2>{{ providerLabel }}</h2>
-                  <p>{{ t('settings.ai-summary', 'Select the inference path used by authoring and runtime tools.') }}</p>
+                  <p>{{ t('settings.ai-summary', 'Configure the model runtime shipped with each build target.') }}</p>
                 </div>
                 <button
                   class="btn btn-primary btn-sm"
-                  :disabled="savingAI || !aiReadyToConnect || !desktopRuntimeAvailable"
-                  :title="desktopActionTitle"
+                  :disabled="savingAI || !aiReadyToConnect || !aiActionAvailable"
+                  :title="aiActionTitle"
                   @click="saveAI"
                 >
                   <Sparkles :size="14" />
-                  {{ savingAI ? t('settings.connecting', 'Connecting') : t('settings.connect', 'Connect') }}
+                  {{ savingAI ? t('settings.connecting', 'Connecting') : provider === 'webgpu' ? t('settings.initialize', 'Initialize') : t('settings.connect', 'Connect') }}
                 </button>
               </header>
 
               <div class="runtime-line">
-                <span><Activity :size="15" />{{ t('settings.active-engine', 'Active engine') }}</span>
-                <strong :class="{ online: engineStatus?.active_ai_engine }">{{ activeEngineLabel }}</strong>
+                <span><Activity :size="15" />{{ t('settings.active-engine', 'Active runtime') }}</span>
+                <strong :class="{ online: activeRuntimeReady }">{{ activeEngineLabel }}</strong>
+              </div>
+
+              <div class="runtime-target-grid">
+                <article class="runtime-target" :class="{ current: !desktopRuntimeAvailable }">
+                  <span class="target-icon"><Globe2 :size="17" /></span>
+                  <span><small>{{ t('settings.web-build', 'Web / PWA build') }}</small><strong>WebGPU</strong></span>
+                  <b>{{ !desktopRuntimeAvailable ? t('settings.current-target', 'Current') : t('settings.packaged-target', 'Packaged') }}</b>
+                </article>
+                <article class="runtime-target" :class="{ current: desktopRuntimeAvailable }">
+                  <span class="target-icon"><MonitorCog :size="17" /></span>
+                  <span><small>{{ t('settings.windows-build', 'Windows build') }}</small><strong>DirectML</strong></span>
+                  <b>{{ desktopRuntimeAvailable ? t('settings.current-target', 'Current') : t('settings.packaged-target', 'Packaged') }}</b>
+                </article>
               </div>
 
               <div class="settings-group">
                 <div class="group-heading">
                   <Cpu :size="16" />
-                  <div><h3>{{ t('settings.provider', 'Provider') }}</h3><p>{{ t('settings.provider-contract', 'One active provider is used across the project.') }}</p></div>
+                  <div><h3>{{ t('settings.provider', 'Connection') }}</h3><p>{{ t('settings.provider-contract', 'Choose a deployment runtime or a development API connection.') }}</p></div>
                 </div>
                 <div class="segmented-control" :aria-label="t('settings.provider', 'Provider')">
-                  <button :class="{ active: provider === 'api' }" :aria-pressed="provider === 'api'" @click="provider = 'api'">
-                    <CloudCog :size="15" />{{ t('settings.api-provider', 'OpenAI-compatible API') }}
+                  <button :class="{ active: provider === 'webgpu' }" :aria-pressed="provider === 'webgpu'" @click="provider = 'webgpu'">
+                    <Globe2 :size="15" />WebGPU
                   </button>
                   <button :class="{ active: provider === 'onnx' }" :aria-pressed="provider === 'onnx'" @click="provider = 'onnx'">
-                    <Cpu :size="15" />{{ t('settings.onnx-provider', 'Local ONNX model') }}
+                    <MonitorCog :size="15" />DirectML
+                  </button>
+                  <button :class="{ active: provider === 'api' }" :aria-pressed="provider === 'api'" @click="provider = 'api'">
+                    <CloudCog :size="15" />{{ t('settings.api-provider-short', 'Development API') }}
                   </button>
                 </div>
               </div>
@@ -239,10 +255,42 @@
                 </div>
               </div>
 
+              <div v-else-if="provider === 'webgpu'" class="settings-group">
+                <div class="group-heading">
+                  <Globe2 :size="16" />
+                  <div><h3>{{ t('settings.webgpu-model', 'WebGPU model') }}</h3><p>{{ t('settings.webgpu-model-note', 'Transformers.js loads ONNX weights into the browser GPU runtime.') }}</p></div>
+                </div>
+                <div class="form-grid two">
+                  <label class="form-field wide">
+                    <span>{{ t('settings.model-id', 'Model ID or packaged path') }}</span>
+                    <input v-model="webGpuModelId" class="input mono-input" placeholder="onnx-community/Qwen2.5-0.5B-Instruct" spellcheck="false" />
+                  </label>
+                  <label class="form-field">
+                    <span>{{ t('settings.dtype', 'Precision') }}</span>
+                    <select v-model="webGpuDtype" class="input">
+                      <option value="q4">Q4</option>
+                      <option value="q4f16">Q4 F16</option>
+                      <option value="q8">Q8</option>
+                      <option value="fp16">FP16</option>
+                      <option value="fp32">FP32</option>
+                    </select>
+                  </label>
+                  <label class="form-field">
+                    <span>{{ t('settings.max-new-tokens', 'Max new tokens') }}</span>
+                    <input v-model.number="webGpuMaxNewTokens" class="input" type="number" min="1" max="2048" step="1" />
+                  </label>
+                </div>
+                <div class="runtime-contract" :class="{ unavailable: !webGpuSupport.available }">
+                  <PackageCheck v-if="webGpuSupport.available" :size="16" />
+                  <CircleAlert v-else :size="16" />
+                  <span><strong>{{ webGpuSupportLabel }}</strong><small>{{ t('settings.webgpu-cache-note', 'Model weights are cached by the browser after the first load.') }}</small></span>
+                </div>
+              </div>
+
               <div v-else class="settings-group">
                 <div class="group-heading">
                   <HardDrive :size="16" />
-                  <div><h3>{{ t('settings.local-model', 'Local model') }}</h3><p>{{ t('settings.local-model-note', 'Paths remain relative to the active project root.') }}</p></div>
+                  <div><h3>{{ t('settings.local-model', 'Windows model') }}</h3><p>{{ t('settings.local-model-note', 'Paths remain relative to the active project root.') }}</p></div>
                 </div>
                 <div class="form-grid">
                   <label class="form-field">
@@ -253,10 +301,10 @@
                     <span>{{ t('settings.tokenizer-path', 'Tokenizer path') }}</span>
                     <input v-model="tokenizerPath" class="input mono-input" :placeholder="t('settings.tokenizer-path-placeholder', 'models/tokenizer.json')" spellcheck="false" />
                   </label>
-                  <label class="switch-row">
-                    <span><strong>{{ t('settings.directml', 'DirectML acceleration') }}</strong><small>{{ t('settings.directml-note', 'Use the Windows GPU execution provider when available.') }}</small></span>
-                    <input v-model="useDirectML" type="checkbox" />
-                  </label>
+                </div>
+                <div class="runtime-contract">
+                  <PackageCheck :size="16" />
+                  <span><strong>{{ t('settings.directml', 'DirectML required') }}</strong><small>{{ t('settings.directml-note', 'Windows builds fail clearly when a DirectML adapter or compatible ONNX model is unavailable.') }}</small></span>
                 </div>
               </div>
             </template>
@@ -480,8 +528,10 @@ import {
   FolderCheck,
   FolderKanban,
   Gauge,
+  Globe2,
   HardDrive,
   KeyRound,
+  MonitorCog,
   PackageCheck,
   Play,
   RefreshCw,
@@ -495,6 +545,15 @@ import {
 } from '@lucide/vue'
 import { hasTauriRuntime, invokeCommand } from '../lib/tauri'
 import { useI18n } from '../lib/i18n'
+import {
+  configureWebGpuRuntime,
+  detectWebGpuSupport,
+  getWebGpuRuntimeConfig,
+  initializeWebGpuRuntime,
+  loadPackagedWebGpuConfig,
+  webGpuSupportMessage,
+  type WebGpuDType,
+} from '../lib/webgpuInference'
 import {
   exportProjectPackage,
   importProjectPackage,
@@ -592,15 +651,21 @@ const projectPackagesEnabled = projectPackagesAvailable()
 const archiveSummary = ref<(ProjectArchiveExportResult | ProjectArchiveInspection) | null>(null)
 let statusTimer: number | undefined
 
-const projectTitle = ref('LLM Galgame Engine')
+const projectTitle = ref('Monogatari Engine')
 const targetFps = ref(60)
-const provider = ref('api')
+const provider = ref<'api' | 'onnx' | 'webgpu'>(desktopRuntimeAvailable ? 'onnx' : 'webgpu')
 const apiBaseUrl = ref('https://api.openai.com/v1')
 const apiKey = ref('')
 const apiModel = ref('gpt-4o-mini')
 const modelPath = ref('models/model.onnx')
 const tokenizerPath = ref('models/tokenizer.json')
 const useDirectML = ref(true)
+const packagedWebGpuConfig = getWebGpuRuntimeConfig()
+const webGpuModelId = ref(packagedWebGpuConfig.modelId)
+const webGpuDtype = ref<WebGpuDType>(packagedWebGpuConfig.dtype)
+const webGpuMaxNewTokens = ref(packagedWebGpuConfig.maxNewTokens)
+const webGpuSupport = detectWebGpuSupport()
+const webGpuReady = ref(false)
 const runtimeSecretSettingKeys = new Set([
   'api_key',
   'apiKey',
@@ -782,12 +847,19 @@ const previewState: ProjectConfigState = {
   error_count: 0,
   warning_count: 1,
   config: {
-    render: { title: 'LLM Galgame Engine' },
+    render: { title: 'Monogatari Engine' },
     engine: { target_fps: 60 },
     ai: {
-      provider: 'api',
+      provider: 'webgpu',
       api: { base_url: 'https://api.openai.com/v1', api_key: '', model: 'gpt-4o-mini' },
       onnx: { model_path: 'models/model.onnx', tokenizer_path: 'models/tokenizer.json', use_directml: true },
+      webgpu: {
+        model_id: 'onnx-community/Qwen2.5-0.5B-Instruct',
+        dtype: 'q4',
+        max_new_tokens: 256,
+        temperature: 0.7,
+        top_p: 0.9,
+      },
     },
     paths: {
       characters: 'characters',
@@ -812,7 +884,7 @@ const previewState: ProjectConfigState = {
     { key: 'saves', label: 'Saves', relative_path: 'saves', absolute_path: '', exists: false, item_count: 0, required: false },
     { key: 'quality_suites', label: 'Quality Suites', relative_path: 'quality_suites', absolute_path: '', exists: true, item_count: 1, required: false },
   ],
-  issues: [{ severity: 'warning', code: 'api_key_missing', path: 'ai.api.api_key', message: 'API key is not configured.' }],
+  issues: [],
 }
 
 const browserProjectState = ref<ProjectConfigState>(previewState)
@@ -825,8 +897,10 @@ function browserStateForConfig(config: Record<string, any>): ProjectConfigState 
       issues.push({ severity: 'warning', code: 'api_base_url_missing', path: 'ai.api.base_url', message: 'API base URL is empty.' })
     }
     issues.push({ severity: 'warning', code: 'api_key_missing', path: 'ai.api.api_key', message: 'API key is not configured.' })
-  } else if (!String(getConfigValue(config, ['ai', 'onnx', 'model_path']) || '').trim()) {
+  } else if (configuredProvider === 'onnx' && !String(getConfigValue(config, ['ai', 'onnx', 'model_path']) || '').trim()) {
     issues.push({ severity: 'warning', code: 'onnx_model_missing', path: 'ai.onnx.model_path', message: 'ONNX model path is empty.' })
+  } else if (configuredProvider === 'webgpu' && !String(getConfigValue(config, ['ai', 'webgpu', 'model_id']) || '').trim()) {
+    issues.push({ severity: 'warning', code: 'webgpu_model_missing', path: 'ai.webgpu.model_id', message: 'WebGPU model ID is empty.' })
   }
   return {
     ...previewState,
@@ -840,9 +914,11 @@ function browserStateForConfig(config: Record<string, any>): ProjectConfigState 
   }
 }
 
-const providerLabel = computed(() => provider.value === 'api'
-  ? t('settings.api-provider', 'OpenAI-compatible API')
-  : t('settings.onnx-provider', 'Local ONNX model'))
+const providerLabel = computed(() => {
+  if (provider.value === 'webgpu') return t('settings.webgpu-provider', 'WebGPU browser runtime')
+  if (provider.value === 'onnx') return t('settings.onnx-provider', 'Windows DirectML runtime')
+  return t('settings.api-provider', 'OpenAI-compatible development API')
+})
 const issueCount = computed(() => (projectState.value?.error_count || 0) + (projectState.value?.warning_count || 0))
 const editablePaths = computed(() => projectState.value?.paths || previewState.paths)
 const displayedProjectPath = computed(() => desktopRuntimeAvailable
@@ -859,10 +935,34 @@ const packageStateLabel = computed(() => archiveSummary.value
   : projectPackagesEnabled
     ? t('settings.ready', 'Ready')
     : t('settings.web-manifest', 'Web manifest'))
-const activeEngineLabel = computed(() => engineStatus.value?.active_ai_engine || t('settings.no-ai-engine', 'No AI engine'))
-const aiReadyToConnect = computed(() => provider.value === 'api'
-  ? Boolean(apiBaseUrl.value.trim() && apiModel.value.trim() && apiKey.value.trim())
-  : Boolean(modelPath.value.trim() && tokenizerPath.value.trim()))
+const activeEngineLabel = computed(() => {
+  if (provider.value === 'webgpu') {
+    return webGpuReady.value ? 'WebGPU' : t('settings.not-initialized', 'Not initialized')
+  }
+  return engineStatus.value?.active_ai_engine || t('settings.no-ai-engine', 'No AI engine')
+})
+const activeRuntimeReady = computed(() => provider.value === 'webgpu'
+  ? webGpuReady.value
+  : Boolean(engineStatus.value?.active_ai_engine))
+const aiReadyToConnect = computed(() => {
+  if (provider.value === 'api') return Boolean(apiBaseUrl.value.trim() && apiModel.value.trim() && apiKey.value.trim())
+  if (provider.value === 'webgpu') return Boolean(webGpuModelId.value.trim() && webGpuMaxNewTokens.value > 0)
+  return Boolean(modelPath.value.trim() && tokenizerPath.value.trim())
+})
+const aiActionAvailable = computed(() => provider.value === 'webgpu'
+  ? !desktopRuntimeAvailable && webGpuSupport.available
+  : desktopRuntimeAvailable)
+const aiActionTitle = computed(() => {
+  if (provider.value === 'webgpu') {
+    return webGpuSupport.available
+      ? t('settings.initialize-webgpu', 'Initialize WebGPU model')
+      : webGpuSupportMessage(webGpuSupport.reason)
+  }
+  return desktopActionTitle.value
+})
+const webGpuSupportLabel = computed(() => webGpuSupport.available
+  ? t('settings.webgpu-available', 'WebGPU available')
+  : t('settings.webgpu-unavailable', 'WebGPU unavailable'))
 const ttsReadyToSave = computed(() => {
   if (ttsConfig.value.provider === 'system') return true
   if (!ttsConfig.value.api_key.trim() || !ttsConfig.value.api_voice_id.trim()) return false
@@ -976,7 +1076,8 @@ function projectIssueMessage(issue: ProjectConfigIssue) {
   if (issue.code === 'api_base_url_missing') return t('settings.issue.api-url-missing', 'The API base URL is empty.')
   if (issue.code === 'api_key_missing') return t('settings.issue.api-key-missing', 'The API key is not configured in runtime memory.')
   if (issue.code === 'onnx_model_missing') return t('settings.issue.onnx-model-missing', 'The ONNX model path is empty.')
-  if (issue.code === 'ai_provider_invalid') return t('settings.issue.ai-provider-invalid', 'The AI provider must be API or ONNX.')
+  if (issue.code === 'webgpu_model_missing') return t('settings.issue.webgpu-model-missing', 'The WebGPU model ID is empty.')
+  if (issue.code === 'ai_provider_invalid') return t('settings.issue.ai-provider-invalid', 'The AI provider must be WebGPU, DirectML, or API.')
   return issue.message
 }
 
@@ -1009,12 +1110,23 @@ function applyProjectState(state: ProjectConfigState) {
     || getConfigValue(config, ['engine', 'title'])
     || projectTitle.value
   targetFps.value = Number(getConfigValue(config, ['engine', 'target_fps']) || getConfigValue(config, ['engine', 'targetFps']) || targetFps.value)
-  provider.value = getConfigValue(config, ['ai', 'provider']) || provider.value
+  const configuredProvider = getConfigValue(config, ['ai', 'provider'])
+  if (configuredProvider === 'api' || configuredProvider === 'onnx' || configuredProvider === 'webgpu') {
+    provider.value = configuredProvider
+  }
   apiBaseUrl.value = getConfigValue(config, ['ai', 'api', 'base_url']) || getConfigValue(config, ['ai', 'api', 'baseUrl']) || apiBaseUrl.value
   apiModel.value = getConfigValue(config, ['ai', 'api', 'model']) || apiModel.value
   modelPath.value = getConfigValue(config, ['ai', 'onnx', 'model_path']) || getConfigValue(config, ['ai', 'onnx', 'modelPath']) || modelPath.value
   tokenizerPath.value = getConfigValue(config, ['ai', 'onnx', 'tokenizer_path']) || getConfigValue(config, ['ai', 'onnx', 'tokenizerPath']) || tokenizerPath.value
-  useDirectML.value = Boolean(getConfigValue(config, ['ai', 'onnx', 'use_directml']) ?? getConfigValue(config, ['ai', 'onnx', 'useDirectML']) ?? useDirectML.value)
+  useDirectML.value = true
+  webGpuModelId.value = getConfigValue(config, ['ai', 'webgpu', 'model_id']) || getConfigValue(config, ['ai', 'webgpu', 'modelId']) || webGpuModelId.value
+  webGpuDtype.value = getConfigValue(config, ['ai', 'webgpu', 'dtype']) || webGpuDtype.value
+  webGpuMaxNewTokens.value = Number(getConfigValue(config, ['ai', 'webgpu', 'max_new_tokens']) || getConfigValue(config, ['ai', 'webgpu', 'maxNewTokens']) || webGpuMaxNewTokens.value)
+  configureWebGpuRuntime({
+    modelId: webGpuModelId.value,
+    dtype: webGpuDtype.value,
+    maxNewTokens: webGpuMaxNewTokens.value,
+  })
   for (const path of state.paths) {
     pathEdits[path.key] = path.relative_path
   }
@@ -1045,16 +1157,22 @@ async function saveProject() {
 }
 
 async function saveAI() {
-  if (!desktopRuntimeAvailable || !aiReadyToConnect.value) return
+  if (!aiActionAvailable.value || !aiReadyToConnect.value) return
   savingAI.value = true
   try {
-    if (provider.value === 'api') {
+    if (provider.value === 'webgpu') {
+      await initializeWebGpuRuntime({
+        modelId: webGpuModelId.value,
+        dtype: webGpuDtype.value,
+        maxNewTokens: webGpuMaxNewTokens.value,
+      })
+      webGpuReady.value = true
+    } else if (provider.value === 'api') {
       await invokeCommand<void>('configure_api', { baseUrl: apiBaseUrl.value, apiKey: apiKey.value, model: apiModel.value })
     } else {
       await invokeCommand<void>('configure_onnx', {
         modelPath: modelPath.value,
         tokenizerPath: tokenizerPath.value,
-        useDirectml: useDirectML.value,
       })
     }
     setStatus(t('settings.notice.ai-connected', 'AI backend connected'))
@@ -1200,7 +1318,12 @@ function buildConfigForSave(source: Record<string, any>) {
   setConfigValue(config, ['ai', 'api', 'model'], apiModel.value)
   setConfigValue(config, ['ai', 'onnx', 'model_path'], modelPath.value)
   setConfigValue(config, ['ai', 'onnx', 'tokenizer_path'], tokenizerPath.value)
-  setConfigValue(config, ['ai', 'onnx', 'use_directml'], useDirectML.value)
+  setConfigValue(config, ['ai', 'onnx', 'use_directml'], true)
+  setConfigValue(config, ['ai', 'webgpu', 'model_id'], webGpuModelId.value)
+  setConfigValue(config, ['ai', 'webgpu', 'dtype'], webGpuDtype.value)
+  setConfigValue(config, ['ai', 'webgpu', 'max_new_tokens'], Number(webGpuMaxNewTokens.value) || 256)
+  setConfigValue(config, ['ai', 'webgpu', 'temperature'], 0.7)
+  setConfigValue(config, ['ai', 'webgpu', 'top_p'], 0.9)
   for (const [key, value] of Object.entries(pathEdits)) {
     setConfigValue(config, ['paths', key], value)
   }
@@ -1290,7 +1413,15 @@ function sanitizeManifestSettings(value: any): any {
   }))
 }
 
-onMounted(refreshAll)
+onMounted(async () => {
+  await refreshAll()
+  if (!desktopRuntimeAvailable) {
+    const config = await loadPackagedWebGpuConfig()
+    webGpuModelId.value = config.modelId
+    webGpuDtype.value = config.dtype
+    webGpuMaxNewTokens.value = config.maxNewTokens
+  }
+})
 onUnmounted(clearStatus)
 </script>
 
@@ -1922,10 +2053,92 @@ select.input {
   color: var(--success);
 }
 
+.runtime-target-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.runtime-target {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 62px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-1);
+}
+
+.runtime-target.current {
+  border-color: var(--border-strong);
+  box-shadow: inset 3px 0 0 var(--brand);
+}
+
+.target-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text-secondary);
+}
+
+.runtime-target > span:nth-child(2) {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.runtime-target small,
+.runtime-contract small {
+  color: var(--text-tertiary);
+  font-size: 8px;
+}
+
+.runtime-target strong,
+.runtime-contract strong {
+  color: var(--text-primary);
+  font-size: 10px;
+}
+
+.runtime-target > b {
+  color: var(--text-tertiary);
+  font-size: 8px;
+  text-transform: uppercase;
+}
+
+.runtime-contract {
+  display: flex;
+  max-width: 800px;
+  min-height: 48px;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--success);
+}
+
+.runtime-contract.unavailable {
+  color: var(--danger);
+}
+
+.runtime-contract > span {
+  display: grid;
+  gap: 2px;
+}
+
 .segmented-control {
   display: inline-grid;
   width: min(560px, 100%);
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 3px;
   padding: 3px;
   border: 1px solid var(--border);
@@ -2366,6 +2579,10 @@ select.input {
 
   .form-grid.two,
   .range-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .runtime-target-grid {
     grid-template-columns: 1fr;
   }
 

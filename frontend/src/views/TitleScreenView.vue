@@ -23,7 +23,7 @@
 
         <nav class="title-menu" :aria-label="t('title.menu', 'Main menu')">
           <button class="title-command primary" @click="openRoute('/game')"><Play :size="17" /><span>{{ t('title.start', 'Start Game') }}</span><ArrowRight :size="15" /></button>
-          <button class="title-command" @click="openRoute('/chat')"><MessageCircle :size="16" /><span>{{ t('nav.chat', 'AI Chat') }}</span><ArrowRight :size="14" /></button>
+          <button class="title-command" @click="openRoute('/chat')"><MessageCircle :size="16" /><span>{{ t('nav.chat', 'Character Test') }}</span><ArrowRight :size="14" /></button>
           <button class="title-command" @click="openRoute('/editor')"><Workflow :size="16" /><span>{{ t('nav.workflow', 'Workflow') }}</span><ArrowRight :size="14" /></button>
           <button class="title-command" @click="openRoute('/characters')"><Images :size="16" /><span>{{ t('title.gallery', 'Gallery') }}</span><ArrowRight :size="14" /></button>
           <button class="title-command" @click="openRoute('/settings')"><Settings :size="16" /><span>{{ t('title.settings', 'Settings') }}</span><ArrowRight :size="14" /></button>

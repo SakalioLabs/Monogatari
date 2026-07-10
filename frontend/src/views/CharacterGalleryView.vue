@@ -111,7 +111,7 @@
           <div v-else class="personality-panel">
             <svg viewBox="0 0 260 260" class="radar-svg" :aria-label="t('characters.personality-chart', 'Personality chart')">
               <polygon v-for="ring in 5" :key="ring" :points="radarRing(ring * 20)" fill="none" stroke="var(--border)" stroke-width="1" />
-              <polygon :points="radarPolygon" fill="rgba(45,212,191,0.18)" stroke="var(--brand)" stroke-width="2" />
+              <polygon :points="radarPolygon" fill="var(--selection)" stroke="var(--brand)" stroke-width="2" />
               <circle v-for="(point, index) in radarPoints" :key="index" :cx="point.x" :cy="point.y" r="4" fill="var(--brand)" />
               <text
                 v-for="(label, index) in radarLabels"
@@ -211,7 +211,7 @@ const radarPoints = computed(() => radarTraits.value.map((value, index) => {
   return { x: 130 + Math.cos(angle) * 100 * value, y: 130 + Math.sin(angle) * 100 * value }
 }))
 const radarPolygon = computed(() => radarPoints.value.map(point => `${point.x},${point.y}`).join(' '))
-const colors = ['#2dd4bf', '#60a5fa', '#f472b6', '#fb923c', '#4ade80', '#a78bfa', '#fbbf24', '#f87171']
+const colors = ['#2f3133', '#4c4f52', '#666a6d', '#7d8184', '#969a9c', '#aaaead', '#bfc1bf', '#d1d2cf']
 
 function initials(name: string): string {
   return name.trim().slice(0, 2).toUpperCase() || 'AI'

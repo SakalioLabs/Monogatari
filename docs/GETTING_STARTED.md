@@ -11,8 +11,8 @@
 
 1. **Configure AI**: Go to Settings > AI Backend and enter your API key
 2. **Load Characters**: Characters are auto-loaded from `rust-engine/data/characters/`
-3. **Start Chatting**: Open AI Chat from the sidebar and select a character
-4. **Try Story Mode**: Open Story Mode for branching dialogue playback
+3. **Start Chatting**: Open Character Test from the sidebar and select a character
+4. **Try Playtest**: Open Playtest for branching dialogue playback
 
 ## Creating Your First Character
 
@@ -48,7 +48,7 @@ Optional renderer fields can be added to the same character file:
 }
 ```
 
-Story Mode uses the first available renderer in this order: Live2D, GLB/GLTF 3D, emotion sprite, portrait, generated 3D placeholder. Renderer paths are project-relative portable references; Live2D backend commands load `.model3.json`/`.json` files only from the active project data root. The built-in Sakura, Luna, and Kenji samples include checked-in SVG portrait and sprite assets under `assets/characters/` in both Web and bundled Tauri data roots.
+Playtest uses the first available renderer in this order: Live2D, GLB/GLTF 3D, emotion sprite, portrait, generated 3D placeholder. Renderer paths are project-relative portable references; Live2D backend commands load `.model3.json`/`.json` files only from the active project data root. The built-in Sakura, Luna, and Kenji samples include checked-in SVG portrait and sprite assets under `assets/characters/` in both Web and bundled Tauri data roots.
 
 ## Creating a Dialogue
 
@@ -149,11 +149,11 @@ Use the generated `dist/` directory as the deploy root. The service worker scope
 | View | Path | Description |
 |------|------|-------------|
 | Dashboard | `/` | Engine status and navigation |
-| AI Chat | `/chat` | Free-form conversation with AI characters |
-| Story Mode | `/game` | Branching dialogue playback |
+| Character Test | `/chat` | Free-form conversation with AI characters |
+| Playtest | `/game` | Branching dialogue playback |
 | Workflow | `/editor` | Visual node-based workflow editor |
 | Characters | `/characters` | Character gallery |
-| Group Chat | `/group-chat` | Multi-character conversations |
+| Ensemble Test | `/group-chat` | Multi-character conversations |
 | Settings | `/settings` | Project and AI configuration |
 | Analytics | `/analytics` | Engagement metrics |
 | Quality | `/quality` | Character stability, knowledge-reference anchoring, workflow output, scoring, event rules, and release-gate checks |

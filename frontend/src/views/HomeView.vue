@@ -41,7 +41,7 @@
         <component :is="metric.icon" :size="16" aria-hidden="true" />
         <span>
           <small>{{ metric.label }}</small>
-          <strong>{{ loading ? '—' : metric.value }}</strong>
+          <strong>{{ loading ? '...' : metric.value }}</strong>
         </span>
       </div>
     </section>
@@ -128,7 +128,7 @@
             </div>
           </div>
           <div class="quick-tool-list">
-            <button @click="open('/chat')"><BotMessageSquare :size="16" aria-hidden="true" /><span>{{ t('nav.chat', 'AI Chat') }}</span><ChevronRight :size="14" aria-hidden="true" /></button>
+            <button @click="open('/chat')"><BotMessageSquare :size="16" aria-hidden="true" /><span>{{ t('nav.chat', 'Character Test') }}</span><ChevronRight :size="14" aria-hidden="true" /></button>
             <button @click="open('/quality')"><ShieldCheck :size="16" aria-hidden="true" /><span>{{ t('nav.quality', 'Quality') }}</span><ChevronRight :size="14" aria-hidden="true" /></button>
             <button @click="open('/analytics')"><ChartNoAxesCombined :size="16" aria-hidden="true" /><span>{{ t('nav.analytics', 'Analytics') }}</span><ChevronRight :size="14" aria-hidden="true" /></button>
           </div>

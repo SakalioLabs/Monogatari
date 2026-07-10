@@ -599,7 +599,7 @@ onUnmounted(() => {
   cursor: pointer;
 }
 .ending-item:hover { background: var(--surface-2); }
-.ending-item.active { border-color: rgba(45, 212, 191, 0.45); background: rgba(45, 212, 191, 0.08); }
+.ending-item.active { border-color: color-mix(in srgb, var(--brand) 42%, var(--border)); background: color-mix(in srgb, var(--brand) 7%, var(--surface-1)); }
 .ending-item-copy { flex: 1; min-width: 0; }
 .ending-item-copy strong, .ending-item-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ending-item-copy strong { font-size: 13px; }
