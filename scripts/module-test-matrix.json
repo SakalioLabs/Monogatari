@@ -14,7 +14,7 @@
     },
     {
       "id": "frontend-unit",
-      "label": "Frontend pure library, Pinia, and component tests",
+      "label": "Frontend domain, workflow preview, Pinia, and component tests",
       "group": "frontend",
       "kind": "unit-component",
       "default": true,

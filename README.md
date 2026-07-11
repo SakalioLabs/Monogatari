@@ -71,7 +71,7 @@ Verified on 2026-07-11:
 - Full frontend dependency audit passes with `npm audit`.
 - The transport-neutral authoring core passes `cargo test --locked -p llm-authoring`, independently proving atomic rollback, portable path containment, project diagnostics, and credential-free settings persistence.
 - The standard `monogatari-mcp` adapter passes real stdio child-process tests for handshake, five schema-backed tools, scrubbed inspection, exact JSON fingerprints, read-only refusal, reviewed-plan confirmation, one-writer exclusion, successful application, and rollback. Its candidate report is explicitly document-level rather than a graph/runtime completion claim.
-- Frontend Vitest coverage independently exercises authoring validation, renderer fallback order, story access derivation, Pinia command/loading state, and shared Vue component interactions instead of relying only on production builds and source scans.
+- Frontend Vitest coverage independently exercises authoring validation, renderer fallback order, story access derivation, the pure browser workflow preview state machine, Pinia command/loading state, and shared Vue component interactions instead of relying only on production builds and source scans.
 - Rust Tauri app crate passes `cargo check --locked -p llm-galgame-app`.
 - Character quality suite regression tests pass inside `cargo test --locked -p llm-galgame-app`.
 - Single-character and group chat prompts use the shared character mind contract and guarded response path for private reasoning leaks, identity drift, and tool-style response drift.
