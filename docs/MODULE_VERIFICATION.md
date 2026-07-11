@@ -20,7 +20,7 @@ Platform-specific gates declare their supported host IDs in the matrix. The Wind
 | Surface | Gate | Evidence type | Current boundary |
 |---|---|---|---|
 | Agent and test orchestration | `automation-contracts` | Node unit contracts | Matrix schema, ownership, selection, CLI parsing, platform command adaptation |
-| Vue pure libraries, workflow preview, Pinia, and shared components | `frontend-unit` | Vitest unit and Happy DOM component tests | Authoring validation, renderer fallback selection, story access, bounded browser workflow execution, Store async state, and shared interaction/accessibility behavior |
+| Vue pure libraries, workflow/Story Playtest, Pinia, and shared components | `frontend-unit` | Vitest unit and Happy DOM component tests | Authoring validation, renderer fallback selection, story access, bounded browser workflow execution, dialogue graph transitions/relationship effects, Store async state, and shared interaction/accessibility behavior |
 | Vue/TypeScript/Web/PWA distribution | `frontend-contracts` | Type check, production builds, static contract verifiers | Root/subpath package and responsive shell contracts |
 | Rust core | `rust-core` | Unit and doc tests | Infrastructure crate |
 | Headless authoring core | `rust-authoring` | Unit, integration, and doc tests | Atomic content mutation, portable paths, project settings, and versioned optimistic multi-file Agent transactions without Tauri |

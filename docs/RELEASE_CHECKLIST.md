@@ -9,7 +9,7 @@
 - [ ] `rust-engine/rust-toolchain.toml` remains pinned to `nightly-2026-07-03` with the minimal profile plus Clippy/rustfmt components; release tests do not override `CARGO_PROFILE_TEST_DEBUG`
 
 ### Frontend
-- [ ] `cd frontend && npm run test:unit` passes pure authoring, renderer selection, story access, browser workflow preview, Pinia async-state, and shared component interaction/accessibility tests
+- [ ] `cd frontend && npm run test:unit` passes pure authoring, renderer selection, story access, browser workflow/Story Playtest state machines, Pinia async-state, and shared component interaction/accessibility tests
 - [ ] `cd frontend && npm run build` passes with zero errors
 - [ ] `cd frontend && npm run build:web` emits manifest, service worker, offline fallback, `404.html`, `.nojekyll`, `_headers`, `_redirects`, `staticwebapp.config.json`, `vercel.json`, `project-assets.json`, and `inference-runtime.json` assets
 - [ ] `cd frontend && npm run verify:inference-runtime` proves the Web/PWA package declares WebGPU, a supported precision, a bounded generation limit, CSP support, and service-worker caching without runtime secrets
@@ -82,7 +82,7 @@
 - [ ] Example characters load correctly (Sakura, Luna, Kenji)
 - [ ] Example dialogues play through with choices
 - [ ] Both checked-in project data roots load through the real character/dialogue/knowledge/event managers, including legacy relationship-object normalization and map-key dialogue node IDs
-- [ ] Story Library lists scene/dialogue/ending lock state and Web/PWA dialogue playback follows real node choices
+- [ ] Story Library lists scene/dialogue/ending lock state; Web/PWA dialogue playback rejects broken targets and applies immutable bounded choice relationship effects; desktop playback preflights every relationship target before committing the inspected dialogue cursor
 - [ ] Scene and Dialogue editors guard dirty drafts, persist browser catalogs, display real project diagnostics, and preview saved drafts through Playtest on desktop and Web/PWA
 - [ ] Release dialogue validation passes for both checked-in data roots with matching catalogs, reachable nodes, valid targets, known characters, and bounded relationship changes
 - [ ] Ending Route editor binds real scene/dialogue catalogs, reports event coverage, guards dirty drafts, persists browser drafts, and previews saved routes without requiring player unlock progress

@@ -79,7 +79,7 @@ pub async fn get_character(
     Ok(character_info(character.id.clone(), &character))
 }
 
-async fn ensure_project_characters_loaded(state: &AppState) -> Result<(), String> {
+pub(crate) async fn ensure_project_characters_loaded(state: &AppState) -> Result<(), String> {
     if !state
         .character_manager
         .read()

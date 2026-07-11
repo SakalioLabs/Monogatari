@@ -268,6 +268,14 @@ import { selectCharacterRendererAsset } from '../lib/rendererAssets'
 import { reloadStoryEventCatalog } from '../lib/storyEvents'
 import { loadStoryContentAccess, type StoryContentAccessEntry, type StoryContentAccessSnapshot } from '../lib/storyAccess'
 import {
+  advanceBrowserDialogue,
+  applyBrowserRelationshipChanges,
+  selectBrowserDialogueChoice,
+  startBrowserDialogue,
+  type BrowserDialogueTransition,
+  type DialogueState,
+} from '../lib/storyPlaytest'
+import {
   loadStoryDialogues,
   loadStoryEndings,
   loadStoryCharacters,
@@ -275,20 +283,10 @@ import {
   type StoryDialogueInfo,
   type StoryEndingInfo,
   type StorySceneInfo,
-  type WebDialogueNode,
 } from '../lib/storyContent'
 
 const { locale, t } = useI18n()
 const route = useRoute()
-
-interface DialogueState {
-  is_active: boolean
-  speaker: string | null
-  text: string
-  emotion: string | null
-  choices: { index: number; text: string }[]
-  live2d_expression: string | null
-}
 
 interface CharacterInfo {
   id: string
@@ -300,6 +298,7 @@ interface CharacterInfo {
   portrait_path: string | null
   sprite_path: string | null
   sprite_paths?: Record<string, string>
+  relationships?: Record<string, number>
 }
 
 interface SaveInfo {
@@ -536,33 +535,6 @@ function typewriterEffect(text: string) {
   }, settings.value.textSpeed)
 }
 
-function webDialogueNode(dialogue: StoryDialogueInfo, nodeId: string | null): WebDialogueNode | null {
-  if (!nodeId) return null
-  return dialogue.nodes?.[nodeId] || null
-}
-
-function browserDialogue(dialogue: StoryDialogueInfo, nodeId = dialogue.start_node_id): DialogueState {
-  const node = webDialogueNode(dialogue, nodeId)
-  if (!node) {
-    return {
-      is_active: false,
-      speaker: null,
-      text: '',
-      emotion: null,
-      choices: [],
-      live2d_expression: null,
-    }
-  }
-  return {
-    is_active: true,
-    speaker: node.speaker_id || null,
-    text: node.text,
-    emotion: node.emotion || null,
-    choices: (node.choices || []).map((choice, index) => ({ index, text: choice.text })),
-    live2d_expression: node.emotion || null,
-  }
-}
-
 function unlockHint(access: StoryContentAccessEntry): string {
   return access.unlocked
     ? t('game.unlocked', 'Unlocked')
@@ -623,12 +595,13 @@ async function startStoryDialogue(dialogue: StoryDialogueInfo) {
       dialogueState.value = await invokeCommand<DialogueState>('start_dialogue', { dialogueId: dialogue.id })
     } else {
       webActiveDialogue.value = dialogue
-      webDialogueNodeId.value = dialogue.start_node_id
-      dialogueState.value = browserDialogue(dialogue)
+      applyBrowserDialogueTransition(startBrowserDialogue(dialogue))
     }
+    const state = dialogueState.value
+    if (!state) throw new Error('Dialogue runtime did not return a state.')
     syncCurrentCharacter()
-    currentExpression.value = dialogueState.value.emotion || dialogueState.value.live2d_expression || currentExpression.value
-    typewriterEffect(dialogueState.value.text)
+    currentExpression.value = state.emotion || state.live2d_expression || currentExpression.value
+    typewriterEffect(state.text)
     showStoryLibrary.value = false
   } catch (e) {
     errorMessage.value = t('game.unable-start-dialogue', 'Unable to start dialogue: {error}', { error: String(e) })
@@ -645,20 +618,21 @@ async function startEnding(ending: StoryEndingInfo) {
     if (!fallbackScene) throw new Error(t('game.ending-scene-unavailable', 'Ending scene {id} is unavailable', { id: ending.scene_id }))
     const fallbackDialogue = storyDialogues.value.find((dialogue) => dialogue.id === ending.dialogue_id)
     if (!fallbackDialogue) throw new Error(t('game.ending-dialogue-unavailable', 'Ending dialogue {id} is unavailable', { id: ending.dialogue_id }))
-    const launch = await invokeCommand<StoryEndingLaunch>('start_story_ending', { endingId: ending.id }, {
+    const launch = await invokeCommand<StoryEndingLaunch>('start_story_ending', { endingId: ending.id }, () => ({
       ending,
       scene: fallbackScene,
-      dialogue: browserDialogue(fallbackDialogue),
-    })
+      dialogue: startBrowserDialogue(fallbackDialogue).state,
+    }))
     activeScene.value = launch.scene
     dialogueState.value = launch.dialogue
     if (!hasTauriRuntime()) {
       webActiveDialogue.value = fallbackDialogue
-      webDialogueNodeId.value = fallbackDialogue.start_node_id
-      dialogueState.value = browserDialogue(fallbackDialogue)
+      applyBrowserDialogueTransition(startBrowserDialogue(fallbackDialogue))
     }
+    const state = dialogueState.value
+    if (!state) throw new Error('Ending runtime did not return a dialogue state.')
     syncCurrentCharacter()
-    typewriterEffect(launch.dialogue.text)
+    typewriterEffect(state.text)
     showStoryLibrary.value = false
     toastMessage.value = t('game.ending-started', 'Ending: {title}', { title: ending.title })
   } catch (error) {
@@ -671,13 +645,11 @@ async function startEnding(ending: StoryEndingInfo) {
 async function selectChoice(index: number) {
   try {
     if (!hasTauriRuntime() && webActiveDialogue.value) {
-      const node = webDialogueNode(webActiveDialogue.value, webDialogueNodeId.value)
-      const target = node?.choices?.[index]?.next_node_id
-      if (!target) throw new Error(t('game.choice-missing-target', 'Choice {index} has no target node', { index: index + 1 }))
-      webDialogueNodeId.value = target
-      dialogueState.value = browserDialogue(webActiveDialogue.value, target)
+      const transition = selectBrowserDialogueChoice(webActiveDialogue.value, webDialogueNodeId.value, index)
+      applyBrowserChoiceRelationships(transition.relationship_changes)
+      applyBrowserDialogueTransition(transition)
       syncCurrentCharacter()
-      typewriterEffect(dialogueState.value.text)
+      typewriterEffect(transition.state.text)
     } else {
       await invokeCommand<void>('select_choice', { choiceIndex: index })
       await updateDialogueState()
@@ -696,20 +668,13 @@ async function advanceDialogue() {
   }
   try {
     if (!hasTauriRuntime() && webActiveDialogue.value) {
-      const node = webDialogueNode(webActiveDialogue.value, webDialogueNodeId.value)
-      if (node?.choices?.length) return
-      if (node?.next_node_id) {
-        webDialogueNodeId.value = node.next_node_id
-        dialogueState.value = browserDialogue(webActiveDialogue.value, node.next_node_id)
+      const transition = advanceBrowserDialogue(webActiveDialogue.value, webDialogueNodeId.value)
+      if (transition.blocked_reason === 'choice_required') return
+      applyBrowserDialogueTransition(transition)
+      if (transition.state.is_active) {
         syncCurrentCharacter()
-        typewriterEffect(dialogueState.value.text)
+        typewriterEffect(transition.state.text)
       } else {
-        webActiveDialogue.value = null
-        webDialogueNodeId.value = null
-        dialogueState.value = browserDialogue({
-          id: '', title: '', start_node_id: '', node_count: 0, nodes: {},
-          access: { content_type: 'dialogue', content_id: '', gated: false, unlocked: true, unlock_event_ids: [] },
-        }, '')
         displayedText.value = ''
       }
     } else {
@@ -719,6 +684,19 @@ async function advanceDialogue() {
   } catch (e) {
     errorMessage.value = String(e)
   }
+}
+
+function applyBrowserDialogueTransition(transition: BrowserDialogueTransition) {
+  webDialogueNodeId.value = transition.node_id
+  dialogueState.value = transition.state
+  if (transition.completed) webActiveDialogue.value = null
+}
+
+function applyBrowserChoiceRelationships(changes: Record<string, number>) {
+  if (Object.keys(changes).length === 0) return
+  const activeCharacterId = currentCharacter.value?.id
+  characters.value = applyBrowserRelationshipChanges(characters.value, changes)
+  currentCharacter.value = characters.value.find((character) => character.id === activeCharacterId) || currentCharacter.value
 }
 
 const QUICK_SAVE_ID = 'quick_save_0'

@@ -1,6 +1,7 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Added a pure browser Story Playtest dialogue state machine with explicit graph errors and immutable relationship updates; desktop choice execution now preflights every relationship target, guards the inspected source node, applies authored deltas through CharacterManager clamping, and tests both runtimes.
 - Extracted the browser workflow validator and preview executor from `WorkflowEditor.vue` into a pure, injected `workflowPreview` domain module with deterministic random-branch tests, run-context normalization, stateful condition/event simulation, useful scene/narration traces, and explicit refusal to misroute unsupported conditions; release source-invariant checks now live in an importable verifier module.
 - Added the official-SDK `monogatari-mcp` stdio server with five schema-backed tools, a startup-fixed project root, read-only default, reviewed transaction fingerprints, shared/exclusive process leases, document-level candidate validation, rollback, real child-process protocol tests, and a release-built binary.
 - Added Vitest and Vue Test Utils coverage for frontend authoring validators, renderer fallback selection, story access derivation, Pinia async command state, and shared component interactions/accessibility, with an independently runnable `frontend-unit` CI and release gate.

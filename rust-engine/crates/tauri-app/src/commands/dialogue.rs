@@ -2,19 +2,24 @@
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use llm_authoring::filesystem::{
     ensure_regular_project_directory, sha256_json, source_label, stage_json_deletion,
     stage_json_replacement,
 };
 use llm_core::normalize_script_state_map;
-use llm_game::characters::CharacterManager;
-use llm_game::dialogue::{DialogueManager, DialogueScript, DialogueScriptSummary};
+use llm_game::characters::{Character, CharacterManager};
+use llm_game::dialogue::{
+    DialogueChoiceEffects, DialogueManager, DialogueScript, DialogueScriptSummary,
+};
 use llm_scripting::{validate_condition_source, validate_script_source};
 use serde::Serialize;
 use serde_json::{json, Value};
 use tauri::State;
+use tokio::sync::RwLock;
 
+use crate::commands::characters::ensure_project_characters_loaded;
 use crate::commands::content_paths::resolve_project_content_dir;
 use crate::content_references::dialogue_references;
 use crate::state::AppState;
@@ -193,11 +198,69 @@ pub async fn select_choice(
     state: State<'_, AppState>,
     choice_index: usize,
 ) -> Result<DialogueState, String> {
-    let mut dm = state.dialogue_manager.write().await;
-    dm.select_choice(choice_index)
+    select_choice_inner(&state, choice_index).await
+}
+
+async fn select_choice_inner(
+    state: &AppState,
+    choice_index: usize,
+) -> Result<DialogueState, String> {
+    let effects = state
+        .dialogue_manager
+        .read()
         .await
-        .map_err(|e| e.to_string())?;
-    get_dialogue_state_inner(&dm)
+        .choice_effects(choice_index)
+        .map_err(|error| error.to_string())?;
+    let targets = resolve_dialogue_choice_relationship_targets(state, &effects).await?;
+    {
+        let mut dialogue_manager = state.dialogue_manager.write().await;
+        dialogue_manager
+            .select_choice_from(&effects.source_node_id, choice_index)
+            .await
+            .map_err(|error| error.to_string())?;
+    };
+    apply_dialogue_choice_relationship_targets(targets).await;
+    let dialogue_manager = state.dialogue_manager.read().await;
+    get_dialogue_state_inner(&dialogue_manager)
+}
+
+async fn resolve_dialogue_choice_relationship_targets(
+    state: &AppState,
+    effects: &DialogueChoiceEffects,
+) -> Result<Vec<(Arc<RwLock<Character>>, f32)>, String> {
+    if effects.relationship_changes.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    ensure_project_characters_loaded(state).await?;
+    let mut changes = effects
+        .relationship_changes
+        .iter()
+        .map(|(character_id, delta)| (character_id.clone(), *delta))
+        .collect::<Vec<_>>();
+    changes.sort_by(|left, right| left.0.cmp(&right.0));
+
+    {
+        let manager = state.character_manager.read().await;
+        changes
+            .into_iter()
+            .map(
+                |(character_id, delta)| match manager.get_character(&character_id) {
+                    Some(character) => Ok((character, delta)),
+                    None => Err(format!(
+                        "Dialogue choice {} changes unknown character `{character_id}`.",
+                        effects.choice_index + 1
+                    )),
+                },
+            )
+            .collect::<Result<Vec<_>, String>>()
+    }
+}
+
+async fn apply_dialogue_choice_relationship_targets(targets: Vec<(Arc<RwLock<Character>>, f32)>) {
+    for (character, delta) in targets {
+        character.write().await.update_relationship("player", delta);
+    }
 }
 
 /// Get the current dialogue state.
@@ -1064,6 +1127,67 @@ mod tests {
             error.contains("Unreachable") || error.contains("unknown speaker"),
             "{error}"
         );
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[tokio::test]
+    async fn dialogue_choices_apply_and_clamp_relationship_effects() {
+        let root = temp_root("choice_effects");
+        write_project(&root);
+        std::fs::write(
+            root.join("dialogue").join("intro.json"),
+            r#"{
+              "id":"intro","title":"Intro","start_node_id":"start",
+              "nodes":{
+                "start":{"speaker_id":"sakura","text":"Choose.","choices":[{
+                  "text":"Be kind","next_node_id":"end","relationship_changes":{"sakura":0.6}
+                },{
+                  "text":"Unknown","next_node_id":"end","relationship_changes":{"missing":0.2}
+                }]},
+                "end":{"speaker_id":"sakura","text":"Thank you.","is_ending":true}
+              }
+            }"#,
+        )
+        .unwrap();
+        let state = authoring_state(&root).await;
+
+        start_dialogue_authoring_inner(&state, "intro")
+            .await
+            .unwrap();
+        let error = select_choice_inner(&state, 1).await.unwrap_err();
+        assert!(error.contains("unknown character `missing`"));
+        assert_eq!(
+            state
+                .dialogue_manager
+                .read()
+                .await
+                .current_node()
+                .unwrap()
+                .text,
+            "Choose."
+        );
+
+        for expected in [0.6_f32, 1.0_f32] {
+            start_dialogue_authoring_inner(&state, "intro")
+                .await
+                .unwrap();
+            let dialogue = select_choice_inner(&state, 0).await.unwrap();
+            assert_eq!(dialogue.text, "Thank you.");
+            let character = state
+                .character_manager
+                .read()
+                .await
+                .get_character("sakura")
+                .unwrap();
+            let character = character.read().await;
+            let actual = character
+                .relationships
+                .get("player")
+                .copied()
+                .unwrap_or(0.0);
+            assert!((actual - expected).abs() < 0.0001, "{actual} != {expected}");
+        }
+
         std::fs::remove_dir_all(root).unwrap();
     }
 }

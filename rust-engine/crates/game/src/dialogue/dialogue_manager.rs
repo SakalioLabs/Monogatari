@@ -59,6 +59,14 @@ pub struct DialogueScriptSummary {
     pub node_count: usize,
 }
 
+/// Side effects authored on a selected dialogue choice.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct DialogueChoiceEffects {
+    pub source_node_id: String,
+    pub choice_index: usize,
+    pub relationship_changes: HashMap<String, f32>,
+}
+
 /// Manages dialogue flow, advancing through nodes and handling choices.
 pub struct DialogueManager {
     /// All loaded dialogue scripts.
@@ -177,7 +185,14 @@ impl DialogueManager {
     }
 
     /// Select a choice by index.
-    pub async fn select_choice(&mut self, choice_index: usize) -> Result<()> {
+    pub async fn select_choice(&mut self, choice_index: usize) -> Result<DialogueChoiceEffects> {
+        let effects = self.choice_effects(choice_index)?;
+        self.select_choice_from(&effects.source_node_id, choice_index)
+            .await
+    }
+
+    /// Inspect a choice without advancing dialogue state.
+    pub fn choice_effects(&self, choice_index: usize) -> Result<DialogueChoiceEffects> {
         let current_id = self
             .current_node_id
             .clone()
@@ -202,16 +217,50 @@ impl DialogueManager {
             )
         })?;
 
-        // Apply relationship changes
-        // (This would need access to the CharacterManager in a full implementation)
+        Ok(DialogueChoiceEffects {
+            source_node_id: current_id,
+            choice_index,
+            relationship_changes: choice.relationship_changes.clone(),
+        })
+    }
 
-        // Check and set flags from the choice
+    /// Select a choice only if the cursor still points at the inspected source node.
+    pub async fn select_choice_from(
+        &mut self,
+        source_node_id: &str,
+        choice_index: usize,
+    ) -> Result<DialogueChoiceEffects> {
+        let effects = self.choice_effects(choice_index)?;
+        if effects.source_node_id != source_node_id {
+            return Err(llm_core::EngineError::dialogue(
+                "current",
+                &effects.source_node_id,
+                format!("Dialogue cursor moved from inspected node: {source_node_id}"),
+            ));
+        }
+        let script_id = self
+            .active_script_id
+            .clone()
+            .ok_or_else(|| llm_core::EngineError::dialogue("none", "none", "No active dialogue"))?;
+        let choice = self
+            .current_node()
+            .and_then(|node| node.choices.get(choice_index))
+            .cloned()
+            .ok_or_else(|| {
+                llm_core::EngineError::dialogue(
+                    "current",
+                    source_node_id,
+                    format!("Invalid choice index: {choice_index}"),
+                )
+            })?;
+
         let choice_flag =
             normalize_script_state_key(&format!("choice_{script_id}_{choice_index}"))?;
         self.flags.insert(choice_flag, true);
 
         self.current_node_id = Some(choice.next_node_id.clone());
-        self.process_current_node().await
+        self.process_current_node().await?;
+        Ok(effects)
     }
 
     /// Process the current node: execute scripts, handle LLM, send events.
@@ -575,6 +624,37 @@ mod tests {
         let variables = HashMap::new();
 
         assert!(manager.load_state(flags, variables).is_err());
+    }
+
+    #[tokio::test]
+    async fn selected_choices_return_relationship_effects() {
+        let script: DialogueScript = serde_json::from_value(serde_json::json!({
+            "id": "intro",
+            "title": "Intro",
+            "start_node_id": "start",
+            "nodes": {
+                "start": {
+                    "text": "Choose",
+                    "choices": [{
+                        "text": "Be kind",
+                        "next_node_id": "end",
+                        "relationship_changes": {"sakura": 0.4}
+                    }]
+                },
+                "end": {"text": "Thank you"}
+            }
+        }))
+        .unwrap();
+        let mut manager = DialogueManager::new();
+        manager.scripts.insert(script.id.clone(), script);
+        manager.start_dialogue("intro").await.unwrap();
+
+        let effects = manager.select_choice(0).await.unwrap();
+
+        assert_eq!(effects.choice_index, 0);
+        assert_eq!(effects.source_node_id, "start");
+        assert_eq!(effects.relationship_changes.get("sakura"), Some(&0.4));
+        assert_eq!(manager.current_node().unwrap().text, "Thank you");
     }
 
     #[tokio::test]
