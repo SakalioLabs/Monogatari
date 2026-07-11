@@ -3046,6 +3046,8 @@ async function verifyAiBackendConfigInvariants() {
   const issues = []
   const aiCommandSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'ai.rs'), 'utf8')
   const rustApiEngineSource = await readFile(path.join(rustDir, 'crates', 'ai', 'src', 'api_engine.rs'), 'utf8')
+  const backendSelectionSource = await readFile(path.join(rustDir, 'crates', 'ai', 'src', 'backend_selection.rs'), 'utf8')
+  const backendMatrixSource = await readFile(path.join(root, 'docs', 'INFERENCE_BACKEND_MATRIX.md'), 'utf8')
   const rustOnnxEngineSource = await readFile(path.join(rustDir, 'crates', 'ai', 'src', 'onnx_engine.rs'), 'utf8')
   const rustPipelineSource = await readFile(path.join(rustDir, 'crates', 'ai', 'src', 'pipeline.rs'), 'utf8')
   const rustPipelineTests = await readFile(path.join(rustDir, 'crates', 'ai', 'tests', 'pipeline_tests.rs'), 'utf8')
@@ -3054,6 +3056,7 @@ async function verifyAiBackendConfigInvariants() {
   const webGpuSource = await readFile(path.join(frontendDir, 'src', 'lib', 'webgpuInference.ts'), 'utf8')
   const webDistSource = await readFile(path.join(frontendDir, 'scripts', 'prepare-web-dist.mjs'), 'utf8')
   const frontendPackage = JSON.parse(await readFile(path.join(frontendDir, 'package.json'), 'utf8'))
+  const tauriMainSource = await readFile(path.join(tauriAppDir, 'src', 'main.rs'), 'utf8')
 
   const aiRequirements = [
     ['onnx_model_config_in_project', 'centralize project-scoped ONNX config construction'],
@@ -3189,6 +3192,30 @@ async function verifyAiBackendConfigInvariants() {
   }
   if (aiCommandSource.includes('ready: true')) {
     issues.push('AI backend status must not hard-code registered engines as ready')
+  }
+
+  const backendSelectionRequirements = [
+    [backendSelectionSource, 'monogatari-inference-backend-plan/v1', 'emit a versioned backend selection report'],
+    [backendSelectionSource, 'BackendReadiness::ProbeRequired', 'separate runtime detection from model readiness'],
+    [backendSelectionSource, 'No backend is recommended until a model-level generation probe succeeds.', 'refuse to recommend unprobed backends'],
+    [backendSelectionSource, 'qwen35_hybrid_contract_unsupported', 'block the current DirectML executor for Qwen3.5 hybrid graphs'],
+    [backendSelectionSource, 'qwen35_dml_graph_capture_partition_failure', 'record the current WinML DirectML graph partition blocker'],
+    [backendSelectionSource, 'server_prefers_ready_vllm_then_sglang_then_llama_cpp', 'test managed Linux service priority'],
+    [backendSelectionSource, 'backend_ids_use_stable_snake_case_wire_names', 'test stable frontend backend identifiers'],
+    [backendSelectionSource, 'configured_api_still_requires_a_generation_probe', 'keep configured APIs unready until generation succeeds'],
+    [backendSelectionSource, 'api_service_ready', 'represent completed API generation separately from configuration'],
+    [aiCommandSource, 'get_inference_backend_plan', 'expose host capability planning through Tauri'],
+    [tauriMainSource, 'commands::ai::get_inference_backend_plan', 'register the backend planning command'],
+    [settingsViewSource, "invokeCommand<InferenceBackendPlan>('get_inference_backend_plan'", 'load the backend plan in desktop diagnostics'],
+    [settingsViewSource, 'backendPlanRows', 'render actionable backend readiness states'],
+    [settingsViewSource, 'webgpu_model_ready: hasVerifiedWebGpuGeneration()', 'report WebGPU ready only after successful generation'],
+    [backendMatrixSource, 'Qwen3.5 is a vision-language model, not a raw 3D mesh model.', 'document the model and 3D boundary'],
+    [backendMatrixSource, 'qwen35_text08_b', 'document the stable default model profile identifier'],
+  ]
+  for (const [source, needle, description] of backendSelectionRequirements) {
+    if (!source.includes(needle)) {
+      issues.push(`Inference backend selection must ${description}`)
+    }
   }
 
   const pipelineRegistrationRequirements = [

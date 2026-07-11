@@ -1,72 +1,79 @@
 //! # LLM Galgame Engine - AI
 //!
-//! LLM inference layer supporting both API-based and local ONNX models.
+//! LLM inference layer with conservative backend planning, API services, and a
+//! linked DirectML executor for compatible local ONNX models.
 //!
 //! ## Architecture
 //!
-//! The AI module follows a strategy pattern with multiple inference engines:
-//!
 //! ```text
-//! ┌─────────────────────────────────────────────────────────────┐
-//! │                    InferencePipeline                        │
-//! │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
-//! │  │  API Engine  │  │ ONNX Engine │  │  Engine N   │        │
-//! │  │ (OpenAI等)   │  │ (本地模型)   │  │  (扩展)     │        │
-//! │  └─────────────┘  └─────────────┘  └─────────────┘        │
-//! └─────────────────────────────────────────────────────────────┘
-//!                              │
-//!                              ▼
-//!                     InferenceResult
+//! Host detection + completed probes
+//!                 |
+//!                 v
+//!       Inference backend plan
+//!                 |
+//!       +---------+---------+
+//!       |                   |
+//!       v                   v
+//! API/service engine   DirectML ONNX engine
+//!       |                   |
+//!       +---------+---------+
+//!                 v
+//!          InferenceResult
 //! ```
 //!
 //! ## Supported Engines
 //!
 //! ### API Engine
-//! - OpenAI-compatible API (GPT-3.5, GPT-4, etc.)
+//! - OpenAI-compatible APIs and local services
 //! - Custom API endpoints
 //! - Streaming support via SSE
 //!
 //! ### ONNX Engine
-//! - Local ONNX model inference
-//! - DirectML GPU acceleration (Windows)
-//! - CPU fallback
-//! - Temperature, top-k, top-p sampling
+//! - Compatible full-sequence local ONNX model inference
+//! - Required DirectML GPU acceleration on Windows
+//! - No implicit CPU fallback
+//! - Temperature, top-k, and top-p sampling
+//! - Qwen3.5 hybrid recurrent-state graphs are not supported by this executor
 //!
 //! ## Usage
 //!
 //! ```rust,no_run
-//! use llm_ai::{InferencePipeline, APIEngine, APIConfig, InferenceOptions};
+//! use llm_ai::{APIConfig, APIEngine, InferenceOptions, InferencePipeline};
 //!
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! // Create and configure API engine
 //! let config = APIConfig {
 //!     base_url: "https://api.openai.com/v1".to_string(),
 //!     api_key: "your-key".to_string(),
-//!     model: "gpt-3.5-turbo".to_string(),
+//!     model: "gpt-4o-mini".to_string(),
 //!     ..Default::default()
 //! };
 //! let engine = APIEngine::new(config);
 //!
-//! // Create pipeline and register engine
 //! let mut pipeline = InferencePipeline::new();
 //! pipeline.register_engine(std::sync::Arc::new(tokio::sync::RwLock::new(engine)));
 //! pipeline.set_active_engine("API")?;
 //!
-//! // Generate response
-//! let options = InferenceOptions::default();
-//! let result = pipeline.generate_response("Hello!", &options).await?;
+//! let result = pipeline
+//!     .generate_response("Hello!", &InferenceOptions::default())
+//!     .await?;
 //! println!("Response: {}", result.text);
 //! # Ok(())
 //! # }
 //! ```
 
 pub mod api_engine;
+pub mod backend_selection;
 pub mod inference;
 pub mod onnx_engine;
 pub mod pipeline;
 pub mod prompt_builder;
 
 pub use api_engine::{APIConfig, APIEngine};
+pub use backend_selection::{
+    build_inference_backend_plan, detect_host_capabilities, AccelerationKind, BackendAssessment,
+    BackendPlanRequest, BackendReadiness, DeploymentTarget, HostCapabilities, InferenceBackendId,
+    InferenceBackendPlan, ModelProfile, RuntimeProbeSignals, INFERENCE_BACKEND_PLAN_SCHEMA,
+};
 pub use inference::{InferenceEngine, InferenceOptions, InferenceResult};
 pub use onnx_engine::{ModelConfig, ONNXEngine};
 pub use pipeline::InferencePipeline;

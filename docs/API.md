@@ -91,7 +91,9 @@ Knowledge loader `directory` values resolve under the active project `knowledge/
 
 ## AI Backend
 
-ONNX `modelPath` and `tokenizerPath` values are project-relative references under the active project data root. Model references must end in `.onnx`, tokenizer references must end in `.json`, and absolute paths, drive/URI-style prefixes, empty segments, `.`/`..` traversal, and non-portable path segments are rejected. `configure_onnx` registers and activates the ONNX backend.
+ONNX `modelPath` and `tokenizerPath` values are project-relative references under the active project data root. Model references must end in `.onnx`, tokenizer references must end in `.json`, and absolute paths, drive/URI-style prefixes, empty segments, `.`/`..` traversal, and non-portable path segments are rejected. `configure_onnx` registers and activates the linked DirectML backend for compatible full-sequence causal-LM graphs; Qwen3.5 hybrid graphs are not supported by this executor.
+
+Backend planning uses `monogatari-inference-backend-plan/v1`. Host detection can produce `probe_required`, but only an explicit exact-model generation signal can produce `ready` and become `recommended_backend`. API configuration validation alone is not a generation probe.
 
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
@@ -100,6 +102,7 @@ ONNX `modelPath` and `tokenizerPath` values are project-relative references unde
 | `generate_response` | `{ prompt, options }` | `InferenceResult` | One-shot generation |
 | `generate_stream` | `{ prompt, options }` | `void` | Streaming generation |
 | `get_ai_status` | - | `AiStatus` | Current AI configuration |
+| `get_inference_backend_plan` | `{ request?: { target?, model_profile?, signals? } }` | `InferenceBackendPlan` | Detect host capabilities and rank only generation-verified runtime profiles |
 
 ## Workflow
 

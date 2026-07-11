@@ -458,6 +458,39 @@
                 <strong :class="{ online: engineStatus?.active_ai_engine }">{{ activeEngineLabel }}</strong>
               </div>
 
+              <div v-if="backendPlan" class="settings-group backend-plan-group">
+                <div class="group-heading split-heading">
+                  <div class="heading-copy">
+                    <Bot :size="16" />
+                    <div>
+                      <h3>{{ t('settings.inference-selection', 'Inference selection') }}</h3>
+                      <p>{{ backendPlan.schema }}</p>
+                    </div>
+                  </div>
+                  <span class="state-chip" :class="{ ready: backendPlan.recommended_backend }">{{ backendRecommendationLabel }}</span>
+                </div>
+                <div class="backend-plan-list">
+                  <div
+                    v-for="item in backendPlanRows"
+                    :key="item.backend"
+                    class="backend-plan-row"
+                    :class="item.readiness"
+                  >
+                    <span class="backend-plan-icon">
+                      <CheckCircle2 v-if="item.readiness === 'ready'" :size="14" />
+                      <Activity v-else-if="item.readiness === 'probe_required'" :size="14" />
+                      <Download v-else-if="item.readiness === 'setup_required'" :size="14" />
+                      <CircleAlert v-else :size="14" />
+                    </span>
+                    <span class="backend-plan-copy">
+                      <strong>{{ backendName(item.backend) }}</strong>
+                      <small>{{ item.reason_code }}</small>
+                    </span>
+                    <b>{{ backendReadinessLabel(item.readiness) }}</b>
+                  </div>
+                </div>
+              </div>
+
               <div class="metric-grid">
                 <div><span>{{ t('home.stats.characters', 'Characters') }}</span><strong>{{ engineStatus?.character_count ?? 0 }}</strong></div>
                 <div><span>{{ t('home.stats.dialogues', 'Dialogues') }}</span><strong>{{ engineStatus?.dialogue_count ?? 0 }}</strong></div>
@@ -549,6 +582,7 @@ import {
   configureWebGpuRuntime,
   detectWebGpuSupport,
   getWebGpuRuntimeConfig,
+  hasVerifiedWebGpuGeneration,
   initializeWebGpuRuntime,
   loadPackagedWebGpuConfig,
   webGpuSupportMessage,
@@ -585,6 +619,26 @@ interface EngineStatus {
   knowledge_count: number
   ai_engines: string[]
   active_ai_engine: string | null
+}
+
+type InferenceBackendId = 'web_gpu' | 'llama_cpp' | 'win_ml_gen_ai' | 'direct_ml_onnx' | 'mlx_lm' | 'vllm' | 'sglang' | 'open_ai_compatible'
+type BackendReadiness = 'ready' | 'probe_required' | 'setup_required' | 'blocked' | 'unavailable'
+
+interface BackendAssessment {
+  backend: InferenceBackendId
+  readiness: BackendReadiness
+  reason_code: string
+  summary: string
+  accelerators: string[]
+}
+
+interface InferenceBackendPlan {
+  schema: string
+  recommended_backend: InferenceBackendId | null
+  next_probe: InferenceBackendId | null
+  fallback_order: InferenceBackendId[]
+  selection_summary: string
+  backends: BackendAssessment[]
 }
 
 interface ProjectPathStatus {
@@ -632,6 +686,7 @@ interface CloudSyncStatus {
 const projectPath = ref('./data')
 const projectState = ref<ProjectConfigState | null>(null)
 const engineStatus = ref<EngineStatus | null>(null)
+const backendPlan = ref<InferenceBackendPlan | null>(null)
 const settingsSectionIds = new Set<SettingsSection>(['project', 'ai', 'voice', 'sync', 'diagnostics'])
 const storedSection = localStorage.getItem('monogatari-settings-section') as SettingsSection | null
 const activeSection = ref<SettingsSection>(storedSection && settingsSectionIds.has(storedSection) ? storedSection : 'project')
@@ -944,6 +999,14 @@ const activeEngineLabel = computed(() => {
 const activeRuntimeReady = computed(() => provider.value === 'webgpu'
   ? webGpuReady.value
   : Boolean(engineStatus.value?.active_ai_engine))
+const backendPlanRows = computed(() => backendPlan.value?.backends.filter(item => item.readiness !== 'unavailable') || [])
+const backendRecommendationLabel = computed(() => {
+  if (backendPlan.value?.recommended_backend) return backendName(backendPlan.value.recommended_backend)
+  if (backendPlan.value?.next_probe) {
+    return t('settings.next-probe', 'Probe: {backend}', { backend: backendName(backendPlan.value.next_probe) })
+  }
+  return t('settings.no-verified-backend', 'No verified backend')
+})
 const aiReadyToConnect = computed(() => {
   if (provider.value === 'api') return Boolean(apiBaseUrl.value.trim() && apiModel.value.trim() && apiKey.value.trim())
   if (provider.value === 'webgpu') return Boolean(webGpuModelId.value.trim() && webGpuMaxNewTokens.value > 0)
@@ -1086,6 +1149,7 @@ async function refreshAll() {
   refreshing.value = true
   try {
     await Promise.all([loadProjectConfig(), refreshStatus(), checkSyncStatus()])
+    await refreshBackendPlan()
   } finally {
     refreshing.value = false
   }
@@ -1177,6 +1241,7 @@ async function saveAI() {
     }
     setStatus(t('settings.notice.ai-connected', 'AI backend connected'))
     await refreshStatus()
+    await refreshBackendPlan()
   } catch (error) {
     reportFailure(t('settings.action.connect-ai', 'Connect AI backend'), error)
   } finally {
@@ -1306,6 +1371,47 @@ async function refreshStatus() {
       active_ai_engine: null,
     })
   } catch {}
+}
+
+async function refreshBackendPlan() {
+  if (!desktopRuntimeAvailable) {
+    backendPlan.value = null
+    return
+  }
+  const activeEngine = engineStatus.value?.active_ai_engine || ''
+  try {
+    backendPlan.value = await invokeCommand<InferenceBackendPlan>('get_inference_backend_plan', {
+      request: {
+        target: 'desktop',
+        signals: {
+          webgpu_adapter_available: webGpuSupport.available,
+          webgpu_model_ready: hasVerifiedWebGpuGeneration(),
+          api_configured: activeEngine === 'API',
+        },
+      },
+    })
+  } catch {
+    backendPlan.value = null
+  }
+}
+
+function backendName(backend: InferenceBackendId): string {
+  if (backend === 'web_gpu') return 'WebGPU'
+  if (backend === 'llama_cpp') return 'llama.cpp'
+  if (backend === 'win_ml_gen_ai') return 'WinML GenAI'
+  if (backend === 'direct_ml_onnx') return 'DirectML ONNX'
+  if (backend === 'mlx_lm') return 'MLX-LM'
+  if (backend === 'vllm') return 'vLLM'
+  if (backend === 'sglang') return 'SGLang'
+  return t('settings.api-provider-short', 'Development API')
+}
+
+function backendReadinessLabel(readiness: BackendReadiness): string {
+  if (readiness === 'ready') return t('settings.backend-ready', 'Ready')
+  if (readiness === 'probe_required') return t('settings.backend-probe-required', 'Probe required')
+  if (readiness === 'setup_required') return t('settings.backend-setup-required', 'Setup required')
+  if (readiness === 'blocked') return t('settings.backend-blocked', 'Blocked')
+  return t('settings.backend-unavailable', 'Unavailable')
 }
 
 function buildConfigForSave(source: Record<string, any>) {
@@ -2309,6 +2415,84 @@ select.input {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-top: 16px;
   border: 1px solid var(--border);
+}
+
+.backend-plan-group {
+  padding-top: 16px;
+}
+
+.backend-plan-list {
+  display: grid;
+  border-top: 1px solid var(--border);
+}
+
+.backend-plan-row {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 45px;
+  border-bottom: 1px solid var(--border);
+}
+
+.backend-plan-row:last-child {
+  border-bottom: 0;
+}
+
+.backend-plan-icon {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  color: var(--text-tertiary);
+}
+
+.backend-plan-row.ready .backend-plan-icon {
+  color: var(--success);
+}
+
+.backend-plan-row.probe_required .backend-plan-icon {
+  color: var(--info);
+}
+
+.backend-plan-row.setup_required .backend-plan-icon {
+  color: var(--warning);
+}
+
+.backend-plan-row.blocked .backend-plan-icon {
+  color: var(--danger);
+}
+
+.backend-plan-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.backend-plan-copy strong,
+.backend-plan-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.backend-plan-copy strong {
+  color: var(--text-primary);
+  font-size: 10px;
+}
+
+.backend-plan-copy small {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 8px;
+}
+
+.backend-plan-row > b {
+  color: var(--text-secondary);
+  font-size: 8px;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
 .metric-grid > div {

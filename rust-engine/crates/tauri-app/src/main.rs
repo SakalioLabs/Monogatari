@@ -111,6 +111,7 @@ fn main() {
             commands::ai::generate_response,
             commands::ai::generate_stream,
             commands::ai::get_ai_status,
+            commands::ai::get_inference_backend_plan,
             commands::chat::send_chat_message,
             commands::chat::send_chat_message_stream,
             commands::chat::get_chat_history,

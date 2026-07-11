@@ -19,8 +19,8 @@ Monogatari is a low-code game development engine built with Rust (Tauri 2.x) and
 |           Core Crates                             |
 |  core/ | ai/ | game/ | assets/ | scripting/       |
 +--------------------------------------------------+
-|           Inference Runtimes                       |
-|  WebGPU (Web) | DirectML (Windows) | Dev API       |
+|       Inference Planner and Runtime Profiles       |
+| WebGPU | Local services | DirectML | Managed API   |
 +--------------------------------------------------+
 ```
 
@@ -29,7 +29,7 @@ Monogatari is a low-code game development engine built with Rust (Tauri 2.x) and
 | Crate | Purpose | Key Types |
 |-------|---------|-----------|
 | `core` | Shared infrastructure | EventBus, ServiceLocator, GameClock |
-| `ai` | AI inference | InferencePipeline, APIEngine, ONNXEngine |
+| `ai` | AI inference and selection | InferencePipeline, BackendPlan, APIEngine, ONNXEngine |
 | `game` | Game logic | CharacterManager, DialogueManager, KnowledgeBase, SceneManager |
 | `assets` | File management | AssetManager, SaveManager |
 | `scripting` | Rhai scripting | ScriptEngine |
@@ -41,10 +41,11 @@ Script execution is treated as bounded authoring logic. Tauri script commands va
 
 1. **Developer starts a character test** from ChatView or GroupChatView
 2. **Runtime builds context** from character personality, knowledge base, conversation history
-3. **Target runtime generates output** through Transformers.js WebGPU in browser packages or Rust ONNX Runtime DirectML in Windows packages; a remote API may be selected for development
-4. **Response streams** directly in the browser or through Tauri events (`chat-chunk`, `chat-complete`)
-5. **Evaluation triggered** every 5 messages - scores friendliness, engagement, creativity
-6. **Events triggered** based on cumulative scores and relationship milestones
+3. **Backend planner reports candidates** from host detection and completed exact-model probes; detection alone never makes a backend selectable
+4. **Target runtime generates output** through Transformers.js WebGPU, a generation-verified OpenAI-compatible local/managed service, or the linked DirectML executor for a compatible full-sequence ONNX graph
+5. **Response streams** directly in the browser or through Tauri events (`chat-chunk`, `chat-complete`)
+6. **Evaluation triggered** every 5 messages - scores friendliness, engagement, creativity
+7. **Events triggered** based on cumulative scores and relationship milestones
 
 ## Frontend Architecture
 
@@ -67,7 +68,7 @@ Script execution is treated as bounded authoring logic. Tauri script commands va
 
 The Windows release audit treats installer output as a separate trust boundary. It reads MSI properties through the Windows Installer API, reads NSIS PE version metadata, records SHA-256 hashes and Authenticode status for both formats, and administratively extracts the MSI into a uniquely owned temporary directory. The extracted `data/` tree must match the checked-in source tree exactly by portable relative path, byte length, and SHA-256 hash before the application executable is trusted.
 
-Before Tauri initializes a window, the production binary recognizes `--verify-installation <absolute-report.json>`. This path resolves bundled resources beside the executable, rejects secret-bearing settings and non-regular filesystem entries, loads characters, dialogues, knowledge, and events through the real runtime managers, validates scenes, endings, workflows, locales, and Quality Suites, and rebuilds the complete project export inventory fingerprint. The bundled DirectML sample must verify without configuration warnings; API-based custom projects may report only the runtime-only `api_key_missing` warning. The atomic JSON report includes engine version and build Git commit, allowing a clean-worktree installer audit to reject stale binaries that were produced from another revision. Stable and beta channels require valid Authenticode signatures; internal, alpha, and nightly channels may explicitly audit unsigned candidates without marking them release-ready.
+Before Tauri initializes a window, the production binary recognizes `--verify-installation <absolute-report.json>`. This path resolves bundled resources beside the executable, rejects secret-bearing settings and non-regular filesystem entries, loads characters, dialogues, knowledge, and events through the real runtime managers, validates scenes, endings, workflows, locales, and Quality Suites, and rebuilds the complete project export inventory fingerprint. Bundled project configuration must verify without warnings; inference readiness is a separate exact-model generation gate. The atomic JSON report includes engine version and build Git commit, allowing a clean-worktree installer audit to reject stale binaries that were produced from another revision. Stable and beta channels require valid Authenticode signatures; internal, alpha, and nightly channels may explicitly audit unsigned candidates without marking them release-ready.
 
 ## i18n Locale Boundaries
 
@@ -81,8 +82,12 @@ Live2D backend commands treat model paths as project-relative model file referen
 
 Inference follows the package target:
 1. **WebGPU Runtime**: Web/PWA builds lazy-load the pinned Transformers.js 4.2.0 text-generation pipeline and `onnx-community/Qwen3.5-0.8B-Text-ONNX` Q4 contract from `inference-runtime.json`, require a secure WebGPU context, and stream output in Character and Ensemble Test. The package keeps ORT single-threaded for static-host compatibility and bundles the Asyncify WASM binary that matches the WebGPU module factory embedded by `onnxruntime-web/webgpu`; model weights remain in the browser cache rather than the application bundle.
-2. **DirectML Runtime**: Windows builds load a project-relative ONNX model and standard `tokenizer.json`, require the DirectML execution provider without CPU fallback, validate full-sequence causal-LM inputs plus float32 logits, and run bounded autoregressive generation off the async runtime thread.
-3. **Development API**: OpenAI-compatible endpoints remain available for authoring and integration testing.
+2. **Backend Planner**: The versioned `monogatari-inference-backend-plan/v1` report combines read-only host detection with explicit probe signals. Only an exact-model generation result can create `ready`; detected runtimes remain `probe_required`, `setup_required`, `blocked`, or `unavailable`.
+3. **Local and Managed Services**: llama.cpp, MLX-LM adapters, vLLM, and SGLang remain separately installed profiles. Once their health, generation, and streaming probes pass, the existing `APIEngine` consumes their OpenAI-compatible endpoint without a new wire protocol.
+4. **DirectML Runtime**: Windows builds can load a project-relative ONNX model and standard `tokenizer.json`, require DirectML without CPU fallback, validate full-sequence causal-LM inputs plus float32 logits, and run bounded autoregressive generation off the async runtime thread. This executor does not implement Qwen3.5 hybrid convolution/recurrent state handling.
+5. **OpenAI-Compatible API**: Remote or loopback endpoints remain available for authoring and deployment. Valid configuration is not equivalent to generation readiness.
+
+The verified backend matrix, reproduced blockers, automatic preference order, and staged CUDA, Vulkan, Metal, ROCm, Intel, and MUSA rollout process live in [INFERENCE_BACKEND_MATRIX.md](INFERENCE_BACKEND_MATRIX.md).
 
 Character responses use a structured prompt system:
 - System prompt with character personality, background, and emotion
@@ -96,11 +101,11 @@ Workflow LLM nodes and Quality Suite workflow-output checks finalize guarded mod
 
 When live evaluator output is unavailable, deterministic fallback scoring uses only trusted, normalized player messages. The fallback recognizes English, Chinese, Japanese, and Korean friendly sentiment, questions, and creative-story intent so international builds keep stable relationship and story-event previews without live model calls.
 
-API backend configuration treats provider credentials as runtime-only secrets. Project settings save/load paths scrub API keys, tokens, authorization headers, token-shaped values, query-secret assignments, and legacy persisted secret fields before writing `settings.json` or returning project config state to the frontend. The Rust API engine redacts API keys, bearer tokens, sensitive custom headers, and echoed secret assignments from debug output and API error surfaces before they can reach logs or frontend error reports. Settings-configured backends register through async-safe Tauri command paths, and OpenAI-compatible API engines validate runtime base URLs, API keys, and model IDs before activation so configured providers report ready and can serve chat or streaming immediately after configuration. API base URLs must be HTTPS except localhost/loopback development endpoints, cannot carry embedded credentials, query strings, or fragments, and are normalized before request construction. OpenAI-compatible streaming responses are parsed through a buffered SSE delta parser so provider chunks can split JSON lines or UTF-8 content without dropping streamed character text, while provider error frames and malformed SSE data frames abort inference instead of being ignored. Streaming chat failures replace any partial assistant bubble with a stable failure message before surfacing the provider/runtime error to the author. Standard and streaming API completions must include non-blank generated text before they are reported as successful, so malformed 200 responses cannot become empty character dialogue or workflow output.
+API backend configuration treats provider credentials as runtime-only secrets. Project settings save/load paths scrub API keys, tokens, authorization headers, token-shaped values, query-secret assignments, and legacy persisted secret fields before writing `settings.json` or returning project config state to the frontend. The Rust API engine redacts API keys, bearer tokens, sensitive custom headers, and echoed secret assignments from debug output and API error surfaces before they can reach logs or frontend error reports. Settings-configured backends register through async-safe Tauri command paths, and OpenAI-compatible API engines validate runtime base URLs, API keys, and model IDs before activation; the planner still records them as unverified until a model-level generation probe succeeds. API base URLs must be HTTPS except localhost/loopback development endpoints, cannot carry embedded credentials, query strings, or fragments, and are normalized before request construction. OpenAI-compatible streaming responses are parsed through a buffered SSE delta parser so provider chunks can split JSON lines or UTF-8 content without dropping streamed character text, while provider error frames and malformed SSE data frames abort inference instead of being ignored. Streaming chat failures replace any partial assistant bubble with a stable failure message before surfacing the provider/runtime error to the author. Standard and streaming API completions must include non-blank generated text before they are reported as successful, so malformed 200 responses cannot become empty character dialogue or workflow output.
 
 The shared inference pipeline treats unsuccessful `InferenceResult` envelopes as inference failures instead of successful empty generations. Active-engine calls retry these provider failure envelopes, while direct engine and streaming calls reject them before chat, workflow LLM nodes, or stream completion handlers can consume empty or stale generated text.
 
-Windows ONNX configuration treats `modelPath` and `tokenizerPath` as project-relative file references under the active project data root. Model references must be `.onnx`, tokenizer references must be `.json`, and path-shaped or non-portable input is rejected before initialization. A DirectML session disables parallel execution and memory patterns as required by the provider, rejects unsupported KV-cache graph inputs, and registers as active only after model and tokenizer initialization succeed.
+Windows ONNX configuration treats `modelPath` and `tokenizerPath` as project-relative file references under the active project data root. Model references must be `.onnx`, tokenizer references must be `.json`, and path-shaped or non-portable input is rejected before initialization. A DirectML session disables parallel execution and memory patterns as required by the provider, rejects unsupported KV-cache graph inputs, and registers as active only after model and tokenizer initialization succeed. The current Qwen3.5 profile remains blocked because its hybrid cache/state contract is not supported by this loop; tested WinML GenAI DirectML profiles are also blocked by operator availability or graph partition/capture failures.
 
 The legacy C# AI path mirrors the same boundary-sanitization intent for bracket, fullwidth, XML/header, attributed XML-like, Markdown role-code-fence, comment-wrapped, punctuation-free heading, and JSON-shaped role spoofing, and redacts token-shaped values plus JSON/header/query secret assignments from provider error bodies and request exceptions while the legacy solution remains in the release gate.
 

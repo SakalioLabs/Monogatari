@@ -7,8 +7,9 @@ use tauri::State;
 use tokio::sync::RwLock;
 
 use llm_ai::{
-    APIConfig, APIEngine, InferenceEngine, InferenceOptions, InferencePipeline, ModelConfig,
-    ONNXEngine,
+    build_inference_backend_plan, detect_host_capabilities, APIConfig, APIEngine,
+    BackendPlanRequest, InferenceBackendPlan, InferenceEngine, InferenceOptions, InferencePipeline,
+    ModelConfig, ONNXEngine,
 };
 
 use crate::state::AppState;
@@ -378,6 +379,17 @@ pub async fn get_ai_status(state: State<'_, AppState>) -> Result<AIStatus, Strin
         engines,
         active_engine: pipeline.active_engine_name().map(|s| s.to_string()),
     })
+}
+
+/// Build a conservative backend plan from host detection and completed runtime probes.
+#[tauri::command]
+pub fn get_inference_backend_plan(
+    request: Option<BackendPlanRequest>,
+) -> Result<InferenceBackendPlan, String> {
+    Ok(build_inference_backend_plan(
+        detect_host_capabilities(),
+        request.unwrap_or_default(),
+    ))
 }
 
 /// Generate a streaming response, sending chunks via channel.

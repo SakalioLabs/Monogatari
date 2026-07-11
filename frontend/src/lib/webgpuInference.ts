@@ -46,6 +46,7 @@ type WebGpuNavigator = Navigator & {
 
 let activeConfig = { ...DEFAULT_WEBGPU_RUNTIME_CONFIG }
 let loadedGeneratorKey = ''
+let verifiedGeneratorKey = ''
 let generatorPromise: Promise<any> | null = null
 
 export function detectWebGpuSupport(): WebGpuSupport {
@@ -69,6 +70,10 @@ export function getWebGpuRuntimeConfig(): WebGpuRuntimeConfig {
   return { ...activeConfig }
 }
 
+export function hasVerifiedWebGpuGeneration(): boolean {
+  return verifiedGeneratorKey === generatorKey(activeConfig)
+}
+
 export function configureWebGpuRuntime(config: Partial<WebGpuRuntimeConfig>): WebGpuRuntimeConfig {
   const next = normalizeConfig({ ...activeConfig, ...config })
   const nextKey = generatorKey(next)
@@ -76,6 +81,7 @@ export function configureWebGpuRuntime(config: Partial<WebGpuRuntimeConfig>): We
     generatorPromise = null
     loadedGeneratorKey = ''
   }
+  if (verifiedGeneratorKey && verifiedGeneratorKey !== nextKey) verifiedGeneratorKey = ''
   activeConfig = next
   return getWebGpuRuntimeConfig()
 }
@@ -152,6 +158,7 @@ export async function generateWebGpuChat(
 
   const text = extractGeneratedText(output) || streamedText
   if (!text.trim()) throw new Error('The WebGPU model completed without generating text.')
+  verifiedGeneratorKey = generatorKey(config)
   if (options.onChunk && !streamedText) options.onChunk(text)
   return text
 }

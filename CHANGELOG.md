@@ -1,6 +1,9 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Added a versioned inference backend planner that separates host detection, setup, exact-model probes, known blockers, and ready backends across WebGPU, llama.cpp, WinML GenAI, DirectML ONNX, MLX-LM, vLLM, SGLang, and OpenAI-compatible services.
+- Added Settings diagnostics for backend recommendation, next probe, stable reason codes, and readiness states without treating model initialization or API configuration as successful generation.
+- Added a verified inference backend matrix with Qwen3.5 0.8B WebGPU and Linux llama.cpp evidence, reproduced Windows WinML/DirectML blockers, and staged CUDA, Vulkan, Metal, ROCm, Intel, and MUSA adaptation gates.
 - Added a Windows installer audit that validates exact MSI/NSIS identity and version metadata, the pinned MSI upgrade identity, installer SHA-256 hashes, size bounds, MSI database properties, Authenticode status for installers and the extracted application, signer identity, and release-channel signing policy.
 - Added MSI administrative-image verification that compares every bundled `data/` path, size, and SHA-256 hash with the checked-in project before running the extracted production executable.
 - Added `--verify-installation <absolute-report.json>` headless production-binary verification for bundled settings, runtime characters/dialogues/knowledge/events, scenes, endings, workflows, locales, Quality Suites, complete project inventory, content fingerprint, and build Git provenance.

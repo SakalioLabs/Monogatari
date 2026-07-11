@@ -42,7 +42,8 @@
 - [ ] Rust API engine rejects standard and streaming 200 responses that omit non-blank generated text before reporting inference success
 - [ ] Shared AI inference pipeline retries or rejects unsuccessful provider result envelopes before chat, streaming, or workflow LLM callers consume generated text
 - [ ] Project settings save/load paths scrub API keys, tokens, authorization headers, token-shaped values, query-secret assignments, and legacy persisted secret fields; enforce the 1 MiB limit; atomically replace regular `settings.json` files; and reject symlink/non-regular targets
-- [ ] Windows ONNX configuration accepts only project-relative `.onnx` model and `.json` tokenizer references, requires DirectML without CPU fallback, validates supported causal-LM inputs and float32 logits, and activates only after initialization succeeds
+- [ ] Windows ONNX configuration accepts only project-relative `.onnx` model and `.json` tokenizer references, requires DirectML without CPU fallback, validates compatible full-sequence causal-LM inputs and float32 logits, and activates only after initialization succeeds
+- [ ] `get_inference_backend_plan` emits `monogatari-inference-backend-plan/v1`, keeps detected/unprobed profiles out of `recommended_backend`, and preserves the documented Qwen3.5 WinML/DirectML blockers
 - [ ] Engine initialization stages fresh character/dialogue/knowledge managers before activation, replaces rather than merges previous project content, and clears mutable runtime state on same-root reloads and project switches
 - [ ] Engine initialization stages the versioned story event catalog with character-reference validation, and failed loads or hot reloads leave the active catalog unchanged
 - [ ] Saving project `settings.json` does not switch the active project root without loading the matching content managers
@@ -88,9 +89,10 @@
 - [ ] Checked-in character `knowledge_refs`, legacy `knowledge`, and `knowledgeRefs` resolve to existing knowledge entries in both project data roots
 
 ### AI Integration
-- [ ] API mode: streaming chat with OpenAI-compatible endpoint
+- [ ] API mode: exact configured model completes non-streaming and streaming chat through the OpenAI-compatible endpoint
 - [ ] Web/PWA mode: character and ensemble tests generate through the packaged Transformers.js WebGPU runtime
-- [ ] Windows mode: a compatible full-sequence causal-LM ONNX model initializes and generates through DirectML on device 0
+- [ ] Windows DirectML generic profile: a compatible full-sequence causal-LM ONNX model initializes and generates through DirectML on device 0; this result must not be reported as Qwen3.5 readiness
+- [ ] Platform backend evidence and blockers match `docs/INFERENCE_BACKEND_MATRIX.md`
 - [ ] Evaluation triggers fire at correct intervals
 - [ ] Relationship milestones unlock events correctly
 - [ ] Workflow LLM nodes guard generated output and replace blank or guard-only results with stable failure text before it is used by downstream story nodes

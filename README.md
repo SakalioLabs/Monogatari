@@ -4,7 +4,7 @@ A low-code game development engine for building LLM-driven visual novels and tex
 
 ## What It Is
 
-Monogatari is an authoring workbench and runtime toolkit, not a game itself. Developers compose characters, scenes, dialogue graphs, story events, endings, knowledge, audio, and model behavior through visual editors and structured project files. Web packages run local model inference through WebGPU; Windows packages run compatible ONNX models through DirectML. OpenAI-compatible APIs remain available as a development connection.
+Monogatari is an authoring workbench and runtime toolkit, not a game itself. Developers compose characters, scenes, dialogue graphs, story events, endings, knowledge, audio, and model behavior through visual editors and structured project files. Web packages run verified local models through WebGPU. Desktop and server deployments use a conservative backend planner across compatible local runtimes and generation-verified OpenAI-compatible services; the linked Windows DirectML executor remains limited to compatible full-sequence ONNX graphs.
 
 ## Key Features
 
@@ -38,7 +38,7 @@ Monogatari is an authoring workbench and runtime toolkit, not a game itself. Dev
 - **Template Marketplace** - Browse, import, and export community-created templates, characters, and story modules.
 
 - **Project Export** - Export project as distributable JSON manifest with content inventory for packaging.
-- **Targeted Model Runtimes** - Web/PWA packages use WebGPU; Windows packages use a linked DirectML executor; an OpenAI-compatible API can be selected for development.
+- **Targeted Model Runtimes** - Web/PWA packages use WebGPU; desktop diagnostics report WebGPU, llama.cpp, WinML GenAI, DirectML ONNX, MLX-LM, and OpenAI-compatible readiness; server plans cover vLLM and SGLang without bundling those services into the app.
 - **Title Preview** - Inspect the authored title experience and launch the current project Playtest.
 - **Visual Review** - Review scene and character art, runtime metadata, and unlock-state presentation before release.
 - **Transcript** - Inspect runtime conversation history by character and role.
@@ -47,10 +47,14 @@ Monogatari is an authoring workbench and runtime toolkit, not a game itself. Dev
 
 ## Current Development Status
 
-Verified on 2026-07-10:
+Verified on 2026-07-11:
 
 - Frontend production build passes with `npm run build`.
 - Web/PWA production build passes with `npm run build:web`, including static-hosting SPA fallback assets, dedicated install/maskable icons, copied project sample assets, and bundle-budget verification.
+- Qwen3.5 0.8B Text ONNX Q4 initializes and generates a complete streamed Chinese response through the packaged Transformers.js WebGPU runtime on the verified Windows host.
+- The versioned inference backend planner separates host/runtime detection from exact-model generation readiness and refuses to auto-select unprobed backends.
+- Qwen3.5 0.8B is explicitly blocked on the current linked DirectML executor and tested WinML GenAI DirectML profiles; the hybrid recurrent state contract does not fit the existing full-sequence ONNX loop, and the newer WinML profile reproduced a DML graph-partition/capture failure.
+- Qwen3.5 0.8B Q4_K_M generates through `llama.cpp` on WSL2 Ubuntu CPU, and `llama-server` passes health, non-streaming OpenAI-compatible completion, SSE streaming, and terminal `[DONE]` probes.
 - Playtest exposes a project-backed Story Library whose scene, dialogue, and ending entries consume the persistent event-unlock ledger. Content not referenced by an `unlock_*` action remains open for backward compatibility.
 - The Story Event workbench edits trigger thresholds, character scopes, repeat behavior, typed actions, and metadata, with fingerprint conflict detection and rollback-safe project catalog replacement.
 - The Ending Route workbench binds real scenes and dialogues into versioned assets, detects mismatched event coverage, rejects stale writes, protects referenced deletions, and previews valid routes without changing player unlock progress.
@@ -93,9 +97,9 @@ Verified on 2026-07-10:
 - Group chat character responses reuse the same runtime safety trace contract so multi-character scenes expose prompt-injection, response guard, memory guard, and relationship side-channel evidence per reply.
 - Group chat per-character generation failures surface as stable system messages, are omitted from future prompt transcripts, and record response length metadata instead of raw dialogue in debug logs.
 - Group chat command boundaries trim participant IDs, reject empty or duplicate participant sets, reject inactive sessions, and refuse blank messages before they can advance a multi-character scene.
-- Settings-configured AI backends register through async-safe Tauri command paths; OpenAI-compatible API backends initialize before activation, so API chat and streaming are ready immediately after a successful configuration save.
+- Settings-configured AI backends register through async-safe Tauri command paths. OpenAI-compatible API configuration validates local credentials and endpoint shape before activation, while backend auto-selection still requires a real model-level generation probe.
 - OpenAI-compatible API configuration rejects blank runtime credentials or model IDs, embedded URL credentials, provider URL query strings/fragments, and non-local plaintext HTTP before a backend can become active.
-- Windows ONNX configuration resolves model and tokenizer references under the active project data root, rejects raw filesystem paths, creates a required DirectML execution provider, validates the causal-LM graph, and activates the engine only after initialization succeeds.
+- Windows ONNX configuration resolves model and tokenizer references under the active project data root, rejects raw filesystem paths, creates a required DirectML execution provider, validates compatible full-sequence causal-LM graphs, and activates the engine only after initialization succeeds. Qwen3.5 hybrid graphs are outside this executor contract.
 - Chat sessions now expose a restorable audit report with the latest safety trace, evaluation, story-event decisions, event-rule fingerprints, and triggerable events so author diagnostics survive character switching.
 - Quality Suites now export runtime safety trace evidence and guard-note count summaries, and include group chat plus block-body prompt-injection scenarios that require concrete guard notes for input wrapping, response guarding, memory guarding, relationship side-channel containment, and score/event containment.
 - Local fallback scoring ignores prompt-injection text for engagement and creativity boosts, so long meta-instructions cannot unlock score-gated story events when model evaluation is unavailable.
@@ -148,6 +152,7 @@ Verified on 2026-07-10:
 - Release artifact manifests can be generated with `node scripts/create-release-manifest.mjs` to capture Web/PWA and desktop installer artifact paths, SHA-256 checksums, checked-in Quality Suite source evidence plus aggregate suite-set fingerprints, checked-in workflow source evidence plus aggregate workflow-set fingerprints, checked-in project content source evidence plus aggregate and per-category content-set fingerprints, checked-in release channel policy metadata, git source-state evidence, missing installer expectations, and verified installer signing evidence.
 - One-command release verification passes with `node scripts/verify-release.mjs`, including all quality suite files, Rust core/state-key tests, Rust AI prompt/API/pipeline tests, Rust scripting and asset management tests, legacy C# AI prompt/API invariants, AI backend config, engine project root, asset/save-manager, script command, i18n locale, workflow command, content loader, character manager, plugin manager, marketplace, Live2D model, and TTS output/error/log-privacy invariants, structured role-block prompt-injection regressions, renderer asset contract checks, pinned knowledge-ref checks, locale coverage, frontend UI text artifact scanning, cloud-sync status contract checks, frontend source invariants, frontend route/sidebar coverage, Tauri packaging preflight, root and subpath Web/PWA builds, Web/PWA dist asset checks, release artifact manifest checks, and preview route smoke checks.
 - Commercial release gates are tracked in `docs/RELEASE_CHECKLIST.md`.
+- Runtime evidence, blockers, selection order, and staged platform adaptation are tracked in `docs/INFERENCE_BACKEND_MATRIX.md`.
 
 ## Architecture
 
@@ -156,7 +161,7 @@ monogatari/
 +-- rust-engine/           # Rust backend (Tauri desktop app)
 |   +-- crates/
 |   |   +-- core/          # EventBus, ServiceLocator, GameClock, error handling
-|   |   +-- ai/            # API engine, ONNX engine, inference pipeline
+|   |   +-- ai/            # Backend planner, API/ONNX engines, inference pipeline
 |   |   +-- game/          # Characters, Dialogue, Knowledge, Scenes, Script parser
 |   |   +-- assets/        # Asset management, save/load
 |   |   +-- scripting/     # Rhai scripting engine
@@ -343,7 +348,7 @@ API keys are runtime-only. Set them through Settings when configuring the AI bac
 
 ### ONNX Mode (Local)
 
-ONNX configuration is project-scoped and validated, but this build does not link an ONNX Runtime executor yet. ONNX inference and streaming fail with an explicit runtime-unavailable error instead of returning placeholder character text; use the API backend for production dialogue until the local runtime integration is enabled.
+ONNX configuration is project-scoped and uses the linked ONNX Runtime DirectML executor on Windows. It requires a compatible full-sequence causal-LM graph with standard tokenizer metadata and float32 logits; there is no implicit CPU fallback. Qwen3.5 uses hybrid attention, convolution, and recurrent state inputs and is therefore blocked on this executor. Use the verified WebGPU profile or a generation-probed OpenAI-compatible local/service backend for Qwen3.5. See [Inference Backend Matrix](docs/INFERENCE_BACKEND_MATRIX.md).
 
 ```json
 {
@@ -435,7 +440,7 @@ ONNX configuration is project-scoped and validated, but this build does not link
 ### Completed
 
 - [x] Core engine architecture (EventBus, ServiceLocator, GameClock)
-- [x] AI inference pipeline (API + project-scoped ONNX configuration preflight with runtime-unavailable guard)
+- [x] AI inference pipeline (API + linked project-scoped DirectML executor + conservative backend readiness planner)
 - [x] Character system (personality, memory, emotions, relationships)
 - [x] Dialogue system (branching, choices, flags, scripts)
 - [x] Knowledge base (keyword search, category/tag indexing)
@@ -530,7 +535,7 @@ ONNX configuration is project-scoped and validated, but this build does not link
 
 - **Backend**: Rust, Tauri 2.x
 - **Frontend**: Vue 3, TypeScript, Vite, Pinia
-- **AI**: Transformers.js WebGPU (Web/PWA), ONNX Runtime DirectML (Windows), optional OpenAI-compatible development API
+- **AI**: Transformers.js WebGPU, backend capability/readiness planner, linked ONNX Runtime DirectML for compatible Windows graphs, OpenAI-compatible local or managed services
 - **Scripting**: Rhai
 - **Rendering**: PixiJS, Live2D Cubism SDK
 - **Desktop**: Tauri (WebView2 on Windows, WebKit on macOS/Linux)
