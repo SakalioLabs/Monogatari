@@ -101,6 +101,10 @@ const rendererDataRoots = [
 ]
 
 const requiredRendererAssetCharacterIds = ['sakura', 'luna', 'kenji']
+const requiredModel3dFixtureCharacterId = 'renderer_fox'
+const requiredModel3dFixturePath = 'assets/models/fox.glb'
+const requiredModel3dFixtureLicensePath = 'assets/models/fox.LICENSE.txt'
+const requiredModel3dFixtureSha256 = 'd97044e701822bac5a62696459b27d7b375aada5de8574ed4362edbba94771f7'
 
 const rendererAssetFields = [
   {
@@ -223,7 +227,7 @@ const sharedCspFragments = [
   "img-src 'self' asset: http://asset.localhost data: blob:",
   "media-src 'self' asset: http://asset.localhost data: blob:",
   "font-src 'self' data:",
-  "connect-src 'self' asset: http://asset.localhost https: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*",
+  "connect-src 'self' asset: http://asset.localhost blob: https: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*",
   "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",
@@ -1020,6 +1024,7 @@ async function verifyRendererAssets() {
     const charactersDir = path.join(dataRoot.dir, 'characters')
     const scenesDir = path.join(dataRoot.dir, 'scenes')
     const coreCharactersWithRendererAssets = new Set()
+    let model3dFixtureDeclared = false
 
     for (const file of await jsonFilesInDir(charactersDir, issues)) {
       const value = JSON.parse(await readFile(file, 'utf8'))
@@ -1036,6 +1041,13 @@ async function verifyRendererAssets() {
         if (assetCount > 0 && requiredRendererAssetCharacterIds.includes(character?.id)) {
           coreCharactersWithRendererAssets.add(character.id)
         }
+        if (character?.id === requiredModel3dFixtureCharacterId) {
+          const modelPath = stringField(character, ['model_3d_path', 'model3dPath', 'model3DPath'])
+          model3dFixtureDeclared = modelPath === requiredModel3dFixturePath
+          if (!model3dFixtureDeclared) {
+            issues.push(`${relative(file)}:${requiredModel3dFixtureCharacterId} must reference ${requiredModel3dFixturePath}`)
+          }
+        }
       }
     }
 
@@ -1044,6 +1056,10 @@ async function verifyRendererAssets() {
         issues.push(`${dataRoot.label}: core sample character ${characterId} must declare a checked-in renderer asset`)
       }
     }
+    if (!model3dFixtureDeclared) {
+      issues.push(`${dataRoot.label}: ${requiredModel3dFixtureCharacterId} must declare the checked-in animated GLB fixture`)
+    }
+    await verifyModel3dFixture(dataRoot, issues)
 
     for (const file of await jsonFilesInDir(scenesDir, issues)) {
       const scene = JSON.parse(await readFile(file, 'utf8'))
@@ -1077,6 +1093,41 @@ async function verifyRendererAssets() {
   console.log(
     `[release] Renderer assets OK (${characterCount} character record(s), ${sceneBackgroundCount}/${sceneCount} scene background(s), ${declaredCharacterAssetCount} declared character asset(s))`,
   )
+}
+
+async function verifyModel3dFixture(dataRoot, issues) {
+  const modelPath = path.join(dataRoot.dir, requiredModel3dFixturePath)
+  const licensePath = path.join(dataRoot.dir, requiredModel3dFixtureLicensePath)
+  try {
+    const model = await readFile(modelPath)
+    if (model.length < 20 || model.subarray(0, 4).toString('ascii') !== 'glTF') {
+      issues.push(`${dataRoot.label}: 3D fixture must be a binary glTF file`)
+      return
+    }
+    if (model.readUInt32LE(4) !== 2) {
+      issues.push(`${dataRoot.label}: 3D fixture must use glTF version 2`)
+    }
+    if (model.readUInt32LE(8) !== model.length) {
+      issues.push(`${dataRoot.label}: 3D fixture declared length must match file size`)
+    }
+    const sha256 = createHash('sha256').update(model).digest('hex')
+    if (sha256 !== requiredModel3dFixtureSha256) {
+      issues.push(`${dataRoot.label}: 3D fixture SHA-256 mismatch: ${sha256}`)
+    }
+  } catch (error) {
+    issues.push(`${dataRoot.label}: cannot read 3D fixture: ${error.message}`)
+  }
+
+  try {
+    const license = await readFile(licensePath, 'utf8')
+    for (const requiredText of ['PixelMannen', 'tomkranis', 'CC BY 4.0']) {
+      if (!license.includes(requiredText)) {
+        issues.push(`${dataRoot.label}: 3D fixture attribution must include ${requiredText}`)
+      }
+    }
+  } catch (error) {
+    issues.push(`${dataRoot.label}: cannot read 3D fixture attribution: ${error.message}`)
+  }
 }
 
 async function verifyKnowledgeRefs() {
@@ -2580,6 +2631,24 @@ async function verifyFrontendSourceInvariants() {
   }
   if (!characterModelSource.includes("defineEmits") || !characterModelSource.includes("'load-error'") || !characterModelSource.includes('Could not load 3D model')) {
     issues.push('frontend/src/components/CharacterModelView.vue must emit load-error for runtime GLB/GLTF load failures')
+  }
+  for (const [needle, description] of [
+    ['data-model-state', 'expose deterministic 3D load state for visual probes'],
+    ['data-model-animations', 'expose loaded animation clip count for visual probes'],
+    ['data-canvas-signature', 'expose a bounded WebGL pixel signature for visual probes'],
+    ['data-canvas-motion', 'prove animated model frames change rendered pixels'],
+    ['gl.readPixels', 'sample the rendered WebGL framebuffer inside the renderer boundary'],
+    ['__MONOGATARI_3D_PROBE__', 'publish an opt-in canvas snapshot for Playwright visual verification'],
+    ['data-canvas-preview', 'expose the opt-in canvas snapshot through the read-only DOM probe'],
+    ['rendererProbeEnabled()', 'keep WebGL framebuffer readback disabled outside explicit visual probes'],
+    ['loadRequestSequence', 'prevent stale GLB requests from replacing the active character model'],
+    ['normalizeAndFrameModel', 'normalize arbitrary model units before display'],
+    ['frameModel', 'frame loaded models for the current viewport aspect ratio'],
+    ['THREE.SRGBColorSpace', 'render embedded model textures in the expected output color space'],
+  ]) {
+    if (!characterModelSource.includes(needle)) {
+      issues.push(`frontend/src/components/CharacterModelView.vue must ${description}`)
+    }
   }
 
   const workflowRunDiagnosticsRequirements = [
@@ -4638,6 +4707,9 @@ async function verifyReleaseChannelPolicy() {
     ['data/knowledge/sakura_nature.json', 'require default Sakura knowledge content in release manifests'],
     ['data/scenes/sakura_park.json', 'require default Sakura scene content in release manifests'],
     ['data/assets/characters/sakura_sprite.svg', 'require default Sakura renderer asset content in release manifests'],
+    ['data/assets/models/fox.glb', 'require the real animated GLB renderer fixture in release manifests'],
+    ['data/assets/models/fox.LICENSE.txt', 'require the GLB fixture attribution in release manifests'],
+    ['data/characters/renderer_fox.json', 'require the character record that exercises the real GLB fixture'],
     ['data/events/story_events.json', 'require project story event content in release manifests'],
     ['data/endings/best_friend_ending.json', 'require project story ending content in release manifests'],
     ["'endings'", 'include story endings in project content source categories'],

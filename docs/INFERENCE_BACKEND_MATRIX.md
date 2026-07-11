@@ -43,10 +43,21 @@ Monogatari can use a 3D character with Qwen3.5 in two separate ways:
    vision profile.
 
 Geometry-aware reasoning would require a separate mesh encoder, structured scene
-description, or tool adapter. The repository currently has the 3D loading and
-renderer selection contract, but no licensed real GLB/GLTF fixture has completed
-the desktop/mobile visual gate yet. Therefore 3D support remains contract-tested,
-not end-to-end release-verified.
+description, or tool adapter. Rendering support is verified separately with the
+Khronos Fox GLB fixture: the checked-in character record loads the real animated
+glTF 2.0 model, normalizes arbitrary source units, frames it for desktop/mobile
+aspects, and exposes deterministic canvas state for visual and pixel probes.
+
+3D renderer evidence on the Windows test host:
+
+| Viewport | State | Pixel evidence | Framing evidence |
+| --- | --- | --- | --- |
+| 1440x900 desktop | `ready`, 3 animation clips, textured, motion detected | 67 sampled colors, luminance 13-195, 89 non-background samples | 24x24 content bounds `5,3,14,21`; margin on every edge; no console errors/warnings |
+| 375x812 mobile | `ready`, 3 animation clips, textured, motion detected | 61 sampled colors, luminance 13-194, 75 non-background samples | preview rect `17,465,353,765`; content bounds `6,3,13,21`; no overflow or console errors/warnings |
+
+The unmodified GLB is 162,852 bytes with SHA-256
+`d97044e701822bac5a62696459b27d7b375aada5de8574ed4362edbba94771f7`.
+Its CC0/CC BY attribution ships beside the model in both data roots.
 
 ## Verified evidence
 
@@ -423,6 +434,7 @@ private prompts, or user project paths.
   replaced by exact-model success evidence.
 - No unverified backend is selected automatically.
 - Model weights and temporary exports remain outside Git.
+- The animated GLB fixture passes header/hash/attribution checks and desktop/mobile framebuffer probes.
 
 ## Primary references
 
@@ -437,3 +449,4 @@ private prompts, or user project paths.
 - [MLX-LM](https://github.com/ml-explore/mlx-lm)
 - [SGLang AMD platform guide](https://github.com/sgl-project/sglang/blob/main/docs/platforms/amd_gpu.md)
 - [SGLang MUSA support tracker](https://github.com/sgl-project/sglang/issues/16565)
+- [Khronos Fox glTF sample and attribution](https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/Fox)

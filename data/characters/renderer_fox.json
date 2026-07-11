@@ -1,0 +1,21 @@
+{
+  "id": "renderer_fox",
+  "name": "Fox Renderer Sample",
+  "description": "An animated glTF sample used to verify the real 3D character renderer.",
+  "background": "This character record is a release fixture for GLB loading, animation, automatic framing, and renderer fallback checks.",
+  "personality": {
+    "openness": 0.7,
+    "conscientiousness": 0.8,
+    "extraversion": 0.4,
+    "agreeableness": 0.8,
+    "neuroticism": 0.2,
+    "speech_style": "observant and concise"
+  },
+  "emotion": "neutral",
+  "relationships": {},
+  "live2d_model_path": null,
+  "model_3d_path": "assets/models/fox.glb",
+  "portrait_path": null,
+  "sprite_path": null,
+  "sprite_paths": {}
+}

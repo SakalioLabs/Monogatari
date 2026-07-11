@@ -48,7 +48,7 @@ Optional renderer fields can be added to the same character file:
 }
 ```
 
-Playtest uses the first available renderer in this order: Live2D, GLB/GLTF 3D, emotion sprite, portrait, generated 3D placeholder. Renderer paths are project-relative portable references; Live2D backend commands load `.model3.json`/`.json` files only from the active project data root. The built-in Sakura, Luna, and Kenji samples include checked-in SVG portrait and sprite assets under `assets/characters/` in both Web and bundled Tauri data roots.
+Playtest uses the first available renderer in this order: Live2D, GLB/GLTF 3D, emotion sprite, portrait, generated 3D placeholder. Renderer paths are project-relative portable references; Live2D backend commands load `.model3.json`/`.json` files only from the active project data root. The built-in Sakura, Luna, and Kenji samples include checked-in SVG portrait and sprite assets under `assets/characters/`. The `renderer_fox` release fixture references the attributed `assets/models/fox.glb` animated glTF 2.0 asset. Both fixture and attribution are present in the Web and bundled Tauri data roots.
 
 ## Creating a Dialogue
 

@@ -687,7 +687,7 @@ mod tests {
         assert_eq!(report.engine_version, env!("CARGO_PKG_VERSION"));
         assert_eq!(report.git_commit, env!("MONOGATARI_GIT_COMMIT"));
         assert_eq!(report.git_short_commit, env!("MONOGATARI_GIT_SHORT_COMMIT"));
-        assert_eq!(report.data_file_count, 97);
+        assert_eq!(report.data_file_count, 100);
         assert!(report.project_warning_codes.is_empty());
         assert!(report.counts.characters > 0);
         assert!(report.counts.dialogues > 0);

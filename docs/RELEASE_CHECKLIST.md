@@ -19,7 +19,7 @@
 - [ ] `npm audit` shows zero vulnerabilities
 - [ ] Frontend runtime source contains no `console.log` or `console.debug` debug output before Web/PWA or Tauri packaging
 - [ ] Frontend runtime source contains no `v-html` or direct `innerHTML`/`outerHTML` assignment before Web/PWA or Tauri packaging
-- [ ] Web/PWA `index.html` and `404.html` include a Content Security Policy meta tag that blocks object/frame/form and JavaScript `unsafe-eval` surfaces while allowing the explicit `wasm-unsafe-eval` needed by ONNX Runtime Web
+- [ ] Web/PWA `index.html` and `404.html` include a Content Security Policy meta tag that blocks object/frame/form and JavaScript `unsafe-eval` surfaces while allowing the explicit `wasm-unsafe-eval` needed by ONNX Runtime Web and `connect-src blob:` for embedded GLB textures
 - [ ] Web/PWA dist includes a static-hosting `_headers` file with CSP, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, and a restrictive browser `Permissions-Policy`
 - [ ] Web/PWA dist includes a static-hosting `_redirects` file with project asset passthrough rules and a final `/* /index.html 200` SPA fallback
 - [ ] Web/PWA dist includes an Azure Static Web Apps `staticwebapp.config.json` with SPA navigation fallback, static asset exclusions, 404 rewrite, and matching global security headers
@@ -80,12 +80,15 @@
 - [ ] Knowledge base search returns relevant results
 - [ ] Scene assets validate without missing file warnings
 - [ ] Checked-in character renderer asset fields resolve to supported project-relative files or intentionally fall back to the generated 3D placeholder
+- [ ] `renderer_fox` resolves `assets/models/fox.glb`; the GLB v2 header, declared length, SHA-256, and packaged attribution file pass release verification in both data roots
 - [ ] Core sample characters Sakura, Luna, and Kenji declare checked-in portrait/sprite renderer assets in both data roots
 - [ ] Character Editor renderer asset diagnostics flag unsupported extensions, absolute paths, external URLs, and parent traversal before saving/exporting character JSON
 - [ ] Character Editor renderer preview follows Playtest priority for Live2D, GLB/GLTF, sprite/portrait, and generated 3D fallback states
 - [ ] Playtest and Character Editor preview both derive renderer priority from the shared frontend renderer asset selector
 - [ ] `npm run verify:renderer-assets` passes, proving shared renderer selector priority, expression sprite resolution, validation skips, and generated fallback behavior
 - [ ] Playtest renderer fallback verified for Live2D, GLB/GLTF, sprite/portrait, assetless character states, and runtime Live2D/GLB/GLTF load failures that must skip to the next valid candidate
+- [ ] Real GLB visual probe passes at 1440x900 and 375x812: `data-model-state=ready`, animation count is non-zero, canvas pixels are nonblank/nonuniform, model remains framed, and the animation changes rendered pixels over time
+- [ ] Embedded GLB PNG textures decode with their authored colors and no current-build `GLTFLoader` console errors; Web/PWA and Tauri CSP include `connect-src blob:`
 - [ ] Checked-in character `knowledge_refs`, legacy `knowledge`, and `knowledgeRefs` resolve to existing knowledge entries in both project data roots
 
 ### AI Integration
@@ -164,7 +167,7 @@
 - [ ] Installed Tauri build resolves bundled sample `data/` resources at startup when no development project data root is available
 - [ ] `node scripts/verify-windows-installers.mjs --check` passes for public Windows artifacts, proving MSI/NSIS identity, version, stable MSI upgrade code, hashes, size bounds, expected-publisher Authenticode signatures on both installers and the extracted application, exact MSI payload parity, and extracted runtime verification
 - [ ] Internal/alpha unsigned candidates use the explicit `--allow-unsigned` audit only; their audit reports `release_ready: false` and is not reused as stable/beta evidence
-- [ ] Extracted production executable writes a verified `monogatari-installation-verification/v1` report with current engine/build Git provenance, no bundled DirectML project warnings, 97-file project inventory, runtime content counts, and a valid project content fingerprint
+- [ ] Extracted production executable writes a verified `monogatari-installation-verification/v1` report with current engine/build Git provenance, no bundled DirectML project warnings, 100-file project inventory, runtime content counts, and a valid project content fingerprint
 - [ ] Installed Tauri build writes analytics, sync manifests, saves, and generated system/API TTS assets under the active project data root with sanitized output filenames
 - [ ] Azure and ElevenLabs TTS provider errors redact token-shaped values, API-key assignments, authorization headers, sensitive provider headers, and response bodies before reaching frontend status surfaces
 - [ ] TTS synthesis logs record text length metadata instead of raw spoken dialogue, prompt text, or token-shaped content

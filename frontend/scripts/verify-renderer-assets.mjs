@@ -1,10 +1,15 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import vm from 'node:vm'
 import ts from 'typescript'
 
 const sourceUrl = new URL('../src/lib/rendererAssets.ts', import.meta.url)
 const source = await readFile(sourceUrl, 'utf8')
+const fixtureCharacterUrl = new URL('../../data/characters/renderer_fox.json', import.meta.url)
+const fixtureModelUrl = new URL('../../data/assets/models/fox.glb', import.meta.url)
+const fixtureLicenseUrl = new URL('../../data/assets/models/fox.LICENSE.txt', import.meta.url)
+const fixtureSha256 = 'd97044e701822bac5a62696459b27d7b375aada5de8574ed4362edbba94771f7'
 
 const { outputText, diagnostics = [] } = ts.transpileModule(source, {
   fileName: 'rendererAssets.ts',
@@ -200,4 +205,20 @@ assert.equal(rendererAssetValidationMessage('assets/hero portrait.png', imageAss
 assert.equal(rendererAssetValidationMessage('assets/hero.bmp', imageAssetExtensions), 'Expected .png, .jpg, .jpeg, .webp, .svg')
 assert.equal(rendererAssetValidationMessage('live2d/hero.model3.json', ['.json', '.model3.json']), null)
 
-console.log('[renderer-assets] Selector contract OK')
+const fixtureCharacter = JSON.parse(await readFile(fixtureCharacterUrl, 'utf8'))
+assert.equal(fixtureCharacter.id, 'renderer_fox')
+assert.equal(fixtureCharacter.model_3d_path, 'assets/models/fox.glb')
+assert.equal(selectCharacterRendererAsset(fixtureCharacter, { validatePaths: true }).mode, 'model3d')
+
+const fixtureModel = await readFile(fixtureModelUrl)
+assert.equal(fixtureModel.subarray(0, 4).toString('ascii'), 'glTF')
+assert.equal(fixtureModel.readUInt32LE(4), 2)
+assert.equal(fixtureModel.readUInt32LE(8), fixtureModel.length)
+assert.equal(createHash('sha256').update(fixtureModel).digest('hex'), fixtureSha256)
+
+const fixtureLicense = await readFile(fixtureLicenseUrl, 'utf8')
+assert.match(fixtureLicense, /PixelMannen/)
+assert.match(fixtureLicense, /tomkranis/)
+assert.match(fixtureLicense, /CC BY 4\.0/)
+
+console.log(`[renderer-assets] Selector and animated GLB fixture contract OK (${fixtureModel.length} bytes)`)

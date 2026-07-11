@@ -55,6 +55,7 @@ Characters are stored as JSON files in `rust-engine/data/characters/`.
     "speech_style": "Description of how the character speaks"
   },
   "portrait_path": "assets/characters/hero_portrait.svg",
+  "model_3d_path": "assets/models/hero.glb",
   "sprite_path": "assets/characters/hero_sprite.svg",
   "sprite_paths": {
     "happy": "assets/characters/hero_happy.svg",
@@ -64,7 +65,7 @@ Characters are stored as JSON files in `rust-engine/data/characters/`.
 }
 ```
 
-Renderer paths must be project-relative, portable, stay inside the active data root, and use supported extensions. Absolute paths, URI-like prefixes, empty segments, `.`/`..` traversal, and non-portable path segments are rejected by renderer diagnostics. Playtest and Character Editor resolve Live2D first, then GLB/GLTF 3D models, emotion-specific sprites, fallback sprites, portraits, and finally the generated placeholder. Live2D backend commands load only `.model3.json`/`.json` files from the active project data root.
+Renderer paths must be project-relative, portable, stay inside the active data root, and use supported extensions. Absolute paths, URI-like prefixes, empty segments, `.`/`..` traversal, and non-portable path segments are rejected by renderer diagnostics. Playtest and Character Editor resolve Live2D first, then GLB/GLTF 3D models, emotion-specific sprites, fallback sprites, portraits, and finally the generated placeholder. Loaded 3D models are normalized to a bounded stage size and reframed when the preview aspect changes. Live2D backend commands load only `.model3.json`/`.json` files from the active project data root.
 
 ### Personality Traits (0.0 - 1.0)
 - **openness**: Curiosity, creativity, willingness to try new things
