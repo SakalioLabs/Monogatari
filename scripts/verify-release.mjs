@@ -176,6 +176,18 @@ const releaseCriticalRustFiles = [
   'crates/authoring/src/agent_transaction/plan.rs',
   'crates/authoring/src/agent_transaction/protocol.rs',
   'crates/authoring/src/agent_transaction/tests.rs',
+  'crates/authoring/src/json_catalog.rs',
+  'crates/authoring/src/json_catalog/inspect.rs',
+  'crates/authoring/src/json_catalog/protocol.rs',
+  'crates/authoring/src/json_catalog/read.rs',
+  'crates/authoring/src/json_catalog/tests.rs',
+  'crates/mcp-server/src/cli.rs',
+  'crates/mcp-server/src/lib.rs',
+  'crates/mcp-server/src/main.rs',
+  'crates/mcp-server/src/protocol.rs',
+  'crates/mcp-server/src/server.rs',
+  'crates/mcp-server/src/validation.rs',
+  'crates/mcp-server/tests/stdio_e2e.rs',
   'crates/tauri-app/src/main.rs',
   'crates/tauri-app/src/installation_verifier.rs',
   'crates/tauri-app/src/state.rs',
@@ -312,6 +324,7 @@ async function main() {
   await verifyWorkflowCommandInvariants()
   await verifyContentLoaderPathInvariants()
   await verifyAgentTransactionInvariants()
+  await verifyMcpServerInvariants()
   await verifyCharacterManagerPathInvariants()
   await verifyPluginManagerPathInvariants()
   await verifyMarketplacePathInvariants()
@@ -330,6 +343,8 @@ async function main() {
   await run('Release-critical Rust format check', 'rustfmt', ['--edition', '2021', '--check', ...releaseCriticalRustFiles], rustDir)
   await run('Rust core tests', 'cargo', ['test', '--locked', '-p', 'llm-core'], rustDir)
   await run('Rust headless authoring tests', 'cargo', ['test', '--locked', '-p', 'llm-authoring'], rustDir)
+  await run('Rust MCP stdio and authoring tests', 'cargo', ['test', '--locked', '-p', 'monogatari-mcp'], rustDir)
+  await run('Rust MCP release binary build', 'cargo', ['build', '--locked', '--release', '-p', 'monogatari-mcp'], rustDir)
   await run('Rust AI prompt and pipeline tests', 'cargo', ['test', '--locked', '-p', 'llm-ai'], rustDir)
   await run('Rust asset management tests', 'cargo', ['test', '--locked', '-p', 'llm-assets'], rustDir)
   await run('Rust scripting tests', 'cargo', ['test', '--locked', '-p', 'llm-scripting'], rustDir)
@@ -3834,6 +3849,81 @@ async function verifyAgentTransactionInvariants() {
   }
 
   console.log('[release] Agent transaction invariants OK')
+}
+
+async function verifyMcpServerInvariants() {
+  const issues = []
+  const mcpRoot = path.join(rustDir, 'crates', 'mcp-server')
+  const [
+    mcpCargoSource,
+    mcpLibSource,
+    mcpMainSource,
+    mcpProtocolSource,
+    mcpServerSource,
+    mcpValidationSource,
+    mcpE2eSource,
+    jsonCatalogSource,
+  ] = await Promise.all([
+    readFile(path.join(mcpRoot, 'Cargo.toml'), 'utf8'),
+    readFile(path.join(mcpRoot, 'src', 'lib.rs'), 'utf8'),
+    readFile(path.join(mcpRoot, 'src', 'main.rs'), 'utf8'),
+    readFile(path.join(mcpRoot, 'src', 'protocol.rs'), 'utf8'),
+    readFile(path.join(mcpRoot, 'src', 'server.rs'), 'utf8'),
+    readFile(path.join(mcpRoot, 'src', 'validation.rs'), 'utf8'),
+    readFile(path.join(mcpRoot, 'tests', 'stdio_e2e.rs'), 'utf8'),
+    Promise.all([
+      'json_catalog.rs',
+      'json_catalog/inspect.rs',
+      'json_catalog/protocol.rs',
+      'json_catalog/read.rs',
+      'json_catalog/tests.rs',
+    ].map((relativePath) => readFile(path.join(rustDir, 'crates', 'authoring', 'src', relativePath), 'utf8')))
+      .then((sources) => sources.join('\n')),
+  ])
+  const requirements = [
+    [mcpCargoSource, 'rmcp = { version = "2.2.0"', 'use the pinned official Rust MCP SDK'],
+    [mcpCargoSource, '"transport-io"', 'enable the SDK stdio transport'],
+    [mcpCargoSource, '"transport-child-process"', 'exercise the server through a real child-process client'],
+    [mcpLibSource, 'rmcp::transport::stdio()', 'serve MCP through the SDK stdio transport'],
+    [mcpMainSource, '.with_writer(std::io::stderr)', 'reserve stdout exclusively for MCP frames'],
+    [mcpServerSource, 'canonical_project_root(&project_root)', 'bind one canonical project root at startup'],
+    [mcpServerSource, 'pub async fn inspect_project', 'expose project inspection'],
+    [mcpServerSource, 'pub async fn list_project_json', 'expose bounded JSON catalog listing'],
+    [mcpServerSource, 'pub async fn read_project_json', 'expose exact JSON document reads'],
+    [mcpServerSource, 'pub async fn plan_transaction', 'expose side-effect-free transaction planning'],
+    [mcpServerSource, 'pub async fn apply_transaction', 'expose validated transaction application'],
+    [mcpServerSource, 'if !self.allow_write', 'keep writes disabled unless startup explicitly enables them'],
+    [mcpProtocolSource, 'expected_precondition_fingerprint', 'require the caller to confirm the reviewed plan fingerprint'],
+    [mcpServerSource, 'self.access.write().await', 'serialize reads against staged write candidates'],
+    [mcpServerSource, 'std::fs::File::try_lock(&file)', 'exclude concurrent server processes while a writer owns the project'],
+    [mcpServerSource, 'std::fs::File::try_lock_shared(&file)', 'share the project lease only between read-only server processes'],
+    [mcpServerSource, 'apply_agent_project_transaction_with_validator', 'delegate writes to the shared rollback-capable authoring core'],
+    [mcpValidationSource, 'JsonAcceptanceLevel::Document', 'label candidate acceptance honestly as document-level'],
+    [jsonCatalogSource, 'monogatari-json-catalog-report/v1', 'version shared JSON catalog reports'],
+    [jsonCatalogSource, 'MAX_AUTHORABLE_JSON_BYTES', 'bound JSON reads and transaction writes consistently'],
+    [jsonCatalogSource, 'verify_exact_path', 'require exact-case paths before reads'],
+    [jsonCatalogSource, 'content_fingerprint', 'publish semantic fingerprints separately from exact file SHA-256'],
+    [mcpE2eSource, 'real_stdio_handshake_lists_and_reads_schema_backed_tools', 'test real stdio initialization, discovery, and reads'],
+    [mcpE2eSource, 'readonly_stdio_plans_but_structurally_rejects_apply', 'test default read-only refusal without filesystem changes'],
+    [mcpE2eSource, 'writable_stdio_requires_reviewed_fingerprint_and_rolls_back_invalid_candidate', 'test fingerprint confirmation, application, and rollback'],
+  ]
+  for (const [source, needle, description] of requirements) {
+    if (!source.includes(needle)) {
+      issues.push(`MCP Agent authoring must ${description}`)
+    }
+  }
+  if (/\btauri\b/i.test(mcpCargoSource)) {
+    issues.push('monogatari-mcp must remain independent of the Tauri command crate')
+  }
+  if (/pub\s+project_root\s*:/.test(mcpProtocolSource)) {
+    issues.push('MCP tool requests must not be able to replace the startup-bound project root')
+  }
+
+  if (issues.length > 0) {
+    throw new Error(`MCP Agent authoring verification failed:\n${issues.join('\n')}`)
+  }
+
+  console.log('[release] MCP Agent authoring invariants OK')
 }
 
 async function verifyCharacterManagerPathInvariants() {

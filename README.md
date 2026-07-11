@@ -24,6 +24,7 @@ Monogatari is an authoring workbench and runtime toolkit, not a game itself. Dev
 - **Real 3D Fixture** - A licensed animated glTF 2.0 Fox fixture verifies GLB loading, texture color space, automatic unit normalization, responsive camera framing, animation playback, and renderer fallback in packaged Web/PWA and desktop data roots.
 - **Project Control Panel** - Project settings, path readiness, AI backend selection, and runtime initialization are managed from one production-oriented console.
 - **Verified Project Packages** - Desktop authors export and import complete `.monogatari` ZIP packages with sanitized settings, deterministic inventories, SHA-256 verification, portable-path enforcement, bounded extraction, and transactional installation into a new project directory.
+- **Agent Authoring Skill and MCP** - A repository Skill defines dependency-ordered visual-novel production, while the standard stdio MCP server exposes five schema-backed inspect/read/plan/apply tools over the same headless authoring core. Writes are disabled by default and require exact SHA preconditions plus a reviewed plan fingerprint. See [MCP_SERVER.md](docs/MCP_SERVER.md).
 - **Character System** - Full personality model (Big Five traits), memory system, emotion tracking, and relationship scores per character.
 - **Knowledge Base** - Keyword-indexed world lore, pinned character references, and release-verified context anchors that feed into AI prompts for consistent storytelling.
 - **Branching Dialogue** - Pre-scripted dialogue trees with choices, relationship changes, and flag-based conditional branching.
@@ -69,6 +70,7 @@ Verified on 2026-07-11:
 - Tauri mobile deployment preflight passes with `node scripts/verify-tauri-mobile-preflight.mjs`, covering Android/iOS command readiness, Vite `TAURI_DEV_HOST` binding, Tauri shell config, and mobile release documentation.
 - Full frontend dependency audit passes with `npm audit`.
 - The transport-neutral authoring core passes `cargo test --locked -p llm-authoring`, independently proving atomic rollback, portable path containment, project diagnostics, and credential-free settings persistence.
+- The standard `monogatari-mcp` adapter passes real stdio child-process tests for handshake, five schema-backed tools, scrubbed inspection, exact JSON fingerprints, read-only refusal, reviewed-plan confirmation, one-writer exclusion, successful application, and rollback. Its candidate report is explicitly document-level rather than a graph/runtime completion claim.
 - Rust Tauri app crate passes `cargo check --locked -p llm-galgame-app`.
 - Character quality suite regression tests pass inside `cargo test --locked -p llm-galgame-app`.
 - Single-character and group chat prompts use the shared character mind contract and guarded response path for private reasoning leaks, identity drift, and tool-style response drift.

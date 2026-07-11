@@ -27,6 +27,7 @@ runtimes/
 
 # Data
 *.log
+**/.monogatari-mcp-project.lock
 
 # Research (cloned repos)
 research/

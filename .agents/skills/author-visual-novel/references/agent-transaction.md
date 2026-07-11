@@ -54,3 +54,11 @@ v1 accepts lowercase `.json` files beneath `assets`, `characters`, `dialogue`, `
 The plan schema is `monogatari-agent-project-transaction-plan/v1`; success uses `monogatari-agent-project-transaction-result/v1`; structured failures use `monogatari-agent-project-transaction-error/v1` with stable error codes and optional operation/path context.
 
 Transaction success proves only that the candidate passed the validator supplied by its transport. A complete visual novel still requires the graph, runtime, package, and experience acceptance levels in `project-contract.md`.
+
+## Standard MCP Transport
+
+`monogatari-mcp` exposes this protocol through `plan_transaction` and `apply_transaction`. The server fixes the project root at startup; no tool accepts a replacement root. It starts read-only, and `apply_transaction` remains unavailable unless the process was launched with `--allow-write`.
+
+Use `list_project_json` or `read_project_json` to obtain the exact file-byte `sha256`. The separate `content_fingerprint` normalizes parsed JSON and is useful for semantic comparison, but it is not a transaction precondition. After planning, pass the unchanged transaction and the returned `precondition_fingerprint` as `expected_precondition_fingerprint`; a changed plan is rejected and must be reviewed again.
+
+The current MCP candidate validator reports `acceptance_level: "document"`. It checks settings readiness and every authorable JSON document after staging, and then commits or rolls back. It does not yet replace graph reachability, cross-reference, runtime manager, Quality Suite, package, or visual validation.

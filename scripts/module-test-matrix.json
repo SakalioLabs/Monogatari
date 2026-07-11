@@ -46,6 +46,17 @@
       "owner_paths": ["rust-engine/crates/authoring"]
     },
     {
+      "id": "rust-mcp",
+      "label": "MCP stdio protocol and authoring tests",
+      "group": "rust",
+      "kind": "unit-integration-protocol",
+      "default": true,
+      "cwd": "rust-engine",
+      "command": "cargo",
+      "args": ["test", "--locked", "-p", "monogatari-mcp"],
+      "owner_paths": ["rust-engine/crates/mcp-server"]
+    },
+    {
       "id": "rust-ai",
       "label": "Rust AI unit and integration tests",
       "group": "rust",

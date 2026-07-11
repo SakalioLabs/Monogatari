@@ -6,28 +6,20 @@ use std::path::{Path, PathBuf};
 use sha2::{Digest, Sha256};
 
 use super::protocol::*;
+#[cfg(test)]
+use crate::json_catalog::AUTHORABLE_JSON_CATALOG_ROOTS;
+use crate::json_catalog::{
+    validate_authorable_json_path, JsonCatalogErrorCode, MAX_AUTHORABLE_JSON_BYTES,
+};
 use crate::paths::resolve_project_relative;
-use crate::project::canonical_regular_project_root;
+use crate::project::canonical_project_root;
 
 const MAX_TRANSACTION_OPERATIONS: usize = 256;
-pub(super) const MAX_TRANSACTION_FILE_BYTES: u64 = 4 * 1024 * 1024;
+pub(super) const MAX_TRANSACTION_FILE_BYTES: u64 = MAX_AUTHORABLE_JSON_BYTES;
 const MAX_TRANSACTION_TOTAL_BYTES: u64 = 32 * 1024 * 1024;
-const MAX_TRANSACTION_PATH_BYTES: usize = 512;
-const MAX_TRANSACTION_PATH_SEGMENTS: usize = 16;
-const MAX_TRANSACTION_PATH_SEGMENT_BYTES: usize = 128;
 const MAX_TRANSACTION_ID_BYTES: usize = 128;
-pub(super) const ALLOWED_JSON_ROOTS: &[&str] = &[
-    "assets",
-    "characters",
-    "dialogue",
-    "endings",
-    "events",
-    "knowledge",
-    "locales",
-    "quality_suites",
-    "scenes",
-    "workflows",
-];
+#[cfg(test)]
+pub(super) const ALLOWED_JSON_ROOTS: &[&str] = AUTHORABLE_JSON_CATALOG_ROOTS;
 
 pub(super) struct PreparedTransaction {
     pub(super) root: PathBuf,
@@ -69,7 +61,7 @@ pub(super) fn prepare_transaction(
         ));
     }
 
-    let root = canonical_regular_project_root(project_root).map_err(|_| {
+    let root = canonical_project_root(project_root).map_err(|_| {
         AgentTransactionError::new(
             AgentTransactionErrorCode::ProjectRootInvalid,
             "Project root must be an existing regular directory.",
@@ -222,59 +214,14 @@ fn validate_transaction_id(transaction_id: &str) -> Result<(), AgentTransactionE
 }
 
 fn validate_operation_path(path: &str, index: usize) -> Result<String, AgentTransactionError> {
-    if path.len() > MAX_TRANSACTION_PATH_BYTES {
-        return Err(AgentTransactionError::for_operation(
-            AgentTransactionErrorCode::InvalidPath,
-            format!("Transaction paths cannot exceed {MAX_TRANSACTION_PATH_BYTES} UTF-8 bytes."),
-            index,
-            path,
-        ));
-    }
-    let segments = path.split('/').collect::<Vec<_>>();
-    if segments.len() < 2 || segments.len() > MAX_TRANSACTION_PATH_SEGMENTS {
-        return Err(AgentTransactionError::for_operation(
-            AgentTransactionErrorCode::InvalidPath,
-            format!(
-                "Transaction paths require 2 to {MAX_TRANSACTION_PATH_SEGMENTS} portable segments."
-            ),
-            index,
-            path,
-        ));
-    }
-    if !ALLOWED_JSON_ROOTS.contains(&segments[0]) {
-        return Err(AgentTransactionError::for_operation(
-            AgentTransactionErrorCode::PathNotAllowed,
-            "Transaction paths must target an authorable project JSON catalog.",
-            index,
-            path,
-        ));
-    }
-    if !path.ends_with(".json") {
-        return Err(AgentTransactionError::for_operation(
-            AgentTransactionErrorCode::InvalidPath,
-            "Agent transaction v1 accepts JSON files with a lowercase `.json` extension.",
-            index,
-            path,
-        ));
-    }
-    if segments.iter().any(|segment| {
-        segment.is_empty()
-            || segment.len() > MAX_TRANSACTION_PATH_SEGMENT_BYTES
-            || segment.starts_with('.')
-            || segment.ends_with('.')
-            || segment.ends_with(' ')
-            || !segment
-                .chars()
-                .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
-    }) {
-        return Err(AgentTransactionError::for_operation(
-            AgentTransactionErrorCode::InvalidPath,
-            "Transaction paths must use bounded portable ASCII segments.",
-            index,
-            path,
-        ));
-    }
-
+    validate_authorable_json_path(path).map_err(|error| {
+        let code = if error.code == JsonCatalogErrorCode::PathNotAllowed {
+            AgentTransactionErrorCode::PathNotAllowed
+        } else {
+            AgentTransactionErrorCode::InvalidPath
+        };
+        AgentTransactionError::for_operation(code, error.message, index, path)
+    })?;
     Ok(path.to_string())
 }
 

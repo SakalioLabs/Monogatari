@@ -8,10 +8,10 @@ Monogatari is a low-code game development engine built with Rust (Tauri 2.x) and
 
 ```
 +--------------------------------------------------+
-|                  Frontend (Vue 3)                  |
-|  Views (22) | PWA shell | Stores (Pinia)          |
+|       Human Frontend       |     Agent Clients     |
+| Vue 3 workbench / PWA      | Skill / standard MCP  |
 +--------------------------------------------------+
-|            Tauri IPC Bridge (invokeCommand)        |
+|       Tauri IPC Bridge     |   MCP stdio adapter   |
 +--------------------------------------------------+
 |                  Rust Backend                      |
 |  25 Command Modules | Thin Tauri Adapters          |
@@ -33,7 +33,8 @@ Monogatari is a low-code game development engine built with Rust (Tauri 2.x) and
 | `game` | Game logic | CharacterManager, DialogueManager, KnowledgeBase, SceneManager |
 | `assets` | File management | AssetManager, SaveManager |
 | `scripting` | Rhai scripting | ScriptEngine |
-| `authoring` | Headless human/agent project operations | ProjectConfigState, portable path resolver, staged content mutations |
+| `authoring` | Headless human/agent project operations | ProjectConfigState, JSON catalog, Agent transaction planner/applier |
+| `mcp-server` | Standard agent transport over stdio | Five schema-backed project tools, read-only default, write lease |
 | `tauri-app` | Tauri commands | AppState, 25 command modules |
 
 Script execution is treated as bounded authoring logic. Tauri script commands validate payload size and hidden control characters before execution or DSL parsing, and `ScriptEngine::execute` repeats that source validation for workflow and future plugin callers. Condition expressions use shared 2,000-character/control-character validation and run through a separate read-only Rhai engine that can inspect variables, flags, and temporary workflow context values without registering state mutation functions; workflow validation applies the same condition rules before imported graphs run. Workflow condition nodes expose relationship, evaluation score, and evaluation-count context as temporary scope variables so branches can react to chat state or author preview presets without writing story state. Desktop run-context previews snapshot script state and mirror variable, flag, relationship, emotion, and scene node effects in a per-run local state bag; browser-only Web/PWA workflow previews mirror the same state transitions plus weighted random-branch behavior so exported builds can exercise later condition branches, event gates, and trace diagnostics without touching persistent save data. Script variables and flags use shared portable state key validation before Rhai functions, workflow validation, workflow nodes, dialogue scripts, or save loading can write them, keeping persisted state names stable across desktop, Web/PWA, and exported project packages. The shared engine caps Rhai operations, recursive calls, expression depth, variable count, function definitions, and module imports so custom game logic cannot hang the workbench through runaway loops or recursion.
@@ -69,7 +70,9 @@ Script execution is treated as bounded authoring logic. Tauri script commands va
 
 The repository-level `.agents/skills/author-visual-novel` Skill gives agents a discoverable authoring workflow over the same versioned project data consumed by desktop and Web/PWA runtimes. It requires dependency-ordered content generation, portable IDs and paths, Quality Suite evidence, mirrored built-in data roots, and the real release gate; it does not define a second story schema.
 
-`llm-authoring` is the transport-neutral application boundary. It owns project settings inspection and scrubbed atomic persistence, strict portable project paths, and rollback-capable content mutations; Tauri project commands and catalog editors call these services instead of owning duplicate filesystem rules. Its `monogatari-agent-project-transaction/v1` protocol adds bounded multi-file JSON plans, exact missing/SHA-256 preconditions, duplicate and case-collision rejection, candidate validation, reverse-order rollback, structured results, and stable error codes. Module ownership and independently runnable gates live in `scripts/module-test-matrix.json`, with `rust-authoring` proving this boundary without compiling Tauri. The next transport is a standard MCP server that delegates planning and application to this crate while supplying authoritative graph/runtime validation. Until that server passes its own gate, the Skill continues to edit canonical project data and run the existing validators rather than claiming an incomplete MCP facade.
+`llm-authoring` is the transport-neutral application boundary. It owns project settings inspection and scrubbed atomic persistence, strict portable project paths, bounded JSON catalog inspection, exact byte and semantic content fingerprints, and rollback-capable content mutations; transports call these services instead of owning duplicate filesystem rules. Its `monogatari-agent-project-transaction/v1` protocol adds bounded multi-file JSON plans, exact missing/SHA-256 preconditions, duplicate and case-collision rejection, candidate validation, reverse-order rollback, structured results, and stable error codes.
+
+`monogatari-mcp` is the standard stdio adapter over that core. Startup fixes one canonical project root, stdout carries MCP frames only, and tools cannot select another filesystem root. `inspect_project`, `list_project_json`, `read_project_json`, and `plan_transaction` are read-only. `apply_transaction` is unavailable unless startup includes `--allow-write`, requires the exact fingerprint returned by a freshly reviewed plan, and serializes in-process reads and writes. Read-only server processes share a project-level operating-system lease; a write-enabled process requires it exclusively, so another process cannot race or inspect a staged multi-file candidate. Candidate acceptance currently proves project settings plus document-level JSON safety only; graph reachability, runtime loading, packaging, Quality Suites, and rendered experience remain explicit higher gates. The independently runnable `rust-mcp` gate uses the official Rust MCP SDK client against a real child process to prove handshake, schemas, reads, planning, default refusal, successful writes, and rollback.
 
 ## Installed Desktop Verification
 

@@ -24,6 +24,8 @@ rust-engine/
 |   |-- game/          # Runtime characters, dialogue, knowledge, and scenes
 |   |-- assets/        # Asset and save management
 |   |-- scripting/     # Rhai scripting engine
+|   |-- authoring/     # Transport-neutral project and Agent transactions
+|   |-- mcp-server/    # Standard stdio Agent transport
 |   `-- tauri-app/     # Tauri desktop application
 `-- data/              # Bundled project data
 ```
@@ -54,6 +56,18 @@ cargo tauri dev
 cd crates/tauri-app
 cargo tauri build
 ```
+
+### Agent MCP Server
+
+```bash
+# Read-only by default
+cargo run --locked -p monogatari-mcp -- --project-root ../data
+
+# Explicitly enable reviewed transaction application
+cargo run --locked -p monogatari-mcp -- --project-root ../data --allow-write
+```
+
+The MCP process binds one project root at startup and exposes schema-backed inspection, JSON listing/reading, planning, and rollback-capable application. Candidate acceptance is document-level; use the repository release gate for graph, runtime, package, and experience evidence. See `docs/MCP_SERVER.md` from the repository root.
 
 ## Usage
 

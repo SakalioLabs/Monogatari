@@ -7,6 +7,8 @@
 - `rust-engine/data/`: packaged desktop mirror; keep it byte-equivalent to `data/`.
 - `rust-engine/crates/tauri-app/src/commands/`: runtime authoring, validation, and reference rules.
 - `rust-engine/crates/authoring/`: transport-neutral project, path, and Agent transaction contracts.
+- `rust-engine/crates/mcp-server/`: standard stdio transport over the authoring contracts.
+- `docs/MCP_SERVER.md`: MCP startup, tool, write-mode, and acceptance boundaries.
 - `agent-transaction.md`: versioned optimistic multi-file JSON operation format.
 - `data/quality_suites/character_stability.json`: executable story and safety acceptance examples.
 - `scripts/module-test-matrix.json`: independently runnable engineering gates.

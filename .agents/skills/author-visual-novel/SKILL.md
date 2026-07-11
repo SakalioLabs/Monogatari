@@ -32,13 +32,17 @@ Use structured JSON editing and preserve unrelated author changes. Do not invent
 
 When an Agent transport offers transaction planning or application, read [references/agent-transaction.md](references/agent-transaction.md). Use `missing` only for new files and an exact current SHA-256 for updates or deletions. Plan first, review every resolved path and resulting hash, then apply with the authoritative candidate-project validator. Do not use the transaction API as a substitute for graph, runtime, package, or experience validation.
 
+## Use Standard MCP When Available
+
+The repository ships `monogatari-mcp`, documented in `docs/MCP_SERVER.md`. Call `inspect_project` first, use `list_project_json` and `read_project_json` to obtain exact preconditions, then call `plan_transaction`. Call `apply_transaction` only when the server explicitly reports write mode and pass the unchanged transaction plus the reviewed plan's `precondition_fingerprint`. Treat its `document` acceptance level as JSON safety evidence, not graph or runtime completion.
+
 ## Validate The Result
 
 Run narrow gates while iterating:
 
 ```powershell
 node scripts/verify-modules.mjs --list
-node scripts/verify-modules.mjs --module rust-authoring --module rust-game --module rust-tauri
+node scripts/verify-modules.mjs --module rust-authoring --module rust-mcp --module rust-game --module rust-tauri
 ```
 
 Run the complete release gate before declaring a project deliverable:

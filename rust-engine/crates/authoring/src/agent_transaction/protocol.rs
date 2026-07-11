@@ -2,6 +2,7 @@
 
 use std::fmt;
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -11,7 +12,7 @@ pub const AGENT_TRANSACTION_RESULT_SCHEMA_V1: &str =
     "monogatari-agent-project-transaction-result/v1";
 pub const AGENT_TRANSACTION_ERROR_SCHEMA_V1: &str = "monogatari-agent-project-transaction-error/v1";
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct AgentProjectTransaction {
     pub schema: String,
@@ -19,7 +20,7 @@ pub struct AgentProjectTransaction {
     pub operations: Vec<AgentProjectOperation>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 #[serde(tag = "op", rename_all = "snake_case", deny_unknown_fields)]
 pub enum AgentProjectOperation {
     PutJson {
@@ -56,21 +57,21 @@ impl AgentProjectOperation {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum AgentFilePrecondition {
     Missing,
     Sha256 { value: String },
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum AgentOperationKind {
     PutJson,
     DeleteJson,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 pub struct AgentPlannedOperation {
     pub index: usize,
     pub operation: AgentOperationKind,
@@ -80,7 +81,7 @@ pub struct AgentPlannedOperation {
     pub write_bytes: u64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 pub struct AgentProjectTransactionPlan {
     pub schema: String,
     pub transaction_id: String,
@@ -90,13 +91,13 @@ pub struct AgentProjectTransactionPlan {
     pub operations: Vec<AgentPlannedOperation>,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum AgentTransactionStatus {
     Applied,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 pub struct AgentProjectTransactionResult {
     pub schema: String,
     pub transaction_id: String,
@@ -107,14 +108,14 @@ pub struct AgentProjectTransactionResult {
     pub cleanup_warnings: Vec<AgentTransactionCleanupWarning>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 pub struct AgentTransactionCleanupWarning {
     pub code: String,
     pub path: String,
     pub message: String,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum AgentTransactionErrorCode {
     SchemaMismatch,
@@ -134,7 +135,7 @@ pub enum AgentTransactionErrorCode {
     RollbackFailed,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 pub struct AgentTransactionError {
     pub schema: String,
     pub code: AgentTransactionErrorCode,

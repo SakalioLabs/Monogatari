@@ -23,6 +23,7 @@ Platform-specific gates declare their supported host IDs in the matrix. The Wind
 | Vue/TypeScript/Web/PWA | `frontend-contracts` | Type check, production builds, static contract verifiers | No isolated component/unit runner yet |
 | Rust core | `rust-core` | Unit and doc tests | Infrastructure crate |
 | Headless authoring core | `rust-authoring` | Unit, integration, and doc tests | Atomic content mutation, portable paths, project settings, and versioned optimistic multi-file Agent transactions without Tauri |
+| Standard MCP adapter | `rust-mcp` | Unit, protocol, and real stdio child-process tests | Fixed project root, five schema-backed tools, read-only default, reviewed fingerprints, write exclusion, candidate validation, and rollback |
 | Rust AI | `rust-ai` | Unit, integration, and doc tests | Inference contracts and backend planning |
 | Rust assets | `rust-assets` | Unit tests | Asset and save boundaries |
 | Rust scripting | `rust-scripting` | Unit tests | Rhai execution and condition boundaries |
@@ -37,8 +38,8 @@ GitHub Actions runs the automation, frontend, Rust, and .NET groups as separate 
 ## Open Audit Work
 
 1. Add frontend unit/component tests for pure authoring libraries, stores, editor state, and renderer fallback selection. Build-time source scans are useful but do not prove interactive behavior in isolation.
-2. Continue moving catalog validation, cross-reference discovery, and packaging behind `llm-authoring`; project settings, portable path resolution, and atomic single-file mutations are already shared by Tauri.
-3. Expose the tested `monogatari-agent-project-transaction/v1` planner and applier through a standard MCP server without duplicating engine schemas or validators.
+2. Continue moving schema-specific catalog validation, cross-reference discovery, and packaging behind `llm-authoring`; project settings, portable paths, JSON document inspection, and transactions are now shared by Tauri or MCP without transport duplication.
+3. Raise MCP candidate acceptance from document-level to graph/runtime validation by extracting the existing Tauri loaders and reference checks into reusable headless services.
 4. Extend the retained .NET renderer ABI/load coverage with a headless SDL initialization and render-loop probe, or formally remove those projects from the supported product boundary.
 5. Decompose `scripts/verify-release.mjs` into importable content, security, packaging, and browser gates while preserving one release entry point.
 

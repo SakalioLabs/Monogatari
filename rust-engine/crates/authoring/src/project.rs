@@ -3,6 +3,7 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
@@ -26,7 +27,7 @@ const SECRET_CONFIG_KEYS: &[&str] = &[
 
 pub const MAX_PROJECT_SETTINGS_BYTES: u64 = 1024 * 1024;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 pub struct ProjectPathStatus {
     pub key: String,
     pub label: String,
@@ -37,7 +38,7 @@ pub struct ProjectPathStatus {
     pub required: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 pub struct ProjectConfigIssue {
     pub severity: String,
     pub code: String,
@@ -45,7 +46,7 @@ pub struct ProjectConfigIssue {
     pub message: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 pub struct ProjectConfigState {
     pub project_path: String,
     pub settings_path: String,
@@ -232,7 +233,7 @@ pub async fn save_project_config(
     project_root: &Path,
     config: Value,
 ) -> Result<ProjectConfigState, String> {
-    let project_root = canonical_regular_project_root(project_root)?;
+    let project_root = canonical_project_root(project_root)?;
     if !config.is_object() {
         return Err("Project config must be a JSON object.".to_string());
     }
@@ -359,7 +360,7 @@ pub fn default_project_config() -> Value {
 
 fn canonical_project_root_if_present(project_root: &Path) -> Result<PathBuf, String> {
     match std::fs::symlink_metadata(project_root) {
-        Ok(_) => canonical_regular_project_root(project_root),
+        Ok(_) => canonical_project_root(project_root),
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
             Ok(project_root.to_path_buf())
         }
@@ -370,7 +371,8 @@ fn canonical_project_root_if_present(project_root: &Path) -> Result<PathBuf, Str
     }
 }
 
-pub(crate) fn canonical_regular_project_root(project_root: &Path) -> Result<PathBuf, String> {
+/// Resolve an existing project root without following a root-level symbolic link.
+pub fn canonical_project_root(project_root: &Path) -> Result<PathBuf, String> {
     let metadata = std::fs::symlink_metadata(project_root).map_err(|error| {
         format!(
             "Unable to inspect project path `{}`: {error}",

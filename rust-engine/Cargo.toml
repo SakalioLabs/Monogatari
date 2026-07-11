@@ -7,6 +7,7 @@ members = [
     "crates/assets",
     "crates/scripting",
     "crates/authoring",
+    "crates/mcp-server",
     "crates/tauri-app",
 ]
 
@@ -24,6 +25,7 @@ async-trait = "0.1"
 # Serialization
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+schemars = "1"
 
 # Error handling
 anyhow = "1"
