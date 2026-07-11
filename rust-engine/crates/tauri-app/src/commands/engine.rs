@@ -133,7 +133,7 @@ fn normalize_project_path_from(project_path: &str, current_dir: &Path) -> Result
         return Ok(direct);
     }
 
-    Ok(find_upward(&current_dir, &requested).unwrap_or(direct))
+    Ok(find_upward(current_dir, &requested).unwrap_or(direct))
 }
 
 fn validate_engine_project_root(project_root: PathBuf) -> Result<PathBuf, String> {

@@ -120,6 +120,15 @@ impl EventScoreSnapshot {
     }
 }
 
+#[derive(Debug, Clone, Copy, Default)]
+pub struct EventTriggerContext<'a> {
+    pub character_id: Option<&'a str>,
+    pub relationship: f32,
+    pub scores: EventScoreSnapshot,
+    pub evaluation_count: u32,
+    pub already_triggered: bool,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct EventTriggerDecision {
     pub event_id: String,
@@ -419,11 +428,7 @@ impl StoryEventCatalog {
         &self,
         event_id: &str,
         event_type: Option<&str>,
-        character_id: Option<&str>,
-        relationship: f32,
-        scores: EventScoreSnapshot,
-        evaluation_count: u32,
-        already_triggered: bool,
+        context: EventTriggerContext<'_>,
     ) -> Result<EventTriggerDecision, String> {
         let definition = self
             .definition(event_id, event_type)
@@ -435,11 +440,11 @@ impl StoryEventCatalog {
             })?;
         Ok(evaluate_story_event(
             definition,
-            character_id,
-            relationship,
-            scores,
-            evaluation_count,
-            already_triggered,
+            context.character_id,
+            context.relationship,
+            context.scores,
+            context.evaluation_count,
+            context.already_triggered,
         ))
     }
 
@@ -1141,10 +1146,29 @@ mod tests {
         };
 
         let luna = catalog
-            .decision_for("luna_secret", None, Some("luna"), 0.0, scores, 2, true)
+            .decision_for(
+                "luna_secret",
+                None,
+                EventTriggerContext {
+                    character_id: Some("luna"),
+                    scores,
+                    evaluation_count: 2,
+                    already_triggered: true,
+                    ..Default::default()
+                },
+            )
             .unwrap();
         let sakura = catalog
-            .decision_for("luna_secret", None, Some("sakura"), 0.0, scores, 2, false)
+            .decision_for(
+                "luna_secret",
+                None,
+                EventTriggerContext {
+                    character_id: Some("sakura"),
+                    scores,
+                    evaluation_count: 2,
+                    ..Default::default()
+                },
+            )
             .unwrap();
 
         assert!(luna.triggered, "{:?}", luna.blocked_reasons);

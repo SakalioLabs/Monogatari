@@ -6,12 +6,27 @@ on:
   pull_request:
     branches: [master]
 
+permissions:
+  contents: read
+
 jobs:
+  automation-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/verify-modules.mjs --group automation --report module-verification-automation.json
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: module-verification-automation
+          path: module-verification-automation.json
+          if-no-files-found: ignore
+
   frontend:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -20,18 +35,54 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
-      - run: npm run build
+        working-directory: frontend
+      - run: node scripts/verify-modules.mjs --group frontend --report module-verification-frontend.json
       - run: npm audit --audit-level=moderate
+        working-directory: frontend
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: module-verification-frontend
+          path: module-verification-frontend.json
+          if-no-files-found: ignore
 
-  rust-check:
+  rust-modules:
     runs-on: windows-latest
-    defaults:
-      run:
-        working-directory: rust-engine
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-07-03
+          components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: rust-engine
-      - run: cargo check --locked -p llm-galgame-app
+      - run: node scripts/verify-modules.mjs --group rust --report module-verification-rust.json
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: module-verification-rust
+          path: module-verification-rust.json
+          if-no-files-found: ignore
+
+  legacy-dotnet:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+      - run: dotnet restore LLMAssistant.sln
+      - run: node scripts/verify-modules.mjs --group dotnet --report module-verification-dotnet.json
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: module-verification-dotnet
+          path: module-verification-dotnet.json
+          if-no-files-found: ignore

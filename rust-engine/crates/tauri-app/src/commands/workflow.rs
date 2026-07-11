@@ -12,7 +12,9 @@ use crate::commands::story_events::apply_story_event_definition;
 use crate::commands::{chat, prompt_guard};
 use crate::state::AppState;
 use crate::story_access::{ensure_story_content_access, story_content_access, StoryContentKind};
-use crate::story_events::{EventScoreSnapshot, StoryEventCatalog, StoryEventDefinition};
+use crate::story_events::{
+    EventScoreSnapshot, EventTriggerContext, StoryEventCatalog, StoryEventDefinition,
+};
 
 const DEFAULT_WORKFLOW_MAX_STEPS: usize = 64;
 const WORKFLOW_MAX_STEPS_LIMIT: usize = 256;
@@ -554,7 +556,7 @@ async fn execute_workflow_node_inner_with_context(
                 .and_then(|value| value.as_str())
                 .ok_or_else(|| "Condition field `condition` must be a string.".to_string())?;
             validate_condition_source(condition).map_err(|e| e.to_string())?;
-            let preview_ref = preview_state.as_ref().map(|state| &**state);
+            let preview_ref = preview_state.as_deref();
             let scope_variables =
                 workflow_condition_scope_variables(state, &node.config, run_context, preview_ref)
                     .await;
@@ -573,9 +575,9 @@ async fn execute_workflow_node_inner_with_context(
             let metric = workflow_score_metric(&node.config);
             let threshold = optional_config_f32(&node.config, "threshold");
             let character_id =
-                workflow_character_id_from_state(&state, &node.config, run_context).await;
+                workflow_character_id_from_state(state, &node.config, run_context).await;
             let (evaluation, source) =
-                workflow_evaluation_for_character(&state, character_id.as_deref(), run_context)
+                workflow_evaluation_for_character(state, character_id.as_deref(), run_context)
                     .await;
             let score = workflow_metric_score(&evaluation, &metric).ok_or_else(|| {
                 format!(
@@ -727,38 +729,36 @@ async fn execute_workflow_node_inner_with_context(
             let event_catalog = state.story_event_catalog.read().await.clone();
             let event = workflow_event_definition(&event_catalog, event_id, event_type)?;
             let character_id =
-                workflow_character_id_from_state(&state, &node.config, run_context).await;
+                workflow_character_id_from_state(state, &node.config, run_context).await;
             let (evaluation, evaluation_source) =
-                workflow_evaluation_for_character(&state, character_id.as_deref(), run_context)
+                workflow_evaluation_for_character(state, character_id.as_deref(), run_context)
                     .await;
-            let preview_ref = preview_state.as_ref().map(|state| &**state);
+            let preview_ref = preview_state.as_deref();
             let relationship = workflow_relationship_for_character(
-                &state,
+                state,
                 character_id.as_deref(),
                 run_context,
                 preview_ref,
             )
             .await;
-            let (evaluation_count, already_triggered) = workflow_event_session_state(
-                &state,
-                character_id.as_deref(),
-                event_id,
-                run_context,
-            )
-            .await;
+            let (evaluation_count, already_triggered) =
+                workflow_event_session_state(state, character_id.as_deref(), event_id, run_context)
+                    .await;
             let decision = event_catalog.decision_for(
                 &event.event_id,
                 Some(&event.event_type),
-                character_id.as_deref(),
-                relationship,
-                EventScoreSnapshot {
-                    friendliness: evaluation.friendliness,
-                    engagement: evaluation.engagement,
-                    creativity: evaluation.creativity,
-                    overall: evaluation.overall_score,
+                EventTriggerContext {
+                    character_id: character_id.as_deref(),
+                    relationship,
+                    scores: EventScoreSnapshot {
+                        friendliness: evaluation.friendliness,
+                        engagement: evaluation.engagement,
+                        creativity: evaluation.creativity,
+                        overall: evaluation.overall_score,
+                    },
+                    evaluation_count,
+                    already_triggered,
                 },
-                evaluation_count,
-                already_triggered,
             )?;
 
             let application = if decision.triggered && run_context.is_none() {
@@ -806,7 +806,7 @@ async fn execute_workflow_node_inner_with_context(
                 let previous_emotion = workflow_character_emotion_for_preview(
                     state,
                     &character_id,
-                    preview_state.as_ref().map(|state| &**state),
+                    preview_state.as_deref(),
                 )
                 .await?;
                 if let Some(preview_state) = preview_state.as_mut() {
@@ -848,7 +848,7 @@ async fn execute_workflow_node_inner_with_context(
                     state,
                     Some(&character_id),
                     run_context,
-                    preview_state.as_ref().map(|state| &**state),
+                    preview_state.as_deref(),
                 )
                 .await;
                 let current = clamp_workflow_relationship(previous + delta);
@@ -1174,7 +1174,7 @@ fn normalize_workflow_score_metric(metric: &str) -> String {
         "friendliness_score" | "friendliness score" | "friendly" => "friendliness".to_string(),
         "engagement_score" | "engagement score" | "engaged" => "engagement".to_string(),
         "creativity_score" | "creativity score" | "creative" => "creativity".to_string(),
-        value if value.is_empty() => "overall".to_string(),
+        "" => "overall".to_string(),
         value => value.to_string(),
     }
 }
@@ -3755,22 +3755,24 @@ mod tests {
             .decision_for(
                 &event.event_id,
                 Some(&event.event_type),
-                Some("sakura"),
-                0.0,
-                scores,
-                1,
-                false,
+                EventTriggerContext {
+                    character_id: Some("sakura"),
+                    scores,
+                    evaluation_count: 1,
+                    ..Default::default()
+                },
             )
             .unwrap();
         let triggered = catalog
             .decision_for(
                 &event.event_id,
                 Some(&event.event_type),
-                Some("sakura"),
-                0.0,
-                scores,
-                2,
-                false,
+                EventTriggerContext {
+                    character_id: Some("sakura"),
+                    scores,
+                    evaluation_count: 2,
+                    ..Default::default()
+                },
             )
             .unwrap();
 

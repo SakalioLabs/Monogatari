@@ -530,10 +530,8 @@ fn verify_archive(
         let entry = archive
             .by_index(index)
             .map_err(|error| format!("Unable to inspect ZIP entry {index}: {error}"))?;
-        if entry.name() == ARCHIVE_MANIFEST_PATH {
-            if manifest_index.replace(index).is_some() {
-                return Err("Project package contains duplicate manifests.".to_string());
-            }
+        if entry.name() == ARCHIVE_MANIFEST_PATH && manifest_index.replace(index).is_some() {
+            return Err("Project package contains duplicate manifests.".to_string());
         }
     }
     let manifest_index = manifest_index

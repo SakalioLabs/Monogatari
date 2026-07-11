@@ -916,9 +916,7 @@ fn score_from_text(text: &str) -> Option<f32> {
 
     let has_percent = trimmed.contains('%');
     let numeric = first_number(trimmed)?;
-    if has_percent {
-        Some(clamp_score(numeric / 100.0))
-    } else if numeric > 1.0 && numeric <= 100.0 {
+    if has_percent || (numeric > 1.0 && numeric <= 100.0) {
         Some(clamp_score(numeric / 100.0))
     } else {
         Some(clamp_score(numeric))

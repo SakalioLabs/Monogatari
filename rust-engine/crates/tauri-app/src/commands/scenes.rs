@@ -1107,7 +1107,7 @@ fn derive_scene_id(path: &str) -> String {
 }
 
 fn humanize_id(id: &str) -> String {
-    id.split(|ch: char| ch == '_' || ch == '-' || ch == '/')
+    id.split(['_', '-', '/'])
         .filter(|part| !part.is_empty())
         .map(|part| {
             let mut chars = part.chars();

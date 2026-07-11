@@ -11,4 +11,15 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+    <None Include="..\..\runtimes\win-x64\native\SDL2.dll" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\runtimes\win-x64\native\SDL2_ttf.dll" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\runtimes\win-x64\native\SDL2_image.dll" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\runtimes\win-x64\native\libavif-16.dll" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\runtimes\win-x64\native\libtiff-5.dll" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\runtimes\win-x64\native\libwebp-7.dll" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\runtimes\win-x64\native\libwebpdemux-2.dll" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\runtimes\win-x64\native\licenses\*.txt" Link="licenses\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

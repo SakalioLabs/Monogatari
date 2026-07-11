@@ -141,7 +141,7 @@ Verified on 2026-07-11:
 - Locale JSON files validate across project data and frontend fallback directories, including key coverage and Web/PWA fallback parity.
 - i18n locale commands validate portable locale IDs before loading or listing JSON files under the active project `locales/` directory.
 - Live2D remains on `pixi-live2d-display@0.4.0`; its transitive `gh-pages` dependency is pinned to the safe `6.3.0` line through npm overrides.
-- Rust desktop dependencies are pinned through `rust-engine/Cargo.lock`, and the compiler/formatter toolchain is fixed to `nightly-2026-07-03`, for reproducible Tauri builds.
+- Rust desktop dependencies are pinned through `rust-engine/Cargo.lock`, and the compiler/linter/formatter toolchain is fixed to `nightly-2026-07-03`, for reproducible Tauri builds.
 - Tauri desktop packaging configuration declares Windows MSI/NSIS targets, a pinned WiX upgrade identity, installer metadata, icons, WebView2 bootstrap behavior, and bundled sample project data, all checked by the release verifier.
 - Installed Tauri builds discover bundled sample `data/` resources at startup and bind them as the default project root when no development data root is available.
 - Windows release-candidate audits query MSI/NSIS metadata, the stable MSI upgrade identity, and Authenticode status for both installers plus the extracted application, administratively extract the MSI, compare every bundled project file by SHA-256, and run the production executable's headless runtime verifier with build-commit provenance.
@@ -175,9 +175,24 @@ monogatari/
 |   |   +-- components/    # Live2DCanvas, search, toasts, progress, dialogs, and shared UI
 |   |   +-- stores/        # Pinia game store
 |   |   +-- styles/        # Design system (CSS variables, components)
++-- .agents/skills/        # Agent-discoverable visual novel authoring workflow
++-- scripts/               # Module matrix, release, package, and installer verification
 +-- src/                   # C# implementation (legacy, SDL2-based)
 +-- tests/                 # C# tests
 ```
+
+## Agent Authoring
+
+Agents can invoke `$author-visual-novel` from the repository Skill at `.agents/skills/author-visual-novel`. The Skill authors the canonical project graph in dependency order, requires Quality Suite evidence, and validates output through the same engine and release contracts used for human-authored projects.
+
+Use the module matrix for narrow feedback while authoring:
+
+```bash
+node scripts/verify-modules.mjs --list
+node scripts/verify-modules.mjs --module rust-game --module rust-tauri
+```
+
+Run `node scripts/verify-release.mjs` before describing generated content as a deliverable project. The current module coverage and remaining MCP/headless-authoring extraction are tracked in `docs/MODULE_VERIFICATION.md`.
 
 ## Quick Start
 

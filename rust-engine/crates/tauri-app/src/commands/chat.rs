@@ -18,6 +18,8 @@ use tracing::debug;
 use crate::commands::prompt_guard;
 use crate::commands::story_events::apply_story_event_definition;
 use crate::state::AppState;
+#[cfg(test)]
+use crate::story_events::EventTriggerContext;
 use crate::story_events::{EventScoreSnapshot, StoryEventCatalog};
 pub use crate::story_events::{EventTriggerDecision, EventTriggerRule, TriggeredEvent};
 use crate::story_progress::StoryEventApplication;
@@ -1222,11 +1224,13 @@ pub(super) fn explain_event_trigger(
         .decision_for(
             &event.event_id,
             Some(&event.event_type),
-            None,
-            relationship,
-            event_score_snapshot(evaluation),
-            evaluation_count,
-            already_triggered,
+            EventTriggerContext {
+                relationship,
+                scores: event_score_snapshot(evaluation),
+                evaluation_count,
+                already_triggered,
+                ..Default::default()
+            },
         )
         .expect("compatibility event definitions and trigger rules must stay aligned")
 }

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Author Visual Novels"
+  short_description: "Create and validate Monogatari visual novel projects"
+  default_prompt: "Use $author-visual-novel to create a complete, validated Monogatari visual novel project from my story brief."

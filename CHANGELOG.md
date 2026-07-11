@@ -1,6 +1,11 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Added the repository-level `$author-visual-novel` Skill so agents can author canonical Monogatari characters, knowledge, scenes, dialogue, events, endings, workflows, and Quality Suites against the same runtime and release contracts as human authors.
+- Added a versioned module verification matrix, tested selector/runner, machine-readable reports, expanded CI jobs, and explicit audit gaps for independently proving the automation, frontend, Rust, and legacy .NET implementation surfaces.
+- Added pinned, SHA-256-verified official SDL2 runtime preparation plus warnings-as-errors solution builds, restoring independent build evidence for the retained Windows x64 .NET application instead of relying on missing repository-local DLLs.
+- Moved SDL2 runtime ownership from the legacy executable into the Renderer module and added a Windows native ABI/license regression that loads SDL2, SDL2_image, and SDL2_ttf and verifies their required exports.
+- Added all-target Rust workspace Clippy to the pinned toolchain, module matrix, CI, and integrated release gate.
 - Added a versioned inference backend planner that separates host detection, setup, exact-model probes, known blockers, and ready backends across WebGPU, llama.cpp, WinML GenAI, DirectML ONNX, MLX-LM, vLLM, SGLang, and OpenAI-compatible services.
 - Added Settings diagnostics for backend recommendation, next probe, stable reason codes, and readiness states without treating model initialization or API configuration as successful generation.
 - Added a verified inference backend matrix with Qwen3.5 0.8B WebGPU and Linux llama.cpp evidence, reproduced Windows WinML/DirectML blockers, and staged CUDA, Vulkan, Metal, ROCm, Intel, and MUSA adaptation gates.

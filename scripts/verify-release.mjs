@@ -21,6 +21,7 @@ const textExtensions = new Set([
   '.json',
   '.md',
   '.mjs',
+  '.ps1',
   '.rs',
   '.toml',
   '.ts',
@@ -314,6 +315,7 @@ async function main() {
   await verifyReleaseChannelPolicy()
 
   await run('git diff whitespace check', 'git', ['diff', '--check'], root)
+  await run('Automation contract tests', 'node', ['--test', 'scripts/tests/module-test-matrix.test.mjs'], root)
   await run('Frontend i18n coverage', 'npm', ['run', 'verify:i18n'], frontendDir)
   await run('Frontend renderer asset selector contract', 'npm', ['run', 'verify:renderer-assets'], frontendDir)
   await run('Frontend mobile shell readiness', 'npm', ['run', 'verify:mobile-readiness'], frontendDir)
@@ -328,6 +330,7 @@ async function main() {
     env: { CARGO_INCREMENTAL: '0' },
   })
   await run('Rust Tauri app check', 'cargo', ['check', '--locked', '-p', 'llm-galgame-app'], rustDir)
+  await run('Rust workspace Clippy', 'cargo', ['clippy', '--workspace', '--all-targets', '--locked', '--', '-D', 'warnings'], rustDir)
   await run(
     'Frontend audit',
     'npm',
@@ -348,6 +351,15 @@ async function main() {
   await verifyWebPreview({ basePath: '/' })
   await verifyWindowsInstallersIfPresent()
   await run('Release artifact manifest check', 'node', ['scripts/create-release-manifest.mjs', '--check', '--allow-missing-installers'], root)
+  if (process.platform === 'win32') {
+    await run(
+      'Legacy SDL2 runtime preparation',
+      'powershell',
+      ['-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'scripts/prepare-legacy-sdl.ps1'],
+      root,
+    )
+    await run('Legacy C# warnings-as-errors build', 'dotnet', ['build', 'LLMAssistant.sln', '--no-restore', '-warnaserror'], root)
+  }
   await run('Legacy C# tests', 'dotnet', ['test', 'LLMAssistant.sln', '--no-restore'], root)
 
   const elapsed = ((Date.now() - started) / 1000).toFixed(1)
@@ -4592,7 +4604,7 @@ async function verifyTauriPackagingConfig() {
   const rustToolchainRequirements = [
     [rustToolchainSource, 'channel = "nightly-2026-07-03"', 'pin the verified Rust nightly by exact date'],
     [rustToolchainSource, 'profile = "minimal"', 'keep release toolchain installation minimal'],
-    [rustToolchainSource, 'components = ["rustfmt"]', 'install the formatter used by release verification'],
+    [rustToolchainSource, 'components = ["clippy", "rustfmt"]', 'install the linter and formatter used by release verification'],
     [releaseVerifierSource, "env: { CARGO_INCREMENTAL: '0' }", 'disable incremental Tauri test compilation deterministically'],
   ]
   for (const [source, needle, description] of rustToolchainRequirements) {

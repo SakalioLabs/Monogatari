@@ -19,10 +19,12 @@ Thank you for your interest in contributing to Monogatari, an LLM-driven visual 
   - `crates/scripting/` - Rhai scripting engine
   - `crates/tauri-app/` - Tauri commands and state management
 - `frontend/` - Vue 3 + TypeScript + Vite + Pinia
-  - `src/views/` - 13 application views
+  - `src/views/` - 22 application views
   - `src/components/` - Reusable components (Live2D, 3D viewer, etc.)
   - `src/stores/` - Pinia state management
   - `src/lib/` - Utilities (Tauri bridge, i18n, toast)
+- `.agents/skills/` - Repository-level Agent authoring workflows
+- `scripts/module-test-matrix.json` - Module ownership and independent verification gates
 
 ## Development Guidelines
 
@@ -45,8 +47,15 @@ Thank you for your interest in contributing to Monogatari, an LLM-driven visual 
 
 ## Testing
 
-- Frontend: `cd frontend && npm run build` (type-check + production build)
-- Rust: `cd rust-engine && cargo check --locked -p llm-galgame-app`
+- List gates: `node scripts/verify-modules.mjs --list`
+- One module: `node scripts/verify-modules.mjs --module rust-ai`
+- One implementation group: `node scripts/verify-modules.mjs --group rust`
+- All default module gates: `node scripts/verify-modules.mjs`
+- Complete release gate: `node scripts/verify-release.mjs`
+
+The module runner can write machine-readable evidence with `--report <path>`. Add every new implementation surface to `scripts/module-test-matrix.json` and add focused tests before relying on the integrated release gate.
+
+The retained Windows x64 SDL2 application gate downloads official pinned SDL2, SDL2_image, and SDL2_ttf release archives, verifies their SHA-256 values, and writes generated native files under ignored `runtimes/`. Run it directly with `powershell -NoProfile -File scripts/prepare-legacy-sdl.ps1` when diagnosing that compatibility path.
 
 ## Pull Requests
 

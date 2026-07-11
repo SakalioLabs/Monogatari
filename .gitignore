@@ -22,6 +22,8 @@ Thumbs.db
 *.so
 *.dylib
 release/
+runtimes/
+.cache/
 
 # Data
 *.log

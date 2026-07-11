@@ -1084,7 +1084,7 @@ fn package_content_sha256(files: &[Value]) -> String {
 fn category_content_sha256(files: &[&Value]) -> String {
     let mut hasher = Sha256::new();
     for file in files {
-        update_file_fingerprint(&mut hasher, *file);
+        update_file_fingerprint(&mut hasher, file);
     }
     finish_sha256(hasher)
 }

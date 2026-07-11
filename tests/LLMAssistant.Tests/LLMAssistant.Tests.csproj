@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\LLMAssistant.Core\LLMAssistant.Core.csproj" />
+    <ProjectReference Include="..\..\src\LLMAssistant.Renderer\LLMAssistant.Renderer.csproj" />
     <ProjectReference Include="..\..\src\LLMAssistant.Assets\LLMAssistant.Assets.csproj" />
     <ProjectReference Include="..\..\src\LLMAssistant.Game\LLMAssistant.Game.csproj" />
     <ProjectReference Include="..\..\src\LLMAssistant.AI\LLMAssistant.AI.csproj" />

@@ -1,0 +1,44 @@
+# Monogatari Module Verification
+
+## Purpose
+
+The integrated release gate is broad, but broad verification is not the same as independently addressable module evidence. `scripts/module-test-matrix.json` is the machine-readable ownership and execution map. `scripts/verify-modules.mjs` validates that map, selects gates by module or group, executes each command without a shell, and can emit a JSON report for agents and CI.
+
+```powershell
+node scripts/verify-modules.mjs --list
+node scripts/verify-modules.mjs --module rust-ai
+node scripts/verify-modules.mjs --group rust --report module-verification-rust.json
+node scripts/verify-modules.mjs
+```
+
+The no-selector form runs every default gate. `release-gate` is intentionally non-default because it rebuilds and smoke-tests the complete distribution; run it explicitly or use `node scripts/verify-release.mjs` before a release claim.
+
+Platform-specific gates declare their supported host IDs in the matrix. The Windows x64 SDL2 preparation and legacy application build are reported as skipped on other hosts instead of failing an otherwise valid frontend or portable-library audit.
+
+## Current Verification Map
+
+| Surface | Gate | Evidence type | Current boundary |
+|---|---|---|---|
+| Agent and test orchestration | `automation-contracts` | Node unit contracts | Matrix schema, ownership, selection, CLI parsing, platform command adaptation |
+| Vue/TypeScript/Web/PWA | `frontend-contracts` | Type check, production builds, static contract verifiers | No isolated component/unit runner yet |
+| Rust core | `rust-core` | Unit and doc tests | Infrastructure crate |
+| Rust AI | `rust-ai` | Unit, integration, and doc tests | Inference contracts and backend planning |
+| Rust assets | `rust-assets` | Unit tests | Asset and save boundaries |
+| Rust scripting | `rust-scripting` | Unit tests | Rhai execution and condition boundaries |
+| Rust game | `rust-game` | Unit and integration tests | Characters, dialogue, knowledge, and script parsing |
+| Tauri application | `rust-tauri`, `rust-tauri-check` | Command/project tests and compile check | Command layer remains one large crate |
+| Rust workspace | `rust-clippy` | All-target warnings-as-errors lint | Runs after crate tests so diagnostics retain module context |
+| Legacy .NET | `legacy-dotnet-native`, `legacy-dotnet-build`, `legacy-dotnet-tests` | Pinned SDL2 preparation, warnings-as-errors build, shared tests, native ABI/license probe | A headless render-loop probe is still pending |
+| Complete product | `release-gate` | Build, package, preview, content, security, and runtime checks | Integrated and intentionally slower |
+
+GitHub Actions runs the automation, frontend, Rust, and .NET groups as separate jobs and uploads their machine-readable reports. A green CI run therefore proves more than the previous frontend-build/Tauri-check pair, while the full release gate remains the final local or release-workflow requirement.
+
+## Open Audit Work
+
+1. Add frontend unit/component tests for pure authoring libraries, stores, editor state, and renderer fallback selection. Build-time source scans are useful but do not prove interactive behavior in isolation.
+2. Split headless project validation and packaging out of the Tauri command crate into an authoring application boundary shared by desktop commands and Agent transports.
+3. Add a transactional Agent project operation format, then expose it through a standard MCP server without duplicating engine schemas or validators.
+4. Extend the retained .NET renderer ABI/load coverage with a headless SDL initialization and render-loop probe, or formally remove those projects from the supported product boundary.
+5. Decompose `scripts/verify-release.mjs` into importable content, security, packaging, and browser gates while preserving one release entry point.
+
+These are explicit gaps, not implied failures. They remain part of the project-wide convergence goal until each has authoritative tests or is removed from the supported architecture.

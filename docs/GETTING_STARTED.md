@@ -3,7 +3,7 @@
 ## Quick Setup
 
 1. Clone the repository
-2. Install the pinned Rust toolchain: `rustup toolchain install nightly-2026-07-03 --profile minimal --component rustfmt`
+2. Install the pinned Rust toolchain: `rustup toolchain install nightly-2026-07-03 --profile minimal --component clippy --component rustfmt`
 3. Install frontend dependencies: `cd frontend && npm install`
 4. Run the dev server: `cd rust-engine/crates/tauri-app && cargo tauri dev`
 

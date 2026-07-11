@@ -1,0 +1,162 @@
+{
+  "schema": "monogatari-module-test-matrix/v1",
+  "modules": [
+    {
+      "id": "automation-contracts",
+      "label": "Automation contract tests",
+      "group": "automation",
+      "kind": "unit",
+      "default": true,
+      "cwd": ".",
+      "command": "node",
+      "args": ["--test", "scripts/tests/module-test-matrix.test.mjs"],
+      "owner_paths": ["scripts/lib", "scripts/tests", "scripts/module-test-matrix.json", ".agents/skills"]
+    },
+    {
+      "id": "frontend-contracts",
+      "label": "Vue and Web/PWA build contracts",
+      "group": "frontend",
+      "kind": "build-contract",
+      "default": true,
+      "cwd": "frontend",
+      "command": "npm",
+      "args": ["run", "build"],
+      "owner_paths": ["frontend/src", "frontend/scripts", "frontend/package.json"]
+    },
+    {
+      "id": "rust-core",
+      "label": "Rust core unit tests",
+      "group": "rust",
+      "kind": "unit",
+      "default": true,
+      "cwd": "rust-engine",
+      "command": "cargo",
+      "args": ["test", "--locked", "-p", "llm-core"],
+      "owner_paths": ["rust-engine/crates/core"]
+    },
+    {
+      "id": "rust-ai",
+      "label": "Rust AI unit and integration tests",
+      "group": "rust",
+      "kind": "unit-integration",
+      "default": true,
+      "cwd": "rust-engine",
+      "command": "cargo",
+      "args": ["test", "--locked", "-p", "llm-ai"],
+      "owner_paths": ["rust-engine/crates/ai"]
+    },
+    {
+      "id": "rust-assets",
+      "label": "Rust asset and save tests",
+      "group": "rust",
+      "kind": "unit",
+      "default": true,
+      "cwd": "rust-engine",
+      "command": "cargo",
+      "args": ["test", "--locked", "-p", "llm-assets"],
+      "owner_paths": ["rust-engine/crates/assets"]
+    },
+    {
+      "id": "rust-scripting",
+      "label": "Rust scripting unit tests",
+      "group": "rust",
+      "kind": "unit",
+      "default": true,
+      "cwd": "rust-engine",
+      "command": "cargo",
+      "args": ["test", "--locked", "-p", "llm-scripting"],
+      "owner_paths": ["rust-engine/crates/scripting"]
+    },
+    {
+      "id": "rust-game",
+      "label": "Rust game unit and integration tests",
+      "group": "rust",
+      "kind": "unit-integration",
+      "default": true,
+      "cwd": "rust-engine",
+      "command": "cargo",
+      "args": ["test", "--locked", "-p", "llm-game"],
+      "owner_paths": ["rust-engine/crates/game"]
+    },
+    {
+      "id": "rust-tauri",
+      "label": "Tauri command and project contract tests",
+      "group": "rust",
+      "kind": "unit-integration",
+      "default": true,
+      "cwd": "rust-engine",
+      "command": "cargo",
+      "args": ["test", "--locked", "-p", "llm-galgame-app"],
+      "env": { "CARGO_INCREMENTAL": "0" },
+      "owner_paths": ["rust-engine/crates/tauri-app"]
+    },
+    {
+      "id": "rust-tauri-check",
+      "label": "Tauri application compile check",
+      "group": "rust",
+      "kind": "compile",
+      "default": true,
+      "cwd": "rust-engine",
+      "command": "cargo",
+      "args": ["check", "--locked", "-p", "llm-galgame-app"],
+      "owner_paths": ["rust-engine/crates/tauri-app"]
+    },
+    {
+      "id": "rust-clippy",
+      "label": "Rust workspace Clippy",
+      "group": "rust",
+      "kind": "lint",
+      "default": true,
+      "cwd": "rust-engine",
+      "command": "cargo",
+      "args": ["clippy", "--workspace", "--all-targets", "--locked", "--", "-D", "warnings"],
+      "owner_paths": ["rust-engine/crates", "rust-engine/Cargo.toml", "rust-engine/Cargo.lock"]
+    },
+    {
+      "id": "legacy-dotnet-native",
+      "label": "Pinned legacy SDL2 runtime preparation",
+      "group": "dotnet",
+      "kind": "dependency",
+      "default": true,
+      "platforms": ["win32"],
+      "cwd": ".",
+      "command": "powershell",
+      "args": ["-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/prepare-legacy-sdl.ps1"],
+      "owner_paths": ["scripts/prepare-legacy-sdl.ps1", "src/LLMAssistant.App"]
+    },
+    {
+      "id": "legacy-dotnet-build",
+      "label": "Legacy .NET solution warnings-as-errors build",
+      "group": "dotnet",
+      "kind": "compile",
+      "default": true,
+      "platforms": ["win32"],
+      "cwd": ".",
+      "command": "dotnet",
+      "args": ["build", "LLMAssistant.sln", "--no-restore", "-warnaserror"],
+      "owner_paths": ["src", "LLMAssistant.sln"]
+    },
+    {
+      "id": "legacy-dotnet-tests",
+      "label": "Legacy .NET solution tests",
+      "group": "dotnet",
+      "kind": "unit-integration",
+      "default": true,
+      "cwd": ".",
+      "command": "dotnet",
+      "args": ["test", "LLMAssistant.sln", "--no-restore"],
+      "owner_paths": ["src", "tests"]
+    },
+    {
+      "id": "release-gate",
+      "label": "Integrated release verification",
+      "group": "release",
+      "kind": "release",
+      "default": false,
+      "cwd": ".",
+      "command": "node",
+      "args": ["scripts/verify-release.mjs"],
+      "owner_paths": ["data", "docs", "frontend", "rust-engine", "scripts", "src", "tests"]
+    }
+  ]
+}

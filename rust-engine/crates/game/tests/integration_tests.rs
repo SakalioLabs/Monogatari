@@ -158,16 +158,14 @@ end
 
 #[test]
 fn test_personality_system() {
-    let mut personality = Personality::default();
-
-    // Set traits
-    personality.openness = 0.8;
-    personality.extraversion = 0.7;
-    personality.speech_style = "cheerful".to_string();
-
-    // Add likes/dislikes
-    personality.likes.push("cherry blossoms".to_string());
-    personality.dislikes.push("rudeness".to_string());
+    let personality = Personality {
+        openness: 0.8,
+        extraversion: 0.7,
+        likes: vec!["cherry blossoms".to_string()],
+        dislikes: vec!["rudeness".to_string()],
+        speech_style: "cheerful".to_string(),
+        ..Default::default()
+    };
 
     // Build description
     let description = personality.to_prompt_description();

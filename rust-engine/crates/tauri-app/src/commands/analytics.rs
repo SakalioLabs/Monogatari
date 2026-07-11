@@ -30,8 +30,10 @@ pub struct AnalyticsSummary {
     pub avg_relationship_score: f32,
 }
 
+type ProjectAnalyticsStore = Arc<RwLock<HashMap<PathBuf, Vec<AnalyticsEvent>>>>;
+
 /// Project-scoped analytics event stores (in-memory, persisted to disk).
-static ANALYTICS_STORE: once_cell::sync::Lazy<Arc<RwLock<HashMap<PathBuf, Vec<AnalyticsEvent>>>>> =
+static ANALYTICS_STORE: once_cell::sync::Lazy<ProjectAnalyticsStore> =
     once_cell::sync::Lazy::new(|| Arc::new(RwLock::new(HashMap::new())));
 
 fn analytics_file_path(project_root: &Path) -> PathBuf {
@@ -138,11 +140,11 @@ pub async fn get_analytics_summary(state: State<'_, AppState>) -> Result<Analyti
     }
 
     let mut top_characters: Vec<(String, u32)> = char_counts.into_iter().collect();
-    top_characters.sort_by(|a, b| b.1.cmp(&a.1));
+    top_characters.sort_by_key(|entry| std::cmp::Reverse(entry.1));
     top_characters.truncate(10);
 
     let mut top_choices: Vec<(String, u32)> = choice_counts.into_iter().collect();
-    top_choices.sort_by(|a, b| b.1.cmp(&a.1));
+    top_choices.sort_by_key(|entry| std::cmp::Reverse(entry.1));
     top_choices.truncate(10);
 
     // Get relationship score

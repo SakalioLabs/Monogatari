@@ -335,7 +335,7 @@ fn load_quality_suite_from_root(
     let path =
         match suite_path {
             Some(path) if path == "built-in:character_stability" => None,
-            Some(path) => Some(resolve_suite_path(&root, &path)?),
+            Some(path) => Some(resolve_suite_path(root, &path)?),
             None => {
                 let default_path = root.join(DEFAULT_SUITE_PATH);
                 if default_path.exists() {
@@ -878,24 +878,26 @@ async fn run_quality_scenario(
     let issues = validate_scenario_expectations(
         scenario,
         &evaluation,
-        relationship_delta,
-        prompt_injection_detected,
-        private_reasoning_leak_detected,
-        identity_drift_detected,
-        style_drift_detected,
-        evaluation_summary_leak_detected,
-        workflow_output_leak_detected,
-        &workflow_output,
-        memory_prompt_leak_detected,
-        runtime_safety_trace.as_ref(),
-        workflow_evidence.coverage.as_ref(),
-        &workflow_evidence.issues,
-        knowledge_anchor_missing_detected,
-        knowledge_boundary_violation_detected,
-        &character_response,
-        &triggered_events,
-        &knowledge_evidence.issues,
-        &event_rules_verified,
+        ScenarioExpectationEvidence {
+            relationship_delta,
+            prompt_injection_detected,
+            private_reasoning_leak_detected,
+            identity_drift_detected,
+            style_drift_detected,
+            evaluation_summary_leak_detected,
+            workflow_output_leak_detected,
+            workflow_output: &workflow_output,
+            memory_prompt_leak_detected,
+            runtime_safety_trace: runtime_safety_trace.as_ref(),
+            workflow_coverage: workflow_evidence.coverage.as_ref(),
+            workflow_issues: &workflow_evidence.issues,
+            knowledge_anchor_missing_detected,
+            knowledge_boundary_violation_detected,
+            character_response: &character_response,
+            triggered_events: &triggered_events,
+            knowledge_issues: &knowledge_evidence.issues,
+            event_rules_verified: &event_rules_verified,
+        },
     );
 
     QualityScenarioReport {
@@ -1521,9 +1523,8 @@ fn scenario_relationship_delta(scenario: &QualityScenario) -> f32 {
         .clamp(-0.5, 0.5)
 }
 
-fn validate_scenario_expectations(
-    scenario: &QualityScenario,
-    evaluation: &chat::ConversationEvaluation,
+#[derive(Default)]
+struct ScenarioExpectationEvidence<'a> {
     relationship_delta: f32,
     prompt_injection_detected: bool,
     private_reasoning_leak_detected: bool,
@@ -1531,18 +1532,44 @@ fn validate_scenario_expectations(
     style_drift_detected: bool,
     evaluation_summary_leak_detected: bool,
     workflow_output_leak_detected: bool,
-    workflow_output: &str,
+    workflow_output: &'a str,
     memory_prompt_leak_detected: bool,
-    runtime_safety_trace: Option<&chat::ChatSafetyTrace>,
-    workflow_coverage: Option<&QualityWorkflowCoverageReport>,
-    workflow_issues: &[String],
+    runtime_safety_trace: Option<&'a chat::ChatSafetyTrace>,
+    workflow_coverage: Option<&'a QualityWorkflowCoverageReport>,
+    workflow_issues: &'a [String],
     knowledge_anchor_missing_detected: bool,
     knowledge_boundary_violation_detected: bool,
-    character_response: &str,
-    triggered_events: &[String],
-    knowledge_issues: &[String],
-    event_rules_verified: &[chat::EventTriggerRule],
+    character_response: &'a str,
+    triggered_events: &'a [String],
+    knowledge_issues: &'a [String],
+    event_rules_verified: &'a [chat::EventTriggerRule],
+}
+
+fn validate_scenario_expectations(
+    scenario: &QualityScenario,
+    evaluation: &chat::ConversationEvaluation,
+    evidence: ScenarioExpectationEvidence<'_>,
 ) -> Vec<String> {
+    let ScenarioExpectationEvidence {
+        relationship_delta,
+        prompt_injection_detected,
+        private_reasoning_leak_detected,
+        identity_drift_detected,
+        style_drift_detected,
+        evaluation_summary_leak_detected,
+        workflow_output_leak_detected,
+        workflow_output,
+        memory_prompt_leak_detected,
+        runtime_safety_trace,
+        workflow_coverage,
+        workflow_issues,
+        knowledge_anchor_missing_detected,
+        knowledge_boundary_violation_detected,
+        character_response,
+        triggered_events,
+        knowledge_issues,
+        event_rules_verified,
+    } = evidence;
     let mut issues = Vec::new();
     let expect = &scenario.expect;
 
@@ -2829,24 +2856,10 @@ mod tests {
         let issues = validate_scenario_expectations(
             &suite.scenarios[0],
             &report.scenarios[0].evaluation,
-            0.0,
-            false,
-            false,
-            false,
-            false,
-            true,
-            false,
-            "",
-            false,
-            None,
-            None,
-            &[],
-            false,
-            false,
-            "",
-            &[],
-            &[],
-            &[],
+            ScenarioExpectationEvidence {
+                evaluation_summary_leak_detected: true,
+                ..Default::default()
+            },
         );
 
         assert!(issues
@@ -2898,24 +2911,10 @@ mod tests {
         let issues = validate_scenario_expectations(
             &suite.scenarios[0],
             &report.scenarios[0].evaluation,
-            0.0,
-            false,
-            false,
-            false,
-            false,
-            false,
-            true,
-            "",
-            false,
-            None,
-            None,
-            &[],
-            false,
-            false,
-            "",
-            &[],
-            &[],
-            &[],
+            ScenarioExpectationEvidence {
+                workflow_output_leak_detected: true,
+                ..Default::default()
+            },
         );
         assert!(issues
             .iter()
@@ -2966,24 +2965,10 @@ mod tests {
         let issues = validate_scenario_expectations(
             &suite.scenarios[0],
             &report.scenarios[0].evaluation,
-            0.0,
-            false,
-            false,
-            false,
-            false,
-            false,
-            false,
-            "",
-            true,
-            None,
-            None,
-            &[],
-            false,
-            false,
-            "",
-            &[],
-            &[],
-            &[],
+            ScenarioExpectationEvidence {
+                memory_prompt_leak_detected: true,
+                ..Default::default()
+            },
         );
         assert!(issues
             .iter()

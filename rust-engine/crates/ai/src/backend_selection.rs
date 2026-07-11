@@ -30,31 +30,21 @@ pub enum BackendReadiness {
     Unavailable,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DeploymentTarget {
     Web,
+    #[default]
     Desktop,
     Server,
 }
 
-impl Default for DeploymentTarget {
-    fn default() -> Self {
-        Self::Desktop
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ModelProfile {
+    #[default]
     Qwen35Text08B,
     GenericCausalLm,
-}
-
-impl Default for ModelProfile {
-    fn default() -> Self {
-        Self::Qwen35Text08B
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -761,10 +751,7 @@ mod tests {
         }
     }
 
-    fn backend<'a>(
-        plan: &'a InferenceBackendPlan,
-        id: InferenceBackendId,
-    ) -> &'a BackendAssessment {
+    fn backend(plan: &InferenceBackendPlan, id: InferenceBackendId) -> &BackendAssessment {
         plan.backends
             .iter()
             .find(|assessment| assessment.backend == id)

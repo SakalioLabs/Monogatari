@@ -484,7 +484,7 @@ mod tests {
         // Test random_int
         let result = engine.execute("random_int(1, 100)").unwrap();
         let val = result.as_int().unwrap();
-        assert!(val >= 1 && val <= 100);
+        assert!((1..=100).contains(&val));
     }
 
     #[test]
