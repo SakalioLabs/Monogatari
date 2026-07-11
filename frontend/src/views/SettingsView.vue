@@ -263,7 +263,7 @@
                 <div class="form-grid two">
                   <label class="form-field wide">
                     <span>{{ t('settings.model-id', 'Model ID or packaged path') }}</span>
-                    <input v-model="webGpuModelId" class="input mono-input" placeholder="onnx-community/Qwen2.5-0.5B-Instruct" spellcheck="false" />
+                    <input v-model="webGpuModelId" class="input mono-input" placeholder="onnx-community/Qwen3.5-0.8B-Text-ONNX" spellcheck="false" />
                   </label>
                   <label class="form-field">
                     <span>{{ t('settings.dtype', 'Precision') }}</span>
@@ -854,7 +854,7 @@ const previewState: ProjectConfigState = {
       api: { base_url: 'https://api.openai.com/v1', api_key: '', model: 'gpt-4o-mini' },
       onnx: { model_path: 'models/model.onnx', tokenizer_path: 'models/tokenizer.json', use_directml: true },
       webgpu: {
-        model_id: 'onnx-community/Qwen2.5-0.5B-Instruct',
+        model_id: 'onnx-community/Qwen3.5-0.8B-Text-ONNX',
         dtype: 'q4',
         max_new_tokens: 256,
         temperature: 0.7,

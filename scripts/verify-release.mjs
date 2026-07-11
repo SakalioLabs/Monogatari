@@ -88,7 +88,6 @@ const requiredWebDistFiles = [
   'offline-i18n.js',
   'project-assets.json',
   'inference-runtime.json',
-  'ort/ort-wasm-simd-threaded.jsep.mjs',
   'events/story_events.json',
   'favicon.svg',
   'icons/app-icon.svg',
@@ -246,7 +245,6 @@ const requiredAzureStaticWebAppFallbackExcludes = [
   '/assets/*',
   '/events/*',
   '/models/*',
-  '/ort/*',
   '/icons/*',
   '/locales/*',
   '/manifest.webmanifest',
@@ -261,7 +259,6 @@ const requiredStaticRedirectPassthroughs = [
   ['/assets/*', '/assets/:splat'],
   ['/events/*', '/events/:splat'],
   ['/models/*', '/models/:splat'],
-  ['/ort/*', '/ort/:splat'],
   ['/icons/*', '/icons/:splat'],
   ['/locales/*', '/locales/:splat'],
   ['/manifest.webmanifest', '/manifest.webmanifest'],
@@ -2339,7 +2336,6 @@ async function verifyFrontendSourceInvariants() {
     ['/project-assets.json', 'precache the generated project asset manifest'],
     ['INFERENCE_RUNTIME_PATH', 'declare the packaged inference runtime path'],
     ['/inference-runtime.json', 'precache the packaged inference runtime contract'],
-    ['path.startsWith("/ort/")', 'cache the same-origin ONNX runtime module after first use'],
     ['cacheProjectAssets()', 'cache generated project assets during service worker install'],
     ['manifest.event_catalogs', 'cache project story event catalogs during service worker install'],
     ['manifest.scene_files', 'cache project scene catalogs during service worker install'],
@@ -2403,7 +2399,6 @@ async function verifyFrontendSourceInvariants() {
     ['cp(projectCharactersDir, distProjectCharactersDir', 'merge character definitions into the Web/PWA dist tree'],
     ['cp(projectKnowledgeDir, distProjectKnowledgeDir', 'merge knowledge entries into the Web/PWA dist tree'],
     ['cp(projectWebModelDir, distWebModelDir', 'copy optional WebGPU model artifacts into the Web/PWA package'],
-    ['copyFile(path.join(ortRuntimeSourceDir, file)', 'copy the ONNX runtime module into the Web/PWA package'],
     ['event_catalogs', 'inventory story event catalogs in the Web/PWA project manifest'],
     ['WebGPU inference contract', 'report the generated inference runtime in the Web/PWA preparation output'],
   ]
@@ -3166,8 +3161,8 @@ async function verifyAiBackendConfigInvariants() {
     [webGpuSource, 'detectWebGpuSupport', 'detect secure-context and WebGPU availability'],
     [webGpuSource, "packagedAssetUrl('inference-runtime.json')", 'load the packaged WebGPU runtime contract relative to the deployment base'],
     [webGpuSource, 'wasm.wasmPaths', 'override the Transformers.js CDN default with packaged ONNX runtime assets'],
-    [webGpuSource, "packagedAssetUrl('ort/ort-wasm-simd-threaded.jsep.mjs')", 'load the ONNX runtime module from the same origin'],
-    [webGpuSource, "onnxruntime-web/dist/ort-wasm-simd-threaded.jsep.wasm", 'bundle the ONNX WebGPU WASM binary with Vite'],
+    [webGpuSource, 'wasm.numThreads = 1', 'avoid worker and blob bootstrap requirements in static web packages'],
+    [webGpuSource, "onnxruntime-web/dist/ort-wasm-simd-threaded.asyncify.wasm", 'bundle the matching ONNX WebGPU WASM binary with Vite'],
     [chatViewSource, 'generateWebGpuChat', 'use WebGPU generation in browser character tests'],
     [webDistSource, "schema: 'monogatari-inference-runtime/v1'", 'emit a versioned web inference contract'],
     [webDistSource, "backend: 'webgpu'", 'mark web packages as WebGPU runtimes'],
@@ -3178,7 +3173,7 @@ async function verifyAiBackendConfigInvariants() {
       issues.push(`WebGPU runtime must ${description}`)
     }
   }
-  if (frontendPackage.dependencies?.['@huggingface/transformers'] !== '3.8.1') {
+  if (frontendPackage.dependencies?.['@huggingface/transformers'] !== '4.2.0') {
     issues.push('WebGPU runtime must pin the verified Transformers.js runtime version')
   }
 
@@ -4804,7 +4799,7 @@ async function verifyWebDist({ basePath = '/' } = {}) {
   }
   await verifyWebProjectAssets(distDir, projectAssetManifest, issues)
 
-  if (!bundledAssets.some((file) => /^ort-wasm-simd-threaded\.jsep-[A-Za-z0-9_-]+\.wasm$/.test(file))) {
+  if (!bundledAssets.some((file) => /^ort-wasm-simd-threaded\.asyncify-[A-Za-z0-9_-]+\.wasm$/.test(file))) {
     issues.push('Missing bundled WebGPU ONNX runtime WASM asset')
   }
 
@@ -4854,9 +4849,6 @@ async function verifyWebDist({ basePath = '/' } = {}) {
     }
     if (!serviceWorker.includes('/inference-runtime.json')) {
       issues.push('sw.js app shell must include /inference-runtime.json')
-    }
-    if (!serviceWorker.includes('path.startsWith("/ort/")')) {
-      issues.push('sw.js must cache same-origin ONNX runtime modules')
     }
     if (!serviceWorker.includes('cacheProjectAssets()')) {
       issues.push('sw.js install flow must cache project assets from the generated manifest')

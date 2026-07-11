@@ -8,10 +8,6 @@ import { fileURLToPath } from 'node:url'
 const mobileDevHost = process.env.TAURI_DEV_HOST
 const frontendDir = fileURLToPath(new URL('.', import.meta.url))
 const projectDataDir = path.resolve(frontendDir, '..', 'data')
-const ortRuntimeDir = path.join(frontendDir, 'node_modules', 'onnxruntime-web', 'dist')
-const ortRuntimeFiles = new Set([
-  'ort-wasm-simd-threaded.jsep.mjs',
-])
 const projectDataRoots = {
   assets: path.join(projectDataDir, 'assets'),
   events: path.join(projectDataDir, 'events'),
@@ -73,12 +69,6 @@ function serveProjectFile(rootDir: string) {
   }
 }
 
-function serveOrtRuntimeFile(request: IncomingMessage, response: ServerResponse, next: (error?: unknown) => void) {
-  const requestPath = decodeURIComponent((request.url || '/').split('?')[0]).replace(/^\/+/, '')
-  if (!ortRuntimeFiles.has(requestPath)) return next()
-  return serveProjectFile(ortRuntimeDir)(request, response, next)
-}
-
 function projectDataDevPlugin(): Plugin {
   return {
     name: 'monogatari-project-data-dev',
@@ -105,7 +95,6 @@ function projectDataDevPlugin(): Plugin {
       for (const [route, rootDir] of Object.entries(projectDataRoots)) {
         server.middlewares.use(`/${route}`, serveProjectFile(rootDir))
       }
-      server.middlewares.use('/ort', serveOrtRuntimeFile)
     },
   }
 }

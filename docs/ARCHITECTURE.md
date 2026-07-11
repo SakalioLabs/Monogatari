@@ -80,7 +80,7 @@ Live2D backend commands treat model paths as project-relative model file referen
 ## AI Pipeline
 
 Inference follows the package target:
-1. **WebGPU Runtime**: Web/PWA builds lazy-load a pinned Transformers.js text-generation pipeline from `inference-runtime.json`, require a secure WebGPU context, and stream output in Character and Ensemble Test.
+1. **WebGPU Runtime**: Web/PWA builds lazy-load the pinned Transformers.js 4.2.0 text-generation pipeline and `onnx-community/Qwen3.5-0.8B-Text-ONNX` Q4 contract from `inference-runtime.json`, require a secure WebGPU context, and stream output in Character and Ensemble Test. The package keeps ORT single-threaded for static-host compatibility and bundles the Asyncify WASM binary that matches the WebGPU module factory embedded by `onnxruntime-web/webgpu`; model weights remain in the browser cache rather than the application bundle.
 2. **DirectML Runtime**: Windows builds load a project-relative ONNX model and standard `tokenizer.json`, require the DirectML execution provider without CPU fallback, validate full-sequence causal-LM inputs plus float32 logits, and run bounded autoregressive generation off the async runtime thread.
 3. **Development API**: OpenAI-compatible endpoints remain available for authoring and integration testing.
 

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { copyFile, cp, mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises'
+import { copyFile, cp, readFile, readdir, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -23,11 +23,6 @@ const distProjectKnowledgeDir = path.join(distDir, 'knowledge')
 const projectSettingsPath = path.join(rootDir, 'data', 'settings.json')
 const projectWebModelDir = path.join(rootDir, 'data', 'models', 'webgpu')
 const distWebModelDir = path.join(distDir, 'models', 'webgpu')
-const ortRuntimeSourceDir = path.resolve(scriptDir, '..', 'node_modules', 'onnxruntime-web', 'dist')
-const distOrtRuntimeDir = path.join(distDir, 'ort')
-const ortRuntimeFiles = [
-  'ort-wasm-simd-threaded.jsep.mjs',
-]
 const inferenceRuntimePath = path.join(distDir, 'inference-runtime.json')
 const projectAssetManifestPath = path.join(distDir, 'project-assets.json')
 const distServiceWorkerPath = path.join(distDir, 'sw.js')
@@ -129,7 +124,6 @@ function staticHostingRedirects() {
     '/characters/* /characters/:splat 200',
     '/knowledge/* /knowledge/:splat 200',
     '/models/* /models/:splat 200',
-    '/ort/* /ort/:splat 200',
     '/icons/* /icons/:splat 200',
     '/locales/* /locales/:splat 200',
     '/manifest.webmanifest /manifest.webmanifest 200',
@@ -157,7 +151,6 @@ function azureStaticWebAppConfig() {
         '/characters/*',
         '/knowledge/*',
         '/models/*',
-        '/ort/*',
         '/icons/*',
         '/locales/*',
         '/manifest.webmanifest',
@@ -253,7 +246,7 @@ async function webInferenceRuntime() {
     schema: 'monogatari-inference-runtime/v1',
     target: 'web',
     backend: 'webgpu',
-    model_id: webgpu.model_id || webgpu.modelId || 'onnx-community/Qwen2.5-0.5B-Instruct',
+    model_id: webgpu.model_id || webgpu.modelId || 'onnx-community/Qwen3.5-0.8B-Text-ONNX',
     dtype: webgpu.dtype || 'q4',
     max_new_tokens: Number(webgpu.max_new_tokens || webgpu.maxNewTokens || 256),
     temperature: Number(webgpu.temperature || 0.7),
@@ -284,10 +277,6 @@ await cp(projectCharactersDir, distProjectCharactersDir, { recursive: true, forc
 await cp(projectKnowledgeDir, distProjectKnowledgeDir, { recursive: true, force: true })
 if (await directoryExists(projectWebModelDir)) {
   await cp(projectWebModelDir, distWebModelDir, { recursive: true, force: true })
-}
-await mkdir(distOrtRuntimeDir, { recursive: true })
-for (const file of ortRuntimeFiles) {
-  await copyFile(path.join(ortRuntimeSourceDir, file), path.join(distOrtRuntimeDir, file))
 }
 await writeFile(inferenceRuntimePath, `${JSON.stringify(await webInferenceRuntime(), null, 2)}\n`)
 await writeFile(projectAssetManifestPath, `${JSON.stringify(await projectAssetManifest(), null, 2)}\n`)

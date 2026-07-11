@@ -70,7 +70,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (path.startsWith("/assets/") || path.startsWith("/ort/")) {
+  if (path.startsWith("/assets/")) {
     event.respondWith(cacheFirst(request));
     return;
   }

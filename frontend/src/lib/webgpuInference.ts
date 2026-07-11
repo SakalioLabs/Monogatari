@@ -26,7 +26,7 @@ export interface WebGpuGenerationOptions {
 }
 
 export const DEFAULT_WEBGPU_RUNTIME_CONFIG: WebGpuRuntimeConfig = {
-  modelId: 'onnx-community/Qwen2.5-0.5B-Instruct',
+  modelId: 'onnx-community/Qwen3.5-0.8B-Text-ONNX',
   dtype: 'q4',
   maxNewTokens: 256,
   temperature: 0.7,
@@ -34,7 +34,7 @@ export const DEFAULT_WEBGPU_RUNTIME_CONFIG: WebGpuRuntimeConfig = {
 }
 
 const PACKAGED_ORT_WASM_URL = new URL(
-  '../../node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.jsep.wasm',
+  '../../node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.asyncify.wasm',
   import.meta.url,
 ).href
 
@@ -178,6 +178,7 @@ async function generatorForConfig(
       progress_callback: onProgress,
     }))
     .catch((error) => {
+      console.error('[webgpu-inference] Failed to initialize the model runtime.', error)
       generatorPromise = null
       loadedGeneratorKey = ''
       throw error
@@ -190,8 +191,10 @@ async function loadTransformersRuntime(): Promise<any> {
   const wasm = transformers.env?.backends?.onnx?.wasm
   if (!wasm) throw new Error('The packaged ONNX WebAssembly runtime is unavailable.')
 
+  // Keep the module factory bundled by onnxruntime-web. Overriding the MJS path
+  // makes ORT bootstrap it through a blob URL, which conflicts with the web CSP.
+  wasm.numThreads = 1
   wasm.wasmPaths = {
-    mjs: packagedAssetUrl('ort/ort-wasm-simd-threaded.jsep.mjs'),
     wasm: PACKAGED_ORT_WASM_URL,
   }
   return transformers

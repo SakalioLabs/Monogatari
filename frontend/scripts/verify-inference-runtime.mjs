@@ -1,4 +1,4 @@
-import { readFile, readdir, stat } from 'node:fs/promises'
+import { readFile, readdir } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -9,9 +9,6 @@ const runtime = JSON.parse(await readFile(path.join(distDir, 'inference-runtime.
 const headers = await readFile(path.join(distDir, '_headers'), 'utf8')
 const serviceWorker = await readFile(path.join(distDir, 'sw.js'), 'utf8')
 const failures = []
-const ortRuntimeFiles = [
-  'ort/ort-wasm-simd-threaded.jsep.mjs',
-]
 
 if (runtime.schema !== 'monogatari-inference-runtime/v1') failures.push('runtime schema is invalid')
 if (runtime.target !== 'web') failures.push('runtime target must be web')
@@ -23,16 +20,8 @@ if (!Number.isInteger(runtime.max_new_tokens) || runtime.max_new_tokens < 1 || r
 }
 if (!headers.includes("script-src 'self' 'wasm-unsafe-eval'")) failures.push('CSP does not allow ONNX WebAssembly bootstrap')
 if (!serviceWorker.includes('INFERENCE_RUNTIME_PATH')) failures.push('service worker does not cache the runtime contract')
-for (const file of ortRuntimeFiles) {
-  try {
-    const fileStat = await stat(path.join(distDir, file))
-    if (!fileStat.isFile() || fileStat.size === 0) failures.push(`${file} is empty`)
-  } catch {
-    failures.push(`${file} is missing`)
-  }
-}
 const bundledAssets = await readdir(path.join(distDir, 'assets'))
-if (!bundledAssets.some((file) => /^ort-wasm-simd-threaded\.jsep-[A-Za-z0-9_-]+\.wasm$/.test(file))) {
+if (!bundledAssets.some((file) => /^ort-wasm-simd-threaded\.asyncify-[A-Za-z0-9_-]+\.wasm$/.test(file))) {
   failures.push('the bundled WebGPU ONNX runtime WASM asset is missing')
 }
 if (Object.keys(runtime).some((key) => /^(api[_-]?key|password|access[_-]?token|secret)$/i.test(key))) {

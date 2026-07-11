@@ -58,6 +58,7 @@
 - Added a linked Windows DirectML executor with standard tokenizer loading, causal-LM graph validation, bounded autoregressive generation, streaming output, and real backend readiness reporting.
 - Added async-safe initialized backend registration so API and DirectML engines become active only after their runtime initialization succeeds.
 - Added a Transformers.js WebGPU text-generation runtime for Web/PWA character and ensemble tests, plus a versioned packaged inference contract, CSP support, service-worker caching, and release verification.
+- Upgraded the Web/PWA runtime to Transformers.js 4.2.0 and Qwen3.5 0.8B Text ONNX Q4, paired the embedded WebGPU module with its matching packaged Asyncify WASM binary, and verified both browser session initialization and streamed Chinese character generation on an RTX 3060.
 - Added API backend runtime configuration validation so blank keys/models, unsafe base URLs, embedded credentials, and query/fragment-bearing provider URLs are rejected before a backend can become active.
 - Added OpenAI-compatible SSE stream error-frame handling so provider error payloads and malformed data frames abort streaming inference instead of being silently ignored.
 - Added content loader path isolation tests and release-gate invariants so character, dialogue, and knowledge reload commands resolve only under the active project content directories.
