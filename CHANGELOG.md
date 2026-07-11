@@ -1,6 +1,8 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Added the official-SDK `monogatari-mcp` stdio server with five schema-backed tools, a startup-fixed project root, read-only default, reviewed transaction fingerprints, shared/exclusive process leases, document-level candidate validation, rollback, real child-process protocol tests, and a release-built binary.
+- Added Vitest and Vue Test Utils coverage for frontend authoring validators, renderer fallback selection, story access derivation, Pinia async command state, and shared component interactions/accessibility, with an independently runnable `frontend-unit` CI and release gate.
 - Added `monogatari-agent-project-transaction/v1` to `llm-authoring`, providing deterministic dry-run plans, JSON-only catalog allowlists, exact create/update/delete preconditions, bounded payloads, case-collision protection, multi-file staged candidate validation, reverse-order rollback, structured results, cleanup warnings, and stable machine-readable errors for future MCP transports.
 - Added the transport-neutral `llm-authoring` crate with independently tested atomic content rollback, strict portable project paths, project settings diagnostics, credential scrubbing, and atomic persistence; Tauri project/config and catalog commands now delegate these filesystem rules through thin adapters.
 - Added the repository-level `$author-visual-novel` Skill so agents can author canonical Monogatari characters, knowledge, scenes, dialogue, events, endings, workflows, and Quality Suites against the same runtime and release contracts as human authors.

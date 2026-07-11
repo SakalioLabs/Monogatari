@@ -9,6 +9,7 @@
 - [ ] `rust-engine/rust-toolchain.toml` remains pinned to `nightly-2026-07-03` with the minimal profile plus Clippy/rustfmt components; release tests do not override `CARGO_PROFILE_TEST_DEBUG`
 
 ### Frontend
+- [ ] `cd frontend && npm run test:unit` passes pure authoring, renderer selection, story access, Pinia async-state, and shared component interaction/accessibility tests
 - [ ] `cd frontend && npm run build` passes with zero errors
 - [ ] `cd frontend && npm run build:web` emits manifest, service worker, offline fallback, `404.html`, `.nojekyll`, `_headers`, `_redirects`, `staticwebapp.config.json`, `vercel.json`, `project-assets.json`, and `inference-runtime.json` assets
 - [ ] `cd frontend && npm run verify:inference-runtime` proves the Web/PWA package declares WebGPU, a supported precision, a bounded generation limit, CSP support, and service-worker caching without runtime secrets

@@ -1,14 +1,14 @@
 <template>
   <Transition name="fade">
     <div v-if="visible" class="confirm-overlay" @click.self="cancel">
-      <div class="confirm-panel">
+      <div class="confirm-panel" role="dialog" aria-modal="true" :aria-label="title">
         <div class="confirm-header">
           <h3>{{ title }}</h3>
         </div>
         <p class="confirm-message">{{ message }}</p>
         <div class="confirm-actions">
-          <button class="btn btn-secondary" @click="cancel">{{ cancelText }}</button>
-          <button class="btn btn-danger" @click="confirm">{{ confirmText }}</button>
+          <button type="button" class="btn btn-secondary" @click="cancel">{{ cancelText }}</button>
+          <button type="button" class="btn btn-danger" @click="confirm">{{ confirmText }}</button>
         </div>
       </div>
     </div>
@@ -16,6 +16,8 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue'
+
 const props = withDefaults(defineProps<{
   visible: boolean
   title?: string
@@ -37,6 +39,13 @@ const emit = defineEmits<{
 
 function confirm() { emit('confirm'); emit('update:visible', false) }
 function cancel() { emit('cancel'); emit('update:visible', false) }
+
+function handleKeydown(event: KeyboardEvent) {
+  if (props.visible && event.key === 'Escape') cancel()
+}
+
+onMounted(() => window.addEventListener('keydown', handleKeydown))
+onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
 </script>
 
 <style scoped>

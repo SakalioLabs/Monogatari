@@ -23,6 +23,7 @@ test('checked-in matrix is valid and owns every primary implementation surface',
 
   for (const requiredPath of [
     'frontend/src',
+    'frontend/vitest.config.ts',
     'rust-engine/crates/core',
     'rust-engine/crates/ai',
     'rust-engine/crates/assets',

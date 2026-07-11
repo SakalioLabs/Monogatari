@@ -137,9 +137,14 @@ export async function deleteDialogueDefinition(
 }
 
 export function normalizeDialogueDefinition(dialogue: DialogueDefinition): DialogueDefinition {
-  const nodes = Object.fromEntries(Object.entries(dialogue.nodes)
+  const normalizedNodes = Object.entries(dialogue.nodes)
+    .map(([nodeId, node]) => [nodeId.trim(), normalizeNode(node)] as const)
     .sort(([left], [right]) => left.localeCompare(right))
-    .map(([nodeId, node]) => [nodeId.trim(), normalizeNode(node)]))
+  const normalizedNodeIds = normalizedNodes.map(([nodeId]) => nodeId)
+  if (new Set(normalizedNodeIds).size !== normalizedNodeIds.length) {
+    throw new Error('Dialogue node IDs collide after whitespace normalization.')
+  }
+  const nodes = Object.fromEntries(normalizedNodes)
   return {
     id: dialogue.id.trim(),
     title: dialogue.title.trim(),
@@ -173,7 +178,9 @@ export function validateDialogueDefinition(
   for (const [nodeId, node] of Object.entries(dialogue.nodes)) {
     if (!portableId(nodeId)) issues.push(`Node ID "${nodeId}" is not portable.`)
     validateText(issues, `Node "${nodeId}" text`, node.text, 1, 16384)
-    if (node.speaker_id && knownCharacters.size > 0 && !knownCharacters.has(node.speaker_id)) {
+    if (node.speaker_id && !portableId(node.speaker_id)) {
+      issues.push(`Node "${nodeId}" speaker "${node.speaker_id}" is not portable.`)
+    } else if (node.speaker_id && knownCharacters.size > 0 && !knownCharacters.has(node.speaker_id)) {
       issues.push(`Node "${nodeId}" references unknown speaker "${node.speaker_id}".`)
     }
     if (node.emotion !== null) validateText(issues, `Node "${nodeId}" emotion`, node.emotion, 1, 64)
@@ -206,7 +213,9 @@ export function validateDialogueDefinition(
         issues.push(`${label} can contain at most 128 relationship changes.`)
       }
       for (const [characterId, delta] of Object.entries(choice.relationship_changes)) {
-        if (knownCharacters.size > 0 && !knownCharacters.has(characterId)) {
+        if (!portableId(characterId)) {
+          issues.push(`${label} relationship character "${characterId}" is not portable.`)
+        } else if (knownCharacters.size > 0 && !knownCharacters.has(characterId)) {
           issues.push(`${label} changes unknown character "${characterId}".`)
         }
         if (!Number.isFinite(delta) || delta < -1 || delta > 1) {

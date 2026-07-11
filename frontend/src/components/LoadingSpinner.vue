@@ -1,6 +1,6 @@
 <template>
-  <div class="loading-wrap" :class="{ inline }">
-    <div class="loading-spinner" :style="{ width: size + 'px', height: size + 'px', borderWidth: thickness + 'px' }"></div>
+  <div class="loading-wrap" :class="{ inline }" role="status" :aria-label="text || 'Loading'">
+    <div class="loading-spinner" aria-hidden="true" :style="{ width: size + 'px', height: size + 'px', borderWidth: thickness + 'px' }"></div>
     <span v-if="text" class="loading-text">{{ text }}</span>
   </div>
 </template>

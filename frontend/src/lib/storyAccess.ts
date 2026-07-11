@@ -30,7 +30,7 @@ export async function loadStoryContentAccess(): Promise<StoryContentAccessSnapsh
   return deriveStoryContentAccess(catalog.catalog_fingerprint, catalog.events, progress)
 }
 
-function deriveStoryContentAccess(
+export function deriveStoryContentAccess(
   catalogFingerprint: string,
   events: Array<{ event_id: string; actions: StoryEventAction[] }>,
   progress: StoryProgressSnapshot,

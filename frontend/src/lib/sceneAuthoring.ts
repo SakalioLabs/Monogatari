@@ -203,7 +203,10 @@ function isPortableProjectPath(value: string): boolean {
     && !value.includes('\\')
     && !value.includes(':')
     && !/[\u0000-\u001f\u007f]/.test(value)
-    && value.split('/').every((segment) => segment.length > 0 && segment !== '.' && segment !== '..')
+    && value.split('/').every((segment) => segment.length > 0
+      && segment !== '.'
+      && segment !== '..'
+      && /^[A-Za-z0-9._-]+$/.test(segment))
 }
 
 function ensureExpectedFingerprint(current: SceneAuthoringCatalogSnapshot, expected: string): void {

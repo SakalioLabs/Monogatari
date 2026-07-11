@@ -13,6 +13,17 @@
       "owner_paths": ["scripts/lib", "scripts/tests", "scripts/module-test-matrix.json", ".agents/skills"]
     },
     {
+      "id": "frontend-unit",
+      "label": "Frontend pure library, Pinia, and component tests",
+      "group": "frontend",
+      "kind": "unit-component",
+      "default": true,
+      "cwd": "frontend",
+      "command": "npm",
+      "args": ["run", "test:unit"],
+      "owner_paths": ["frontend/src/lib", "frontend/src/stores", "frontend/src/components", "frontend/vitest.config.ts"]
+    },
+    {
       "id": "frontend-contracts",
       "label": "Vue and Web/PWA build contracts",
       "group": "frontend",

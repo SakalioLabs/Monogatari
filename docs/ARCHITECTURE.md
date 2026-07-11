@@ -53,6 +53,7 @@ Script execution is treated as bounded authoring logic. Tauri script commands va
 
 - **Router**: 22 routes with lazy-loaded views
 - **State**: Pinia store for game state (saves, scenes, relationships)
+- **Isolated Tests**: Vitest covers pure authoring and access contracts, renderer fallback selection, Pinia async state, and shared Vue component behavior in Happy DOM; production builds remain a separate package contract.
 - **i18n**: Nested key resolution with localStorage persistence (zh-CN, ja-JP, ko-KR)
 - **Tauri Bridge**: Browser-compatible `invokeCommand()` with fallback for non-Tauri environments
 - **Web Distribution**: Production browser builds register a service worker, manifest, and offline fallback; Tauri runtime disables service worker registration.

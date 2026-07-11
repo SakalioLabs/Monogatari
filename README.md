@@ -71,6 +71,7 @@ Verified on 2026-07-11:
 - Full frontend dependency audit passes with `npm audit`.
 - The transport-neutral authoring core passes `cargo test --locked -p llm-authoring`, independently proving atomic rollback, portable path containment, project diagnostics, and credential-free settings persistence.
 - The standard `monogatari-mcp` adapter passes real stdio child-process tests for handshake, five schema-backed tools, scrubbed inspection, exact JSON fingerprints, read-only refusal, reviewed-plan confirmation, one-writer exclusion, successful application, and rollback. Its candidate report is explicitly document-level rather than a graph/runtime completion claim.
+- Frontend Vitest coverage independently exercises authoring validation, renderer fallback order, story access derivation, Pinia command/loading state, and shared Vue component interactions instead of relying only on production builds and source scans.
 - Rust Tauri app crate passes `cargo check --locked -p llm-galgame-app`.
 - Character quality suite regression tests pass inside `cargo test --locked -p llm-galgame-app`.
 - Single-character and group chat prompts use the shared character mind contract and guarded response path for private reasoning leaks, identity drift, and tool-style response drift.
@@ -171,6 +172,7 @@ monogatari/
 |   |   +-- assets/        # Asset management, save/load
 |   |   +-- scripting/     # Rhai scripting engine
 |   |   +-- authoring/     # Headless project services shared by Tauri and agents
+|   |   +-- mcp-server/    # Standard schema-backed stdio Agent transport
 |   |   +-- tauri-app/     # Tauri commands (AI, Chat, Dialogue, Workflow, etc.)
 |   +-- data/              # Example characters, dialogues, knowledge, events, scenes, assets
 +-- frontend/              # Vue 3 + Vite + Pinia
@@ -189,16 +191,16 @@ monogatari/
 
 Agents can invoke `$author-visual-novel` from the repository Skill at `.agents/skills/author-visual-novel`. The Skill authors the canonical project graph in dependency order, requires Quality Suite evidence, and validates output through the same engine and release contracts used for human-authored projects.
 
-The shared `llm-authoring` crate also defines `monogatari-agent-project-transaction/v1`: a JSON-only multi-file plan/apply contract with create-or-exact-SHA preconditions, portable path containment, candidate validation, and rollback. The protocol is ready for transport integration; the standard MCP server remains the next boundary and is not implied by the Skill alone.
+The shared `llm-authoring` crate also defines `monogatari-agent-project-transaction/v1`: a JSON-only multi-file plan/apply contract with create-or-exact-SHA preconditions, portable path containment, candidate validation, and rollback. `monogatari-mcp` exposes that core through five standard stdio tools with a startup-fixed project root, read-only default, reviewed plan fingerprints, process-level project leases, and explicit document-level acceptance.
 
 Use the module matrix for narrow feedback while authoring:
 
 ```bash
 node scripts/verify-modules.mjs --list
-node scripts/verify-modules.mjs --module rust-authoring --module rust-game --module rust-tauri
+node scripts/verify-modules.mjs --module frontend-unit --module rust-authoring --module rust-mcp --module rust-game --module rust-tauri
 ```
 
-Run `node scripts/verify-release.mjs` before describing generated content as a deliverable project. The current module coverage and remaining MCP/catalog-validation extraction are tracked in `docs/MODULE_VERIFICATION.md`.
+Run `node scripts/verify-release.mjs` before describing generated content as a deliverable project. The current module coverage and remaining graph/runtime extraction are tracked in `docs/MODULE_VERIFICATION.md`.
 
 ## Quick Start
 
