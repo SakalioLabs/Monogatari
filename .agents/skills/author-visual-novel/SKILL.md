@@ -28,6 +28,10 @@ Build project data that the real Monogatari runtime can load. Treat a project as
 
 Use structured JSON editing and preserve unrelated author changes. Do not invent a parallel schema or bypass runtime validation with a custom parser.
 
+## Apply Agent Transactions Safely
+
+When an Agent transport offers transaction planning or application, read [references/agent-transaction.md](references/agent-transaction.md). Use `missing` only for new files and an exact current SHA-256 for updates or deletions. Plan first, review every resolved path and resulting hash, then apply with the authoritative candidate-project validator. Do not use the transaction API as a substitute for graph, runtime, package, or experience validation.
+
 ## Validate The Result
 
 Run narrow gates while iterating:

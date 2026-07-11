@@ -33,6 +33,7 @@
 ### Rust Backend
 - [ ] `cargo check --locked -p llm-galgame-app` passes
 - [ ] `cargo test --locked -p llm-authoring` passes independently of Tauri
+- [ ] Agent transaction tests prove strict schemas, portable JSON-only paths, missing/exact-SHA preconditions, duplicate and case-collision rejection, deterministic dry-run plans, complete candidate validation, multi-file commit, and reverse-order rollback
 - [ ] `cargo clippy --workspace --all-targets --locked -- -D warnings` passes
 - [ ] All 25 command modules register correctly in main.rs
 - [ ] Chat streaming works with API backend

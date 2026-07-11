@@ -187,14 +187,16 @@ monogatari/
 
 Agents can invoke `$author-visual-novel` from the repository Skill at `.agents/skills/author-visual-novel`. The Skill authors the canonical project graph in dependency order, requires Quality Suite evidence, and validates output through the same engine and release contracts used for human-authored projects.
 
+The shared `llm-authoring` crate also defines `monogatari-agent-project-transaction/v1`: a JSON-only multi-file plan/apply contract with create-or-exact-SHA preconditions, portable path containment, candidate validation, and rollback. The protocol is ready for transport integration; the standard MCP server remains the next boundary and is not implied by the Skill alone.
+
 Use the module matrix for narrow feedback while authoring:
 
 ```bash
 node scripts/verify-modules.mjs --list
-node scripts/verify-modules.mjs --module rust-game --module rust-tauri
+node scripts/verify-modules.mjs --module rust-authoring --module rust-game --module rust-tauri
 ```
 
-Run `node scripts/verify-release.mjs` before describing generated content as a deliverable project. The current module coverage and remaining MCP/headless-authoring extraction are tracked in `docs/MODULE_VERIFICATION.md`.
+Run `node scripts/verify-release.mjs` before describing generated content as a deliverable project. The current module coverage and remaining MCP/catalog-validation extraction are tracked in `docs/MODULE_VERIFICATION.md`.
 
 ## Quick Start
 

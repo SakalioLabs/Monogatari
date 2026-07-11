@@ -22,7 +22,7 @@ Platform-specific gates declare their supported host IDs in the matrix. The Wind
 | Agent and test orchestration | `automation-contracts` | Node unit contracts | Matrix schema, ownership, selection, CLI parsing, platform command adaptation |
 | Vue/TypeScript/Web/PWA | `frontend-contracts` | Type check, production builds, static contract verifiers | No isolated component/unit runner yet |
 | Rust core | `rust-core` | Unit and doc tests | Infrastructure crate |
-| Headless authoring core | `rust-authoring` | Unit, integration, and doc tests | Atomic content mutation, portable path resolution, project settings diagnostics and persistence without Tauri |
+| Headless authoring core | `rust-authoring` | Unit, integration, and doc tests | Atomic content mutation, portable paths, project settings, and versioned optimistic multi-file Agent transactions without Tauri |
 | Rust AI | `rust-ai` | Unit, integration, and doc tests | Inference contracts and backend planning |
 | Rust assets | `rust-assets` | Unit tests | Asset and save boundaries |
 | Rust scripting | `rust-scripting` | Unit tests | Rhai execution and condition boundaries |
@@ -38,7 +38,7 @@ GitHub Actions runs the automation, frontend, Rust, and .NET groups as separate 
 
 1. Add frontend unit/component tests for pure authoring libraries, stores, editor state, and renderer fallback selection. Build-time source scans are useful but do not prove interactive behavior in isolation.
 2. Continue moving catalog validation, cross-reference discovery, and packaging behind `llm-authoring`; project settings, portable path resolution, and atomic single-file mutations are already shared by Tauri.
-3. Add a multi-operation transactional Agent project format on top of `llm-authoring`, then expose it through a standard MCP server without duplicating engine schemas or validators.
+3. Expose the tested `monogatari-agent-project-transaction/v1` planner and applier through a standard MCP server without duplicating engine schemas or validators.
 4. Extend the retained .NET renderer ABI/load coverage with a headless SDL initialization and render-loop probe, or formally remove those projects from the supported product boundary.
 5. Decompose `scripts/verify-release.mjs` into importable content, security, packaging, and browser gates while preserving one release entry point.
 

@@ -6,6 +6,8 @@
 - `data/`: canonical checked-in examples used by the workbench and Web/PWA build.
 - `rust-engine/data/`: packaged desktop mirror; keep it byte-equivalent to `data/`.
 - `rust-engine/crates/tauri-app/src/commands/`: runtime authoring, validation, and reference rules.
+- `rust-engine/crates/authoring/`: transport-neutral project, path, and Agent transaction contracts.
+- `agent-transaction.md`: versioned optimistic multi-file JSON operation format.
 - `data/quality_suites/character_stability.json`: executable story and safety acceptance examples.
 - `scripts/module-test-matrix.json`: independently runnable engineering gates.
 - `scripts/verify-release.mjs`: final integrated release gate.
@@ -34,6 +36,7 @@
 - Keep generated story text separate from system prompts, tool calls, hidden reasoning, and runtime control data.
 - Prove important branches with Quality Suite scenarios, including negative cases and boundary thresholds.
 - Do not ship secrets in `settings.json`, project packages, logs, fixtures, or verification reports.
+- For Agent transactions, require `missing` on creates and an exact current SHA-256 on updates/deletes; never use a blind overwrite operation.
 
 ## Acceptance Levels
 

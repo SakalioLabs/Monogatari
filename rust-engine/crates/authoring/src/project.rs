@@ -370,7 +370,7 @@ fn canonical_project_root_if_present(project_root: &Path) -> Result<PathBuf, Str
     }
 }
 
-fn canonical_regular_project_root(project_root: &Path) -> Result<PathBuf, String> {
+pub(crate) fn canonical_regular_project_root(project_root: &Path) -> Result<PathBuf, String> {
     let metadata = std::fs::symlink_metadata(project_root).map_err(|error| {
         format!(
             "Unable to inspect project path `{}`: {error}",

@@ -172,6 +172,10 @@ const releaseCriticalRustFiles = [
   'crates/authoring/src/filesystem.rs',
   'crates/authoring/src/paths.rs',
   'crates/authoring/src/project.rs',
+  'crates/authoring/src/agent_transaction.rs',
+  'crates/authoring/src/agent_transaction/plan.rs',
+  'crates/authoring/src/agent_transaction/protocol.rs',
+  'crates/authoring/src/agent_transaction/tests.rs',
   'crates/tauri-app/src/main.rs',
   'crates/tauri-app/src/installation_verifier.rs',
   'crates/tauri-app/src/state.rs',
@@ -307,6 +311,7 @@ async function main() {
   await verifyScriptCommandInvariants()
   await verifyWorkflowCommandInvariants()
   await verifyContentLoaderPathInvariants()
+  await verifyAgentTransactionInvariants()
   await verifyCharacterManagerPathInvariants()
   await verifyPluginManagerPathInvariants()
   await verifyMarketplacePathInvariants()
@@ -3779,6 +3784,56 @@ async function verifyContentLoaderPathInvariants() {
   }
 
   console.log('[release] Content loader path invariants OK')
+}
+
+async function verifyAgentTransactionInvariants() {
+  const issues = []
+  const transactionSources = await Promise.all([
+    'agent_transaction.rs',
+    'agent_transaction/plan.rs',
+    'agent_transaction/protocol.rs',
+    'agent_transaction/tests.rs',
+  ].map((relativePath) => readFile(path.join(rustDir, 'crates', 'authoring', 'src', relativePath), 'utf8')))
+  const transactionSource = transactionSources.join('\n')
+  const authoringCargoSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'Cargo.toml'), 'utf8')
+  const requirements = [
+    ['monogatari-agent-project-transaction/v1', 'version Agent transaction requests'],
+    ['monogatari-agent-project-transaction-plan/v1', 'version deterministic dry-run plans'],
+    ['monogatari-agent-project-transaction-result/v1', 'version successful application results'],
+    ['monogatari-agent-project-transaction-error/v1', 'version structured transaction errors'],
+    ['deny_unknown_fields', 'reject unknown request and operation fields'],
+    ['AgentFilePrecondition', 'require explicit file preconditions'],
+    ['Missing', 'support create-only missing preconditions'],
+    ['Sha256 { value: String }', 'support exact update/delete SHA-256 preconditions'],
+    ['MAX_TRANSACTION_OPERATIONS', 'bound operation counts'],
+    ['MAX_TRANSACTION_FILE_BYTES', 'bound individual JSON documents'],
+    ['MAX_TRANSACTION_TOTAL_BYTES', 'bound aggregate transaction writes'],
+    ['ALLOWED_JSON_ROOTS', 'allowlist authorable JSON catalog roots'],
+    ['portable_path.to_ascii_lowercase()', 'reject duplicate targets across ASCII case'],
+    ['reject_case_collision', 'reject collisions with existing case-variant paths'],
+    ['stage_json_replacement', 'stage JSON replacements through the shared filesystem transaction'],
+    ['stage_json_deletion', 'stage JSON deletions through the shared filesystem transaction'],
+    ['rollback_staged(&mut staged).await?', 'roll back every staged operation on failure'],
+    ['FnOnce(PathBuf) -> ValidationFuture', 'require a caller-supplied authoritative candidate validator'],
+    ['backup_cleanup_failed', 'distinguish post-commit cleanup warnings from application failures'],
+    ['plan_is_deterministic_and_does_not_write', 'test side-effect-free deterministic plans'],
+    ['apply_commits_multiple_writes_and_deletion_after_validation', 'test validated multi-file commits'],
+    ['validation_failure_rolls_back_every_staged_operation', 'test complete rollback after candidate rejection'],
+  ]
+  for (const [needle, description] of requirements) {
+    if (!transactionSource.includes(needle)) {
+      issues.push(`Agent transaction handling must ${description}`)
+    }
+  }
+  if (/\btauri\b/i.test(authoringCargoSource)) {
+    issues.push('llm-authoring must remain transport-neutral and cannot depend on Tauri')
+  }
+
+  if (issues.length > 0) {
+    throw new Error(`Agent transaction verification failed:\n${issues.join('\n')}`)
+  }
+
+  console.log('[release] Agent transaction invariants OK')
 }
 
 async function verifyCharacterManagerPathInvariants() {
