@@ -1,6 +1,7 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Added the transport-neutral `llm-authoring` crate with independently tested atomic content rollback, strict portable project paths, project settings diagnostics, credential scrubbing, and atomic persistence; Tauri project/config and catalog commands now delegate these filesystem rules through thin adapters.
 - Added the repository-level `$author-visual-novel` Skill so agents can author canonical Monogatari characters, knowledge, scenes, dialogue, events, endings, workflows, and Quality Suites against the same runtime and release contracts as human authors.
 - Added a versioned module verification matrix, tested selector/runner, machine-readable reports, expanded CI jobs, and explicit audit gaps for independently proving the automation, frontend, Rust, and legacy .NET implementation surfaces.
 - Added pinned, SHA-256-verified official SDL2 runtime preparation plus warnings-as-errors solution builds, restoring independent build evidence for the retained Windows x64 .NET application instead of relying on missing repository-local DLLs.

@@ -22,11 +22,12 @@ Platform-specific gates declare their supported host IDs in the matrix. The Wind
 | Agent and test orchestration | `automation-contracts` | Node unit contracts | Matrix schema, ownership, selection, CLI parsing, platform command adaptation |
 | Vue/TypeScript/Web/PWA | `frontend-contracts` | Type check, production builds, static contract verifiers | No isolated component/unit runner yet |
 | Rust core | `rust-core` | Unit and doc tests | Infrastructure crate |
+| Headless authoring core | `rust-authoring` | Unit, integration, and doc tests | Atomic content mutation, portable path resolution, project settings diagnostics and persistence without Tauri |
 | Rust AI | `rust-ai` | Unit, integration, and doc tests | Inference contracts and backend planning |
 | Rust assets | `rust-assets` | Unit tests | Asset and save boundaries |
 | Rust scripting | `rust-scripting` | Unit tests | Rhai execution and condition boundaries |
 | Rust game | `rust-game` | Unit and integration tests | Characters, dialogue, knowledge, and script parsing |
-| Tauri application | `rust-tauri`, `rust-tauri-check` | Command/project tests and compile check | Command layer remains one large crate |
+| Tauri application | `rust-tauri`, `rust-tauri-check` | Command/project tests and compile check | Project settings delegate to `llm-authoring`; remaining catalogs and packaging still live in the command crate |
 | Rust workspace | `rust-clippy` | All-target warnings-as-errors lint | Runs after crate tests so diagnostics retain module context |
 | Legacy .NET | `legacy-dotnet-native`, `legacy-dotnet-build`, `legacy-dotnet-tests` | Pinned SDL2 preparation, warnings-as-errors build, shared tests, native ABI/license probe | A headless render-loop probe is still pending |
 | Complete product | `release-gate` | Build, package, preview, content, security, and runtime checks | Integrated and intentionally slower |
@@ -36,8 +37,8 @@ GitHub Actions runs the automation, frontend, Rust, and .NET groups as separate 
 ## Open Audit Work
 
 1. Add frontend unit/component tests for pure authoring libraries, stores, editor state, and renderer fallback selection. Build-time source scans are useful but do not prove interactive behavior in isolation.
-2. Split headless project validation and packaging out of the Tauri command crate into an authoring application boundary shared by desktop commands and Agent transports.
-3. Add a transactional Agent project operation format, then expose it through a standard MCP server without duplicating engine schemas or validators.
+2. Continue moving catalog validation, cross-reference discovery, and packaging behind `llm-authoring`; project settings, portable path resolution, and atomic single-file mutations are already shared by Tauri.
+3. Add a multi-operation transactional Agent project format on top of `llm-authoring`, then expose it through a standard MCP server without duplicating engine schemas or validators.
 4. Extend the retained .NET renderer ABI/load coverage with a headless SDL initialization and render-loop probe, or formally remove those projects from the supported product boundary.
 5. Decompose `scripts/verify-release.mjs` into importable content, security, packaging, and browser gates while preserving one release entry point.
 

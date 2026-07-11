@@ -6,6 +6,7 @@ members = [
     "crates/game",
     "crates/assets",
     "crates/scripting",
+    "crates/authoring",
     "crates/tauri-app",
 ]
 
@@ -67,6 +68,7 @@ llm-ai = { path = "crates/ai" }
 llm-game = { path = "crates/game" }
 llm-assets = { path = "crates/assets" }
 llm-scripting = { path = "crates/scripting" }
+llm-authoring = { path = "crates/authoring" }
 
 [profile.release]
 opt-level = 3

@@ -169,13 +169,15 @@ const releaseCriticalRustFiles = [
   'crates/game/src/dialogue/dialogue_node.rs',
   'crates/game/src/dialogue/dialogue_script.rs',
   'crates/scripting/src/lib.rs',
+  'crates/authoring/src/filesystem.rs',
+  'crates/authoring/src/paths.rs',
+  'crates/authoring/src/project.rs',
   'crates/tauri-app/src/main.rs',
   'crates/tauri-app/src/installation_verifier.rs',
   'crates/tauri-app/src/state.rs',
   'crates/tauri-app/src/story_access.rs',
   'crates/tauri-app/src/story_events.rs',
   'crates/tauri-app/src/story_progress.rs',
-  'crates/tauri-app/src/content_authoring.rs',
   'crates/tauri-app/src/content_references.rs',
   'crates/tauri-app/src/commands/ai.rs',
   'crates/tauri-app/src/commands/engine.rs',
@@ -322,6 +324,7 @@ async function main() {
   await run('Tauri mobile deployment preflight', 'node', ['scripts/verify-tauri-mobile-preflight.mjs'], root)
   await run('Release-critical Rust format check', 'rustfmt', ['--edition', '2021', '--check', ...releaseCriticalRustFiles], rustDir)
   await run('Rust core tests', 'cargo', ['test', '--locked', '-p', 'llm-core'], rustDir)
+  await run('Rust headless authoring tests', 'cargo', ['test', '--locked', '-p', 'llm-authoring'], rustDir)
   await run('Rust AI prompt and pipeline tests', 'cargo', ['test', '--locked', '-p', 'llm-ai'], rustDir)
   await run('Rust asset management tests', 'cargo', ['test', '--locked', '-p', 'llm-assets'], rustDir)
   await run('Rust scripting tests', 'cargo', ['test', '--locked', '-p', 'llm-scripting'], rustDir)
@@ -3724,15 +3727,26 @@ async function verifyWorkflowCommandInvariants() {
 
 async function verifyContentLoaderPathInvariants() {
   const issues = []
-  const contentPathsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'content_paths.rs'), 'utf8')
+  const contentPathAdapterSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'content_paths.rs'), 'utf8')
+  const sharedContentPathsSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'paths.rs'), 'utf8')
   const characterCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'characters.rs'), 'utf8')
   const knowledgeCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'knowledge.rs'), 'utf8')
   const dialogueCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'dialogue.rs'), 'utf8')
 
-  const contentPathRequirements = [
+  const adapterRequirements = [
     ['resolve_project_content_dir', 'centralize content loader directory resolution'],
     ['state.current_project_data_root().await', 'resolve content loader commands against the active project root'],
-    ['project_content_dir', 'resolve content directories through a project-scoped path helper'],
+    ['use llm_authoring::paths::project_content_dir', 'delegate path policy to the transport-neutral authoring crate'],
+    ['project_content_dir(&project_root, requested_dir, canonical_dir)', 'pass only the active root and requested catalog path to the shared resolver'],
+  ]
+  for (const [needle, description] of adapterRequirements) {
+    if (!contentPathAdapterSource.includes(needle)) {
+      issues.push(`Content loader path adapter must ${description}`)
+    }
+  }
+
+  const sharedPathRequirements = [
+    ['pub fn project_content_dir', 'expose one transport-neutral content path resolver'],
     ['project_root.join(canonical_dir)', 'scope content loaders to their canonical project content directories'],
     ['Content paths cannot contain drive prefixes or URI schemes', 'reject URI-like and drive-prefixed content paths'],
     ['Content paths cannot contain empty, current, or parent directory segments', 'reject traversal-shaped content paths'],
@@ -3740,9 +3754,9 @@ async function verifyContentLoaderPathInvariants() {
     ['content_dirs_resolve_canonical_and_nested_project_paths', 'test compatible project content path resolution'],
     ['content_dirs_reject_escape_attempts', 'test content directory traversal and absolute path rejection'],
   ]
-  for (const [needle, description] of contentPathRequirements) {
-    if (!contentPathsSource.includes(needle)) {
-      issues.push(`Content loader path handling must ${description}`)
+  for (const [needle, description] of sharedPathRequirements) {
+    if (!sharedContentPathsSource.includes(needle)) {
+      issues.push(`Shared content path handling must ${description}`)
     }
   }
 
@@ -4023,7 +4037,8 @@ async function verifyTauriPackagingConfig() {
   const tauriStoryEventsSource = await readFile(path.join(tauriAppDir, 'src', 'story_events.rs'), 'utf8')
   const tauriStoryProgressSource = await readFile(path.join(tauriAppDir, 'src', 'story_progress.rs'), 'utf8')
   const tauriStoryAccessSource = await readFile(path.join(tauriAppDir, 'src', 'story_access.rs'), 'utf8')
-  const tauriContentAuthoringSource = await readFile(path.join(tauriAppDir, 'src', 'content_authoring.rs'), 'utf8')
+  const authoringFilesystemSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'filesystem.rs'), 'utf8')
+  const authoringProjectSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'project.rs'), 'utf8')
   const tauriContentReferencesSource = await readFile(path.join(tauriAppDir, 'src', 'content_references.rs'), 'utf8')
   const tauriStoryEventCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'story_events.rs'), 'utf8')
   const tauriEndingCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'endings.rs'), 'utf8')
@@ -4232,10 +4247,14 @@ async function verifyTauriPackagingConfig() {
     [tauriStateSource, 'changing_project_root_clears_project_runtime_state', 'test project root changes clear runtime state'],
     [tauriStateSource, 'same_root_reload_can_explicitly_clear_project_runtime_state', 'test same-root project reloads clear runtime state'],
     [tauriStateSource, 'story_content_authoring_lock', 'serialize project content authoring mutations'],
-    [tauriContentAuthoringSource, 'pub struct StagedContentMutation', 'share rollback-capable content mutations across authoring catalogs'],
-    [tauriContentAuthoringSource, 'stage_json_replacement', 'stage bounded atomic JSON replacements'],
-    [tauriContentAuthoringSource, 'stage_json_deletion', 'stage rollback-capable JSON deletions'],
-    [tauriContentAuthoringSource, 'replacements_commit_or_restore_the_previous_document', 'test shared content replacement rollback'],
+    [authoringFilesystemSource, 'pub struct StagedContentMutation', 'share rollback-capable content mutations through the headless authoring crate'],
+    [authoringFilesystemSource, 'stage_json_replacement', 'stage bounded atomic JSON replacements'],
+    [authoringFilesystemSource, 'stage_json_deletion', 'stage rollback-capable JSON deletions'],
+    [authoringFilesystemSource, 'replacements_commit_or_restore_the_previous_document', 'test shared content replacement rollback'],
+    [tauriDialogueCommandsSource, 'use llm_authoring::filesystem', 'delegate dialogue mutations to the headless authoring crate'],
+    [tauriEndingCommandsSource, 'use llm_authoring::filesystem', 'delegate ending mutations to the headless authoring crate'],
+    [tauriKnowledgeCommandsSource, 'use llm_authoring::filesystem', 'delegate knowledge mutations to the headless authoring crate'],
+    [tauriScenesSource, 'use llm_authoring::filesystem', 'delegate scene mutations to the headless authoring crate'],
     [tauriContentReferencesSource, 'scene_references', 'scan scene references before metadata deletion'],
     [tauriContentReferencesSource, 'dialogue_references', 'scan dialogue references before script deletion'],
     [tauriContentReferencesSource, 'workflow_scene_references', 'include workflow scene transitions in reference protection'],
@@ -4275,21 +4294,23 @@ async function verifyTauriPackagingConfig() {
     [tauriProjectSource, 'sha256:path-size-file-sha256-v1', 'record project export package fingerprint algorithms'],
     [tauriProjectSource, 'content_sha256', 'emit package content fingerprints in project export manifests'],
     [tauriProjectSource, 'sanitize_export_config', 'redact sensitive settings in project export manifests'],
-    [tauriProjectSource, 'scrub_runtime_secret_config(&config)', 'scrub runtime secrets before saving or returning project settings'],
-    [tauriProjectSource, 'MAX_PROJECT_SETTINGS_BYTES', 'bound project settings payloads'],
-    [tauriProjectSource, 'stage_json_replacement(', 'atomically stage project settings saves'],
-    [tauriProjectSource, 'staged.rollback().await?', 'restore previous settings after rejected staged saves'],
-    [tauriProjectSource, 'settings_not_regular_file', 'reject non-regular and symlinked project settings'],
-    [tauriProjectSource, 'settings_too_large', 'reject oversized project settings before reading them'],
-    [tauriProjectSource, 'build_state_rejects_non_regular_settings_paths', 'test non-regular project settings rejection'],
-    [tauriProjectSource, 'build_state_rejects_oversized_settings_before_reading', 'test bounded project settings reads'],
-    [tauriProjectSource, 'scrub_runtime_secret_string', 'scrub token-like and assignment-shaped secrets inside project setting string values'],
-    [tauriProjectSource, 'scrub_token_like_values', 'scrub token-shaped values from project settings payloads'],
-    [tauriProjectSource, 'scrub_secret_assignments', 'scrub secret assignments from project settings payloads'],
-    [tauriProjectSource, 'is_secret_config_key', 'centralize project config secret key matching'],
-    [tauriProjectSource, 'SECRET_CONFIG_KEYS', 'centralize sensitive export config keys'],
-    [tauriProjectSource, 'scrub_runtime_secret_config_removes_sensitive_settings_before_save', 'test project settings secret scrubbing before save'],
-    [tauriProjectSource, 'build_state_scrubs_legacy_settings_secrets', 'test legacy project settings secrets are not returned to the frontend'],
+    [tauriProjectSource, 'save_project_config_to_disk(&root, config).await', 'delegate project settings persistence to the headless authoring crate'],
+    [tauriProjectSource, 'story_content_authoring_lock.lock().await', 'serialize settings changes with other project content mutations'],
+    [authoringProjectSource, 'scrub_runtime_secret_config(&config)', 'scrub runtime secrets before saving or returning project settings'],
+    [authoringProjectSource, 'MAX_PROJECT_SETTINGS_BYTES', 'bound project settings payloads'],
+    [authoringProjectSource, 'stage_json_replacement(', 'atomically stage project settings saves'],
+    [authoringProjectSource, 'staged.rollback().await?', 'restore previous settings after rejected staged saves'],
+    [authoringProjectSource, 'settings_not_regular_file', 'reject non-regular and symlinked project settings'],
+    [authoringProjectSource, 'settings_too_large', 'reject oversized project settings before reading them'],
+    [authoringProjectSource, 'inspect_reports_non_regular_and_oversized_settings', 'test non-regular project settings rejection'],
+    [authoringProjectSource, 'inspect_reports_non_regular_and_oversized_settings', 'test bounded project settings reads'],
+    [authoringProjectSource, 'scrub_runtime_secret_string', 'scrub token-like and assignment-shaped secrets inside project setting string values'],
+    [authoringProjectSource, 'scrub_token_like_values', 'scrub token-shaped values from project settings payloads'],
+    [authoringProjectSource, 'scrub_secret_assignments', 'scrub secret assignments from project settings payloads'],
+    [authoringProjectSource, 'is_secret_config_key', 'centralize project config secret key matching'],
+    [authoringProjectSource, 'SECRET_CONFIG_KEYS', 'centralize sensitive export config keys'],
+    [authoringProjectSource, 'save_is_atomic_and_scrubs_runtime_secrets', 'test project settings secret scrubbing before save'],
+    [authoringProjectSource, 'inspect_scrubs_legacy_persisted_secrets_from_returned_state', 'test legacy project settings secrets are not returned to the frontend'],
     [tauriProjectSource, 'EXPORT_DIRECTORIES', 'declare exportable project directories explicitly'],
     [tauriProjectSource, '("events", "events")', 'include story event catalogs in project exports'],
     [tauriProjectSource, '("endings", "endings")', 'include story ending catalogs in project exports'],

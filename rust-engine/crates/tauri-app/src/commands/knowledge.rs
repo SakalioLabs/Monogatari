@@ -3,6 +3,10 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
+use llm_authoring::filesystem::{
+    ensure_regular_project_directory, sha256_json, source_label, stage_json_deletion,
+    stage_json_replacement,
+};
 use llm_game::knowledge::{KnowledgeCategory, KnowledgeEntry};
 use llm_game::KnowledgeBase;
 use serde::Serialize;
@@ -10,10 +14,6 @@ use serde_json::{json, Value};
 use tauri::State;
 
 use crate::commands::content_paths::resolve_project_content_dir;
-use crate::content_authoring::{
-    ensure_regular_project_directory, sha256_json, source_label, stage_json_deletion,
-    stage_json_replacement,
-};
 use crate::content_references::knowledge_references;
 use crate::state::AppState;
 

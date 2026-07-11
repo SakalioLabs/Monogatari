@@ -6,7 +6,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod commands;
-mod content_authoring;
 mod content_references;
 mod installation_verifier;
 mod state;

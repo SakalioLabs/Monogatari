@@ -1,4 +1,4 @@
-//! Shared atomic filesystem transactions for project content authoring.
+//! Atomic filesystem transactions for project content authoring.
 
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};

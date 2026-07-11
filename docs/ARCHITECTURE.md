@@ -14,10 +14,10 @@ Monogatari is a low-code game development engine built with Rust (Tauri 2.x) and
 |            Tauri IPC Bridge (invokeCommand)        |
 +--------------------------------------------------+
 |                  Rust Backend                      |
-|  25 Command Modules | State (AppState)             |
+|  25 Command Modules | Thin Tauri Adapters          |
 +--------------------------------------------------+
-|           Core Crates                             |
-|  core/ | ai/ | game/ | assets/ | scripting/       |
+|        Headless Authoring and Core Crates          |
+| authoring | core | ai | game | assets | scripting |
 +--------------------------------------------------+
 |       Inference Planner and Runtime Profiles       |
 | WebGPU | Local services | DirectML | Managed API   |
@@ -33,7 +33,8 @@ Monogatari is a low-code game development engine built with Rust (Tauri 2.x) and
 | `game` | Game logic | CharacterManager, DialogueManager, KnowledgeBase, SceneManager |
 | `assets` | File management | AssetManager, SaveManager |
 | `scripting` | Rhai scripting | ScriptEngine |
-| `tauri-app` | Tauri commands | AppState, 22 command modules |
+| `authoring` | Headless human/agent project operations | ProjectConfigState, portable path resolver, staged content mutations |
+| `tauri-app` | Tauri commands | AppState, 25 command modules |
 
 Script execution is treated as bounded authoring logic. Tauri script commands validate payload size and hidden control characters before execution or DSL parsing, and `ScriptEngine::execute` repeats that source validation for workflow and future plugin callers. Condition expressions use shared 2,000-character/control-character validation and run through a separate read-only Rhai engine that can inspect variables, flags, and temporary workflow context values without registering state mutation functions; workflow validation applies the same condition rules before imported graphs run. Workflow condition nodes expose relationship, evaluation score, and evaluation-count context as temporary scope variables so branches can react to chat state or author preview presets without writing story state. Desktop run-context previews snapshot script state and mirror variable, flag, relationship, emotion, and scene node effects in a per-run local state bag; browser-only Web/PWA workflow previews mirror the same state transitions plus weighted random-branch behavior so exported builds can exercise later condition branches, event gates, and trace diagnostics without touching persistent save data. Script variables and flags use shared portable state key validation before Rhai functions, workflow validation, workflow nodes, dialogue scripts, or save loading can write them, keeping persisted state names stable across desktop, Web/PWA, and exported project packages. The shared engine caps Rhai operations, recursive calls, expression depth, variable count, function definitions, and module imports so custom game logic cannot hang the workbench through runaway loops or recursion.
 
@@ -68,7 +69,7 @@ Script execution is treated as bounded authoring logic. Tauri script commands va
 
 The repository-level `.agents/skills/author-visual-novel` Skill gives agents a discoverable authoring workflow over the same versioned project data consumed by desktop and Web/PWA runtimes. It requires dependency-ordered content generation, portable IDs and paths, Quality Suite evidence, mirrored built-in data roots, and the real release gate; it does not define a second story schema.
 
-Module ownership and independently runnable gates live in `scripts/module-test-matrix.json`. The thin `scripts/verify-modules.mjs` adapter validates that declarative matrix, runs selected gates without shell command composition, and emits bounded machine-readable evidence for both agents and CI. The next transport boundary is a headless authoring application layer shared by Tauri and a standard MCP server; until that extraction is complete, the Skill edits canonical project data and uses existing runtime/release validators rather than claiming an incomplete MCP facade.
+`llm-authoring` is the transport-neutral application boundary. It owns project settings inspection and scrubbed atomic persistence, strict portable project paths, and rollback-capable single-file content mutations; Tauri project commands and catalog editors call these services instead of owning duplicate filesystem rules. Module ownership and independently runnable gates live in `scripts/module-test-matrix.json`, with `rust-authoring` proving this boundary without compiling Tauri. The next layer is a versioned multi-operation transaction protocol, followed by a standard MCP server that delegates to this crate. Until those layers pass their own gates, the Skill continues to edit canonical project data and run the existing validators rather than claiming an incomplete MCP facade.
 
 ## Installed Desktop Verification
 

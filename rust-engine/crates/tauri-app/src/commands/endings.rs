@@ -3,6 +3,9 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
+use llm_authoring::filesystem::{
+    ensure_regular_project_directory, stage_json_deletion, stage_json_replacement,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -14,9 +17,6 @@ use crate::commands::dialogue::{
 };
 use crate::commands::scenes::{
     build_scene_asset_catalog, resolve_project_scene, set_scene_inner, SceneInfo,
-};
-use crate::content_authoring::{
-    ensure_regular_project_directory, stage_json_deletion, stage_json_replacement,
 };
 use crate::state::AppState;
 use crate::story_access::{

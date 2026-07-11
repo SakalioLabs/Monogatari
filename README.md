@@ -68,6 +68,7 @@ Verified on 2026-07-11:
 - Responsive shell verification runs during `npm run build:web`, covering built 375px mobile and 768px tablet Web/PWA layout signals.
 - Tauri mobile deployment preflight passes with `node scripts/verify-tauri-mobile-preflight.mjs`, covering Android/iOS command readiness, Vite `TAURI_DEV_HOST` binding, Tauri shell config, and mobile release documentation.
 - Full frontend dependency audit passes with `npm audit`.
+- The transport-neutral authoring core passes `cargo test --locked -p llm-authoring`, independently proving atomic rollback, portable path containment, project diagnostics, and credential-free settings persistence.
 - Rust Tauri app crate passes `cargo check --locked -p llm-galgame-app`.
 - Character quality suite regression tests pass inside `cargo test --locked -p llm-galgame-app`.
 - Single-character and group chat prompts use the shared character mind contract and guarded response path for private reasoning leaks, identity drift, and tool-style response drift.
@@ -167,6 +168,7 @@ monogatari/
 |   |   +-- game/          # Characters, Dialogue, Knowledge, Scenes, Script parser
 |   |   +-- assets/        # Asset management, save/load
 |   |   +-- scripting/     # Rhai scripting engine
+|   |   +-- authoring/     # Headless project services shared by Tauri and agents
 |   |   +-- tauri-app/     # Tauri commands (AI, Chat, Dialogue, Workflow, etc.)
 |   +-- data/              # Example characters, dialogues, knowledge, events, scenes, assets
 +-- frontend/              # Vue 3 + Vite + Pinia

@@ -35,6 +35,17 @@
       "owner_paths": ["rust-engine/crates/core"]
     },
     {
+      "id": "rust-authoring",
+      "label": "Headless authoring core tests",
+      "group": "rust",
+      "kind": "unit-integration",
+      "default": true,
+      "cwd": "rust-engine",
+      "command": "cargo",
+      "args": ["test", "--locked", "-p", "llm-authoring"],
+      "owner_paths": ["rust-engine/crates/authoring"]
+    },
+    {
       "id": "rust-ai",
       "label": "Rust AI unit and integration tests",
       "group": "rust",

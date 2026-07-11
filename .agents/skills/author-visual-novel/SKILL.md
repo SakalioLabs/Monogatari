@@ -34,7 +34,7 @@ Run narrow gates while iterating:
 
 ```powershell
 node scripts/verify-modules.mjs --list
-node scripts/verify-modules.mjs --module rust-game --module rust-tauri
+node scripts/verify-modules.mjs --module rust-authoring --module rust-game --module rust-tauri
 ```
 
 Run the complete release gate before declaring a project deliverable:

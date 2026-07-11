@@ -3,14 +3,14 @@
 use std::collections::{HashMap, HashSet};
 use std::path::{Component, Path, PathBuf};
 
+use llm_authoring::filesystem::{
+    ensure_regular_project_directory, sha256_json, source_label, stage_json_deletion,
+    stage_json_replacement,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tauri::State;
 
-use crate::content_authoring::{
-    ensure_regular_project_directory, sha256_json, source_label, stage_json_deletion,
-    stage_json_replacement,
-};
 use crate::content_references::scene_references;
 use crate::state::{default_project_data_root, AppState};
 use crate::story_access::{

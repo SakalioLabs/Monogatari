@@ -3,6 +3,10 @@
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
+use llm_authoring::filesystem::{
+    ensure_regular_project_directory, sha256_json, source_label, stage_json_deletion,
+    stage_json_replacement,
+};
 use llm_core::normalize_script_state_map;
 use llm_game::characters::CharacterManager;
 use llm_game::dialogue::{DialogueManager, DialogueScript, DialogueScriptSummary};
@@ -12,10 +16,6 @@ use serde_json::{json, Value};
 use tauri::State;
 
 use crate::commands::content_paths::resolve_project_content_dir;
-use crate::content_authoring::{
-    ensure_regular_project_directory, sha256_json, source_label, stage_json_deletion,
-    stage_json_replacement,
-};
 use crate::content_references::dialogue_references;
 use crate::state::AppState;
 use crate::story_access::{

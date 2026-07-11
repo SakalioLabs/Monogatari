@@ -18,6 +18,7 @@ llm-ai = { workspace = true }
 llm-game = { workspace = true }
 llm-assets = { workspace = true }
 llm-scripting = { workspace = true }
+llm-authoring = { workspace = true }
 
 # Async runtime
 tokio = { workspace = true }

@@ -17,6 +17,7 @@ Thank you for your interest in contributing to Monogatari, an LLM-driven visual 
   - `crates/game/` - Characters, Dialogue, Knowledge, Scenes, Script parser
   - `crates/assets/` - Asset management, save/load
   - `crates/scripting/` - Rhai scripting engine
+  - `crates/authoring/` - Headless project configuration, paths, and atomic authoring operations
   - `crates/tauri-app/` - Tauri commands and state management
 - `frontend/` - Vue 3 + TypeScript + Vite + Pinia
   - `src/views/` - 22 application views
@@ -36,6 +37,7 @@ Thank you for your interest in contributing to Monogatari, an LLM-driven visual 
 
 ### Rust Backend
 - Follow existing patterns for Tauri commands (see `commands/` modules)
+- Put transport-neutral project validation and mutation rules in `llm-authoring`; keep Tauri commands as adapters over shared services
 - Register new commands in `main.rs` and `commands/mod.rs`
 - Use `AppState` for shared state via `State<AppState>`
 - Use `tokio::sync::RwLock` for concurrent access

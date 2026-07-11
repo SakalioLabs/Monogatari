@@ -2101,6 +2101,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "llm-authoring"
+version = "0.9.5"
+dependencies = [
+ "serde",
+ "serde_json",
+ "sha2",
+ "tokio",
+]
+
+[[package]]
 name = "llm-core"
 version = "0.9.5"
 dependencies = [
@@ -2125,6 +2135,7 @@ dependencies = [
  "hostname",
  "llm-ai",
  "llm-assets",
+ "llm-authoring",
  "llm-core",
  "llm-game",
  "llm-scripting",
