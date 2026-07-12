@@ -12,6 +12,7 @@ use llm_authoring::json_catalog::{
     AuthorableJsonCatalog, JsonAcceptanceLevel, JsonCatalogDocument, JsonCatalogReport,
 };
 use llm_authoring::project::default_project_config;
+use llm_authoring::runtime_validation::CoreRuntimeValidationReport;
 use monogatari_mcp::protocol::{InspectProjectOutput, McpToolError, McpToolErrorCode};
 use rmcp::model::{CallToolRequestParams, JsonObject};
 use rmcp::service::RunningService;
@@ -60,7 +61,7 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
     )?;
     let client = connect(&project.root, false).await?;
     let second_reader = connect(&project.root, false).await?;
-    assert_eq!(second_reader.list_all_tools().await?.len(), 5);
+    assert_eq!(second_reader.list_all_tools().await?.len(), 6);
     second_reader.cancel().await?;
 
     let tools = client.list_all_tools().await?;
@@ -76,7 +77,8 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
             "inspect_project",
             "list_project_json",
             "plan_transaction",
-            "read_project_json"
+            "read_project_json",
+            "validate_project"
         ]
     );
     assert!(tools.iter().all(|tool| tool.output_schema.is_some()));
@@ -88,6 +90,17 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
     assert!(!inspection.write_enabled);
     assert_eq!(inspection.acceptance_level, JsonAcceptanceLevel::Document);
     assert!(inspection.project.config["ai"]["api"]["api_key"] == "");
+
+    let validation = client
+        .call_tool(CallToolRequestParams::new("validate_project"))
+        .await?;
+    let validation: CoreRuntimeValidationReport = structured(&validation)?;
+    assert!(validation.valid, "{:?}", validation.issues);
+    assert_eq!(validation.character_count, 1);
+    assert_eq!(
+        validation.acceptance_level,
+        JsonAcceptanceLevel::CoreRuntime
+    );
 
     let listing = client
         .call_tool(
@@ -130,6 +143,30 @@ async fn readonly_stdio_plans_but_structurally_rejects_apply() -> anyhow::Result
     assert_eq!(error.code, McpToolErrorCode::WriteDisabled);
     assert!(!project.root.join("characters/emi.json").exists());
 
+    client.cancel().await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn readonly_validation_returns_structured_invalid_evidence() -> anyhow::Result<()> {
+    let project = TestProject::new("validate-invalid");
+    std::fs::write(
+        project.root.join("quality_suites/rejected.json"),
+        r#"{"version":"1","name":"Rejected","description":"Invalid refs","scenarios":[{"id":"missing","category":"story","description":"Missing character","character_id":"missing","expect":{}}]}"#,
+    )?;
+    let client = connect(&project.root, false).await?;
+
+    let validation = client
+        .call_tool(CallToolRequestParams::new("validate_project"))
+        .await?;
+    assert_eq!(validation.is_error, Some(false));
+    let validation: CoreRuntimeValidationReport = structured(&validation)?;
+
+    assert!(!validation.valid);
+    assert!(validation
+        .issues
+        .iter()
+        .any(|issue| issue.code == "quality_character_missing"));
     client.cancel().await?;
     Ok(())
 }

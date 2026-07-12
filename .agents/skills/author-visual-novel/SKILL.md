@@ -34,7 +34,7 @@ When an Agent transport offers transaction planning or application, read [refere
 
 ## Use Standard MCP When Available
 
-The repository ships `monogatari-mcp`, documented in `docs/MCP_SERVER.md`. Call `inspect_project` first, use `list_project_json` and `read_project_json` to obtain exact preconditions, then call `plan_transaction`. Call `apply_transaction` only when the server explicitly reports write mode and pass the unchanged transaction plus the reviewed plan's `precondition_fingerprint`. Treat read-only `document` acceptance as JSON safety evidence. A successful write may report `core_runtime`, proving real character/dialogue/knowledge loading plus strict scene/ending/Story Event/Workflow/Quality Suite catalogs and references; it is not package, Quality scenario execution, or visual completion.
+The repository ships `monogatari-mcp`, documented in `docs/MCP_SERVER.md`. Call `inspect_project` and `validate_project` first, use `list_project_json` and `read_project_json` to obtain exact preconditions, then call `plan_transaction`. Call `apply_transaction` only when the server explicitly reports write mode and pass the unchanged transaction plus the reviewed plan's `precondition_fingerprint`. Call `validate_project` again after application. Treat read-only `document` acceptance as JSON safety evidence and `core_runtime` as real character/dialogue/knowledge loading plus strict scene/ending/Story Event/Workflow/Quality Suite catalogs and references; it is not package, Quality scenario execution, or visual completion.
 
 ## Validate The Result
 

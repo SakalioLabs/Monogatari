@@ -11,6 +11,9 @@ use llm_authoring::json_catalog::{
     inspect_project_json_catalog, read_project_json, JsonCatalogDocument, JsonCatalogReport,
 };
 use llm_authoring::project::{canonical_project_root, inspect_project_config, ProjectConfigState};
+use llm_authoring::runtime_validation::{
+    validate_core_runtime_project, CoreRuntimeValidationReport,
+};
 use rmcp::handler::server::{router::tool::ToolRouter, wrapper::Parameters};
 use rmcp::model::{Implementation, ServerCapabilities, ServerInfo};
 use rmcp::{tool, tool_handler, tool_router, Json, ServerHandler};
@@ -119,6 +122,25 @@ impl MonogatariMcpServer {
             project,
             json_catalog,
         }))
+    }
+
+    /// Validate the current project through every shared headless authoring gate without writing.
+    #[tool(annotations(
+        title = "Validate project",
+        read_only_hint = true,
+        destructive_hint = false,
+        idempotent_hint = true,
+        open_world_hint = false
+    ))]
+    pub async fn validate_project(
+        &self,
+    ) -> Result<Json<CoreRuntimeValidationReport>, Json<McpToolError>> {
+        let _guard = self.access.read().await;
+        validate_core_runtime_project(&self.project_root)
+            .await
+            .map(Json)
+            .map_err(|message| McpToolError::project(message, None))
+            .map_err(Json)
     }
 
     /// List safe JSON metadata and exact SHA-256 preconditions, optionally by catalog.
@@ -234,7 +256,7 @@ impl ServerHandler for MonogatariMcpServer {
                 env!("CARGO_PKG_VERSION"),
             ))
             .with_instructions(format!(
-                "Author Monogatari visual novels inside the fixed project root. Inspect, list, and read before planning. Plan before apply. Transaction acceptance loads real character, dialogue, and knowledge managers and checks their core references; scene, event, ending, workflow, package, Quality Suite, and visual acceptance still require their dedicated gates. {mode}"
+                "Author Monogatari visual novels inside the fixed project root. Inspect, list, and read before planning. Use validate_project for read-only headless acceptance. Plan before apply. Transaction acceptance and validate_project share real runtime, scene, ending, Story Event, Workflow, and Quality Suite validation; package, Quality execution, and visual acceptance remain higher gates. {mode}"
             ))
     }
 }
@@ -268,7 +290,7 @@ mod tests {
     }
 
     #[test]
-    fn exposes_exactly_five_schema_backed_tools_with_write_annotations() {
+    fn exposes_six_schema_backed_tools_with_write_annotations() {
         let root = temp_project();
         let server = MonogatariMcpServer::new(root.clone(), false).unwrap();
         let tools = server.tool_router.list_all();
@@ -283,7 +305,8 @@ mod tests {
                 "inspect_project",
                 "list_project_json",
                 "plan_transaction",
-                "read_project_json"
+                "read_project_json",
+                "validate_project"
             ]
         );
         assert!(tools.iter().all(|tool| tool.output_schema.is_some()));

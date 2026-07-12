@@ -35,7 +35,7 @@
 - [ ] `cargo check --locked -p llm-galgame-app` passes
 - [ ] `cargo test --locked -p llm-authoring` passes independently of Tauri
 - [ ] Agent transaction tests prove strict schemas, portable JSON-only paths, missing/exact-SHA preconditions, duplicate and case-collision rejection, deterministic dry-run plans, complete candidate validation, multi-file commit, and reverse-order rollback
-- [ ] `cargo test --locked -p monogatari-mcp` passes, including a real stdio child-process handshake, five schema-backed tools, scrubbed reads, deterministic plans, default write refusal, reviewed-plan fingerprint enforcement, one-writer exclusion, successful core-runtime application, and rollback after document or runtime-reference rejection
+- [ ] `cargo test --locked -p monogatari-mcp` passes, including a real stdio child-process handshake, six schema-backed tools, scrubbed reads, structured read-only validation, deterministic plans, default write refusal, reviewed-plan fingerprint enforcement, one-writer exclusion, successful core-runtime application, and rollback after document or runtime-reference rejection
 - [ ] `cargo build --locked --release -p monogatari-mcp` produces the distributable stdio server binary documented in `docs/MCP_SERVER.md`
 - [ ] MCP inspection claims document acceptance; candidate application claims only `core_runtime` character/dialogue/knowledge manager and reference acceptance; scene, event, ending, workflow, package, Quality Suite, and experience gates remain separate evidence
 - [ ] `cargo clippy --workspace --all-targets --locked -- -D warnings` passes

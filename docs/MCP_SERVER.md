@@ -39,6 +39,7 @@ This is read-only. Add `--allow-write` to `args` only for a client that should b
 | Tool | Mode | Contract |
 |---|---|---|
 | `inspect_project` | Read | Returns scrubbed settings readiness and a complete JSON catalog report |
+| `validate_project` | Read | Runs every shared headless runtime/catalog/reference gate and returns structured evidence without writing |
 | `list_project_json` | Read | Lists exact byte SHA-256, semantic content fingerprint, size, kind, and portable path; accepts an optional catalog filter |
 | `read_project_json` | Read | Reads one exact-case JSON path beneath an authorable catalog |
 | `plan_transaction` | Read | Validates `monogatari-agent-project-transaction/v1` and returns a deterministic plan without writing |
@@ -49,11 +50,12 @@ The authorable JSON catalogs are `assets`, `characters`, `dialogue`, `endings`, 
 ## Agent Flow
 
 1. Call `inspect_project` and stop on project or catalog errors.
-2. Call `list_project_json`, then `read_project_json` for every document that will be updated or deleted.
-3. Use `missing` for creates and the returned exact `sha256` for updates or deletions.
-4. Call `plan_transaction` and review every resolved path, operation, resulting hash, byte count, and the plan fingerprint.
-5. Call `apply_transaction` with the unchanged transaction and reviewed `expected_precondition_fingerprint`.
-6. Run graph, runtime, package, Quality Suite, and visual gates appropriate to the deliverable.
+2. Call `validate_project` to obtain current structured runtime/catalog/reference evidence.
+3. Call `list_project_json`, then `read_project_json` for every document that will be updated or deleted.
+4. Use `missing` for creates and the returned exact `sha256` for updates or deletions.
+5. Call `plan_transaction` and review every resolved path, operation, resulting hash, byte count, and the plan fingerprint.
+6. Call `apply_transaction` with the unchanged transaction and reviewed `expected_precondition_fingerprint`.
+7. Call `validate_project` again, then run package, Quality execution, and visual gates appropriate to the deliverable.
 
 Planning and application both re-read current state. Any intervening file change invalidates the SHA precondition or plan fingerprint instead of overwriting newer work.
 
