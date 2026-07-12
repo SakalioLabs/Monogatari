@@ -1,6 +1,7 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Unified authored dialogue conditions across Rust and browser Playtest: false choices are hidden with stable original indices, false nodes follow required linear fallbacks with cycle detection, dialogue scripts and variables feed later conditions, unsupported browser expressions stop explicitly, failed Rust conditions/scripts roll back cursor and local state, and Rust now delegates legacy-compatible dialogue scripts to the bounded shared Rhai engine.
 - Added a pure browser Story Playtest dialogue state machine with explicit graph errors and immutable relationship updates; desktop choice execution now preflights every relationship target, guards the inspected source node, applies authored deltas through CharacterManager clamping, and tests both runtimes.
 - Extracted the browser workflow validator and preview executor from `WorkflowEditor.vue` into a pure, injected `workflowPreview` domain module with deterministic random-branch tests, run-context normalization, stateful condition/event simulation, useful scene/narration traces, and explicit refusal to misroute unsupported conditions; release source-invariant checks now live in an importable verifier module.
 - Added the official-SDK `monogatari-mcp` stdio server with five schema-backed tools, a startup-fixed project root, read-only default, reviewed transaction fingerprints, shared/exclusive process leases, document-level candidate validation, rollback, real child-process protocol tests, and a release-built binary.

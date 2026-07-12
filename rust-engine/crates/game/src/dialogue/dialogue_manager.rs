@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, info};
 
 use llm_core::{normalize_script_state_key, normalize_script_state_map, Result};
+use llm_scripting::ScriptEngine;
 
 use super::dialogue_node::{Choice, DialogueNode};
 use super::dialogue_script::DialogueScript;
@@ -149,11 +150,20 @@ impl DialogueManager {
             llm_core::EngineError::dialogue(script_id, "unknown", "Dialogue not found")
         })?;
 
+        let start_node_id = script.start_node_id.clone();
+        let title = script.title.clone();
+        let variables = normalize_script_state_map(script.variables.clone())?;
+        let previous_state = self.runtime_state();
         self.active_script_id = Some(script_id.to_string());
-        self.current_node_id = Some(script.start_node_id.clone());
+        self.current_node_id = Some(start_node_id);
+        self.variables = variables;
 
-        debug!("Started dialogue: {}", script.title);
-        self.process_current_node().await
+        debug!("Started dialogue: {title}");
+        if let Err(error) = self.process_current_node().await {
+            self.restore_runtime_state_unchecked(previous_state);
+            return Err(error);
+        }
+        Ok(())
     }
 
     /// Advance to the next node in a linear dialogue.
@@ -176,8 +186,13 @@ impl DialogueManager {
         })?;
 
         if let Some(next_id) = &node.next_node_id {
+            let previous_state = self.runtime_state();
             self.current_node_id = Some(next_id.clone());
-            self.process_current_node().await
+            if let Err(error) = self.process_current_node().await {
+                self.restore_runtime_state_unchecked(previous_state);
+                return Err(error);
+            }
+            Ok(())
         } else {
             // End of dialogue
             self.end_dialogue().await
@@ -216,6 +231,13 @@ impl DialogueManager {
                 format!("Invalid choice index: {choice_index}"),
             )
         })?;
+        if !self.condition_matches(choice.condition.as_deref())? {
+            return Err(llm_core::EngineError::dialogue(
+                &script_id,
+                &current_id,
+                format!("Choice {} is not available", choice_index + 1),
+            ));
+        }
 
         Ok(DialogueChoiceEffects {
             source_node_id: current_id,
@@ -254,17 +276,22 @@ impl DialogueManager {
                 )
             })?;
 
+        let previous_state = self.runtime_state();
         let choice_flag =
             normalize_script_state_key(&format!("choice_{script_id}_{choice_index}"))?;
         self.flags.insert(choice_flag, true);
 
         self.current_node_id = Some(choice.next_node_id.clone());
-        self.process_current_node().await?;
+        if let Err(error) = self.process_current_node().await {
+            self.restore_runtime_state_unchecked(previous_state);
+            return Err(error);
+        }
         Ok(effects)
     }
 
     /// Process the current node: execute scripts, handle LLM, send events.
     async fn process_current_node(&mut self) -> Result<()> {
+        self.resolve_conditional_nodes()?;
         let current_id = self
             .current_node_id
             .clone()
@@ -305,7 +332,12 @@ impl DialogueManager {
 
         // Send event
         if let Some(sender) = &self.event_sender {
-            if node.choices.is_empty() {
+            let available_choices = self
+                .available_choices()?
+                .into_iter()
+                .map(|(_, choice)| choice)
+                .collect::<Vec<_>>();
+            if available_choices.is_empty() {
                 let _ = sender.send(DialogueEvent::ShowDialogue {
                     speaker_id: node.speaker_id.clone(),
                     text,
@@ -318,7 +350,7 @@ impl DialogueManager {
                     emotion: node.emotion.clone(),
                 });
                 let _ = sender.send(DialogueEvent::ShowChoices {
-                    choices: node.choices.clone(),
+                    choices: available_choices,
                 });
             }
         }
@@ -410,11 +442,15 @@ impl DialogueManager {
     /// Restore a previously validated dialogue cursor and local state.
     pub fn restore_runtime_state(&mut self, state: DialogueRuntimeState) -> Result<()> {
         let state = self.validate_runtime_state(state)?;
+        self.restore_runtime_state_unchecked(state);
+        Ok(())
+    }
+
+    fn restore_runtime_state_unchecked(&mut self, state: DialogueRuntimeState) {
         self.active_script_id = state.active_script_id;
         self.current_node_id = state.current_node_id;
         self.flags = state.flags;
         self.variables = state.variables;
-        Ok(())
     }
 
     /// Load dialogue state from persistence.
@@ -428,48 +464,90 @@ impl DialogueManager {
         Ok(())
     }
 
-    /// Execute a simple script expression (setFlag, setVariable).
+    /// Execute an authored Rhai script against dialogue-local JSON state.
     fn execute_script(&mut self, script: &str) -> Result<()> {
-        let trimmed = script.trim();
-
-        // Parse setFlag('name', true/false)
-        if let Some(inner) = trimmed
-            .strip_prefix("setFlag(")
-            .and_then(|value| value.strip_suffix(')'))
-        {
-            let parts: Vec<&str> = inner
-                .split(',')
-                .map(|s| s.trim().trim_matches('\''))
-                .collect();
-            if parts.len() >= 2 {
-                let flag_name = normalize_script_state_key(parts[0])?;
-                let value = parts[1] == "true";
-                self.flags.insert(flag_name.clone(), value);
-                debug!("Set flag: {} = {}", flag_name, value);
-            }
-        }
-
-        // Parse setVariable('name', 'value')
-        if let Some(inner) = trimmed
-            .strip_prefix("setVariable(")
-            .and_then(|value| value.strip_suffix(')'))
-        {
-            let parts: Vec<&str> = inner
-                .split(',')
-                .map(|s| s.trim().trim_matches('\''))
-                .collect();
-            if parts.len() >= 2 {
-                let var_name = normalize_script_state_key(parts[0])?;
-                let value = parts[1];
-                self.variables.insert(
-                    var_name.clone(),
-                    serde_json::Value::String(value.to_string()),
-                );
-                debug!("Set variable: {} = {}", var_name, value);
-            }
-        }
-
+        let engine = self.script_engine()?;
+        let script = normalize_legacy_dialogue_script(script);
+        let _ = engine.execute(&script)?;
+        let (variables, flags) = engine.json_state()?;
+        self.variables = variables;
+        self.flags = flags;
         Ok(())
+    }
+
+    fn resolve_conditional_nodes(&mut self) -> Result<()> {
+        let script_id = self
+            .active_script_id
+            .clone()
+            .ok_or_else(|| llm_core::EngineError::dialogue("none", "none", "No active dialogue"))?;
+        let max_nodes = self
+            .scripts
+            .get(&script_id)
+            .map(|script| script.nodes.len())
+            .unwrap_or(0);
+        let mut visited = std::collections::HashSet::new();
+        loop {
+            let node_id = self.current_node_id.clone().ok_or_else(|| {
+                llm_core::EngineError::dialogue(&script_id, "none", "No current dialogue node")
+            })?;
+            if !visited.insert(node_id.clone()) || visited.len() > max_nodes {
+                return Err(llm_core::EngineError::dialogue(
+                    &script_id,
+                    &node_id,
+                    "Conditional node fallback cycle detected",
+                ));
+            }
+            let node = self
+                .scripts
+                .get(&script_id)
+                .and_then(|script| script.nodes.get(&node_id))
+                .ok_or_else(|| {
+                    llm_core::EngineError::dialogue(&script_id, &node_id, "Node not found")
+                })?;
+            if self.condition_matches(node.condition.as_deref())? {
+                return Ok(());
+            }
+            let next_node_id = node.next_node_id.clone().ok_or_else(|| {
+                llm_core::EngineError::dialogue(
+                    &script_id,
+                    &node_id,
+                    "Conditional node has no fallback transition",
+                )
+            })?;
+            self.current_node_id = Some(next_node_id);
+        }
+    }
+
+    fn condition_matches(&self, condition: Option<&str>) -> Result<bool> {
+        let Some(condition) = condition.filter(|condition| !condition.trim().is_empty()) else {
+            return Ok(true);
+        };
+        self.script_engine()?
+            .evaluate_condition(&normalize_legacy_dialogue_script(condition))
+    }
+
+    fn script_engine(&self) -> Result<ScriptEngine> {
+        let engine = ScriptEngine::new();
+        engine.load_json_state(self.variables.clone(), self.flags.clone())?;
+        Ok(engine)
+    }
+
+    /// Return choices whose authored conditions pass, preserving original indices.
+    pub fn available_choices(&self) -> Result<Vec<(usize, Choice)>> {
+        let node = self.current_node().ok_or_else(|| {
+            llm_core::EngineError::dialogue("current", "none", "No current dialogue node")
+        })?;
+        node.choices
+            .iter()
+            .enumerate()
+            .filter_map(|(index, choice)| {
+                match self.condition_matches(choice.condition.as_deref()) {
+                    Ok(true) => Some(Ok((index, choice.clone()))),
+                    Ok(false) => None,
+                    Err(error) => Some(Err(error)),
+                }
+            })
+            .collect()
     }
 
     /// Set a game flag.
@@ -554,6 +632,36 @@ impl DialogueManager {
     pub fn has_script(&self, script_id: &str) -> bool {
         self.scripts.contains_key(script_id)
     }
+}
+
+fn normalize_legacy_dialogue_script(script: &str) -> String {
+    let mut normalized = String::with_capacity(script.len());
+    let mut in_single_quote = false;
+    let mut escaped = false;
+    for character in script.chars() {
+        if in_single_quote {
+            if escaped {
+                normalized.push(character);
+                escaped = false;
+            } else if character == '\\' {
+                normalized.push(character);
+                escaped = true;
+            } else if character == '\'' {
+                normalized.push('"');
+                in_single_quote = false;
+            } else if character == '"' {
+                normalized.push_str("\\\"");
+            } else {
+                normalized.push(character);
+            }
+        } else if character == '\'' {
+            normalized.push('"');
+            in_single_quote = true;
+        } else {
+            normalized.push(character);
+        }
+    }
+    normalized
 }
 
 impl Default for DialogueManager {
@@ -655,6 +763,110 @@ mod tests {
         assert_eq!(effects.source_node_id, "start");
         assert_eq!(effects.relationship_changes.get("sakura"), Some(&0.4));
         assert_eq!(manager.current_node().unwrap().text, "Thank you");
+    }
+
+    #[tokio::test]
+    async fn dialogue_conditions_filter_stable_choice_indices_and_skip_linear_nodes() {
+        let script: DialogueScript = serde_json::from_value(serde_json::json!({
+            "id": "conditional",
+            "title": "Conditional",
+            "start_node_id": "start",
+            "variables": {"score": 1},
+            "nodes": {
+                "start": {
+                    "text": "Choose",
+                    "script": "setFlag('met_aoi', true); setVariable('score', 2);",
+                    "choices": [
+                        {"text": "Hidden", "next_node_id": "hidden", "condition": "hasFlag(\"missing\")"},
+                        {"text": "Visible", "next_node_id": "skip", "condition": "hasFlag(\"met_aoi\") && getVariable(\"score\") == 2"}
+                    ]
+                },
+                "hidden": {"text": "Hidden"},
+                "skip": {
+                    "text": "Skip",
+                    "condition": "getVariable(\"score\") < 2",
+                    "next_node_id": "shown"
+                },
+                "shown": {"text": "Shown"}
+            }
+        }))
+        .unwrap();
+        let mut manager = DialogueManager::new();
+        manager.scripts.insert(script.id.clone(), script);
+
+        manager.start_dialogue("conditional").await.unwrap();
+
+        assert_eq!(
+            manager
+                .available_choices()
+                .unwrap()
+                .into_iter()
+                .map(|(index, choice)| (index, choice.text))
+                .collect::<Vec<_>>(),
+            vec![(1, "Visible".to_string())]
+        );
+        assert!(manager.choice_effects(0).is_err());
+        manager.select_choice(1).await.unwrap();
+        assert_eq!(manager.current_node().unwrap().text, "Shown");
+        assert!(manager.has_flag("met_aoi"));
+        assert_eq!(manager.variables.get("score"), Some(&serde_json::json!(2)));
+    }
+
+    #[test]
+    fn conditional_nodes_require_linear_fallbacks() {
+        let mut script: DialogueScript = serde_json::from_value(serde_json::json!({
+            "id": "conditional",
+            "title": "Conditional",
+            "start_node_id": "start",
+            "nodes": {"start": {"text": "Blocked", "condition": "false"}}
+        }))
+        .unwrap();
+
+        assert!(script.validate_graph().is_err());
+        script.nodes.get_mut("start").unwrap().condition = Some("  ".to_string());
+        assert!(script.validate_graph().is_ok());
+    }
+
+    #[tokio::test]
+    async fn condition_and_script_failures_roll_back_dialogue_runtime_state() {
+        let invalid_start: DialogueScript = serde_json::from_value(serde_json::json!({
+            "id": "invalid_start",
+            "title": "Invalid Start",
+            "start_node_id": "start",
+            "nodes": {
+                "start": {"text": "Start", "condition": "unknownFunction()", "next_node_id": "end"},
+                "end": {"text": "End"}
+            }
+        }))
+        .unwrap();
+        let invalid_choice: DialogueScript = serde_json::from_value(serde_json::json!({
+            "id": "invalid_choice",
+            "title": "Invalid Choice",
+            "start_node_id": "start",
+            "nodes": {
+                "start": {"text": "Start", "choices": [{"text": "Continue", "next_node_id": "end"}]},
+                "end": {"text": "End", "script": "unknownFunction();"}
+            }
+        }))
+        .unwrap();
+        let mut manager = DialogueManager::new();
+        manager
+            .scripts
+            .insert(invalid_start.id.clone(), invalid_start);
+        manager
+            .scripts
+            .insert(invalid_choice.id.clone(), invalid_choice);
+        manager.set_flag("preserved", true).unwrap();
+
+        assert!(manager.start_dialogue("invalid_start").await.is_err());
+        assert!(!manager.is_active());
+        assert!(manager.has_flag("preserved"));
+
+        manager.start_dialogue("invalid_choice").await.unwrap();
+        assert!(manager.select_choice(0).await.is_err());
+        assert_eq!(manager.current_node().unwrap().text, "Start");
+        assert!(!manager.has_flag("choice_invalid_choice_0"));
+        assert!(manager.has_flag("preserved"));
     }
 
     #[tokio::test]

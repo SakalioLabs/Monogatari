@@ -82,7 +82,7 @@
 - [ ] Example characters load correctly (Sakura, Luna, Kenji)
 - [ ] Example dialogues play through with choices
 - [ ] Both checked-in project data roots load through the real character/dialogue/knowledge/event managers, including legacy relationship-object normalization and map-key dialogue node IDs
-- [ ] Story Library lists scene/dialogue/ending lock state; Web/PWA dialogue playback rejects broken targets and applies immutable bounded choice relationship effects; desktop playback preflights every relationship target before committing the inspected dialogue cursor
+- [ ] Story Library lists scene/dialogue/ending lock state; Web/PWA and desktop dialogue playback hide false choices while preserving authored indices, follow required linear fallbacks for false nodes, carry script variables/flags into later conditions, reject unsupported browser syntax, reject broken targets, and apply bounded choice relationship effects; desktop playback preflights every relationship target before committing the inspected dialogue cursor
 - [ ] Scene and Dialogue editors guard dirty drafts, persist browser catalogs, display real project diagnostics, and preview saved drafts through Playtest on desktop and Web/PWA
 - [ ] Release dialogue validation passes for both checked-in data roots with matching catalogs, reachable nodes, valid targets, known characters, and bounded relationship changes
 - [ ] Ending Route editor binds real scene/dialogue catalogs, reports event coverage, guards dirty drafts, persists browser drafts, and previews saved routes without requiring player unlock progress

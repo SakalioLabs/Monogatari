@@ -115,4 +115,14 @@ describe('dialogue authoring contracts', () => {
     expect(issues.some((issue) => issue.includes('speaker "../aoi" is not portable'))).toBe(true)
     expect(issues.some((issue) => issue.includes('relationship character "../aoi" is not portable'))).toBe(true)
   })
+
+  it('requires conditional nodes to define an unambiguous linear fallback', () => {
+    const issues = validateDialogueDefinition(dialogue({
+      nodes: {
+        start: node({ condition: "hasFlag('started')" }),
+      },
+    }), ['aoi'])
+
+    expect(issues).toContain('Conditional node "start" requires a linear fallback target.')
+  })
 })

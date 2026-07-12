@@ -204,6 +204,43 @@ impl ScriptEngine {
         Ok(())
     }
 
+    /// Load JSON-compatible variables and flags into the script runtime.
+    pub fn load_json_state(
+        &self,
+        variables: HashMap<String, serde_json::Value>,
+        flags: HashMap<String, bool>,
+    ) -> Result<()> {
+        let variables = variables
+            .into_iter()
+            .map(|(name, value)| {
+                rhai::serde::to_dynamic(value)
+                    .map(|value| (name, value))
+                    .map_err(|error| {
+                        EngineError::script(format!("Invalid script variable: {error}"), 0, 0)
+                    })
+            })
+            .collect::<Result<HashMap<_, _>>>()?;
+        self.load_state(variables, flags)
+    }
+
+    /// Export script variables and flags as JSON-compatible state.
+    pub fn json_state(
+        &self,
+    ) -> Result<(HashMap<String, serde_json::Value>, HashMap<String, bool>)> {
+        let variables = self
+            .all_variables()
+            .into_iter()
+            .map(|(name, value)| {
+                rhai::serde::from_dynamic::<serde_json::Value>(&value)
+                    .map(|value| (name, value))
+                    .map_err(|error| {
+                        EngineError::script(format!("Invalid script result: {error}"), 0, 0)
+                    })
+            })
+            .collect::<Result<HashMap<_, _>>>()?;
+        Ok((variables, self.all_flags()))
+    }
+
     /// Register a custom function.
     pub fn register_fn_dynamic(
         &mut self,
@@ -580,5 +617,30 @@ mod tests {
         let flags = HashMap::new();
 
         assert!(engine.load_state(variables, flags).is_err());
+    }
+
+    #[test]
+    fn json_state_round_trips_condition_and_script_values() {
+        let engine = ScriptEngine::new();
+        engine
+            .load_json_state(
+                HashMap::from([
+                    ("score".to_string(), serde_json::json!(2)),
+                    ("route".to_string(), serde_json::json!("aoi")),
+                ]),
+                HashMap::from([("started".to_string(), true)]),
+            )
+            .unwrap();
+
+        assert!(engine
+            .evaluate_condition("hasFlag(\"started\") && getVariable(\"score\") == 2")
+            .unwrap());
+        let _ = engine
+            .execute("setVariable(\"score\", 3); setFlag(\"finished\", true);")
+            .unwrap();
+        let (variables, flags) = engine.json_state().unwrap();
+        assert_eq!(variables.get("score"), Some(&serde_json::json!(3)));
+        assert_eq!(variables.get("route"), Some(&serde_json::json!("aoi")));
+        assert_eq!(flags.get("finished"), Some(&true));
     }
 }

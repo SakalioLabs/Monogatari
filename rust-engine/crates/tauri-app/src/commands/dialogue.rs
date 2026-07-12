@@ -914,13 +914,13 @@ fn get_dialogue_state_inner(dm: &DialogueManager) -> Result<DialogueState, Strin
     }
 
     let node = dm.current_node().ok_or("No current node")?;
-    let choices = node
-        .choices
-        .iter()
-        .enumerate()
+    let choices = dm
+        .available_choices()
+        .map_err(|error| error.to_string())?
+        .into_iter()
         .map(|(index, choice)| ChoiceInfo {
             index,
-            text: choice.text.clone(),
+            text: choice.text,
         })
         .collect();
 
@@ -1139,8 +1139,10 @@ mod tests {
             r#"{
               "id":"intro","title":"Intro","start_node_id":"start",
               "nodes":{
-                "start":{"speaker_id":"sakura","text":"Choose.","choices":[{
-                  "text":"Be kind","next_node_id":"end","relationship_changes":{"sakura":0.6}
+                "start":{"speaker_id":"sakura","text":"Choose.","script":"setFlag('visible', true)","choices":[{
+                  "text":"Be kind","next_node_id":"end","condition":"hasFlag(\"visible\")","relationship_changes":{"sakura":0.6}
+                },{
+                  "text":"Hidden","next_node_id":"end","condition":"hasFlag(\"missing\")"
                 },{
                   "text":"Unknown","next_node_id":"end","relationship_changes":{"missing":0.2}
                 }]},
@@ -1151,10 +1153,18 @@ mod tests {
         .unwrap();
         let state = authoring_state(&root).await;
 
-        start_dialogue_authoring_inner(&state, "intro")
+        let started = start_dialogue_authoring_inner(&state, "intro")
             .await
             .unwrap();
-        let error = select_choice_inner(&state, 1).await.unwrap_err();
+        assert_eq!(
+            started
+                .choices
+                .iter()
+                .map(|choice| choice.index)
+                .collect::<Vec<_>>(),
+            vec![0, 2]
+        );
+        let error = select_choice_inner(&state, 2).await.unwrap_err();
         assert!(error.contains("unknown character `missing`"));
         assert_eq!(
             state

@@ -43,7 +43,7 @@ describe('browser story playtest dialogue cursor', () => {
     }))
 
     expect(transition).toMatchObject({
-      node_id: 'start',
+      runtime: { node_id: 'start' },
       completed: false,
       blocked_reason: null,
       state: {
@@ -69,8 +69,9 @@ describe('browser story playtest dialogue cursor', () => {
       kind: { text: 'Thank you.' },
     })
 
-    expect(selectBrowserDialogueChoice(script, 'start', 0)).toMatchObject({
-      node_id: 'kind',
+    const started = startBrowserDialogue(script)
+    expect(selectBrowserDialogueChoice(script, started.runtime, 0)).toMatchObject({
+      runtime: { node_id: 'kind' },
       relationship_changes: { aoi: 0.4 },
       state: { text: 'Thank you.' },
     })
@@ -107,16 +108,66 @@ describe('browser story playtest dialogue cursor', () => {
       end: { text: 'Done.', is_ending: true },
     })
 
-    expect(advanceBrowserDialogue(script, 'start')).toMatchObject({
-      node_id: 'start',
+    const started = startBrowserDialogue(script)
+    expect(advanceBrowserDialogue(script, started.runtime)).toMatchObject({
+      runtime: { node_id: 'start' },
       completed: false,
       blocked_reason: 'choice_required',
     })
-    expect(advanceBrowserDialogue(script, 'end')).toMatchObject({
-      node_id: null,
+    const ending = selectBrowserDialogueChoice(script, started.runtime, 0)
+    expect(advanceBrowserDialogue(script, ending.runtime)).toMatchObject({
+      runtime: { node_id: null },
       completed: true,
       state: { is_active: false, text: '' },
     })
+  })
+
+  it('keeps authored choice indices while filtering choices from dialogue-local state', () => {
+    const script = dialogue({
+      start: {
+        text: 'Choose.',
+        script: "setFlag('met_aoi', true)",
+        choices: [
+          { text: 'Hidden', next_node_id: 'hidden', condition: "hasFlag('missing')" },
+          { text: 'Visible', next_node_id: 'visible', condition: "hasFlag('met_aoi')" },
+        ],
+      },
+      hidden: { text: 'Hidden.' },
+      visible: { text: 'Visible.' },
+    })
+
+    const started = startBrowserDialogue(script)
+    expect(started.state.choices).toEqual([{ index: 1, text: 'Visible' }])
+    expect(started.runtime.flags).toEqual({ met_aoi: true })
+    expect(() => selectBrowserDialogueChoice(script, started.runtime, 0)).toThrowError(expect.objectContaining({
+      code: 'choice_unavailable',
+    }))
+    expect(selectBrowserDialogueChoice(script, started.runtime, 1).state.text).toBe('Visible.')
+  })
+
+  it('skips disabled linear nodes and carries script variables into later conditions', () => {
+    const script = dialogue({
+      start: { text: 'Start.', script: "setVariable('score', 2)", next_node_id: 'skip' },
+      skip: { text: 'Skip.', condition: "getVariable('score') < 2", next_node_id: 'shown' },
+      shown: { text: 'Shown.', condition: "getVariable('score') == 2" },
+    })
+
+    const started = startBrowserDialogue(script)
+    const advanced = advanceBrowserDialogue(script, started.runtime)
+    expect(advanced.runtime).toMatchObject({ node_id: 'shown', variables: { score: 2 } })
+    expect(advanced.state.text).toBe('Shown.')
+  })
+
+  it('rejects blocked conditional terminals and unsupported browser expressions explicitly', () => {
+    const blocked = dialogue({ start: { text: 'Blocked.', condition: 'false' } })
+    expect(() => startBrowserDialogue(blocked)).toThrowError(expect.objectContaining({
+      code: 'node_condition_blocked',
+    }))
+
+    const unsupported = dialogue({ start: { text: 'Unsupported.', condition: 'unknownFunction()' } })
+    expect(() => startBrowserDialogue(unsupported)).toThrowError(expect.objectContaining({
+      code: 'condition_unsupported',
+    }))
   })
 
   it.each([
@@ -131,10 +182,11 @@ describe('browser story playtest dialogue cursor', () => {
     const script = dialogue({
       start: { text: 'Choose.', choices: [{ text: 'Broken', next_node_id: 'missing' }] },
     })
+    const runtime = startBrowserDialogue(script).runtime
 
     for (const run of [
-      () => selectBrowserDialogueChoice(script, 'start', 2),
-      () => selectBrowserDialogueChoice(script, 'start', 0),
+      () => selectBrowserDialogueChoice(script, runtime, 2),
+      () => selectBrowserDialogueChoice(script, runtime, 0),
     ]) {
       try {
         run()
@@ -143,10 +195,10 @@ describe('browser story playtest dialogue cursor', () => {
         expect(error).toBeInstanceOf(StoryPlaytestError)
       }
     }
-    expect(() => selectBrowserDialogueChoice(script, 'start', 2)).toThrowError(expect.objectContaining({
+    expect(() => selectBrowserDialogueChoice(script, runtime, 2)).toThrowError(expect.objectContaining({
       code: 'choice_index_invalid',
     }))
-    expect(() => selectBrowserDialogueChoice(script, 'start', 0)).toThrowError(expect.objectContaining({
+    expect(() => selectBrowserDialogueChoice(script, runtime, 0)).toThrowError(expect.objectContaining({
       code: 'choice_target_missing',
       target_node_id: 'missing',
     }))
@@ -154,7 +206,8 @@ describe('browser story playtest dialogue cursor', () => {
 
   it('rejects missing linear targets instead of silently ending playback', () => {
     const script = dialogue({ start: { text: 'Start.', next_node_id: 'missing' } })
-    expect(() => advanceBrowserDialogue(script, 'start')).toThrowError(expect.objectContaining({
+    const runtime = startBrowserDialogue(script).runtime
+    expect(() => advanceBrowserDialogue(script, runtime)).toThrowError(expect.objectContaining({
       code: 'next_target_missing',
       target_node_id: 'missing',
     }))

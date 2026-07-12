@@ -273,6 +273,7 @@ import {
   selectBrowserDialogueChoice,
   startBrowserDialogue,
   type BrowserDialogueTransition,
+  type BrowserDialogueRuntime,
   type DialogueState,
 } from '../lib/storyPlaytest'
 import {
@@ -363,7 +364,8 @@ const storyAccess = ref<StoryContentAccessSnapshot>({
   entries: [],
 })
 const webActiveDialogue = ref<StoryDialogueInfo | null>(null)
-const webDialogueNodeId = ref<string | null>(null)
+const webDialogueRuntime = ref<BrowserDialogueRuntime | null>(null)
+const webDialogueFlags = ref<Record<string, boolean>>({})
 
 const settings = ref({
   textSpeed: 30,
@@ -595,7 +597,7 @@ async function startStoryDialogue(dialogue: StoryDialogueInfo) {
       dialogueState.value = await invokeCommand<DialogueState>('start_dialogue', { dialogueId: dialogue.id })
     } else {
       webActiveDialogue.value = dialogue
-      applyBrowserDialogueTransition(startBrowserDialogue(dialogue))
+      applyBrowserDialogueTransition(startBrowserDialogue(dialogue, webDialogueFlags.value))
     }
     const state = dialogueState.value
     if (!state) throw new Error('Dialogue runtime did not return a state.')
@@ -621,13 +623,13 @@ async function startEnding(ending: StoryEndingInfo) {
     const launch = await invokeCommand<StoryEndingLaunch>('start_story_ending', { endingId: ending.id }, () => ({
       ending,
       scene: fallbackScene,
-      dialogue: startBrowserDialogue(fallbackDialogue).state,
+      dialogue: startBrowserDialogue(fallbackDialogue, webDialogueFlags.value).state,
     }))
     activeScene.value = launch.scene
     dialogueState.value = launch.dialogue
     if (!hasTauriRuntime()) {
       webActiveDialogue.value = fallbackDialogue
-      applyBrowserDialogueTransition(startBrowserDialogue(fallbackDialogue))
+      applyBrowserDialogueTransition(startBrowserDialogue(fallbackDialogue, webDialogueFlags.value))
     }
     const state = dialogueState.value
     if (!state) throw new Error('Ending runtime did not return a dialogue state.')
@@ -645,7 +647,8 @@ async function startEnding(ending: StoryEndingInfo) {
 async function selectChoice(index: number) {
   try {
     if (!hasTauriRuntime() && webActiveDialogue.value) {
-      const transition = selectBrowserDialogueChoice(webActiveDialogue.value, webDialogueNodeId.value, index)
+      if (!webDialogueRuntime.value) throw new Error('Browser dialogue runtime is unavailable.')
+      const transition = selectBrowserDialogueChoice(webActiveDialogue.value, webDialogueRuntime.value, index)
       applyBrowserChoiceRelationships(transition.relationship_changes)
       applyBrowserDialogueTransition(transition)
       syncCurrentCharacter()
@@ -668,7 +671,8 @@ async function advanceDialogue() {
   }
   try {
     if (!hasTauriRuntime() && webActiveDialogue.value) {
-      const transition = advanceBrowserDialogue(webActiveDialogue.value, webDialogueNodeId.value)
+      if (!webDialogueRuntime.value) throw new Error('Browser dialogue runtime is unavailable.')
+      const transition = advanceBrowserDialogue(webActiveDialogue.value, webDialogueRuntime.value)
       if (transition.blocked_reason === 'choice_required') return
       applyBrowserDialogueTransition(transition)
       if (transition.state.is_active) {
@@ -687,7 +691,8 @@ async function advanceDialogue() {
 }
 
 function applyBrowserDialogueTransition(transition: BrowserDialogueTransition) {
-  webDialogueNodeId.value = transition.node_id
+  webDialogueRuntime.value = transition.runtime
+  webDialogueFlags.value = transition.runtime.flags
   dialogueState.value = transition.state
   if (transition.completed) webActiveDialogue.value = null
 }

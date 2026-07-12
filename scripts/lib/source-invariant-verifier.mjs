@@ -28,6 +28,7 @@ export function createSourceInvariantVerifier({
     const storyAccessSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyAccess.ts'), 'utf8')
     const storyContentSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyContent.ts'), 'utf8')
     const storyPlaytestSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyPlaytest.ts'), 'utf8')
+    const localConditionSource = await readFile(path.join(frontendDir, 'src', 'lib', 'localCondition.ts'), 'utf8')
     const knowledgeContentSource = await readFile(path.join(frontendDir, 'src', 'lib', 'knowledgeContent.ts'), 'utf8')
     const storyEndingsSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyEndings.ts'), 'utf8')
     const sceneAuthoringSource = await readFile(path.join(frontendDir, 'src', 'lib', 'sceneAuthoring.ts'), 'utf8')
@@ -309,13 +310,22 @@ export function createSourceInvariantVerifier({
       [gameViewSource, 'route.query.previewEnding', 'launch browser ending author previews from saved drafts'],
       [gameViewSource, 'route.query.previewScene', 'launch browser scene author previews from saved drafts'],
       [gameViewSource, 'route.query.previewDialogue', 'launch browser dialogue author previews from saved drafts'],
-      [gameViewSource, 'webDialogueNodeId', 'advance packaged Web/PWA dialogue scripts with a browser cursor'],
+      [gameViewSource, 'webDialogueRuntime', 'retain browser dialogue cursor, variables, and flags across transitions'],
       [gameViewSource, "from '../lib/storyPlaytest'", 'delegate browser dialogue traversal to the Story Playtest domain module'],
+      [workflowPreviewSource, "from './localCondition'", 'share local condition evaluation instead of owning a workflow-only parser'],
+      [storyPlaytestSource, "from './localCondition'", 'reuse the shared bounded browser condition evaluator'],
+      [localConditionSource, 'evaluateLocalCondition', 'expose one pure browser condition evaluation boundary'],
+      [localConditionSource, 'getVariable', 'read local preview variables from shared browser conditions'],
+      [localConditionSource, 'hasFlag', 'read local preview flags from shared browser conditions'],
       [storyPlaytestSource, 'StoryPlaytestError', 'surface stable browser dialogue graph error codes'],
       [storyPlaytestSource, 'choice_target_missing', 'reject choices that target missing browser dialogue nodes'],
       [storyPlaytestSource, 'relationship_target_missing', 'reject unknown browser relationship targets before mutation'],
       [storyPlaytestSource, 'next_target_missing', 'reject linear transitions that target missing browser dialogue nodes'],
       [storyPlaytestSource, 'relationship_changes', 'return browser choice relationship effects to Story Mode'],
+      [storyPlaytestSource, 'choice_unavailable', 'reject submissions for condition-hidden choices'],
+      [storyPlaytestSource, 'node_condition_blocked', 'reject false conditional nodes without a fallback'],
+      [storyPlaytestSource, 'condition_unsupported', 'refuse unsupported browser conditions instead of misrouting'],
+      [storyPlaytestSource, 'script_unsupported', 'refuse unsupported browser dialogue scripts instead of ignoring state'],
       [chatViewSource, "listen<StoryEventApplication[]>('chat-event-applications'", 'surface applied event effects from streaming chat'],
       [chatViewSource, 'loadStoryProgress()', 'refresh persistent unlock counts in the chat workbench'],
       [workflowEditorSource, 'loadStoryEventCatalog()', 'load project story events into the workflow editor'],
@@ -473,8 +483,6 @@ export function createSourceInvariantVerifier({
       ['selectWeightedBranchIndex(weights, random)', 'select weighted random branches through an injectable browser preview random source'],
       ["case 'relationship'", 'execute relationship nodes in browser workflow previews'],
       ["case 'emotion_change'", 'execute emotion change nodes in browser workflow previews'],
-      ['getVariable', 'read local preview variables from workflow conditions'],
-      ['hasFlag', 'read local preview flags from workflow conditions'],
       ['isEvaluationStep(step)', 'render evaluation score diagnostics in workflow run traces'],
       ['isTriggerEventStep(step)', 'render story-event trigger diagnostics in workflow run traces'],
       ['eventBlockers(step)', 'surface event trigger blocker reasons in workflow run traces'],
@@ -1339,6 +1347,13 @@ export function createSourceInvariantVerifier({
       [gameDialogueSource, 'dialogue_state_keys_reject_invalid_names', 'test legacy dialogue state key rejection'],
       [gameDialogueSource, 'choice_effects', 'inspect dialogue choice effects before committing the cursor'],
       [gameDialogueSource, 'select_choice_from', 'guard choice commits against a moved dialogue cursor'],
+      [gameDialogueSource, 'available_choices', 'filter authored dialogue choices while preserving original indices'],
+      [gameDialogueSource, 'resolve_conditional_nodes', 'skip false linear conditional nodes with cycle detection'],
+      [gameDialogueSource, 'normalize_legacy_dialogue_script', 'preserve checked-in single-quoted dialogue script compatibility'],
+      [gameDialogueSource, 'dialogue_conditions_filter_stable_choice_indices_and_skip_linear_nodes', 'test runtime condition and script-state behavior'],
+      [gameDialogueSource, 'condition_and_script_failures_roll_back_dialogue_runtime_state', 'test failed dialogue conditions and scripts restore the prior cursor and state'],
+      [scriptingSource, 'load_json_state', 'adapt JSON dialogue variables into the shared Rhai runtime'],
+      [scriptingSource, 'json_state_round_trips_condition_and_script_values', 'test JSON script-state condition and mutation parity'],
       [dialogueCommandSource, 'resolve_dialogue_choice_relationship_targets', 'resolve all relationship targets before advancing dialogue'],
       [dialogueCommandSource, 'update_relationship("player", delta)', 'apply authored relationship deltas through CharacterManager clamping'],
       [dialogueCommandSource, 'dialogue_choices_apply_and_clamp_relationship_effects', 'test relationship choice effects and clamping'],

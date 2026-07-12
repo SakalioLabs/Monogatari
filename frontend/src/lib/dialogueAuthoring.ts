@@ -198,6 +198,9 @@ export function validateDialogueDefinition(
       issues.push(`Node "${nodeId}" needs End mode before setting an ending type.`)
     }
     if (node.ending_type !== null) validateText(issues, `Node "${nodeId}" ending type`, node.ending_type, 1, 64)
+    if (node.condition !== null && node.next_node_id === null) {
+      issues.push(`Conditional node "${nodeId}" requires a linear fallback target.`)
+    }
     validateSource(issues, `Node "${nodeId}" condition`, node.condition, 2000)
     validateSource(issues, `Node "${nodeId}" script`, node.script, 20000)
     if (node.use_llm && !node.llm_prompt) issues.push(`Node "${nodeId}" enables LLM generation without a prompt.`)

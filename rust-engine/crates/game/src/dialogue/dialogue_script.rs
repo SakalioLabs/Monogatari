@@ -2,6 +2,7 @@
 
 use std::collections::{HashMap, HashSet, VecDeque};
 
+use llm_scripting::{validate_condition_source, validate_script_source};
 use serde::{Deserialize, Serialize};
 
 use super::dialogue_node::DialogueNode;
@@ -77,6 +78,24 @@ impl DialogueScript {
                     "A node cannot combine a linear next node with player choices",
                 ));
             }
+            if node
+                .condition
+                .as_deref()
+                .is_some_and(|condition| !condition.trim().is_empty())
+                && node.next_node_id.is_none()
+            {
+                return Err(llm_core::EngineError::dialogue(
+                    &self.id,
+                    node_id,
+                    "A conditional node requires a linear fallback transition",
+                ));
+            }
+            if let Some(condition) = node.condition.as_deref() {
+                validate_condition_source(condition)?;
+            }
+            if let Some(script) = node.script.as_deref() {
+                validate_script_source(script)?;
+            }
             if node.is_ending && (node.next_node_id.is_some() || !node.choices.is_empty()) {
                 return Err(llm_core::EngineError::dialogue(
                     &self.id,
@@ -95,6 +114,9 @@ impl DialogueScript {
                 ensure_target(self, node_id, next_node_id)?;
             }
             for choice in &node.choices {
+                if let Some(condition) = choice.condition.as_deref() {
+                    validate_condition_source(condition)?;
+                }
                 ensure_target(self, node_id, &choice.next_node_id)?;
             }
         }
