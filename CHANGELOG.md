@@ -1,6 +1,7 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Extended shared Agent candidate validation through strict bounded scene and ending catalogs, background-inferred scene IDs, and ending-to-scene/dialogue references; Tauri now reuses the same authoring models/loaders, and real MCP stdio tests prove invalid ending writes roll back atomically.
 - Added reusable `llm-authoring` core-runtime project validation that loads the real character, dialogue, and knowledge managers, checks duplicate IDs plus character/knowledge/dialogue references, returns deterministic machine-readable evidence, powers both Tauri project loading and MCP candidate transactions, and rolls back MCP writes that fail runtime references; removed the obsolete duplicate Sakura fixture and the unused `llm-game -> llm-ai` dependency.
 - Unified authored dialogue conditions across Rust and browser Playtest: false choices are hidden with stable original indices, false nodes follow required linear fallbacks with cycle detection, dialogue scripts and variables feed later conditions, unsupported browser expressions stop explicitly, failed Rust conditions/scripts roll back cursor and local state, and Rust now delegates legacy-compatible dialogue scripts to the bounded shared Rhai engine.
 - Added a pure browser Story Playtest dialogue state machine with explicit graph errors and immutable relationship updates; desktop choice execution now preflights every relationship target, guards the inspected source node, applies authored deltas through CharacterManager clamping, and tests both runtimes.

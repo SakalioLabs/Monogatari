@@ -1,12 +1,16 @@
 //! Versioned ending assets and gated Story Mode launch commands.
 
 use std::collections::HashSet;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use llm_authoring::filesystem::{
     ensure_regular_project_directory, stage_json_deletion, stage_json_replacement,
 };
-use serde::{Deserialize, Serialize};
+pub use llm_authoring::story_content_validation::StoryEndingDefinition;
+use llm_authoring::story_content_validation::{
+    load_story_ending_sources, validate_ending, LoadedStoryEnding,
+};
+use serde::Serialize;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use tauri::State;
@@ -26,21 +30,10 @@ use crate::story_events::{StoryEventAction, StoryEventCatalog};
 
 use llm_game::dialogue::DialogueManager;
 
-const STORY_ENDING_SCHEMA_V1: &str = "monogatari-story-ending/v1";
+const STORY_ENDING_SCHEMA_V1: &str =
+    llm_authoring::story_content_validation::STORY_ENDING_SCHEMA_V1;
 const STORY_ENDING_CATALOG_SCHEMA_V1: &str = "monogatari-story-ending-catalog/v1";
-const MAX_ENDING_FILES: usize = 256;
 const MAX_ENDING_FILE_BYTES: u64 = 64 * 1024;
-
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(deny_unknown_fields)]
-pub struct StoryEndingDefinition {
-    pub schema: String,
-    pub id: String,
-    pub title: String,
-    pub description: String,
-    pub scene_id: String,
-    pub dialogue_id: String,
-}
 
 #[derive(Debug, Clone, Serialize)]
 pub struct StoryEndingCatalogEntry {
@@ -71,13 +64,6 @@ pub struct StoryEndingLaunch {
     pub ending: StoryEndingDefinition,
     pub scene: SceneInfo,
     pub dialogue: DialogueState,
-}
-
-#[derive(Debug, Clone)]
-struct LoadedStoryEnding {
-    ending: StoryEndingDefinition,
-    source_path: String,
-    absolute_path: PathBuf,
 }
 
 #[tauri::command]
@@ -479,150 +465,6 @@ pub(crate) fn load_story_endings(
         .collect())
 }
 
-fn load_story_ending_sources(project_root: &Path) -> Result<Vec<LoadedStoryEnding>, String> {
-    let ending_root = project_root.join("endings");
-    if !ending_root.exists() {
-        return Ok(Vec::new());
-    }
-    let root_metadata = std::fs::symlink_metadata(&ending_root).map_err(|error| {
-        format!(
-            "Failed to inspect story ending directory `{}`: {error}",
-            ending_root.display()
-        )
-    })?;
-    if root_metadata.file_type().is_symlink() || !root_metadata.is_dir() {
-        return Err(format!(
-            "Story ending path must be a regular directory: {}",
-            ending_root.display()
-        ));
-    }
-    let canonical_root = ending_root.canonicalize().map_err(|error| {
-        format!(
-            "Failed to resolve story ending directory `{}`: {error}",
-            ending_root.display()
-        )
-    })?;
-    let mut files = std::fs::read_dir(&ending_root)
-        .map_err(|error| {
-            format!(
-                "Failed to read story ending directory `{}`: {error}",
-                ending_root.display()
-            )
-        })?
-        .filter_map(Result::ok)
-        .map(|entry| entry.path())
-        .filter(|path| {
-            path.extension()
-                .and_then(|extension| extension.to_str())
-                .is_some_and(|extension| extension.eq_ignore_ascii_case("json"))
-        })
-        .collect::<Vec<PathBuf>>();
-    files.sort();
-    if files.len() > MAX_ENDING_FILES {
-        return Err(format!(
-            "Story ending directory contains {} JSON files; the limit is {MAX_ENDING_FILES}.",
-            files.len()
-        ));
-    }
-
-    let mut seen = HashSet::new();
-    let mut endings = Vec::with_capacity(files.len());
-    for path in files {
-        let metadata = std::fs::symlink_metadata(&path).map_err(|error| {
-            format!(
-                "Failed to inspect story ending `{}`: {error}",
-                path.display()
-            )
-        })?;
-        if metadata.file_type().is_symlink() || !metadata.is_file() {
-            return Err(format!(
-                "Story ending must be a regular file: {}",
-                path.display()
-            ));
-        }
-        if metadata.len() > MAX_ENDING_FILE_BYTES {
-            return Err(format!(
-                "Story ending `{}` is {} bytes; the limit is {MAX_ENDING_FILE_BYTES} bytes.",
-                path.display(),
-                metadata.len()
-            ));
-        }
-        let canonical_path = path.canonicalize().map_err(|error| {
-            format!(
-                "Failed to resolve story ending `{}`: {error}",
-                path.display()
-            )
-        })?;
-        if !canonical_path.starts_with(&canonical_root) {
-            return Err(format!(
-                "Story ending escapes the project ending directory: {}",
-                path.display()
-            ));
-        }
-        let content = std::fs::read_to_string(&canonical_path).map_err(|error| {
-            format!("Failed to read story ending `{}`: {error}", path.display())
-        })?;
-        let ending: StoryEndingDefinition = serde_json::from_str(&content).map_err(|error| {
-            format!("Invalid story ending JSON in `{}`: {error}", path.display())
-        })?;
-        validate_ending(&ending, &path)?;
-        if !seen.insert(ending.id.clone()) {
-            return Err(format!("Duplicate story ending id `{}`.", ending.id));
-        }
-        endings.push(LoadedStoryEnding {
-            ending,
-            source_path: source_label(project_root, &path),
-            absolute_path: canonical_path,
-        });
-    }
-    endings.sort_by(|left, right| left.ending.id.cmp(&right.ending.id));
-    Ok(endings)
-}
-
-fn validate_ending(ending: &StoryEndingDefinition, path: &Path) -> Result<(), String> {
-    if ending.schema != STORY_ENDING_SCHEMA_V1 {
-        return Err(format!(
-            "Story ending `{}` uses unsupported schema `{}`.",
-            path.display(),
-            ending.schema
-        ));
-    }
-    for (label, value) in [
-        ("id", ending.id.as_str()),
-        ("scene_id", ending.scene_id.as_str()),
-        ("dialogue_id", ending.dialogue_id.as_str()),
-    ] {
-        if !is_portable_id(value) {
-            return Err(format!(
-                "Story ending `{}` has invalid {label} `{value}`.",
-                path.display()
-            ));
-        }
-    }
-    if ending.title.trim().is_empty() || ending.title.chars().count() > 256 {
-        return Err(format!(
-            "Story ending `{}` title must contain 1 to 256 characters.",
-            ending.id
-        ));
-    }
-    if ending.description.trim().is_empty() || ending.description.chars().count() > 2048 {
-        return Err(format!(
-            "Story ending `{}` description must contain 1 to 2048 characters.",
-            ending.id
-        ));
-    }
-    Ok(())
-}
-
-fn is_portable_id(value: &str) -> bool {
-    !value.is_empty()
-        && value.len() <= 128
-        && value.trim() == value
-        && value
-            .bytes()
-            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-' | b'.'))
-}
-
 fn story_ending_catalog_fingerprint(endings: &[LoadedStoryEnding]) -> String {
     let entries = endings
         .iter()
@@ -653,17 +495,11 @@ fn sha256_json(value: &Value) -> String {
     format!("{:x}", hasher.finalize())
 }
 
-fn source_label(project_root: &Path, path: &Path) -> String {
-    path.strip_prefix(project_root)
-        .unwrap_or(path)
-        .to_string_lossy()
-        .replace('\\', "/")
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::story_events::StoryEventCatalog;
+    use std::path::PathBuf;
     use std::sync::atomic::{AtomicU64, Ordering};
 
     static TEST_ROOT_COUNTER: AtomicU64 = AtomicU64::new(0);

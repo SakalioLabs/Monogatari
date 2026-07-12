@@ -14,6 +14,8 @@ fn project_root(label: &str) -> PathBuf {
     std::fs::create_dir_all(root.join("dialogue")).unwrap();
     std::fs::create_dir_all(root.join("knowledge")).unwrap();
     std::fs::create_dir_all(root.join("assets")).unwrap();
+    std::fs::create_dir_all(root.join("scenes")).unwrap();
+    std::fs::create_dir_all(root.join("endings")).unwrap();
     std::fs::write(
         root.join("settings.json"),
         r#"{"paths":{"characters":"characters","dialogue":"dialogue","knowledge":"knowledge","assets":"assets"}}"#,
@@ -53,6 +55,30 @@ async fn validates_real_core_runtime_catalogs_and_references() {
     assert_eq!(report.dialogue_count, 1);
     assert_eq!(report.dialogue_node_count, 1);
     assert_eq!(report.knowledge_count, 1);
+    assert_eq!(report.scene_count, 0);
+    assert_eq!(report.ending_count, 0);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
+async fn validates_scene_and_ending_references_with_the_loaded_dialogue_runtime() {
+    let root = project_root("story_content");
+    write_valid_core(&root);
+    std::fs::write(
+        root.join("scenes/finale.json"),
+        r#"{"id":"finale","name":"Finale"}"#,
+    )
+    .unwrap();
+    std::fs::write(root.join("endings/finale.json"), r#"{"schema":"monogatari-story-ending/v1","id":"finale","title":"Finale","description":"Done.","scene_id":"finale","dialogue_id":"missing"}"#).unwrap();
+
+    let report = validate_core_runtime_project(&root).await.unwrap();
+
+    assert_eq!(report.scene_count, 1);
+    assert_eq!(report.ending_count, 1);
+    assert!(report
+        .issues
+        .iter()
+        .any(|issue| issue.code == "ending_dialogue_missing"));
     std::fs::remove_dir_all(root).unwrap();
 }
 
