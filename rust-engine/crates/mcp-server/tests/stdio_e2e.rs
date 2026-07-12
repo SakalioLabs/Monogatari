@@ -255,6 +255,38 @@ async fn writable_stdio_requires_reviewed_fingerprint_and_rolls_back_invalid_can
     assert!(error.message.contains("story_event_content_missing"));
     assert!(!invalid_event.root.join("events/rejected.json").exists());
     client.cancel().await?;
+
+    let invalid_workflow = TestProject::new("workflow-runtime-rollback");
+    let client = connect(&invalid_workflow.root, true).await?;
+    let transaction = AgentProjectTransaction {
+        schema: AGENT_TRANSACTION_SCHEMA_V1.to_string(),
+        transaction_id: "workflow_reference_rollback".to_string(),
+        operations: vec![AgentProjectOperation::PutJson {
+            path: "workflows/rejected.json".to_string(),
+            document: json!({
+                "id": "rejected",
+                "name": "Rejected",
+                "start_node_id": "start",
+                "nodes": [
+                    {"id":"start","node_type":"start","label":"Start","x":0,"y":0,"config":{},"connections":["scene"]},
+                    {"id":"scene","node_type":"scene_change","label":"Scene","x":1,"y":0,"config":{"scene_id":"missing"},"connections":["end"]},
+                    {"id":"end","node_type":"end","label":"End","x":2,"y":0,"config":{},"connections":[]}
+                ]
+            }),
+            precondition: AgentFilePrecondition::Missing,
+        }],
+    };
+    let plan = call_plan(&client, &transaction).await?;
+    let rejected = call_apply(&client, &transaction, &plan.precondition_fingerprint).await?;
+    assert_eq!(rejected.is_error, Some(true));
+    let error: McpToolError = structured(&rejected)?;
+    assert_eq!(error.code, McpToolErrorCode::TransactionError);
+    assert!(error.message.contains("workflow_scene_missing"));
+    assert!(!invalid_workflow
+        .root
+        .join("workflows/rejected.json")
+        .exists());
+    client.cancel().await?;
     Ok(())
 }
 

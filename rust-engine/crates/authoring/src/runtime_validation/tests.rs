@@ -17,6 +17,7 @@ fn project_root(label: &str) -> PathBuf {
     std::fs::create_dir_all(root.join("scenes")).unwrap();
     std::fs::create_dir_all(root.join("endings")).unwrap();
     std::fs::create_dir_all(root.join("events")).unwrap();
+    std::fs::create_dir_all(root.join("workflows")).unwrap();
     std::fs::write(
         root.join("settings.json"),
         r#"{"paths":{"characters":"characters","dialogue":"dialogue","knowledge":"knowledge","assets":"assets"}}"#,
@@ -59,6 +60,7 @@ async fn validates_real_core_runtime_catalogs_and_references() {
     assert_eq!(report.scene_count, 0);
     assert_eq!(report.ending_count, 0);
     assert_eq!(report.story_event_count, 0);
+    assert_eq!(report.workflow_count, 0);
     std::fs::remove_dir_all(root).unwrap();
 }
 
@@ -80,6 +82,26 @@ async fn rejects_story_event_actions_with_unknown_content_targets() {
         .issues
         .iter()
         .any(|issue| issue.code == "story_event_content_missing"));
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
+async fn rejects_workflow_nodes_with_unknown_scene_targets() {
+    let root = project_root("workflow_references");
+    write_valid_core(&root);
+    std::fs::write(
+        root.join("workflows/rejected.json"),
+        r#"{"id":"rejected","name":"Rejected","start_node_id":"start","nodes":[{"id":"start","node_type":"start","label":"Start","x":0,"y":0,"config":{},"connections":["scene"]},{"id":"scene","node_type":"scene_change","label":"Scene","x":1,"y":0,"config":{"scene_id":"missing"},"connections":["end"]},{"id":"end","node_type":"end","label":"End","x":2,"y":0,"config":{},"connections":[]}]}"#,
+    )
+    .unwrap();
+
+    let report = validate_core_runtime_project(&root).await.unwrap();
+
+    assert_eq!(report.workflow_count, 1);
+    assert!(report
+        .issues
+        .iter()
+        .any(|issue| issue.code == "workflow_scene_missing"));
     std::fs::remove_dir_all(root).unwrap();
 }
 

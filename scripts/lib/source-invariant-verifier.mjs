@@ -1374,20 +1374,16 @@ export function createSourceInvariantVerifier({
   async function verifyWorkflowCommandInvariants() {
     const issues = []
     const workflowSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'workflow.rs'), 'utf8')
+    const workflowValidationSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'workflow_validation.rs'), 'utf8')
     const mainSource = await readFile(path.join(tauriAppDir, 'src', 'main.rs'), 'utf8')
 
     const workflowRequirements = [
       ['state.current_project_data_root().await', 'resolve workflow commands against the active project root'],
       ['workflow_path_in_project', 'resolve workflow files through a project-scoped path helper'],
       ['normalize_workflow_relative_path', 'normalize and validate workflow paths before file access'],
-      ['normalize_script_state_key', 'validate workflow state keys during workflow validation'],
-      ['validate_workflow_state_keys', 'centralize workflow state-key config validation'],
-      ['node_state_key_invalid', 'report invalid workflow state keys before execution'],
       ['workflow_validation_rejects_invalid_state_keys', 'test workflow validation rejects invalid state keys'],
       ['validate_condition_source', 'reuse shared condition expression validation'],
-      ['validate_workflow_condition', 'centralize workflow condition config validation'],
       ['workflow_condition_scope_variables', 'expose score and relationship context to workflow condition expressions'],
-      ['node_condition_invalid', 'report invalid workflow conditions before execution'],
       ['workflow_validation_rejects_invalid_conditions', 'test workflow validation rejects invalid conditions'],
       ['workflow_validation_uses_project_event_catalog_and_character_scope', 'test workflow event ids and character scope against project catalogs'],
       ['workflow_condition_nodes_reject_invalid_payloads', 'test workflow condition nodes reject invalid payloads'],
@@ -1412,9 +1408,24 @@ export function createSourceInvariantVerifier({
       ['WORKFLOW_LIST_MAX_DEPTH', 'bound recursive workflow discovery'],
       ['workflow_listing_is_sorted_scoped_and_skips_invalid_files', 'test sorted scoped workflow discovery'],
     ]
+    const workflowDomainRequirements = [
+      ['normalize_script_state_key', 'validate workflow state keys during workflow validation'],
+      ['validate_workflow_state_keys', 'centralize workflow state-key config validation'],
+      ['node_state_key_invalid', 'report invalid workflow state keys before execution'],
+      ['validate_condition_source', 'reuse shared condition expression validation in the pure domain'],
+      ['validate_workflow_condition', 'centralize workflow condition config validation'],
+      ['node_condition_invalid', 'report invalid workflow conditions before execution'],
+      ['load_project_workflows', 'load bounded project Workflow catalogs for Agent validation'],
+      ['validate_workflow_references', 'validate Workflow cross-catalog references'],
+    ]
     for (const [needle, description] of workflowRequirements) {
       if (!workflowSource.includes(needle)) {
         issues.push(`Workflow commands must ${description}`)
+      }
+    }
+    for (const [needle, description] of workflowDomainRequirements) {
+      if (!workflowValidationSource.includes(needle)) {
+        issues.push(`Workflow domain must ${description}`)
       }
     }
 

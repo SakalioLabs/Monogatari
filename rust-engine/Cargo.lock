@@ -2112,6 +2112,7 @@ version = "0.9.5"
 dependencies = [
  "llm-core",
  "llm-game",
+ "llm-scripting",
  "schemars 1.2.1",
  "serde",
  "serde_json",

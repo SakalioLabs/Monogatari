@@ -17,6 +17,7 @@ use crate::story_content_validation::{
     load_scene_documents, load_story_ending_sources, scene_ids, validate_ending_references,
 };
 use crate::story_events::StoryEventCatalog;
+use crate::workflow_validation::{load_project_workflows, validate_workflow_references};
 
 pub const CORE_RUNTIME_VALIDATION_SCHEMA_V1: &str = "monogatari-core-runtime-validation/v1";
 
@@ -42,6 +43,7 @@ pub struct CoreRuntimeValidationReport {
     pub scene_count: usize,
     pub ending_count: usize,
     pub story_event_count: usize,
+    pub workflow_count: usize,
     pub error_count: usize,
     pub issues: Vec<CoreRuntimeValidationIssue>,
 }
@@ -123,6 +125,13 @@ pub async fn load_core_runtime_project(project_root: &Path) -> Result<CoreRuntim
         &story_content,
         &mut issues,
     );
+    let workflow_count = validate_workflows(
+        project_root,
+        &story_events,
+        &story_content.scene_ids,
+        &character_ids,
+        &mut issues,
+    );
 
     issues.sort_by(|left, right| {
         left.path
@@ -149,6 +158,7 @@ pub async fn load_core_runtime_project(project_root: &Path) -> Result<CoreRuntim
         scene_count: story_content.scene_ids.len(),
         ending_count: story_content.ending_ids.len(),
         story_event_count: story_events.definitions().len(),
+        workflow_count,
         error_count: issues.len(),
         issues,
     };
@@ -159,6 +169,27 @@ pub async fn load_core_runtime_project(project_root: &Path) -> Result<CoreRuntim
         knowledge,
         story_events,
     })
+}
+
+fn validate_workflows(
+    project_root: &Path,
+    story_events: &StoryEventCatalog,
+    scene_ids: &HashSet<String>,
+    character_ids: &HashSet<String>,
+    issues: &mut Vec<CoreRuntimeValidationIssue>,
+) -> usize {
+    let workflows = match load_project_workflows(project_root, story_events) {
+        Ok(workflows) => workflows,
+        Err(error) => {
+            issues.push(issue("workflow_catalog_invalid", Some("workflows"), error));
+            return 0;
+        }
+    };
+    for (code, path, message) in validate_workflow_references(&workflows, scene_ids, character_ids)
+    {
+        issues.push(issue(code, Some(path), message));
+    }
+    workflows.len()
 }
 
 struct ValidatedStoryContent {
