@@ -59,7 +59,7 @@ Planning and application both re-read current state. Any intervening file change
 
 ## Acceptance Boundary
 
-MCP candidate validation currently reports `acceptance_level: "document"`. It proves bounded portable paths, exact-case resolution, regular files without symlinks, valid object/array JSON, project settings readiness, and complete staged rollback on rejection. It does not prove ID references, dialogue/workflow reachability, runtime manager loading, Quality Suites, package inventories, or rendered desktop/mobile experience.
+Read-only inspection reports `acceptance_level: "document"`. Successful `apply_transaction` reports `acceptance_level: "core_runtime"`: in addition to document safety and settings readiness, the staged candidate must load through the real character, dialogue, and knowledge managers, reject duplicate IDs, and pass character relationship, pinned-knowledge, dialogue speaker, dialogue relationship-target, and dialogue graph checks. Rejection rolls back every staged operation. This level does not yet prove scene, Story Event, ending, workflow, package, Quality Suite, or rendered desktop/mobile acceptance.
 
 Use the full release gate before a release claim:
 

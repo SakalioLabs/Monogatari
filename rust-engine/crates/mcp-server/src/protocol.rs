@@ -12,8 +12,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 pub const MCP_INSPECTION_SCHEMA_V1: &str = "monogatari-mcp-project-inspection/v1";
-pub const MCP_CANDIDATE_VALIDATION_SCHEMA_V1: &str =
-    "monogatari-mcp-candidate-document-validation/v1";
 pub const MCP_TOOL_ERROR_SCHEMA_V1: &str = "monogatari-mcp-tool-error/v1";
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
@@ -43,16 +41,6 @@ pub struct ReadProjectJsonRequest {
 pub struct ApplyTransactionRequest {
     pub transaction: AgentProjectTransaction,
     pub expected_precondition_fingerprint: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
-pub struct CandidateDocumentValidation {
-    pub schema: String,
-    pub acceptance_level: JsonAcceptanceLevel,
-    pub valid: bool,
-    pub document_count: usize,
-    pub total_bytes: u64,
-    pub warning_count: usize,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]

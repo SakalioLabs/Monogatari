@@ -80,6 +80,7 @@ impl AuthorableJsonCatalog {
 #[serde(rename_all = "snake_case")]
 pub enum JsonAcceptanceLevel {
     Document,
+    CoreRuntime,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]

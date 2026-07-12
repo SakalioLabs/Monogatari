@@ -20,7 +20,7 @@ use crate::protocol::{
     ApplyTransactionOutput, ApplyTransactionRequest, InspectProjectOutput, ListProjectJsonRequest,
     McpToolError, ReadProjectJsonRequest, MCP_INSPECTION_SCHEMA_V1,
 };
-use crate::validation::validate_candidate_documents;
+use crate::validation::validate_candidate_core_runtime;
 
 #[derive(Debug, Clone)]
 pub struct MonogatariMcpServer {
@@ -205,7 +205,7 @@ impl MonogatariMcpServer {
             &self.project_root,
             &request.transaction,
             |candidate_root| async move {
-                let validation = validate_candidate_documents(&candidate_root)?;
+                let validation = validate_candidate_core_runtime(&candidate_root).await?;
                 serde_json::to_value(validation).map_err(|_| {
                     llm_authoring::agent_transaction::AgentTransactionError::candidate_validation(
                         "Candidate validation result could not be serialized.",
@@ -234,7 +234,7 @@ impl ServerHandler for MonogatariMcpServer {
                 env!("CARGO_PKG_VERSION"),
             ))
             .with_instructions(format!(
-                "Author Monogatari visual novels inside the fixed project root. Inspect, list, and read before planning. Plan before apply. JSON acceptance is document-level only and does not prove graph reachability, runtime behavior, packaging, or visual quality. {mode}"
+                "Author Monogatari visual novels inside the fixed project root. Inspect, list, and read before planning. Plan before apply. Transaction acceptance loads real character, dialogue, and knowledge managers and checks their core references; scene, event, ending, workflow, package, Quality Suite, and visual acceptance still require their dedicated gates. {mode}"
             ))
     }
 }

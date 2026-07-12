@@ -154,7 +154,8 @@ async fn writable_stdio_requires_reviewed_fingerprint_and_rolls_back_invalid_can
     assert_eq!(applied.is_error, Some(false));
     let applied: AgentProjectTransactionResult = structured(&applied)?;
     assert_eq!(applied.status, AgentTransactionStatus::Applied);
-    assert_eq!(applied.validation["acceptance_level"], "document");
+    assert_eq!(applied.validation["acceptance_level"], "core_runtime");
+    assert_eq!(applied.validation["dialogue_count"], 1);
     assert!(clean.root.join("dialogue/intro.json").is_file());
     client.cancel().await?;
 
@@ -169,6 +170,34 @@ async fn writable_stdio_requires_reviewed_fingerprint_and_rolls_back_invalid_can
     assert_eq!(error.code, McpToolErrorCode::TransactionError);
     assert!(!invalid.root.join("dialogue/rejected.json").exists());
     assert_eq!(std::fs::read_dir(invalid.root.join("dialogue"))?.count(), 0);
+    client.cancel().await?;
+
+    let invalid_reference = TestProject::new("runtime-rollback");
+    let client = connect(&invalid_reference.root, true).await?;
+    let transaction = AgentProjectTransaction {
+        schema: AGENT_TRANSACTION_SCHEMA_V1.to_string(),
+        transaction_id: "runtime_reference_rollback".to_string(),
+        operations: vec![AgentProjectOperation::PutJson {
+            path: "dialogue/rejected.json".to_string(),
+            document: json!({
+                "id": "rejected",
+                "title": "Rejected",
+                "start_node_id": "start",
+                "nodes": {"start": {"speaker_id": "missing", "text": "Rejected", "is_ending": true}}
+            }),
+            precondition: AgentFilePrecondition::Missing,
+        }],
+    };
+    let plan = call_plan(&client, &transaction).await?;
+    let rejected = call_apply(&client, &transaction, &plan.precondition_fingerprint).await?;
+    assert_eq!(rejected.is_error, Some(true));
+    let error: McpToolError = structured(&rejected)?;
+    assert_eq!(error.code, McpToolErrorCode::TransactionError);
+    assert!(error.message.contains("dialogue_speaker_missing"));
+    assert!(!invalid_reference
+        .root
+        .join("dialogue/rejected.json")
+        .exists());
     client.cancel().await?;
     Ok(())
 }
@@ -239,12 +268,22 @@ async fn call_apply(
 }
 
 fn create_transaction(id: &str, path: &str) -> AgentProjectTransaction {
+    let document = if path.starts_with("dialogue/") {
+        json!({
+            "id": "generated",
+            "title": "Generated",
+            "start_node_id": "start",
+            "nodes": {"start": {"text": "Generated dialogue.", "is_ending": true}}
+        })
+    } else {
+        json!({"id": "generated", "name": "Generated"})
+    };
     AgentProjectTransaction {
         schema: AGENT_TRANSACTION_SCHEMA_V1.to_string(),
         transaction_id: id.to_string(),
         operations: vec![AgentProjectOperation::PutJson {
             path: path.to_string(),
-            document: json!({"id": "generated", "nodes": {}}),
+            document,
             precondition: AgentFilePrecondition::Missing,
         }],
     }

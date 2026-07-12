@@ -138,6 +138,15 @@ impl KnowledgeBase {
             _ => Vec::new(),
         };
         let count = entries.len();
+        let mut incoming_ids = std::collections::HashSet::new();
+        for entry in &entries {
+            if self.entries.contains_key(&entry.id) || !incoming_ids.insert(&entry.id) {
+                return Err(llm_core::EngineError::config(
+                    "knowledge",
+                    format!("Duplicate knowledge id: {}", entry.id),
+                ));
+            }
+        }
         for entry in entries {
             self.add_entry(entry);
         }
@@ -149,11 +158,16 @@ impl KnowledgeBase {
     pub async fn load_from_directory(&mut self, dir: &Path) -> Result<usize> {
         let mut total = 0;
         let mut entries = tokio::fs::read_dir(dir).await?;
+        let mut paths = Vec::new();
         while let Some(entry) = entries.next_entry().await? {
             let path = entry.path();
             if path.extension().is_some_and(|e| e == "json") {
-                total += self.load_from_file(&path).await?;
+                paths.push(path);
             }
+        }
+        paths.sort();
+        for path in paths {
+            total += self.load_from_file(&path).await?;
         }
         Ok(total)
     }
@@ -220,5 +234,27 @@ mod tests {
         assert_eq!(loaded, 1);
         let entry = knowledge.get_entry("sakura_nature").unwrap();
         assert_eq!(entry.category, KnowledgeCategory::Lore);
+    }
+
+    #[tokio::test]
+    async fn knowledge_file_loading_rejects_duplicate_ids() {
+        let file_path = std::env::temp_dir().join(format!(
+            "monogatari-knowledge-duplicate-{}-{}.json",
+            std::process::id(),
+            chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+        ));
+        std::fs::write(
+            &file_path,
+            r#"{"id":"lore","category":"world_lore","title":"Lore","content":"Lore"}"#,
+        )
+        .unwrap();
+        let mut knowledge = KnowledgeBase::new();
+        knowledge.load_from_file(&file_path).await.unwrap();
+
+        let error = knowledge.load_from_file(&file_path).await.unwrap_err();
+
+        let _ = std::fs::remove_file(&file_path);
+        assert!(error.to_string().contains("Duplicate knowledge id: lore"));
+        assert_eq!(knowledge.all_entries().len(), 1);
     }
 }

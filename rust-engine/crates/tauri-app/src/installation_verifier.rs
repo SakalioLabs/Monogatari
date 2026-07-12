@@ -675,6 +675,7 @@ mod tests {
     async fn checked_in_data_passes_installed_runtime_verification() {
         let root = temp_root("runtime");
         let source = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../data");
+        let expected_data_file_count = inventory_tree(&source).unwrap().file_count;
         copy_directory(&source, &root.join("data"));
         std::fs::write(root.join("llm-galgame-app.exe"), b"test executable").unwrap();
 
@@ -687,7 +688,7 @@ mod tests {
         assert_eq!(report.engine_version, env!("CARGO_PKG_VERSION"));
         assert_eq!(report.git_commit, env!("MONOGATARI_GIT_COMMIT"));
         assert_eq!(report.git_short_commit, env!("MONOGATARI_GIT_SHORT_COMMIT"));
-        assert_eq!(report.data_file_count, 100);
+        assert_eq!(report.data_file_count, expected_data_file_count);
         assert!(report.project_warning_codes.is_empty());
         assert!(report.counts.characters > 0);
         assert!(report.counts.dialogues > 0);

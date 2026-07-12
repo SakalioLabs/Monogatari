@@ -5,7 +5,6 @@ edition.workspace = true
 
 [dependencies]
 llm-core = { workspace = true }
-llm-ai = { workspace = true }
 llm-scripting = { workspace = true }
 tokio = { workspace = true }
 async-trait = { workspace = true }

@@ -4,6 +4,7 @@ use serde::Serialize;
 use std::path::{Path, PathBuf};
 use tauri::State;
 
+use llm_authoring::runtime_validation::load_core_runtime_project;
 use llm_game::{characters::CharacterManager, dialogue::DialogueManager, knowledge::KnowledgeBase};
 
 use crate::state::{default_project_data_root, AppState};
@@ -68,35 +69,23 @@ pub(crate) async fn load_project_content(
     ),
     String,
 > {
-    let mut characters = CharacterManager::new();
-    // Load characters
-    let char_path = path.join("characters");
-    if char_path.exists() {
-        characters
-            .load_from_directory(&char_path)
-            .await
-            .map_err(|e| e.to_string())?;
+    let core = load_core_runtime_project(path).await?;
+    if !core.report.valid {
+        let evidence = core
+            .report
+            .issues
+            .iter()
+            .take(3)
+            .map(|issue| issue.code.as_str())
+            .collect::<Vec<_>>()
+            .join(", ");
+        return Err(format!(
+            "Core runtime project validation failed: {evidence}."
+        ));
     }
-
-    let mut dialogues = DialogueManager::new();
-    // Load dialogues
-    let dlg_path = path.join("dialogue");
-    if dlg_path.exists() {
-        dialogues
-            .load_from_directory(&dlg_path)
-            .await
-            .map_err(|e| e.to_string())?;
-    }
-
-    let mut knowledge = KnowledgeBase::new();
-    // Load knowledge
-    let kb_path = path.join("knowledge");
-    if kb_path.exists() {
-        knowledge
-            .load_from_directory(&kb_path)
-            .await
-            .map_err(|e| e.to_string())?;
-    }
+    let characters = core.characters;
+    let dialogues = core.dialogues;
+    let knowledge = core.knowledge;
 
     let story_events = StoryEventCatalog::load_from_project_root(path)?;
     let character_ids = characters.character_ids();
@@ -251,8 +240,15 @@ mod tests {
         let second = temp_root("project_second");
         for root in [&first, &second] {
             std::fs::create_dir_all(root.join("characters")).unwrap();
+            std::fs::create_dir_all(root.join("dialogue")).unwrap();
             std::fs::create_dir_all(root.join("knowledge")).unwrap();
             std::fs::create_dir_all(root.join("events")).unwrap();
+            std::fs::create_dir_all(root.join("assets")).unwrap();
+            std::fs::write(
+                root.join("settings.json"),
+                r#"{"paths":{"characters":"characters","dialogue":"dialogue","knowledge":"knowledge","events":"events","assets":"assets"}}"#,
+            )
+            .unwrap();
         }
         std::fs::write(
             first.join("characters").join("first.json"),

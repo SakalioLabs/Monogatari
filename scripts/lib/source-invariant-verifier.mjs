@@ -1547,6 +1547,7 @@ export function createSourceInvariantVerifier({
       mcpValidationSource,
       mcpE2eSource,
       jsonCatalogSource,
+      runtimeValidationSource,
     ] = await Promise.all([
       readFile(path.join(mcpRoot, 'Cargo.toml'), 'utf8'),
       readFile(path.join(mcpRoot, 'src', 'lib.rs'), 'utf8'),
@@ -1561,6 +1562,11 @@ export function createSourceInvariantVerifier({
         'json_catalog/protocol.rs',
         'json_catalog/read.rs',
         'json_catalog/tests.rs',
+      ].map((relativePath) => readFile(path.join(rustDir, 'crates', 'authoring', 'src', relativePath), 'utf8')))
+        .then((sources) => sources.join('\n')),
+      Promise.all([
+        'runtime_validation.rs',
+        'runtime_validation/tests.rs',
       ].map((relativePath) => readFile(path.join(rustDir, 'crates', 'authoring', 'src', relativePath), 'utf8')))
         .then((sources) => sources.join('\n')),
     ])
@@ -1582,7 +1588,14 @@ export function createSourceInvariantVerifier({
       [mcpServerSource, 'std::fs::File::try_lock(&file)', 'exclude concurrent server processes while a writer owns the project'],
       [mcpServerSource, 'std::fs::File::try_lock_shared(&file)', 'share the project lease only between read-only server processes'],
       [mcpServerSource, 'apply_agent_project_transaction_with_validator', 'delegate writes to the shared rollback-capable authoring core'],
-      [mcpValidationSource, 'JsonAcceptanceLevel::Document', 'label candidate acceptance honestly as document-level'],
+      [mcpValidationSource, 'validate_core_runtime_project', 'delegate candidate acceptance to the shared headless runtime validator'],
+      [runtimeValidationSource, 'JsonAcceptanceLevel::CoreRuntime', 'label candidate acceptance as core-runtime rather than full-project validation'],
+      [runtimeValidationSource, 'CharacterManager::new()', 'load candidate characters through the real runtime manager'],
+      [runtimeValidationSource, 'DialogueManager::new()', 'load candidate dialogue graphs through the real runtime manager'],
+      [runtimeValidationSource, 'KnowledgeBase::new()', 'load candidate knowledge through the real runtime manager'],
+      [runtimeValidationSource, 'validate_character_references', 'validate character relationship and knowledge references'],
+      [runtimeValidationSource, 'validate_dialogue_references', 'validate dialogue speaker and relationship references'],
+      [runtimeValidationSource, 'rejects_duplicate_runtime_ids_instead_of_accepting_loader_overwrites', 'test duplicate runtime IDs are rejected'],
       [jsonCatalogSource, 'monogatari-json-catalog-report/v1', 'version shared JSON catalog reports'],
       [jsonCatalogSource, 'MAX_AUTHORABLE_JSON_BYTES', 'bound JSON reads and transaction writes consistently'],
       [jsonCatalogSource, 'verify_exact_path', 'require exact-case paths before reads'],
@@ -1590,6 +1603,7 @@ export function createSourceInvariantVerifier({
       [mcpE2eSource, 'real_stdio_handshake_lists_and_reads_schema_backed_tools', 'test real stdio initialization, discovery, and reads'],
       [mcpE2eSource, 'readonly_stdio_plans_but_structurally_rejects_apply', 'test default read-only refusal without filesystem changes'],
       [mcpE2eSource, 'writable_stdio_requires_reviewed_fingerprint_and_rolls_back_invalid_candidate', 'test fingerprint confirmation, application, and rollback'],
+      [mcpE2eSource, 'runtime_reference_rollback', 'test real stdio rollback after core-runtime reference rejection'],
     ]
     for (const [source, needle, description] of requirements) {
       if (!source.includes(needle)) {

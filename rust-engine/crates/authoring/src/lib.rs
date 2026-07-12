@@ -7,3 +7,4 @@ pub mod filesystem;
 pub mod json_catalog;
 pub mod paths;
 pub mod project;
+pub mod runtime_validation;

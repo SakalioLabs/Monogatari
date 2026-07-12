@@ -70,7 +70,7 @@ Verified on 2026-07-11:
 - Tauri mobile deployment preflight passes with `node scripts/verify-tauri-mobile-preflight.mjs`, covering Android/iOS command readiness, Vite `TAURI_DEV_HOST` binding, Tauri shell config, and mobile release documentation.
 - Full frontend dependency audit passes with `npm audit`.
 - The transport-neutral authoring core passes `cargo test --locked -p llm-authoring`, independently proving atomic rollback, portable path containment, project diagnostics, and credential-free settings persistence.
-- The standard `monogatari-mcp` adapter passes real stdio child-process tests for handshake, five schema-backed tools, scrubbed inspection, exact JSON fingerprints, read-only refusal, reviewed-plan confirmation, one-writer exclusion, successful application, and rollback. Its candidate report is explicitly document-level rather than a graph/runtime completion claim.
+- The standard `monogatari-mcp` adapter passes real stdio child-process tests for handshake, five schema-backed tools, scrubbed inspection, exact JSON fingerprints, read-only refusal, reviewed-plan confirmation, one-writer exclusion, successful application, and rollback. Candidate application reports `core_runtime` only after real character/dialogue/knowledge managers load and their core references pass; scene, event, ending, workflow, package, Quality Suite, and visual gates remain separate.
 - Frontend Vitest coverage independently exercises authoring validation, renderer fallback order, story access derivation, the pure browser workflow preview state machine, Pinia command/loading state, and shared Vue component interactions instead of relying only on production builds and source scans.
 - Rust Tauri app crate passes `cargo check --locked -p llm-galgame-app`.
 - Character quality suite regression tests pass inside `cargo test --locked -p llm-galgame-app`.
@@ -191,7 +191,7 @@ monogatari/
 
 Agents can invoke `$author-visual-novel` from the repository Skill at `.agents/skills/author-visual-novel`. The Skill authors the canonical project graph in dependency order, requires Quality Suite evidence, and validates output through the same engine and release contracts used for human-authored projects.
 
-The shared `llm-authoring` crate also defines `monogatari-agent-project-transaction/v1`: a JSON-only multi-file plan/apply contract with create-or-exact-SHA preconditions, portable path containment, candidate validation, and rollback. `monogatari-mcp` exposes that core through five standard stdio tools with a startup-fixed project root, read-only default, reviewed plan fingerprints, process-level project leases, and explicit document-level acceptance.
+The shared `llm-authoring` crate also defines `monogatari-agent-project-transaction/v1`: a JSON-only multi-file plan/apply contract with create-or-exact-SHA preconditions, portable path containment, candidate validation, and rollback. Its headless core-runtime loader owns real character/dialogue/knowledge manager loading plus duplicate-ID and cross-reference checks for both Tauri and Agent transports. `monogatari-mcp` exposes that core through five standard stdio tools with a startup-fixed project root, read-only default, reviewed plan fingerprints, process-level project leases, document-level inspection, and `core_runtime` candidate application.
 
 Use the module matrix for narrow feedback while authoring:
 

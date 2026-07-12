@@ -3,57 +3,36 @@
 use std::path::Path;
 
 use llm_authoring::agent_transaction::AgentTransactionError;
-use llm_authoring::json_catalog::{
-    inspect_project_json_catalog, JsonAcceptanceLevel, JsonCatalogIssueSeverity,
+use llm_authoring::runtime_validation::{
+    validate_core_runtime_project, CoreRuntimeValidationReport,
 };
-use llm_authoring::project::inspect_project_config;
 
-use crate::protocol::{CandidateDocumentValidation, MCP_CANDIDATE_VALIDATION_SCHEMA_V1};
-
-pub fn validate_candidate_documents(
+pub async fn validate_candidate_core_runtime(
     project_root: &Path,
-) -> Result<CandidateDocumentValidation, AgentTransactionError> {
-    let project = inspect_project_config(project_root).map_err(|_| {
-        AgentTransactionError::candidate_validation(
-            "Candidate project settings could not be inspected.",
-        )
-    })?;
-    if !project.settings_exists || !project.valid {
-        return Err(AgentTransactionError::candidate_validation(
-            "Candidate project settings are not document-ready.",
-        ));
-    }
-
-    let report = inspect_project_json_catalog(project_root, None).map_err(|_| {
-        AgentTransactionError::candidate_validation(
-            "Candidate project JSON catalogs could not be inspected.",
-        )
-    })?;
+) -> Result<CoreRuntimeValidationReport, AgentTransactionError> {
+    let report = validate_core_runtime_project(project_root)
+        .await
+        .map_err(|_| {
+            AgentTransactionError::candidate_validation(
+                "Candidate core runtime validation could not be completed.",
+            )
+        })?;
     if !report.valid {
         let evidence = report
             .issues
             .iter()
-            .filter(|issue| issue.severity == JsonCatalogIssueSeverity::Error)
             .take(3)
             .map(|issue| {
                 issue.path.as_deref().map_or_else(
-                    || format!("{:?}", issue.code),
-                    |path| format!("{:?}: {path}", issue.code),
+                    || issue.code.clone(),
+                    |path| format!("{}: {path}", issue.code),
                 )
             })
             .collect::<Vec<_>>()
             .join(", ");
         return Err(AgentTransactionError::candidate_validation(format!(
-            "Candidate project failed document-level JSON acceptance: {evidence}."
+            "Candidate project failed core runtime acceptance: {evidence}."
         )));
     }
-
-    Ok(CandidateDocumentValidation {
-        schema: MCP_CANDIDATE_VALIDATION_SCHEMA_V1.to_string(),
-        acceptance_level: JsonAcceptanceLevel::Document,
-        valid: true,
-        document_count: report.document_count,
-        total_bytes: report.total_bytes,
-        warning_count: report.warning_count,
-    })
+    Ok(report)
 }

@@ -23,7 +23,7 @@ Platform-specific gates declare their supported host IDs in the matrix. The Wind
 | Vue pure libraries, workflow/Story Playtest, Pinia, and shared components | `frontend-unit` | Vitest unit and Happy DOM component tests | Authoring validation, renderer fallback selection, story access, shared local condition evaluation, bounded browser workflow execution, dialogue graph transitions/scripts/conditions/relationship effects, Store async state, and shared interaction/accessibility behavior |
 | Vue/TypeScript/Web/PWA distribution | `frontend-contracts` | Type check, production builds, static contract verifiers | Root/subpath package and responsive shell contracts |
 | Rust core | `rust-core` | Unit and doc tests | Infrastructure crate |
-| Headless authoring core | `rust-authoring` | Unit, integration, and doc tests | Atomic content mutation, portable paths, project settings, and versioned optimistic multi-file Agent transactions without Tauri |
+| Headless authoring core | `rust-authoring` | Unit, integration, and doc tests | Atomic content mutation, portable paths, project settings, Agent transactions, and real core-runtime manager/reference validation without Tauri |
 | Standard MCP adapter | `rust-mcp` | Unit, protocol, and real stdio child-process tests | Fixed project root, five schema-backed tools, read-only default, reviewed fingerprints, write exclusion, candidate validation, and rollback |
 | Rust AI | `rust-ai` | Unit, integration, and doc tests | Inference contracts and backend planning |
 | Rust assets | `rust-assets` | Unit tests | Asset and save boundaries |
@@ -40,7 +40,7 @@ GitHub Actions runs the automation, frontend, Rust, and .NET groups as separate 
 
 1. Continue the frontend state-machine extraction from the now-isolated workflow preview into the remaining large editor views and end-to-end browser Story Playtest workflows.
 2. Continue moving schema-specific catalog validation, cross-reference discovery, and packaging behind `llm-authoring`; project settings, portable paths, JSON document inspection, and transactions are now shared by Tauri or MCP without transport duplication.
-3. Raise MCP candidate acceptance from document-level to graph/runtime validation by extracting the existing Tauri loaders and reference checks into reusable headless services.
+3. Extend the new shared `core_runtime` candidate acceptance beyond characters/dialogue/knowledge to scenes, Story Events, endings, workflows, Quality Suites, and package-level references without moving transport concerns into the headless core.
 4. Extend the retained .NET renderer ABI/load coverage with a headless SDL initialization and render-loop probe, or formally remove those projects from the supported product boundary.
 5. Continue decomposing `scripts/verify-release.mjs`; frontend, AI, and path source-invariant checks now live in an importable module, while content, packaging, and browser gates remain in the entry point.
 
