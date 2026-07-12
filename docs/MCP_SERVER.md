@@ -59,7 +59,7 @@ Planning and application both re-read current state. Any intervening file change
 
 ## Acceptance Boundary
 
-Read-only inspection reports `acceptance_level: "document"`. Successful `apply_transaction` reports `acceptance_level: "core_runtime"`: in addition to document safety and settings readiness, the staged candidate must load through the real character, dialogue, and knowledge managers; load strict bounded scene, ending, Story Event, and Workflow catalogs; discover background-inferred scenes; reject duplicate IDs; validate Workflow graphs, conditions, state keys, Events, scenes, characters, and sub-workflows; and pass all prior runtime references. Rejection rolls back every staged operation. This level does not yet prove package, Quality Suite, or rendered desktop/mobile acceptance.
+Read-only inspection reports `acceptance_level: "document"`. Successful `apply_transaction` reports `acceptance_level: "core_runtime"`: in addition to document safety and settings readiness, the staged candidate must load through the real character, dialogue, and knowledge managers; load strict bounded scene, ending, Story Event, Workflow, and Quality Suite catalogs; validate Workflow graphs and Quality expectation/reference contracts; and pass all prior runtime references. Rejection rolls back every staged operation. This level does not yet prove package acceptance, execution of Quality scenarios, or rendered desktop/mobile acceptance.
 
 Use the full release gate before a release claim:
 

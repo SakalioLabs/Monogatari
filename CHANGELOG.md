@@ -1,6 +1,7 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Added shared headless Quality Suite document validation with bounded safe loading, expectation range/conflict checks, and character/knowledge/Event/Workflow references; Tauri delegates shape validation and MCP rolls invalid Quality writes back before acceptance.
 - Extracted Workflow models and pure graph/Event validation from the Tauri execution adapter into `llm-authoring`; Agent candidate validation now loads bounded recursive Workflow catalogs, rejects duplicate IDs and broken scene/character/sub-workflow references, and rolls invalid MCP Workflow writes back atomically.
 - Moved the complete Story Event domain into `llm-authoring`, leaving Tauri as a compatibility facade; core Agent validation now loads the same versioned catalogs, validates scoped characters and unlock targets against real scene/dialogue/ending catalogs, and rolls back invalid MCP Event writes.
 - Extended shared Agent candidate validation through strict bounded scene and ending catalogs, background-inferred scene IDs, and ending-to-scene/dialogue references; Tauri now reuses the same authoring models/loaders, and real MCP stdio tests prove invalid ending writes roll back atomically.

@@ -287,6 +287,40 @@ async fn writable_stdio_requires_reviewed_fingerprint_and_rolls_back_invalid_can
         .join("workflows/rejected.json")
         .exists());
     client.cancel().await?;
+
+    let invalid_quality = TestProject::new("quality-runtime-rollback");
+    let client = connect(&invalid_quality.root, true).await?;
+    let transaction = AgentProjectTransaction {
+        schema: AGENT_TRANSACTION_SCHEMA_V1.to_string(),
+        transaction_id: "quality_reference_rollback".to_string(),
+        operations: vec![AgentProjectOperation::PutJson {
+            path: "quality_suites/rejected.json".to_string(),
+            document: json!({
+                "version": "1",
+                "name": "Rejected",
+                "description": "Unknown project references must roll back.",
+                "scenarios": [{
+                    "id": "missing",
+                    "category": "story",
+                    "description": "Missing character",
+                    "character_id": "missing",
+                    "expect": {}
+                }]
+            }),
+            precondition: AgentFilePrecondition::Missing,
+        }],
+    };
+    let plan = call_plan(&client, &transaction).await?;
+    let rejected = call_apply(&client, &transaction, &plan.precondition_fingerprint).await?;
+    assert_eq!(rejected.is_error, Some(true));
+    let error: McpToolError = structured(&rejected)?;
+    assert_eq!(error.code, McpToolErrorCode::TransactionError);
+    assert!(error.message.contains("quality_character_missing"));
+    assert!(!invalid_quality
+        .root
+        .join("quality_suites/rejected.json")
+        .exists());
+    client.cancel().await?;
     Ok(())
 }
 

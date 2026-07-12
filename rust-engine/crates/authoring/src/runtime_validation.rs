@@ -13,6 +13,9 @@ use crate::json_catalog::{
     inspect_project_json_catalog, JsonAcceptanceLevel, JsonCatalogIssueSeverity,
 };
 use crate::project::inspect_project_config;
+use crate::quality_suite_validation::{
+    load_project_quality_suites, validate_quality_suite_references,
+};
 use crate::story_content_validation::{
     load_scene_documents, load_story_ending_sources, scene_ids, validate_ending_references,
 };
@@ -44,6 +47,7 @@ pub struct CoreRuntimeValidationReport {
     pub ending_count: usize,
     pub story_event_count: usize,
     pub workflow_count: usize,
+    pub quality_suite_count: usize,
     pub error_count: usize,
     pub issues: Vec<CoreRuntimeValidationIssue>,
 }
@@ -125,11 +129,19 @@ pub async fn load_core_runtime_project(project_root: &Path) -> Result<CoreRuntim
         &story_content,
         &mut issues,
     );
-    let workflow_count = validate_workflows(
+    let workflow_content = validate_workflows(
         project_root,
         &story_events,
         &story_content.scene_ids,
         &character_ids,
+        &mut issues,
+    );
+    let quality_suite_count = validate_quality_suites(
+        project_root,
+        &character_ids,
+        &knowledge_ids,
+        &story_events,
+        &workflow_content.paths,
         &mut issues,
     );
 
@@ -158,7 +170,8 @@ pub async fn load_core_runtime_project(project_root: &Path) -> Result<CoreRuntim
         scene_count: story_content.scene_ids.len(),
         ending_count: story_content.ending_ids.len(),
         story_event_count: story_events.definitions().len(),
-        workflow_count,
+        workflow_count: workflow_content.count,
+        quality_suite_count,
         error_count: issues.len(),
         issues,
     };
@@ -171,25 +184,82 @@ pub async fn load_core_runtime_project(project_root: &Path) -> Result<CoreRuntim
     })
 }
 
+struct ValidatedWorkflowContent {
+    count: usize,
+    paths: HashSet<String>,
+}
+
 fn validate_workflows(
     project_root: &Path,
     story_events: &StoryEventCatalog,
     scene_ids: &HashSet<String>,
     character_ids: &HashSet<String>,
     issues: &mut Vec<CoreRuntimeValidationIssue>,
-) -> usize {
+) -> ValidatedWorkflowContent {
     let workflows = match load_project_workflows(project_root, story_events) {
         Ok(workflows) => workflows,
         Err(error) => {
             issues.push(issue("workflow_catalog_invalid", Some("workflows"), error));
-            return 0;
+            return ValidatedWorkflowContent {
+                count: 0,
+                paths: HashSet::new(),
+            };
         }
     };
     for (code, path, message) in validate_workflow_references(&workflows, scene_ids, character_ids)
     {
         issues.push(issue(code, Some(path), message));
     }
-    workflows.len()
+    let paths = workflows
+        .iter()
+        .map(|loaded| {
+            loaded
+                .source_path
+                .strip_prefix("workflows/")
+                .unwrap_or(&loaded.source_path)
+                .to_string()
+        })
+        .collect();
+    ValidatedWorkflowContent {
+        count: workflows.len(),
+        paths,
+    }
+}
+
+fn validate_quality_suites(
+    project_root: &Path,
+    character_ids: &HashSet<String>,
+    knowledge_ids: &HashSet<String>,
+    story_events: &StoryEventCatalog,
+    workflow_paths: &HashSet<String>,
+    issues: &mut Vec<CoreRuntimeValidationIssue>,
+) -> usize {
+    let suites = match load_project_quality_suites(project_root) {
+        Ok(suites) => suites,
+        Err(error) => {
+            issues.push(issue(
+                "quality_suite_catalog_invalid",
+                Some("quality_suites"),
+                error,
+            ));
+            return 0;
+        }
+    };
+    let event_ids = story_events
+        .definitions()
+        .iter()
+        .map(|definition| definition.event_id.clone())
+        .collect();
+    for (code, path, message) in validate_quality_suite_references(
+        &suites,
+        character_ids,
+        knowledge_ids,
+        &event_ids,
+        workflow_paths,
+    ) {
+        issues.push(issue(code, Some(path), message));
+    }
+    suites.len()
 }
 
 struct ValidatedStoryContent {

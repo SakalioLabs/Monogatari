@@ -18,6 +18,7 @@ fn project_root(label: &str) -> PathBuf {
     std::fs::create_dir_all(root.join("endings")).unwrap();
     std::fs::create_dir_all(root.join("events")).unwrap();
     std::fs::create_dir_all(root.join("workflows")).unwrap();
+    std::fs::create_dir_all(root.join("quality_suites")).unwrap();
     std::fs::write(
         root.join("settings.json"),
         r#"{"paths":{"characters":"characters","dialogue":"dialogue","knowledge":"knowledge","assets":"assets"}}"#,
@@ -61,6 +62,7 @@ async fn validates_real_core_runtime_catalogs_and_references() {
     assert_eq!(report.ending_count, 0);
     assert_eq!(report.story_event_count, 0);
     assert_eq!(report.workflow_count, 0);
+    assert_eq!(report.quality_suite_count, 0);
     std::fs::remove_dir_all(root).unwrap();
 }
 
@@ -102,6 +104,26 @@ async fn rejects_workflow_nodes_with_unknown_scene_targets() {
         .issues
         .iter()
         .any(|issue| issue.code == "workflow_scene_missing"));
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
+async fn rejects_quality_suites_with_unknown_project_references() {
+    let root = project_root("quality_references");
+    write_valid_core(&root);
+    std::fs::write(
+        root.join("quality_suites/rejected.json"),
+        r#"{"version":"1","name":"Rejected","description":"Rejected suite","scenarios":[{"id":"missing","category":"story","description":"Unknown character","character_id":"missing","expect":{}}]}"#,
+    )
+    .unwrap();
+
+    let report = validate_core_runtime_project(&root).await.unwrap();
+
+    assert_eq!(report.quality_suite_count, 1);
+    assert!(report
+        .issues
+        .iter()
+        .any(|issue| issue.code == "quality_character_missing"));
     std::fs::remove_dir_all(root).unwrap();
 }
 

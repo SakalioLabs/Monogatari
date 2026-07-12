@@ -241,7 +241,8 @@ pub fn validate_workflow_references(
 }
 
 fn source_label(root: &Path, path: &Path) -> String {
-    path.strip_prefix(root)
+    let resolved_root = root.canonicalize().unwrap_or_else(|_| root.to_path_buf());
+    path.strip_prefix(&resolved_root)
         .unwrap_or(path)
         .to_string_lossy()
         .replace('\\', "/")
