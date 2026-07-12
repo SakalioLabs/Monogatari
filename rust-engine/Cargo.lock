@@ -2110,6 +2110,7 @@ dependencies = [
 name = "llm-authoring"
 version = "0.9.5"
 dependencies = [
+ "llm-core",
  "llm-game",
  "schemars 1.2.1",
  "serde",

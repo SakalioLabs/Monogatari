@@ -16,6 +16,7 @@ use crate::project::inspect_project_config;
 use crate::story_content_validation::{
     load_scene_documents, load_story_ending_sources, scene_ids, validate_ending_references,
 };
+use crate::story_events::StoryEventCatalog;
 
 pub const CORE_RUNTIME_VALIDATION_SCHEMA_V1: &str = "monogatari-core-runtime-validation/v1";
 
@@ -40,6 +41,7 @@ pub struct CoreRuntimeValidationReport {
     pub knowledge_count: usize,
     pub scene_count: usize,
     pub ending_count: usize,
+    pub story_event_count: usize,
     pub error_count: usize,
     pub issues: Vec<CoreRuntimeValidationIssue>,
 }
@@ -49,6 +51,7 @@ pub struct CoreRuntimeProject {
     pub characters: CharacterManager,
     pub dialogues: DialogueManager,
     pub knowledge: KnowledgeBase,
+    pub story_events: StoryEventCatalog,
 }
 
 /// Validate document safety, real core runtime loading, and core cross-catalog references.
@@ -112,7 +115,14 @@ pub async fn load_core_runtime_project(project_root: &Path) -> Result<CoreRuntim
     validate_character_references(&characters, &character_ids, &knowledge_ids, &mut issues).await;
     validate_dialogue_references(&dialogues, &character_ids, &mut issues);
 
-    let (scene_count, ending_count) = validate_story_content(project_root, &dialogues, &mut issues);
+    let story_content = validate_story_content(project_root, &dialogues, &mut issues);
+    let story_events = validate_story_events(
+        project_root,
+        &character_ids,
+        &dialogues,
+        &story_content,
+        &mut issues,
+    );
 
     issues.sort_by(|left, right| {
         left.path
@@ -136,8 +146,9 @@ pub async fn load_core_runtime_project(project_root: &Path) -> Result<CoreRuntim
         dialogue_count: dialogues.script_ids().len(),
         dialogue_node_count,
         knowledge_count: knowledge_ids.len(),
-        scene_count,
-        ending_count,
+        scene_count: story_content.scene_ids.len(),
+        ending_count: story_content.ending_ids.len(),
+        story_event_count: story_events.definitions().len(),
         error_count: issues.len(),
         issues,
     };
@@ -146,39 +157,93 @@ pub async fn load_core_runtime_project(project_root: &Path) -> Result<CoreRuntim
         characters,
         dialogues,
         knowledge,
+        story_events,
     })
+}
+
+struct ValidatedStoryContent {
+    scene_ids: HashSet<String>,
+    ending_ids: HashSet<String>,
 }
 
 fn validate_story_content(
     project_root: &Path,
     dialogues: &DialogueManager,
     issues: &mut Vec<CoreRuntimeValidationIssue>,
-) -> (usize, usize) {
+) -> ValidatedStoryContent {
     let scenes = match load_scene_documents(project_root) {
         Ok(scenes) => scenes,
         Err(error) => {
             issues.push(issue("scene_catalog_invalid", Some("scenes"), error));
-            return (0, 0);
+            return ValidatedStoryContent {
+                scene_ids: HashSet::new(),
+                ending_ids: HashSet::new(),
+            };
         }
     };
     let scene_ids = match scene_ids(project_root, &scenes) {
         Ok(ids) => ids,
         Err(error) => {
             issues.push(issue("scene_assets_invalid", Some("assets"), error));
-            return (scenes.len(), 0);
+            return ValidatedStoryContent {
+                scene_ids: scenes.into_iter().map(|loaded| loaded.scene.id).collect(),
+                ending_ids: HashSet::new(),
+            };
         }
     };
     let endings = match load_story_ending_sources(project_root) {
         Ok(endings) => endings,
         Err(error) => {
             issues.push(issue("ending_catalog_invalid", Some("endings"), error));
-            return (scene_ids.len(), 0);
+            return ValidatedStoryContent {
+                scene_ids,
+                ending_ids: HashSet::new(),
+            };
         }
     };
     for (code, message) in validate_ending_references(&endings, &scene_ids, dialogues) {
         issues.push(issue(code, Some("endings"), message));
     }
-    (scene_ids.len(), endings.len())
+    ValidatedStoryContent {
+        scene_ids,
+        ending_ids: endings.into_iter().map(|loaded| loaded.ending.id).collect(),
+    }
+}
+
+fn validate_story_events(
+    project_root: &Path,
+    character_ids: &HashSet<String>,
+    dialogues: &DialogueManager,
+    content: &ValidatedStoryContent,
+    issues: &mut Vec<CoreRuntimeValidationIssue>,
+) -> StoryEventCatalog {
+    let catalog = match StoryEventCatalog::load_from_project_root(project_root) {
+        Ok(catalog) => catalog,
+        Err(error) => {
+            issues.push(issue("story_event_catalog_invalid", Some("events"), error));
+            return StoryEventCatalog::from_document_json(
+                r#"{"schema":"monogatari-story-event-catalog/v1","events":[]}"#,
+                "events/<invalid>",
+            )
+            .expect("empty Story Event catalog is valid");
+        }
+    };
+    if let Err(error) =
+        catalog.validate_character_references(character_ids.iter().map(String::as_str))
+    {
+        issues.push(issue(
+            "story_event_character_missing",
+            Some("events"),
+            error,
+        ));
+    }
+    let dialogue_ids = dialogues.script_ids().into_iter().collect::<HashSet<_>>();
+    if let Err(error) =
+        catalog.validate_content_references(&content.scene_ids, &dialogue_ids, &content.ending_ids)
+    {
+        issues.push(issue("story_event_content_missing", Some("events"), error));
+    }
+    catalog
 }
 
 fn runtime_path(

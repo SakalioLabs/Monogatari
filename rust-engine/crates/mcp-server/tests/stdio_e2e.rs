@@ -227,6 +227,34 @@ async fn writable_stdio_requires_reviewed_fingerprint_and_rolls_back_invalid_can
     assert!(error.message.contains("ending_dialogue_missing"));
     assert!(!invalid_ending.root.join("endings/rejected.json").exists());
     client.cancel().await?;
+
+    let invalid_event = TestProject::new("event-runtime-rollback");
+    let client = connect(&invalid_event.root, true).await?;
+    let transaction = AgentProjectTransaction {
+        schema: AGENT_TRANSACTION_SCHEMA_V1.to_string(),
+        transaction_id: "event_reference_rollback".to_string(),
+        operations: vec![AgentProjectOperation::PutJson {
+            path: "events/rejected.json".to_string(),
+            document: json!({
+                "schema": "monogatari-story-event-catalog/v1",
+                "events": [{
+                    "event_id": "rejected",
+                    "event_type": "story",
+                    "description": "Unknown content must be rejected.",
+                    "actions": [{"type": "unlock_scene", "scene_id": "missing_scene"}]
+                }]
+            }),
+            precondition: AgentFilePrecondition::Missing,
+        }],
+    };
+    let plan = call_plan(&client, &transaction).await?;
+    let rejected = call_apply(&client, &transaction, &plan.precondition_fingerprint).await?;
+    assert_eq!(rejected.is_error, Some(true));
+    let error: McpToolError = structured(&rejected)?;
+    assert_eq!(error.code, McpToolErrorCode::TransactionError);
+    assert!(error.message.contains("story_event_content_missing"));
+    assert!(!invalid_event.root.join("events/rejected.json").exists());
+    client.cancel().await?;
     Ok(())
 }
 

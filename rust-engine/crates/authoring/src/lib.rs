@@ -9,3 +9,4 @@ pub mod paths;
 pub mod project;
 pub mod runtime_validation;
 pub mod story_content_validation;
+pub mod story_events;

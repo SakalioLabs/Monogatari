@@ -525,7 +525,7 @@ async function verifyStoryEventCatalogs() {
   const catalogs = []
   const contentInventories = []
   let fileCount = 0
-  const rustStoryEventSource = await readFile(path.join(tauriAppDir, 'src', 'story_events.rs'), 'utf8')
+  const rustStoryEventSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'story_events.rs'), 'utf8')
 
   for (const dataRoot of rendererDataRoots) {
     const catalog = await loadStoryEventCatalog(dataRoot, issues)
@@ -2411,6 +2411,8 @@ async function verifyTauriPackagingConfig() {
   const tauriInstallationVerifierSource = await readFile(path.join(tauriAppDir, 'src', 'installation_verifier.rs'), 'utf8')
   const tauriStateSource = await readFile(path.join(tauriAppDir, 'src', 'state.rs'), 'utf8')
   const tauriStoryEventsSource = await readFile(path.join(tauriAppDir, 'src', 'story_events.rs'), 'utf8')
+  const authoringStoryEventsSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'story_events.rs'), 'utf8')
+  const authoringRuntimeValidationSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'runtime_validation.rs'), 'utf8')
   const tauriStoryProgressSource = await readFile(path.join(tauriAppDir, 'src', 'story_progress.rs'), 'utf8')
   const tauriStoryAccessSource = await readFile(path.join(tauriAppDir, 'src', 'story_access.rs'), 'utf8')
   const authoringFilesystemSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'filesystem.rs'), 'utf8')
@@ -2613,8 +2615,9 @@ async function verifyTauriPackagingConfig() {
     [tauriStateSource, 'story_progress: Arc<RwLock<StoryProgressState>>', 'keep persistent story progress project-scoped'],
     [tauriEngineSource, 'current_project_data_root().await', 'keep empty engine initialization paths on the active or discovered default root'],
     [tauriEngineSource, 'load_project_content(&path).await?', 'stage all project content before replacing active managers'],
-    [tauriEngineSource, 'StoryEventCatalog::load_from_project_root(path)?', 'stage project story events during engine initialization'],
-    [tauriEngineSource, 'validate_character_references', 'validate character-scoped story events before activation'],
+    [authoringRuntimeValidationSource, 'StoryEventCatalog::load_from_project_root(project_root)', 'stage project story events during shared engine initialization'],
+    [authoringRuntimeValidationSource, 'validate_character_references', 'validate character-scoped story events before activation'],
+    [tauriEngineSource, 'core.story_events', 'activate the shared validated Story Event catalog'],
     [tauriEngineSource, 'let root_changed = state.set_project_data_root(path).await', 'rebind project managers after staged engine initialization'],
     [tauriEngineSource, 'project_content_loading_replaces_instead_of_merging_managers', 'test project reloads do not merge old content'],
     [tauriEngineSource, 'checked_in_project_data_loads_as_real_runtime_content', 'load both checked-in project roots through real runtime managers'],
@@ -2771,25 +2774,27 @@ async function verifyTauriPackagingConfig() {
   }
 
   const storyEventCatalogRequirements = [
-    [tauriStoryEventsSource, 'monogatari-story-event-catalog/v1', 'version project story event catalogs'],
-    [tauriStoryEventsSource, 'monogatari-event-trigger-rule/v1', 'preserve legacy rule fingerprint compatibility'],
-    [tauriStoryEventsSource, 'monogatari-event-trigger-rule/v2', 'fingerprint character scope and repeat behavior'],
-    [tauriStoryEventsSource, 'MAX_STORY_EVENT_FILE_BYTES', 'bound individual story event files'],
-    [tauriStoryEventsSource, 'MAX_STORY_EVENT_CATALOG_BYTES', 'bound aggregate story event catalogs'],
-    [tauriStoryEventsSource, 'metadata.file_type().is_symlink()', 'reject symlinked story event files'],
-    [tauriStoryEventsSource, 'normalize_event_directory_reference', 'validate configured story event directories'],
-    [tauriStoryEventsSource, 'Story event directory escapes the project root', 'enforce the project root boundary for event directories'],
-    [tauriStoryEventsSource, 'Duplicate story event id', 'reject duplicate story event ids'],
-    [tauriStoryEventsSource, 'validate_character_references', 'validate character-scoped event references'],
-    [tauriStoryEventsSource, 'pub enum StoryEventAction', 'define typed story event actions'],
-    [tauriStoryEventsSource, 'normalize_story_event_actions', 'normalize typed and legacy event effects'],
-    [tauriStoryEventsSource, 'MAX_EVENT_ACTIONS', 'bound event action lists'],
-    [tauriStoryEventsSource, 'event_trigger_rule_fingerprint', 'centralize trigger rule fingerprints'],
-    [tauriStoryEventsSource, 'checked_in_catalog_preserves_pinned_v1_rule_fingerprints', 'test pinned legacy rule fingerprints'],
-    [tauriStoryEventsSource, 'checked_in_catalog_preserves_cross_runtime_catalog_fingerprint', 'pin the action-bound catalog fingerprint across Rust and release tooling'],
-    [tauriStoryEventsSource, 'project_catalog_supports_character_scope_and_repeatable_rules', 'test creator-defined scope and repeat behavior'],
-    [tauriStoryEventsSource, 'configured_event_directory_is_project_relative_and_enforced', 'test configured event directory containment'],
-    [tauriStoryEventsSource, 'missing_directory_uses_compatibility_catalog_but_empty_directory_stays_empty', 'preserve old projects without forcing events into intentionally empty catalogs'],
+    [tauriStoryEventsSource, 'pub use llm_authoring::story_events::*', 'keep Tauri as a thin Story Event compatibility facade'],
+    [authoringStoryEventsSource, 'monogatari-story-event-catalog/v1', 'version project story event catalogs'],
+    [authoringStoryEventsSource, 'monogatari-event-trigger-rule/v1', 'preserve legacy rule fingerprint compatibility'],
+    [authoringStoryEventsSource, 'monogatari-event-trigger-rule/v2', 'fingerprint character scope and repeat behavior'],
+    [authoringStoryEventsSource, 'MAX_STORY_EVENT_FILE_BYTES', 'bound individual story event files'],
+    [authoringStoryEventsSource, 'MAX_STORY_EVENT_CATALOG_BYTES', 'bound aggregate story event catalogs'],
+    [authoringStoryEventsSource, 'metadata.file_type().is_symlink()', 'reject symlinked story event files'],
+    [authoringStoryEventsSource, 'normalize_event_directory_reference', 'validate configured story event directories'],
+    [authoringStoryEventsSource, 'Story event directory escapes the project root', 'enforce the project root boundary for event directories'],
+    [authoringStoryEventsSource, 'Duplicate story event id', 'reject duplicate story event ids'],
+    [authoringStoryEventsSource, 'validate_character_references', 'validate character-scoped event references'],
+    [authoringStoryEventsSource, 'validate_content_references', 'validate typed Event content targets'],
+    [authoringStoryEventsSource, 'pub enum StoryEventAction', 'define typed story event actions'],
+    [authoringStoryEventsSource, 'normalize_story_event_actions', 'normalize typed and legacy event effects'],
+    [authoringStoryEventsSource, 'MAX_EVENT_ACTIONS', 'bound event action lists'],
+    [authoringStoryEventsSource, 'event_trigger_rule_fingerprint', 'centralize trigger rule fingerprints'],
+    [authoringStoryEventsSource, 'checked_in_catalog_preserves_pinned_v1_rule_fingerprints', 'test pinned legacy rule fingerprints'],
+    [authoringStoryEventsSource, 'checked_in_catalog_preserves_cross_runtime_catalog_fingerprint', 'pin the action-bound catalog fingerprint across Rust and release tooling'],
+    [authoringStoryEventsSource, 'project_catalog_supports_character_scope_and_repeatable_rules', 'test creator-defined scope and repeat behavior'],
+    [authoringStoryEventsSource, 'configured_event_directory_is_project_relative_and_enforced', 'test configured event directory containment'],
+    [authoringStoryEventsSource, 'missing_directory_uses_compatibility_catalog_but_empty_directory_stays_empty', 'preserve old projects without forcing events into intentionally empty catalogs'],
     [tauriStoryEventCommandsSource, 'get_story_event_catalog', 'expose the active catalog to author tooling'],
     [tauriStoryEventCommandsSource, 'get_story_progress', 'expose persistent story progress to runtime tooling'],
     [tauriStoryEventCommandsSource, 'reload_story_event_catalog', 'support atomic author hot reloads'],

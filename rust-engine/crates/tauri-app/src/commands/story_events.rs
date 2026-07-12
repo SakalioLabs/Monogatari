@@ -5,6 +5,11 @@ use std::path::{Path, PathBuf};
 use serde_json::Value;
 use tauri::State;
 
+use llm_authoring::story_content_validation::{
+    load_scene_documents, load_story_ending_sources, scene_ids,
+};
+use llm_game::dialogue::DialogueManager;
+
 use crate::state::AppState;
 use crate::story_access::{story_content_access_snapshot, StoryContentAccessSnapshot};
 use crate::story_events::{
@@ -84,7 +89,7 @@ async fn save_story_event_catalog_inner(
     let candidate = StoryEventCatalog::from_document_json(&content, &source_path)?;
     let character_ids = state.character_manager.read().await.character_ids();
     candidate.validate_character_references(character_ids.iter().map(String::as_str))?;
-    validate_story_event_content_references(&project_root, &candidate)?;
+    validate_story_event_content_references(&project_root, &candidate).await?;
 
     let mut active_catalog = state.story_event_catalog.write().await;
     if active_catalog.catalog_fingerprint() != expected_catalog_fingerprint {
@@ -319,105 +324,26 @@ async fn cleanup_event_backup(backup_path: &Path) {
     }
 }
 
-fn validate_story_event_content_references(
+async fn validate_story_event_content_references(
     project_root: &Path,
     catalog: &StoryEventCatalog,
 ) -> Result<(), String> {
-    let scene_ids = project_content_ids(project_root, "scenes")?;
-    let dialogue_ids = project_content_ids(project_root, "dialogue")?;
-    let ending_ids = project_content_ids(project_root, "endings")?;
-    for definition in catalog.definitions() {
-        for action in &definition.actions {
-            let (content_type, content_id, known_ids) = match action {
-                StoryEventAction::UnlockScene { scene_id } => ("scene", scene_id, &scene_ids),
-                StoryEventAction::UnlockDialogue { dialogue_id } => {
-                    ("dialogue", dialogue_id, &dialogue_ids)
-                }
-                StoryEventAction::UnlockEnding { ending_id } => ("ending", ending_id, &ending_ids),
-                StoryEventAction::SetFlag { .. } => continue,
-            };
-            if !known_ids.contains(content_id) {
-                return Err(format!(
-                    "Story event `{}` unlocks unknown {content_type} `{content_id}`.",
-                    definition.event_id
-                ));
-            }
-        }
+    let scenes = load_scene_documents(project_root)?;
+    let scene_ids = scene_ids(project_root, &scenes)?;
+    let ending_ids = load_story_ending_sources(project_root)?
+        .into_iter()
+        .map(|loaded| loaded.ending.id)
+        .collect();
+    let mut dialogues = DialogueManager::new();
+    let dialogue_root = project_root.join("dialogue");
+    if dialogue_root.is_dir() {
+        dialogues
+            .load_from_directory(&dialogue_root)
+            .await
+            .map_err(|error| format!("Failed to load project dialogues: {error}"))?;
     }
-    Ok(())
-}
-
-fn project_content_ids(
-    project_root: &Path,
-    directory_name: &str,
-) -> Result<std::collections::HashSet<String>, String> {
-    let directory = project_root.join(directory_name);
-    if !directory.exists() {
-        return Ok(std::collections::HashSet::new());
-    }
-    let metadata = std::fs::symlink_metadata(&directory).map_err(|error| {
-        format!(
-            "Failed to inspect project {directory_name} directory `{}`: {error}",
-            directory.display()
-        )
-    })?;
-    if metadata.file_type().is_symlink() || !metadata.is_dir() {
-        return Err(format!(
-            "Project {directory_name} path must be a regular directory: {}",
-            directory.display()
-        ));
-    }
-
-    let mut ids = std::collections::HashSet::new();
-    for entry in std::fs::read_dir(&directory).map_err(|error| {
-        format!(
-            "Failed to read project {directory_name} directory `{}`: {error}",
-            directory.display()
-        )
-    })? {
-        let path = entry
-            .map_err(|error| format!("Failed to read {directory_name} entry: {error}"))?
-            .path();
-        if path.extension().and_then(|extension| extension.to_str()) != Some("json") {
-            continue;
-        }
-        let metadata = std::fs::symlink_metadata(&path).map_err(|error| {
-            format!(
-                "Failed to inspect project content `{}`: {error}",
-                path.display()
-            )
-        })?;
-        if metadata.file_type().is_symlink() || !metadata.is_file() {
-            return Err(format!(
-                "Project content must be a regular JSON file: {}",
-                path.display()
-            ));
-        }
-        let value: Value =
-            serde_json::from_str(&std::fs::read_to_string(&path).map_err(|error| {
-                format!(
-                    "Failed to read project content `{}`: {error}",
-                    path.display()
-                )
-            })?)
-            .map_err(|error| {
-                format!(
-                    "Invalid project content JSON in `{}`: {error}",
-                    path.display()
-                )
-            })?;
-        let records = match value {
-            Value::Array(records) => records,
-            object @ Value::Object(_) => vec![object],
-            _ => Vec::new(),
-        };
-        for record in records {
-            if let Some(id) = record.get("id").and_then(Value::as_str) {
-                ids.insert(id.to_string());
-            }
-        }
-    }
-    Ok(ids)
+    let dialogue_ids = dialogues.script_ids().into_iter().collect();
+    catalog.validate_content_references(&scene_ids, &dialogue_ids, &ending_ids)
 }
 
 pub(crate) async fn apply_story_event_definition(

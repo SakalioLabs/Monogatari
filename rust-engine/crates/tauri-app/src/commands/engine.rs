@@ -87,9 +87,7 @@ pub(crate) async fn load_project_content(
     let dialogues = core.dialogues;
     let knowledge = core.knowledge;
 
-    let story_events = StoryEventCatalog::load_from_project_root(path)?;
-    let character_ids = characters.character_ids();
-    story_events.validate_character_references(character_ids.iter().map(String::as_str))?;
+    let story_events = core.story_events;
 
     Ok((characters, dialogues, knowledge, story_events))
 }

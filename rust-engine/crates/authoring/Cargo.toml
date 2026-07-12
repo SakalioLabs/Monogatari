@@ -10,3 +10,4 @@ serde_json = { workspace = true }
 sha2 = { workspace = true }
 tokio = { workspace = true }
 llm-game = { workspace = true }
+llm-core = { workspace = true }

@@ -16,6 +16,7 @@ fn project_root(label: &str) -> PathBuf {
     std::fs::create_dir_all(root.join("assets")).unwrap();
     std::fs::create_dir_all(root.join("scenes")).unwrap();
     std::fs::create_dir_all(root.join("endings")).unwrap();
+    std::fs::create_dir_all(root.join("events")).unwrap();
     std::fs::write(
         root.join("settings.json"),
         r#"{"paths":{"characters":"characters","dialogue":"dialogue","knowledge":"knowledge","assets":"assets"}}"#,
@@ -57,6 +58,28 @@ async fn validates_real_core_runtime_catalogs_and_references() {
     assert_eq!(report.knowledge_count, 1);
     assert_eq!(report.scene_count, 0);
     assert_eq!(report.ending_count, 0);
+    assert_eq!(report.story_event_count, 0);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
+async fn rejects_story_event_actions_with_unknown_content_targets() {
+    let root = project_root("story_events");
+    write_valid_core(&root);
+    std::fs::write(
+        root.join("events/events.json"),
+        r#"{"schema":"monogatari-story-event-catalog/v1","events":[{"event_id":"unlock_missing","event_type":"story","description":"Invalid target","actions":[{"type":"unlock_scene","scene_id":"missing"}]}]}"#,
+    )
+    .unwrap();
+
+    let report = validate_core_runtime_project(&root).await.unwrap();
+
+    assert!(!report.valid);
+    assert_eq!(report.story_event_count, 1);
+    assert!(report
+        .issues
+        .iter()
+        .any(|issue| issue.code == "story_event_content_missing"));
     std::fs::remove_dir_all(root).unwrap();
 }
 
