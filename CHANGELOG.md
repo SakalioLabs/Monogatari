@@ -1,6 +1,7 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Extracted project-package portable path rules into a pure module with independent tests for nested paths, case-folded keys, parent expansion, traversal, reserved Windows names, and platform-specific separators.
 - Split project-package Tauri command orchestration from the archive core, isolating application state, blocking-task dispatch, runtime reload validation, and staged import commit from ZIP and manifest mechanics while preserving command names.
 - Added independently runnable Playwright Chromium coverage for workspace navigation, validated character browser-draft persistence, and dialogue authoring-to-Playtest handoff, integrated into the module matrix and release gate.
 - Rejected project-package file/directory topology conflicts during manifest inspection, including case-folded exact collisions and files used as parent directories, with regression coverage before extraction can create staged content.

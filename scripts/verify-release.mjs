@@ -2430,6 +2430,7 @@ async function verifyTauriPackagingConfig() {
   const tauriProjectSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'project.rs'), 'utf8')
   const tauriProjectArchiveSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'project_archive.rs'), 'utf8')
   const tauriProjectArchiveCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'project_archive', 'commands.rs'), 'utf8')
+  const tauriProjectArchivePathSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'project_archive', 'path_validation.rs'), 'utf8')
   const defaultCapabilitySource = await readFile(path.join(tauriAppDir, 'capabilities', 'default.json'), 'utf8')
   const tauriScenesSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'scenes.rs'), 'utf8')
   const tauriChatSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'chat.rs'), 'utf8')
@@ -2706,7 +2707,9 @@ async function verifyTauriPackagingConfig() {
     [tauriProjectArchiveSource, 'MAX_ARCHIVE_TOTAL_BYTES', 'bound expanded project package sizes'],
     [tauriProjectArchiveSource, 'MAX_ARCHIVE_FILE_BYTES', 'bound individual project package files'],
     [tauriProjectArchiveSource, 'MAX_ARCHIVE_FILES', 'bound project package file counts'],
-    [tauriProjectArchiveSource, 'validate_portable_path', 'reject traversal and non-portable archive paths'],
+    [tauriProjectArchiveSource, 'mod path_validation;', 'isolate reusable project package path policy'],
+    [tauriProjectArchivePathSource, 'validate_portable_path', 'reject traversal and non-portable archive paths'],
+    [tauriProjectArchivePathSource, 'portable_paths_reject_escape_reserved_and_platform_specific_shapes', 'independently test portable archive path rejection'],
     [tauriProjectArchiveSource, 'reject_non_regular_zip_entry', 'reject symlink and special ZIP entries'],
     [tauriProjectArchiveSource, 'verify_and_extract_entry', 'stream and verify project package contents during import'],
     [tauriProjectArchiveSource, 'write_export_record', 'stream project files into ZIP output with fixed memory'],

@@ -31,11 +31,13 @@ const MAX_ARCHIVE_TOTAL_BYTES: u64 = 16 * 1024 * 1024 * 1024;
 const MAX_ARCHIVE_FILE_BYTES: u64 = 4 * 1024 * 1024 * 1024;
 const MAX_ARCHIVE_MANIFEST_BYTES: u64 = 4 * 1024 * 1024;
 const MAX_ARCHIVE_JSON_BYTES: u64 = 64 * 1024 * 1024;
-const MAX_PORTABLE_PATH_BYTES: usize = 512;
-const MAX_PORTABLE_SEGMENTS: usize = 32;
-const MAX_PORTABLE_SEGMENT_BYTES: usize = 160;
-
 static ARCHIVE_STAGE_COUNTER: AtomicU64 = AtomicU64::new(0);
+
+mod path_validation;
+use path_validation::{
+    add_directory_and_parents, is_reserved_windows_segment, portable_case_key,
+    validate_portable_path,
+};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ProjectArchiveInspection {
@@ -883,90 +885,6 @@ fn finish_sha256(hasher: Sha256) -> String {
         .iter()
         .map(|byte| format!("{byte:02x}"))
         .collect()
-}
-
-fn validate_portable_path(value: &str, label: &str) -> Result<(), String> {
-    if value.is_empty()
-        || value.len() > MAX_PORTABLE_PATH_BYTES
-        || value.starts_with('/')
-        || value.ends_with('/')
-        || value.contains('\\')
-        || value.chars().any(char::is_control)
-    {
-        return Err(format!(
-            "{label} `{value}` is not a portable relative path."
-        ));
-    }
-    let segments = value.split('/').collect::<Vec<_>>();
-    if segments.is_empty() || segments.len() > MAX_PORTABLE_SEGMENTS {
-        return Err(format!("{label} `{value}` has too many path segments."));
-    }
-    for segment in segments {
-        if segment.is_empty()
-            || segment == "."
-            || segment == ".."
-            || segment.len() > MAX_PORTABLE_SEGMENT_BYTES
-            || segment.ends_with(' ')
-            || segment.ends_with('.')
-            || segment
-                .chars()
-                .any(|ch| matches!(ch, '<' | '>' | ':' | '"' | '|' | '?' | '*'))
-            || is_reserved_windows_segment(segment)
-        {
-            return Err(format!(
-                "{label} `{value}` contains an unsafe path segment."
-            ));
-        }
-    }
-    Ok(())
-}
-
-fn is_reserved_windows_segment(segment: &str) -> bool {
-    let stem = segment
-        .split('.')
-        .next()
-        .unwrap_or(segment)
-        .to_ascii_uppercase();
-    matches!(
-        stem.as_str(),
-        "CON"
-            | "PRN"
-            | "AUX"
-            | "NUL"
-            | "COM1"
-            | "COM2"
-            | "COM3"
-            | "COM4"
-            | "COM5"
-            | "COM6"
-            | "COM7"
-            | "COM8"
-            | "COM9"
-            | "LPT1"
-            | "LPT2"
-            | "LPT3"
-            | "LPT4"
-            | "LPT5"
-            | "LPT6"
-            | "LPT7"
-            | "LPT8"
-            | "LPT9"
-    )
-}
-
-fn portable_case_key(value: &str) -> String {
-    value.to_lowercase()
-}
-
-fn add_directory_and_parents(target: &mut BTreeSet<String>, directory: &str) {
-    let mut current = String::new();
-    for segment in directory.split('/') {
-        if !current.is_empty() {
-            current.push('/');
-        }
-        current.push_str(segment);
-        target.insert(current.clone());
-    }
 }
 
 fn ensure_extraction_target(root: &Path, target: &Path) -> Result<(), String> {
