@@ -1,6 +1,7 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Added independently runnable Playwright Chromium coverage for workspace navigation, validated character browser-draft persistence, and dialogue authoring-to-Playtest handoff, integrated into the module matrix and release gate.
 - Rejected project-package file/directory topology conflicts during manifest inspection, including case-folded exact collisions and files used as parent directories, with regression coverage before extraction can create staged content.
 - Added shared delivery validation and the read-only MCP `validate_delivery` tool, reporting nested core evidence, declared/existing renderer and scene-audio assets, missing or unsupported declarations, and intentional placeholder character usage without claiming rendered visual quality.
 - Added the read-only schema-backed MCP `validate_project` tool so Agents can obtain the same structured headless runtime, catalog, Workflow, and Quality evidence before and after edits without requiring a write transaction.

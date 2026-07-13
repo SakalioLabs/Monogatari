@@ -21,6 +21,7 @@ Platform-specific gates declare their supported host IDs in the matrix. The Wind
 |---|---|---|---|
 | Agent and test orchestration | `automation-contracts` | Node unit contracts | Matrix schema, ownership, selection, CLI parsing, platform command adaptation |
 | Vue pure libraries, workflow/Story Playtest, Pinia, and shared components | `frontend-unit` | Vitest unit and Happy DOM component tests | Authoring validation, renderer fallback selection, story access, shared local condition evaluation, bounded browser workflow execution, dialogue graph transitions/scripts/conditions/relationship effects, Store async state, and shared interaction/accessibility behavior |
+| Browser authoring and Playtest workflows | `frontend-e2e` | Playwright Chromium tests against an isolated Vite server | Workspace navigation, validated browser character drafts across reloads, and dialogue save-to-Playtest handoff |
 | Vue/TypeScript/Web/PWA distribution | `frontend-contracts` | Type check, production builds, static contract verifiers | Root/subpath package and responsive shell contracts |
 | Rust core | `rust-core` | Unit and doc tests | Infrastructure crate |
 | Headless authoring core | `rust-authoring` | Unit, integration, and doc tests | Atomic content mutation, portable paths, project settings, Agent transactions, and real core-runtime manager/reference validation without Tauri |

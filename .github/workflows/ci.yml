@@ -36,6 +36,8 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
         working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
       - run: node scripts/verify-modules.mjs --group frontend --report module-verification-frontend.json
       - run: npm audit --audit-level=moderate
         working-directory: frontend

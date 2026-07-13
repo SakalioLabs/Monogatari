@@ -10,6 +10,7 @@
 
 ### Frontend
 - [ ] `cd frontend && npm run test:unit` passes pure authoring, renderer selection, story access, browser workflow/Story Playtest state machines, Pinia async-state, and shared component interaction/accessibility tests
+- [ ] `cd frontend && npm run test:e2e` passes isolated Chromium navigation, character browser-draft persistence, and dialogue authoring-to-Playtest workflows
 - [ ] `cd frontend && npm run build` passes with zero errors
 - [ ] `cd frontend && npm run build:web` emits manifest, service worker, offline fallback, `404.html`, `.nojekyll`, `_headers`, `_redirects`, `staticwebapp.config.json`, `vercel.json`, `project-assets.json`, and `inference-runtime.json` assets
 - [ ] `cd frontend && npm run verify:inference-runtime` proves the Web/PWA package declares WebGPU, a supported precision, a bounded generation limit, CSP support, and service-worker caching without runtime secrets

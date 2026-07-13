@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "test:unit": "vitest run",
+    "test:e2e": "playwright test",
     "prebuild": "npm run test:unit",
     "build": "npm run verify:i18n && vue-tsc --noEmit && vite build && node scripts/prepare-web-dist.mjs && node scripts/verify-inference-runtime.mjs && node scripts/verify-bundle-budget.mjs && node scripts/verify-responsive-shell.mjs && node scripts/verify-mobile-readiness.mjs",
     "build:web": "npm run verify:i18n && vue-tsc --noEmit && vite build && node scripts/prepare-web-dist.mjs && node scripts/verify-inference-runtime.mjs && node scripts/verify-bundle-budget.mjs && node scripts/verify-responsive-shell.mjs && node scripts/verify-mobile-readiness.mjs",
@@ -37,6 +38,7 @@
     }
   },
   "devDependencies": {
+    "@playwright/test": "1.61.1",
     "@types/three": "^0.185.0",
     "@vitejs/plugin-vue": "^6.0.7",
     "@vue/test-utils": "2.4.11",

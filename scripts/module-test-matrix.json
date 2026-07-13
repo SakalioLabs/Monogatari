@@ -35,6 +35,17 @@
       "owner_paths": ["frontend/src", "frontend/scripts", "frontend/package.json"]
     },
     {
+      "id": "frontend-e2e",
+      "label": "Frontend authoring and Playtest browser workflows",
+      "group": "frontend",
+      "kind": "browser-e2e",
+      "default": true,
+      "cwd": "frontend",
+      "command": "npm",
+      "args": ["run", "test:e2e"],
+      "owner_paths": ["frontend/e2e", "frontend/playwright.config.ts"]
+    },
+    {
       "id": "rust-core",
       "label": "Rust core unit tests",
       "group": "rust",

@@ -371,6 +371,7 @@ async function main() {
   await run('Frontend i18n coverage', 'npm', ['run', 'verify:i18n'], frontendDir)
   await run('Frontend renderer asset selector contract', 'npm', ['run', 'verify:renderer-assets'], frontendDir)
   await run('Frontend mobile shell readiness', 'npm', ['run', 'verify:mobile-readiness'], frontendDir)
+  await run('Frontend authoring browser workflows', 'npm', ['run', 'test:e2e'], frontendDir)
   await run('Tauri mobile deployment preflight', 'node', ['scripts/verify-tauri-mobile-preflight.mjs'], root)
   await run('Release-critical Rust format check', 'rustfmt', ['--edition', '2021', '--check', ...releaseCriticalRustFiles], rustDir)
   await run('Rust core tests', 'cargo', ['test', '--locked', '-p', 'llm-core'], rustDir)
