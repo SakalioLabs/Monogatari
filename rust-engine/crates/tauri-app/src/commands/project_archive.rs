@@ -1,12 +1,12 @@
 //! Verified `.monogatari` project package export and import.
 
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::HashSet;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use zip::write::SimpleFileOptions;
@@ -21,23 +21,24 @@ use super::project::{
 pub(crate) mod commands;
 
 const ARCHIVE_MANIFEST_PATH: &str = "monogatari-project.json";
-const ARCHIVE_FORMAT: &str = "monogatari-project";
-const ARCHIVE_SCHEMA: &str = "monogatari-project-export@1";
-const PACKAGE_FINGERPRINT_ALGORITHM: &str = "sha256:path-size-file-sha256-v1";
 const MAX_ARCHIVE_FILES: usize = 20_000;
 const MAX_ARCHIVE_DIRECTORIES: usize = 4_000;
 const MAX_ARCHIVE_COMPRESSED_BYTES: u64 = 16 * 1024 * 1024 * 1024;
-const MAX_ARCHIVE_TOTAL_BYTES: u64 = 16 * 1024 * 1024 * 1024;
-const MAX_ARCHIVE_FILE_BYTES: u64 = 4 * 1024 * 1024 * 1024;
 const MAX_ARCHIVE_MANIFEST_BYTES: u64 = 4 * 1024 * 1024;
 const MAX_ARCHIVE_JSON_BYTES: u64 = 64 * 1024 * 1024;
 static ARCHIVE_STAGE_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 mod path_validation;
-use path_validation::{
-    add_directory_and_parents, is_reserved_windows_segment, portable_case_key,
-    validate_portable_path,
+use path_validation::{is_reserved_windows_segment, portable_case_key, validate_portable_path};
+mod manifest;
+#[cfg(test)]
+use manifest::{
+    package_fingerprint, validate_package_path_topology, ARCHIVE_FORMAT, ARCHIVE_SCHEMA,
+    PACKAGE_FINGERPRINT_ALGORITHM,
 };
+use manifest::{validate_manifest, ArchiveFileRecord, MAX_ARCHIVE_FILE_BYTES};
+#[cfg(test)]
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ProjectArchiveInspection {
@@ -71,53 +72,6 @@ pub struct ProjectArchiveImportResult {
     pub file_count: usize,
     pub total_bytes: u64,
     pub content_sha256: String,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-struct ArchiveManifest {
-    format: String,
-    schema: String,
-    version: String,
-    #[serde(default)]
-    export_metadata: ArchiveExportMetadata,
-    settings: Value,
-    package: ArchivePackage,
-}
-
-#[derive(Debug, Clone, Default, Deserialize)]
-struct ArchiveExportMetadata {
-    #[serde(default)]
-    engine_version: String,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-struct ArchivePackage {
-    file_count: usize,
-    total_bytes: u64,
-    fingerprint_algorithm: String,
-    content_sha256: String,
-    #[serde(default)]
-    directories: Vec<String>,
-    files: Vec<ArchiveFileRecord>,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-struct ArchiveFileRecord {
-    category: String,
-    path: String,
-    size_bytes: u64,
-    #[serde(default)]
-    checksum_md5: String,
-    checksum_sha256: String,
-}
-
-#[derive(Debug, Clone)]
-struct ValidatedManifest {
-    raw: Value,
-    parsed: ArchiveManifest,
-    files_by_path: BTreeMap<String, ArchiveFileRecord>,
-    allowed_directories: BTreeSet<String>,
-    project_title: String,
 }
 
 #[derive(Debug, Clone)]
@@ -507,214 +461,6 @@ fn verify_archive(
         },
     })
 }
-
-fn validate_manifest(raw: Value) -> Result<ValidatedManifest, String> {
-    let parsed = serde_json::from_value::<ArchiveManifest>(raw.clone())
-        .map_err(|error| format!("Project package manifest has an invalid shape: {error}"))?;
-    if parsed.format != ARCHIVE_FORMAT {
-        return Err(format!(
-            "Unsupported project package format `{}`.",
-            parsed.format
-        ));
-    }
-    if parsed.schema != ARCHIVE_SCHEMA {
-        return Err(format!(
-            "Unsupported project package schema `{}`.",
-            parsed.schema
-        ));
-    }
-    if parsed.version != "1.0" {
-        return Err(format!(
-            "Unsupported project package version `{}`.",
-            parsed.version
-        ));
-    }
-    if !parsed.settings.is_object() {
-        return Err("Project package manifest settings must be an object.".to_string());
-    }
-    if parsed.package.fingerprint_algorithm != PACKAGE_FINGERPRINT_ALGORITHM {
-        return Err(format!(
-            "Unsupported package fingerprint algorithm `{}`.",
-            parsed.package.fingerprint_algorithm
-        ));
-    }
-    validate_sha256(&parsed.package.content_sha256, "Package content SHA-256")?;
-    if parsed.package.files.len() != parsed.package.file_count {
-        return Err(format!(
-            "Package file_count is {}, but {} file records were declared.",
-            parsed.package.file_count,
-            parsed.package.files.len()
-        ));
-    }
-    if parsed.package.files.is_empty() || parsed.package.files.len() > MAX_ARCHIVE_FILES {
-        return Err(format!(
-            "Project package must contain between 1 and {MAX_ARCHIVE_FILES} files."
-        ));
-    }
-    if parsed.package.directories.len() > MAX_ARCHIVE_DIRECTORIES {
-        return Err(format!(
-            "Project package declares too many directories; the limit is {MAX_ARCHIVE_DIRECTORIES}."
-        ));
-    }
-
-    let mut directory_keys = HashSet::new();
-    let mut allowed_directories = BTreeSet::new();
-    for directory in &parsed.package.directories {
-        validate_portable_path(directory, "Package directory")?;
-        if !directory_keys.insert(portable_case_key(directory)) {
-            return Err(format!(
-                "Project package declares a duplicate directory `{directory}`."
-            ));
-        }
-        add_directory_and_parents(&mut allowed_directories, directory);
-    }
-
-    let mut files_by_path = BTreeMap::new();
-    let mut file_keys = HashSet::new();
-    let mut total_bytes = 0u64;
-    let mut ordered_paths = Vec::new();
-    for record in &parsed.package.files {
-        validate_portable_path(&record.path, "Package file")?;
-        if record.path == ARCHIVE_MANIFEST_PATH {
-            return Err(format!(
-                "`{ARCHIVE_MANIFEST_PATH}` cannot inventory itself."
-            ));
-        }
-        if record.category.trim().is_empty()
-            || record.category.len() > 64
-            || !record
-                .category
-                .chars()
-                .all(|ch| ch.is_ascii_lowercase() || ch == '_')
-        {
-            return Err(format!(
-                "Package file `{}` has invalid category `{}`.",
-                record.path, record.category
-            ));
-        }
-        if record.size_bytes > MAX_ARCHIVE_FILE_BYTES {
-            return Err(format!(
-                "Package file `{}` exceeds the per-file limit of {} bytes.",
-                record.path, MAX_ARCHIVE_FILE_BYTES
-            ));
-        }
-        validate_sha256(
-            &record.checksum_sha256,
-            &format!("SHA-256 for `{}`", record.path),
-        )?;
-        if !record.checksum_md5.is_empty()
-            && (record.checksum_md5.len() != 32
-                || !record.checksum_md5.chars().all(|ch| ch.is_ascii_hexdigit()))
-        {
-            return Err(format!("MD5 for `{}` is invalid.", record.path));
-        }
-        let folded = portable_case_key(&record.path);
-        if !file_keys.insert(folded) {
-            return Err(format!(
-                "Project package declares a duplicate portable file path `{}`.",
-                record.path
-            ));
-        }
-        if record.path != "settings.json"
-            && !parsed
-                .package
-                .directories
-                .iter()
-                .any(|directory| record.path.starts_with(&format!("{directory}/")))
-        {
-            return Err(format!(
-                "Package file `{}` is outside declared project directories.",
-                record.path
-            ));
-        }
-        total_bytes = total_bytes
-            .checked_add(record.size_bytes)
-            .ok_or_else(|| "Project package total size overflowed.".to_string())?;
-        if total_bytes > MAX_ARCHIVE_TOTAL_BYTES {
-            return Err(format!(
-                "Project package exceeds the total size limit of {MAX_ARCHIVE_TOTAL_BYTES} bytes."
-            ));
-        }
-        ordered_paths.push(record.path.clone());
-        files_by_path.insert(record.path.clone(), record.clone());
-    }
-    if !files_by_path.contains_key("settings.json") {
-        return Err("Project package must include settings.json.".to_string());
-    }
-    validate_package_path_topology(&files_by_path, &directory_keys)?;
-    let mut sorted_paths = ordered_paths.clone();
-    sorted_paths.sort();
-    if ordered_paths != sorted_paths {
-        return Err("Project package file inventory must be sorted by path.".to_string());
-    }
-    if total_bytes != parsed.package.total_bytes {
-        return Err(format!(
-            "Package total_bytes is {}, but file records total {total_bytes}.",
-            parsed.package.total_bytes
-        ));
-    }
-    let fingerprint = package_fingerprint(files_by_path.values());
-    if fingerprint != parsed.package.content_sha256 {
-        return Err(
-            "Project package content fingerprint does not match its inventory.".to_string(),
-        );
-    }
-
-    let project_title = parsed
-        .settings
-        .get("render")
-        .and_then(|render| render.get("title"))
-        .and_then(Value::as_str)
-        .map(str::trim)
-        .filter(|title| !title.is_empty())
-        .unwrap_or("Monogatari Project")
-        .chars()
-        .take(120)
-        .collect::<String>();
-
-    Ok(ValidatedManifest {
-        raw,
-        parsed,
-        files_by_path,
-        allowed_directories,
-        project_title,
-    })
-}
-
-fn validate_package_path_topology(
-    files_by_path: &BTreeMap<String, ArchiveFileRecord>,
-    directory_keys: &HashSet<String>,
-) -> Result<(), String> {
-    let file_keys = files_by_path
-        .keys()
-        .map(|path| portable_case_key(path))
-        .collect::<HashSet<_>>();
-
-    for path in files_by_path.keys() {
-        let folded = portable_case_key(path);
-        if directory_keys.contains(&folded) {
-            return Err(format!(
-                "Project package path `{path}` is declared as both a file and a directory."
-            ));
-        }
-
-        let mut ancestor = String::new();
-        for segment in path.split('/').take(path.split('/').count() - 1) {
-            if !ancestor.is_empty() {
-                ancestor.push('/');
-            }
-            ancestor.push_str(segment);
-            if file_keys.contains(&portable_case_key(&ancestor)) {
-                return Err(format!(
-                    "Project package file `{ancestor}` cannot contain descendant `{path}`."
-                ));
-            }
-        }
-    }
-
-    Ok(())
-}
-
 fn verify_export_bytes(record: &ArchiveFileRecord, bytes: &[u8]) -> Result<(), String> {
     if bytes.len() as u64 != record.size_bytes {
         return Err(format!(
@@ -850,31 +596,6 @@ fn reject_non_regular_zip_entry<R: Read>(entry: &zip::read::ZipFile<'_, R>) -> R
     }
     Ok(())
 }
-
-fn package_fingerprint<'a>(records: impl Iterator<Item = &'a ArchiveFileRecord>) -> String {
-    let mut hasher = Sha256::new();
-    for record in records {
-        hasher.update(record.path.as_bytes());
-        hasher.update(b"\0");
-        hasher.update(record.size_bytes.to_string().as_bytes());
-        hasher.update(b"\0");
-        hasher.update(record.checksum_sha256.as_bytes());
-        hasher.update(b"\n");
-    }
-    finish_sha256(hasher)
-}
-
-fn validate_sha256(value: &str, label: &str) -> Result<(), String> {
-    if value.len() != 64
-        || !value
-            .chars()
-            .all(|ch| ch.is_ascii_digit() || matches!(ch, 'a'..='f'))
-    {
-        return Err(format!("{label} must be a lowercase hexadecimal SHA-256."));
-    }
-    Ok(())
-}
-
 fn sha256_hex(bytes: &[u8]) -> String {
     finish_sha256(Sha256::new_with_prefix(bytes))
 }
