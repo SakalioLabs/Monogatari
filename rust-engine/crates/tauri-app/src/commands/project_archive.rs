@@ -814,6 +814,7 @@ fn validate_manifest(raw: Value) -> Result<ValidatedManifest, String> {
     if !files_by_path.contains_key("settings.json") {
         return Err("Project package must include settings.json.".to_string());
     }
+    validate_package_path_topology(&files_by_path, &directory_keys)?;
     let mut sorted_paths = ordered_paths.clone();
     sorted_paths.sort();
     if ordered_paths != sorted_paths {
@@ -851,6 +852,40 @@ fn validate_manifest(raw: Value) -> Result<ValidatedManifest, String> {
         allowed_directories,
         project_title,
     })
+}
+
+fn validate_package_path_topology(
+    files_by_path: &BTreeMap<String, ArchiveFileRecord>,
+    directory_keys: &HashSet<String>,
+) -> Result<(), String> {
+    let file_keys = files_by_path
+        .keys()
+        .map(|path| portable_case_key(path))
+        .collect::<HashSet<_>>();
+
+    for path in files_by_path.keys() {
+        let folded = portable_case_key(path);
+        if directory_keys.contains(&folded) {
+            return Err(format!(
+                "Project package path `{path}` is declared as both a file and a directory."
+            ));
+        }
+
+        let mut ancestor = String::new();
+        for segment in path.split('/').take(path.split('/').count() - 1) {
+            if !ancestor.is_empty() {
+                ancestor.push('/');
+            }
+            ancestor.push_str(segment);
+            if file_keys.contains(&portable_case_key(&ancestor)) {
+                return Err(format!(
+                    "Project package file `{ancestor}` cannot contain descendant `{path}`."
+                ));
+            }
+        }
+    }
+
+    Ok(())
 }
 
 fn verify_export_bytes(record: &ArchiveFileRecord, bytes: &[u8]) -> Result<(), String> {
@@ -1499,6 +1534,40 @@ mod tests {
         assert!(validate_manifest(collision)
             .unwrap_err()
             .contains("duplicate portable file path"));
+    }
+
+    #[test]
+    fn archive_manifest_rejects_file_directory_topology_conflicts() {
+        let record = |path: &str| ArchiveFileRecord {
+            category: "assets".to_string(),
+            path: path.to_string(),
+            size_bytes: 0,
+            checksum_md5: String::new(),
+            checksum_sha256: sha256_hex(b""),
+        };
+
+        let exact_conflict = BTreeMap::from([
+            ("settings.json".to_string(), record("settings.json")),
+            ("assets/portraits".to_string(), record("assets/portraits")),
+        ]);
+        let directories = HashSet::from([
+            portable_case_key("assets"),
+            portable_case_key("assets/portraits"),
+        ]);
+        let error = validate_package_path_topology(&exact_conflict, &directories).unwrap_err();
+        assert!(error.contains("both a file and a directory"), "{error}");
+
+        let ancestor_conflict = BTreeMap::from([
+            ("settings.json".to_string(), record("settings.json")),
+            ("assets/portraits".to_string(), record("assets/portraits")),
+            (
+                "assets/portraits/guide.png".to_string(),
+                record("assets/portraits/guide.png"),
+            ),
+        ]);
+        let directories = HashSet::from([portable_case_key("assets")]);
+        let error = validate_package_path_topology(&ancestor_conflict, &directories).unwrap_err();
+        assert!(error.contains("cannot contain descendant"), "{error}");
     }
 
     #[test]
