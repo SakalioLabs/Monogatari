@@ -2429,6 +2429,7 @@ async function verifyTauriPackagingConfig() {
   const tauriEngineSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'engine.rs'), 'utf8')
   const tauriProjectSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'project.rs'), 'utf8')
   const tauriProjectArchiveSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'project_archive.rs'), 'utf8')
+  const tauriProjectArchiveCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'project_archive', 'commands.rs'), 'utf8')
   const defaultCapabilitySource = await readFile(path.join(tauriAppDir, 'capabilities', 'default.json'), 'utf8')
   const tauriScenesSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'scenes.rs'), 'utf8')
   const tauriChatSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'chat.rs'), 'utf8')
@@ -2714,13 +2715,14 @@ async function verifyTauriPackagingConfig() {
     [tauriProjectArchiveSource, 'scrub_runtime_secret_config(&settings) != settings', 'reject imported settings containing runtime secrets'],
     [tauriProjectArchiveSource, 'atomic_replace_archive', 'replace exported project packages atomically'],
     [tauriProjectArchiveSource, 'remove_import_staging', 'remove rejected project import staging directories'],
-    [tauriProjectArchiveSource, 'load_project_content(&staging_root)', 'validate imported runtime content before committing it'],
+    [tauriProjectArchiveSource, 'pub(crate) mod commands;', 'keep project package transport orchestration in its own module'],
+    [tauriProjectArchiveCommandsSource, 'load_project_content(&staging_root)', 'validate imported runtime content before committing it'],
     [tauriProjectArchiveSource, 'checked_in_project_packages_reload_as_runtime_content', 'round-trip checked-in project content through a real package'],
     [tauriProjectArchiveSource, 'failed_archive_exports_preserve_existing_packages', 'test atomic package export rollback'],
     [tauriMainSource, 'tauri_plugin_dialog::init()', 'register the native project package dialog plugin'],
-    [tauriMainSource, 'commands::project_archive::export_project_archive', 'register project package exports'],
-    [tauriMainSource, 'commands::project_archive::inspect_project_archive', 'register project package inspection'],
-    [tauriMainSource, 'commands::project_archive::import_project_archive', 'register project package imports'],
+    [tauriMainSource, 'commands::project_archive::commands::export_project_archive', 'register project package exports'],
+    [tauriMainSource, 'commands::project_archive::commands::inspect_project_archive', 'register project package inspection'],
+    [tauriMainSource, 'commands::project_archive::commands::import_project_archive', 'register project package imports'],
     [defaultCapabilitySource, 'dialog:allow-open', 'allow project package selection dialogs'],
     [defaultCapabilitySource, 'dialog:allow-save', 'allow project package save dialogs'],
     [gameCharacterSource, 'deserialize_relationships', 'migrate numeric and detailed legacy relationship values'],
