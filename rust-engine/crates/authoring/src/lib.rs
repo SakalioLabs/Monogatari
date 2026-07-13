@@ -3,6 +3,7 @@
 #![forbid(unsafe_code)]
 
 pub mod agent_transaction;
+pub mod delivery_validation;
 pub mod filesystem;
 pub mod json_catalog;
 pub mod paths;

@@ -7,6 +7,7 @@ use llm_authoring::agent_transaction::{
     apply_agent_project_transaction_with_validator, plan_agent_project_transaction,
     AgentProjectTransaction, AgentProjectTransactionPlan,
 };
+use llm_authoring::delivery_validation::{validate_project_delivery, DeliveryValidationReport};
 use llm_authoring::json_catalog::{
     inspect_project_json_catalog, read_project_json, JsonCatalogDocument, JsonCatalogReport,
 };
@@ -143,6 +144,25 @@ impl MonogatariMcpServer {
             .map_err(Json)
     }
 
+    /// Validate delivery asset readiness on top of the shared headless runtime report.
+    #[tool(annotations(
+        title = "Validate delivery",
+        read_only_hint = true,
+        destructive_hint = false,
+        idempotent_hint = true,
+        open_world_hint = false
+    ))]
+    pub async fn validate_delivery(
+        &self,
+    ) -> Result<Json<DeliveryValidationReport>, Json<McpToolError>> {
+        let _guard = self.access.read().await;
+        validate_project_delivery(&self.project_root)
+            .await
+            .map(Json)
+            .map_err(|message| McpToolError::project(message, None))
+            .map_err(Json)
+    }
+
     /// List safe JSON metadata and exact SHA-256 preconditions, optionally by catalog.
     #[tool(annotations(
         title = "List project JSON",
@@ -256,7 +276,7 @@ impl ServerHandler for MonogatariMcpServer {
                 env!("CARGO_PKG_VERSION"),
             ))
             .with_instructions(format!(
-                "Author Monogatari visual novels inside the fixed project root. Inspect, list, and read before planning. Use validate_project for read-only headless acceptance. Plan before apply. Transaction acceptance and validate_project share real runtime, scene, ending, Story Event, Workflow, and Quality Suite validation; package, Quality execution, and visual acceptance remain higher gates. {mode}"
+                "Author Monogatari visual novels inside the fixed project root. Inspect, list, and read before planning. Use validate_project for read-only headless acceptance and validate_delivery for declared asset readiness. Plan before apply. Package archives, Quality execution, and rendered visual acceptance remain higher gates. {mode}"
             ))
     }
 }
@@ -290,7 +310,7 @@ mod tests {
     }
 
     #[test]
-    fn exposes_six_schema_backed_tools_with_write_annotations() {
+    fn exposes_seven_schema_backed_tools_with_write_annotations() {
         let root = temp_project();
         let server = MonogatariMcpServer::new(root.clone(), false).unwrap();
         let tools = server.tool_router.list_all();
@@ -306,6 +326,7 @@ mod tests {
                 "list_project_json",
                 "plan_transaction",
                 "read_project_json",
+                "validate_delivery",
                 "validate_project"
             ]
         );

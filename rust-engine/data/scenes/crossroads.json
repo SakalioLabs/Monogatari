@@ -2,7 +2,6 @@
   "id": "crossroads",
   "name": "The Crossroads",
   "background_path": "assets/backgrounds/crossroads.svg",
-  "bgm_path": "assets/audio/crossroads_theme.mp3",
   "weather": "pleasant",
   "time_of_day": "golden_hour",
   "tags": [

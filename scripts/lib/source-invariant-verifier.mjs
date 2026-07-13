@@ -1590,6 +1590,7 @@ export function createSourceInvariantVerifier({
       [mcpServerSource, 'canonical_project_root(&project_root)', 'bind one canonical project root at startup'],
       [mcpServerSource, 'pub async fn inspect_project', 'expose project inspection'],
       [mcpServerSource, 'pub async fn validate_project', 'expose read-only shared runtime validation'],
+      [mcpServerSource, 'pub async fn validate_delivery', 'expose read-only delivery asset validation'],
       [mcpServerSource, 'pub async fn list_project_json', 'expose bounded JSON catalog listing'],
       [mcpServerSource, 'pub async fn read_project_json', 'expose exact JSON document reads'],
       [mcpServerSource, 'pub async fn plan_transaction', 'expose side-effect-free transaction planning'],
@@ -1615,6 +1616,7 @@ export function createSourceInvariantVerifier({
       [mcpE2eSource, 'real_stdio_handshake_lists_and_reads_schema_backed_tools', 'test real stdio initialization, discovery, and reads'],
       [mcpE2eSource, 'readonly_stdio_plans_but_structurally_rejects_apply', 'test default read-only refusal without filesystem changes'],
       [mcpE2eSource, 'readonly_validation_returns_structured_invalid_evidence', 'test invalid projects return structured read-only evidence'],
+      [mcpE2eSource, 'readonly_delivery_validation_reports_missing_declared_assets', 'test missing declared assets return structured delivery evidence'],
       [mcpE2eSource, 'writable_stdio_requires_reviewed_fingerprint_and_rolls_back_invalid_candidate', 'test fingerprint confirmation, application, and rollback'],
       [mcpE2eSource, 'runtime_reference_rollback', 'test real stdio rollback after core-runtime reference rejection'],
     ]

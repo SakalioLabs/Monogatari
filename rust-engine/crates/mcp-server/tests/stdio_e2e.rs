@@ -8,6 +8,7 @@ use llm_authoring::agent_transaction::{
     AgentProjectTransactionPlan, AgentProjectTransactionResult, AgentTransactionStatus,
     AGENT_TRANSACTION_SCHEMA_V1,
 };
+use llm_authoring::delivery_validation::DeliveryValidationReport;
 use llm_authoring::json_catalog::{
     AuthorableJsonCatalog, JsonAcceptanceLevel, JsonCatalogDocument, JsonCatalogReport,
 };
@@ -61,7 +62,7 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
     )?;
     let client = connect(&project.root, false).await?;
     let second_reader = connect(&project.root, false).await?;
-    assert_eq!(second_reader.list_all_tools().await?.len(), 6);
+    assert_eq!(second_reader.list_all_tools().await?.len(), 7);
     second_reader.cancel().await?;
 
     let tools = client.list_all_tools().await?;
@@ -78,6 +79,7 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
             "list_project_json",
             "plan_transaction",
             "read_project_json",
+            "validate_delivery",
             "validate_project"
         ]
     );
@@ -101,6 +103,13 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
         validation.acceptance_level,
         JsonAcceptanceLevel::CoreRuntime
     );
+
+    let delivery = client
+        .call_tool(CallToolRequestParams::new("validate_delivery"))
+        .await?;
+    let delivery: DeliveryValidationReport = structured(&delivery)?;
+    assert!(delivery.valid, "{:?}", delivery.issues);
+    assert_eq!(delivery.placeholder_character_count, 1);
 
     let listing = client
         .call_tool(
@@ -167,6 +176,31 @@ async fn readonly_validation_returns_structured_invalid_evidence() -> anyhow::Re
         .issues
         .iter()
         .any(|issue| issue.code == "quality_character_missing"));
+    client.cancel().await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn readonly_delivery_validation_reports_missing_declared_assets() -> anyhow::Result<()> {
+    let project = TestProject::new("delivery-invalid");
+    std::fs::write(
+        project.root.join("characters/aoi.json"),
+        r#"{"id":"aoi","name":"Aoi","portrait_path":"assets/portraits/missing.png"}"#,
+    )?;
+    let client = connect(&project.root, false).await?;
+
+    let delivery = client
+        .call_tool(CallToolRequestParams::new("validate_delivery"))
+        .await?;
+    assert_eq!(delivery.is_error, Some(false));
+    let delivery: DeliveryValidationReport = structured(&delivery)?;
+
+    assert!(delivery.core_runtime.valid);
+    assert!(!delivery.valid);
+    assert!(delivery
+        .issues
+        .iter()
+        .any(|issue| issue.code == "asset_missing"));
     client.cancel().await?;
     Ok(())
 }
