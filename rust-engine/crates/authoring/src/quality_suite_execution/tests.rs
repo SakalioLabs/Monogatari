@@ -1,0 +1,99 @@
+use super::*;
+use crate::quality_suite_validation::parse_quality_suite_document;
+
+fn checked_in_project_root() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../..")
+        .join("data")
+        .canonicalize()
+        .expect("checked-in project root")
+}
+
+fn provenance() -> QualitySuiteRunProvenance {
+    QualitySuiteRunProvenance {
+        generated_at: "2026-07-14T00:00:00Z".to_string(),
+        engine_version: env!("CARGO_PKG_VERSION").to_string(),
+        git_commit: "test-commit".to_string(),
+        git_short_commit: "test".to_string(),
+    }
+}
+
+#[test]
+fn checked_in_character_stability_suite_passes_without_tauri() {
+    let root = checked_in_project_root();
+    let suite = parse_quality_suite_document(include_str!(
+        "../../../../../data/quality_suites/character_stability.json"
+    ))
+    .unwrap();
+    let catalog = StoryEventCatalog::load_from_project_root(&root).unwrap();
+
+    let report = execute_quality_suite(
+        &suite,
+        Some(&root),
+        "quality_suites/character_stability.json",
+        "a",
+        &catalog,
+        provenance(),
+    );
+
+    assert_eq!(report.failed, 0, "{:#?}", report.scenarios);
+    assert_eq!(report.total, suite.scenarios.len());
+    assert_eq!(report.run_metadata.generated_at, "2026-07-14T00:00:00Z");
+}
+
+#[test]
+fn tideglass_quality_workflows_reach_full_coverage_without_tauri() {
+    let root = checked_in_project_root();
+    let suite = parse_quality_suite_document(include_str!(
+        "../../../../../data/quality_suites/tideglass_acceptance.json"
+    ))
+    .unwrap();
+    let catalog = StoryEventCatalog::load_from_project_root(&root).unwrap();
+
+    let report = execute_quality_suite(
+        &suite,
+        Some(&root),
+        "quality_suites/tideglass_acceptance.json",
+        "b",
+        &catalog,
+        provenance(),
+    );
+
+    assert_eq!(report.failed, 0, "{:#?}", report.scenarios);
+    let workflow_reports = report
+        .scenarios
+        .iter()
+        .filter_map(|scenario| scenario.workflow_coverage.as_ref())
+        .collect::<Vec<_>>();
+    assert!(!workflow_reports.is_empty());
+    assert!(workflow_reports
+        .iter()
+        .all(|coverage| coverage.coverage_percent == 100.0));
+}
+
+#[test]
+fn failed_expectations_return_actionable_headless_evidence() {
+    let suite = parse_quality_suite_document(
+        r#"{"version":"1","name":"Failure","description":"Failure evidence","scenarios":[{"id":"low-score","category":"quality","description":"Must fail","messages":[{"role":"player","content":"Hello"}],"expect":{"min_overall":1.0}}]}"#,
+    )
+    .unwrap();
+
+    let report = execute_quality_suite(
+        &suite,
+        None,
+        "quality_suites/failure.json",
+        "c",
+        &StoryEventCatalog::default(),
+        provenance(),
+    );
+
+    assert_eq!(report.failed, 1);
+    assert!(report.scenarios[0]
+        .issues
+        .iter()
+        .any(|issue| issue.contains("overall expected >= 1")));
+    assert_eq!(
+        report.audit_summary.failed_scenario_ids,
+        ["low-score".to_string()]
+    );
+}

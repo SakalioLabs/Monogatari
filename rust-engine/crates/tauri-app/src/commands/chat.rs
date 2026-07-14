@@ -26,10 +26,12 @@ pub use llm_authoring::conversation_quality::{
 use crate::commands::prompt_guard;
 use crate::commands::story_events::apply_story_event_definition;
 use crate::state::AppState;
+#[cfg(test)]
+pub use crate::story_events::EventTriggerRule;
 use crate::story_events::StoryEventCatalog;
 #[cfg(test)]
 use crate::story_events::{EventScoreSnapshot, EventTriggerContext};
-pub use crate::story_events::{EventTriggerDecision, EventTriggerRule, TriggeredEvent};
+pub use crate::story_events::{EventTriggerDecision, TriggeredEvent};
 use crate::story_progress::StoryEventApplication;
 
 const STREAM_SAFETY_WINDOW_CHARS: usize = 240;

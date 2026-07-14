@@ -1,6 +1,7 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Moved complete Quality Suite execution into `llm-authoring`, including deterministic scoring, prompt/response guards, runtime safety traces, Story Event decisions, knowledge evidence, Workflow coverage, expectation failures, audit aggregation, and caller-supplied provenance; Tauri now only loads suites, supplies build metadata, and delegates.
 - Extracted deterministic, side-effect-free Workflow preview execution into `llm-authoring`, including typed environment snapshots, bounded traversal, injected/seeded random branches, stateful Rhai conditions, Story Event decisions, simulated provider-free LLM nodes, and independent tests; Tauri now adapts desktop state while Quality coverage executes headlessly.
 - Unified Quality Suite input documents, scenarios, expectations, messages, and typed Workflow run contexts under `llm-authoring`; Tauri now reexports those contracts instead of deserializing a duplicate schema, with headless malformed-context tests and release invariants.
 - Extracted conversation messages, evaluation scores, safety traces, deterministic multilingual fallback scoring, guarded relationship deltas, and Story Event decisions from Tauri chat commands into a tested `llm-authoring::conversation_quality` domain for headless Quality and MCP reuse.

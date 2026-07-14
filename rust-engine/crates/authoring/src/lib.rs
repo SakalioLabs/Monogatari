@@ -10,6 +10,7 @@ pub mod json_catalog;
 pub mod paths;
 pub mod project;
 pub mod prompt_guard;
+pub mod quality_suite_execution;
 pub mod quality_suite_validation;
 pub mod runtime_validation;
 pub mod story_content_validation;

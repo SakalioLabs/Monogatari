@@ -222,6 +222,8 @@ const releaseCriticalRustFiles = [
   'crates/tauri-app/src/commands/plugin.rs',
   'crates/authoring/src/conversation_quality.rs',
   'crates/authoring/src/prompt_guard.rs',
+  'crates/authoring/src/quality_suite_execution.rs',
+  'crates/authoring/src/quality_suite_execution/tests.rs',
   'crates/authoring/src/workflow_preview.rs',
   'crates/authoring/src/workflow_preview/tests.rs',
   'crates/tauri-app/src/commands/prompt_guard.rs',
@@ -2419,6 +2421,8 @@ async function verifyTauriPackagingConfig() {
   const tauriStoryEventsSource = await readFile(path.join(tauriAppDir, 'src', 'story_events.rs'), 'utf8')
   const authoringStoryEventsSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'story_events.rs'), 'utf8')
   const authoringConversationQualitySource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'conversation_quality.rs'), 'utf8')
+  const authoringQualityExecutionSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'quality_suite_execution.rs'), 'utf8')
+  const authoringQualityExecutionTests = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'quality_suite_execution', 'tests.rs'), 'utf8')
   const authoringQualitySuiteSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'quality_suite_validation.rs'), 'utf8')
   const authoringWorkflowSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'workflow_validation.rs'), 'utf8')
   const authoringWorkflowPreviewSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'workflow_preview.rs'), 'utf8')
@@ -2862,7 +2866,7 @@ async function verifyTauriPackagingConfig() {
     [authoringWorkflowPreviewTests, 'event_decisions_use_typed_context_and_trigger_history', 'test Event decisions from typed preview context'],
     [tauriWorkflowSource, 'execute_workflow_preview(', 'delegate run-context previews to the headless executor'],
     [tauriWorkflowSource, 'workflow_preview_environment', 'adapt desktop state into the headless preview environment'],
-    [tauriQualitySuiteSource, 'execute_workflow_preview(', 'run Quality Workflow coverage without desktop state'],
+    [authoringQualityExecutionSource, 'execute_workflow_preview(', 'run Quality Workflow coverage without desktop state'],
   ]
   for (const [source, needle, description] of headlessWorkflowPreviewRequirements) {
     if (!source.includes(needle)) {
@@ -2872,7 +2876,7 @@ async function verifyTauriPackagingConfig() {
   if (/struct\s+WorkflowPreviewState\s*\{/.test(tauriWorkflowSource)) {
     issues.push('Tauri Workflow commands must not redeclare the headless preview state machine')
   }
-  const qualityWorkflowCoverageSource = tauriQualitySuiteSource.match(
+  const qualityWorkflowCoverageSource = authoringQualityExecutionSource.match(
     /fn scenario_workflow_coverage[\s\S]*?\n\}/,
   )?.[0] ?? ''
   if (
@@ -2880,6 +2884,26 @@ async function verifyTauriPackagingConfig() {
     || qualityWorkflowCoverageSource.includes('AppState::new()')
   ) {
     issues.push('Quality Workflow coverage must execute through the headless preview domain')
+  }
+
+  const headlessQualityExecutionRequirements = [
+    [authoringQualityExecutionSource, 'pub fn execute_quality_suite', 'own complete Quality Suite execution'],
+    [authoringQualityExecutionSource, 'fn run_quality_scenario', 'own scenario evidence aggregation'],
+    [authoringQualityExecutionSource, 'fn scenario_knowledge_evidence', 'own project knowledge evidence'],
+    [authoringQualityExecutionSource, 'pub struct QualitySuiteReport', 'own the structured Quality report contract'],
+    [authoringQualityExecutionTests, 'checked_in_character_stability_suite_passes_without_tauri', 'test the built-in suite without Tauri'],
+    [authoringQualityExecutionTests, 'tideglass_quality_workflows_reach_full_coverage_without_tauri', 'test Tideglass Workflow coverage without Tauri'],
+    [authoringQualityExecutionTests, 'failed_expectations_return_actionable_headless_evidence', 'test structured failure evidence without Tauri'],
+    [tauriQualitySuiteSource, 'execute_quality_suite(', 'delegate execution to the headless Quality domain'],
+    [tauriQualitySuiteSource, 'quality_suite_run_provenance', 'adapt build provenance for headless reports'],
+  ]
+  for (const [source, needle, description] of headlessQualityExecutionRequirements) {
+    if (!source.includes(needle)) {
+      issues.push(`Headless Quality execution must ${description}`)
+    }
+  }
+  if (/fn\s+(?:run_quality_scenario|scenario_knowledge_evidence|validate_scenario_expectations)\s*\(/.test(tauriQualitySuiteSource)) {
+    issues.push('Tauri Quality commands must not redeclare headless scenario execution or evidence logic')
   }
 
   const chatSafetyContractSource = `${authoringConversationQualitySource}\n${tauriChatSource}`
@@ -3104,8 +3128,9 @@ async function verifyTauriPackagingConfig() {
     ['MONOGATARI_GIT_SHORT_COMMIT', 'export a compact git commit for quality report UI evidence'],
     ['reports_workflow_output_finalization_mismatches', 'test finalized workflow output expectations fail loudly'],
   ]
+  const qualityExecutionContractSource = `${authoringQualityExecutionSource}\n${tauriQualitySuiteSource}`
   for (const [needle, description] of qualityRuntimeTraceRequirements) {
-    if (!tauriQualitySuiteSource.includes(needle)) {
+    if (!qualityExecutionContractSource.includes(needle)) {
       issues.push(`Quality suite runtime safety tracing must ${description}`)
     }
   }
