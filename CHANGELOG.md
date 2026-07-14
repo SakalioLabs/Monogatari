@@ -1,6 +1,7 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Extracted conversation messages, evaluation scores, safety traces, deterministic multilingual fallback scoring, guarded relationship deltas, and Story Event decisions from Tauri chat commands into a tested `llm-authoring::conversation_quality` domain for headless Quality and MCP reuse.
 - Moved the pure multilingual prompt and response guard domain plus its tests from the Tauri command crate into `llm-authoring`, leaving a desktop compatibility facade so Agent transports and future headless Quality execution can reuse the exact runtime safety semantics.
 - Moved MCP cross-process project leases into a path-private system temporary namespace so read-only Agent inspection no longer creates sidecar files in authored projects, with unit, real-stdio, and release-invariant coverage for reader sharing and writer exclusion.
 - Added a tested `sync-project-mirror.mjs` check/write workflow and release/desktop-build gates so canonical `data/` and the desktop-packaged `rust-engine/data/` can no longer silently drift while Agent-authored projects are mirrored, while transient MCP lease files stay out of packaged resources; also added UTF-8 MCP guidance for Windows PowerShell 5 clients.

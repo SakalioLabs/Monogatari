@@ -220,6 +220,7 @@ const releaseCriticalRustFiles = [
   'crates/tauri-app/src/commands/live2d.rs',
   'crates/tauri-app/src/commands/marketplace.rs',
   'crates/tauri-app/src/commands/plugin.rs',
+  'crates/authoring/src/conversation_quality.rs',
   'crates/authoring/src/prompt_guard.rs',
   'crates/tauri-app/src/commands/prompt_guard.rs',
   'crates/tauri-app/src/commands/quality_suite.rs',
@@ -2415,6 +2416,7 @@ async function verifyTauriPackagingConfig() {
   const tauriStateSource = await readFile(path.join(tauriAppDir, 'src', 'state.rs'), 'utf8')
   const tauriStoryEventsSource = await readFile(path.join(tauriAppDir, 'src', 'story_events.rs'), 'utf8')
   const authoringStoryEventsSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'story_events.rs'), 'utf8')
+  const authoringConversationQualitySource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'conversation_quality.rs'), 'utf8')
   const authoringRuntimeValidationSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'runtime_validation.rs'), 'utf8')
   const tauriStoryProgressSource = await readFile(path.join(tauriAppDir, 'src', 'story_progress.rs'), 'utf8')
   const tauriStoryAccessSource = await readFile(path.join(tauriAppDir, 'src', 'story_access.rs'), 'utf8')
@@ -2785,8 +2787,32 @@ async function verifyTauriPackagingConfig() {
     ['streaming_generation_failed_message', 'replace partial streaming replies with a stable failure bubble'],
     ['streaming_failure_replacement_is_stable_and_generic', 'test streaming failure replacement text stays generic'],
   ]
+  const conversationQualityRequirements = [
+    ['pub struct ChatMessage', 'own the stable conversation message model'],
+    ['pub struct ChatSafetyTrace', 'own serializable runtime guard evidence'],
+    ['pub struct ConversationEvaluation', 'own deterministic conversation score reports'],
+    ['fallback_conversation_evaluation', 'centralize provider-independent fallback scoring'],
+    ['build_chat_safety_trace', 'centralize runtime chat guard evidence'],
+    ['build_event_trigger_decisions', 'centralize explainable story event decisions'],
+    ['relationship_delta_for_player_message', 'centralize guarded relationship scoring'],
+    ['fallback_scoring_is_multilingual_and_ignores_injection_boosts', 'test multilingual fallback and injection containment without Tauri'],
+    ['safety_traces_deduplicate_pinned_knowledge_and_report_guards', 'test safety evidence without Tauri'],
+    ['event_decisions_use_shared_scores_and_trigger_history', 'test event thresholds and trigger history without Tauri'],
+  ]
+  for (const [needle, description] of conversationQualityRequirements) {
+    if (!authoringConversationQualitySource.includes(needle)) {
+      issues.push(`Headless conversation quality must ${description}`)
+    }
+  }
+  if (!tauriChatSource.includes('pub use llm_authoring::conversation_quality::{')) {
+    issues.push('Tauri chat commands must reuse the shared headless conversation quality models')
+  }
+  if (/pub\s+struct\s+(?:ChatSafetyTrace|ConversationEvaluation)\s*\{/.test(tauriChatSource)) {
+    issues.push('Tauri chat commands must not duplicate headless conversation quality models')
+  }
+  const chatSafetyContractSource = `${authoringConversationQualitySource}\n${tauriChatSource}`
   for (const [needle, description] of chatSafetyTraceRequirements) {
-    if (!tauriChatSource.includes(needle)) {
+    if (!chatSafetyContractSource.includes(needle)) {
       issues.push(`Chat runtime safety tracing must ${description}`)
     }
   }
@@ -2947,7 +2973,7 @@ async function verifyTauriPackagingConfig() {
     ['trusted_scoring_texts', 'score only trusted normalized player messages'],
   ]
   for (const [needle, description] of multilingualFallbackScoringRequirements) {
-    if (!tauriChatSource.includes(needle)) {
+    if (!authoringConversationQualitySource.includes(needle)) {
       issues.push(`Fallback scoring multilingual coverage must ${description}`)
     }
   }
