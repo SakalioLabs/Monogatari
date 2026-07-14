@@ -197,14 +197,12 @@ async function expectBackground(page: Page, fileName: string): Promise<void> {
 async function expectLoadedSprite(page: Page, alt: string): Promise<void> {
   const directSprite = page.locator(`.sprite-stage img[alt="${alt}"]`)
   await expect(directSprite).toBeVisible()
-  const dimensions = await directSprite.evaluate((image: HTMLImageElement) => ({
-    complete: image.complete,
-    width: image.naturalWidth,
-    height: image.naturalHeight,
-  }))
-  expect(dimensions.complete).toBe(true)
-  expect(dimensions.width).toBeGreaterThan(700)
-  expect(dimensions.height).toBeGreaterThan(1200)
+  await expect.poll(
+    () => directSprite.evaluate((image: HTMLImageElement) => (
+      image.complete && image.naturalWidth > 700 && image.naturalHeight > 1200
+    )),
+    { message: `Sprite ${alt} did not finish decoding at its authored resolution`, timeout: 10_000 },
+  ).toBe(true)
 }
 
 async function expectReadableDialogue(page: Page): Promise<void> {
