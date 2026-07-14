@@ -220,6 +220,7 @@ const releaseCriticalRustFiles = [
   'crates/tauri-app/src/commands/live2d.rs',
   'crates/tauri-app/src/commands/marketplace.rs',
   'crates/tauri-app/src/commands/plugin.rs',
+  'crates/authoring/src/prompt_guard.rs',
   'crates/tauri-app/src/commands/prompt_guard.rs',
   'crates/tauri-app/src/commands/quality_suite.rs',
   'crates/tauri-app/src/commands/script.rs',
@@ -2436,7 +2437,8 @@ async function verifyTauriPackagingConfig() {
   const defaultCapabilitySource = await readFile(path.join(tauriAppDir, 'capabilities', 'default.json'), 'utf8')
   const tauriScenesSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'scenes.rs'), 'utf8')
   const tauriChatSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'chat.rs'), 'utf8')
-  const tauriPromptGuardSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'prompt_guard.rs'), 'utf8')
+  const authoringPromptGuardSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'prompt_guard.rs'), 'utf8')
+  const tauriPromptGuardFacadeSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'prompt_guard.rs'), 'utf8')
   const tauriMultiChatSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'multi_chat.rs'), 'utf8')
   const tauriQualitySuiteSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'quality_suite.rs'), 'utf8')
   const tauriWorkflowSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'workflow.rs'), 'utf8')
@@ -2925,8 +2927,11 @@ async function verifyTauriPackagingConfig() {
     ['採点基準', 'detect Japanese scoring-rubric leaks'],
     ['채점 기준', 'detect Korean scoring-rubric leaks'],
   ]
+  if (!tauriPromptGuardFacadeSource.includes('pub use llm_authoring::prompt_guard::*;')) {
+    issues.push('Tauri prompt guard commands must delegate to the shared headless authoring domain')
+  }
   for (const [needle, description] of multilingualPromptGuardRequirements) {
-    if (!tauriPromptGuardSource.includes(needle)) {
+    if (!authoringPromptGuardSource.includes(needle)) {
       issues.push(`Prompt guard multilingual coverage must ${description}`)
     }
   }

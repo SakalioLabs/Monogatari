@@ -24,7 +24,7 @@ Platform-specific gates declare their supported host IDs in the matrix. The Wind
 | Browser authoring and Playtest workflows | `frontend-e2e` | Playwright Chromium tests against an isolated Vite server | Workspace navigation, validated browser character drafts across reloads, and dialogue save-to-Playtest handoff |
 | Vue/TypeScript/Web/PWA distribution | `frontend-contracts` | Type check, production builds, static contract verifiers | Root/subpath package and responsive shell contracts |
 | Rust core | `rust-core` | Unit and doc tests | Infrastructure crate |
-| Headless authoring core | `rust-authoring` | Unit, integration, and doc tests | Atomic content mutation, portable paths, project settings, Agent transactions, and real core-runtime manager/reference validation without Tauri |
+| Headless authoring core | `rust-authoring` | Unit, integration, and doc tests | Atomic content mutation, portable paths, project settings, multilingual prompt guards, Agent transactions, and real core-runtime manager/reference validation without Tauri |
 | Standard MCP adapter | `rust-mcp` | Unit, protocol, and real stdio child-process tests | Fixed project root, seven schema-backed tools, project-external cross-process leases, core/delivery validation, reviewed fingerprints, write exclusion, candidate validation, and rollback |
 | Rust AI | `rust-ai` | Unit, integration, and doc tests | Inference contracts and backend planning |
 | Rust assets | `rust-assets` | Unit tests | Asset and save boundaries |
