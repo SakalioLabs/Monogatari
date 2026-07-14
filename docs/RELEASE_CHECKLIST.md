@@ -36,9 +36,9 @@
 - [ ] `cargo check --locked -p llm-galgame-app` passes
 - [ ] `cargo test --locked -p llm-authoring` passes independently of Tauri
 - [ ] Agent transaction tests prove strict schemas, portable JSON-only paths, missing/exact-SHA preconditions, duplicate and case-collision rejection, deterministic dry-run plans, complete candidate validation, multi-file commit, and reverse-order rollback
-- [ ] `cargo test --locked -p monogatari-mcp` passes, including a real stdio child-process handshake, seven schema-backed tools, scrubbed reads, structured core/delivery validation, deterministic plans, default write refusal, reviewed-plan fingerprint enforcement, one-writer exclusion, successful core-runtime application, and rollback after document or runtime-reference rejection
+- [ ] `cargo test --locked -p monogatari-mcp` passes, including a real stdio child-process handshake, eight schema-backed tools, scrubbed reads, structured core/delivery validation, bounded Quality execution with exact source SHA and actionable pass/failure evidence, deterministic plans, default write refusal, reviewed-plan fingerprint enforcement, one-writer exclusion, successful core-runtime application, and rollback after document or runtime-reference rejection
 - [ ] `cargo build --locked --release -p monogatari-mcp` produces the distributable stdio server binary documented in `docs/MCP_SERVER.md`
-- [ ] MCP inspection claims document acceptance; candidate application claims only `core_runtime` character/dialogue/knowledge manager and reference acceptance; scene, event, ending, workflow, package, Quality Suite, and experience gates remain separate evidence
+- [ ] MCP inspection claims document acceptance; candidate application claims only `core_runtime` character/dialogue/knowledge manager and reference acceptance; `run_quality_suite` separately reports deterministic Quality execution bound to one project source SHA; scene, event, ending, workflow, package, and rendered-experience gates retain their documented evidence boundaries
 - [ ] `cargo clippy --workspace --all-targets --locked -- -D warnings` passes
 - [ ] All 25 command modules register correctly in main.rs
 - [ ] Chat streaming works with API backend

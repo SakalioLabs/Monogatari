@@ -9,12 +9,18 @@ use llm_authoring::agent_transaction::{
 };
 use llm_authoring::delivery_validation::{validate_project_delivery, DeliveryValidationReport};
 use llm_authoring::json_catalog::{
-    inspect_project_json_catalog, read_project_json, JsonCatalogDocument, JsonCatalogReport,
+    inspect_project_json_catalog, read_project_json, AuthorableJsonCatalog, JsonCatalogDocument,
+    JsonCatalogReport,
 };
 use llm_authoring::project::{canonical_project_root, inspect_project_config, ProjectConfigState};
+use llm_authoring::quality_suite_execution::{execute_quality_suite, QualitySuiteRunProvenance};
+use llm_authoring::quality_suite_validation::{
+    parse_quality_suite_document, MAX_QUALITY_SUITE_FILE_BYTES,
+};
 use llm_authoring::runtime_validation::{
     validate_core_runtime_project, CoreRuntimeValidationReport,
 };
+use llm_authoring::story_events::StoryEventCatalog;
 use rmcp::handler::server::{router::tool::ToolRouter, wrapper::Parameters};
 use rmcp::model::{Implementation, ServerCapabilities, ServerInfo};
 use rmcp::{tool, tool_handler, tool_router, Json, ServerHandler};
@@ -23,7 +29,8 @@ use tokio::sync::RwLock;
 use crate::project_lease::ProjectLease;
 use crate::protocol::{
     ApplyTransactionOutput, ApplyTransactionRequest, InspectProjectOutput, ListProjectJsonRequest,
-    McpToolError, ReadProjectJsonRequest, MCP_INSPECTION_SCHEMA_V1,
+    McpToolError, ReadProjectJsonRequest, RunQualitySuiteOutput, RunQualitySuiteRequest,
+    MCP_INSPECTION_SCHEMA_V1, MCP_QUALITY_SUITE_RUN_SCHEMA_V1,
 };
 use crate::validation::validate_candidate_core_runtime;
 
@@ -168,6 +175,71 @@ impl MonogatariMcpServer {
             .map_err(Json)
     }
 
+    /// Execute one bounded project Quality Suite and return complete structured evidence.
+    #[tool(annotations(
+        title = "Run Quality Suite",
+        read_only_hint = true,
+        destructive_hint = false,
+        idempotent_hint = true,
+        open_world_hint = false
+    ))]
+    pub async fn run_quality_suite(
+        &self,
+        Parameters(request): Parameters<RunQualitySuiteRequest>,
+    ) -> Result<Json<RunQualitySuiteOutput>, Json<McpToolError>> {
+        let _guard = self.access.read().await;
+        let document = read_project_json(&self.project_root, &request.path)
+            .map_err(McpToolError::catalog)
+            .map_err(Json)?;
+        if document.metadata.catalog != AuthorableJsonCatalog::QualitySuites {
+            return Err(Json(McpToolError::project(
+                "Quality Suite execution only accepts paths inside `quality_suites`.",
+                Some(serde_json::json!({
+                    "path": request.path,
+                    "required_catalog": "quality_suites"
+                })),
+            )));
+        }
+        if document.metadata.size_bytes > MAX_QUALITY_SUITE_FILE_BYTES {
+            return Err(Json(McpToolError::project(
+                format!(
+                    "Quality Suite documents cannot exceed {MAX_QUALITY_SUITE_FILE_BYTES} bytes."
+                ),
+                Some(serde_json::json!({
+                    "path": document.metadata.path,
+                    "size_bytes": document.metadata.size_bytes,
+                    "max_size_bytes": MAX_QUALITY_SUITE_FILE_BYTES
+                })),
+            )));
+        }
+        let source = serde_json::to_string(&document.document)
+            .map_err(|_| McpToolError::internal("Quality Suite JSON could not be serialized."))
+            .map_err(Json)?;
+        let suite = parse_quality_suite_document(&source)
+            .map_err(|message| {
+                McpToolError::project(message, Some(serde_json::json!({ "path": request.path })))
+            })
+            .map_err(Json)?;
+        let event_catalog = StoryEventCatalog::load_from_project_root(&self.project_root)
+            .map_err(|message| {
+                McpToolError::project(message, Some(serde_json::json!({ "catalog": "events" })))
+            })
+            .map_err(Json)?;
+        let report = execute_quality_suite(
+            &suite,
+            Some(&self.project_root),
+            &document.metadata.path,
+            &document.metadata.sha256,
+            &event_catalog,
+            quality_suite_run_provenance(),
+        );
+        Ok(Json(RunQualitySuiteOutput {
+            schema: MCP_QUALITY_SUITE_RUN_SCHEMA_V1.to_string(),
+            passed: report.failed == 0,
+            report,
+        }))
+    }
+
     /// Validate and deterministically plan an optimistic multi-file JSON transaction without writing.
     #[tool(annotations(
         title = "Plan project transaction",
@@ -243,8 +315,23 @@ impl ServerHandler for MonogatariMcpServer {
                 env!("CARGO_PKG_VERSION"),
             ))
             .with_instructions(format!(
-                "Author Monogatari visual novels inside the fixed project root. Inspect, list, and read before planning. Use validate_project for read-only headless acceptance and validate_delivery for declared asset readiness. Plan before apply. Package archives, Quality execution, and rendered visual acceptance remain higher gates. {mode}"
+                "Author Monogatari visual novels inside the fixed project root. Inspect, list, and read before planning. Use validate_project for read-only headless acceptance, validate_delivery for declared asset readiness, and run_quality_suite for executable Quality evidence. Plan before apply. Package archives and rendered visual acceptance remain higher gates. {mode}"
             ))
+    }
+}
+
+fn quality_suite_run_provenance() -> QualitySuiteRunProvenance {
+    QualitySuiteRunProvenance {
+        generated_at: chrono::Utc::now().to_rfc3339(),
+        engine_version: env!("CARGO_PKG_VERSION").to_string(),
+        git_commit: option_env!("MONOGATARI_GIT_COMMIT")
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or("unknown")
+            .to_string(),
+        git_short_commit: option_env!("MONOGATARI_GIT_SHORT_COMMIT")
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or("unknown")
+            .to_string(),
     }
 }
 
@@ -277,7 +364,7 @@ mod tests {
     }
 
     #[test]
-    fn exposes_seven_schema_backed_tools_with_write_annotations() {
+    fn exposes_eight_schema_backed_tools_with_write_annotations() {
         let root = temp_project();
         let server = MonogatariMcpServer::new(root.clone(), false).unwrap();
         let tools = server.tool_router.list_all();
@@ -293,6 +380,7 @@ mod tests {
                 "list_project_json",
                 "plan_transaction",
                 "read_project_json",
+                "run_quality_suite",
                 "validate_delivery",
                 "validate_project"
             ]
@@ -310,6 +398,35 @@ mod tests {
             apply.annotations.as_ref().unwrap().read_only_hint,
             Some(false)
         );
+        let quality = tools
+            .iter()
+            .find(|tool| tool.name == "run_quality_suite")
+            .unwrap();
+        assert_eq!(
+            quality.annotations.as_ref().unwrap().destructive_hint,
+            Some(false)
+        );
+        assert_eq!(
+            quality.annotations.as_ref().unwrap().read_only_hint,
+            Some(true)
+        );
+        let quality_input_properties = quality
+            .input_schema
+            .get("properties")
+            .and_then(serde_json::Value::as_object)
+            .unwrap();
+        assert!(quality_input_properties.contains_key("path"));
+        let quality_output_schema = quality.output_schema.as_ref().unwrap();
+        let quality_output_properties = quality_output_schema
+            .get("properties")
+            .and_then(serde_json::Value::as_object)
+            .unwrap();
+        assert!(quality_output_properties.contains_key("schema"));
+        assert!(quality_output_properties.contains_key("passed"));
+        assert!(quality_output_properties.contains_key("report"));
+        assert!(serde_json::to_string(quality_output_schema)
+            .unwrap()
+            .contains("scenarios"));
         std::fs::remove_dir_all(root).unwrap();
     }
 

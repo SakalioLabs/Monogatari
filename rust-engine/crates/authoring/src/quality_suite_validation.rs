@@ -3,12 +3,13 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
+use serde::{Deserialize, Serialize};
+
 use crate::story_events::EventTriggerRule;
 use crate::workflow_validation::WorkflowRunContext;
 
-const MAX_QUALITY_SUITE_FILES: usize = 256;
-const MAX_QUALITY_SUITE_FILE_BYTES: u64 = 2 * 1024 * 1024;
-use serde::{Deserialize, Serialize};
+pub const MAX_QUALITY_SUITE_FILES: usize = 256;
+pub const MAX_QUALITY_SUITE_FILE_BYTES: u64 = 2 * 1024 * 1024;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QualitySuiteDocument {

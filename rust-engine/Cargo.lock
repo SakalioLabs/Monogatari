@@ -2325,6 +2325,7 @@ name = "monogatari-mcp"
 version = "0.9.5"
 dependencies = [
  "anyhow",
+ "chrono",
  "llm-authoring",
  "rmcp",
  "schemars 1.2.1",

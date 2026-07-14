@@ -3,6 +3,7 @@
 use std::collections::{BTreeSet, HashSet};
 use std::path::{Path, PathBuf};
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -47,7 +48,7 @@ pub struct TriggeredEvent {
     pub actions: Vec<StoryEventAction>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 pub struct EventTriggerRule {
     pub event_id: String,
     pub event_type: String,
@@ -129,7 +130,7 @@ pub struct EventTriggerContext<'a> {
     pub already_triggered: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 pub struct EventTriggerDecision {
     pub event_id: String,
     pub event_type: String,

@@ -13,8 +13,12 @@ use llm_authoring::json_catalog::{
     AuthorableJsonCatalog, JsonAcceptanceLevel, JsonCatalogDocument, JsonCatalogReport,
 };
 use llm_authoring::project::default_project_config;
+use llm_authoring::quality_suite_validation::MAX_QUALITY_SUITE_FILE_BYTES;
 use llm_authoring::runtime_validation::CoreRuntimeValidationReport;
-use monogatari_mcp::protocol::{InspectProjectOutput, McpToolError, McpToolErrorCode};
+use monogatari_mcp::protocol::{
+    InspectProjectOutput, McpToolError, McpToolErrorCode, RunQualitySuiteOutput,
+    MCP_QUALITY_SUITE_RUN_SCHEMA_V1,
+};
 use rmcp::model::{CallToolRequestParams, JsonObject};
 use rmcp::service::RunningService;
 use rmcp::transport::TokioChildProcess;
@@ -60,11 +64,35 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
         project.root.join("characters/aoi.json"),
         b"{\"id\":\"aoi\",\"name\":\"Aoi\"}\n",
     )?;
+    std::fs::write(
+        project.root.join("quality_suites/mcp.json"),
+        r#"{
+            "version":"1",
+            "name":"MCP Quality",
+            "description":"Structured execution evidence",
+            "scenarios":[
+                {
+                    "id":"passing",
+                    "category":"quality",
+                    "description":"Passing evidence",
+                    "messages":[{"role":"player","content":"Hello"}],
+                    "expect":{"min_overall":0.0}
+                },
+                {
+                    "id":"failing",
+                    "category":"quality",
+                    "description":"Actionable failure evidence",
+                    "messages":[{"role":"player","content":"Hello"}],
+                    "expect":{"min_overall":1.0}
+                }
+            ]
+        }"#,
+    )?;
     let client = connect(&project.root, false).await?;
     let second_reader = connect(&project.root, false).await?;
     assert_no_project_lease_sidecar(&project);
     assert_competing_start_rejected(&project.root, true).await?;
-    assert_eq!(second_reader.list_all_tools().await?.len(), 7);
+    assert_eq!(second_reader.list_all_tools().await?.len(), 8);
     second_reader.cancel().await?;
 
     let tools = client.list_all_tools().await?;
@@ -81,6 +109,7 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
             "list_project_json",
             "plan_transaction",
             "read_project_json",
+            "run_quality_suite",
             "validate_delivery",
             "validate_project"
         ]
@@ -133,6 +162,75 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
     let read: JsonCatalogDocument = structured(&read)?;
     assert_eq!(read.document["name"], "Aoi");
     assert_eq!(read.metadata.content_fingerprint.len(), 64);
+
+    let quality_listing = client
+        .call_tool(
+            CallToolRequestParams::new("list_project_json")
+                .with_arguments(arguments(json!({"catalog": "quality_suites"}))),
+        )
+        .await?;
+    let quality_listing: JsonCatalogReport = structured(&quality_listing)?;
+    assert_eq!(quality_listing.document_count, 1);
+
+    let quality = client
+        .call_tool(
+            CallToolRequestParams::new("run_quality_suite")
+                .with_arguments(arguments(json!({"path": "quality_suites/mcp.json"}))),
+        )
+        .await?;
+    assert_eq!(quality.is_error, Some(false));
+    let quality: RunQualitySuiteOutput = structured(&quality)?;
+    assert_eq!(quality.schema, MCP_QUALITY_SUITE_RUN_SCHEMA_V1);
+    assert!(!quality.passed);
+    assert_eq!(quality.report.total, 2);
+    assert_eq!(quality.report.passed, 1);
+    assert_eq!(quality.report.failed, 1);
+    assert_eq!(
+        quality.report.audit_summary.failed_scenario_ids,
+        ["failing".to_string()]
+    );
+    assert!(quality.report.scenarios[1]
+        .issues
+        .iter()
+        .any(|issue| issue.contains("overall expected >= 1")));
+    assert_eq!(
+        quality.report.run_metadata.suite_path,
+        "quality_suites/mcp.json"
+    );
+    assert_eq!(
+        quality.report.run_metadata.suite_sha256,
+        quality_listing.documents[0].sha256
+    );
+    assert!(!quality.report.run_metadata.generated_at.is_empty());
+
+    let wrong_catalog = client
+        .call_tool(
+            CallToolRequestParams::new("run_quality_suite")
+                .with_arguments(arguments(json!({"path": "characters/aoi.json"}))),
+        )
+        .await?;
+    assert_eq!(wrong_catalog.is_error, Some(true));
+    let error: McpToolError = structured(&wrong_catalog)?;
+    assert_eq!(error.code, McpToolErrorCode::ProjectInvalid);
+
+    let oversized_suite = format!(
+        "{{\"padding\":\"{}\"}}",
+        "a".repeat(MAX_QUALITY_SUITE_FILE_BYTES as usize)
+    );
+    std::fs::write(
+        project.root.join("quality_suites/oversized.json"),
+        oversized_suite,
+    )?;
+    let oversized = client
+        .call_tool(
+            CallToolRequestParams::new("run_quality_suite")
+                .with_arguments(arguments(json!({"path": "quality_suites/oversized.json"}))),
+        )
+        .await?;
+    assert_eq!(oversized.is_error, Some(true));
+    let error: McpToolError = structured(&oversized)?;
+    assert_eq!(error.code, McpToolErrorCode::ProjectInvalid);
+    assert!(error.message.contains("cannot exceed"));
 
     client.cancel().await?;
     Ok(())

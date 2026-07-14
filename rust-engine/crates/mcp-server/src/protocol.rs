@@ -7,11 +7,13 @@ use llm_authoring::json_catalog::{
     AuthorableJsonCatalog, JsonAcceptanceLevel, JsonCatalogError, JsonCatalogReport,
 };
 use llm_authoring::project::ProjectConfigState;
+use llm_authoring::quality_suite_execution::QualitySuiteReport;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 pub const MCP_INSPECTION_SCHEMA_V1: &str = "monogatari-mcp-project-inspection/v1";
+pub const MCP_QUALITY_SUITE_RUN_SCHEMA_V1: &str = "monogatari-mcp-quality-suite-run/v1";
 pub const MCP_TOOL_ERROR_SCHEMA_V1: &str = "monogatari-mcp-tool-error/v1";
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
@@ -34,6 +36,19 @@ pub struct ListProjectJsonRequest {
 #[serde(deny_unknown_fields)]
 pub struct ReadProjectJsonRequest {
     pub path: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct RunQualitySuiteRequest {
+    pub path: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct RunQualitySuiteOutput {
+    pub schema: String,
+    pub passed: bool,
+    pub report: QualitySuiteReport,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]

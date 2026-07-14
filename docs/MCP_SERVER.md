@@ -45,6 +45,7 @@ This is read-only. Add `--allow-write` to `args` only for a client that should b
 | `validate_delivery` | Read | Extends core validation with declared renderer/audio asset existence, extension, and placeholder evidence |
 | `list_project_json` | Read | Lists exact byte SHA-256, semantic content fingerprint, size, kind, and portable path; accepts an optional catalog filter |
 | `read_project_json` | Read | Reads one exact-case JSON path beneath an authorable catalog |
+| `run_quality_suite` | Read | Executes one exact `quality_suites/...json` path through the shared headless domain and returns versioned scenario/audit evidence bound to its byte SHA-256 |
 | `plan_transaction` | Read | Validates `monogatari-agent-project-transaction/v1` and returns a deterministic plan without writing |
 | `apply_transaction` | Write | Requires `--allow-write` plus the exact reviewed `precondition_fingerprint`; stages, validates, commits, or rolls back |
 
@@ -58,14 +59,15 @@ The authorable JSON catalogs are `assets`, `characters`, `dialogue`, `endings`, 
 4. Use `missing` for creates and the returned exact `sha256` for updates or deletions.
 5. Call `plan_transaction` and review every resolved path, operation, resulting hash, byte count, and the plan fingerprint.
 6. Call `apply_transaction` with the unchanged transaction and reviewed `expected_precondition_fingerprint`.
-7. Call `validate_project` and `validate_delivery` again, then run package, Quality execution, and rendered visual gates appropriate to the deliverable.
-8. When editing the repository's built-in `data/` project, run `node scripts/sync-project-mirror.mjs --write` followed by `node scripts/sync-project-mirror.mjs --check` so `rust-engine/data/` remains byte-equivalent.
+7. Call `validate_project` and `validate_delivery` again.
+8. List the `quality_suites` catalog and call `run_quality_suite` for every intended suite path. Accept the run only when `passed` is `true`; `passed: false` is a successful protocol response whose report contains actionable failed-scenario evidence.
+9. Run package and rendered visual gates appropriate to the deliverable. When editing the repository's built-in `data/` project, also run `node scripts/sync-project-mirror.mjs --write` followed by `node scripts/sync-project-mirror.mjs --check` so `rust-engine/data/` remains byte-equivalent.
 
 Planning and application both re-read current state. Any intervening file change invalidates the SHA precondition or plan fingerprint instead of overwriting newer work.
 
 ## Acceptance Boundary
 
-Read-only inspection reports `acceptance_level: "document"`. Successful `apply_transaction` reports `acceptance_level: "core_runtime"`: in addition to document safety and settings readiness, the staged candidate must load through the real character, dialogue, and knowledge managers; load strict bounded scene, ending, Story Event, Workflow, and Quality Suite catalogs; validate Workflow graphs and Quality expectation/reference contracts; and pass all prior runtime references. Rejection rolls back every staged operation. This level does not yet prove package acceptance, execution of Quality scenarios, or rendered desktop/mobile acceptance.
+Read-only inspection reports `acceptance_level: "document"`. Successful `apply_transaction` reports `acceptance_level: "core_runtime"`: in addition to document safety and settings readiness, the staged candidate must load through the real character, dialogue, and knowledge managers; load strict bounded scene, ending, Story Event, Workflow, and Quality Suite catalogs; validate Workflow graphs and Quality expectation/reference contracts; and pass all prior runtime references. Rejection rolls back every staged operation. `run_quality_suite` is a separate read-only gate: it accepts only a bounded path in the fixed project's `quality_suites` catalog and returns `monogatari-mcp-quality-suite-run/v1` with the shared complete report, exact source SHA-256, and MCP build/time provenance. Neither level proves package acceptance or rendered desktop/mobile acceptance.
 
 Use the full release gate before a release claim:
 

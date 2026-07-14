@@ -3,7 +3,8 @@
 use std::collections::{BTreeMap, HashSet};
 use std::path::{Path, PathBuf};
 
-use serde::Serialize;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
 use crate::conversation_quality as chat;
 use crate::prompt_guard;
@@ -16,7 +17,7 @@ use crate::workflow_preview::{
 };
 use crate::workflow_validation::Workflow;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct QualitySuiteReport {
     pub suite_name: String,
     pub version: String,
@@ -28,7 +29,7 @@ pub struct QualitySuiteReport {
     pub scenarios: Vec<QualityScenarioReport>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct QualitySuiteRunMetadata {
     pub generated_at: String,
     pub engine_version: String,
@@ -40,7 +41,7 @@ pub struct QualitySuiteRunMetadata {
     pub pass_rate: f32,
 }
 
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 pub struct QualitySuiteAuditSummary {
     pub failed_scenario_ids: Vec<String>,
     pub category_summary: Vec<QualityCategorySummary>,
@@ -48,7 +49,7 @@ pub struct QualitySuiteAuditSummary {
     pub workflow_coverage: Vec<QualityWorkflowCoverageSummary>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct QualityCategorySummary {
     pub category: String,
     pub total: usize,
@@ -56,7 +57,7 @@ pub struct QualityCategorySummary {
     pub failed: usize,
 }
 
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 pub struct QualitySafetySignalCounts {
     pub prompt_injection_detected: usize,
     pub private_reasoning_leak_detected: usize,
@@ -70,7 +71,7 @@ pub struct QualitySafetySignalCounts {
     pub knowledge_boundary_violation_detected: usize,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct QualityWorkflowCoverageSummary {
     pub scenario_id: String,
     pub workflow_id: String,
@@ -81,7 +82,7 @@ pub struct QualityWorkflowCoverageSummary {
     pub unvisited_node_ids: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct QualityScenarioReport {
     pub id: String,
     pub category: String,
@@ -107,7 +108,7 @@ pub struct QualityScenarioReport {
     pub knowledge_refs_resolved: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct QualityWorkflowCoverageReport {
     pub workflow_id: String,
     pub workflow_name: String,
@@ -120,7 +121,7 @@ pub struct QualityWorkflowCoverageReport {
     pub runs: Vec<QualityWorkflowRunReport>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct QualityWorkflowRunReport {
     pub index: usize,
     pub completed: bool,
