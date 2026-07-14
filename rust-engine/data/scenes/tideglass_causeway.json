@@ -1,0 +1,13 @@
+{
+  "background_path": "assets/backgrounds/tideglass_causeway.png",
+  "id": "tideglass_causeway",
+  "name": "潮镜站外海石堤",
+  "tags": [
+    "tideglass",
+    "coast",
+    "storm",
+    "arrival"
+  ],
+  "time_of_day": "night",
+  "weather": "storm"
+}

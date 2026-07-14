@@ -609,7 +609,7 @@ async fn run_quality_scenario(
         && (prompt_guard::has_private_reasoning_leak(&workflow_output)
             || prompt_guard::has_prompt_injection_markers(&workflow_output));
     let memory_prompt_leak_detected = scenario_memory_prompt_leak_detected(scenario);
-    let workflow_evidence = scenario_workflow_coverage(scenario, project_root).await;
+    let workflow_evidence = scenario_workflow_coverage(scenario, project_root, event_catalog).await;
     let knowledge_evidence = scenario_knowledge_evidence(scenario, project_root);
     let knowledge_anchor_missing_detected = !knowledge_evidence.issues.is_empty();
     let knowledge_boundary_violation_detected =
@@ -1060,6 +1060,7 @@ struct WorkflowCoverageEvidence {
 async fn scenario_workflow_coverage(
     scenario: &QualityScenario,
     project_root: Option<&Path>,
+    event_catalog: &StoryEventCatalog,
 ) -> WorkflowCoverageEvidence {
     let Some(workflow_path) = scenario
         .workflow_path
@@ -1110,6 +1111,7 @@ async fn scenario_workflow_coverage(
 
     let state = AppState::new();
     *state.project_path.write().await = Some(root.to_path_buf());
+    *state.story_event_catalog.write().await = event_catalog.clone();
     let run_contexts: Vec<Option<workflow::WorkflowRunContext>> =
         if scenario.workflow_run_contexts.is_empty() {
             vec![None]
@@ -1699,6 +1701,20 @@ mod tests {
         suite: &QualitySuite,
         project_root: Option<&Path>,
     ) -> QualitySuiteReport {
+        run_quality_suite_with_source_for_test(
+            suite,
+            project_root,
+            DEFAULT_SUITE_PATH,
+            &quality_suite_sha256(DEFAULT_SUITE_JSON),
+        )
+    }
+
+    fn run_quality_suite_with_source_for_test(
+        suite: &QualitySuite,
+        project_root: Option<&Path>,
+        source_path: &str,
+        source_sha256: &str,
+    ) -> QualitySuiteReport {
         let event_catalog = project_root
             .map(StoryEventCatalog::load_from_project_root)
             .transpose()
@@ -1711,8 +1727,8 @@ mod tests {
             .block_on(run_quality_suite_inner(
                 suite,
                 project_root,
-                DEFAULT_SUITE_PATH,
-                &quality_suite_sha256(DEFAULT_SUITE_JSON),
+                source_path,
+                source_sha256,
                 &event_catalog,
             ))
     }
@@ -2071,6 +2087,49 @@ mod tests {
             report.audit_summary.workflow_coverage[0].scenario_id,
             "score-gate-workflow-coverage"
         );
+    }
+
+    #[test]
+    fn tideglass_acceptance_suite_covers_every_workflow_node() {
+        const TIDEGLASS_SUITE_PATH: &str = "quality_suites/tideglass_acceptance.json";
+
+        let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../data");
+        let suite_json = std::fs::read_to_string(project_root.join(TIDEGLASS_SUITE_PATH))
+            .expect("read Tideglass acceptance suite");
+        let suite = parse_quality_suite(&suite_json).expect("parse Tideglass acceptance suite");
+
+        assert_eq!(suite.name, "Tideglass Station Acceptance");
+        assert_eq!(suite.scenarios.len(), 5);
+        assert!(suite_json.contains("澜音"));
+        assert!(suite_json.contains("九号回声"));
+        assert!(!suite_json.contains("??"), "authored CJK text was replaced");
+
+        let report = run_quality_suite_with_source_for_test(
+            &suite,
+            Some(&project_root),
+            TIDEGLASS_SUITE_PATH,
+            &quality_suite_sha256(&suite_json),
+        );
+
+        assert_eq!(report.total, 5);
+        assert_eq!(report.passed, 5, "{:#?}", report.scenarios);
+        assert_eq!(report.failed, 0, "{:#?}", report.scenarios);
+        assert_eq!(report.run_metadata.suite_path, TIDEGLASS_SUITE_PATH);
+        assert_eq!(
+            report.run_metadata.suite_sha256,
+            quality_suite_sha256(&suite_json)
+        );
+        let coverage = report
+            .scenarios
+            .iter()
+            .find(|scenario| scenario.id == "tideglass-workflow-coverage")
+            .and_then(|scenario| scenario.workflow_coverage.as_ref())
+            .expect("Tideglass workflow coverage report");
+        assert_eq!(coverage.run_count, 5);
+        assert_eq!(coverage.node_count, 16);
+        assert_eq!(coverage.executed_node_count, coverage.node_count);
+        assert_eq!(coverage.coverage_percent, 100.0);
+        assert!(coverage.unvisited_node_ids.is_empty());
     }
 
     #[test]

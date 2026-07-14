@@ -1,0 +1,8 @@
+{
+  "description": "清除未来讯号，但保留已经听见的坐标与责任。",
+  "dialogue_id": "tideglass_silence_epilogue",
+  "id": "tideglass_silence_ending",
+  "scene_id": "tideglass_lantern_chamber",
+  "schema": "monogatari-story-ending/v1",
+  "title": "深海慈悲"
+}

@@ -1,0 +1,73 @@
+{
+  "events": [
+    {
+      "actions": [
+        {
+          "flag": "tideglass.first_contact",
+          "type": "set_flag",
+          "value": true
+        }
+      ],
+      "character_ids": [
+        "lanyin"
+      ],
+      "data": {
+        "chapter": "tideglass_arrival"
+      },
+      "description": "澜音接受玩家共同调查未来讯号。",
+      "event_id": "tideglass_first_contact",
+      "event_type": "discovery",
+      "repeatable": false,
+      "rule": {
+        "min_relationship": 0.15
+      }
+    },
+    {
+      "actions": [
+        {
+          "flag": "tideglass.signal_understood",
+          "type": "set_flag",
+          "value": true
+        }
+      ],
+      "character_ids": [
+        "echo_nine"
+      ],
+      "data": {
+        "chapter": "tideglass_investigation"
+      },
+      "description": "玩家理解九号回声协议的证据与限制。",
+      "event_id": "tideglass_signal_understood",
+      "event_type": "discovery",
+      "repeatable": false,
+      "rule": {
+        "min_evaluation_count": 1,
+        "min_score": 0.65,
+        "score_metric": "engagement"
+      }
+    },
+    {
+      "actions": [
+        {
+          "flag": "tideglass.keeper_trust",
+          "type": "set_flag",
+          "value": true
+        }
+      ],
+      "character_ids": [
+        "lanyin"
+      ],
+      "data": {
+        "chapter": "tideglass_climax"
+      },
+      "description": "澜音把灯室最后一把钥匙交给玩家。",
+      "event_id": "tideglass_keeper_trust",
+      "event_type": "relationship_milestone",
+      "repeatable": false,
+      "rule": {
+        "min_relationship": 0.45
+      }
+    }
+  ],
+  "schema": "monogatari-story-event-catalog/v1"
+}

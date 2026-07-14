@@ -17,6 +17,8 @@ cargo run --locked -p monogatari-mcp -- --project-root ..\data
 
 The project root is required at startup and must contain `settings.json`. It is canonicalized once and is never accepted from tool input. Stdout is reserved for MCP frames; diagnostics go to stderr.
 
+MCP stdio frames are UTF-8. Windows PowerShell 5 can encode text sent to a native process with the active system code page even when `Get-Content -Encoding UTF8` decoded the source correctly. Do not pipe non-ASCII request JSON directly from Windows PowerShell 5; use an MCP client that writes UTF-8 bytes, and call `read_project_json` after applying a transaction to verify authored non-ASCII content.
+
 ## Client Configuration
 
 A generic local MCP client configuration looks like this:
@@ -57,6 +59,7 @@ The authorable JSON catalogs are `assets`, `characters`, `dialogue`, `endings`, 
 5. Call `plan_transaction` and review every resolved path, operation, resulting hash, byte count, and the plan fingerprint.
 6. Call `apply_transaction` with the unchanged transaction and reviewed `expected_precondition_fingerprint`.
 7. Call `validate_project` and `validate_delivery` again, then run package, Quality execution, and rendered visual gates appropriate to the deliverable.
+8. When editing the repository's built-in `data/` project, run `node scripts/sync-project-mirror.mjs --write` followed by `node scripts/sync-project-mirror.mjs --check` so `rust-engine/data/` remains byte-equivalent.
 
 Planning and application both re-read current state. Any intervening file change invalidates the SHA precondition or plan fingerprint instead of overwriting newer work.
 

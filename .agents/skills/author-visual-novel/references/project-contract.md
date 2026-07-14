@@ -39,6 +39,14 @@
 - Prove important branches with Quality Suite scenarios, including negative cases and boundary thresholds.
 - Do not ship secrets in `settings.json`, project packages, logs, fixtures, or verification reports.
 - For Agent transactions, require `missing` on creates and an exact current SHA-256 on updates/deletes; never use a blind overwrite operation.
+- Treat MCP stdio as UTF-8 end to end. Avoid Windows PowerShell 5 native-process pipelines for non-ASCII frames, and read the applied documents back through MCP before accepting authored text.
+
+For the checked-in built-in project, synchronize the canonical root into the desktop mirror and then prove exact parity:
+
+```powershell
+node scripts/sync-project-mirror.mjs --write
+node scripts/sync-project-mirror.mjs --check
+```
 
 ## Acceptance Levels
 

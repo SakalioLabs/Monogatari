@@ -1,0 +1,471 @@
+{
+  "description": "暴风夜里调查来自未来的求救讯号，并决定信标站与海岸的命运。",
+  "id": "tideglass_signal",
+  "nodes": {
+    "approach_tower": {
+      "choices": [],
+      "next_node_id": "enter_station",
+      "text": "澜音没有回头。她腰间的铜钥匙随着每一步轻响，像在为风暴计时。"
+    },
+    "beacon_farewell": {
+      "choices": [],
+      "emotion": "fading",
+      "next_node_id": "beacon_terminal",
+      "speaker_id": "echo_nine",
+      "text": "九号回声的轮廓变得透明。很好。至少在某张地图上，今晚有人回家。"
+    },
+    "beacon_ignites": {
+      "choices": [],
+      "emotion": "hopeful",
+      "next_node_id": "beacon_farewell",
+      "speaker_id": "lanyin",
+      "text": "光束越过暴雨，在海面上划出一条稳定的金线。远处，三艘渔船同时改变航向。"
+    },
+    "beacon_terminal": {
+      "choices": [],
+      "ending_type": "beacon",
+      "is_ending": true,
+      "speaker_id": "lanyin",
+      "text": "我们守住的不是未来，是愿意为陌生人留一盏灯的现在。"
+    },
+    "causality_paradox": {
+      "choices": [],
+      "emotion": "calm",
+      "next_node_id": "lanyin_final_question",
+      "speaker_id": "lanyin",
+      "text": "没有一条路线是无辜的。未来只能告诉我们它受过的伤，不能替现在决定要害怕哪一种伤。"
+    },
+    "causeway_warning": {
+      "choices": [],
+      "emotion": "focused",
+      "next_node_id": "approach_tower",
+      "speaker_id": "lanyin",
+      "text": "踩我走过的石缝。黑色的地方不是积水，是海。"
+    },
+    "choose_beacon": {
+      "choices": [],
+      "next_node_id": "beacon_ignites",
+      "text": "你将钥匙转向灯芯。黄铜齿轮咬合，沉睡二十年的透镜发出第一声轰鸣。"
+    },
+    "choose_silence": {
+      "choices": [],
+      "next_node_id": "silence_erases",
+      "text": "你把钥匙转向清除磁鼓。黑色带盘高速旋转，把来自未来的波形一层层抹平。"
+    },
+    "choose_truth": {
+      "choices": [],
+      "next_node_id": "truth_broadcast",
+      "text": "你把钥匙转向广播线圈。讯号冲入海岸每一台收音机，连同时间戳、坐标与所有不确定性。"
+    },
+    "climb_to_lantern": {
+      "choices": [],
+      "next_node_id": "lantern_chamber",
+      "text": "旋梯一圈圈收紧。脚下是接收机的低语，头顶是透镜沉重的转轴，塔外整片海正在后退。"
+    },
+    "control_room_dark": {
+      "choices": [],
+      "next_node_id": "lanyin_history",
+      "text": "控制室里只有真空管的余火。墙上的潮汐图被湿气卷起，中央接收机却在自行升温。"
+    },
+    "echo_childhood": {
+      "choices": [],
+      "emotion": "vulnerable",
+      "next_node_id": "voice_choice",
+      "speaker_id": "echo_nine",
+      "text": "我那时九岁。后来他们用幸存者的声音训练发射协议，所以我叫九号回声。也可能……我只是那些声音的排列。"
+    },
+    "echo_first_words": {
+      "choices": [],
+      "emotion": "fragmented",
+      "next_node_id": "lanyin_doubt",
+      "speaker_id": "echo_nine",
+      "text": "……潮镜站，听见请回答。这里是九号回声。我们只剩十七分钟。"
+    },
+    "echo_flood_warning": {
+      "choices": [],
+      "emotion": "urgent",
+      "next_node_id": "lanyin_question",
+      "speaker_id": "echo_nine",
+      "text": "四十七年后，东堤决口。疏散船跟随错误信号驶入暗礁。两千三百人没有回来。请在今晚点亮信标。"
+    },
+    "echo_memory": {
+      "choices": [],
+      "emotion": "distant",
+      "next_node_id": "echo_childhood",
+      "speaker_id": "echo_nine",
+      "text": "我记得疏散站的玻璃顶。雨落下来时，所有人都抬头，以为那是信标终于亮了。"
+    },
+    "echo_revelation": {
+      "choices": [],
+      "emotion": "urgent",
+      "next_node_id": "causality_paradox",
+      "speaker_id": "echo_nine",
+      "text": "警告不完整。我们的模拟里，点灯能救船，却可能让沿岸过早撤离；公开全部讯号能避免隐瞒，也会引发抢航；清除它，则保留现在的秩序。"
+    },
+    "enter_station": {
+      "choices": [],
+      "emotion": "wary",
+      "next_node_id": "control_room_dark",
+      "speaker_id": "lanyin",
+      "text": "镇上说这里早就断电了。今晚却有人用旧频率呼叫我的名字。"
+    },
+    "final_choice": {
+      "choices": [
+        {
+          "next_node_id": "choose_beacon",
+          "relationship_changes": {
+            "lanyin": 0.2
+          },
+          "text": "点亮信标。先救下能够看见这束光的人。"
+        },
+        {
+          "next_node_id": "choose_truth",
+          "relationship_changes": {
+            "echo_nine": 0.15,
+            "lanyin": 0.05
+          },
+          "text": "公开讯号。把事实与风险一起交给整片海岸。"
+        },
+        {
+          "next_node_id": "choose_silence",
+          "relationship_changes": {
+            "echo_nine": 0.05,
+            "lanyin": -0.05
+          },
+          "text": "清除讯号。拒绝让一个未经证实的未来劫持现在。"
+        }
+      ],
+      "text": "透镜开始转动。你只能把力量送往一个装置。"
+    },
+    "frequency_math": {
+      "choices": [],
+      "emotion": "clearer",
+      "next_node_id": "machine_limit",
+      "speaker_id": "echo_nine",
+      "text": "频率偏移与浪高同步，却提前了四十七秒。每一轮重复，提前量又增加一秒。"
+    },
+    "inspect_log": {
+      "choices": [],
+      "next_node_id": "log_1897",
+      "text": "你在最下层抽屉里找到一本被盐霜粘住的日志。封面没有年份，只有一枚潮镜形状的压印。"
+    },
+    "inspect_machine": {
+      "choices": [],
+      "next_node_id": "frequency_math",
+      "text": "你卸下接收机背板。里面没有现代元件，只有线圈、晶体和一条不该闭合却始终有电的回路。"
+    },
+    "investigation_choice": {
+      "choices": [
+        {
+          "next_node_id": "inspect_log",
+          "relationship_changes": {
+            "lanyin": 0.1
+          },
+          "text": "查阅守塔日志，寻找过去留下的同类记录。"
+        },
+        {
+          "next_node_id": "inspect_machine",
+          "relationship_changes": {
+            "echo_nine": 0.1
+          },
+          "text": "拆开接收机，验证讯号是否真的来自未来。"
+        },
+        {
+          "next_node_id": "speak_to_echo",
+          "relationship_changes": {
+            "echo_nine": 0.15
+          },
+          "text": "直接询问九号回声：它记得怎样的未来？"
+        }
+      ],
+      "text": "风暴压住整座塔。你有时间调查一个方向，再决定是否登上灯室。"
+    },
+    "isolate_transmitter": {
+      "choices": [],
+      "emotion": "approving",
+      "next_node_id": "stabilize_signal",
+      "speaker_id": "lanyin",
+      "text": "谨慎。很好。红色闸刀向下，塔顶的发射线圈沉默了，但那个人影仍留在玻璃上。"
+    },
+    "lantern_chamber": {
+      "choices": [],
+      "next_node_id": "storm_peak",
+      "text": "灯室的玻璃被雨水压成流动的墙。巨大的菲涅耳透镜停在正东方，裂纹把远海切成三条不同的航线。"
+    },
+    "lanyin_doubt": {
+      "choices": [],
+      "emotion": "shaken",
+      "next_node_id": "player_response",
+      "speaker_id": "lanyin",
+      "text": "它用了我父亲设计、从未公开的校验词。可那串时间戳来自四十七年后。"
+    },
+    "lanyin_final_question": {
+      "choices": [],
+      "emotion": "open",
+      "next_node_id": "final_choice",
+      "speaker_id": "lanyin",
+      "text": "钥匙在你手里。告诉我，我们要让这座塔成为什么？"
+    },
+    "lanyin_history": {
+      "choices": [],
+      "emotion": "guarded",
+      "next_node_id": "receiver_wakes",
+      "speaker_id": "lanyin",
+      "text": "我父亲是最后一任守塔人。他关闭信标那天说：有些警告，越及时，越像灾难本身。"
+    },
+    "lanyin_question": {
+      "choices": [],
+      "emotion": "measured",
+      "next_node_id": "investigation_choice",
+      "speaker_id": "lanyin",
+      "text": "如果我们点灯，历史会改变。那它还会不会存在？如果它不存在，这条警告又是谁发来的？"
+    },
+    "log_1897": {
+      "choices": [],
+      "emotion": "reflective",
+      "next_node_id": "log_pattern",
+      "speaker_id": "lanyin",
+      "text": "第一页写着：1897年，信标曾收到“尚未沉没的船”发来的求救。守塔人点灯后，那艘船避开了礁石。"
+    },
+    "log_choice": {
+      "choices": [
+        {
+          "next_node_id": "log_empathy",
+          "relationship_changes": {
+            "lanyin": 0.15
+          },
+          "text": "空白不等于罪。被救下的人仍然真实。"
+        },
+        {
+          "next_node_id": "log_suspicion",
+          "relationship_changes": {
+            "lanyin": -0.03
+          },
+          "text": "这本日志证明不了因果，只证明守塔人一直害怕选择。"
+        }
+      ],
+      "text": "纸页在你指间发脆。澜音没有催促。"
+    },
+    "log_consequence": {
+      "choices": [],
+      "next_node_id": "return_from_log",
+      "text": "日志夹层掉出一张灯室钥匙拓印，标出一条绕过锈死齿轮的手动传动路线。"
+    },
+    "log_empathy": {
+      "choices": [],
+      "emotion": "softened",
+      "next_node_id": "log_consequence",
+      "speaker_id": "lanyin",
+      "text": "澜音把手放在父亲的签名上。片刻后，她合上日志：那就不要让恐惧替我们做决定。"
+    },
+    "log_pattern": {
+      "choices": [],
+      "emotion": "pained",
+      "next_node_id": "log_choice",
+      "speaker_id": "lanyin",
+      "text": "最后一页却是父亲的笔迹：每次被拯救的航线，都会在另一张地图上留下空白。"
+    },
+    "log_suspicion": {
+      "choices": [],
+      "emotion": "resolved",
+      "next_node_id": "log_consequence",
+      "speaker_id": "lanyin",
+      "text": "你说得对。父亲把疑问写成遗训，却没有留下答案。答案只能由今晚承担。"
+    },
+    "machine_choice": {
+      "choices": [
+        {
+          "next_node_id": "machine_trust",
+          "relationship_changes": {
+            "echo_nine": 0.12,
+            "lanyin": 0.05
+          },
+          "text": "物理上说得通。相信讯号，但不相信它对因果的解释。"
+        },
+        {
+          "next_node_id": "machine_fear",
+          "relationship_changes": {
+            "lanyin": 0.08
+          },
+          "text": "它可能在利用我们的期待自证。保留怀疑。"
+        }
+      ],
+      "text": "回路的温度不断上升。你必须判断它的异常意味着什么。"
+    },
+    "machine_consequence": {
+      "choices": [],
+      "next_node_id": "return_from_machine",
+      "text": "你找到一枚烧黑的保险片。换上备用件后，通往灯室的传动电路恢复了三成。足够做一次选择。"
+    },
+    "machine_fear": {
+      "choices": [],
+      "emotion": "fading",
+      "next_node_id": "machine_consequence",
+      "speaker_id": "echo_nine",
+      "text": "怀疑是正确的。我们发送了结果，却无法发送造成结果的全部过程。"
+    },
+    "machine_limit": {
+      "choices": [],
+      "emotion": "astonished",
+      "next_node_id": "machine_choice",
+      "speaker_id": "lanyin",
+      "text": "这不是录音。它在用潮汐本身当作时钟，把讯息逆着干涉纹推回来。"
+    },
+    "machine_trust": {
+      "choices": [],
+      "emotion": "grateful",
+      "next_node_id": "machine_consequence",
+      "speaker_id": "echo_nine",
+      "text": "九号回声低下眼睛。谢谢。未来的人已经把“相信”当成一种失传的技术。"
+    },
+    "player_response": {
+      "choices": [
+        {
+          "next_node_id": "stabilize_signal",
+          "relationship_changes": {
+            "echo_nine": 0.05,
+            "lanyin": 0.08
+          },
+          "text": "先稳定讯号。无论是谁，至少让它把话说完。"
+        },
+        {
+          "next_node_id": "isolate_transmitter",
+          "relationship_changes": {
+            "lanyin": 0.05
+          },
+          "text": "先切断发射端，只保留接收。我们不能让未知讯号控制信标。"
+        }
+      ],
+      "text": "电流在金属桌面下颤动。澜音看向你，等待一个决定。"
+    },
+    "receiver_wakes": {
+      "choices": [],
+      "next_node_id": "echo_first_words",
+      "text": "接收机忽然发出一段尖锐的啸声。玻璃管中，银蓝色的噪点拼成一个模糊的人影。"
+    },
+    "return_from_log": {
+      "choices": [],
+      "emotion": "focused",
+      "next_node_id": "climb_to_lantern",
+      "speaker_id": "lanyin",
+      "text": "澜音收起拓印，示意你跟上。楼梯上方，巨大的透镜正在风中低鸣。"
+    },
+    "return_from_machine": {
+      "choices": [],
+      "emotion": "determined",
+      "next_node_id": "climb_to_lantern",
+      "speaker_id": "lanyin",
+      "text": "澜音推上总闸。楼梯间亮起一盏接一盏的琥珀灯，像过去正被逐层唤醒。"
+    },
+    "return_from_voice": {
+      "choices": [],
+      "emotion": "trusting",
+      "next_node_id": "climb_to_lantern",
+      "speaker_id": "lanyin",
+      "text": "澜音记下坐标。她把最后一把钥匙交给你：灯室只能从里面决定发射模式。"
+    },
+    "silence_erases": {
+      "choices": [],
+      "emotion": "peaceful",
+      "next_node_id": "silence_farewell",
+      "speaker_id": "echo_nine",
+      "text": "九号回声没有反抗。它只抬起手，像隔着四十七年触碰冰冷的玻璃。"
+    },
+    "silence_farewell": {
+      "choices": [],
+      "emotion": "fading",
+      "next_node_id": "silence_terminal",
+      "speaker_id": "echo_nine",
+      "text": "别为我记住灾难。记住坐标，检查堤坝，然后用你们自己的理由去救人。"
+    },
+    "silence_terminal": {
+      "choices": [],
+      "ending_type": "silence",
+      "is_ending": true,
+      "speaker_id": "lanyin",
+      "text": "讯号消失了。可我们已经听见。沉默不再等于什么都没发生。"
+    },
+    "speak_to_echo": {
+      "choices": [],
+      "next_node_id": "echo_memory",
+      "text": "你没有碰机器，只让九号回声继续说。它的轮廓随着每一个词闪烁，仿佛记忆本身正在失真。"
+    },
+    "stabilize_signal": {
+      "choices": [],
+      "next_node_id": "echo_flood_warning",
+      "text": "你调平三个黄铜旋钮。噪声退成海浪般的底音，九号回声的面容第一次清晰。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "causeway_warning",
+      "text": "午夜十二点前，潮水已经漫过堤道两次。第三次浪退去时，远处那座停用二十年的信标塔亮了一下。"
+    },
+    "storm_peak": {
+      "choices": [],
+      "next_node_id": "echo_revelation",
+      "text": "第一道巨浪越过外堤。旧机械同时醒来：灯芯、广播线圈和清除磁鼓，只能选择其中一项。"
+    },
+    "truth_broadcast": {
+      "choices": [],
+      "emotion": "resolute",
+      "next_node_id": "truth_farewell",
+      "speaker_id": "lanyin",
+      "text": "港口的灯一盏盏亮起。有人撤离，有人争吵，也有人开始核对旧堤坝的裂缝。没有人能再说自己不知情。"
+    },
+    "truth_farewell": {
+      "choices": [],
+      "emotion": "relieved",
+      "next_node_id": "truth_terminal",
+      "speaker_id": "echo_nine",
+      "text": "未来的声音第一次不再孤单。九号回声微笑，随后散成一场安静的雪花噪点。"
+    },
+    "truth_terminal": {
+      "choices": [],
+      "ending_type": "truth",
+      "is_ending": true,
+      "speaker_id": "lanyin",
+      "text": "真相不会替我们负责。但从今晚起，责任不再只锁在这座塔里。"
+    },
+    "voice_challenge": {
+      "choices": [],
+      "emotion": "steady",
+      "next_node_id": "voice_consequence",
+      "speaker_id": "echo_nine",
+      "text": "愿意。我们发出讯号，不是为了被记住，是为了让某一天不再需要发出它。"
+    },
+    "voice_choice": {
+      "choices": [
+        {
+          "next_node_id": "voice_compassion",
+          "relationship_changes": {
+            "echo_nine": 0.2,
+            "lanyin": 0.05
+          },
+          "text": "无论你是什么，害怕消失都是真的。"
+        },
+        {
+          "next_node_id": "voice_challenge",
+          "relationship_changes": {
+            "echo_nine": 0.08
+          },
+          "text": "如果未来改变，你愿意连这段记忆一起消失吗？"
+        }
+      ],
+      "text": "它看着自己的双手。噪点从指尖不断脱落。"
+    },
+    "voice_compassion": {
+      "choices": [],
+      "emotion": "relieved",
+      "next_node_id": "voice_consequence",
+      "speaker_id": "echo_nine",
+      "text": "那就够了。请别为了保存我而保存灾难。只保存这个警告有用的部分。"
+    },
+    "voice_consequence": {
+      "choices": [],
+      "next_node_id": "return_from_voice",
+      "text": "讯号短暂稳定，投出一张未来海岸的轮廓。决口位置恰好对应塔顶透镜的一道旧裂纹。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "潮镜信标"
+}

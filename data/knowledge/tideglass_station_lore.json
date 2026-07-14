@@ -1,0 +1,12 @@
+{
+  "category": "location",
+  "content": "潮镜站建于1897年，位于东岸外海石堤尽头。它用海潮压力和机械钟共同校准旧式接收机。最后一任守塔人是澜音的父亲；停用前，他留下了绕过锈死主齿轮的手动传动路线。塔顶菲涅耳透镜的东向镜片有一道旧裂纹，对应未来警告中的堤坝坐标。",
+  "id": "tideglass_station_lore",
+  "tags": [
+    "tideglass",
+    "signal_station",
+    "coast",
+    "history"
+  ],
+  "title": "潮镜信标站"
+}

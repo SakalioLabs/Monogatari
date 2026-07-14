@@ -26,11 +26,20 @@ Build project data that the real Monogatari runtime can load. Treat a project as
 7. Add or update a Quality Suite that proves critical branches, character identity, knowledge boundaries, and prompt-safety behavior.
 8. Keep mirrored `data/` and `rust-engine/data/` roots byte-equivalent when editing the built-in project.
 
+Synchronize and verify the built-in project after an accepted transaction:
+
+```powershell
+node scripts/sync-project-mirror.mjs --write
+node scripts/sync-project-mirror.mjs --check
+```
+
 Use structured JSON editing and preserve unrelated author changes. Do not invent a parallel schema or bypass runtime validation with a custom parser.
 
 ## Apply Agent Transactions Safely
 
 When an Agent transport offers transaction planning or application, read [references/agent-transaction.md](references/agent-transaction.md). Use `missing` only for new files and an exact current SHA-256 for updates or deletions. Plan first, review every resolved path and resulting hash, then apply with the authoritative candidate-project validator. Do not use the transaction API as a substitute for graph, runtime, package, or experience validation.
+
+MCP stdio frames are UTF-8. On Windows PowerShell 5, do not pipe non-ASCII JSON directly to the native MCP process: the native-process pipe can replace authored text even when the input file was read with `-Encoding UTF8`. Use an MCP client that writes UTF-8 bytes and verify non-ASCII content through `read_project_json` after application.
 
 ## Use Standard MCP When Available
 

@@ -1,0 +1,13 @@
+{
+  "background_path": "assets/backgrounds/tideglass_lantern_chamber.png",
+  "id": "tideglass_lantern_chamber",
+  "name": "潮镜站灯室",
+  "tags": [
+    "tideglass",
+    "lantern",
+    "climax",
+    "choice"
+  ],
+  "time_of_day": "night",
+  "weather": "storm"
+}

@@ -1,0 +1,8 @@
+{
+  "description": "公开完整讯号与全部不确定性，把选择交还给海岸。",
+  "dialogue_id": "tideglass_truth_epilogue",
+  "id": "tideglass_truth_ending",
+  "scene_id": "tideglass_control_room",
+  "schema": "monogatari-story-ending/v1",
+  "title": "开放频率"
+}

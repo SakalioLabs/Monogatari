@@ -1,0 +1,231 @@
+{
+  "id": "tideglass_route",
+  "name": "Tideglass Station Route Matrix",
+  "nodes": [
+    {
+      "config": {},
+      "connections": [
+        "causeway"
+      ],
+      "id": "start",
+      "label": "Begin",
+      "node_type": "start",
+      "x": 100,
+      "y": 180
+    },
+    {
+      "config": {
+        "scene_id": "tideglass_causeway"
+      },
+      "connections": [
+        "arrival"
+      ],
+      "id": "causeway",
+      "label": "Storm Causeway",
+      "node_type": "scene_change",
+      "x": 320,
+      "y": 180
+    },
+    {
+      "config": {
+        "speaker": "Narrator",
+        "text": "The dead station answers from forty-seven years ahead."
+      },
+      "connections": [
+        "signal_gate"
+      ],
+      "id": "arrival",
+      "label": "Arrival",
+      "node_type": "narration",
+      "x": 540,
+      "y": 180
+    },
+    {
+      "config": {
+        "character_id": "echo_nine",
+        "criteria": "engagement",
+        "threshold": 0.65,
+        "variable_name": "tideglass_signal_score"
+      },
+      "connections": [
+        "signal_event",
+        "keeper_gate"
+      ],
+      "id": "signal_gate",
+      "label": "Understand Signal",
+      "node_type": "evaluation",
+      "x": 760,
+      "y": 180
+    },
+    {
+      "config": {
+        "character_id": "echo_nine",
+        "event_id": "tideglass_signal_understood",
+        "event_type": "discovery"
+      },
+      "connections": [
+        "truth_scene",
+        "signal_blocked"
+      ],
+      "id": "signal_event",
+      "label": "Signal Understood",
+      "node_type": "trigger_event",
+      "x": 1000,
+      "y": 60
+    },
+    {
+      "config": {
+        "scene_id": "tideglass_control_room"
+      },
+      "connections": [
+        "truth_line"
+      ],
+      "id": "truth_scene",
+      "label": "Open Frequency",
+      "node_type": "scene_change",
+      "x": 1240,
+      "y": 20
+    },
+    {
+      "config": {
+        "emotion": "resolved",
+        "speaker": "echo_nine",
+        "text": "Let every receiver hear the warning and its uncertainty."
+      },
+      "connections": [
+        "end"
+      ],
+      "id": "truth_line",
+      "label": "Broadcast Truth",
+      "node_type": "dialogue",
+      "x": 1460,
+      "y": 20
+    },
+    {
+      "config": {
+        "emotion": "fading",
+        "speaker": "echo_nine",
+        "text": "The warning has already been carried once. Do not use me to carry it again."
+      },
+      "connections": [
+        "end"
+      ],
+      "id": "signal_blocked",
+      "label": "Signal Already Known",
+      "node_type": "dialogue",
+      "x": 1240,
+      "y": 120
+    },
+    {
+      "config": {
+        "condition": "relationship > 0.45"
+      },
+      "connections": [
+        "keeper_event",
+        "silence_scene"
+      ],
+      "id": "keeper_gate",
+      "label": "Keeper Trust",
+      "node_type": "condition",
+      "x": 1000,
+      "y": 300
+    },
+    {
+      "config": {
+        "character_id": "lanyin",
+        "event_id": "tideglass_keeper_trust",
+        "event_type": "relationship_milestone"
+      },
+      "connections": [
+        "beacon_scene",
+        "keeper_blocked"
+      ],
+      "id": "keeper_event",
+      "label": "Keeper Trust Event",
+      "node_type": "trigger_event",
+      "x": 1240,
+      "y": 240
+    },
+    {
+      "config": {
+        "scene_id": "tideglass_lantern_chamber"
+      },
+      "connections": [
+        "beacon_line"
+      ],
+      "id": "beacon_scene",
+      "label": "Light The Beacon",
+      "node_type": "scene_change",
+      "x": 1460,
+      "y": 200
+    },
+    {
+      "config": {
+        "emotion": "hopeful",
+        "speaker": "lanyin",
+        "text": "We keep a light for whoever is still at sea."
+      },
+      "connections": [
+        "end"
+      ],
+      "id": "beacon_line",
+      "label": "Beacon Ending",
+      "node_type": "dialogue",
+      "x": 1680,
+      "y": 200
+    },
+    {
+      "config": {
+        "emotion": "quiet",
+        "speaker": "lanyin",
+        "text": "Trust is not a switch we should keep testing."
+      },
+      "connections": [
+        "end"
+      ],
+      "id": "keeper_blocked",
+      "label": "Trust Already Given",
+      "node_type": "dialogue",
+      "x": 1460,
+      "y": 300
+    },
+    {
+      "config": {
+        "scene_id": "tideglass_lantern_chamber"
+      },
+      "connections": [
+        "silence_line"
+      ],
+      "id": "silence_scene",
+      "label": "Mercy Of The Deep",
+      "node_type": "scene_change",
+      "x": 1240,
+      "y": 420
+    },
+    {
+      "config": {
+        "emotion": "peaceful",
+        "speaker": "echo_nine",
+        "text": "Remember the coordinates. You do not have to remember me."
+      },
+      "connections": [
+        "end"
+      ],
+      "id": "silence_line",
+      "label": "Silence Ending",
+      "node_type": "dialogue",
+      "x": 1460,
+      "y": 420
+    },
+    {
+      "config": {},
+      "connections": [],
+      "id": "end",
+      "label": "End",
+      "node_type": "end",
+      "x": 1900,
+      "y": 220
+    }
+  ],
+  "start_node_id": "start"
+}

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
@@ -13,6 +14,7 @@ import {
   spawnSpecForPlatform,
   validateMatrix,
 } from '../lib/module-test-matrix.mjs'
+import { projectMirrorDiff, synchronizeProjectMirror } from '../lib/project-mirror.mjs'
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 
@@ -151,6 +153,35 @@ test('platform constraints are explicit and portable', () => {
     }, repositoryRoot),
     /unknown platform/,
   )
+})
+
+test('project mirror synchronization makes the packaged data root byte-equivalent', async () => {
+  const temp = await mkdtemp(path.join(os.tmpdir(), 'monogatari-project-mirror-'))
+  const source = path.join(temp, 'data')
+  const mirror = path.join(temp, 'mirror')
+  try {
+    await mkdir(path.join(source, 'dialogue'), { recursive: true })
+    await mkdir(path.join(mirror, 'dialogue'), { recursive: true })
+    await writeFile(path.join(source, 'settings.json'), '{"title":"source"}\n')
+    await writeFile(path.join(source, 'dialogue', 'intro.json'), '{"id":"intro"}\n')
+    await writeFile(path.join(source, '.monogatari-mcp-project.lock'), '')
+    await writeFile(path.join(mirror, 'settings.json'), '{"title":"stale"}\n')
+    await writeFile(path.join(mirror, 'obsolete.json'), '{}\n')
+    await writeFile(path.join(mirror, '.monogatari-mcp-project.lock'), '')
+
+    const before = await projectMirrorDiff(source, mirror)
+    assert.deepEqual(before.missing, ['dialogue/intro.json'])
+    assert.deepEqual(before.changed, ['settings.json'])
+    assert.deepEqual(before.extra, ['.monogatari-mcp-project.lock', 'obsolete.json'])
+
+    const synchronized = await synchronizeProjectMirror(source, mirror)
+    assert.equal(synchronized.valid, true)
+    assert.equal(synchronized.sourceCount, 2)
+    assert.equal(synchronized.mirrorCount, 2)
+    await assert.rejects(stat(path.join(mirror, '.monogatari-mcp-project.lock')), { code: 'ENOENT' })
+  } finally {
+    await rm(temp, { recursive: true, force: true })
+  }
 })
 
 function validModule(overrides = {}) {

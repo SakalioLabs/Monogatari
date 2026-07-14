@@ -368,6 +368,7 @@ async function main() {
 
   await run('git diff whitespace check', 'git', ['diff', '--check'], root)
   await run('Automation contract tests', 'node', ['--test', 'scripts/tests/module-test-matrix.test.mjs'], root)
+  await run('Built-in project mirror parity', 'node', ['scripts/sync-project-mirror.mjs', '--check'], root)
   await run('Frontend i18n coverage', 'npm', ['run', 'verify:i18n'], frontendDir)
   await run('Frontend renderer asset selector contract', 'npm', ['run', 'verify:renderer-assets'], frontendDir)
   await run('Frontend mobile shell readiness', 'npm', ['run', 'verify:mobile-readiness'], frontendDir)
@@ -2463,6 +2464,9 @@ async function verifyTauriPackagingConfig() {
   if (!String(config.build?.beforeBuildCommand ?? '').includes('npm run build')) {
     issues.push('tauri.conf.json build.beforeBuildCommand must run the production frontend build before desktop packaging')
   }
+  if (!String(config.build?.beforeBuildCommand ?? '').includes('scripts/sync-project-mirror.mjs --check')) {
+    issues.push('tauri.conf.json build.beforeBuildCommand must verify the packaged desktop project mirror')
+  }
 
   const csp = config.app?.security?.csp
   if (!nonEmptyString(csp)) {
@@ -2533,13 +2537,13 @@ async function verifyTauriPackagingConfig() {
     : bundle.resources && typeof bundle.resources === 'object'
       ? Object.entries(bundle.resources)
       : []
-  const bundledRootData = resourceEntries.find(([source]) => path.resolve(tauriAppDir, source) === path.join(root, 'data'))
-  if (!bundledRootData) {
-    issues.push('tauri.conf.json bundle.resources must include ../../../data so installed builds carry sample project content')
+  const bundledDesktopData = resourceEntries.find(([source]) => path.resolve(tauriAppDir, source) === path.join(rustDir, 'data'))
+  if (!bundledDesktopData) {
+    issues.push('tauri.conf.json bundle.resources must include ../../data so installed builds use the verified desktop project mirror')
   } else {
-    const [source, target] = bundledRootData
+    const [source, target] = bundledDesktopData
     if (target !== 'data') {
-      issues.push('tauri.conf.json bundle.resources must map ../../../data to clean data/ resource output')
+      issues.push('tauri.conf.json bundle.resources must map ../../data to clean data/ resource output')
     }
     const dataRoot = path.resolve(tauriAppDir, source)
     for (const dir of ['assets', 'characters', 'dialogue', 'endings', 'events', 'knowledge', 'locales', 'quality_suites', 'scenes', 'workflows']) {
@@ -2549,6 +2553,9 @@ async function verifyTauriPackagingConfig() {
     }
     if (!(await fileExists(path.join(dataRoot, 'settings.json')))) {
       issues.push('bundled data resource is missing settings.json')
+    }
+    if (await fileExists(path.join(dataRoot, '.monogatari-mcp-project.lock'))) {
+      issues.push('bundled data resource must not contain the transient MCP project lease file')
     }
   }
 

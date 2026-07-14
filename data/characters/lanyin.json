@@ -1,0 +1,45 @@
+{
+  "background": "澜音在信标站长大，熟悉每一道齿轮与潮沟。父亲关闭信标后，她继续维护这座塔，却从未重新点灯。她不迷信预言，只相信可核对的证据与必须承担的选择。",
+  "description": "潮镜信标站最后的守塔人，以克制而务实的方式守护海岸。",
+  "emotions": {
+    "default": "focused",
+    "states": [
+      "focused",
+      "wary",
+      "guarded",
+      "shaken",
+      "softened",
+      "resolved",
+      "hopeful",
+      "quiet"
+    ]
+  },
+  "id": "lanyin",
+  "knowledge": [
+    "tideglass_station_lore",
+    "tideglass_echo_protocol"
+  ],
+  "live2d_model_path": null,
+  "name": "澜音",
+  "personality": {
+    "agreeableness": 0.72,
+    "conscientiousness": 0.94,
+    "extraversion": 0.35,
+    "neuroticism": 0.28,
+    "openness": 0.62,
+    "speech_style": "句子简短、具体、克制；情绪松动时才使用海潮和灯光的比喻，不替玩家作最终决定"
+  },
+  "portrait_path": "assets/characters/lanyin_sprite.png",
+  "relationships": {
+    "echo_nine": {
+      "score": 0.1,
+      "type": "uncertain_witness"
+    }
+  },
+  "sprite_path": "assets/characters/lanyin_sprite.png",
+  "sprite_paths": {
+    "focused": "assets/characters/lanyin_sprite.png",
+    "hopeful": "assets/characters/lanyin_sprite.png",
+    "quiet": "assets/characters/lanyin_sprite.png"
+  }
+}

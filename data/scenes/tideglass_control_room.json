@@ -1,0 +1,13 @@
+{
+  "background_path": "assets/backgrounds/tideglass_control_room.png",
+  "id": "tideglass_control_room",
+  "name": "潮镜站控制室",
+  "tags": [
+    "tideglass",
+    "indoor",
+    "receiver",
+    "investigation"
+  ],
+  "time_of_day": "night",
+  "weather": "storm"
+}

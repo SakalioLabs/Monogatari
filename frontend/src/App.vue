@@ -329,7 +329,13 @@ onUnmounted(() => {
 }
 
 .app-frame.sidebar-collapsed { grid-template-columns: 72px minmax(0, 1fr); }
-.app-frame.fullscreen-route { display: block; }
+.app-frame.fullscreen-route {
+  display: block;
+  height: 100vh;
+  height: 100svh;
+  min-height: 0;
+  overflow: hidden;
+}
 
 .app-sidebar {
   position: relative;
@@ -490,7 +496,12 @@ onUnmounted(() => {
 .sidebar-collapsed .sidebar-footer { justify-content: center; }
 
 .app-workspace { display: grid; min-width: 0; min-height: 100svh; grid-template-rows: auto minmax(0, 1fr); }
-.fullscreen-route .app-workspace { display: block; min-height: 100svh; }
+.fullscreen-route .app-workspace {
+  display: block;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
 .app-topbar {
   position: relative;
   z-index: 30;
@@ -535,6 +546,7 @@ onUnmounted(() => {
 .locale-control select { max-width: 104px; border: 0; outline: 0; background: transparent; color: var(--text-primary); font: inherit; font-size: 11px; }
 .locale-control option { background: var(--surface-1); color: var(--text-primary); }
 .app-main { min-width: 0; min-height: 0; overflow: auto; }
+.fullscreen-route .app-main { height: 100%; overflow: hidden; }
 .mobile-menu, .mobile-close, .mobile-bottom-nav, .mobile-nav-backdrop { display: none; }
 
 .page-enter-active, .page-leave-active { transition: opacity 120ms ease; }

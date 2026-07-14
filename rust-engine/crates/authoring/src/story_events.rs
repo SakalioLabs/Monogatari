@@ -1144,9 +1144,11 @@ mod tests {
 
     #[test]
     fn checked_in_catalog_preserves_cross_runtime_catalog_fingerprint() {
+        let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../data");
+        let catalog = StoryEventCatalog::load_from_project_root(&project_root).unwrap();
         assert_eq!(
-            StoryEventCatalog::default().catalog_fingerprint(),
-            "f79ea33cd8ee91e961889e74cc3db23995219711c50324cad6fd9dae94a25b10"
+            catalog.catalog_fingerprint(),
+            "dd87c91c64c6affaaa139c5aac073f9b0a47aab9f135bb95760c88f0099a0f0f"
         );
     }
 

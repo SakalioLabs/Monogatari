@@ -1,0 +1,8 @@
+{
+  "description": "点亮信标，让当下的光先救下能够看见它的人。",
+  "dialogue_id": "tideglass_beacon_epilogue",
+  "id": "tideglass_beacon_ending",
+  "scene_id": "tideglass_lantern_chamber",
+  "schema": "monogatari-story-ending/v1",
+  "title": "留存之光"
+}

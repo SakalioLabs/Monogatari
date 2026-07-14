@@ -1,0 +1,27 @@
+{
+  "description": "《潮镜信标》开放频率结局短章。",
+  "id": "tideglass_truth_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "ending_type": "truth",
+      "is_ending": true,
+      "speaker_id": "echo_nine",
+      "text": "九号回声散去前说：终于，不只有一座塔记得。"
+    },
+    "scene": {
+      "choices": [],
+      "next_node_id": "voice",
+      "text": "整片海岸都听见了来自未来的讯号，也听见了它无法证明的部分。"
+    },
+    "voice": {
+      "choices": [],
+      "emotion": "quiet",
+      "next_node_id": "final",
+      "speaker_id": "lanyin",
+      "text": "他们争论、核查、修堤。真相没有带来安静，但带来了共同承担。"
+    }
+  },
+  "start_node_id": "scene",
+  "title": "开放频率"
+}

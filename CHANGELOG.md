@@ -1,6 +1,7 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Added a tested `sync-project-mirror.mjs` check/write workflow and release/desktop-build gates so canonical `data/` and the desktop-packaged `rust-engine/data/` can no longer silently drift while Agent-authored projects are mirrored, while transient MCP lease files stay out of packaged resources; also added UTF-8 MCP guidance for Windows PowerShell 5 clients.
 - Added a developer-test handoff that records the independently passing 17-module matrix, integrated gate, human and Agent/MCP workflows, acceptance semantics, and environment-dependent release boundaries.
 - Extracted project-package manifest models, schema/version checks, inventory bounds, checksum syntax, deterministic fingerprints, sorting, and file/directory topology validation into a pure independently tested module consumed by ZIP I/O.
 - Extracted project-package portable path rules into a pure module with independent tests for nested paths, case-folded keys, parent expansion, traversal, reserved Windows names, and platform-specific separators.

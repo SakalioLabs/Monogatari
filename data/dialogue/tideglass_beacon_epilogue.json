@@ -1,0 +1,27 @@
+{
+  "description": "《潮镜信标》留存之光结局短章。",
+  "id": "tideglass_beacon_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "ending_type": "beacon",
+      "is_ending": true,
+      "speaker_id": "echo_nine",
+      "text": "在不再需要求救的未来，九号回声留下最后一句：有人回家了。"
+    },
+    "scene": {
+      "choices": [],
+      "next_node_id": "voice",
+      "text": "风暴过去后，潮镜站的光每晚都会准时越过外海。"
+    },
+    "voice": {
+      "choices": [],
+      "emotion": "quiet",
+      "next_node_id": "final",
+      "speaker_id": "lanyin",
+      "text": "港口没有为我们立碑。很好，灯本来就不是为了被感谢。"
+    }
+  },
+  "start_node_id": "scene",
+  "title": "留存之光"
+}

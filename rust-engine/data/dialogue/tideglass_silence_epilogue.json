@@ -1,0 +1,27 @@
+{
+  "description": "《潮镜信标》深海慈悲结局短章。",
+  "id": "tideglass_silence_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "ending_type": "silence",
+      "is_ending": true,
+      "speaker_id": "echo_nine",
+      "text": "没有声音回答。远海的黑暗里，一艘船平安转向。"
+    },
+    "scene": {
+      "choices": [],
+      "next_node_id": "voice",
+      "text": "磁鼓被清空后，控制室只剩真实的浪声。坐标却留在你们的纸上。"
+    },
+    "voice": {
+      "choices": [],
+      "emotion": "quiet",
+      "next_node_id": "final",
+      "speaker_id": "lanyin",
+      "text": "我们没有服从未来，也没有假装没听见。明天去检查东堤。"
+    }
+  },
+  "start_node_id": "scene",
+  "title": "深海慈悲"
+}

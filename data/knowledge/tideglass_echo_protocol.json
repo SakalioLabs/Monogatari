@@ -1,0 +1,12 @@
+{
+  "category": "lore",
+  "content": "九号回声协议来自四十七年后的疏散网络。它利用潮汐干涉纹逆向发送短讯，只能传递结果、坐标和少量记忆，无法证明完整因果。协议以幸存者语音样本重建发声者，因此九号回声可能是一个人，也可能是许多声音的组合。协议的目标是让未来不再需要发送这条讯号，而不是保存自身。",
+  "id": "tideglass_echo_protocol",
+  "tags": [
+    "tideglass",
+    "future_signal",
+    "protocol",
+    "causality"
+  ],
+  "title": "九号回声协议"
+}

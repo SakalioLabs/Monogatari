@@ -10,13 +10,13 @@
 ## First Steps After Launch
 
 1. **Configure AI**: Go to Settings > AI Backend and enter your API key
-2. **Load Characters**: Characters are auto-loaded from `rust-engine/data/characters/`
+2. **Load Characters**: Characters are auto-loaded from the canonical `data/characters/` project and synchronized into the desktop package mirror
 3. **Start Chatting**: Open Character Test from the sidebar and select a character
 4. **Try Playtest**: Open Playtest for branching dialogue playback
 
 ## Creating Your First Character
 
-Create a JSON file in `rust-engine/data/characters/`:
+Create a JSON file in `data/characters/`, then run `node scripts/sync-project-mirror.mjs --write` before starting a desktop build:
 
 ```json
 {

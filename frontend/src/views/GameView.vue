@@ -12,11 +12,11 @@
       </div>
       <div class="top-actions">
         <button class="control-btn library-trigger" :title="t('game.story-library', 'Story library')" :aria-label="t('game.story-library', 'Story library')" @click="openStoryLibrary"><LibraryBig :size="16" /></button>
-        <button class="control-btn" @click="saveGame"><Save :size="15" />{{ t('game.save', 'Save') }}</button>
-        <button class="control-btn" @click="openLoadDialog"><FolderOpen :size="15" />{{ t('game.load', 'Load') }}</button>
+        <button v-if="desktopRuntime" class="control-btn" @click="saveGame"><Save :size="15" />{{ t('game.save', 'Save') }}</button>
+        <button v-if="desktopRuntime" class="control-btn" @click="openLoadDialog"><FolderOpen :size="15" />{{ t('game.load', 'Load') }}</button>
         <button class="control-btn" @click="$router.push('/backlog')"><History :size="15" />{{ t('nav.backlog', 'Backlog') }}</button>
         <button class="control-btn" @click="toggleSettings"><SlidersHorizontal :size="15" />{{ t('game.tune', 'Tune') }}</button>
-        <span v-if="dialogueState?.is_active" class="auto-save-badge" :title="t('game.auto-save-active', 'Auto-save active')"><Cloud :size="15" /></span>
+        <span v-if="desktopRuntime && dialogueState?.is_active" class="auto-save-badge" :title="t('game.auto-save-active', 'Auto-save active')"><Cloud :size="15" /></span>
       </div>
     </header>
 
@@ -194,8 +194,8 @@
           <div class="pause-title">{{ t('game.paused', 'Paused') }}</div>
           <div class="pause-actions">
             <button class="pause-btn primary" @click="showPause = false"><Play :size="15" />{{ t('game.resume', 'Resume') }}</button>
-            <button class="pause-btn" @click="saveGame(); showPause = false"><Save :size="15" />{{ t('game.save', 'Save') }}</button>
-            <button class="pause-btn" @click="openLoadDialog(); showPause = false"><FolderOpen :size="15" />{{ t('game.load', 'Load') }}</button>
+            <button v-if="desktopRuntime" class="pause-btn" @click="saveGame(); showPause = false"><Save :size="15" />{{ t('game.save', 'Save') }}</button>
+            <button v-if="desktopRuntime" class="pause-btn" @click="openLoadDialog(); showPause = false"><FolderOpen :size="15" />{{ t('game.load', 'Load') }}</button>
             <button class="pause-btn" @click="$router.push('/backlog')"><History :size="15" />{{ t('nav.backlog', 'Backlog') }}</button>
             <button class="pause-btn" @click="showSettings = true; showPause = false"><SlidersHorizontal :size="15" />{{ t('game.settings', 'Settings') }}</button>
             <button class="pause-btn secondary" @click="$router.push('/title')"><PanelsTopLeft :size="15" />{{ t('game.title-screen', 'Title screen') }}</button>
@@ -288,6 +288,7 @@ import {
 
 const { locale, t } = useI18n()
 const route = useRoute()
+const desktopRuntime = hasTauriRuntime()
 
 interface CharacterInfo {
   id: string
@@ -771,14 +772,14 @@ function handleKeydown(e: KeyboardEvent) {
     return
   }
   // Quick save/load
-  if (e.key === 's' && !e.ctrlKey && !e.metaKey) {
+  if (desktopRuntime && e.key === 's' && !e.ctrlKey && !e.metaKey) {
     e.preventDefault()
     if (dialogueState.value?.is_active) {
       saveQuick()
     }
     return
   }
-  if (e.key === 'l' && !e.ctrlKey && !e.metaKey) {
+  if (desktopRuntime && e.key === 'l' && !e.ctrlKey && !e.metaKey) {
     e.preventDefault()
     quickLoad()
     return
@@ -798,7 +799,7 @@ onMounted(async () => {
   const previewSceneId = route.query.previewScene
   const previewDialogueId = route.query.previewDialogue
   const previewEndingId = route.query.previewEnding
-  if (!hasTauriRuntime() && route.query.authoring === '1') {
+  if (!desktopRuntime && route.query.authoring === '1') {
     if (typeof previewSceneId === 'string') {
       const scene = storyScenes.value.find((item) => item.id === previewSceneId)
       if (scene) await enterScene(scene)
@@ -812,17 +813,18 @@ onMounted(async () => {
   }
   window.addEventListener('keydown', handleKeydown)
   
-  // Auto-save every 2 minutes during active dialogue
-  autoSaveTimer = window.setInterval(async () => {
-    if (dialogueState.value?.is_active) {
-      try {
-        const name = t('game.auto-save-name', 'Auto-save {time}', {
-          time: new Date().toLocaleTimeString(locale.value, { hour: '2-digit', minute: '2-digit' }),
-        })
-        await invokeCommand<string>('save_game', { saveName: name, saveId: AUTO_SAVE_ID })
-      } catch (e) { console.error('Auto-save failed:', e) }
-    }
-  }, 120000)
+  if (desktopRuntime) {
+    autoSaveTimer = window.setInterval(async () => {
+      if (dialogueState.value?.is_active) {
+        try {
+          const name = t('game.auto-save-name', 'Auto-save {time}', {
+            time: new Date().toLocaleTimeString(locale.value, { hour: '2-digit', minute: '2-digit' }),
+          })
+          await invokeCommand<string>('save_game', { saveName: name, saveId: AUTO_SAVE_ID })
+        } catch (e) { console.error('Auto-save failed:', e) }
+      }
+    }, 120000)
+  }
 })
 
 onUnmounted(() => {
@@ -835,8 +837,25 @@ onUnmounted(() => {
 
 <style scoped>
 .game-container {
+  --surface-0: #101314;
+  --surface-1: #171b1c;
+  --surface-2: #222829;
+  --surface-3: #303839;
+  --surface-4: #414b4c;
+  --text-primary: #f4f3ed;
+  --text-secondary: #c9ccc7;
+  --text-tertiary: #9da39f;
+  --border: rgba(235, 231, 214, 0.2);
+  --brand: #d8b969;
+  --brand-light: #f0d78e;
+  --brand-strong: #ffe6a3;
+  --success: #80b49a;
+  --shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.38);
   position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   height: 100vh;
+  height: 100svh;
   overflow: hidden;
   color: var(--text-primary);
   background: var(--surface-0);
@@ -943,7 +962,7 @@ onUnmounted(() => {
   z-index: 1;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
-  height: calc(100vh - 63px);
+  min-height: 0;
 }
 
 .model-area {
@@ -967,14 +986,16 @@ onUnmounted(() => {
 .sprite-stage {
   width: min(460px, 76vw);
   height: min(680px, 62vh);
+  min-height: 0;
   display: grid;
   place-items: end center;
+  overflow: hidden;
 }
 
 .sprite-stage img {
   display: block;
-  max-width: 100%;
-  max-height: 100%;
+  width: min(460px, 76vw);
+  height: min(680px, 62vh);
   object-fit: contain;
   filter: drop-shadow(0 28px 36px rgba(0,0,0,0.46));
 }
@@ -1439,7 +1460,7 @@ onUnmounted(() => {
   }
 
   .top-actions .control-btn { flex: 0 0 auto; }
-  .stage { height: calc(100dvh - 108px); }
+  .stage { min-height: 0; }
 
   .dialogue-area {
     padding: 12px;
