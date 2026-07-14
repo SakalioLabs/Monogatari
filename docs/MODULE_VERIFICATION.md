@@ -24,13 +24,13 @@ Platform-specific gates declare their supported host IDs in the matrix. The Wind
 | Browser authoring and Playtest workflows | `frontend-e2e` | Playwright Chromium tests against an isolated Vite server | Workspace navigation, validated browser character drafts across reloads, and dialogue save-to-Playtest handoff |
 | Vue/TypeScript/Web/PWA distribution | `frontend-contracts` | Type check, production builds, static contract verifiers | Root/subpath package and responsive shell contracts |
 | Rust core | `rust-core` | Unit and doc tests | Infrastructure crate |
-| Headless authoring core | `rust-authoring` | Unit, integration, and doc tests | Atomic content mutation, portable paths, project settings, multilingual prompt guards, deterministic conversation scoring/safety/event decisions, shared Quality/Workflow input schemas, Agent transactions, and real core-runtime manager/reference validation without Tauri |
+| Headless authoring core | `rust-authoring` | Unit, integration, and doc tests | Atomic content mutation, portable paths, project settings, multilingual prompt guards, deterministic conversation scoring/safety/event decisions, shared Quality/Workflow schemas, deterministic side-effect-free Workflow previews, Agent transactions, and real core-runtime manager/reference validation without Tauri |
 | Standard MCP adapter | `rust-mcp` | Unit, protocol, and real stdio child-process tests | Fixed project root, seven schema-backed tools, project-external cross-process leases, core/delivery validation, reviewed fingerprints, write exclusion, candidate validation, and rollback |
 | Rust AI | `rust-ai` | Unit, integration, and doc tests | Inference contracts and backend planning |
 | Rust assets | `rust-assets` | Unit tests | Asset and save boundaries |
 | Rust scripting | `rust-scripting` | Unit tests | Rhai execution and condition boundaries |
 | Rust game | `rust-game` | Unit and integration tests | Characters, dialogue, knowledge, and script parsing |
-| Tauri application | `rust-tauri`, `rust-tauri-check` | Command/project tests and compile check | Project settings delegate to `llm-authoring`; remaining catalogs and packaging still live in the command crate |
+| Tauri application | `rust-tauri`, `rust-tauri-check` | Command/project tests and compile check | Desktop commands adapt state into shared authoring domains; provider calls, persistent runtime effects, remaining catalogs, and packaging stay in the command crate |
 | Rust workspace | `rust-clippy` | All-target warnings-as-errors lint | Runs after crate tests so diagnostics retain module context |
 | Legacy .NET | `legacy-dotnet-native`, `legacy-dotnet-build`, `legacy-dotnet-tests` | Pinned SDL2 preparation, warnings-as-errors build, shared tests, native ABI/license probe | A headless render-loop probe is still pending |
 | Complete product | `release-gate` | Build, package, preview, content, security, and runtime checks | Integrated and intentionally slower |
@@ -41,7 +41,7 @@ GitHub Actions runs the automation, frontend, Rust, and .NET groups as separate 
 
 1. Continue the frontend state-machine extraction from the now-isolated workflow preview into the remaining large editor views and end-to-end browser Story Playtest workflows.
 2. Continue moving schema-specific catalog validation, cross-reference discovery, and packaging behind `llm-authoring`; project settings, portable paths, JSON document inspection, and transactions are now shared by Tauri or MCP without transport duplication.
-3. Extend shared candidate acceptance and deterministic execution beyond the current catalog/reference checks into complete scene, ending, Workflow, Quality Suite, and package-level runtime evidence without moving transport concerns into the headless core.
+3. Move the remaining Quality scenario execution and evidence aggregation behind `llm-authoring`, then expose it through MCP without moving transport concerns into the headless core.
 4. Extend the retained .NET renderer ABI/load coverage with a headless SDL initialization and render-loop probe, or formally remove those projects from the supported product boundary.
 5. Continue decomposing `scripts/verify-release.mjs`; frontend, AI, and path source-invariant checks now live in an importable module, while content, packaging, and browser gates remain in the entry point.
 

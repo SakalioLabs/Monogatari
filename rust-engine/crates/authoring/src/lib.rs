@@ -14,4 +14,5 @@ pub mod quality_suite_validation;
 pub mod runtime_validation;
 pub mod story_content_validation;
 pub mod story_events;
+pub mod workflow_preview;
 pub mod workflow_validation;

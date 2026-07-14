@@ -3,8 +3,7 @@
 use std::collections::{HashMap, HashSet};
 use std::path::{Component, Path, PathBuf};
 
-use llm_scripting::{validate_condition_source, ScriptEngine};
-use serde::Serialize;
+use llm_scripting::validate_condition_source;
 use tauri::State;
 
 use crate::commands::story_events::apply_story_event_definition;
@@ -21,6 +20,11 @@ const WORKFLOW_LIST_MAX_FILES: usize = 1_000;
 const WORKFLOW_LIST_MAX_DEPTH: usize = 8;
 const WORKFLOW_LIST_MAX_FILE_BYTES: u64 = 2 * 1024 * 1024;
 
+use llm_authoring::workflow_preview::{
+    execute_workflow_preview, WorkflowPreviewAppliedEvent, WorkflowPreviewCharacterState,
+    WorkflowPreviewEnvironment, WorkflowPreviewOptions,
+};
+pub use llm_authoring::workflow_preview::{WorkflowExecutionReport, WorkflowExecutionStep};
 #[cfg(test)]
 use llm_authoring::workflow_validation::validate_workflow_graph as validate_workflow_inner;
 use llm_authoring::workflow_validation::{
@@ -30,71 +34,6 @@ pub use llm_authoring::workflow_validation::{
     Workflow, WorkflowFileSummary, WorkflowNode, WorkflowNodeTypeInfo, WorkflowRunContext,
     WorkflowValidationResult,
 };
-
-#[derive(Debug, Clone, Serialize)]
-pub struct WorkflowExecutionStep {
-    pub step_index: usize,
-    pub node_id: String,
-    pub node_type: String,
-    pub label: String,
-    pub output: serde_json::Value,
-    pub next_node_id: Option<String>,
-    pub stopped_reason: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct WorkflowExecutionReport {
-    pub workflow_id: String,
-    pub workflow_name: String,
-    pub completed: bool,
-    pub stopped_reason: Option<String>,
-    pub node_count: usize,
-    pub executed_node_count: usize,
-    pub coverage_percent: f32,
-    pub executed_node_ids: Vec<String>,
-    pub unvisited_node_ids: Vec<String>,
-    pub steps: Vec<WorkflowExecutionStep>,
-    pub validation: WorkflowValidationResult,
-}
-
-struct WorkflowPreviewState {
-    script_engine: ScriptEngine,
-    relationships: HashMap<String, HashMap<String, f32>>,
-    emotions: HashMap<String, String>,
-}
-
-impl WorkflowPreviewState {
-    fn new(script_engine: ScriptEngine) -> Self {
-        Self {
-            script_engine,
-            relationships: HashMap::new(),
-            emotions: HashMap::new(),
-        }
-    }
-
-    fn relationship(&self, character_id: &str, target_id: &str) -> Option<f32> {
-        self.relationships
-            .get(character_id)
-            .and_then(|targets| targets.get(target_id))
-            .copied()
-    }
-
-    fn set_relationship(&mut self, character_id: &str, target_id: &str, value: f32) {
-        self.relationships
-            .entry(character_id.to_string())
-            .or_default()
-            .insert(target_id.to_string(), value);
-    }
-
-    fn emotion(&self, character_id: &str) -> Option<&str> {
-        self.emotions.get(character_id).map(String::as_str)
-    }
-
-    fn set_emotion(&mut self, character_id: &str, emotion: &str) {
-        self.emotions
-            .insert(character_id.to_string(), emotion.to_string());
-    }
-}
 
 /// Get available workflow node types.
 #[tauri::command]
@@ -318,6 +257,22 @@ pub(crate) async fn execute_workflow_inner(
     run_context: Option<WorkflowRunContext>,
 ) -> Result<WorkflowExecutionReport, String> {
     let event_catalog = state.story_event_catalog.read().await.clone();
+    let choice_selections = choice_selections.unwrap_or_default();
+    if run_context.as_ref().is_some_and(|context| context.enabled) {
+        let environment = workflow_preview_environment(state, &workflow).await?;
+        return execute_workflow_preview(
+            &workflow,
+            &event_catalog,
+            environment,
+            WorkflowPreviewOptions {
+                max_steps,
+                choice_selections,
+                run_context,
+                ..WorkflowPreviewOptions::default()
+            },
+        );
+    }
+
     let validation = validate_workflow_with_catalog(&workflow, &event_catalog);
     if !validation.valid {
         return Err(format_validation_errors(&validation));
@@ -336,30 +291,12 @@ pub(crate) async fn execute_workflow_inner(
     let mut steps = Vec::new();
     let mut completed = false;
     let mut stopped_reason = None;
-    let choice_selections = choice_selections.unwrap_or_default();
-    let run_context = run_context
-        .filter(|context| context.enabled)
-        .map(normalize_workflow_run_context);
-    let mut preview_state = if run_context.is_some() {
-        Some(WorkflowPreviewState::new(
-            workflow_preview_script_engine(state).await?,
-        ))
-    } else {
-        None
-    };
-
     for step_index in 0..step_limit {
         let node = node_lookup
             .get(&current_node_id)
             .cloned()
             .ok_or_else(|| format!("Workflow node `{current_node_id}` was not found."))?;
-        let output = execute_workflow_node_inner_with_context(
-            state,
-            node.clone(),
-            run_context.as_ref(),
-            preview_state.as_mut(),
-        )
-        .await?;
+        let output = execute_workflow_node_inner(state, node.clone()).await?;
         let (next_node_id, node_stopped_reason) =
             workflow_next_node(&node, &output, &choice_selections);
 
@@ -415,18 +352,85 @@ pub(crate) async fn execute_workflow_inner(
     })
 }
 
+async fn workflow_preview_environment(
+    state: &AppState,
+    workflow: &Workflow,
+) -> Result<WorkflowPreviewEnvironment, String> {
+    let (script_variables, script_flags) = state
+        .script_engine
+        .read()
+        .await
+        .json_state()
+        .map_err(|error| error.to_string())?;
+    let character_handles = {
+        let characters = state.character_manager.read().await;
+        characters
+            .all_characters()
+            .iter()
+            .map(|(id, character)| (id.clone(), character.clone()))
+            .collect::<Vec<_>>()
+    };
+    let mut characters = HashMap::new();
+    for (id, character) in character_handles {
+        let character = character.read().await;
+        characters.insert(
+            id,
+            WorkflowPreviewCharacterState {
+                emotion: character.emotion.clone(),
+                relationships: character.relationships.clone(),
+                ..WorkflowPreviewCharacterState::default()
+            },
+        );
+    }
+    let sessions = state.chat_sessions.read().await.clone();
+    for (id, session) in sessions {
+        let character = characters.entry(id).or_default();
+        character.has_chat_session = true;
+        character.last_evaluation = session.last_evaluation;
+        character.evaluation_count = session.evaluation_count;
+        character.triggered_event_ids = session.triggered_event_ids;
+    }
+
+    let event_catalog = state.story_event_catalog.read().await;
+    let progress = state.story_progress.read().await;
+    let applied_events = progress
+        .applied_events
+        .iter()
+        .map(|event| WorkflowPreviewAppliedEvent {
+            event_id: event.event_id.clone(),
+            character_id: event.character_id.clone(),
+        })
+        .collect();
+    let mut scene_access = HashMap::new();
+    for scene_id in workflow.nodes.iter().filter_map(|node| {
+        (node.node_type == "scene_change")
+            .then(|| config_string(&node.config, &["scene_id"]))
+            .flatten()
+    }) {
+        let access = story_content_access(
+            &event_catalog,
+            &progress,
+            StoryContentKind::Scene,
+            &scene_id,
+        );
+        scene_access.insert(
+            scene_id,
+            serde_json::to_value(access).map_err(|error| error.to_string())?,
+        );
+    }
+
+    Ok(WorkflowPreviewEnvironment {
+        script_variables,
+        script_flags,
+        characters,
+        applied_events,
+        scene_access,
+    })
+}
+
 async fn execute_workflow_node_inner(
     state: &AppState,
     node: WorkflowNode,
-) -> Result<serde_json::Value, String> {
-    execute_workflow_node_inner_with_context(state, node, None, None).await
-}
-
-async fn execute_workflow_node_inner_with_context(
-    state: &AppState,
-    node: WorkflowNode,
-    run_context: Option<&WorkflowRunContext>,
-    mut preview_state: Option<&mut WorkflowPreviewState>,
 ) -> Result<serde_json::Value, String> {
     match node.node_type.as_str() {
         "start" => Ok(serde_json::json!({
@@ -462,30 +466,16 @@ async fn execute_workflow_node_inner_with_context(
         "set_variable" => {
             let name = node.config["variable_name"].as_str().unwrap_or("");
             let value = node.config["value"].as_str().unwrap_or("");
-            if let Some(preview_state) = preview_state.as_mut() {
-                preview_state
-                    .script_engine
-                    .set_variable(name, rhai::Dynamic::from(value.to_string()))
-                    .map_err(|e| e.to_string())?;
-            } else {
-                let se = state.script_engine.read().await;
-                se.set_variable(name, rhai::Dynamic::from(value.to_string()))
-                    .map_err(|e| e.to_string())?;
-            }
+            let se = state.script_engine.read().await;
+            se.set_variable(name, rhai::Dynamic::from(value.to_string()))
+                .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({"status": "ok"}))
         }
         "set_flag" => {
             let name = node.config["flag_name"].as_str().unwrap_or("");
             let value = node.config["value"].as_bool().unwrap_or(true);
-            if let Some(preview_state) = preview_state.as_mut() {
-                preview_state
-                    .script_engine
-                    .set_flag(name, value)
-                    .map_err(|e| e.to_string())?;
-            } else {
-                let se = state.script_engine.read().await;
-                se.set_flag(name, value).map_err(|e| e.to_string())?;
-            }
+            let se = state.script_engine.read().await;
+            se.set_flag(name, value).map_err(|e| e.to_string())?;
             Ok(serde_json::json!({"status": "ok"}))
         }
         "condition" => {
@@ -495,29 +485,19 @@ async fn execute_workflow_node_inner_with_context(
                 .and_then(|value| value.as_str())
                 .ok_or_else(|| "Condition field `condition` must be a string.".to_string())?;
             validate_condition_source(condition).map_err(|e| e.to_string())?;
-            let preview_ref = preview_state.as_deref();
-            let scope_variables =
-                workflow_condition_scope_variables(state, &node.config, run_context, preview_ref)
-                    .await;
-            let result = if let Some(preview_state) = preview_state.as_ref() {
-                preview_state
-                    .script_engine
-                    .evaluate_condition_with_scope_variables(condition, scope_variables)
-            } else {
-                let se = state.script_engine.read().await;
-                se.evaluate_condition_with_scope_variables(condition, scope_variables)
-            }
-            .map_err(|e| e.to_string())?;
+            let scope_variables = workflow_condition_scope_variables(state, &node.config).await;
+            let se = state.script_engine.read().await;
+            let result = se
+                .evaluate_condition_with_scope_variables(condition, scope_variables)
+                .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({"result": result}))
         }
         "evaluation" => {
             let metric = workflow_score_metric(&node.config);
             let threshold = optional_config_f32(&node.config, "threshold");
-            let character_id =
-                workflow_character_id_from_state(state, &node.config, run_context).await;
+            let character_id = workflow_character_id_from_state(state, &node.config).await;
             let (evaluation, source) =
-                workflow_evaluation_for_character(state, character_id.as_deref(), run_context)
-                    .await;
+                workflow_evaluation_for_character(state, character_id.as_deref()).await;
             let score = workflow_metric_score(&evaluation, &metric).ok_or_else(|| {
                 format!(
                     "Unknown evaluation metric `{metric}`. Use friendliness, engagement, creativity, or overall."
@@ -532,25 +512,12 @@ async fn execute_workflow_node_inner_with_context(
                 .map(str::trim)
                 .filter(|value| !value.is_empty())
             {
-                if let Some(preview_state) = preview_state.as_mut() {
-                    preview_state
-                        .script_engine
-                        .set_variable(variable_name, rhai::Dynamic::from(score as f64))
+                let se = state.script_engine.read().await;
+                se.set_variable(variable_name, rhai::Dynamic::from(score as f64))
+                    .map_err(|e| e.to_string())?;
+                if let Some(passed) = passed {
+                    se.set_flag(&format!("{variable_name}_passed"), passed)
                         .map_err(|e| e.to_string())?;
-                    if let Some(passed) = passed {
-                        preview_state
-                            .script_engine
-                            .set_flag(&format!("{variable_name}_passed"), passed)
-                            .map_err(|e| e.to_string())?;
-                    }
-                } else {
-                    let se = state.script_engine.read().await;
-                    se.set_variable(variable_name, rhai::Dynamic::from(score as f64))
-                        .map_err(|e| e.to_string())?;
-                    if let Some(passed) = passed {
-                        se.set_flag(&format!("{variable_name}_passed"), passed)
-                            .map_err(|e| e.to_string())?;
-                    }
                 }
             }
 
@@ -574,20 +541,14 @@ async fn execute_workflow_node_inner_with_context(
             let access = {
                 let catalog = state.story_event_catalog.read().await;
                 let progress = state.story_progress.read().await;
-                if preview_state.is_none() {
-                    ensure_story_content_access(
-                        &catalog,
-                        &progress,
-                        StoryContentKind::Scene,
-                        &scene_id,
-                    )?
-                } else {
-                    story_content_access(&catalog, &progress, StoryContentKind::Scene, &scene_id)
-                }
+                ensure_story_content_access(
+                    &catalog,
+                    &progress,
+                    StoryContentKind::Scene,
+                    &scene_id,
+                )?
             };
-            if preview_state.is_none() {
-                record_workflow_scene_change(state, &scene_id).await;
-            }
+            record_workflow_scene_change(state, &scene_id).await;
             Ok(serde_json::json!({
                 "action": "scene_change",
                 "scene_id": scene_id,
@@ -667,22 +628,13 @@ async fn execute_workflow_node_inner_with_context(
                 .filter(|value| !value.is_empty());
             let event_catalog = state.story_event_catalog.read().await.clone();
             let event = workflow_event_definition(&event_catalog, event_id, event_type)?;
-            let character_id =
-                workflow_character_id_from_state(state, &node.config, run_context).await;
+            let character_id = workflow_character_id_from_state(state, &node.config).await;
             let (evaluation, evaluation_source) =
-                workflow_evaluation_for_character(state, character_id.as_deref(), run_context)
-                    .await;
-            let preview_ref = preview_state.as_deref();
-            let relationship = workflow_relationship_for_character(
-                state,
-                character_id.as_deref(),
-                run_context,
-                preview_ref,
-            )
-            .await;
+                workflow_evaluation_for_character(state, character_id.as_deref()).await;
+            let relationship =
+                workflow_relationship_for_character(state, character_id.as_deref()).await;
             let (evaluation_count, already_triggered) =
-                workflow_event_session_state(state, character_id.as_deref(), event_id, run_context)
-                    .await;
+                workflow_event_session_state(state, character_id.as_deref(), event_id).await;
             let decision = event_catalog.decision_for(
                 &event.event_id,
                 Some(&event.event_type),
@@ -700,7 +652,7 @@ async fn execute_workflow_node_inner_with_context(
                 },
             )?;
 
-            let application = if decision.triggered && run_context.is_none() {
+            let application = if decision.triggered {
                 let application = apply_story_event_definition(
                     state,
                     &event,
@@ -741,23 +693,6 @@ async fn execute_workflow_node_inner_with_context(
                 .ok_or_else(|| "emotion_change node requires character_id.".to_string())?;
             let emotion = config_string(&node.config, &["emotion"])
                 .ok_or_else(|| "emotion_change node requires emotion.".to_string())?;
-            if preview_state.is_some() {
-                let previous_emotion = workflow_character_emotion_for_preview(
-                    state,
-                    &character_id,
-                    preview_state.as_deref(),
-                )
-                .await?;
-                if let Some(preview_state) = preview_state.as_mut() {
-                    preview_state.set_emotion(&character_id, &emotion);
-                }
-                return Ok(serde_json::json!({
-                    "action": "emotion_change",
-                    "character_id": character_id,
-                    "previous_emotion": previous_emotion,
-                    "emotion": emotion,
-                }));
-            }
             let cm = state.character_manager.read().await;
             let character = cm
                 .get_character(&character_id)
@@ -781,28 +716,6 @@ async fn execute_workflow_node_inner_with_context(
             let target_id = config_string(&node.config, &["target_id", "other_id"])
                 .unwrap_or_else(|| "player".to_string());
             let delta = optional_config_f32(&node.config, "delta").unwrap_or(0.0);
-            if preview_state.is_some() {
-                ensure_workflow_character(state, &character_id).await?;
-                let previous = workflow_relationship_for_character(
-                    state,
-                    Some(&character_id),
-                    run_context,
-                    preview_state.as_deref(),
-                )
-                .await;
-                let current = clamp_workflow_relationship(previous + delta);
-                if let Some(preview_state) = preview_state.as_mut() {
-                    preview_state.set_relationship(&character_id, &target_id, current);
-                }
-                return Ok(serde_json::json!({
-                    "action": "relationship",
-                    "character_id": character_id,
-                    "target_id": target_id,
-                    "delta": delta,
-                    "previous": previous,
-                    "current": current,
-                }));
-            }
             let cm = state.character_manager.read().await;
             let character = cm
                 .get_character(&character_id)
@@ -1128,15 +1041,6 @@ fn workflow_metric_score(evaluation: &chat::ConversationEvaluation, metric: &str
     }
 }
 
-async fn workflow_preview_script_engine(state: &AppState) -> Result<ScriptEngine, String> {
-    let preview_engine = ScriptEngine::new();
-    let se = state.script_engine.read().await;
-    preview_engine
-        .load_state(se.all_variables(), se.all_flags())
-        .map_err(|e| e.to_string())?;
-    Ok(preview_engine)
-}
-
 fn optional_config_f32(config: &serde_json::Value, field: &str) -> Option<f32> {
     config.get(field).and_then(|value| match value {
         serde_json::Value::Number(number) => number.as_f64().map(|value| value as f32),
@@ -1181,7 +1085,6 @@ fn workflow_branch_weights(config: &serde_json::Value, connection_count: usize) 
 async fn workflow_character_id_from_state(
     state: &AppState,
     config: &serde_json::Value,
-    run_context: Option<&WorkflowRunContext>,
 ) -> Option<String> {
     if let Some(character_id) = config
         .get("character_id")
@@ -1191,10 +1094,6 @@ async fn workflow_character_id_from_state(
         .map(str::trim)
         .filter(|value| !value.is_empty())
     {
-        return Some(character_id.to_string());
-    }
-
-    if let Some(character_id) = run_context.and_then(workflow_run_context_character_id) {
         return Some(character_id.to_string());
     }
 
@@ -1209,17 +1108,7 @@ async fn workflow_character_id_from_state(
 async fn workflow_evaluation_for_character(
     state: &AppState,
     character_id: Option<&str>,
-    run_context: Option<&WorkflowRunContext>,
 ) -> (chat::ConversationEvaluation, &'static str) {
-    if workflow_run_context_applies(run_context, character_id) {
-        return (
-            run_context
-                .and_then(|context| context.evaluation.clone())
-                .unwrap_or_else(neutral_workflow_evaluation),
-            "run_context_evaluation",
-        );
-    }
-
     let Some(character_id) = character_id else {
         return (
             neutral_workflow_evaluation(),
@@ -1247,21 +1136,13 @@ async fn workflow_evaluation_for_character(
 async fn workflow_condition_scope_variables(
     state: &AppState,
     config: &serde_json::Value,
-    run_context: Option<&WorkflowRunContext>,
-    preview_state: Option<&WorkflowPreviewState>,
 ) -> Vec<(String, rhai::Dynamic)> {
-    let character_id = workflow_character_id_from_state(state, config, run_context).await;
+    let character_id = workflow_character_id_from_state(state, config).await;
     let (evaluation, evaluation_source) =
-        workflow_evaluation_for_character(state, character_id.as_deref(), run_context).await;
-    let relationship = workflow_relationship_for_character(
-        state,
-        character_id.as_deref(),
-        run_context,
-        preview_state,
-    )
-    .await;
+        workflow_evaluation_for_character(state, character_id.as_deref()).await;
+    let relationship = workflow_relationship_for_character(state, character_id.as_deref()).await;
     let evaluation_count =
-        workflow_evaluation_count_for_character(state, character_id.as_deref(), run_context).await;
+        workflow_evaluation_count_for_character(state, character_id.as_deref()).await;
 
     workflow_condition_scope_from_values(
         character_id.as_deref(),
@@ -1335,28 +1216,7 @@ fn workflow_condition_scope_from_values(
     ]
 }
 
-async fn workflow_relationship_for_character(
-    state: &AppState,
-    character_id: Option<&str>,
-    run_context: Option<&WorkflowRunContext>,
-    preview_state: Option<&WorkflowPreviewState>,
-) -> f32 {
-    if let Some(value) =
-        preview_state
-            .zip(character_id)
-            .and_then(|(preview_state, character_id)| {
-                preview_state.relationship(character_id, "player")
-            })
-    {
-        return value;
-    }
-
-    if workflow_run_context_applies(run_context, character_id) {
-        return run_context
-            .and_then(|context| context.relationship)
-            .unwrap_or(0.0);
-    }
-
+async fn workflow_relationship_for_character(state: &AppState, character_id: Option<&str>) -> f32 {
     let Some(character_id) = character_id else {
         return 0.0;
     };
@@ -1374,41 +1234,10 @@ async fn workflow_relationship_for_character(
     }
 }
 
-async fn ensure_workflow_character(state: &AppState, character_id: &str) -> Result<(), String> {
-    let cm = state.character_manager.read().await;
-    cm.get_character(character_id)
-        .map(|_| ())
-        .ok_or_else(|| format!("Character not found: {character_id}"))
-}
-
-async fn workflow_character_emotion_for_preview(
-    state: &AppState,
-    character_id: &str,
-    preview_state: Option<&WorkflowPreviewState>,
-) -> Result<String, String> {
-    if let Some(emotion) = preview_state.and_then(|state| state.emotion(character_id)) {
-        return Ok(emotion.to_string());
-    }
-
-    let cm = state.character_manager.read().await;
-    let character = cm
-        .get_character(character_id)
-        .ok_or_else(|| format!("Character not found: {character_id}"))?;
-    let character = character.read().await;
-    Ok(character.emotion.clone())
-}
-
 async fn workflow_evaluation_count_for_character(
     state: &AppState,
     character_id: Option<&str>,
-    run_context: Option<&WorkflowRunContext>,
 ) -> u32 {
-    if workflow_run_context_applies(run_context, character_id) {
-        return run_context
-            .and_then(|context| context.evaluation_count)
-            .unwrap_or(0);
-    }
-
     let Some(character_id) = character_id else {
         return 0;
     };
@@ -1424,20 +1253,7 @@ async fn workflow_event_session_state(
     state: &AppState,
     character_id: Option<&str>,
     event_id: &str,
-    run_context: Option<&WorkflowRunContext>,
 ) -> (u32, bool) {
-    if workflow_run_context_applies(run_context, character_id) {
-        if let Some(context) = run_context {
-            return (
-                context.evaluation_count.unwrap_or(0),
-                context
-                    .already_triggered_events
-                    .iter()
-                    .any(|id| id == event_id),
-            );
-        }
-    }
-
     let progress_applied = state
         .story_progress
         .read()
@@ -1456,68 +1272,6 @@ async fn workflow_event_session_state(
         session.evaluation_count,
         progress_applied || session.triggered_event_ids.iter().any(|id| id == event_id),
     )
-}
-
-fn workflow_run_context_applies(
-    run_context: Option<&WorkflowRunContext>,
-    character_id: Option<&str>,
-) -> bool {
-    let Some(context) = run_context else {
-        return false;
-    };
-    if !context.enabled {
-        return false;
-    }
-
-    let Some(context_character_id) = workflow_run_context_character_id(context) else {
-        return true;
-    };
-
-    character_id
-        .map(|character_id| character_id.eq_ignore_ascii_case(context_character_id))
-        .unwrap_or(true)
-}
-
-fn workflow_run_context_character_id(context: &WorkflowRunContext) -> Option<&str> {
-    context
-        .character_id
-        .as_deref()
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-}
-
-fn normalize_workflow_run_context(mut context: WorkflowRunContext) -> WorkflowRunContext {
-    context.relationship = context.relationship.map(clamp_workflow_relationship);
-    context.evaluation = context.evaluation.map(normalize_workflow_evaluation);
-    context
-}
-
-fn normalize_workflow_evaluation(
-    evaluation: chat::ConversationEvaluation,
-) -> chat::ConversationEvaluation {
-    chat::ConversationEvaluation {
-        friendliness: clamp_workflow_score(evaluation.friendliness),
-        engagement: clamp_workflow_score(evaluation.engagement),
-        creativity: clamp_workflow_score(evaluation.creativity),
-        overall_score: clamp_workflow_score(evaluation.overall_score),
-        summary: prompt_guard::guard_evaluation_summary(&evaluation.summary),
-    }
-}
-
-fn clamp_workflow_score(value: f32) -> f32 {
-    if value.is_finite() {
-        value.clamp(0.0, 1.0)
-    } else {
-        0.5
-    }
-}
-
-fn clamp_workflow_relationship(value: f32) -> f32 {
-    if value.is_finite() {
-        value.clamp(-1.0, 1.0)
-    } else {
-        0.0
-    }
 }
 
 fn workflow_event_definition(

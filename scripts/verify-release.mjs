@@ -222,6 +222,8 @@ const releaseCriticalRustFiles = [
   'crates/tauri-app/src/commands/plugin.rs',
   'crates/authoring/src/conversation_quality.rs',
   'crates/authoring/src/prompt_guard.rs',
+  'crates/authoring/src/workflow_preview.rs',
+  'crates/authoring/src/workflow_preview/tests.rs',
   'crates/tauri-app/src/commands/prompt_guard.rs',
   'crates/tauri-app/src/commands/quality_suite.rs',
   'crates/tauri-app/src/commands/script.rs',
@@ -2419,6 +2421,8 @@ async function verifyTauriPackagingConfig() {
   const authoringConversationQualitySource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'conversation_quality.rs'), 'utf8')
   const authoringQualitySuiteSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'quality_suite_validation.rs'), 'utf8')
   const authoringWorkflowSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'workflow_validation.rs'), 'utf8')
+  const authoringWorkflowPreviewSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'workflow_preview.rs'), 'utf8')
+  const authoringWorkflowPreviewTests = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'workflow_preview', 'tests.rs'), 'utf8')
   const authoringRuntimeValidationSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'runtime_validation.rs'), 'utf8')
   const tauriStoryProgressSource = await readFile(path.join(tauriAppDir, 'src', 'story_progress.rs'), 'utf8')
   const tauriStoryAccessSource = await readFile(path.join(tauriAppDir, 'src', 'story_access.rs'), 'utf8')
@@ -2845,6 +2849,37 @@ async function verifyTauriPackagingConfig() {
     || tauriQualityParserSource.includes('serde_json::from_str')
   ) {
     issues.push('Tauri Quality parsing must delegate directly to the shared headless parser')
+  }
+
+  const headlessWorkflowPreviewRequirements = [
+    [authoringWorkflowPreviewSource, 'pub fn execute_workflow_preview', 'expose deterministic Workflow preview execution'],
+    [authoringWorkflowPreviewSource, 'pub struct WorkflowPreviewEnvironment', 'accept transport-neutral preview state'],
+    [authoringWorkflowPreviewSource, 'pub struct WorkflowPreviewOptions', 'accept bounded execution and deterministic branch options'],
+    [authoringWorkflowPreviewSource, 'struct DeterministicRandom', 'make random branches reproducible'],
+    [authoringWorkflowPreviewSource, '"simulated": true', 'simulate LLM nodes without requiring a provider'],
+    [authoringWorkflowPreviewTests, 'executes_context_state_and_conditions_without_tauri', 'test stateful preview execution without Tauri'],
+    [authoringWorkflowPreviewTests, 'random_branches_are_deterministic_and_injectable', 'test deterministic random branches'],
+    [authoringWorkflowPreviewTests, 'event_decisions_use_typed_context_and_trigger_history', 'test Event decisions from typed preview context'],
+    [tauriWorkflowSource, 'execute_workflow_preview(', 'delegate run-context previews to the headless executor'],
+    [tauriWorkflowSource, 'workflow_preview_environment', 'adapt desktop state into the headless preview environment'],
+    [tauriQualitySuiteSource, 'execute_workflow_preview(', 'run Quality Workflow coverage without desktop state'],
+  ]
+  for (const [source, needle, description] of headlessWorkflowPreviewRequirements) {
+    if (!source.includes(needle)) {
+      issues.push(`Headless Workflow preview must ${description}`)
+    }
+  }
+  if (/struct\s+WorkflowPreviewState\s*\{/.test(tauriWorkflowSource)) {
+    issues.push('Tauri Workflow commands must not redeclare the headless preview state machine')
+  }
+  const qualityWorkflowCoverageSource = tauriQualitySuiteSource.match(
+    /fn scenario_workflow_coverage[\s\S]*?\n\}/,
+  )?.[0] ?? ''
+  if (
+    !qualityWorkflowCoverageSource.includes('execute_workflow_preview(')
+    || qualityWorkflowCoverageSource.includes('AppState::new()')
+  ) {
+    issues.push('Quality Workflow coverage must execute through the headless preview domain')
   }
 
   const chatSafetyContractSource = `${authoringConversationQualitySource}\n${tauriChatSource}`

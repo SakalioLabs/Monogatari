@@ -12,3 +12,4 @@ tokio = { workspace = true }
 llm-game = { workspace = true }
 llm-core = { workspace = true }
 llm-scripting = { workspace = true }
+rhai = { workspace = true }

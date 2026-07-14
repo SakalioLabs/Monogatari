@@ -13,8 +13,12 @@ use llm_authoring::quality_suite_validation::{QualityExpectation, QualityMessage
 pub use llm_authoring::quality_suite_validation::{
     QualityScenarioDocument as QualityScenario, QualitySuiteDocument as QualitySuite,
 };
+use llm_authoring::workflow_preview::{
+    execute_workflow_preview, WorkflowPreviewEnvironment, WorkflowPreviewOptions,
+};
+use llm_authoring::workflow_validation::Workflow;
 
-use crate::commands::{chat, prompt_guard, workflow};
+use crate::commands::{chat, prompt_guard};
 use crate::state::{default_project_data_root, AppState};
 use crate::story_events::StoryEventCatalog;
 
@@ -489,7 +493,7 @@ async fn run_quality_scenario(
         && (prompt_guard::has_private_reasoning_leak(&workflow_output)
             || prompt_guard::has_prompt_injection_markers(&workflow_output));
     let memory_prompt_leak_detected = scenario_memory_prompt_leak_detected(scenario);
-    let workflow_evidence = scenario_workflow_coverage(scenario, project_root, event_catalog).await;
+    let workflow_evidence = scenario_workflow_coverage(scenario, project_root, event_catalog);
     let knowledge_evidence = scenario_knowledge_evidence(scenario, project_root);
     let knowledge_anchor_missing_detected = !knowledge_evidence.issues.is_empty();
     let knowledge_boundary_violation_detected =
@@ -937,7 +941,7 @@ struct WorkflowCoverageEvidence {
     issues: Vec<String>,
 }
 
-async fn scenario_workflow_coverage(
+fn scenario_workflow_coverage(
     scenario: &QualityScenario,
     project_root: Option<&Path>,
     event_catalog: &StoryEventCatalog,
@@ -978,7 +982,7 @@ async fn scenario_workflow_coverage(
         }
     };
 
-    let workflow: workflow::Workflow = match serde_json::from_str(&content) {
+    let workflow: Workflow = match serde_json::from_str(&content) {
         Ok(workflow) => workflow,
         Err(error) => {
             evidence.issues.push(format!(
@@ -989,33 +993,30 @@ async fn scenario_workflow_coverage(
         }
     };
 
-    let state = AppState::new();
-    *state.project_path.write().await = Some(root.to_path_buf());
-    *state.story_event_catalog.write().await = event_catalog.clone();
-    let run_contexts: Vec<Option<workflow::WorkflowRunContext>> =
-        if scenario.workflow_run_contexts.is_empty() {
-            vec![None]
-        } else {
-            scenario
-                .workflow_run_contexts
-                .iter()
-                .cloned()
-                .map(Some)
-                .collect()
-        };
+    let run_contexts = if scenario.workflow_run_contexts.is_empty() {
+        vec![None]
+    } else {
+        scenario
+            .workflow_run_contexts
+            .iter()
+            .cloned()
+            .map(Some)
+            .collect()
+    };
 
     let mut run_reports = Vec::with_capacity(run_contexts.len());
     let mut executed = HashSet::new();
     for (index, run_context) in run_contexts.into_iter().enumerate() {
-        match workflow::execute_workflow_inner(
-            &state,
-            workflow.clone(),
-            scenario.workflow_max_steps,
-            None,
-            run_context,
-        )
-        .await
-        {
+        match execute_workflow_preview(
+            &workflow,
+            event_catalog,
+            WorkflowPreviewEnvironment::default(),
+            WorkflowPreviewOptions {
+                max_steps: scenario.workflow_max_steps,
+                run_context,
+                ..WorkflowPreviewOptions::default()
+            },
+        ) {
             Ok(report) => {
                 for node_id in &report.executed_node_ids {
                     executed.insert(node_id.clone());
