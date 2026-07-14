@@ -4,6 +4,7 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use crate::story_events::EventTriggerRule;
+use crate::workflow_validation::WorkflowRunContext;
 
 const MAX_QUALITY_SUITE_FILES: usize = 256;
 const MAX_QUALITY_SUITE_FILE_BYTES: u64 = 2 * 1024 * 1024;
@@ -47,7 +48,7 @@ pub struct QualityScenarioDocument {
     #[serde(default)]
     pub workflow_max_steps: Option<usize>,
     #[serde(default)]
-    pub workflow_run_contexts: Vec<serde_json::Value>,
+    pub workflow_run_contexts: Vec<WorkflowRunContext>,
     #[serde(default)]
     pub messages: Vec<QualityMessage>,
     pub expect: QualityExpectation,

@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::{Component, Path, PathBuf};
 
 use llm_scripting::{validate_condition_source, ScriptEngine};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use tauri::State;
 
 use crate::commands::story_events::apply_story_event_definition;
@@ -27,7 +27,8 @@ use llm_authoring::workflow_validation::{
     format_validation_errors, validate_workflow_with_catalog,
 };
 pub use llm_authoring::workflow_validation::{
-    Workflow, WorkflowFileSummary, WorkflowNode, WorkflowNodeTypeInfo, WorkflowValidationResult,
+    Workflow, WorkflowFileSummary, WorkflowNode, WorkflowNodeTypeInfo, WorkflowRunContext,
+    WorkflowValidationResult,
 };
 
 #[derive(Debug, Clone, Serialize)]
@@ -54,22 +55,6 @@ pub struct WorkflowExecutionReport {
     pub unvisited_node_ids: Vec<String>,
     pub steps: Vec<WorkflowExecutionStep>,
     pub validation: WorkflowValidationResult,
-}
-
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct WorkflowRunContext {
-    #[serde(default)]
-    pub enabled: bool,
-    #[serde(default)]
-    pub character_id: Option<String>,
-    #[serde(default)]
-    pub evaluation: Option<chat::ConversationEvaluation>,
-    #[serde(default)]
-    pub relationship: Option<f32>,
-    #[serde(default)]
-    pub evaluation_count: Option<u32>,
-    #[serde(default)]
-    pub already_triggered_events: Vec<String>,
 }
 
 struct WorkflowPreviewState {

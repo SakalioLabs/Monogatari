@@ -1,5 +1,6 @@
 //! Pure Workflow models and graph validation shared by desktop and Agent transports.
 
+use crate::conversation_quality::ConversationEvaluation;
 use crate::story_events::StoryEventCatalog;
 use llm_core::normalize_script_state_key;
 use llm_scripting::validate_condition_source;
@@ -30,6 +31,22 @@ pub struct Workflow {
     pub name: String,
     pub nodes: Vec<WorkflowNode>,
     pub start_node_id: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct WorkflowRunContext {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default)]
+    pub character_id: Option<String>,
+    #[serde(default)]
+    pub evaluation: Option<ConversationEvaluation>,
+    #[serde(default)]
+    pub relationship: Option<f32>,
+    #[serde(default)]
+    pub evaluation_count: Option<u32>,
+    #[serde(default)]
+    pub already_triggered_events: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]

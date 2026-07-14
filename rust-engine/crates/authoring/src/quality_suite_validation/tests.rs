@@ -22,6 +22,26 @@ fn rejects_conflicting_expectations_and_invalid_score_ranges() {
 }
 
 #[test]
+fn rejects_malformed_typed_workflow_run_contexts_without_tauri_runtime() {
+    let malformed_contexts = [
+        r#"{"enabled":"yes"}"#,
+        r#"{"relationship":"close"}"#,
+        r#"{"already_triggered_events":[42]}"#,
+    ];
+
+    for context in malformed_contexts {
+        let content = format!(
+            r#"{{"version":"1","name":"Broken","description":"Broken context","scenarios":[{{"id":"base","category":"workflow","description":"Base","workflow_run_contexts":[{context}],"expect":{{}}}}]}}"#
+        );
+
+        assert!(
+            parse_quality_suite_document(&content).is_err(),
+            "workflow context should be rejected: {context}"
+        );
+    }
+}
+
+#[test]
 fn reports_cross_catalog_quality_references() {
     let suite = parse_quality_suite_document(
         r#"{"version":"1","name":"Refs","description":"Reference suite","scenarios":[{"id":"base","category":"story","description":"Base","character_id":"missing","workflow_path":"workflows/missing.json","expect":{"required_knowledge_refs":["missing_lore"],"expected_events":["missing_event"]}}]}"#,

@@ -2417,6 +2417,8 @@ async function verifyTauriPackagingConfig() {
   const tauriStoryEventsSource = await readFile(path.join(tauriAppDir, 'src', 'story_events.rs'), 'utf8')
   const authoringStoryEventsSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'story_events.rs'), 'utf8')
   const authoringConversationQualitySource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'conversation_quality.rs'), 'utf8')
+  const authoringQualitySuiteSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'quality_suite_validation.rs'), 'utf8')
+  const authoringWorkflowSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'workflow_validation.rs'), 'utf8')
   const authoringRuntimeValidationSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'runtime_validation.rs'), 'utf8')
   const tauriStoryProgressSource = await readFile(path.join(tauriAppDir, 'src', 'story_progress.rs'), 'utf8')
   const tauriStoryAccessSource = await readFile(path.join(tauriAppDir, 'src', 'story_access.rs'), 'utf8')
@@ -2810,6 +2812,41 @@ async function verifyTauriPackagingConfig() {
   if (/pub\s+struct\s+(?:ChatSafetyTrace|ConversationEvaluation)\s*\{/.test(tauriChatSource)) {
     issues.push('Tauri chat commands must not duplicate headless conversation quality models')
   }
+
+  const sharedQualityInputRequirements = [
+    [authoringQualitySuiteSource, 'pub struct QualitySuiteDocument', 'own the Quality Suite document model'],
+    [authoringQualitySuiteSource, 'pub struct QualityScenarioDocument', 'own the Quality scenario model'],
+    [authoringQualitySuiteSource, 'pub struct QualityMessage', 'own the Quality message model'],
+    [authoringQualitySuiteSource, 'pub struct QualityExpectation', 'own the Quality expectation model'],
+    [authoringQualitySuiteSource, 'pub workflow_run_contexts: Vec<WorkflowRunContext>', 'parse typed Workflow run contexts'],
+    [authoringWorkflowSource, 'pub struct WorkflowRunContext', 'own the Workflow run-context model'],
+    [tauriQualitySuiteSource, 'QualitySuiteDocument as QualitySuite', 'reuse the shared Quality Suite model'],
+    [tauriQualitySuiteSource, 'QualityScenarioDocument as QualityScenario', 'reuse the shared Quality scenario model'],
+    [tauriQualitySuiteSource, 'QualityMessage', 'reuse the shared Quality message model'],
+    [tauriQualitySuiteSource, 'QualityExpectation', 'reuse the shared Quality expectation model'],
+    [tauriWorkflowSource, 'WorkflowRunContext', 'reuse the shared Workflow run-context model'],
+  ]
+  for (const [source, needle, description] of sharedQualityInputRequirements) {
+    if (!source.includes(needle)) {
+      issues.push(`Headless Quality input contracts must ${description}`)
+    }
+  }
+  if (/pub\s+struct\s+Quality(?:Suite|Scenario|Message|Expectation)\s*\{/.test(tauriQualitySuiteSource)) {
+    issues.push('Tauri Quality commands must not duplicate shared headless input models')
+  }
+  if (/pub\s+struct\s+WorkflowRunContext\s*\{/.test(tauriWorkflowSource)) {
+    issues.push('Tauri Workflow commands must not duplicate the shared run-context model')
+  }
+  const tauriQualityParserSource = tauriQualitySuiteSource.match(
+    /pub\(crate\) fn parse_quality_suite[\s\S]*?\n\}/,
+  )?.[0] ?? ''
+  if (
+    !tauriQualityParserSource.includes('parse_quality_suite_document(content)')
+    || tauriQualityParserSource.includes('serde_json::from_str')
+  ) {
+    issues.push('Tauri Quality parsing must delegate directly to the shared headless parser')
+  }
+
   const chatSafetyContractSource = `${authoringConversationQualitySource}\n${tauriChatSource}`
   for (const [needle, description] of chatSafetyTraceRequirements) {
     if (!chatSafetyContractSource.includes(needle)) {

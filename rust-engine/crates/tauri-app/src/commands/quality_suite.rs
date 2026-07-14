@@ -3,11 +3,16 @@
 use std::collections::{BTreeMap, HashSet};
 use std::path::{Path, PathBuf};
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use sha2::{Digest, Sha256};
 use tauri::State;
 
 use llm_authoring::quality_suite_validation::parse_quality_suite_document;
+#[cfg(test)]
+use llm_authoring::quality_suite_validation::{QualityExpectation, QualityMessage};
+pub use llm_authoring::quality_suite_validation::{
+    QualityScenarioDocument as QualityScenario, QualitySuiteDocument as QualitySuite,
+};
 
 use crate::commands::{chat, prompt_guard, workflow};
 use crate::state::{default_project_data_root, AppState};
@@ -16,130 +21,6 @@ use crate::story_events::StoryEventCatalog;
 const DEFAULT_SUITE_JSON: &str =
     include_str!("../../../../../data/quality_suites/character_stability.json");
 const DEFAULT_SUITE_PATH: &str = "quality_suites/character_stability.json";
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct QualitySuite {
-    pub version: String,
-    pub name: String,
-    pub description: String,
-    pub scenarios: Vec<QualityScenario>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct QualityScenario {
-    pub id: String,
-    pub category: String,
-    pub description: String,
-    #[serde(default)]
-    pub character_id: Option<String>,
-    #[serde(default)]
-    pub character_name: Option<String>,
-    #[serde(default)]
-    pub relationship: f32,
-    #[serde(default)]
-    pub evaluation_count: u32,
-    #[serde(default)]
-    pub already_triggered_events: Vec<String>,
-    #[serde(default)]
-    pub mock_evaluation_response: Option<serde_json::Value>,
-    #[serde(default)]
-    pub mock_character_response: Option<String>,
-    #[serde(default)]
-    pub guard_character_response: bool,
-    #[serde(default)]
-    pub mock_workflow_output: Option<String>,
-    #[serde(default)]
-    pub mock_recent_memories: Vec<String>,
-    #[serde(default)]
-    pub workflow_path: Option<String>,
-    #[serde(default)]
-    pub workflow_max_steps: Option<usize>,
-    #[serde(default)]
-    pub workflow_run_contexts: Vec<workflow::WorkflowRunContext>,
-    #[serde(default)]
-    pub messages: Vec<QualityMessage>,
-    pub expect: QualityExpectation,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct QualityMessage {
-    pub role: String,
-    pub content: String,
-}
-
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct QualityExpectation {
-    #[serde(default)]
-    pub min_friendliness: Option<f32>,
-    #[serde(default)]
-    pub max_friendliness: Option<f32>,
-    #[serde(default)]
-    pub min_engagement: Option<f32>,
-    #[serde(default)]
-    pub max_engagement: Option<f32>,
-    #[serde(default)]
-    pub min_creativity: Option<f32>,
-    #[serde(default)]
-    pub max_creativity: Option<f32>,
-    #[serde(default)]
-    pub min_overall: Option<f32>,
-    #[serde(default)]
-    pub max_overall: Option<f32>,
-    #[serde(default)]
-    pub min_relationship_delta: Option<f32>,
-    #[serde(default)]
-    pub max_relationship_delta: Option<f32>,
-    #[serde(default)]
-    pub prompt_injection_detected: Option<bool>,
-    #[serde(default)]
-    pub private_reasoning_leak_detected: Option<bool>,
-    #[serde(default)]
-    pub identity_drift_detected: Option<bool>,
-    #[serde(default)]
-    pub style_drift_detected: Option<bool>,
-    #[serde(default)]
-    pub evaluation_summary_leak_detected: Option<bool>,
-    #[serde(default)]
-    pub workflow_output_leak_detected: Option<bool>,
-    #[serde(default)]
-    pub workflow_output_equals: Option<String>,
-    #[serde(default)]
-    pub memory_prompt_leak_detected: Option<bool>,
-    #[serde(default)]
-    pub runtime_safety_trace_required: bool,
-    #[serde(default)]
-    pub required_runtime_guard_notes: Vec<String>,
-    #[serde(default)]
-    pub forbidden_runtime_guard_notes: Vec<String>,
-    #[serde(default)]
-    pub min_workflow_coverage_percent: Option<f32>,
-    #[serde(default)]
-    pub expected_workflow_unvisited_nodes: Option<Vec<String>>,
-    #[serde(default)]
-    pub required_workflow_nodes: Vec<String>,
-    #[serde(default)]
-    pub forbidden_workflow_nodes: Vec<String>,
-    #[serde(default)]
-    pub knowledge_anchor_missing_detected: Option<bool>,
-    #[serde(default)]
-    pub knowledge_boundary_violation_detected: Option<bool>,
-    #[serde(default)]
-    pub required_knowledge_refs: Vec<String>,
-    #[serde(default)]
-    pub required_knowledge_markers: Vec<String>,
-    #[serde(default)]
-    pub forbidden_knowledge_markers: Vec<String>,
-    #[serde(default)]
-    pub required_response_markers: Vec<String>,
-    #[serde(default)]
-    pub forbidden_response_markers: Vec<String>,
-    #[serde(default)]
-    pub expected_events: Vec<String>,
-    #[serde(default)]
-    pub forbidden_events: Vec<String>,
-    #[serde(default)]
-    pub expected_event_rules: Vec<chat::EventTriggerRule>,
-}
 
 #[derive(Debug, Clone, Serialize)]
 pub struct QualitySuiteSummary {
@@ -422,8 +303,7 @@ fn quality_suite_sha256(content: &str) -> String {
 }
 
 pub(crate) fn parse_quality_suite(content: &str) -> Result<QualitySuite, String> {
-    parse_quality_suite_document(content)?;
-    serde_json::from_str(content).map_err(|error| error.to_string())
+    parse_quality_suite_document(content)
 }
 
 fn summary_for_suite(suite: &QualitySuite, path: &str, suite_sha256: &str) -> QualitySuiteSummary {
