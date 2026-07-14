@@ -15,7 +15,7 @@ The resulting binary is `rust-engine/target/release/monogatari-mcp.exe` on Windo
 cargo run --locked -p monogatari-mcp -- --project-root ..\data
 ```
 
-The project root is required at startup and must contain `settings.json`. It is canonicalized once and is never accepted from tool input. Stdout is reserved for MCP frames; diagnostics go to stderr.
+The project root is required at startup and must contain `settings.json`. It is canonicalized once and is never accepted from tool input. Stdout is reserved for MCP frames; diagnostics go to stderr. Cross-process reader/writer leases live in a SHA-256-named system temporary directory, so starting a read-only server does not create files in the authored project.
 
 MCP stdio frames are UTF-8. Windows PowerShell 5 can encode text sent to a native process with the active system code page even when `Get-Content -Encoding UTF8` decoded the source correctly. Do not pipe non-ASCII request JSON directly from Windows PowerShell 5; use an MCP client that writes UTF-8 bytes, and call `read_project_json` after applying a transaction to verify authored non-ASCII content.
 

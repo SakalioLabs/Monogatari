@@ -1554,6 +1554,7 @@ export function createSourceInvariantVerifier({
       mcpLibSource,
       mcpMainSource,
       mcpProtocolSource,
+      mcpProjectLeaseSource,
       mcpServerSource,
       mcpValidationSource,
       mcpE2eSource,
@@ -1564,6 +1565,7 @@ export function createSourceInvariantVerifier({
       readFile(path.join(mcpRoot, 'src', 'lib.rs'), 'utf8'),
       readFile(path.join(mcpRoot, 'src', 'main.rs'), 'utf8'),
       readFile(path.join(mcpRoot, 'src', 'protocol.rs'), 'utf8'),
+      readFile(path.join(mcpRoot, 'src', 'project_lease.rs'), 'utf8'),
       readFile(path.join(mcpRoot, 'src', 'server.rs'), 'utf8'),
       readFile(path.join(mcpRoot, 'src', 'validation.rs'), 'utf8'),
       readFile(path.join(mcpRoot, 'tests', 'stdio_e2e.rs'), 'utf8'),
@@ -1598,8 +1600,11 @@ export function createSourceInvariantVerifier({
       [mcpServerSource, 'if !self.allow_write', 'keep writes disabled unless startup explicitly enables them'],
       [mcpProtocolSource, 'expected_precondition_fingerprint', 'require the caller to confirm the reviewed plan fingerprint'],
       [mcpServerSource, 'self.access.write().await', 'serialize reads against staged write candidates'],
-      [mcpServerSource, 'std::fs::File::try_lock(&file)', 'exclude concurrent server processes while a writer owns the project'],
-      [mcpServerSource, 'std::fs::File::try_lock_shared(&file)', 'share the project lease only between read-only server processes'],
+      [mcpProjectLeaseSource, 'std::env::temp_dir()', 'keep process leases outside the authored project tree'],
+      [mcpProjectLeaseSource, 'Sha256::digest(project_root.as_os_str().as_encoded_bytes())', 'derive a path-private stable lease identity'],
+      [mcpProjectLeaseSource, 'std::fs::File::try_lock(&file)', 'exclude concurrent server processes while a writer owns the project'],
+      [mcpProjectLeaseSource, 'std::fs::File::try_lock_shared(&file)', 'share the project lease only between read-only server processes'],
+      [mcpProjectLeaseSource, 'leases_coordinate_access_without_mutating_the_project', 'unit-test lease coordination and project immutability'],
       [mcpServerSource, 'apply_agent_project_transaction_with_validator', 'delegate writes to the shared rollback-capable authoring core'],
       [mcpValidationSource, 'validate_core_runtime_project', 'delegate candidate acceptance to the shared headless runtime validator'],
       [runtimeValidationSource, 'JsonAcceptanceLevel::CoreRuntime', 'label candidate acceptance as core-runtime rather than full-project validation'],
@@ -1615,6 +1620,8 @@ export function createSourceInvariantVerifier({
       [jsonCatalogSource, 'content_fingerprint', 'publish semantic fingerprints separately from exact file SHA-256'],
       [mcpE2eSource, 'real_stdio_handshake_lists_and_reads_schema_backed_tools', 'test real stdio initialization, discovery, and reads'],
       [mcpE2eSource, 'readonly_stdio_plans_but_structurally_rejects_apply', 'test default read-only refusal without filesystem changes'],
+      [mcpE2eSource, 'assert_no_project_lease_sidecar', 'prove real stdio readers do not create project-side lease files'],
+      [mcpE2eSource, 'assert_competing_start_rejected(&project.root, true)', 'prove cross-process readers exclude a competing writer'],
       [mcpE2eSource, 'readonly_validation_returns_structured_invalid_evidence', 'test invalid projects return structured read-only evidence'],
       [mcpE2eSource, 'readonly_delivery_validation_reports_missing_declared_assets', 'test missing declared assets return structured delivery evidence'],
       [mcpE2eSource, 'writable_stdio_requires_reviewed_fingerprint_and_rolls_back_invalid_candidate', 'test fingerprint confirmation, application, and rollback'],
@@ -1627,6 +1634,9 @@ export function createSourceInvariantVerifier({
     }
     if (/\btauri\b/i.test(mcpCargoSource)) {
       issues.push('monogatari-mcp must remain independent of the Tauri command crate')
+    }
+    if (mcpServerSource.includes('project_root.join(".monogatari-mcp-project.lock")')) {
+      issues.push('monogatari-mcp must keep coordination leases outside the authored project tree')
     }
     if (/pub\s+project_root\s*:/.test(mcpProtocolSource)) {
       issues.push('MCP tool requests must not be able to replace the startup-bound project root')

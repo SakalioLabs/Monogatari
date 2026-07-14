@@ -62,6 +62,8 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
     )?;
     let client = connect(&project.root, false).await?;
     let second_reader = connect(&project.root, false).await?;
+    assert_no_project_lease_sidecar(&project);
+    assert_competing_start_rejected(&project.root, true).await?;
     assert_eq!(second_reader.list_all_tools().await?.len(), 7);
     second_reader.cancel().await?;
 
@@ -140,6 +142,7 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
 async fn readonly_stdio_plans_but_structurally_rejects_apply() -> anyhow::Result<()> {
     let project = TestProject::new("readonly");
     let client = connect(&project.root, false).await?;
+    assert_no_project_lease_sidecar(&project);
     let transaction = create_transaction("readonly_batch", "characters/emi.json");
 
     let plan = call_plan(&client, &transaction).await?;
@@ -153,7 +156,12 @@ async fn readonly_stdio_plans_but_structurally_rejects_apply() -> anyhow::Result
     assert!(!project.root.join("characters/emi.json").exists());
 
     client.cancel().await?;
+    assert_no_project_lease_sidecar(&project);
     Ok(())
+}
+
+fn assert_no_project_lease_sidecar(project: &TestProject) {
+    assert!(!project.root.join(".monogatari-mcp-project.lock").exists());
 }
 
 #[tokio::test]
@@ -210,8 +218,8 @@ async fn writable_stdio_requires_reviewed_fingerprint_and_rolls_back_invalid_can
 ) -> anyhow::Result<()> {
     let clean = TestProject::new("write");
     let client = connect(&clean.root, true).await?;
-    assert_start_rejected_while_writer_holds_lease(&clean.root, false).await?;
-    assert_start_rejected_while_writer_holds_lease(&clean.root, true).await?;
+    assert_competing_start_rejected(&clean.root, false).await?;
+    assert_competing_start_rejected(&clean.root, true).await?;
     let transaction = create_transaction("write_batch", "dialogue/intro.json");
     let plan = call_plan(&client, &transaction).await?;
 
@@ -408,7 +416,7 @@ async fn connect(
     Ok(().serve(transport).await?)
 }
 
-async fn assert_start_rejected_while_writer_holds_lease(
+async fn assert_competing_start_rejected(
     project_root: &Path,
     allow_write: bool,
 ) -> anyhow::Result<()> {

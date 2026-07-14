@@ -20,6 +20,7 @@ use rmcp::model::{Implementation, ServerCapabilities, ServerInfo};
 use rmcp::{tool, tool_handler, tool_router, Json, ServerHandler};
 use tokio::sync::RwLock;
 
+use crate::project_lease::ProjectLease;
 use crate::protocol::{
     ApplyTransactionOutput, ApplyTransactionRequest, InspectProjectOutput, ListProjectJsonRequest,
     McpToolError, ReadProjectJsonRequest, MCP_INSPECTION_SCHEMA_V1,
@@ -63,40 +64,6 @@ impl MonogatariMcpServer {
     fn inspect_config(&self) -> Result<ProjectConfigState, McpToolError> {
         inspect_project_config(&self.project_root)
             .map_err(|message| McpToolError::project(message, None))
-    }
-}
-
-#[derive(Debug)]
-struct ProjectLease {
-    _file: std::fs::File,
-}
-
-impl ProjectLease {
-    fn acquire(project_root: &std::path::Path, allow_write: bool) -> Result<Self, String> {
-        let lock_path = project_root.join(".monogatari-mcp-project.lock");
-        if let Ok(metadata) = std::fs::symlink_metadata(&lock_path) {
-            if metadata.file_type().is_symlink() || !metadata.is_file() {
-                return Err("MCP write lock path must be a regular file.".to_string());
-            }
-        }
-        let file = std::fs::OpenOptions::new()
-            .create(true)
-            .read(true)
-            .write(true)
-            .truncate(false)
-            .open(&lock_path)
-            .map_err(|_| "Unable to open the MCP project write lock.".to_string())?;
-        if allow_write {
-            std::fs::File::try_lock(&file).map_err(|_| {
-                "Another MCP server already holds this project root; stop it before enabling writes."
-                    .to_string()
-            })?;
-        } else {
-            std::fs::File::try_lock_shared(&file).map_err(|_| {
-                "A write-enabled MCP server already owns this project root.".to_string()
-            })?;
-        }
-        Ok(Self { _file: file })
     }
 }
 
@@ -347,17 +314,20 @@ mod tests {
     }
 
     #[test]
-    fn coordinates_reader_and_writer_server_instances() {
+    fn coordinates_server_instances_without_mutating_the_project_root() {
         let root = temp_project();
+        let before = std::fs::read_dir(&root).unwrap().count();
         let first_reader = MonogatariMcpServer::new(root.clone(), false).unwrap();
         let second_reader = MonogatariMcpServer::new(root.clone(), false).unwrap();
         assert!(MonogatariMcpServer::new(root.clone(), true).is_err());
+        assert_eq!(std::fs::read_dir(&root).unwrap().count(), before);
         drop(first_reader);
         drop(second_reader);
 
         let writer = MonogatariMcpServer::new(root.clone(), true).unwrap();
         assert!(MonogatariMcpServer::new(root.clone(), true).is_err());
         assert!(MonogatariMcpServer::new(root.clone(), false).is_err());
+        assert_eq!(std::fs::read_dir(&root).unwrap().count(), before);
         drop(writer);
 
         let replacement_reader = MonogatariMcpServer::new(root.clone(), false).unwrap();

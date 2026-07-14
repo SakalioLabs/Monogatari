@@ -3,6 +3,7 @@
 #![forbid(unsafe_code)]
 
 pub mod cli;
+mod project_lease;
 pub mod protocol;
 mod server;
 mod validation;
