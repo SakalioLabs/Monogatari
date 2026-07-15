@@ -49,6 +49,16 @@ test('release runner delegates Tauri packaging evidence to the importable module
     path.join(repositoryRoot, 'scripts', 'lib', 'tauri-packaging', 'package-policy.mjs'),
     'utf8',
   )
+  const buildToolchainSource = await readFile(
+    path.join(
+      repositoryRoot,
+      'scripts',
+      'lib',
+      'tauri-packaging',
+      'build-toolchain-policy.mjs',
+    ),
+    'utf8',
+  )
   const installationPolicySource = await readFile(
     path.join(repositoryRoot, 'scripts', 'lib', 'tauri-packaging', 'installation-policy.mjs'),
     'utf8',
@@ -89,6 +99,7 @@ test('release runner delegates Tauri packaging evidence to the importable module
   assert(!source.includes('async function verifyTauriPackagingConfig'))
   assert(!source.includes('const installationVerificationRequirements'))
   assert(moduleSource.includes('collectTauriPackagingEvidence'))
+  assert(moduleSource.includes('collectTauriBuildToolchainEvidence'))
   assert(moduleSource.includes('collectTauriPackagePolicyEvidence'))
   assert(moduleSource.includes('collectTauriInstallationPolicyEvidence'))
   assert(moduleSource.includes('collectTauriCommandRegistrationEvidence'))
@@ -103,7 +114,11 @@ test('release runner delegates Tauri packaging evidence to the importable module
   assert(!moduleSource.includes('const headlessWorkflowPreviewRequirements'))
   assert(!moduleSource.includes('const headlessQualityExecutionRequirements'))
   assert(!moduleSource.includes('const qualityRuntimeTraceRequirements'))
+  assert(!moduleSource.includes('const buildMetadataRequirements'))
+  assert(!moduleSource.includes('const rustToolchainRequirements'))
   assert(packagePolicySource.includes('config.productName'))
+  assert(buildToolchainSource.includes('const buildMetadataRequirements'))
+  assert(buildToolchainSource.includes('const rustToolchainRequirements'))
   assert(installationPolicySource.includes('const requirements'))
   assert(commandRegistrationSource.includes('extractTauriCommandRegistrations'))
   assert(conversationSafetySource.includes('const multilingualPromptGuardRequirements'))

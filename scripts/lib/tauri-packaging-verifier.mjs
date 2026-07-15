@@ -1,6 +1,7 @@
 import { readFile as readFileFromDisk } from 'node:fs/promises'
 import path from 'node:path'
 
+import { collectTauriBuildToolchainEvidence } from './tauri-packaging/build-toolchain-policy.mjs'
 import { collectTauriCommandRegistrationEvidence } from './tauri-packaging/command-registration-policy.mjs'
 import { collectTauriConversationSafetyEvidence } from './tauri-packaging/conversation-safety-policy.mjs'
 import { collectTauriInstallationPolicyEvidence } from './tauri-packaging/installation-policy.mjs'
@@ -59,16 +60,20 @@ export async function collectTauriPackagingEvidence(options = {}) {
     rustDirectory: rustDir,
     tauriAppDirectory: tauriAppDir,
   })
+  const buildToolchainEvidence = await collectTauriBuildToolchainEvidence({
+    ...options,
+    repositoryRoot: root,
+    rustDirectory: rustDir,
+    tauriAppDirectory: tauriAppDir,
+  })
   const issues = [
     ...packagePolicyEvidence.issues,
     ...installationPolicyEvidence.issues,
     ...commandRegistrationEvidence.issues,
     ...conversationSafetyEvidence.issues,
     ...qualityWorkflowEvidence.issues,
+    ...buildToolchainEvidence.issues,
   ]
-  const tauriBuildSource = await readFile(path.join(tauriAppDir, 'build.rs'), 'utf8')
-  const rustToolchainSource = await readFile(path.join(rustDir, 'rust-toolchain.toml'), 'utf8')
-  const releaseVerifierSource = await readFile(path.join(root, 'scripts', 'verify-release.mjs'), 'utf8')
   const tauriMainSource = await readFile(path.join(tauriAppDir, 'src', 'main.rs'), 'utf8')
   const tauriStateSource = await readFile(path.join(tauriAppDir, 'src', 'state.rs'), 'utf8')
   const tauriStoryEventsSource = await readFile(path.join(tauriAppDir, 'src', 'story_events.rs'), 'utf8')
@@ -378,34 +383,6 @@ export async function collectTauriPackagingEvidence(options = {}) {
     if (!source.includes(needle)) {
       issues.push(`Story event catalog integration must ${description}`)
     }
-  }
-
-  const buildMetadataRequirements = [
-    ['cargo:rustc-env=MONOGATARI_GIT_COMMIT', 'inject the build git commit into the Tauri binary'],
-    ['cargo:rustc-env=MONOGATARI_GIT_SHORT_COMMIT', 'inject a short build git commit into the Tauri binary'],
-    ['rev-parse', 'derive build commit metadata from git'],
-    ['symbolic-ref', 'rerun the build script when the current branch ref changes'],
-  ]
-  for (const [needle, description] of buildMetadataRequirements) {
-    if (!tauriBuildSource.includes(needle)) {
-      issues.push(`Tauri build metadata must ${description}`)
-    }
-  }
-
-  const rustToolchainRequirements = [
-    [rustToolchainSource, 'channel = "nightly-2026-07-03"', 'pin the verified Rust nightly by exact date'],
-    [rustToolchainSource, 'profile = "minimal"', 'keep release toolchain installation minimal'],
-    [rustToolchainSource, 'components = ["clippy", "rustfmt"]', 'install the linter and formatter used by release verification'],
-    [releaseVerifierSource, "env: { CARGO_INCREMENTAL: '0' }", 'disable incremental Tauri test compilation deterministically'],
-  ]
-  for (const [source, needle, description] of rustToolchainRequirements) {
-    if (!source.includes(needle)) {
-      issues.push(`Rust release toolchain must ${description}`)
-    }
-  }
-  const forbiddenTestProfileOverride = ['CARGO', 'PROFILE', 'TEST', 'DEBUG'].join('_')
-  if (releaseVerifierSource.includes(forbiddenTestProfileOverride)) {
-    issues.push('Rust release verification must not override the Tauri test debug-profile environment')
   }
 
   for (const [source, file] of [
