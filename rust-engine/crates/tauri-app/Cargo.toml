@@ -46,4 +46,3 @@ once_cell = { workspace = true }
 hostname = { workspace = true }
 md5 = { workspace = true }
 sha2 = { workspace = true }
-zip = { workspace = true }

@@ -1,7 +1,5 @@
 //! Pure portable-path rules shared by package manifests and transport adapters.
 
-use std::collections::BTreeSet;
-
 const MAX_PORTABLE_PATH_BYTES: usize = 512;
 const MAX_PORTABLE_SEGMENTS: usize = 32;
 const MAX_PORTABLE_SEGMENT_BYTES: usize = 160;
@@ -79,17 +77,6 @@ pub fn portable_case_key(value: &str) -> String {
     value.to_lowercase()
 }
 
-pub(super) fn add_directory_and_parents(target: &mut BTreeSet<String>, directory: &str) {
-    let mut current = String::new();
-    for segment in directory.split('/') {
-        if !current.is_empty() {
-            current.push('/');
-        }
-        current.push_str(segment);
-        target.insert(current.clone());
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -98,13 +85,6 @@ mod tests {
     fn portable_paths_accept_nested_content_and_build_case_keys() {
         validate_portable_path("assets/portraits/Guide.PNG", "Asset").unwrap();
         assert_eq!(portable_case_key("Assets/Guide.PNG"), "assets/guide.png");
-
-        let mut directories = BTreeSet::new();
-        add_directory_and_parents(&mut directories, "assets/portraits");
-        assert_eq!(
-            directories.into_iter().collect::<Vec<_>>(),
-            ["assets", "assets/portraits"]
-        );
     }
 
     #[test]

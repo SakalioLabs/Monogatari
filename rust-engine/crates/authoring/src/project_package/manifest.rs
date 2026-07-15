@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
-use super::portable_path::{add_directory_and_parents, portable_case_key, validate_portable_path};
+use super::portable_path::{portable_case_key, validate_portable_path};
 use super::ARCHIVE_MANIFEST_PATH;
 
 pub const ARCHIVE_FORMAT: &str = "monogatari-project";
@@ -16,6 +16,9 @@ pub const MAX_ARCHIVE_FILES: usize = 20_000;
 pub const MAX_ARCHIVE_DIRECTORIES: usize = 4_000;
 pub const MAX_ARCHIVE_TOTAL_BYTES: u64 = 16 * 1024 * 1024 * 1024;
 pub const MAX_ARCHIVE_FILE_BYTES: u64 = 4 * 1024 * 1024 * 1024;
+pub const MAX_ARCHIVE_MANIFEST_BYTES: u64 = 4 * 1024 * 1024;
+pub const MAX_ARCHIVE_JSON_BYTES: u64 = 64 * 1024 * 1024;
+pub const MAX_ARCHIVE_COMPRESSED_BYTES: u64 = MAX_ARCHIVE_TOTAL_BYTES + 64 * 1024 * 1024;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ArchiveManifest {
@@ -65,6 +68,7 @@ pub struct ValidatedManifest {
 }
 
 pub fn validate_manifest(raw: Value) -> Result<ValidatedManifest, String> {
+    encode_project_package_manifest(&raw)?;
     let parsed = serde_json::from_value::<ArchiveManifest>(raw.clone())
         .map_err(|error| format!("Project package manifest has an invalid shape: {error}"))?;
     if parsed.format != ARCHIVE_FORMAT {
@@ -113,16 +117,21 @@ pub fn validate_manifest(raw: Value) -> Result<ValidatedManifest, String> {
         ));
     }
 
-    let mut directory_keys = HashSet::new();
+    let mut declared_directory_keys = HashSet::new();
+    let mut directory_spellings = BTreeMap::new();
     let mut allowed_directories = BTreeSet::new();
     for directory in &parsed.package.directories {
         validate_portable_path(directory, "Package directory")?;
-        if !directory_keys.insert(portable_case_key(directory)) {
+        if !declared_directory_keys.insert(portable_case_key(directory)) {
             return Err(format!(
                 "Project package declares a duplicate directory `{directory}`."
             ));
         }
-        add_directory_and_parents(&mut allowed_directories, directory);
+        register_directory_and_parents(
+            directory,
+            &mut directory_spellings,
+            &mut allowed_directories,
+        )?;
     }
 
     let mut files_by_path = BTreeMap::new();
@@ -154,6 +163,12 @@ pub fn validate_manifest(raw: Value) -> Result<ValidatedManifest, String> {
                 record.path, MAX_ARCHIVE_FILE_BYTES
             ));
         }
+        if is_json_path(&record.path) && record.size_bytes > MAX_ARCHIVE_JSON_BYTES {
+            return Err(format!(
+                "JSON package file `{}` exceeds the validation limit of {MAX_ARCHIVE_JSON_BYTES} bytes.",
+                record.path
+            ));
+        }
         validate_sha256(
             &record.checksum_sha256,
             &format!("SHA-256 for `{}`", record.path),
@@ -183,6 +198,13 @@ pub fn validate_manifest(raw: Value) -> Result<ValidatedManifest, String> {
                 record.path
             ));
         }
+        if let Some((parent, _)) = record.path.rsplit_once('/') {
+            register_directory_and_parents(
+                parent,
+                &mut directory_spellings,
+                &mut allowed_directories,
+            )?;
+        }
         total_bytes = total_bytes
             .checked_add(record.size_bytes)
             .ok_or_else(|| "Project package total size overflowed.".to_string())?;
@@ -197,6 +219,12 @@ pub fn validate_manifest(raw: Value) -> Result<ValidatedManifest, String> {
     if !files_by_path.contains_key("settings.json") {
         return Err("Project package must include settings.json.".to_string());
     }
+    if directory_spellings.len() > MAX_ARCHIVE_DIRECTORIES {
+        return Err(format!(
+            "Project package resolves to too many directories; the limit is {MAX_ARCHIVE_DIRECTORIES}."
+        ));
+    }
+    let directory_keys = directory_spellings.into_keys().collect::<HashSet<_>>();
     validate_package_path_topology(&files_by_path, &directory_keys)?;
     let mut sorted_paths = ordered_paths.clone();
     sorted_paths.sort();
@@ -235,6 +263,50 @@ pub fn validate_manifest(raw: Value) -> Result<ValidatedManifest, String> {
         allowed_directories,
         project_title,
     })
+}
+
+pub(crate) fn encode_project_package_manifest(manifest: &Value) -> Result<Vec<u8>, String> {
+    let bytes = serde_json::to_vec_pretty(manifest)
+        .map_err(|error| format!("Unable to encode project package manifest: {error}"))?;
+    if bytes.len() as u64 > MAX_ARCHIVE_MANIFEST_BYTES {
+        return Err(format!(
+            "Project package manifest exceeds the {MAX_ARCHIVE_MANIFEST_BYTES} byte limit."
+        ));
+    }
+    Ok(bytes)
+}
+
+pub(crate) fn is_json_path(path: &str) -> bool {
+    std::path::Path::new(path)
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| extension.eq_ignore_ascii_case("json"))
+}
+
+fn register_directory_and_parents(
+    directory: &str,
+    spellings_by_key: &mut BTreeMap<String, String>,
+    allowed_directories: &mut BTreeSet<String>,
+) -> Result<(), String> {
+    let mut current = String::new();
+    for segment in directory.split('/') {
+        if !current.is_empty() {
+            current.push('/');
+        }
+        current.push_str(segment);
+        let key = portable_case_key(&current);
+        if let Some(existing) = spellings_by_key.get(&key) {
+            if existing != &current {
+                return Err(format!(
+                    "Project package directory paths `{existing}` and `{current}` collide on portable filesystems."
+                ));
+            }
+        } else {
+            spellings_by_key.insert(key, current.clone());
+        }
+        allowed_directories.insert(current.clone());
+    }
+    Ok(())
 }
 
 pub fn validate_package_path_topology(
@@ -458,5 +530,84 @@ mod tests {
         assert!(validate_manifest(manifest)
             .unwrap_err()
             .contains("per-file limit"));
+    }
+
+    #[test]
+    fn manifest_rejects_wire_and_json_size_limits_without_archive_io() {
+        let mut oversized_wire = minimal_manifest();
+        oversized_wire["padding"] = json!("x".repeat(MAX_ARCHIVE_MANIFEST_BYTES as usize));
+        let error = validate_manifest(oversized_wire).unwrap_err();
+        assert!(error.contains("manifest exceeds"), "{error}");
+
+        let mut oversized_json = minimal_manifest();
+        oversized_json["package"]["total_bytes"] = json!(MAX_ARCHIVE_JSON_BYTES + 1);
+        oversized_json["package"]["files"][0]["size_bytes"] = json!(MAX_ARCHIVE_JSON_BYTES + 1);
+        let error = validate_manifest(oversized_json).unwrap_err();
+        assert!(error.contains("JSON package file"), "{error}");
+    }
+
+    #[test]
+    fn manifest_rejects_implicit_directory_aliases_and_bombs_without_archive_io() {
+        let empty_sha = format!("{:x}", Sha256::digest([]));
+        let mut alias = minimal_manifest();
+        alias["package"]["file_count"] = json!(3);
+        alias["package"]["directories"] = json!(["assets"]);
+        alias["package"]["files"] = json!([
+            {
+                "category": "assets",
+                "path": "assets/Guide/a.bin",
+                "size_bytes": 0,
+                "checksum_sha256": empty_sha
+            },
+            {
+                "category": "assets",
+                "path": "assets/guide/b.bin",
+                "size_bytes": 0,
+                "checksum_sha256": empty_sha
+            },
+            {
+                "category": "settings",
+                "path": "settings.json",
+                "size_bytes": 0,
+                "checksum_sha256": empty_sha
+            }
+        ]);
+        let error = validate_manifest(alias).unwrap_err();
+        assert!(error.contains("collide on portable filesystems"), "{error}");
+
+        let mut records = (0..MAX_ARCHIVE_DIRECTORIES)
+            .map(|index| ArchiveFileRecord {
+                category: "assets".to_string(),
+                path: format!("assets/d{index:04}/file.bin"),
+                size_bytes: 0,
+                checksum_md5: String::new(),
+                checksum_sha256: empty_sha.clone(),
+            })
+            .collect::<Vec<_>>();
+        records.push(ArchiveFileRecord {
+            category: "settings".to_string(),
+            path: "settings.json".to_string(),
+            size_bytes: 0,
+            checksum_md5: String::new(),
+            checksum_sha256: empty_sha,
+        });
+        records.sort_by(|left, right| left.path.cmp(&right.path));
+        let fingerprint = package_fingerprint(records.iter());
+        let directory_bomb = json!({
+            "format": ARCHIVE_FORMAT,
+            "schema": ARCHIVE_SCHEMA,
+            "version": "1.0",
+            "settings": {},
+            "package": {
+                "file_count": records.len(),
+                "total_bytes": 0,
+                "fingerprint_algorithm": PACKAGE_FINGERPRINT_ALGORITHM,
+                "content_sha256": fingerprint,
+                "directories": ["assets"],
+                "files": records
+            }
+        });
+        let error = validate_manifest(directory_bomb).unwrap_err();
+        assert!(error.contains("too many directories"), "{error}");
     }
 }

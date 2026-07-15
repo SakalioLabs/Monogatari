@@ -14,9 +14,10 @@ use zip::{CompressionMethod, ZipWriter};
 
 use crate::project::canonical_project_root;
 
+use super::manifest::encode_project_package_manifest;
 use super::{
     project_export_settings_bytes, validate_manifest, ArchiveFileRecord, ARCHIVE_MANIFEST_PATH,
-    MAX_ARCHIVE_FILE_BYTES,
+    MAX_ARCHIVE_COMPRESSED_BYTES, MAX_ARCHIVE_FILE_BYTES,
 };
 
 static PACKAGE_STAGE_COUNTER: AtomicU64 = AtomicU64::new(0);
@@ -66,14 +67,23 @@ pub fn write_project_package(
         let _ = std::fs::remove_file(&stage_path);
         return Err(error);
     }
+    let archive_bytes = match std::fs::metadata(&stage_path) {
+        Ok(metadata) => metadata.len(),
+        Err(error) => {
+            let _ = std::fs::remove_file(&stage_path);
+            return Err(format!("Unable to inspect staged project package: {error}"));
+        }
+    };
+    if archive_bytes > MAX_ARCHIVE_COMPRESSED_BYTES {
+        let _ = std::fs::remove_file(&stage_path);
+        return Err(format!(
+            "Project package exceeds the compressed size limit of {MAX_ARCHIVE_COMPRESSED_BYTES} bytes."
+        ));
+    }
     if let Err(error) = commit_staged_package(&stage_path, &destination, target_policy) {
         let _ = std::fs::remove_file(&stage_path);
         return Err(error);
     }
-    let archive_bytes = std::fs::metadata(&destination)
-        .map_err(|error| format!("Unable to inspect exported project package: {error}"))?
-        .len();
-
     Ok(ProjectPackageExportResult {
         archive_path: destination.to_string_lossy().to_string(),
         project_path: project_root.to_string_lossy().to_string(),
@@ -167,8 +177,7 @@ fn write_staged_package<'a>(
     let options = SimpleFileOptions::default()
         .compression_method(CompressionMethod::Deflated)
         .unix_permissions(0o644);
-    let manifest_bytes = serde_json::to_vec_pretty(manifest)
-        .map_err(|error| format!("Unable to encode project package manifest: {error}"))?;
+    let manifest_bytes = encode_project_package_manifest(manifest)?;
     writer
         .start_file(ARCHIVE_MANIFEST_PATH, options)
         .map_err(|error| format!("Unable to add project package manifest: {error}"))?;

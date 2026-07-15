@@ -15,10 +15,12 @@ use crate::project::{
     inspect_project_config, path_from_config, sanitize_export_config, scrub_runtime_secret_config,
 };
 
+use super::manifest::is_json_path;
 use super::{
     package_fingerprint, portable_case_key, validate_manifest, validate_portable_path,
     ArchiveFileRecord, ARCHIVE_FORMAT, ARCHIVE_SCHEMA, MAX_ARCHIVE_DIRECTORIES, MAX_ARCHIVE_FILES,
-    MAX_ARCHIVE_FILE_BYTES, MAX_ARCHIVE_TOTAL_BYTES, PACKAGE_FINGERPRINT_ALGORITHM,
+    MAX_ARCHIVE_FILE_BYTES, MAX_ARCHIVE_JSON_BYTES, MAX_ARCHIVE_TOTAL_BYTES,
+    PACKAGE_FINGERPRINT_ALGORITHM,
 };
 
 pub const PROJECT_EXPORT_DIRECTORIES: &[(&str, &str)] = &[
@@ -389,6 +391,11 @@ fn ensure_export_inventory_capacity(
     if next_bytes > MAX_ARCHIVE_FILE_BYTES {
         return Err(format!(
             "Project export source `{relative_path}` exceeds the per-file limit of {MAX_ARCHIVE_FILE_BYTES} bytes."
+        ));
+    }
+    if is_json_path(relative_path) && next_bytes > MAX_ARCHIVE_JSON_BYTES {
+        return Err(format!(
+            "Project export JSON `{relative_path}` exceeds the validation limit of {MAX_ARCHIVE_JSON_BYTES} bytes."
         ));
     }
     let next_total = current_bytes
@@ -815,6 +822,10 @@ mod tests {
         let error = ensure_export_inventory_capacity(0, 0, MAX_ARCHIVE_FILE_BYTES + 1, "assets/a")
             .unwrap_err();
         assert!(error.contains("per-file limit"), "{error}");
+        let error =
+            ensure_export_inventory_capacity(0, 0, MAX_ARCHIVE_JSON_BYTES + 1, "assets/a.JSON")
+                .unwrap_err();
+        assert!(error.contains("JSON"), "{error}");
         let error = ensure_export_inventory_capacity(0, MAX_ARCHIVE_TOTAL_BYTES, 1, "assets/a")
             .unwrap_err();
         assert!(error.contains("total size limit"), "{error}");

@@ -2,16 +2,17 @@
 
 use tauri::State;
 
+use llm_authoring::project_package::{extract_project_package, inspect_project_package};
+
 use crate::state::AppState;
 
 use super::super::project::{
     build_project_config_state, build_project_export_manifest, resolve_project_root,
 };
 use super::{
-    available_project_directory_name, canonical_regular_archive, canonical_regular_directory,
-    normalize_archive_path, normalize_local_path, remove_import_staging, unique_sibling_path,
-    verify_archive, write_project_archive, ProjectArchiveExportResult, ProjectArchiveImportResult,
-    ProjectArchiveInspection,
+    available_project_directory_name, canonical_regular_directory, normalize_archive_path,
+    normalize_local_path, remove_import_staging, unique_sibling_path, write_project_archive,
+    ProjectArchiveExportResult, ProjectArchiveImportResult, ProjectArchiveInspection,
 };
 
 /// Create a portable project package containing content and a signed inventory.
@@ -25,7 +26,7 @@ pub async fn export_project_archive(
         &resolve_project_root(&state, project_path).await?,
         "Project root",
     )?;
-    let destination = normalize_archive_path(&destination_path, false)?;
+    let destination = normalize_archive_path(&destination_path)?;
     let loaded_characters = state.character_manager.read().await.character_ids();
     let loaded_dialogues = state.dialogue_manager.read().await.script_ids();
     let loaded_knowledge_count = state.knowledge_base.read().await.len();
@@ -68,8 +69,8 @@ pub async fn export_project_archive(
 pub async fn inspect_project_archive(
     archive_path: String,
 ) -> Result<ProjectArchiveInspection, String> {
-    let archive_path = canonical_regular_archive(&normalize_archive_path(&archive_path, true)?)?;
-    tokio::task::spawn_blocking(move || verify_archive(&archive_path, None).map(|v| v.inspection))
+    let archive_path = normalize_archive_path(&archive_path)?;
+    tokio::task::spawn_blocking(move || inspect_project_package(&archive_path))
         .await
         .map_err(|error| format!("Project package inspection task failed: {error}"))?
 }
@@ -81,7 +82,7 @@ pub async fn import_project_archive(
     archive_path: String,
     destination_parent: String,
 ) -> Result<ProjectArchiveImportResult, String> {
-    let archive_path = canonical_regular_archive(&normalize_archive_path(&archive_path, true)?)?;
+    let archive_path = normalize_archive_path(&archive_path)?;
     let destination_parent = canonical_regular_directory(
         &normalize_local_path(&destination_parent, "Import destination")?,
         "Import destination",
@@ -107,7 +108,7 @@ pub async fn import_project_archive(
     let archive_for_task = archive_path.clone();
     let staging_for_task = staging_root.clone();
     let verified = match tokio::task::spawn_blocking(move || {
-        verify_archive(&archive_for_task, Some(&staging_for_task))
+        extract_project_package(&archive_for_task, &staging_for_task)
     })
     .await
     {
@@ -157,11 +158,17 @@ pub async fn import_project_archive(
         return Err(format!("Imported ending content is invalid: {error}"));
     }
 
-    let directory_name = available_project_directory_name(
+    let directory_name = match available_project_directory_name(
         &destination_parent,
-        &verified.inspection.project_title,
+        &verified.project_title,
         &archive_path,
-    )?;
+    ) {
+        Ok(directory_name) => directory_name,
+        Err(error) => {
+            remove_import_staging(&staging_root);
+            return Err(error);
+        }
+    };
     let destination = destination_parent.join(&directory_name);
     if destination.exists() {
         remove_import_staging(&staging_root);
@@ -179,12 +186,12 @@ pub async fn import_project_archive(
     }
 
     Ok(ProjectArchiveImportResult {
-        archive_path: archive_path.to_string_lossy().to_string(),
+        archive_path: verified.archive_path,
         project_path: destination.to_string_lossy().to_string(),
-        project_title: verified.inspection.project_title,
+        project_title: verified.project_title,
         directory_name,
-        file_count: verified.inspection.file_count,
-        total_bytes: verified.inspection.total_bytes,
-        content_sha256: verified.inspection.content_sha256,
+        file_count: verified.file_count,
+        total_bytes: verified.total_bytes,
+        content_sha256: verified.content_sha256,
     })
 }
