@@ -53,6 +53,16 @@ test('release runner delegates Tauri packaging evidence to the importable module
     path.join(repositoryRoot, 'scripts', 'lib', 'tauri-packaging', 'installation-policy.mjs'),
     'utf8',
   )
+  const commandRegistrationSource = await readFile(
+    path.join(
+      repositoryRoot,
+      'scripts',
+      'lib',
+      'tauri-packaging',
+      'command-registration-policy.mjs',
+    ),
+    'utf8',
+  )
 
   assert(source.includes("from './lib/tauri-packaging-verifier.mjs'"))
   assert(source.includes('createTauriPackagingVerifier({'))
@@ -61,8 +71,12 @@ test('release runner delegates Tauri packaging evidence to the importable module
   assert(moduleSource.includes('collectTauriPackagingEvidence'))
   assert(moduleSource.includes('collectTauriPackagePolicyEvidence'))
   assert(moduleSource.includes('collectTauriInstallationPolicyEvidence'))
+  assert(moduleSource.includes('collectTauriCommandRegistrationEvidence'))
   assert(!moduleSource.includes('config.productName'))
   assert(!moduleSource.includes('const installationVerificationRequirements'))
+  assert(!moduleSource.includes('commands::project_archive::commands::export_project_archive'))
+  assert(!moduleSource.includes('commands::story_events::get_story_progress'))
   assert(packagePolicySource.includes('config.productName'))
   assert(installationPolicySource.includes('const requirements'))
+  assert(commandRegistrationSource.includes('extractTauriCommandRegistrations'))
 })

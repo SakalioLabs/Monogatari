@@ -1,6 +1,7 @@
 import { readFile as readFileFromDisk } from 'node:fs/promises'
 import path from 'node:path'
 
+import { collectTauriCommandRegistrationEvidence } from './tauri-packaging/command-registration-policy.mjs'
 import { collectTauriInstallationPolicyEvidence } from './tauri-packaging/installation-policy.mjs'
 import { collectTauriPackagePolicyEvidence } from './tauri-packaging/package-policy.mjs'
 
@@ -42,9 +43,14 @@ export async function collectTauriPackagingEvidence(options = {}) {
     repositoryRoot: root,
     tauriAppDirectory: tauriAppDir,
   })
+  const commandRegistrationEvidence = await collectTauriCommandRegistrationEvidence({
+    ...options,
+    tauriAppDirectory: tauriAppDir,
+  })
   const issues = [
     ...packagePolicyEvidence.issues,
     ...installationPolicyEvidence.issues,
+    ...commandRegistrationEvidence.issues,
   ]
   const tauriBuildSource = await readFile(path.join(tauriAppDir, 'build.rs'), 'utf8')
   const rustToolchainSource = await readFile(path.join(rustDir, 'rust-toolchain.toml'), 'utf8')
@@ -86,7 +92,6 @@ export async function collectTauriPackagingEvidence(options = {}) {
   const tauriProjectArchiveSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'project_archive.rs'), 'utf8')
   const tauriProjectArchiveCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'project_archive', 'commands.rs'), 'utf8')
   const tauriProjectArchiveTests = await readFile(path.join(tauriAppDir, 'src', 'commands', 'project_archive', 'tests.rs'), 'utf8')
-  const defaultCapabilitySource = await readFile(path.join(tauriAppDir, 'capabilities', 'default.json'), 'utf8')
   const tauriScenesSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'scenes.rs'), 'utf8')
   const tauriChatSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'chat.rs'), 'utf8')
   const authoringPromptGuardSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'prompt_guard.rs'), 'utf8')
@@ -252,12 +257,6 @@ export async function collectTauriPackagingEvidence(options = {}) {
     [tauriProjectArchiveCommandsSource, 'validate_project_delivery(&staging_root)', 'share core-runtime and delivery acceptance before committing imported projects'],
     [tauriProjectArchiveTests, 'checked_in_project_packages_reload_as_runtime_content', 'round-trip checked-in project content through a real package'],
     [tauriProjectArchiveTests, 'failed_archive_exports_preserve_existing_packages', 'test atomic package export rollback'],
-    [tauriMainSource, 'tauri_plugin_dialog::init()', 'register the native project package dialog plugin'],
-    [tauriMainSource, 'commands::project_archive::commands::export_project_archive', 'register project package exports'],
-    [tauriMainSource, 'commands::project_archive::commands::inspect_project_archive', 'register project package inspection'],
-    [tauriMainSource, 'commands::project_archive::commands::import_project_archive', 'register project package imports'],
-    [defaultCapabilitySource, 'dialog:allow-open', 'allow project package selection dialogs'],
-    [defaultCapabilitySource, 'dialog:allow-save', 'allow project package save dialogs'],
     [gameCharacterSource, 'deserialize_relationships', 'migrate numeric and detailed legacy relationship values'],
     [gameDialogueScriptSource, 'node.id.clone_from(node_id)', 'treat dialogue node map keys as authoritative IDs'],
     [gameDialogueScriptSource, 'validate_graph', 'reject broken or unreachable dialogue graphs during runtime loading'],
@@ -509,26 +508,8 @@ export async function collectTauriPackagingEvidence(options = {}) {
     [tauriEndingCommandsSource, 'ending_save_is_atomic_and_rejects_stale_or_invalid_updates', 'test atomic ending saves and stale-write rejection'],
     [tauriEndingCommandsSource, 'ending_create_rejects_portable_case_aliases_without_replacing_definition', 'test ending create cannot replace a Windows path alias'],
     [tauriEndingCommandsSource, 'ending_delete_requires_event_references_to_be_removed_first', 'test ending deletion reference protection'],
-    [tauriMainSource, 'commands::story_events::save_story_event_catalog', 'register event catalog authoring saves'],
-    [tauriMainSource, 'commands::endings::start_story_ending', 'register gated ending launch commands'],
-    [tauriMainSource, 'commands::endings::get_story_ending_catalog', 'register ending catalog authoring reads'],
-    [tauriMainSource, 'commands::endings::save_story_ending', 'register ending authoring saves'],
-    [tauriMainSource, 'commands::endings::delete_story_ending', 'register ending authoring deletes'],
-    [tauriMainSource, 'commands::endings::preview_story_ending', 'register ending author previews'],
-    [tauriMainSource, 'commands::scenes::get_scene_authoring_catalog', 'register scene authoring reads'],
-    [tauriMainSource, 'commands::scenes::save_scene_definition', 'register scene authoring saves'],
-    [tauriMainSource, 'commands::scenes::delete_scene_definition', 'register scene authoring deletes'],
-    [tauriMainSource, 'commands::dialogue::get_dialogue_authoring_catalog', 'register dialogue authoring reads'],
-    [tauriMainSource, 'commands::dialogue::save_dialogue_definition', 'register dialogue authoring saves'],
-    [tauriMainSource, 'commands::dialogue::delete_dialogue_definition', 'register dialogue authoring deletes'],
-    [tauriMainSource, 'commands::dialogue::preview_dialogue', 'register dialogue author previews'],
-    [tauriMainSource, 'commands::knowledge::get_knowledge_authoring_catalog', 'register knowledge authoring reads'],
-    [tauriMainSource, 'commands::knowledge::save_knowledge_entry_definition', 'register knowledge authoring saves'],
-    [tauriMainSource, 'commands::knowledge::delete_knowledge_entry_definition', 'register knowledge authoring deletes'],
     [tauriWorkflowSource, 'apply_story_event_definition', 'apply real workflow trigger effects through the shared executor'],
     [tauriQualitySuiteSource, 'event_catalog: &StoryEventCatalog', 'run quality scenarios against project event rules'],
-    [tauriMainSource, 'commands::story_events::get_story_event_catalog', 'register story event catalog commands'],
-    [tauriMainSource, 'commands::story_events::get_story_progress', 'register story progress commands'],
     [tauriStoryProgressSource, 'monogatari-story-progress/v1', 'version persistent story progress'],
     [tauriStoryProgressSource, 'monogatari-story-event-application/v1', 'version event application audit reports'],
     [tauriStoryProgressSource, 'validate_and_normalize', 'validate restored story progress before activation'],
