@@ -9,7 +9,7 @@
       "default": true,
       "cwd": ".",
       "command": "node",
-      "args": ["--test", "scripts/tests/module-test-matrix.test.mjs"],
+      "args": ["--test", "scripts/tests/automation-contracts.test.mjs"],
       "owner_paths": ["scripts/lib", "scripts/tests", "scripts/module-test-matrix.json", ".agents/skills"]
     },
     {
