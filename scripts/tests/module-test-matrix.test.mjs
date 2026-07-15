@@ -15,6 +15,10 @@ import {
   validateMatrix,
 } from '../lib/module-test-matrix.mjs'
 import { projectMirrorDiff, synchronizeProjectMirror } from '../lib/project-mirror.mjs'
+import {
+  extractBrowserWorkflowNodeCatalog,
+  extractRustWorkflowNodeCatalog,
+} from '../lib/source-invariant-verifier.mjs'
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 
@@ -41,6 +45,42 @@ test('checked-in matrix is valid and owns every primary implementation surface',
   ]) {
     assert(ownerPaths.has(requiredPath), `missing module owner for ${requiredPath}`)
   }
+})
+
+test('checked-in Workflow node catalogs remain structurally equivalent', async () => {
+  const rustSource = await readFile(path.join(
+    repositoryRoot,
+    'rust-engine',
+    'crates',
+    'authoring',
+    'src',
+    'workflow_validation.rs',
+  ), 'utf8')
+  const browserSource = await readFile(path.join(
+    repositoryRoot,
+    'frontend',
+    'src',
+    'lib',
+    'workflowAuthoring.ts',
+  ), 'utf8')
+
+  const rustCatalog = extractRustWorkflowNodeCatalog(rustSource)
+  const browserCatalog = extractBrowserWorkflowNodeCatalog(browserSource)
+  assert.equal(rustCatalog.length, 21)
+  assert.deepEqual(browserCatalog, rustCatalog)
+  assert.deepEqual(
+    rustCatalog.find((entry) => entry.nodeType === 'dialogue')?.configurableFields,
+    ['speaker', 'text', 'emotion', 'use_llm'],
+  )
+  assert.deepEqual(
+    rustCatalog.find((entry) => entry.nodeType === 'llm_generate')?.configurableFields,
+    ['prompt', 'system_prompt', 'max_tokens'],
+  )
+})
+
+test('Workflow node catalog extraction fails closed for opaque definitions', () => {
+  assert.deepEqual(extractRustWorkflowNodeCatalog('pub fn another_catalog() {}'), [])
+  assert.deepEqual(extractBrowserWorkflowNodeCatalog('const OTHER_TYPES = []'), [])
 })
 
 test('matrix rejects duplicate IDs and paths outside the repository', () => {

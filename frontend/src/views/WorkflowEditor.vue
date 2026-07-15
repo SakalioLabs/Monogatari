@@ -98,7 +98,7 @@
         <svg class="connections" width="100%" height="100%" aria-hidden="true">
           <path
             v-for="(conn, index) in connections"
-            :key="index"
+            :key="`${conn.sourceNodeId}:${conn.targetNodeId}:${index}`"
             :d="connectionPath(conn)"
             fill="none"
             stroke="var(--brand)"
@@ -211,7 +211,7 @@
                   :value="selectedNode.config[field]"
                   @input="updateConfig(field, ($event.target as HTMLTextAreaElement).value)"
                 ></textarea>
-                <label v-else-if="field === 'value' && selectedNode.node_type === 'set_flag'" class="switch-row">
+                <label v-else-if="isWorkflowBooleanField(selectedNode.node_type, field)" class="switch-row">
                   <span>{{ t('workflow.enabled', 'Enabled') }}</span>
                   <input type="checkbox" :checked="selectedNode.config[field]" @change="updateConfig(field, ($event.target as HTMLInputElement).checked)" />
                 </label>
@@ -435,51 +435,61 @@ import {
 import { hasTauriRuntime, invokeCommand } from '../lib/tauri'
 import { loadStoryEventCatalog, type StoryEventDefinition } from '../lib/storyEvents'
 import {
+  connectWorkflowNodes,
+  createDefaultWorkflowFlow,
+  createDefaultWorkflowNodeTypes,
+  createWorkflowNode as buildWorkflowNode,
+  findOpenWorkflowCanvasPosition,
+  isWorkflowBooleanField,
+  isWorkflowDocument,
+  isWorkflowLongField as isLongField,
+  isWorkflowNumericField as isNumericField,
+  nextWorkflowNodeSequence,
+  normalizeWorkflowPath,
+  removeWorkflowNode,
+  safeWorkflowFileName,
+  synchronizeWorkflowDocument,
+  workflowConfigFields,
+  workflowConnectionPath as connectionPath,
+  workflowConnections,
+  workflowNodeAtPoint,
+  workflowNodeIcon as getNodeIcon,
+  workflowNumericFieldStep as numericFieldStep,
+  WORKFLOW_NODE_HEIGHT as NODE_HEIGHT,
+  WORKFLOW_NODE_WIDTH as NODE_WIDTH,
+  type WorkflowFileSummary,
+  type WorkflowNodeTypeInfo,
+} from '../lib/workflowAuthoring'
+import type {
+  Workflow,
+  WorkflowExecutionReport,
+  WorkflowExecutionStep,
+  WorkflowNode,
+  WorkflowPresetMatrixReport,
+  WorkflowRunContextForm,
+  WorkflowRunContextPayload,
+  WorkflowRunContextPreset,
+  WorkflowValidationIssue,
+  WorkflowValidationResult,
+} from '../lib/workflowContract'
+import {
   aggregatePresetMatrixCoverage,
   runWorkflowLocally,
   validateWorkflowLocally,
   workflowRunContextPayloadFromValues,
-  type Workflow,
-  type WorkflowExecutionReport,
-  type WorkflowExecutionStep,
-  type WorkflowNode,
-  type WorkflowPresetMatrixReport,
-  type WorkflowRunContextForm,
-  type WorkflowRunContextPayload,
-  type WorkflowRunContextPreset,
-  type WorkflowValidationIssue,
-  type WorkflowValidationResult,
 } from '../lib/workflowPreview'
 
 const { t } = useI18n()
-
-interface NodeTypeInfo {
-  node_type: string
-  label: string
-  description: string
-  category: string
-  configurable_fields: string[]
-}
-
-interface WorkflowFileSummary {
-  path: string
-  workflow_id: string
-  name: string
-  node_count: number
-}
 
 type InspectorTab = 'properties' | 'validation' | 'execution'
 type WorkflowPathDialogMode = 'open' | 'save'
 type PendingWorkflowAction = 'new' | 'open' | 'leave' | 'delete-node'
 type WorkflowNotice = { type: 'success' | 'error'; message: string }
 
-const NODE_WIDTH = 214
-const NODE_HEIGHT = 92
-
 const workflow = ref<Workflow | null>(null)
 const nodes = ref<WorkflowNode[]>([])
 const selectedNode = ref<WorkflowNode | null>(null)
-const nodeTypes = ref<NodeTypeInfo[]>([])
+const nodeTypes = ref<WorkflowNodeTypeInfo[]>([])
 const storyEvents = ref<StoryEventDefinition[]>([])
 const canvasRef = ref<HTMLDivElement>()
 const validationResult = ref<WorkflowValidationResult | null>(null)
@@ -502,6 +512,7 @@ const pathDialogValue = ref('')
 const pendingAction = ref<PendingWorkflowAction | null>(null)
 const notice = ref<WorkflowNotice | null>(null)
 const desktopRuntimeAvailable = hasTauriRuntime()
+const fallbackNodeTypes = createDefaultWorkflowNodeTypes()
 let noticeTimer: number | undefined
 let pendingNavigation: NavigationGuardNext | null = null
 const runContext = ref<WorkflowRunContextForm>({
@@ -561,30 +572,6 @@ const runContextPresets = computed<WorkflowRunContextPreset[]>(() => [
   },
 ])
 
-const previewNodeTypes: NodeTypeInfo[] = [
-  { node_type: 'start', label: 'Start', description: 'Workflow entry point', category: 'flow', configurable_fields: [] },
-  { node_type: 'dialogue', label: 'Dialogue', description: 'Show character dialogue', category: 'content', configurable_fields: ['speaker_id', 'text'] },
-  { node_type: 'choice', label: 'Choice', description: 'Present player choices', category: 'content', configurable_fields: ['choices'] },
-  { node_type: 'condition', label: 'Condition', description: 'Branch by expression', category: 'flow', configurable_fields: ['condition'] },
-  { node_type: 'set_variable', label: 'Set Variable', description: 'Set a game variable', category: 'logic', configurable_fields: ['variable_name', 'value'] },
-  { node_type: 'set_flag', label: 'Set Flag', description: 'Set a game flag', category: 'logic', configurable_fields: ['flag_name', 'value'] },
-  { node_type: 'llm_generate', label: 'LLM Generate', description: 'Generate text with the active model', category: 'ai', configurable_fields: ['prompt', 'system_prompt'] },
-  { node_type: 'evaluation', label: 'Evaluation', description: 'Read latest conversation score', category: 'ai', configurable_fields: ['character_id', 'criteria', 'threshold', 'variable_name'] },
-  { node_type: 'trigger_event', label: 'Trigger Event', description: 'Trigger score-aware story event', category: 'flow', configurable_fields: ['character_id', 'event_id', 'event_type'] },
-  { node_type: 'scene_change', label: 'Scene Change', description: 'Switch background scene', category: 'content', configurable_fields: ['scene_id'] },
-  { node_type: 'emotion_change', label: 'Change Emotion', description: 'Change character emotion', category: 'character', configurable_fields: ['character_id', 'emotion'] },
-  { node_type: 'relationship', label: 'Relationship', description: 'Modify relationship score', category: 'character', configurable_fields: ['character_id', 'delta'] },
-  { node_type: 'narration', label: 'Narration', description: 'Display narrator text', category: 'content', configurable_fields: ['text', 'speaker'] },
-  { node_type: 'bgm', label: 'BGM', description: 'Control background music', category: 'media', configurable_fields: ['track_path', 'action', 'volume'] },
-  { node_type: 'sfx', label: 'SFX', description: 'Play a sound effect', category: 'media', configurable_fields: ['sound_path', 'volume'] },
-  { node_type: 'wait', label: 'Wait', description: 'Pause workflow execution', category: 'flow', configurable_fields: ['duration_ms'] },
-  { node_type: 'random_branch', label: 'Random Branch', description: 'Randomly pick a branch', category: 'flow', configurable_fields: ['weights'] },
-  { node_type: 'sub_workflow', label: 'Sub Workflow', description: 'Delegate to another workflow', category: 'flow', configurable_fields: ['workflow_id', 'workflow_path'] },
-  { node_type: 'camera', label: 'Camera', description: 'Control camera motion', category: 'media', configurable_fields: ['action', 'target_x', 'target_y', 'zoom', 'duration_ms'] },
-  { node_type: 'shake', label: 'Shake', description: 'Screen shake effect', category: 'media', configurable_fields: ['intensity', 'duration_ms'] },
-  { node_type: 'end', label: 'End', description: 'Workflow exit', category: 'flow', configurable_fields: [] },
-]
-
 let nextNodeId = 1
 let draggingNode: WorkflowNode | null = null
 let connectingFrom: WorkflowNode | null = null
@@ -592,7 +579,7 @@ let dragOffset = { x: 0, y: 0 }
 
 const nodeCategories = computed(() => {
   const query = paletteQuery.value.trim().toLocaleLowerCase()
-  const categories: Record<string, NodeTypeInfo[]> = {}
+  const categories: Record<string, WorkflowNodeTypeInfo[]> = {}
   for (const nt of nodeTypes.value) {
     if (query && ![
       nt.node_type,
@@ -611,23 +598,7 @@ const nodeCategories = computed(() => {
 
 const filteredNodeCount = computed(() => nodeCategories.value.reduce((count, category) => count + category.nodes.length, 0))
 
-const connections = computed(() => {
-  const conns: { x1: number; y1: number; x2: number; y2: number }[] = []
-  for (const node of nodes.value) {
-    for (const targetId of node.connections) {
-      const target = nodes.value.find((n) => n.id === targetId)
-      if (target) {
-        conns.push({
-          x1: node.x + NODE_WIDTH,
-          y1: node.y + NODE_HEIGHT / 2,
-          x2: target.x,
-          y2: target.y + NODE_HEIGHT / 2,
-        })
-      }
-    }
-  }
-  return conns
-})
+const connections = computed(() => workflowConnections(nodes.value))
 
 const executionStepsByNode = computed(() => {
   const map = new Map<string, WorkflowExecutionStep>()
@@ -733,6 +704,8 @@ function configFieldLabel(field: string): string {
   if (field === 'flag_name') return t('workflow.field.flag-name', 'Flag name')
   if (field === 'prompt') return t('workflow.field.prompt', 'Prompt')
   if (field === 'system_prompt') return t('workflow.field.system-prompt', 'System prompt')
+  if (field === 'max_tokens') return t('workflow.field.max-tokens', 'Max tokens')
+  if (field === 'use_llm') return t('workflow.field.use-llm', 'Use LLM')
   if (field === 'character_id') return t('workflow.field.character-id', 'Character ID')
   if (field === 'criteria') return t('workflow.field.criteria', 'Metric')
   if (field === 'threshold') return t('workflow.field.threshold', 'Threshold')
@@ -757,16 +730,6 @@ function configFieldLabel(field: string): string {
   return field
 }
 
-function isNumericField(field: string): boolean {
-  return ['threshold', 'delta', 'volume', 'duration_ms', 'target_x', 'target_y', 'zoom', 'intensity'].includes(field)
-}
-
-function numericFieldStep(field: string): string | undefined {
-  if (!isNumericField(field)) return undefined
-  if (field === 'duration_ms') return '1'
-  return '0.05'
-}
-
 function updateConfigFromInput(field: string, event: Event) {
   const value = (event.target as HTMLInputElement).value
   updateConfig(field, isNumericField(field) && value !== '' ? Number(value) : value)
@@ -787,37 +750,8 @@ function openInspector(tab: InspectorTab) {
   compactInspectorOpen.value = true
 }
 
-function getNodeIcon(type: string): string {
-  const icons: Record<string, string> = {
-    start: 'ST',
-    dialogue: 'DG',
-    choice: 'CH',
-    condition: 'IF',
-    set_variable: 'VR',
-    set_flag: 'FL',
-    llm_generate: 'AI',
-    emotion_change: 'EM',
-    relationship: 'RL',
-    scene_change: 'SC',
-    trigger_event: 'EV',
-    evaluation: 'QA',
-    end: 'EN',
-  }
-  return icons[type] || 'ND'
-}
-
-function connectionPath(conn: { x1: number; y1: number; x2: number; y2: number }): string {
-  const mid = Math.max(60, Math.abs(conn.x2 - conn.x1) / 2)
-  return `M ${conn.x1} ${conn.y1} C ${conn.x1 + mid} ${conn.y1}, ${conn.x2 - mid} ${conn.y2}, ${conn.x2} ${conn.y2}`
-}
-
 function getConfigFields(nodeType: string): string[] {
-  const type = nodeTypes.value.find((t) => t.node_type === nodeType)
-  return type?.configurable_fields || []
-}
-
-function isLongField(field: string): boolean {
-  return field === 'text' || field === 'prompt' || field === 'system_prompt'
+  return workflowConfigFields(nodeTypes.value, nodeType)
 }
 
 function updateConfig(field: string, value: any) {
@@ -933,10 +867,7 @@ function blockerLabel(reason: string): string {
 
 function syncWorkflowFromCanvas(): Workflow | null {
   if (!workflow.value) return null
-  workflow.value.nodes = nodes.value
-  if (!workflow.value.start_node_id || !nodes.value.some((node) => node.id === workflow.value?.start_node_id)) {
-    workflow.value.start_node_id = nodes.value.find((node) => node.node_type === 'start')?.id || nodes.value[0]?.id || ''
-  }
+  workflow.value = synchronizeWorkflowDocument(workflow.value, nodes.value)
   return workflow.value
 }
 
@@ -1209,17 +1140,17 @@ function nodeRunTooltip(node: WorkflowNode): string {
 }
 
 
-function createNode(type: NodeTypeInfo, x: number, y: number): WorkflowNode {
-  while (nodes.value.some((node) => node.id === `node_${nextNodeId}`)) nextNodeId += 1
-  return {
-    id: `node_${nextNodeId++}`,
-    node_type: type.node_type,
-    label: nodeTypeLabel(type.node_type),
-    x: Math.max(16, x - NODE_WIDTH / 2),
-    y: Math.max(16, y - 28),
-    config: {},
-    connections: [],
-  }
+function createNode(type: WorkflowNodeTypeInfo, x: number, y: number): WorkflowNode {
+  const result = buildWorkflowNode(
+    type,
+    nodeTypeLabel(type.node_type),
+    x,
+    y,
+    nodes.value,
+    nextNodeId,
+  )
+  nextNodeId = result.nextNodeSequence
+  return result.node
 }
 
 function selectNode(node: WorkflowNode) {
@@ -1231,10 +1162,7 @@ function selectNode(node: WorkflowNode) {
 function deleteNode() {
   if (!selectedNode.value) return
   const id = selectedNode.value.id
-  nodes.value = nodes.value.filter((node) => node.id !== id)
-  for (const node of nodes.value) {
-    node.connections = node.connections.filter((targetId) => targetId !== id)
-  }
+  nodes.value = removeWorkflowNode(nodes.value, id)
   selectedNode.value = null
   markWorkflowDirty()
 }
@@ -1243,7 +1171,7 @@ function requestDeleteNode() {
   if (selectedNode.value) pendingAction.value = 'delete-node'
 }
 
-function addNodeFromPalette(nodeType: NodeTypeInfo) {
+function addNodeFromPalette(nodeType: WorkflowNodeTypeInfo) {
   const position = findOpenCanvasPosition()
   const node = createNode(nodeType, position.x + NODE_WIDTH / 2, position.y + 28)
   nodes.value.push(node)
@@ -1252,46 +1180,35 @@ function addNodeFromPalette(nodeType: NodeTypeInfo) {
 }
 
 function findOpenCanvasPosition(): { x: number; y: number } {
-  const width = Math.max(NODE_WIDTH + 32, canvasRef.value?.clientWidth || 640)
-  const height = Math.max(NODE_HEIGHT + 32, canvasRef.value?.clientHeight || 520)
-  for (let y = 28; y <= Math.max(28, height - NODE_HEIGHT - 24); y += NODE_HEIGHT + 24) {
-    for (let x = 28; x <= Math.max(28, width - NODE_WIDTH - 24); x += NODE_WIDTH + 24) {
-      const overlaps = nodes.value.some((node) => (
-        x < node.x + NODE_WIDTH + 12
-        && x + NODE_WIDTH + 12 > node.x
-        && y < node.y + NODE_HEIGHT + 12
-        && y + NODE_HEIGHT + 12 > node.y
-      ))
-      if (!overlaps) return { x, y }
-    }
-  }
-  const offset = (nodes.value.length % 6) * 18
-  return { x: 28 + offset, y: 28 + offset }
+  return findOpenWorkflowCanvasPosition(
+    nodes.value,
+    canvasRef.value?.clientWidth || 640,
+    canvasRef.value?.clientHeight || 520,
+  )
 }
 
 function addDefaultFlow(markDirty = true) {
-  const startType = nodeTypes.value.find((type) => type.node_type === 'start') || previewNodeTypes.find((type) => type.node_type === 'start')!
-  const endType = nodeTypes.value.find((type) => type.node_type === 'end') || previewNodeTypes.find((type) => type.node_type === 'end')!
-  const canvasWidth = Math.max(NODE_WIDTH + 40, canvasRef.value?.clientWidth || 640)
-  const startX = 20
-  const startY = 132
-  const horizontalEndX = Math.max(startX, canvasWidth - NODE_WIDTH - 20)
-  const hasHorizontalRoom = horizontalEndX >= startX + NODE_WIDTH + 12
-  const endX = hasHorizontalRoom ? horizontalEndX : Math.max(20, (canvasWidth - NODE_WIDTH) / 2)
-  const endY = hasHorizontalRoom ? startY : startY + NODE_HEIGHT + 34
-  const start = createNode(startType, startX + NODE_WIDTH / 2, startY + 28)
-  const end = createNode(endType, endX + NODE_WIDTH / 2, endY + 28)
-  start.connections = [end.id]
-  nodes.value = [start, end]
+  const catalog = nodeTypes.value.some((type) => type.node_type === 'start')
+    && nodeTypes.value.some((type) => type.node_type === 'end')
+    ? nodeTypes.value
+    : fallbackNodeTypes
+  const flow = createDefaultWorkflowFlow(
+    catalog,
+    nodeTypeLabel,
+    canvasRef.value?.clientWidth || 640,
+    nextNodeId,
+  )
+  nodes.value = flow.nodes
+  nextNodeId = flow.nextNodeSequence
   if (workflow.value) {
     workflow.value.nodes = nodes.value
-    workflow.value.start_node_id = start.id
+    workflow.value.start_node_id = flow.startNodeId
   }
   selectedNode.value = null
   if (markDirty) markWorkflowDirty()
 }
 
-function onDragStart(event: DragEvent, nodeType: NodeTypeInfo) {
+function onDragStart(event: DragEvent, nodeType: WorkflowNodeTypeInfo) {
   event.dataTransfer?.setData('nodeType', JSON.stringify(nodeType))
 }
 
@@ -1302,7 +1219,7 @@ function onDrop(event: DragEvent) {
   const y = event.clientY - rect.top
 
   try {
-    const nodeType = JSON.parse(event.dataTransfer.getData('nodeType')) as NodeTypeInfo
+    const nodeType = JSON.parse(event.dataTransfer.getData('nodeType')) as WorkflowNodeTypeInfo
     const node = createNode(nodeType, x, y)
     nodes.value.push(node)
     selectNode(node)
@@ -1348,14 +1265,10 @@ function onCanvasMouseDown() {
 function getNodeAtClientPoint(event: MouseEvent): WorkflowNode | undefined {
   if (!canvasRef.value) return undefined
   const rect = canvasRef.value.getBoundingClientRect()
-  const x = event.clientX - rect.left
-  const y = event.clientY - rect.top
-  return nodes.value.find((node) =>
-    x >= node.x &&
-    x <= node.x + NODE_WIDTH &&
-    y >= node.y &&
-    y <= node.y + NODE_HEIGHT
-  )
+  return workflowNodeAtPoint(nodes.value, {
+    x: event.clientX - rect.left,
+    y: event.clientY - rect.top,
+  })
 }
 
 function startConnection(event: MouseEvent, node: WorkflowNode) {
@@ -1364,9 +1277,16 @@ function startConnection(event: MouseEvent, node: WorkflowNode) {
 
   const onMouseUp = (e: MouseEvent) => {
     const target = getNodeAtClientPoint(e)
-    if (connectingFrom && target && target.id !== connectingFrom.id && !connectingFrom.connections.includes(target.id)) {
-      connectingFrom.connections.push(target.id)
-      markWorkflowDirty()
+    if (connectingFrom && target) {
+      const sourceId = connectingFrom.id
+      const update = connectWorkflowNodes(nodes.value, sourceId, target.id)
+      if (update.changed) {
+        nodes.value = update.nodes
+        if (selectedNode.value?.id === sourceId) {
+          selectedNode.value = nodes.value.find((node) => node.id === sourceId) || null
+        }
+        markWorkflowDirty()
+      }
     }
     connectingFrom = null
     window.removeEventListener('mouseup', onMouseUp)
@@ -1444,12 +1364,6 @@ async function submitPathDialog() {
   else await saveWorkflowPath(path)
 }
 
-function normalizeWorkflowPath(value: string, appendExtension: boolean): string {
-  let path = value.trim().replace(/\\/g, '/')
-  if (appendExtension && path && !path.toLocaleLowerCase().endsWith('.json')) path += '.json'
-  return path
-}
-
 async function loadWorkflowPath(path: string) {
   loadingWorkflow.value = true
   try {
@@ -1469,8 +1383,7 @@ function applyLoadedWorkflow(loaded: Workflow, path: string) {
   workflow.value = loaded
   nodes.value = loaded.nodes
   selectedNode.value = null
-  nextNodeId = 1
-  while (nodes.value.some((node) => node.id === `node_${nextNodeId}`)) nextNodeId += 1
+  nextNodeId = nextWorkflowNodeSequence(nodes.value)
   currentWorkflowPath.value = path
   workflowDirty.value = false
   inspectorTab.value = 'properties'
@@ -1502,15 +1415,6 @@ function chooseWorkflowJsonFile(): Promise<File | null> {
     input.addEventListener('change', () => resolve(input.files?.[0] || null), { once: true })
     input.click()
   })
-}
-
-function isWorkflowDocument(value: unknown): value is Workflow {
-  if (!value || typeof value !== 'object') return false
-  const candidate = value as Partial<Workflow>
-  return typeof candidate.id === 'string'
-    && typeof candidate.name === 'string'
-    && typeof candidate.start_node_id === 'string'
-    && Array.isArray(candidate.nodes)
 }
 
 async function saveWorkflow() {
@@ -1562,10 +1466,6 @@ async function exportJSON() {
   a.click()
   URL.revokeObjectURL(url)
   showWorkflowNotice(t('workflow.notice.exported', 'Workflow JSON exported'))
-}
-
-function safeWorkflowFileName(value: string): string {
-  return value.trim().replace(/[^a-z0-9._-]+/gi, '-').replace(/^-+|-+$/g, '') || 'workflow'
 }
 
 function confirmPendingAction() {
@@ -1626,13 +1526,13 @@ onBeforeRouteLeave((_to, _from, next) => {
 onMounted(async () => {
   try {
     const [loadedNodeTypes, eventCatalog] = await Promise.all([
-      invokeCommand<NodeTypeInfo[]>('get_workflow_nodes', undefined, previewNodeTypes),
+      invokeCommand<WorkflowNodeTypeInfo[]>('get_workflow_nodes', undefined, fallbackNodeTypes),
       loadStoryEventCatalog(),
     ])
     nodeTypes.value = loadedNodeTypes
     storyEvents.value = eventCatalog.events
   } catch (error) {
-    nodeTypes.value = previewNodeTypes
+    nodeTypes.value = fallbackNodeTypes
     showWorkflowNotice(t('workflow.error.catalogs', 'Unable to load authoring catalogs: {error}', { error: formatWorkflowError(error) }), 'error')
   }
   if (!restoreBrowserDraft()) createNewWorkflow(false)

@@ -487,6 +487,8 @@
     "workflow.field.flag-name": "フラグ名",
     "workflow.field.prompt": "プロンプト",
     "workflow.field.system-prompt": "システムプロンプト",
+    "workflow.field.max-tokens": "最大トークン数",
+    "workflow.field.use-llm": "LLM を使用",
     "workflow.field.character-id": "キャラクター ID",
     "workflow.field.criteria": "指標",
     "workflow.field.threshold": "しきい値",

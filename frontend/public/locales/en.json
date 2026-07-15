@@ -487,6 +487,8 @@
     "workflow.field.flag-name": "Flag name",
     "workflow.field.prompt": "Prompt",
     "workflow.field.system-prompt": "System prompt",
+    "workflow.field.max-tokens": "Max tokens",
+    "workflow.field.use-llm": "Use LLM",
     "workflow.field.character-id": "Character ID",
     "workflow.field.criteria": "Metric",
     "workflow.field.threshold": "Threshold",

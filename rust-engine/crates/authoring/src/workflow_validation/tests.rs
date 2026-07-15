@@ -15,6 +15,42 @@ fn node(id: &str, node_type: &str, connections: &[&str]) -> WorkflowNode {
 }
 
 #[test]
+fn exposes_one_authoritative_workflow_node_catalog() {
+    let catalog = workflow_node_types();
+    let unique_types = catalog
+        .iter()
+        .map(|entry| entry.node_type.as_str())
+        .collect::<std::collections::HashSet<_>>();
+
+    assert_eq!(catalog.len(), 21);
+    assert_eq!(unique_types.len(), catalog.len());
+    assert!(catalog.iter().all(|entry| {
+        !entry.node_type.is_empty()
+            && !entry.label.is_empty()
+            && !entry.description.is_empty()
+            && !entry.category.is_empty()
+    }));
+
+    let dialogue = catalog
+        .iter()
+        .find(|entry| entry.node_type == "dialogue")
+        .unwrap();
+    assert_eq!(
+        dialogue.configurable_fields,
+        ["speaker", "text", "emotion", "use_llm"]
+    );
+
+    let llm_generate = catalog
+        .iter()
+        .find(|entry| entry.node_type == "llm_generate")
+        .unwrap();
+    assert_eq!(
+        llm_generate.configurable_fields,
+        ["prompt", "system_prompt", "max_tokens"]
+    );
+}
+
+#[test]
 fn validates_a_minimal_graph_without_tauri_state() {
     let workflow = Workflow {
         id: "minimal".into(),

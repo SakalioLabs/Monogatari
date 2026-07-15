@@ -1,6 +1,30 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 
+export function extractRustWorkflowNodeCatalog(source) {
+  const catalogSource = source.match(
+    /pub fn workflow_node_types\(\)[\s\S]*?\n\}/,
+  )?.[0] ?? ''
+  return [...catalogSource.matchAll(
+    /node_type\(\s*"([^"]+)"\s*,\s*"[^"]*"\s*,\s*"[^"]*"\s*,\s*"[^"]+"\s*,\s*&\[([^\]]*)\]\s*,?\s*\)/g,
+  )].map((match) => ({
+    nodeType: match[1],
+    configurableFields: [...match[2].matchAll(/"([^"]+)"/g)].map((field) => field[1]),
+  }))
+}
+
+export function extractBrowserWorkflowNodeCatalog(source) {
+  const catalogSource = source.match(
+    /const DEFAULT_WORKFLOW_NODE_TYPES[\s\S]*?=\s*\[([\s\S]*?)\n\]/,
+  )?.[1] ?? ''
+  return [...catalogSource.matchAll(
+    /\{\s*node_type:\s*'([^']+)'[\s\S]*?configurable_fields:\s*\[([^\]]*)\]\s*\}/g,
+  )].map((match) => ({
+    nodeType: match[1],
+    configurableFields: [...match[2].matchAll(/'([^']+)'/g)].map((field) => field[1]),
+  }))
+}
+
 export function createSourceInvariantVerifier({
   root,
   frontendDir,
@@ -1375,6 +1399,10 @@ export function createSourceInvariantVerifier({
     const issues = []
     const workflowSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'workflow.rs'), 'utf8')
     const workflowValidationSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'workflow_validation.rs'), 'utf8')
+    const workflowValidationTests = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'workflow_validation', 'tests.rs'), 'utf8')
+    const workflowAuthoringSource = await readFile(path.join(frontendDir, 'src', 'lib', 'workflowAuthoring.ts'), 'utf8')
+    const workflowAuthoringTests = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'workflowAuthoring.test.ts'), 'utf8')
+    const workflowEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'WorkflowEditor.vue'), 'utf8')
     const mainSource = await readFile(path.join(tauriAppDir, 'src', 'main.rs'), 'utf8')
 
     const workflowRequirements = [
@@ -1417,6 +1445,7 @@ export function createSourceInvariantVerifier({
       ['node_condition_invalid', 'report invalid workflow conditions before execution'],
       ['load_project_workflows', 'load bounded project Workflow catalogs for Agent validation'],
       ['validate_workflow_references', 'validate Workflow cross-catalog references'],
+      ['pub fn workflow_node_types()', 'own the authoritative Rust node catalog'],
     ]
     for (const [needle, description] of workflowRequirements) {
       if (!workflowSource.includes(needle)) {
@@ -1427,6 +1456,40 @@ export function createSourceInvariantVerifier({
       if (!workflowValidationSource.includes(needle)) {
         issues.push(`Workflow domain must ${description}`)
       }
+    }
+
+    const workflowAuthoringRequirements = [
+      [workflowValidationTests, 'exposes_one_authoritative_workflow_node_catalog', 'test the authoritative Rust node catalog'],
+      [workflowSource, 'Ok(workflow_node_types())', 'delegate node-catalog reads to headless authoring'],
+      [workflowAuthoringSource, 'const DEFAULT_WORKFLOW_NODE_TYPES', 'provide an offline browser node catalog'],
+      [workflowAuthoringSource, 'export function createDefaultWorkflowFlow', 'own default graph construction outside the Vue view'],
+      [workflowAuthoringSource, 'export function synchronizeWorkflowDocument', 'own document synchronization outside the Vue view'],
+      [workflowAuthoringTests, 'mirrors the authoritative node catalog fields', 'test browser catalog compatibility'],
+      [workflowAuthoringTests, 'treats boolean and integer-backed fields as typed controls', 'test typed node controls'],
+      [workflowAuthoringTests, 'connects and removes nodes without mutating the source graph', 'test immutable graph editing'],
+      [workflowEditorSource, 'isWorkflowBooleanField(selectedNode.node_type, field)', 'render boolean fields through the authoring contract'],
+      [workflowEditorSource, 'createDefaultWorkflowFlow(', 'delegate default graph construction to the authoring domain'],
+      [workflowEditorSource, 'synchronizeWorkflowDocument(', 'delegate document synchronization to the authoring domain'],
+    ]
+    for (const [source, needle, description] of workflowAuthoringRequirements) {
+      if (!source.includes(needle)) {
+        issues.push(`Workflow authoring boundaries must ${description}`)
+      }
+    }
+
+    const tauriNodeCatalogCommand = workflowSource.match(
+      /pub async fn get_workflow_nodes[\s\S]*?\n\}/,
+    )?.[0] ?? ''
+    if (tauriNodeCatalogCommand.includes('WorkflowNodeTypeInfo {') || tauriNodeCatalogCommand.includes('Ok(vec![')) {
+      issues.push('Tauri Workflow commands must not redeclare the authoritative node catalog')
+    }
+
+    const rustNodeCatalog = extractRustWorkflowNodeCatalog(workflowValidationSource)
+    const browserNodeCatalog = extractBrowserWorkflowNodeCatalog(workflowAuthoringSource)
+    if (rustNodeCatalog.length === 0 || browserNodeCatalog.length === 0) {
+      issues.push('Workflow node catalogs must remain statically inspectable by the release verifier')
+    } else if (JSON.stringify(rustNodeCatalog) !== JSON.stringify(browserNodeCatalog)) {
+      issues.push('Browser Workflow fallback node types and configurable fields must match llm-authoring')
     }
 
     if (!mainSource.includes('commands::workflow::list_workflows')) {

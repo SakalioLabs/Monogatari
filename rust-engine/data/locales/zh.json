@@ -487,6 +487,8 @@
     "workflow.field.flag-name": "标记名",
     "workflow.field.prompt": "提示词",
     "workflow.field.system-prompt": "系统提示词",
+    "workflow.field.max-tokens": "最大词元数",
+    "workflow.field.use-llm": "使用 LLM",
     "workflow.field.character-id": "角色 ID",
     "workflow.field.criteria": "指标",
     "workflow.field.threshold": "阈值",

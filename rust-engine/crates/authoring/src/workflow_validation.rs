@@ -58,6 +58,172 @@ pub struct WorkflowNodeTypeInfo {
     pub configurable_fields: Vec<String>,
 }
 
+/// Return the authoritative Workflow node catalog shared by every Rust transport.
+pub fn workflow_node_types() -> Vec<WorkflowNodeTypeInfo> {
+    fn node_type(
+        node_type: &str,
+        label: &str,
+        description: &str,
+        category: &str,
+        configurable_fields: &[&str],
+    ) -> WorkflowNodeTypeInfo {
+        WorkflowNodeTypeInfo {
+            node_type: node_type.to_string(),
+            label: label.to_string(),
+            description: description.to_string(),
+            category: category.to_string(),
+            configurable_fields: configurable_fields
+                .iter()
+                .map(|field| (*field).to_string())
+                .collect(),
+        }
+    }
+
+    vec![
+        node_type(
+            "start",
+            "Start",
+            "Starting point of the workflow",
+            "flow",
+            &[],
+        ),
+        node_type(
+            "dialogue",
+            "Dialogue",
+            "Show dialogue text from a character",
+            "content",
+            &["speaker", "text", "emotion", "use_llm"],
+        ),
+        node_type(
+            "choice",
+            "Choice",
+            "Present choices to the player",
+            "content",
+            &["choices"],
+        ),
+        node_type(
+            "condition",
+            "Condition",
+            "Branch based on a condition",
+            "flow",
+            &["condition"],
+        ),
+        node_type(
+            "set_variable",
+            "Set Variable",
+            "Set a game variable",
+            "logic",
+            &["variable_name", "value"],
+        ),
+        node_type(
+            "set_flag",
+            "Set Flag",
+            "Set a game flag",
+            "logic",
+            &["flag_name", "value"],
+        ),
+        node_type(
+            "llm_generate",
+            "LLM Generate",
+            "Generate text using LLM",
+            "ai",
+            &["prompt", "system_prompt", "max_tokens"],
+        ),
+        node_type(
+            "evaluation",
+            "Evaluation",
+            "Read the latest LLM conversation score and compare a threshold",
+            "ai",
+            &["character_id", "criteria", "threshold", "variable_name"],
+        ),
+        node_type(
+            "scene_change",
+            "Scene Change",
+            "Change the active background scene",
+            "content",
+            &["scene_id"],
+        ),
+        node_type(
+            "trigger_event",
+            "Trigger Event",
+            "Preview and trigger a score-aware story event",
+            "flow",
+            &["character_id", "event_id", "event_type"],
+        ),
+        node_type(
+            "emotion_change",
+            "Change Emotion",
+            "Change a character's emotion",
+            "character",
+            &["character_id", "emotion"],
+        ),
+        node_type(
+            "relationship",
+            "Relationship",
+            "Modify relationship score",
+            "character",
+            &["character_id", "delta"],
+        ),
+        node_type("end", "End", "End of the workflow", "flow", &[]),
+        node_type(
+            "narration",
+            "Narration",
+            "Display narrator text or inner monologue",
+            "content",
+            &["text", "speaker"],
+        ),
+        node_type(
+            "bgm",
+            "BGM",
+            "Control background music playback",
+            "media",
+            &["track_path", "action", "volume"],
+        ),
+        node_type(
+            "sfx",
+            "SFX",
+            "Play a sound effect",
+            "media",
+            &["sound_path", "volume"],
+        ),
+        node_type(
+            "wait",
+            "Wait",
+            "Pause workflow execution for a duration",
+            "flow",
+            &["duration_ms"],
+        ),
+        node_type(
+            "random_branch",
+            "Random Branch",
+            "Randomly select one of multiple branches",
+            "flow",
+            &["weights"],
+        ),
+        node_type(
+            "sub_workflow",
+            "Sub Workflow",
+            "Execute another workflow as a subroutine",
+            "flow",
+            &["workflow_id", "workflow_path"],
+        ),
+        node_type(
+            "camera",
+            "Camera",
+            "Control camera position, zoom, and effects",
+            "media",
+            &["action", "target_x", "target_y", "zoom", "duration_ms"],
+        ),
+        node_type(
+            "shake",
+            "Shake",
+            "Screen shake effect for dramatic moments",
+            "media",
+            &["intensity", "duration_ms"],
+        ),
+    ]
+}
+
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct WorkflowFileSummary {
     pub path: String,

@@ -20,11 +20,11 @@ Platform-specific gates declare their supported host IDs in the matrix. The Wind
 | Surface | Gate | Evidence type | Current boundary |
 |---|---|---|---|
 | Agent and test orchestration | `automation-contracts` | Node unit contracts | Matrix schema, ownership, selection, CLI parsing, platform command adaptation |
-| Vue pure libraries, workflow/Story Playtest, Pinia, and shared components | `frontend-unit` | Vitest unit and Happy DOM component tests | Authoring validation, renderer fallback selection, story access, shared local condition evaluation, bounded browser workflow execution, dialogue graph transitions/scripts/conditions/relationship effects, Store async state, and shared interaction/accessibility behavior |
+| Vue pure libraries, workflow/Story Playtest, Pinia, and shared components | `frontend-unit` | Vitest unit and Happy DOM component tests | Workflow catalog parity, node creation/layout/connections/document synchronization, authoring validation, renderer fallback selection, story access, shared local condition evaluation, bounded browser workflow execution, dialogue graph transitions/scripts/conditions/relationship effects, Store async state, and shared interaction/accessibility behavior |
 | Browser authoring and Playtest workflows | `frontend-e2e` | Playwright Chromium tests against an isolated Vite server | Workspace navigation, validated browser character drafts across reloads, and dialogue save-to-Playtest handoff |
 | Vue/TypeScript/Web/PWA distribution | `frontend-contracts` | Type check, production builds, static contract verifiers | Root/subpath package and responsive shell contracts |
 | Rust core | `rust-core` | Unit and doc tests | Infrastructure crate |
-| Headless authoring core | `rust-authoring` | Unit, integration, and doc tests | Atomic content mutation, portable paths, project settings, multilingual prompt guards, deterministic conversation scoring/safety/event decisions, shared Quality/Workflow schemas, side-effect-free Workflow previews, complete Quality execution/evidence, Agent transactions, and real core-runtime manager/reference validation without Tauri |
+| Headless authoring core | `rust-authoring` | Unit, integration, and doc tests | Atomic content mutation, portable paths, project settings, multilingual prompt guards, deterministic conversation scoring/safety/event decisions, authoritative Workflow node catalog, shared Quality/Workflow schemas, side-effect-free Workflow previews, complete Quality execution/evidence, Agent transactions, and real core-runtime manager/reference validation without Tauri |
 | Standard MCP adapter | `rust-mcp` | Unit, protocol, and real stdio child-process tests | Fixed project root, eight schema-backed tools, project-external cross-process leases, core/delivery validation, bounded Quality execution/evidence, reviewed fingerprints, write exclusion, candidate validation, and rollback |
 | Rust AI | `rust-ai` | Unit, integration, and doc tests | Inference contracts and backend planning |
 | Rust assets | `rust-assets` | Unit tests | Asset and save boundaries |
@@ -39,7 +39,7 @@ GitHub Actions runs the automation, frontend, Rust, and .NET groups as separate 
 
 ## Open Audit Work
 
-1. Continue the frontend state-machine extraction from the now-isolated workflow preview into the remaining large editor views and end-to-end browser Story Playtest workflows.
+1. Continue frontend state-machine extraction after isolating Workflow contracts, graph authoring, and preview execution; large Settings and Quality Suite views plus end-to-end browser Story Playtest workflows remain.
 2. Continue moving schema-specific catalog validation, cross-reference discovery, and packaging behind `llm-authoring`; project settings, portable paths, JSON document inspection, and transactions are now shared by Tauri or MCP without transport duplication.
 3. Extend the retained .NET renderer ABI/load coverage with a headless SDL initialization and render-loop probe, or formally remove those projects from the supported product boundary.
 4. Continue decomposing `scripts/verify-release.mjs`; frontend, AI, and path source-invariant checks now live in an importable module, while content, packaging, and browser gates remain in the entry point.
