@@ -193,6 +193,31 @@ test('Scene authoring saves a real background, previews, and rejects portable ID
   await expect(page.locator('.header-actions').getByRole('button', { name: 'Save', exact: true })).toBeDisabled()
 })
 
+test('Scene Asset diagnostics uses the project catalog and persists browser runtime selection', async ({ page }) => {
+  await page.goto('/assets')
+
+  await expect(page.getByRole('heading', { name: 'Scene Assets' })).toBeVisible()
+  const sceneRows = page.locator('.scene-row')
+  await expect.poll(() => sceneRows.count()).toBeGreaterThan(2)
+  const target = page.locator('.scene-row:not(.active)').first()
+  const targetId = (await target.locator('.scene-copy small').textContent())?.trim()
+  const targetName = (await target.locator('.scene-copy strong').textContent())?.trim()
+  if (!targetId || !targetName) throw new Error('Scene Asset diagnostics did not expose a non-active project Scene')
+
+  await target.click()
+  await page.getByRole('button', { name: 'Set Active', exact: true }).click()
+  await expect(page.locator('.status-toast.success')).toContainText(`Active scene: ${targetName}`)
+  const activated = page.locator('.scene-row').filter({ hasText: targetId })
+  await expect(activated).toHaveClass(/active/)
+
+  await page.reload()
+  const persisted = page.locator('.scene-row').filter({ hasText: targetId })
+  await expect(persisted).toHaveClass(/active/)
+  await page.getByRole('button', { name: 'Active', exact: true }).first().click()
+  await expect(page.locator('.scene-row')).toHaveCount(1)
+  await expect(page.locator('.scene-row .scene-copy small')).toHaveText(targetId)
+})
+
 test('Knowledge authoring persists Agent context and protects browser character references', async ({ page }) => {
   await page.goto('/knowledge')
 

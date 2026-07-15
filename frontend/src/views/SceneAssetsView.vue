@@ -201,7 +201,7 @@
                 <ImageOff v-else :size="14" />
               </span>
               <span class="background-copy"><strong>{{ asset.file_name }}</strong><small>{{ asset.relative_path }}</small></span>
-              <span class="background-meta"><strong>{{ formatBytes(asset.file_size) }}</strong><small>{{ asset.linked_scene_id ? t('assets.linked', 'Linked') : t('assets.unlinked', 'Unlinked') }}</small></span>
+              <span class="background-meta"><strong>{{ formatSceneAssetBytes(asset.file_size) }}</strong><small>{{ asset.linked_scene_id ? t('assets.linked', 'Linked') : t('assets.unlinked', 'Unlinked') }}</small></span>
             </button>
           </div>
         </section>
@@ -217,63 +217,36 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { AlertTriangle, CheckCircle2, Clock3, CloudSun, Hash, ImageOff, Images, ListChecks, LoaderCircle, PanelRightOpen, Play, RefreshCw, Search, X } from '@lucide/vue'
 import { resolveAssetUrl } from '../lib/assets'
 import { useI18n } from '../lib/i18n'
-import { invokeCommand } from '../lib/tauri'
+import {
+  loadActiveSceneAssetState,
+  loadSceneAssetCatalog,
+  setActiveSceneAsset,
+  type ActiveSceneAssetState,
+  type BackgroundAssetInfo,
+  type SceneAssetCatalog,
+  type SceneAssetCatalogIssue,
+  type SceneAssetInfo,
+} from '../lib/sceneAssets'
+import {
+  activateSceneAssetState,
+  addFailedScenePreviewUrl,
+  filterSceneAssets,
+  formatSceneAssetBytes,
+  normalizeActiveSceneAssetState,
+  sceneAssetIssueTarget,
+  sceneAssetMetrics,
+  sceneAssetName,
+  type SceneAssetFilter,
+} from '../lib/sceneAssetPresentation'
 
-interface SceneInfo {
-  id: string
-  name: string
-  background_path: string | null
-  bgm_path: string | null
-  weather: string | null
-  time_of_day: string | null
-  tags: string[]
-  source: string
-  background_exists: boolean
-  absolute_background_path: string | null
-}
-
-interface BackgroundAsset {
-  id: string
-  file_name: string
-  relative_path: string
-  absolute_path: string
-  extension: string
-  file_size: number
-  linked_scene_id: string | null
-}
-
-interface SceneAssetIssue {
-  severity: string
-  code: string
-  scene_id: string | null
-  path: string | null
-  message: string
-}
-
-interface SceneAssetCatalog {
-  project_path: string | null
-  valid: boolean
-  error_count: number
-  warning_count: number
-  scenes: SceneInfo[]
-  backgrounds: BackgroundAsset[]
-  issues: SceneAssetIssue[]
-}
-
-interface ActiveScene {
-  scene: SceneInfo | null
-  scene_history: string[]
-}
-
-type SceneFilter = 'all' | 'active' | 'missing'
 type InspectorTab = 'runtime' | 'diagnostics' | 'backgrounds'
 
 const { t } = useI18n()
 const catalog = ref<SceneAssetCatalog | null>(null)
-const activeState = ref<ActiveScene | null>(null)
-const selectedScene = ref<SceneInfo | null>(null)
+const activeState = ref<ActiveSceneAssetState | null>(null)
+const selectedScene = ref<SceneAssetInfo | null>(null)
 const searchQuery = ref('')
-const sceneFilter = ref<SceneFilter>('all')
+const sceneFilter = ref<SceneAssetFilter>('all')
 const inspectorTab = ref<InspectorTab>('runtime')
 const compactInspectorOpen = ref(false)
 const isLoading = ref(false)
@@ -281,106 +254,43 @@ const settingSceneId = ref('')
 const failedPreviewUrls = ref<string[]>([])
 const toast = ref('')
 const toastType = ref<'success' | 'error'>('success')
-const activeSceneStorageKey = 'monogatari.activeScene'
 let toastTimer: number | null = null
-
-const previewCatalog: SceneAssetCatalog = {
-  project_path: null,
-  valid: true,
-  error_count: 0,
-  warning_count: 0,
-  scenes: [
-    {
-      id: 'sakura_park',
-      name: 'Sakura Park',
-      background_path: 'assets/backgrounds/sakura_park.svg',
-      bgm_path: null,
-      weather: 'spring',
-      time_of_day: 'day',
-      tags: ['outdoor', 'calm'],
-      source: 'preview',
-      background_exists: true,
-      absolute_background_path: null,
-    },
-    {
-      id: 'studio_night',
-      name: 'Studio Night',
-      background_path: 'assets/backgrounds/studio_night.svg',
-      bgm_path: null,
-      weather: 'clear',
-      time_of_day: 'night',
-      tags: ['indoor', 'focus'],
-      source: 'preview',
-      background_exists: true,
-      absolute_background_path: null,
-    },
-  ],
-  backgrounds: [
-    {
-      id: 'sakura_park',
-      file_name: 'sakura_park.svg',
-      relative_path: 'assets/backgrounds/sakura_park.svg',
-      absolute_path: '',
-      extension: 'svg',
-      file_size: 2257,
-      linked_scene_id: 'sakura_park',
-    },
-    {
-      id: 'studio_night',
-      file_name: 'studio_night.svg',
-      relative_path: 'assets/backgrounds/studio_night.svg',
-      absolute_path: '',
-      extension: 'svg',
-      file_size: 1916,
-      linked_scene_id: 'studio_night',
-    },
-  ],
-  issues: [],
-}
 
 const scenes = computed(() => catalog.value?.scenes || [])
 const activeScene = computed(() => activeState.value?.scene || null)
-const issueCount = computed(() => (catalog.value?.error_count || 0) + (catalog.value?.warning_count || 0))
-const brokenSceneCount = computed(() => scenes.value.filter(scene => scene.background_path && !scene.background_exists).length)
-const filteredScenes = computed(() => {
-  const query = searchQuery.value.trim().toLowerCase()
-  return scenes.value.filter(scene => {
-    if (sceneFilter.value === 'active' && activeScene.value?.id !== scene.id) return false
-    if (sceneFilter.value === 'missing' && (!scene.background_path || scene.background_exists)) return false
-    if (!query) return true
-    return scene.id.toLowerCase().includes(query)
-      || scene.name.toLowerCase().includes(query)
-      || (scene.background_path || '').toLowerCase().includes(query)
-      || scene.tags.some(tag => tag.toLowerCase().includes(query))
-  })
-})
+const metrics = computed(() => sceneAssetMetrics(catalog.value))
+const issueCount = computed(() => metrics.value.issue_count)
+const brokenSceneCount = computed(() => metrics.value.broken_scene_count)
+const filteredScenes = computed(() => filterSceneAssets(
+  scenes.value,
+  searchQuery.value,
+  sceneFilter.value,
+  activeScene.value?.id || null,
+))
 
 async function refreshCatalog(showNotice = false) {
   isLoading.value = true
   try {
-    const nextCatalog = await invokeCommand<SceneAssetCatalog>('list_scene_assets', undefined, previewCatalog)
-    const nextActiveState = await invokeCommand<ActiveScene>(
-      'get_current_scene',
-      undefined,
-      () => previewActiveState(nextCatalog),
-    )
+    const nextCatalog = await loadSceneAssetCatalog()
+    const nextActiveState = await loadActiveSceneAssetState(nextCatalog)
     catalog.value = nextCatalog
-    activeState.value = normalizeActiveState(nextActiveState, nextCatalog)
+    activeState.value = normalizeActiveSceneAssetState(nextActiveState, nextCatalog)
     const selectedId = selectedScene.value?.id || activeState.value.scene?.id
     selectedScene.value = nextCatalog.scenes.find(scene => scene.id === selectedId) || nextCatalog.scenes[0] || null
     failedPreviewUrls.value = []
     if (showNotice) notify('success', t('assets.notice.refreshed', 'Scene catalog refreshed.'))
   } catch (error) {
-    catalog.value = previewCatalog
-    activeState.value = previewActiveState(previewCatalog)
-    selectedScene.value = previewCatalog.scenes[0] || null
+    catalog.value = null
+    activeState.value = { scene: null, scene_history: [] }
+    selectedScene.value = null
+    failedPreviewUrls.value = []
     notify('error', t('assets.notice.load-failed', 'Scene catalog could not be loaded: {error}', { error: String(error) }))
   } finally {
     isLoading.value = false
   }
 }
 
-function selectScene(scene: SceneInfo) {
+function selectScene(scene: SceneAssetInfo) {
   selectedScene.value = scene
   trackView(scene.name, scene.id, 'scenes')
 }
@@ -391,17 +301,13 @@ function selectSceneById(sceneId: string | null) {
   if (scene) selectScene(scene)
 }
 
-async function activateScene(scene: SceneInfo) {
+async function activateScene(scene: SceneAssetInfo) {
   if (!scene.background_exists || settingSceneId.value) return
   settingSceneId.value = scene.id
   try {
-    const selected = await invokeCommand<SceneInfo>('set_scene', { sceneId: scene.id }, () => scene)
+    const selected = await setActiveSceneAsset(scene)
     const catalogScene = scenes.value.find(item => item.id === selected.id) || selected
-    activeState.value = {
-      scene: catalogScene,
-      scene_history: [...(activeState.value?.scene_history || []), catalogScene.id].slice(-24),
-    }
-    localStorage.setItem(activeSceneStorageKey, JSON.stringify(catalogScene))
+    activeState.value = activateSceneAssetState(activeState.value, catalogScene)
     notify('success', t('assets.notice.active', 'Active scene: {name}', { name: catalogScene.name }))
   } catch (error) {
     notify('error', t('assets.notice.activate-failed', 'Scene could not be activated: {error}', { error: String(error) }))
@@ -410,72 +316,46 @@ async function activateScene(scene: SceneInfo) {
   }
 }
 
-function previewActiveState(sourceCatalog: SceneAssetCatalog): ActiveScene {
-  const stored = localStorage.getItem(activeSceneStorageKey)
-  if (stored) {
-    try {
-      const storedScene = JSON.parse(stored) as SceneInfo
-      const scene = sourceCatalog.scenes.find(item => item.id === storedScene.id)
-      if (scene) return { scene, scene_history: [scene.id] }
-    } catch {
-      localStorage.removeItem(activeSceneStorageKey)
-    }
-  }
-  const scene = sourceCatalog.scenes[0] || null
-  return { scene, scene_history: scene ? [scene.id] : [] }
-}
-
-function normalizeActiveState(state: ActiveScene, sourceCatalog: SceneAssetCatalog): ActiveScene {
-  const scene = state.scene ? sourceCatalog.scenes.find(item => item.id === state.scene?.id) || state.scene : null
-  return { scene, scene_history: state.scene_history || [] }
-}
-
-function scenePreviewUrl(scene: SceneInfo): string | null {
+function scenePreviewUrl(scene: SceneAssetInfo): string | null {
   return resolveAssetUrl(scene.absolute_background_path || scene.background_path)
 }
 
-function backgroundPreviewUrl(asset: BackgroundAsset): string | null {
+function backgroundPreviewUrl(asset: BackgroundAssetInfo): string | null {
   return resolveAssetUrl(asset.absolute_path || asset.relative_path)
 }
 
-function previewAvailable(scene: SceneInfo): boolean {
+function previewAvailable(scene: SceneAssetInfo): boolean {
   const url = scenePreviewUrl(scene)
   return Boolean(scene.background_exists && url && !failedPreviewUrls.value.includes(url))
 }
 
-function backgroundPreviewAvailable(asset: BackgroundAsset): boolean {
+function backgroundPreviewAvailable(asset: BackgroundAssetInfo): boolean {
   const url = backgroundPreviewUrl(asset)
   return Boolean(url && !failedPreviewUrls.value.includes(url))
 }
 
-function markPreviewFailed(scene: SceneInfo) {
+function markPreviewFailed(scene: SceneAssetInfo) {
   const url = scenePreviewUrl(scene)
-  if (url && !failedPreviewUrls.value.includes(url)) failedPreviewUrls.value = [...failedPreviewUrls.value, url]
+  failedPreviewUrls.value = addFailedScenePreviewUrl(failedPreviewUrls.value, url)
 }
 
-function markBackgroundFailed(asset: BackgroundAsset) {
+function markBackgroundFailed(asset: BackgroundAssetInfo) {
   const url = backgroundPreviewUrl(asset)
-  if (url && !failedPreviewUrls.value.includes(url)) failedPreviewUrls.value = [...failedPreviewUrls.value, url]
+  failedPreviewUrls.value = addFailedScenePreviewUrl(failedPreviewUrls.value, url)
 }
 
 function sceneName(id: string): string {
-  return scenes.value.find(scene => scene.id === id)?.name || id
+  return sceneAssetName(scenes.value, id)
 }
 
-function issueTarget(issue: SceneAssetIssue): string {
-  return issue.scene_id || issue.path || t('assets.catalog', 'Catalog')
+function issueTarget(issue: SceneAssetCatalogIssue): string {
+  return sceneAssetIssueTarget(issue) || t('assets.catalog', 'Catalog')
 }
 
 function severityLabel(severity: string): string {
   if (severity.toLowerCase() === 'error') return t('common.error', 'Error')
   if (severity.toLowerCase() === 'warning') return t('assets.warnings', 'Warnings')
   return severity
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 function trackView(name: string, id: string, type: string) {

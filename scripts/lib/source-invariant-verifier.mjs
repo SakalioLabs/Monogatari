@@ -68,6 +68,10 @@ export function createSourceInvariantVerifier({
     const sceneAuthoringTestSource = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'sceneAuthoring.test.ts'), 'utf8')
     const sceneEditingSource = await readFile(path.join(frontendDir, 'src', 'lib', 'sceneEditing.ts'), 'utf8')
     const sceneEditingTestSource = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'sceneEditing.test.ts'), 'utf8')
+    const sceneAssetsSource = await readFile(path.join(frontendDir, 'src', 'lib', 'sceneAssets.ts'), 'utf8')
+    const sceneAssetsTestSource = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'sceneAssets.test.ts'), 'utf8')
+    const sceneAssetPresentationSource = await readFile(path.join(frontendDir, 'src', 'lib', 'sceneAssetPresentation.ts'), 'utf8')
+    const sceneAssetPresentationTestSource = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'sceneAssetPresentation.test.ts'), 'utf8')
     const dialogueAuthoringSource = await readFile(path.join(frontendDir, 'src', 'lib', 'dialogueAuthoring.ts'), 'utf8')
     const dialogueGraphEditingSource = await readFile(path.join(frontendDir, 'src', 'lib', 'dialogueGraphEditing.ts'), 'utf8')
     const dialogueGraphEditingTestSource = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'dialogueGraphEditing.test.ts'), 'utf8')
@@ -99,6 +103,7 @@ export function createSourceInvariantVerifier({
     const storyEventEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'StoryEventEditorView.vue'), 'utf8')
     const endingEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'EndingEditorView.vue'), 'utf8')
     const sceneEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'SceneEditorView.vue'), 'utf8')
+    const sceneAssetsViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'SceneAssetsView.vue'), 'utf8')
     const dialogueEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'DialogueEditorView.vue'), 'utf8')
     const qualitySuiteSource = await readFile(path.join(frontendDir, 'src', 'views', 'QualitySuiteView.vue'), 'utf8')
     const qualitySuiteContractSource = await readFile(path.join(frontendDir, 'src', 'lib', 'qualitySuiteContract.ts'), 'utf8')
@@ -369,6 +374,19 @@ export function createSourceInvariantVerifier({
       [authoringE2eSource, 'Scene authoring saves a real background, previews, and rejects portable ID collisions', 'exercise Scene save, Playtest, and collision handling in a real browser'],
       [authoringE2eSource, "toHaveURL(/\\/game\\?previewScene=agent_scene_test&authoring=1$/)", 'prove the saved browser Scene reaches author Playtest'],
       [authoringE2eSource, "fill('AGENT_SCENE_TEST')", 'exercise case-folded Scene ID collision handling before persistence'],
+      [sceneAssetsSource, 'loadSceneAuthoringCatalog()', 'derive Web/PWA Scene Asset diagnostics from the real project catalog'],
+      [sceneAssetsSource, "invokeCommand<SceneAssetCatalog>('list_scene_assets')", 'retain the desktop Scene Asset command boundary'],
+      [sceneAssetsSource, 'export function buildBrowserSceneAssetCatalog', 'build browser asset evidence without hard-coded sample Scenes'],
+      [sceneAssetPresentationSource, 'export function filterSceneAssets', 'filter Scene Asset catalogs outside the Vue view'],
+      [sceneAssetPresentationSource, 'export function activateSceneAssetState', 'bound active Scene history outside transport orchestration'],
+      [sceneAssetPresentationSource, 'export function addFailedScenePreviewUrl', 'track failed preview resources immutably'],
+      [sceneAssetsViewSource, "from '../lib/sceneAssets'", 'delegate Scene Asset transport and browser persistence'],
+      [sceneAssetsViewSource, "from '../lib/sceneAssetPresentation'", 'delegate Scene Asset filtering and presentation state'],
+      [sceneAssetsTestSource, 'builds the browser catalog from real authoring entries without sample duplication', 'test real browser Scene Asset catalog shaping'],
+      [sceneAssetsTestSource, 'clears stale browser active Scene identities', 'test stale and malformed browser runtime state cleanup'],
+      [sceneAssetPresentationTestSource, 'normalizes active state and bounds immutable history', 'test active Scene presentation state independently'],
+      [authoringE2eSource, 'Scene Asset diagnostics uses the project catalog and persists browser runtime selection', 'exercise real Scene Asset loading and active-state persistence in a browser'],
+      [authoringE2eSource, 'toBeGreaterThan(2)', 'prove Scene Asset diagnostics cannot regress to the two-item sample catalog'],
       [dialogueAuthoringSource, "invokeCommand<DialogueAuthoringCatalogSnapshot>('get_dialogue_authoring_catalog')", 'load editable dialogue catalog snapshots'],
       [dialogueAuthoringSource, 'expectedCatalogFingerprint', 'save and delete dialogues with optimistic concurrency'],
       [dialogueAuthoringSource, 'saveBrowserDialogueDrafts', 'persist browser dialogue authoring drafts'],
@@ -505,6 +523,22 @@ export function createSourceInvariantVerifier({
     for (const needle of sceneEditingViewLeaks) {
       if (sceneEditorSource.includes(needle)) {
         issues.push(`frontend/src/views/SceneEditorView.vue must not redeclare Scene editing domain logic: ${needle}`)
+      }
+    }
+
+    const sceneAssetsViewLeaks = [
+      'interface SceneInfo',
+      'interface SceneAssetCatalog',
+      'const previewCatalog',
+      'function previewActiveState',
+      'function normalizeActiveState',
+      'localStorage.',
+      'invokeCommand',
+      'const query = searchQuery.value.trim().toLowerCase()',
+    ]
+    for (const needle of sceneAssetsViewLeaks) {
+      if (sceneAssetsViewSource.includes(needle)) {
+        issues.push(`frontend/src/views/SceneAssetsView.vue must not redeclare Scene Asset transport or presentation logic: ${needle}`)
       }
     }
 
