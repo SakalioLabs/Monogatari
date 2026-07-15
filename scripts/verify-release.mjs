@@ -165,6 +165,8 @@ const releaseCriticalRustFiles = [
   'crates/authoring/src/paths.rs',
   'crates/authoring/src/project.rs',
   'crates/authoring/src/project_package.rs',
+  'crates/authoring/src/project_package/archive_writer.rs',
+  'crates/authoring/src/project_package/archive_writer/tests.rs',
   'crates/authoring/src/project_package/export.rs',
   'crates/authoring/src/project_package/manifest.rs',
   'crates/authoring/src/project_package/portable_path.rs',
@@ -2287,6 +2289,8 @@ async function verifyTauriPackagingConfig() {
   const authoringFilesystemSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'filesystem.rs'), 'utf8')
   const authoringProjectSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'project.rs'), 'utf8')
   const authoringProjectPackageSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'project_package.rs'), 'utf8')
+  const authoringProjectPackageWriterSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'project_package', 'archive_writer.rs'), 'utf8')
+  const authoringProjectPackageWriterTests = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'project_package', 'archive_writer', 'tests.rs'), 'utf8')
   const authoringProjectPackageExportSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'project_package', 'export.rs'), 'utf8')
   const authoringProjectPackagePathSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'project_package', 'portable_path.rs'), 'utf8')
   const authoringProjectPackageManifestSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'project_package', 'manifest.rs'), 'utf8')
@@ -2593,6 +2597,14 @@ async function verifyTauriPackagingConfig() {
     [tauriProjectSource, 'build_headless_project_export_manifest', 'delegate export generation to the shared headless package domain'],
     [tauriProjectSource, 'project_export_provenance()', 'inject desktop build and time provenance at the adapter boundary'],
     [authoringProjectPackageSource, 'pub const ARCHIVE_MANIFEST_PATH', 'pin the shared project package manifest path'],
+    [authoringProjectPackageSource, 'mod archive_writer;', 'isolate shared atomic project package writing'],
+    [authoringProjectPackageWriterSource, 'pub fn write_project_package', 'expose project package writing without Tauri'],
+    [authoringProjectPackageWriterSource, 'ProjectPackageTargetPolicy', 'make package create and replacement intent explicit'],
+    [authoringProjectPackageWriterSource, 'write_export_record', 'stream project files into ZIP output with fixed memory'],
+    [authoringProjectPackageWriterSource, 'writer.write_all(&buffer[..read])', 'write project package assets incrementally'],
+    [authoringProjectPackageWriterSource, 'commit_staged_package', 'commit generated project packages through a staged file'],
+    [authoringProjectPackageWriterTests, 'writes_streamed_credential_free_packages_without_tauri', 'test real project package output without desktop state'],
+    [authoringProjectPackageWriterTests, 'failed_package_replacement_preserves_the_previous_file', 'test shared atomic package export rollback'],
     [authoringProjectPackageSource, 'mod manifest;', 'isolate shared project package manifest semantics'],
     [authoringProjectPackageManifestSource, 'MAX_ARCHIVE_TOTAL_BYTES', 'bound expanded project package sizes'],
     [authoringProjectPackageManifestSource, 'MAX_ARCHIVE_FILE_BYTES', 'bound individual project package files'],
@@ -2603,13 +2615,11 @@ async function verifyTauriPackagingConfig() {
     [authoringProjectPackageManifestSource, 'minimal_manifest_validates_without_zip_io', 'independently test project package manifest acceptance'],
     [authoringProjectPackageManifestSource, 'manifest_rejects_declared_size_bombs_without_allocating', 'independently test package size-bomb rejection'],
     [tauriProjectArchiveSource, 'use llm_authoring::project_package::{', 'reuse the shared project package protocol'],
+    [tauriProjectArchiveSource, 'write_project_package(', 'delegate archive output to the shared headless writer'],
     [tauriProjectArchiveSource, 'reject_non_regular_zip_entry', 'reject symlink and special ZIP entries'],
     [tauriProjectArchiveSource, 'verify_and_extract_entry', 'stream and verify project package contents during import'],
-    [tauriProjectArchiveSource, 'write_export_record', 'stream project files into ZIP output with fixed memory'],
-    [tauriProjectArchiveSource, 'writer.write_all(&buffer[..read])', 'write project package assets incrementally'],
     [tauriProjectArchiveSource, 'SHA-256 mismatch', 'reject tampered package files'],
     [tauriProjectArchiveSource, 'scrub_runtime_secret_config(&settings) != settings', 'reject imported settings containing runtime secrets'],
-    [tauriProjectArchiveSource, 'atomic_replace_archive', 'replace exported project packages atomically'],
     [tauriProjectArchiveSource, 'remove_import_staging', 'remove rejected project import staging directories'],
     [tauriProjectArchiveSource, 'pub(crate) mod commands;', 'keep project package transport orchestration in its own module'],
     [tauriProjectArchiveCommandsSource, 'load_project_content(&staging_root)', 'validate imported runtime content before committing it'],

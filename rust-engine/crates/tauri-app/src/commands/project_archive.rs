@@ -9,14 +9,18 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use serde::Serialize;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
+#[cfg(test)]
 use zip::write::SimpleFileOptions;
-use zip::{CompressionMethod, ZipArchive, ZipWriter};
+use zip::ZipArchive;
+#[cfg(test)]
+use zip::{CompressionMethod, ZipWriter};
 
 use llm_authoring::project::{sanitize_export_config, scrub_runtime_secret_config};
 use llm_authoring::project_package::{
-    is_reserved_windows_segment, portable_case_key, project_export_settings_bytes,
-    validate_manifest, validate_portable_path, ArchiveFileRecord, ARCHIVE_MANIFEST_PATH,
-    MAX_ARCHIVE_DIRECTORIES, MAX_ARCHIVE_FILES, MAX_ARCHIVE_FILE_BYTES,
+    is_reserved_windows_segment, portable_case_key, validate_manifest, validate_portable_path,
+    write_project_package, ArchiveFileRecord, ProjectPackageExportResult,
+    ProjectPackageTargetPolicy, ARCHIVE_MANIFEST_PATH, MAX_ARCHIVE_DIRECTORIES, MAX_ARCHIVE_FILES,
+    MAX_ARCHIVE_FILE_BYTES,
 };
 #[cfg(test)]
 use llm_authoring::project_package::{
@@ -45,16 +49,7 @@ pub struct ProjectArchiveInspection {
     pub verified: bool,
 }
 
-#[derive(Debug, Clone, Serialize)]
-pub struct ProjectArchiveExportResult {
-    pub archive_path: String,
-    pub project_path: String,
-    pub project_title: String,
-    pub file_count: usize,
-    pub total_bytes: u64,
-    pub archive_bytes: u64,
-    pub content_sha256: String,
-}
+pub type ProjectArchiveExportResult = ProjectPackageExportResult;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ProjectArchiveImportResult {
@@ -77,201 +72,12 @@ fn write_project_archive(
     destination: &Path,
     manifest_value: Value,
 ) -> Result<ProjectArchiveExportResult, String> {
-    let validated = validate_manifest(manifest_value)?;
-    let parent = destination
-        .parent()
-        .ok_or_else(|| "Project package destination must have a parent directory.".to_string())?;
-    let parent = canonical_regular_directory(parent, "Project package destination")?;
-    let destination = parent.join(
-        destination
-            .file_name()
-            .ok_or_else(|| "Project package destination has no file name.".to_string())?,
-    );
-    ensure_replaceable_archive_target(&destination)?;
-
-    let stage_path = unique_sibling_path(&parent, ".monogatari-export", "tmp")?;
-    let write_result = (|| {
-        let stage_file = OpenOptions::new()
-            .create_new(true)
-            .read(true)
-            .write(true)
-            .open(&stage_path)
-            .map_err(|error| {
-                format!(
-                    "Unable to create staged project package `{}`: {error}",
-                    stage_path.display()
-                )
-            })?;
-        let mut writer = ZipWriter::new(stage_file);
-        let options = SimpleFileOptions::default()
-            .compression_method(CompressionMethod::Deflated)
-            .unix_permissions(0o644);
-        let manifest_bytes = serde_json::to_vec_pretty(&validated.raw)
-            .map_err(|error| format!("Unable to encode project package manifest: {error}"))?;
-        writer
-            .start_file(ARCHIVE_MANIFEST_PATH, options)
-            .map_err(|error| format!("Unable to add project package manifest: {error}"))?;
-        writer
-            .write_all(&manifest_bytes)
-            .map_err(|error| format!("Unable to write project package manifest: {error}"))?;
-
-        for record in validated.files_by_path.values() {
-            write_export_record(
-                &mut writer,
-                options,
-                project_root,
-                &validated.parsed.settings,
-                record,
-            )?;
-        }
-
-        let file = writer
-            .finish()
-            .map_err(|error| format!("Unable to finalize project package: {error}"))?;
-        file.sync_all()
-            .map_err(|error| format!("Unable to sync project package: {error}"))?;
-        Ok::<(), String>(())
-    })();
-
-    if let Err(error) = write_result {
-        let _ = std::fs::remove_file(&stage_path);
-        return Err(error);
-    }
-    atomic_replace_archive(&stage_path, &destination)?;
-    let archive_bytes = std::fs::metadata(&destination)
-        .map_err(|error| format!("Unable to inspect exported project package: {error}"))?
-        .len();
-
-    Ok(ProjectArchiveExportResult {
-        archive_path: destination.to_string_lossy().to_string(),
-        project_path: project_root.to_string_lossy().to_string(),
-        project_title: validated.project_title,
-        file_count: validated.parsed.package.file_count,
-        total_bytes: validated.parsed.package.total_bytes,
-        archive_bytes,
-        content_sha256: validated.parsed.package.content_sha256,
-    })
-}
-
-fn write_export_record(
-    writer: &mut ZipWriter<File>,
-    options: SimpleFileOptions,
-    project_root: &Path,
-    manifest_settings: &Value,
-    record: &ArchiveFileRecord,
-) -> Result<(), String> {
-    if record.path == "settings.json" {
-        let bytes = project_export_settings_bytes(manifest_settings)?;
-        verify_export_bytes(record, &bytes)?;
-        writer.start_file(&record.path, options).map_err(|error| {
-            format!(
-                "Unable to add `{}` to project package: {error}",
-                record.path
-            )
-        })?;
-        return writer.write_all(&bytes).map_err(|error| {
-            format!(
-                "Unable to write `{}` to project package: {error}",
-                record.path
-            )
-        });
-    }
-
-    let path = project_root.join(&record.path);
-    let metadata = std::fs::symlink_metadata(&path).map_err(|error| {
-        format!(
-            "Unable to inspect export source `{}`: {error}",
-            path.display()
-        )
-    })?;
-    if metadata.file_type().is_symlink() || !metadata.is_file() {
-        return Err(format!(
-            "Project export source must be a regular file: {}",
-            path.display()
-        ));
-    }
-    if metadata.len() != record.size_bytes {
-        return Err(format!(
-            "Project file `{}` changed size while the package was being created.",
-            record.path
-        ));
-    }
-    let canonical_root = project_root
-        .canonicalize()
-        .map_err(|error| format!("Unable to resolve project root: {error}"))?;
-    let canonical_path = path.canonicalize().map_err(|error| {
-        format!(
-            "Unable to resolve export source `{}`: {error}",
-            path.display()
-        )
-    })?;
-    if !canonical_path.starts_with(&canonical_root) {
-        return Err(format!(
-            "Project export source escapes the project root: {}",
-            path.display()
-        ));
-    }
-    let mut source = File::open(&canonical_path).map_err(|error| {
-        format!(
-            "Unable to open export source `{}`: {error}",
-            canonical_path.display()
-        )
-    })?;
-    writer.start_file(&record.path, options).map_err(|error| {
-        format!(
-            "Unable to add `{}` to project package: {error}",
-            record.path
-        )
-    })?;
-
-    let mut sha256 = Sha256::new();
-    let mut md5 = md5::Context::new();
-    let mut total = 0u64;
-    let mut buffer = [0u8; 64 * 1024];
-    loop {
-        let read = source
-            .read(&mut buffer)
-            .map_err(|error| format!("Unable to read export source `{}`: {error}", record.path))?;
-        if read == 0 {
-            break;
-        }
-        total = total
-            .checked_add(read as u64)
-            .ok_or_else(|| format!("Project file `{}` size overflowed.", record.path))?;
-        if total > record.size_bytes || total > MAX_ARCHIVE_FILE_BYTES {
-            return Err(format!(
-                "Project file `{}` expanded while the package was being created.",
-                record.path
-            ));
-        }
-        sha256.update(&buffer[..read]);
-        md5.consume(&buffer[..read]);
-        writer.write_all(&buffer[..read]).map_err(|error| {
-            format!(
-                "Unable to write `{}` to project package: {error}",
-                record.path
-            )
-        })?;
-    }
-    if total != record.size_bytes {
-        return Err(format!(
-            "Project file `{}` changed size while the package was being created.",
-            record.path
-        ));
-    }
-    if finish_sha256(sha256) != record.checksum_sha256 {
-        return Err(format!(
-            "Project file `{}` changed while the package was being created.",
-            record.path
-        ));
-    }
-    if !record.checksum_md5.is_empty() && format!("{:x}", md5.compute()) != record.checksum_md5 {
-        return Err(format!(
-            "Project file `{}` failed its compatibility checksum.",
-            record.path
-        ));
-    }
-    Ok(())
+    write_project_package(
+        project_root,
+        destination,
+        manifest_value,
+        ProjectPackageTargetPolicy::ReplaceExisting,
+    )
 }
 
 fn verify_archive(
@@ -454,30 +260,6 @@ fn verify_archive(
         },
     })
 }
-fn verify_export_bytes(record: &ArchiveFileRecord, bytes: &[u8]) -> Result<(), String> {
-    if bytes.len() as u64 != record.size_bytes {
-        return Err(format!(
-            "Project file `{}` changed size while the package was being created.",
-            record.path
-        ));
-    }
-    if sha256_hex(bytes) != record.checksum_sha256 {
-        return Err(format!(
-            "Project file `{}` changed while the package was being created.",
-            record.path
-        ));
-    }
-    if !record.checksum_md5.is_empty()
-        && format!("{:x}", md5::compute(bytes)) != record.checksum_md5
-    {
-        return Err(format!(
-            "Project file `{}` failed its compatibility checksum.",
-            record.path
-        ));
-    }
-    Ok(())
-}
-
 fn verify_and_extract_entry<R: Read>(
     entry: &mut R,
     record: &ArchiveFileRecord,
@@ -589,6 +371,7 @@ fn reject_non_regular_zip_entry<R: Read>(entry: &zip::read::ZipFile<'_, R>) -> R
     }
     Ok(())
 }
+#[cfg(test)]
 fn sha256_hex(bytes: &[u8]) -> String {
     finish_sha256(Sha256::new_with_prefix(bytes))
 }
@@ -674,51 +457,6 @@ fn canonical_regular_directory(path: &Path, label: &str) -> Result<PathBuf, Stri
     }
     path.canonicalize()
         .map_err(|error| format!("Unable to resolve {label} `{}`: {error}", path.display()))
-}
-
-fn ensure_replaceable_archive_target(path: &Path) -> Result<(), String> {
-    if !path.exists() {
-        return Ok(());
-    }
-    let metadata = std::fs::symlink_metadata(path).map_err(|error| {
-        format!(
-            "Unable to inspect existing project package `{}`: {error}",
-            path.display()
-        )
-    })?;
-    if metadata.file_type().is_symlink() || !metadata.is_file() {
-        return Err(format!(
-            "Existing project package target must be a regular file: {}",
-            path.display()
-        ));
-    }
-    Ok(())
-}
-
-fn atomic_replace_archive(stage_path: &Path, destination: &Path) -> Result<(), String> {
-    let parent = destination
-        .parent()
-        .ok_or_else(|| "Project package destination has no parent directory.".to_string())?;
-    let backup_path = unique_sibling_path(parent, ".monogatari-export", "backup")?;
-    let had_destination = destination.exists();
-    if had_destination {
-        std::fs::rename(destination, &backup_path).map_err(|error| {
-            format!("Unable to stage the previous project package for replacement: {error}")
-        })?;
-    }
-    if let Err(error) = std::fs::rename(stage_path, destination) {
-        if had_destination {
-            let _ = std::fs::rename(&backup_path, destination);
-        }
-        let _ = std::fs::remove_file(stage_path);
-        return Err(format!("Unable to commit project package: {error}"));
-    }
-    if had_destination {
-        std::fs::remove_file(&backup_path).map_err(|error| {
-            format!("Project package was replaced, but its backup could not be removed: {error}")
-        })?;
-    }
-    Ok(())
 }
 
 fn unique_sibling_path(parent: &Path, prefix: &str, suffix: &str) -> Result<PathBuf, String> {

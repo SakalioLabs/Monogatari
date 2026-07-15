@@ -2,10 +2,14 @@
 
 pub const ARCHIVE_MANIFEST_PATH: &str = "monogatari-project.json";
 
+mod archive_writer;
 mod export;
 mod manifest;
 mod portable_path;
 
+pub use archive_writer::{
+    write_project_package, ProjectPackageExportResult, ProjectPackageTargetPolicy,
+};
 pub use export::{
     build_project_export_manifest, project_export_settings_bytes, ProjectExportProvenance,
     ProjectExportRuntimeSnapshot, PROJECT_EXPORT_DIRECTORIES,
