@@ -7,6 +7,10 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { createSourceInvariantVerifier } from './lib/source-invariant-verifier.mjs'
+import {
+  expectedFrontendRoutes,
+  frontendRouteCoverageEvidence,
+} from './lib/frontend-route-verifier.mjs'
 import { releaseChannelPolicyIssues } from './lib/release-channel-policy-verifier.mjs'
 import {
   extractHtmlCsp,
@@ -146,31 +150,6 @@ const rendererAssetFields = [
 const sceneBackgroundExtensions = new Set(['.png', '.jpg', '.jpeg', '.webp', '.svg'])
 const releaseSubpathBase = '/Monogatari/'
 const requiredLocales = ['en.json', 'zh-CN.json', 'zh.json', 'ja-JP.json', 'ja.json', 'ko-KR.json', 'ko.json']
-
-const expectedFrontendRoutes = [
-  { path: '/', name: 'home', component: 'HomeView.vue', navKey: 'nav.dashboard' },
-  { path: '/title', name: 'title', component: 'TitleScreenView.vue', sidebar: false },
-  { path: '/game', name: 'game', component: 'GameView.vue', navKey: 'nav.story' },
-  { path: '/chat', name: 'chat', component: 'ChatView.vue', navKey: 'nav.chat' },
-  { path: '/editor', name: 'editor', component: 'WorkflowEditor.vue', navKey: 'nav.workflow' },
-  { path: '/character-editor', name: 'character-editor', component: 'CharacterEditorView.vue', navKey: 'nav.editor' },
-  { path: '/assets', name: 'assets', component: 'SceneAssetsView.vue', navKey: 'nav.assets' },
-  { path: '/settings', name: 'settings', component: 'SettingsView.vue', navKey: 'nav.settings' },
-  { path: '/characters', name: 'characters', component: 'CharacterGalleryView.vue', navKey: 'nav.characters' },
-  { path: '/group-chat', name: 'group-chat', component: 'GroupChatView.vue', navKey: 'nav.group' },
-  { path: '/analytics', name: 'analytics', component: 'AnalyticsView.vue', navKey: 'nav.analytics' },
-  { path: '/quality', name: 'quality', component: 'QualitySuiteView.vue', navKey: 'nav.quality' },
-  { path: '/marketplace', name: 'marketplace', component: 'MarketplaceView.vue', navKey: 'nav.marketplace' },
-  { path: '/plugins', name: 'plugins', component: 'PluginView.vue', navKey: 'nav.plugins' },
-  { path: '/audio', name: 'audio', component: 'AudioView.vue', navKey: 'nav.audio' },
-  { path: '/knowledge', name: 'knowledge', component: 'KnowledgeBaseView.vue', navKey: 'nav.knowledge' },
-  { path: '/dialogue-editor', name: 'dialogue-editor', component: 'DialogueEditorView.vue', navKey: 'nav.dialogues' },
-  { path: '/story-events', name: 'story-events', component: 'StoryEventEditorView.vue', navKey: 'nav.events' },
-  { path: '/endings', name: 'endings', component: 'EndingEditorView.vue', navKey: 'nav.endings' },
-  { path: '/scene-editor', name: 'scene-editor', component: 'SceneEditorView.vue', navKey: 'nav.scenes' },
-  { path: '/cg-gallery', name: 'cg-gallery', component: 'CGGalleryView.vue', navKey: 'nav.cg-gallery' },
-  { path: '/backlog', name: 'backlog', component: 'BacklogView.vue', navKey: 'nav.backlog' },
-]
 
 const releaseCriticalRustFiles = [
   'crates/core/src/state_key.rs',
@@ -2254,98 +2233,16 @@ async function verifyI18nLocalePathInvariants() {
 
 
 async function verifyFrontendRouteCoverage() {
-  const issues = []
   const routerSource = await readFile(path.join(frontendDir, 'src', 'router', 'index.ts'), 'utf8')
   const appSource = await readFile(path.join(frontendDir, 'src', 'App.vue'), 'utf8')
   const enLocale = JSON.parse(await readFile(path.join(root, 'data', 'locales', 'en.json'), 'utf8'))
-  const localeKeys = new Set(Object.keys(localeMessages(enLocale) ?? {}))
-
-  const routes = parseFrontendRoutes(routerSource)
-  const navItems = parseSidebarNavItems(appSource)
-  const expectedRoutesByPath = new Map(expectedFrontendRoutes.map((route) => [route.path, route]))
-  const routesByPath = new Map(routes.map((route) => [route.path, route]))
-  const navByPath = new Map(navItems.map((item) => [item.path, item]))
-  const sidebarRoutes = expectedFrontendRoutes.filter((route) => route.sidebar !== false)
-
-  for (const duplicate of duplicateValues(routes.map((route) => route.path))) {
-    issues.push(`frontend router has duplicate path ${duplicate}`)
-  }
-  for (const duplicate of duplicateValues(routes.map((route) => route.name))) {
-    issues.push(`frontend router has duplicate name ${duplicate}`)
-  }
-  for (const duplicate of duplicateValues(navItems.map((item) => item.path))) {
-    issues.push(`sidebar nav has duplicate path ${duplicate}`)
-  }
-
-  if (routes.length !== expectedFrontendRoutes.length) {
-    issues.push(`frontend router must expose ${expectedFrontendRoutes.length} routes, found ${routes.length}`)
-  }
-  if (navItems.length !== sidebarRoutes.length) {
-    issues.push(`sidebar nav must expose ${sidebarRoutes.length} items, found ${navItems.length}`)
-  }
-
-  for (const expected of expectedFrontendRoutes) {
-    const route = routesByPath.get(expected.path)
-    const nav = navByPath.get(expected.path)
-    if (!route) {
-      issues.push(`missing frontend route ${expected.path}`)
-      continue
-    }
-    if (route.name !== expected.name) {
-      issues.push(`route ${expected.path} must be named ${expected.name}, found ${route.name}`)
-    }
-    if (route.component !== expected.component) {
-      issues.push(`route ${expected.path} must load ${expected.component}, found ${route.component}`)
-    }
-    if (!(await fileExists(path.join(frontendDir, 'src', 'views', expected.component)))) {
-      issues.push(`route ${expected.path} component file is missing: ${expected.component}`)
-    }
-
-    if (expected.sidebar === false) {
-      if (nav) issues.push(`route ${expected.path} should not appear in the sidebar nav`)
-      continue
-    }
-
-    if (!nav) {
-      issues.push(`route ${expected.path} is missing from the sidebar nav`)
-    } else if (nav.labelKey !== expected.navKey) {
-      issues.push(`sidebar nav ${expected.path} must use ${expected.navKey}, found ${nav.labelKey}`)
-    }
-  }
-
-  for (const route of routes) {
-    if (!expectedRoutesByPath.has(route.path)) {
-      issues.push(`unexpected frontend route ${route.path}`)
-    }
-    if (!route.component.endsWith('.vue')) {
-      issues.push(`route ${route.path} must resolve to a Vue single-file component`)
-    }
-  }
-
-  for (const item of navItems) {
-    const expected = expectedRoutesByPath.get(item.path)
-    if (!expected) {
-      issues.push(`sidebar nav item ${item.path} does not match any expected route`)
-    } else if (expected.sidebar === false) {
-      issues.push(`sidebar nav item ${item.path} targets a full-screen route`)
-    }
-    if (!localeKeys.has(item.labelKey)) {
-      issues.push(`sidebar nav ${item.path} label key is missing from data/locales/en.json: ${item.labelKey}`)
-    }
-    if (item.badgeLiteral) {
-      issues.push(`sidebar nav ${item.path} badge must use t('badge.*') instead of a literal`)
-    }
-    if (item.badgeKey && !item.badgeKey.startsWith('badge.')) {
-      issues.push(`sidebar nav ${item.path} badge key must use the badge.* namespace`)
-    }
-    if (item.badgeKey && !localeKeys.has(item.badgeKey)) {
-      issues.push(`sidebar nav ${item.path} badge key is missing from data/locales/en.json: ${item.badgeKey}`)
-    }
-  }
-
-  if (!appSource.includes("route.name !== 'game' && route.name !== 'title'")) {
-    issues.push('App.vue must keep game and title as full-screen routes without the sidebar')
-  }
+  const viewEntries = await readdir(path.join(frontendDir, 'src', 'views'), { withFileTypes: true })
+  const { issues, routes, navItems } = frontendRouteCoverageEvidence({
+    routerSource,
+    appSource,
+    localeMessages: localeMessages(enLocale),
+    availableComponents: viewEntries.filter((entry) => entry.isFile()).map((entry) => entry.name),
+  })
 
   if (issues.length > 0) {
     throw new Error(`Frontend route coverage verification failed:\n${issues.join('\n')}`)
@@ -3148,60 +3045,6 @@ async function verifyReleaseChannelPolicy() {
   }
 
   console.log('[release] Release channel policy OK')
-}
-
-function parseFrontendRoutes(source) {
-  const directImports = new Map()
-  const importPattern = /import\s+([A-Za-z]\w*)\s+from\s+['"]\.\.\/views\/([^'"]+\.vue)['"]/g
-  let importMatch
-  while ((importMatch = importPattern.exec(source)) !== null) {
-    directImports.set(importMatch[1], importMatch[2])
-  }
-
-  const routes = []
-  const routePattern = /{\s*path:\s*'([^']+)'[\s\S]*?name:\s*'([^']+)'[\s\S]*?component:\s*(?:([A-Za-z]\w*)|\(\)\s*=>\s*import\(['"]\.\.\/views\/([^'"]+\.vue)['"]\))/g
-  let routeMatch
-  while ((routeMatch = routePattern.exec(source)) !== null) {
-    const [, routePath, name, directComponent, lazyComponent] = routeMatch
-    routes.push({
-      path: routePath,
-      name,
-      component: lazyComponent ?? directImports.get(directComponent) ?? directComponent,
-    })
-  }
-  return routes
-}
-
-function parseSidebarNavItems(source) {
-  const navArray = /const navItems = computed(?:<[^>]+>)?\(\(\) => \[([\s\S]*?)\]\)/.exec(source)?.[1]
-  if (!navArray) return []
-
-  const items = []
-  const itemPattern = /{([^{}]+)}/g
-  let itemMatch
-  while ((itemMatch = itemPattern.exec(navArray)) !== null) {
-    const itemSource = itemMatch[1]
-    const itemPath = /path:\s*'([^']+)'/.exec(itemSource)?.[1]
-    const labelKey = /label:\s*t\('([^']+)'/.exec(itemSource)?.[1]
-    if (!itemPath || !labelKey) continue
-    items.push({
-      path: itemPath,
-      labelKey,
-      badgeKey: /badge:\s*t\('([^']+)'/.exec(itemSource)?.[1],
-      badgeLiteral: /badge:\s*'([^']+)'/.exec(itemSource)?.[1],
-    })
-  }
-  return items
-}
-
-function duplicateValues(values) {
-  const seen = new Set()
-  const duplicates = new Set()
-  for (const value of values) {
-    if (seen.has(value)) duplicates.add(value)
-    seen.add(value)
-  }
-  return [...duplicates]
 }
 
 async function verifyWebDist({ basePath = '/' } = {}) {
