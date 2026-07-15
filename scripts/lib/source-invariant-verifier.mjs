@@ -1964,10 +1964,13 @@ export function createSourceInvariantVerifier({
     const mcpRoot = path.join(rustDir, 'crates', 'mcp-server')
     const [
       mcpCargoSource,
+      mcpCliSource,
       mcpLibSource,
       mcpMainSource,
+      mcpPackageTransportSource,
       mcpProtocolSource,
       mcpProjectLeaseSource,
+      mcpProvenanceSource,
       mcpServerSource,
       mcpValidationSource,
       mcpE2eSource,
@@ -1975,10 +1978,13 @@ export function createSourceInvariantVerifier({
       runtimeValidationSource,
     ] = await Promise.all([
       readFile(path.join(mcpRoot, 'Cargo.toml'), 'utf8'),
+      readFile(path.join(mcpRoot, 'src', 'cli.rs'), 'utf8'),
       readFile(path.join(mcpRoot, 'src', 'lib.rs'), 'utf8'),
       readFile(path.join(mcpRoot, 'src', 'main.rs'), 'utf8'),
+      readFile(path.join(mcpRoot, 'src', 'package_transport.rs'), 'utf8'),
       readFile(path.join(mcpRoot, 'src', 'protocol.rs'), 'utf8'),
       readFile(path.join(mcpRoot, 'src', 'project_lease.rs'), 'utf8'),
+      readFile(path.join(mcpRoot, 'src', 'provenance.rs'), 'utf8'),
       readFile(path.join(mcpRoot, 'src', 'server.rs'), 'utf8'),
       readFile(path.join(mcpRoot, 'src', 'validation.rs'), 'utf8'),
       readFile(path.join(mcpRoot, 'tests', 'stdio_e2e.rs'), 'utf8'),
@@ -2000,6 +2006,7 @@ export function createSourceInvariantVerifier({
       [mcpCargoSource, 'rmcp = { version = "2.2.0"', 'use the pinned official Rust MCP SDK'],
       [mcpCargoSource, '"transport-io"', 'enable the SDK stdio transport'],
       [mcpCargoSource, '"transport-child-process"', 'exercise the server through a real child-process client'],
+      [mcpCliSource, '"--package-output-dir"', 'bind package output through one startup option'],
       [mcpLibSource, 'rmcp::transport::stdio()', 'serve MCP through the SDK stdio transport'],
       [mcpMainSource, '.with_writer(std::io::stderr)', 'reserve stdout exclusively for MCP frames'],
       [mcpServerSource, 'canonical_project_root(&project_root)', 'bind one canonical project root at startup'],
@@ -2008,11 +2015,22 @@ export function createSourceInvariantVerifier({
       [mcpServerSource, 'pub async fn validate_delivery', 'expose read-only delivery asset validation'],
       [mcpServerSource, 'pub async fn list_project_json', 'expose bounded JSON catalog listing'],
       [mcpServerSource, 'pub async fn read_project_json', 'expose exact JSON document reads'],
+      [mcpServerSource, 'pub async fn preview_project_package', 'expose read-only credential-free package previews'],
+      [mcpServerSource, 'pub async fn export_project_package', 'expose reviewed fixed-root package output'],
       [mcpServerSource, 'pub async fn plan_transaction', 'expose side-effect-free transaction planning'],
       [mcpServerSource, 'pub async fn apply_transaction', 'expose validated transaction application'],
       [mcpServerSource, 'if !self.allow_write', 'keep writes disabled unless startup explicitly enables them'],
       [mcpProtocolSource, 'expected_precondition_fingerprint', 'require the caller to confirm the reviewed plan fingerprint'],
+      [mcpProtocolSource, 'expected_content_sha256', 'require the caller to confirm the reviewed package fingerprint'],
+      [mcpProtocolSource, 'replace_existing', 'make package replacement explicit in the tool schema'],
       [mcpServerSource, 'self.access.write().await', 'serialize reads against staged write candidates'],
+      [mcpPackageTransportSource, 'PackageOutputBoundary', 'isolate package destination policy from the tool router'],
+      [mcpPackageTransportSource, 'root.starts_with(project_root)', 'keep package output outside the authored project root'],
+      [mcpPackageTransportSource, 'validate_portable_path(file_name', 'accept one portable package file name'],
+      [mcpPackageTransportSource, 'ProjectPackageTargetPolicy::CreateNew', 'default package output to non-replacing creation'],
+      [mcpPackageTransportSource, 'write_project_package(', 'delegate archive generation to the shared headless writer'],
+      [mcpPackageTransportSource, 'tokio::task::spawn_blocking', 'keep package inventory and ZIP I/O off async executor workers'],
+      [mcpProvenanceSource, 'project_export_provenance', 'inject MCP build and time provenance outside package semantics'],
       [mcpProjectLeaseSource, 'std::env::temp_dir()', 'keep process leases outside the authored project tree'],
       [mcpProjectLeaseSource, 'Sha256::digest(project_root.as_os_str().as_encoded_bytes())', 'derive a path-private stable lease identity'],
       [mcpProjectLeaseSource, 'std::fs::File::try_lock(&file)', 'exclude concurrent server processes while a writer owns the project'],
@@ -2038,6 +2056,10 @@ export function createSourceInvariantVerifier({
       [mcpE2eSource, 'readonly_validation_returns_structured_invalid_evidence', 'test invalid projects return structured read-only evidence'],
       [mcpE2eSource, 'readonly_delivery_validation_reports_missing_declared_assets', 'test missing declared assets return structured delivery evidence'],
       [mcpE2eSource, 'writable_stdio_requires_reviewed_fingerprint_and_rolls_back_invalid_candidate', 'test fingerprint confirmation, application, and rollback'],
+      [mcpE2eSource, 'package_preview_and_export_are_bound_to_reviewed_content_and_output_root', 'test real stdio package preview and fixed-root ZIP output'],
+      [mcpE2eSource, 'McpToolErrorCode::PackageOutputUnavailable', 'test package export requires a startup-fixed output directory'],
+      [mcpE2eSource, 'PackageFingerprintMismatch', 'test stale package review rejection'],
+      [mcpE2eSource, 'format!("../{escape_name}")', 'test package path traversal rejection'],
       [mcpE2eSource, 'runtime_reference_rollback', 'test real stdio rollback after core-runtime reference rejection'],
     ]
     for (const [source, needle, description] of requirements) {
@@ -2053,6 +2075,9 @@ export function createSourceInvariantVerifier({
     }
     if (/pub\s+project_root\s*:/.test(mcpProtocolSource)) {
       issues.push('MCP tool requests must not be able to replace the startup-bound project root')
+    }
+    if (/pub\s+(?:output_path|package_output_dir)\s*:/.test(mcpProtocolSource)) {
+      issues.push('MCP tool requests must not be able to replace the startup-bound package output directory')
     }
 
     if (issues.length > 0) {

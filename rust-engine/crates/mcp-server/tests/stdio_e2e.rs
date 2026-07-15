@@ -16,8 +16,9 @@ use llm_authoring::project::default_project_config;
 use llm_authoring::quality_suite_validation::MAX_QUALITY_SUITE_FILE_BYTES;
 use llm_authoring::runtime_validation::CoreRuntimeValidationReport;
 use monogatari_mcp::protocol::{
-    InspectProjectOutput, McpToolError, McpToolErrorCode, RunQualitySuiteOutput,
-    MCP_QUALITY_SUITE_RUN_SCHEMA_V1,
+    ExportProjectPackageOutput, InspectProjectOutput, McpToolError, McpToolErrorCode,
+    PreviewProjectPackageOutput, RunQualitySuiteOutput, MCP_PACKAGE_EXPORT_SCHEMA_V1,
+    MCP_PACKAGE_PREVIEW_SCHEMA_V1, MCP_QUALITY_SUITE_RUN_SCHEMA_V1,
 };
 use rmcp::model::{CallToolRequestParams, JsonObject};
 use rmcp::service::RunningService;
@@ -30,6 +31,7 @@ static NEXT_TEMP_ROOT: AtomicU64 = AtomicU64::new(0);
 
 struct TestProject {
     root: PathBuf,
+    package_output: PathBuf,
 }
 
 impl TestProject {
@@ -39,21 +41,27 @@ impl TestProject {
             std::process::id(),
             NEXT_TEMP_ROOT.fetch_add(1, Ordering::Relaxed)
         ));
+        let package_output = root.with_extension("packages");
         for catalog in AuthorableJsonCatalog::ALL {
             std::fs::create_dir_all(root.join(catalog.as_str())).unwrap();
         }
+        std::fs::create_dir_all(&package_output).unwrap();
         std::fs::write(
             root.join("settings.json"),
             serde_json::to_vec_pretty(&default_project_config()).unwrap(),
         )
         .unwrap();
-        Self { root }
+        Self {
+            root,
+            package_output,
+        }
     }
 }
 
 impl Drop for TestProject {
     fn drop(&mut self) {
         let _ = std::fs::remove_dir_all(&self.root);
+        let _ = std::fs::remove_dir_all(&self.package_output);
     }
 }
 
@@ -92,7 +100,7 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
     let second_reader = connect(&project.root, false).await?;
     assert_no_project_lease_sidecar(&project);
     assert_competing_start_rejected(&project.root, true).await?;
-    assert_eq!(second_reader.list_all_tools().await?.len(), 8);
+    assert_eq!(second_reader.list_all_tools().await?.len(), 10);
     second_reader.cancel().await?;
 
     let tools = client.list_all_tools().await?;
@@ -105,9 +113,11 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
         names,
         [
             "apply_transaction",
+            "export_project_package",
             "inspect_project",
             "list_project_json",
             "plan_transaction",
+            "preview_project_package",
             "read_project_json",
             "run_quality_suite",
             "validate_delivery",
@@ -121,6 +131,7 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
         .await?;
     let inspection: InspectProjectOutput = structured(&inspection)?;
     assert!(!inspection.write_enabled);
+    assert!(!inspection.package_output_configured);
     assert_eq!(inspection.acceptance_level, JsonAcceptanceLevel::Document);
     assert!(inspection.project.config["ai"]["api"]["api_key"] == "");
 
@@ -231,6 +242,177 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
     let error: McpToolError = structured(&oversized)?;
     assert_eq!(error.code, McpToolErrorCode::ProjectInvalid);
     assert!(error.message.contains("cannot exceed"));
+
+    client.cancel().await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn package_preview_and_export_are_bound_to_reviewed_content_and_output_root(
+) -> anyhow::Result<()> {
+    let project = TestProject::new("package");
+    let mut settings = default_project_config();
+    settings["render"]["title"] = json!("MCP Package");
+    settings["ai"]["api"]["api_key"] = json!("must-not-ship");
+    std::fs::write(
+        project.root.join("settings.json"),
+        serde_json::to_vec_pretty(&settings)?,
+    )?;
+    std::fs::write(
+        project.root.join("characters/aoi.json"),
+        b"{\"id\":\"aoi\",\"name\":\"Aoi\"}\n",
+    )?;
+
+    let readonly =
+        connect_with_package_output(&project.root, false, Some(&project.package_output)).await?;
+    let preview = readonly
+        .call_tool(CallToolRequestParams::new("preview_project_package"))
+        .await?;
+    assert_eq!(preview.is_error, Some(false));
+    let preview: PreviewProjectPackageOutput = structured(&preview)?;
+    assert_eq!(preview.schema, MCP_PACKAGE_PREVIEW_SCHEMA_V1);
+    assert!(preview.package_output_configured);
+    assert_eq!(preview.project_title, "MCP Package");
+    assert!(preview.file_count >= 2);
+    assert_eq!(preview.content_sha256.len(), 64);
+    assert_eq!(
+        preview.manifest["settings"]["ai"]["api"]["api_key"],
+        "<redacted>"
+    );
+
+    let refused = readonly
+        .call_tool(
+            CallToolRequestParams::new("export_project_package").with_arguments(arguments(json!({
+                "file_name": "readonly.monogatari",
+                "expected_content_sha256": preview.content_sha256,
+                "replace_existing": false
+            }))),
+        )
+        .await?;
+    assert_eq!(refused.is_error, Some(true));
+    let error: McpToolError = structured(&refused)?;
+    assert_eq!(error.code, McpToolErrorCode::WriteDisabled);
+    assert!(!project.package_output.join("readonly.monogatari").exists());
+    readonly.cancel().await?;
+
+    let unconfigured = connect(&project.root, true).await?;
+    let unavailable = unconfigured
+        .call_tool(
+            CallToolRequestParams::new("export_project_package").with_arguments(arguments(json!({
+                "file_name": "unconfigured.monogatari",
+                "expected_content_sha256": preview.content_sha256,
+                "replace_existing": false
+            }))),
+        )
+        .await?;
+    assert_eq!(unavailable.is_error, Some(true));
+    let error: McpToolError = structured(&unavailable)?;
+    assert_eq!(error.code, McpToolErrorCode::PackageOutputUnavailable);
+    assert!(!project
+        .package_output
+        .join("unconfigured.monogatari")
+        .exists());
+    unconfigured.cancel().await?;
+
+    let client =
+        connect_with_package_output(&project.root, true, Some(&project.package_output)).await?;
+    let reviewed = client
+        .call_tool(CallToolRequestParams::new("preview_project_package"))
+        .await?;
+    let reviewed: PreviewProjectPackageOutput = structured(&reviewed)?;
+
+    let escape_name = format!(
+        "{}-escape.monogatari",
+        project.root.file_name().unwrap().to_string_lossy()
+    );
+    let escaped = client
+        .call_tool(
+            CallToolRequestParams::new("export_project_package").with_arguments(arguments(json!({
+                "file_name": format!("../{escape_name}"),
+                "expected_content_sha256": reviewed.content_sha256,
+                "replace_existing": false
+            }))),
+        )
+        .await?;
+    assert_eq!(escaped.is_error, Some(true));
+    let error: McpToolError = structured(&escaped)?;
+    assert_eq!(error.code, McpToolErrorCode::PackageError);
+    assert!(!project
+        .package_output
+        .parent()
+        .unwrap()
+        .join(&escape_name)
+        .exists());
+
+    std::fs::write(
+        project.root.join("characters/aoi.json"),
+        b"{\"id\":\"aoi\",\"name\":\"Aoi Updated\"}\n",
+    )?;
+    let stale = client
+        .call_tool(
+            CallToolRequestParams::new("export_project_package").with_arguments(arguments(json!({
+                "file_name": "story.monogatari",
+                "expected_content_sha256": reviewed.content_sha256,
+                "replace_existing": false
+            }))),
+        )
+        .await?;
+    assert_eq!(stale.is_error, Some(true));
+    let error: McpToolError = structured(&stale)?;
+    assert_eq!(error.code, McpToolErrorCode::PackageFingerprintMismatch);
+    assert!(!project.package_output.join("story.monogatari").exists());
+
+    let current = client
+        .call_tool(CallToolRequestParams::new("preview_project_package"))
+        .await?;
+    let current: PreviewProjectPackageOutput = structured(&current)?;
+    assert_ne!(current.content_sha256, reviewed.content_sha256);
+    let exported = client
+        .call_tool(
+            CallToolRequestParams::new("export_project_package").with_arguments(arguments(json!({
+                "file_name": "story.monogatari",
+                "expected_content_sha256": current.content_sha256,
+                "replace_existing": false
+            }))),
+        )
+        .await?;
+    assert_eq!(exported.is_error, Some(false));
+    let exported: ExportProjectPackageOutput = structured(&exported)?;
+    assert_eq!(exported.schema, MCP_PACKAGE_EXPORT_SCHEMA_V1);
+    assert_eq!(exported.package.content_sha256, current.content_sha256);
+    let archive = project.package_output.join("story.monogatari");
+    assert_eq!(
+        PathBuf::from(&exported.package.archive_path),
+        archive.canonicalize()?
+    );
+    assert!(std::fs::read(&archive)?.starts_with(b"PK"));
+
+    let duplicate = client
+        .call_tool(
+            CallToolRequestParams::new("export_project_package").with_arguments(arguments(json!({
+                "file_name": "story.monogatari",
+                "expected_content_sha256": current.content_sha256,
+                "replace_existing": false
+            }))),
+        )
+        .await?;
+    assert_eq!(duplicate.is_error, Some(true));
+    let error: McpToolError = structured(&duplicate)?;
+    assert_eq!(error.code, McpToolErrorCode::PackageError);
+
+    let replaced = client
+        .call_tool(
+            CallToolRequestParams::new("export_project_package").with_arguments(arguments(json!({
+                "file_name": "story.monogatari",
+                "expected_content_sha256": current.content_sha256,
+                "replace_existing": true
+            }))),
+        )
+        .await?;
+    assert_eq!(replaced.is_error, Some(false));
+    let replaced: ExportProjectPackageOutput = structured(&replaced)?;
+    assert_eq!(replaced.package.content_sha256, current.content_sha256);
+    assert!(archive.is_file());
 
     client.cancel().await?;
     Ok(())
@@ -505,8 +687,19 @@ async fn connect(
     project_root: &Path,
     allow_write: bool,
 ) -> anyhow::Result<RunningService<RoleClient, ()>> {
+    connect_with_package_output(project_root, allow_write, None).await
+}
+
+async fn connect_with_package_output(
+    project_root: &Path,
+    allow_write: bool,
+    package_output_dir: Option<&Path>,
+) -> anyhow::Result<RunningService<RoleClient, ()>> {
     let mut command = tokio::process::Command::new(env!("CARGO_BIN_EXE_monogatari-mcp"));
     command.arg("--project-root").arg(project_root);
+    if let Some(output_dir) = package_output_dir {
+        command.arg("--package-output-dir").arg(output_dir);
+    }
     if allow_write {
         command.arg("--allow-write");
     }

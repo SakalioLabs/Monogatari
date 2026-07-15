@@ -13,7 +13,7 @@ use llm_authoring::json_catalog::{
     JsonCatalogReport,
 };
 use llm_authoring::project::{canonical_project_root, inspect_project_config, ProjectConfigState};
-use llm_authoring::quality_suite_execution::{execute_quality_suite, QualitySuiteRunProvenance};
+use llm_authoring::quality_suite_execution::execute_quality_suite;
 use llm_authoring::quality_suite_validation::{
     parse_quality_suite_document, MAX_QUALITY_SUITE_FILE_BYTES,
 };
@@ -26,18 +26,25 @@ use rmcp::model::{Implementation, ServerCapabilities, ServerInfo};
 use rmcp::{tool, tool_handler, tool_router, Json, ServerHandler};
 use tokio::sync::RwLock;
 
+use crate::package_transport::{
+    export_project_package as export_package, preview_project_package as preview_package,
+    PackageOutputBoundary,
+};
 use crate::project_lease::ProjectLease;
 use crate::protocol::{
-    ApplyTransactionOutput, ApplyTransactionRequest, InspectProjectOutput, ListProjectJsonRequest,
-    McpToolError, ReadProjectJsonRequest, RunQualitySuiteOutput, RunQualitySuiteRequest,
-    MCP_INSPECTION_SCHEMA_V1, MCP_QUALITY_SUITE_RUN_SCHEMA_V1,
+    ApplyTransactionOutput, ApplyTransactionRequest, ExportProjectPackageOutput,
+    ExportProjectPackageRequest, InspectProjectOutput, ListProjectJsonRequest, McpToolError,
+    PreviewProjectPackageOutput, ReadProjectJsonRequest, RunQualitySuiteOutput,
+    RunQualitySuiteRequest, MCP_INSPECTION_SCHEMA_V1, MCP_QUALITY_SUITE_RUN_SCHEMA_V1,
 };
+use crate::provenance::quality_suite_run_provenance;
 use crate::validation::validate_candidate_core_runtime;
 
 #[derive(Debug, Clone)]
 pub struct MonogatariMcpServer {
     project_root: PathBuf,
     allow_write: bool,
+    package_output: Option<PackageOutputBoundary>,
     _project_lease: Arc<ProjectLease>,
     access: Arc<RwLock<()>>,
     tool_router: ToolRouter<Self>,
@@ -45,15 +52,27 @@ pub struct MonogatariMcpServer {
 
 impl MonogatariMcpServer {
     pub fn new(project_root: PathBuf, allow_write: bool) -> Result<Self, String> {
+        Self::new_with_package_output(project_root, allow_write, None)
+    }
+
+    pub fn new_with_package_output(
+        project_root: PathBuf,
+        allow_write: bool,
+        package_output_dir: Option<PathBuf>,
+    ) -> Result<Self, String> {
         let project_root = canonical_project_root(&project_root)?;
         let state = inspect_project_config(&project_root)?;
         if !state.settings_exists {
             return Err("MCP project root must contain settings.json.".to_string());
         }
+        let package_output = package_output_dir
+            .map(|output| PackageOutputBoundary::new(&project_root, output))
+            .transpose()?;
         let project_lease = Arc::new(ProjectLease::acquire(&project_root, allow_write)?);
         Ok(Self {
             project_root,
             allow_write,
+            package_output,
             _project_lease: project_lease,
             access: Arc::new(RwLock::new(())),
             tool_router: Self::tool_router(),
@@ -94,6 +113,7 @@ impl MonogatariMcpServer {
             schema: MCP_INSPECTION_SCHEMA_V1.to_string(),
             acceptance_level: json_catalog.acceptance_level,
             write_enabled: self.allow_write,
+            package_output_configured: self.package_output.is_some(),
             project,
             json_catalog,
         }))
@@ -175,6 +195,24 @@ impl MonogatariMcpServer {
             .map_err(Json)
     }
 
+    /// Build and return a credential-free package manifest without writing an archive.
+    #[tool(annotations(
+        title = "Preview project package",
+        read_only_hint = true,
+        destructive_hint = false,
+        idempotent_hint = true,
+        open_world_hint = false
+    ))]
+    pub async fn preview_project_package(
+        &self,
+    ) -> Result<Json<PreviewProjectPackageOutput>, Json<McpToolError>> {
+        let _guard = self.access.read().await;
+        preview_package(self.project_root.clone(), self.package_output.is_some())
+            .await
+            .map(Json)
+            .map_err(Json)
+    }
+
     /// Execute one bounded project Quality Suite and return complete structured evidence.
     #[tool(annotations(
         title = "Run Quality Suite",
@@ -238,6 +276,33 @@ impl MonogatariMcpServer {
             passed: report.failed == 0,
             report,
         }))
+    }
+
+    /// Export one reviewed package into the startup-fixed output directory.
+    #[tool(annotations(
+        title = "Export project package",
+        read_only_hint = false,
+        destructive_hint = true,
+        idempotent_hint = false,
+        open_world_hint = false
+    ))]
+    pub async fn export_project_package(
+        &self,
+        Parameters(request): Parameters<ExportProjectPackageRequest>,
+    ) -> Result<Json<ExportProjectPackageOutput>, Json<McpToolError>> {
+        if !self.allow_write {
+            return Err(Json(McpToolError::write_disabled()));
+        }
+        let output = self
+            .package_output
+            .clone()
+            .ok_or_else(McpToolError::package_output_unavailable)
+            .map_err(Json)?;
+        let _guard = self.access.write().await;
+        export_package(self.project_root.clone(), output, request)
+            .await
+            .map(Json)
+            .map_err(Json)
     }
 
     /// Validate and deterministically plan an optimistic multi-file JSON transaction without writing.
@@ -309,29 +374,19 @@ impl ServerHandler for MonogatariMcpServer {
         } else {
             "Writes are disabled; restart with --allow-write to enable apply_transaction."
         };
+        let package_mode = match (self.allow_write, self.package_output.is_some()) {
+            (true, true) => "Package export is enabled and still requires a freshly reviewed content fingerprint.",
+            (false, true) => "Package preview is available, but export requires --allow-write.",
+            (_, false) => "Package preview is available; export also requires a startup-fixed --package-output-dir.",
+        };
         ServerInfo::new(ServerCapabilities::builder().enable_tools().build())
             .with_server_info(Implementation::new(
                 "monogatari-mcp",
                 env!("CARGO_PKG_VERSION"),
             ))
             .with_instructions(format!(
-                "Author Monogatari visual novels inside the fixed project root. Inspect, list, and read before planning. Use validate_project for read-only headless acceptance, validate_delivery for declared asset readiness, and run_quality_suite for executable Quality evidence. Plan before apply. Package archives and rendered visual acceptance remain higher gates. {mode}"
+                "Author Monogatari visual novels inside the fixed project root. Inspect, list, and read before planning. Use validate_project for read-only headless acceptance, validate_delivery for declared asset readiness, and run_quality_suite for executable Quality evidence. Plan before apply. Preview a credential-free package manifest before exporting to the fixed output directory. Package transport does not prove rendered visual acceptance. {mode} {package_mode}"
             ))
-    }
-}
-
-fn quality_suite_run_provenance() -> QualitySuiteRunProvenance {
-    QualitySuiteRunProvenance {
-        generated_at: chrono::Utc::now().to_rfc3339(),
-        engine_version: env!("CARGO_PKG_VERSION").to_string(),
-        git_commit: option_env!("MONOGATARI_GIT_COMMIT")
-            .filter(|value| !value.trim().is_empty())
-            .unwrap_or("unknown")
-            .to_string(),
-        git_short_commit: option_env!("MONOGATARI_GIT_SHORT_COMMIT")
-            .filter(|value| !value.trim().is_empty())
-            .unwrap_or("unknown")
-            .to_string(),
     }
 }
 
@@ -364,7 +419,7 @@ mod tests {
     }
 
     #[test]
-    fn exposes_eight_schema_backed_tools_with_write_annotations() {
+    fn exposes_ten_schema_backed_tools_with_write_annotations() {
         let root = temp_project();
         let server = MonogatariMcpServer::new(root.clone(), false).unwrap();
         let tools = server.tool_router.list_all();
@@ -376,9 +431,11 @@ mod tests {
             names,
             [
                 "apply_transaction",
+                "export_project_package",
                 "inspect_project",
                 "list_project_json",
                 "plan_transaction",
+                "preview_project_package",
                 "read_project_json",
                 "run_quality_suite",
                 "validate_delivery",
@@ -427,6 +484,39 @@ mod tests {
         assert!(serde_json::to_string(quality_output_schema)
             .unwrap()
             .contains("scenarios"));
+        let preview = tools
+            .iter()
+            .find(|tool| tool.name == "preview_project_package")
+            .unwrap();
+        assert_eq!(
+            preview.annotations.as_ref().unwrap().read_only_hint,
+            Some(true)
+        );
+        let preview_output_properties = preview
+            .output_schema
+            .as_ref()
+            .unwrap()
+            .get("properties")
+            .and_then(serde_json::Value::as_object)
+            .unwrap();
+        assert!(preview_output_properties.contains_key("content_sha256"));
+        assert!(preview_output_properties.contains_key("manifest"));
+        let export = tools
+            .iter()
+            .find(|tool| tool.name == "export_project_package")
+            .unwrap();
+        assert_eq!(
+            export.annotations.as_ref().unwrap().destructive_hint,
+            Some(true)
+        );
+        let export_input_properties = export
+            .input_schema
+            .get("properties")
+            .and_then(serde_json::Value::as_object)
+            .unwrap();
+        assert!(export_input_properties.contains_key("file_name"));
+        assert!(export_input_properties.contains_key("expected_content_sha256"));
+        assert!(export_input_properties.contains_key("replace_existing"));
         std::fs::remove_dir_all(root).unwrap();
     }
 

@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use crate::ServerOptions;
 
-pub const HELP: &str = "Monogatari MCP server\n\nUsage:\n  monogatari-mcp --project-root <path> [--allow-write]\n\nOptions:\n  --project-root <path>  Fixed visual-novel project root containing settings.json\n  --allow-write          Enable fingerprint-confirmed Agent transactions\n  -h, --help             Show this help\n  -V, --version          Show the server version";
+pub const HELP: &str = "Monogatari MCP server\n\nUsage:\n  monogatari-mcp --project-root <path> [--package-output-dir <path>] [--allow-write]\n\nOptions:\n  --project-root <path>        Fixed visual-novel project root containing settings.json\n  --package-output-dir <path>  Fixed external directory for reviewed .monogatari output\n  --allow-write                Enable fingerprint-confirmed transactions and package export\n  -h, --help                   Show this help\n  -V, --version                Show the server version";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CliAction {
@@ -20,6 +20,7 @@ where
 {
     let mut args = args.into_iter();
     let mut project_root = None;
+    let mut package_output_dir = None;
     let mut allow_write = false;
 
     while let Some(argument) = args.next() {
@@ -47,6 +48,18 @@ where
                 }
                 project_root = Some(PathBuf::from(value));
             }
+            "--package-output-dir" => {
+                if package_output_dir.is_some() {
+                    return Err("--package-output-dir may only be supplied once.".to_string());
+                }
+                let value = args
+                    .next()
+                    .ok_or_else(|| "--package-output-dir requires a path value.".to_string())?;
+                if value.is_empty() {
+                    return Err("--package-output-dir requires a non-empty path.".to_string());
+                }
+                package_output_dir = Some(PathBuf::from(value));
+            }
             _ => return Err(format!("Unknown option `{flag}`.")),
         }
     }
@@ -58,6 +71,7 @@ where
     Ok(CliAction::Run(ServerOptions {
         project_root,
         allow_write,
+        package_output_dir,
     }))
 }
 
@@ -80,8 +94,37 @@ mod tests {
             CliAction::Run(ServerOptions {
                 project_root: PathBuf::from("project"),
                 allow_write: true,
+                package_output_dir: None,
             })
         );
+    }
+
+    #[test]
+    fn accepts_one_fixed_package_output_directory() {
+        assert_eq!(
+            parse_args(args(&[
+                "--project-root",
+                "project",
+                "--package-output-dir",
+                "packages"
+            ]))
+            .unwrap(),
+            CliAction::Run(ServerOptions {
+                project_root: PathBuf::from("project"),
+                allow_write: false,
+                package_output_dir: Some(PathBuf::from("packages")),
+            })
+        );
+        assert!(parse_args(args(&["--project-root", "project", "--package-output-dir"])).is_err());
+        assert!(parse_args(args(&[
+            "--project-root",
+            "project",
+            "--package-output-dir",
+            "a",
+            "--package-output-dir",
+            "b"
+        ]))
+        .is_err());
     }
 
     #[test]
