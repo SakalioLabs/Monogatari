@@ -70,6 +70,8 @@ export function createSourceInvariantVerifier({
     const chatViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'ChatView.vue'), 'utf8')
     const groupChatViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'GroupChatView.vue'), 'utf8')
     const characterEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'CharacterEditorView.vue'), 'utf8')
+    const characterAuthoringSource = await readFile(path.join(frontendDir, 'src', 'lib', 'characterAuthoring.ts'), 'utf8')
+    const characterAuthoringTestSource = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'characterAuthoring.test.ts'), 'utf8')
     const analyticsViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'AnalyticsView.vue'), 'utf8')
     const workflowEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'WorkflowEditor.vue'), 'utf8')
     const workflowPreviewSource = await readFile(path.join(frontendDir, 'src', 'lib', 'workflowPreview.ts'), 'utf8')
@@ -318,6 +320,14 @@ export function createSourceInvariantVerifier({
       [characterEditorSource, 'saveBrowserCharacterDrafts', 'wire Web/PWA character saves to browser authoring drafts'],
       [characterEditorSource, 'pendingAction', 'keep character discard and restore confirmation inside the application'],
       [characterEditorSource, 'isDirty', 'guard dirty character drafts during navigation'],
+      [characterEditorSource, 'characterFormFromStory', 'delegate runtime-to-form normalization to the character domain'],
+      [characterEditorSource, 'buildStoryCharacter', 'delegate save payload shaping to the character domain'],
+      [characterAuthoringSource, 'validateCharacterForm', 'centralize character form validation'],
+      [characterAuthoringSource, 'candidate.trim().toLowerCase() === normalizedId', 'reject cross-platform case-folded character ID collisions'],
+      [characterAuthoringSource, 'characterFormSnapshot', 'derive dirty state from canonical character payloads'],
+      [characterAuthoringSource, 'parseCharacterKnowledgeRefs', 'centralize stable knowledge reference parsing'],
+      [characterAuthoringTestSource, 'rejects case-folded portable ID collisions', 'test portable character ID collision handling'],
+      [characterAuthoringTestSource, 'builds the exact trimmed and bounded story payload', 'test character payload normalization and isolation'],
       [sceneAuthoringSource, "invokeCommand<SceneAuthoringCatalogSnapshot>('get_scene_authoring_catalog')", 'load editable scene catalog snapshots'],
       [sceneAuthoringSource, 'expectedCatalogFingerprint', 'save and delete scenes with optimistic concurrency'],
       [sceneAuthoringSource, 'saveBrowserSceneDrafts', 'persist browser scene authoring drafts'],
@@ -408,6 +418,11 @@ export function createSourceInvariantVerifier({
     }
     if (characterEditorSource.includes('window.confirm')) {
       issues.push('frontend/src/views/CharacterEditorView.vue must not block author workflows with native browser confirmation dialogs')
+    }
+    for (const needle of ['interface CharacterForm', 'function characterPayload', 'function splitKnowledgeRefs', '[key: string]: any']) {
+      if (characterEditorSource.includes(needle)) {
+        issues.push(`frontend/src/views/CharacterEditorView.vue must not redeclare character domain logic: ${needle}`)
+      }
     }
 
     const analyticsFrontendRequirements = [

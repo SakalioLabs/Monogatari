@@ -33,6 +33,13 @@ test('character authoring persists a validated browser draft across reloads', as
 
   await expect(page.getByText('Browser draft active')).toBeVisible()
   await expect(page.getByRole('button', { name: /Agent Guide/ })).toBeVisible()
+
+  await page.getByTitle('Create Character').click()
+  await page.getByLabel('Character ID').fill('AGENT_GUIDE')
+  await page.getByLabel('Name').fill('Duplicate Guide')
+  await expect(page.getByText('This character ID already exists.')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeDisabled()
+
   await page.reload()
   await expect(page.getByRole('button', { name: /Agent Guide/ })).toBeVisible()
   await expect(page.getByText('Browser draft active')).toBeVisible()

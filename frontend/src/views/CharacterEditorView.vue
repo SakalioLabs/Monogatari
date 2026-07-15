@@ -374,6 +374,23 @@ import { useRoute } from 'vue-router'
 import Live2DCanvas from '../components/Live2DCanvas.vue'
 import CharacterModelView from '../components/CharacterModelView.vue'
 import { resolveAssetUrl } from '../lib/assets'
+import {
+  CHARACTER_EMOTIONS,
+  buildStoryCharacter,
+  characterFormFromStory,
+  characterFormSnapshot,
+  characterSpritePlaceholder,
+  characterSummaryFromStory,
+  createCharacterForm,
+  fillMissingCharacterSpritePaths,
+  filterCharacterSummaries,
+  parseCharacterKnowledgeRefs,
+  toggleCharacterKnowledgeRef,
+  validateCharacterForm,
+  type CharacterForm,
+  type CharacterSummary,
+  type CharacterTraitKey,
+} from '../lib/characterAuthoring'
 import { loadKnowledgeAuthoringCatalog } from '../lib/knowledgeContent'
 import {
   cleanRendererPathMap,
@@ -396,45 +413,6 @@ import {
 const { t } = useI18n()
 const route = useRoute()
 
-interface KnowledgeEntry {
-  topic: string
-  content: string
-}
-
-interface CharForm {
-  id: string
-  name: string
-  description: string
-  background: string
-  speech_style: string
-  default_emotion: string
-  live2d_model_path: string
-  model_3d_path: string
-  portrait_path: string
-  sprite_path: string
-  sprite_paths: Record<string, string>
-  openness: number
-  conscientiousness: number
-  extraversion: number
-  agreeableness: number
-  neuroticism: number
-  relationships: Record<string, number>
-  knowledge_entries: KnowledgeEntry[]
-  knowledge_refs: string
-  emotion_modifiers: Record<string, string>
-  [key: string]: any
-}
-
-interface CharacterSummary {
-  id: string
-  name: string
-  description: string
-  emotion: string
-  live2d_model_path: string | null
-  portrait_path: string | null
-  sprite_path: string | null
-}
-
 interface AssetDiagnostic {
   key: string
   label: string
@@ -448,7 +426,7 @@ type PendingAction =
   | { kind: 'cancel' }
   | { kind: 'restore' }
 
-const emotions = ['neutral', 'happy', 'sad', 'angry', 'surprised', 'love', 'embarrassed', 'thoughtful', 'excited', 'anxious']
+const emotions = CHARACTER_EMOTIONS
 
 const emotionOptions = computed(() => [
   { value: 'neutral', label: t('characters.editor.emotion.neutral', 'Neutral') },
@@ -467,7 +445,7 @@ function emotionLabel(value: string): string {
   return emotionOptions.value.find(option => option.value === value)?.label || value
 }
 
-const personalityTraits = computed(() => [
+const personalityTraits = computed<Array<{ key: CharacterTraitKey; label: string; desc: string }>>(() => [
   { key: 'openness', label: t('characters.trait.openness', 'Openness'), desc: t('characters.editor.trait.openness', 'Curiosity, creativity, and willingness to try new things.') },
   { key: 'conscientiousness', label: t('characters.trait.conscientiousness', 'Conscientiousness'), desc: t('characters.editor.trait.conscientiousness', 'Organization, discipline, and goal-oriented behavior.') },
   { key: 'extraversion', label: t('characters.trait.extraversion', 'Extraversion'), desc: t('characters.editor.trait.extraversion', 'Sociability, assertiveness, and energy from interactions.') },
@@ -510,48 +488,37 @@ const baselineSnapshot = ref('')
 const pendingAction = ref<PendingAction | null>(null)
 const discarding = ref(false)
 
-const defaultForm = (): CharForm => ({
-  id: '', name: '', description: '', background: '', speech_style: '',
-  default_emotion: 'neutral', live2d_model_path: '', model_3d_path: '',
-  portrait_path: '', sprite_path: '', sprite_paths: {},
-  openness: 0.5, conscientiousness: 0.5, extraversion: 0.5, agreeableness: 0.5, neuroticism: 0.5,
-  relationships: {}, knowledge_entries: [], knowledge_refs: '', emotion_modifiers: {},
-})
-
-const form = reactive<CharForm>(defaultForm())
+const form = reactive<CharacterForm>(createCharacterForm())
 const previewFailedRendererAssets = ref<Record<string, true>>({})
 
-const filteredCharacterList = computed(() => {
-  const query = searchQuery.value.trim().toLowerCase()
-  if (!query) return characterList.value
-  return characterList.value.filter(character => (
-    character.id.toLowerCase().includes(query)
-    || character.name.toLowerCase().includes(query)
-    || character.description.toLowerCase().includes(query)
-  ))
-})
+const filteredCharacterList = computed(() => filterCharacterSummaries(characterList.value, searchQuery.value))
 
 const otherCharacters = computed(() =>
   characterList.value.filter(c => c.id !== form.id)
 )
 
-const parsedKnowledgeRefs = computed(() => splitKnowledgeRefs(form.knowledge_refs))
-const missingKnowledgeRefs = computed(() => knowledgeCatalogLoaded.value
-  ? parsedKnowledgeRefs.value.filter(id => !knowledgeIds.value.includes(id))
+const parsedKnowledgeRefs = computed(() => parseCharacterKnowledgeRefs(form.knowledge_refs))
+const validationIssue = computed(() => validateCharacterForm(form, {
+  isNew: isNew.value,
+  existingCharacterIds: characterList.value.map(({ id }) => id),
+  knownKnowledgeIds: knowledgeCatalogLoaded.value ? knowledgeIds.value : null,
+}))
+const missingKnowledgeRefs = computed(() => validationIssue.value?.code === 'unknown_knowledge'
+  ? validationIssue.value.knowledge_refs
   : [])
 
 const validationMessage = computed(() => {
-  if (!form.id.trim() || !form.name.trim()) return t('characters.editor.validation.required', 'Character ID and name are required.')
-  if (!/^[A-Za-z0-9_-]{1,128}$/.test(form.id.trim())) return t('characters.editor.validation.id', 'ID can use only letters, numbers, underscores, or hyphens.')
-  if (isNew.value && characterList.value.some(character => character.id === form.id.trim())) return t('characters.editor.validation.duplicate', 'This character ID already exists.')
-  if (missingKnowledgeRefs.value.length > 0) return t('characters.editor.validation.knowledge', 'Remove unknown knowledge references before saving.')
-  if (form.knowledge_entries.some(entry => !entry.topic.trim() || !entry.content.trim())) return t('characters.editor.validation.local-knowledge', 'Each private knowledge entry needs a topic and content.')
+  if (validationIssue.value?.code === 'required') return t('characters.editor.validation.required', 'Character ID and name are required.')
+  if (validationIssue.value?.code === 'invalid_id') return t('characters.editor.validation.id', 'ID can use only letters, numbers, underscores, or hyphens.')
+  if (validationIssue.value?.code === 'duplicate_id') return t('characters.editor.validation.duplicate', 'This character ID already exists.')
+  if (validationIssue.value?.code === 'unknown_knowledge') return t('characters.editor.validation.knowledge', 'Remove unknown knowledge references before saving.')
+  if (validationIssue.value?.code === 'invalid_private_knowledge') return t('characters.editor.validation.local-knowledge', 'Each private knowledge entry needs a topic and content.')
   return ''
 })
 const canSave = computed(() => !validationMessage.value)
 const isDirty = computed(() => editing.value
   && baselineSnapshot.value.length > 0
-  && baselineSnapshot.value !== formSnapshot())
+  && baselineSnapshot.value !== characterFormSnapshot(form))
 
 const assetDiagnostics = computed<AssetDiagnostic[]>(() => {
   const diagnostics: AssetDiagnostic[] = []
@@ -566,7 +533,7 @@ const assetDiagnostics = computed<AssetDiagnostic[]>(() => {
     }
   }
 
-  for (const [emotion, path] of Object.entries(cleanSpritePaths(form.sprite_paths))) {
+  for (const [emotion, path] of Object.entries(cleanRendererPathMap(form.sprite_paths))) {
     const key = `sprite_paths.${emotion}`
     const message = localizedAssetValidationMessage(path, imageAssetExtensions)
     diagnostics.push({
@@ -685,7 +652,7 @@ watch(
     form.model_3d_path,
     form.portrait_path,
     form.sprite_path,
-    JSON.stringify(cleanSpritePaths(form.sprite_paths)),
+    JSON.stringify(cleanRendererPathMap(form.sprite_paths)),
   ],
   () => {
     previewFailedRendererAssets.value = {}
@@ -740,28 +707,12 @@ function initials(name: string): string {
   return name.trim().slice(0, 2).toUpperCase() || '??'
 }
 
-function normalizeSpritePaths(value: unknown): Record<string, string> {
-  return cleanRendererPathMap(value)
-}
-
-function cleanSpritePaths(paths: Record<string, string>): Record<string, string> {
-  return cleanRendererPathMap(paths)
-}
-
 function spritePlaceholder(emotion: string): string {
-  if (form.sprite_path.trim()) return form.sprite_path.trim()
-  const base = form.id.trim() || 'character'
-  return 'assets/sprites/' + base + '_' + emotion + '.png'
+  return characterSpritePlaceholder(form.id, emotion, form.sprite_path)
 }
 
 function fillDefaultSpritePaths() {
-  const fallback = form.sprite_path.trim()
-  if (!fallback) return
-  for (const emotion of emotions) {
-    if (!form.sprite_paths[emotion]?.trim()) {
-      form.sprite_paths[emotion] = fallback
-    }
-  }
+  form.sprite_paths = fillMissingCharacterSpritePaths(form.sprite_paths, form.sprite_path, emotions)
 }
 
 function assetFieldIssue(key: RendererAssetSpec['key']): AssetDiagnostic | undefined {
@@ -773,7 +724,7 @@ function spritePathIssue(emotion: string): AssetDiagnostic | undefined {
 }
 
 function resetForm() {
-  Object.assign(form, defaultForm())
+  Object.assign(form, createCharacterForm())
   previewFailedRendererAssets.value = {}
 }
 
@@ -798,15 +749,7 @@ async function loadList() {
     const characters = await loadStoryCharacters()
     browserCharacters.value = characters
     browserDraft.value = !hasTauriRuntime() && loadBrowserCharacterDrafts() !== null
-    characterList.value = characters.map(character => ({
-      id: character.id,
-      name: character.name,
-      description: character.description,
-      emotion: character.emotion,
-      live2d_model_path: character.live2d_model_path ?? null,
-      portrait_path: character.portrait_path ?? null,
-      sprite_path: character.sprite_path ?? null,
-    }))
+    characterList.value = characters.map(characterSummaryFromStory)
   } catch (e) {
     notify('error', t('characters.editor.notice.load-failed', 'Characters could not be loaded: {error}', { error: String(e) }))
   }
@@ -832,28 +775,7 @@ async function selectChar(id: string) {
     resetForm()
     selectedId.value = id
     isNew.value = false
-    Object.assign(form, {
-      id: character.id,
-      name: character.name || '',
-      description: character.description || '',
-      background: character.background || '',
-      speech_style: String(character.personality?.speech_style || ''),
-      default_emotion: character.emotion || 'neutral',
-      live2d_model_path: character.live2d_model_path || '',
-      model_3d_path: character.model_3d_path || '',
-      portrait_path: character.portrait_path || '',
-      sprite_path: character.sprite_path || '',
-      sprite_paths: normalizeSpritePaths(character.sprite_paths),
-      openness: Number(character.personality?.openness ?? 0.5),
-      conscientiousness: Number(character.personality?.conscientiousness ?? 0.5),
-      extraversion: Number(character.personality?.extraversion ?? 0.5),
-      agreeableness: Number(character.personality?.agreeableness ?? 0.5),
-      neuroticism: Number(character.personality?.neuroticism ?? 0.5),
-      relationships: cloneRecord(character.relationships),
-      knowledge_entries: cloneKnowledgeEntries(character.knowledge_entries),
-      knowledge_refs: (character.knowledge_refs || character.knowledge || []).join(', '),
-      emotion_modifiers: cloneStringRecord(character.emotion_modifiers),
-    })
+    Object.assign(form, characterFormFromStory(character))
     editing.value = true
     activeTab.value = 'basic'
     setBaseline()
@@ -869,7 +791,7 @@ async function save() {
   }
   saving.value = true
   try {
-    const character = characterPayload()
+    const character = buildStoryCharacter(form)
     if (hasTauriRuntime()) {
       await invokeCommand('create_character', {
         input: { ...character, default_emotion: character.emotion },
@@ -895,7 +817,7 @@ async function save() {
 }
 
 function exportChar() {
-  const data = characterPayload()
+  const data = buildStoryCharacter(form)
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -916,69 +838,12 @@ function removeKnowledge(i: number) {
   form.knowledge_entries.splice(i, 1)
 }
 
-function splitKnowledgeRefs(value: string): string[] {
-  return [...new Set(value.split(',')
-    .map(ref => ref.trim())
-    .filter(Boolean))]
-}
-
 function toggleKnowledgeRef(id: string) {
-  const refs = new Set(parsedKnowledgeRefs.value)
-  if (refs.has(id)) refs.delete(id)
-  else refs.add(id)
-  form.knowledge_refs = [...refs].join(', ')
-}
-
-function characterPayload(): StoryCharacterInfo {
-  return {
-    id: form.id.trim(),
-    name: form.name.trim(),
-    description: form.description.trim(),
-    background: form.background.trim(),
-    personality: {
-      openness: clampTrait(form.openness),
-      conscientiousness: clampTrait(form.conscientiousness),
-      extraversion: clampTrait(form.extraversion),
-      agreeableness: clampTrait(form.agreeableness),
-      neuroticism: clampTrait(form.neuroticism),
-      speech_style: form.speech_style.trim(),
-    },
-    emotion: form.default_emotion || 'neutral',
-    live2d_model_path: form.live2d_model_path.trim() || null,
-    model_3d_path: form.model_3d_path.trim() || null,
-    portrait_path: form.portrait_path.trim() || null,
-    sprite_path: form.sprite_path.trim() || null,
-    sprite_paths: cleanSpritePaths(form.sprite_paths),
-    relationships: Object.fromEntries(Object.entries(form.relationships).map(([id, score]) => [id, Math.max(-1, Math.min(1, Number(score) || 0))])),
-    knowledge_entries: form.knowledge_entries.map(entry => ({ topic: entry.topic.trim(), content: entry.content.trim() })),
-    knowledge_refs: parsedKnowledgeRefs.value,
-    emotion_modifiers: cloneStringRecord(form.emotion_modifiers),
-  }
-}
-
-function formSnapshot(): string {
-  return JSON.stringify(characterPayload())
+  form.knowledge_refs = toggleCharacterKnowledgeRef(form.knowledge_refs, id)
 }
 
 function setBaseline() {
-  baselineSnapshot.value = formSnapshot()
-}
-
-function clampTrait(value: number): number {
-  return Math.max(0, Math.min(1, Number(value) || 0))
-}
-
-function cloneRecord(value: Record<string, number> | undefined): Record<string, number> {
-  return value ? { ...value } : {}
-}
-
-function cloneStringRecord(value: Record<string, string> | undefined): Record<string, string> {
-  if (!value) return {}
-  return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, String(item)]))
-}
-
-function cloneKnowledgeEntries(value: KnowledgeEntry[] | undefined): KnowledgeEntry[] {
-  return (value || []).map(entry => ({ topic: String(entry.topic || ''), content: String(entry.content || '') }))
+  baselineSnapshot.value = characterFormSnapshot(form)
 }
 
 function requestSelect(characterId: string) {
