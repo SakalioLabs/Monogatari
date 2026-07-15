@@ -1,5 +1,7 @@
 //! Fixed-root MCP transport for project-package preview, inspection, and export.
 
+mod reimport;
+
 use std::path::{Path, PathBuf};
 
 use llm_authoring::project_package::{
@@ -14,6 +16,8 @@ use crate::protocol::{
     MCP_PACKAGE_EXPORT_SCHEMA_V1, MCP_PACKAGE_INSPECTION_SCHEMA_V1, MCP_PACKAGE_PREVIEW_SCHEMA_V1,
 };
 use crate::provenance::project_export_provenance;
+
+pub(crate) use reimport::validate_project_package;
 
 const MAX_PACKAGE_FILE_NAME_BYTES: usize = 240;
 

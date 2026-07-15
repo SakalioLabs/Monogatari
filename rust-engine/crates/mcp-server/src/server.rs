@@ -28,7 +28,8 @@ use tokio::sync::RwLock;
 
 use crate::package_transport::{
     export_project_package as export_package, inspect_project_package as inspect_package,
-    preview_project_package as preview_package, PackageDirectoryBoundary,
+    preview_project_package as preview_package, validate_project_package as validate_package,
+    PackageDirectoryBoundary,
 };
 use crate::project_lease::ProjectLease;
 use crate::protocol::{
@@ -36,7 +37,8 @@ use crate::protocol::{
     ExportProjectPackageRequest, InspectProjectOutput, InspectProjectPackageOutput,
     InspectProjectPackageRequest, ListProjectJsonRequest, McpToolError,
     PreviewProjectPackageOutput, ReadProjectJsonRequest, RunQualitySuiteOutput,
-    RunQualitySuiteRequest, MCP_INSPECTION_SCHEMA_V1, MCP_QUALITY_SUITE_RUN_SCHEMA_V1,
+    RunQualitySuiteRequest, ValidateProjectPackageOutput, ValidateProjectPackageRequest,
+    MCP_INSPECTION_SCHEMA_V1, MCP_QUALITY_SUITE_RUN_SCHEMA_V1,
 };
 use crate::provenance::quality_suite_run_provenance;
 use crate::validation::validate_candidate_core_runtime;
@@ -238,6 +240,30 @@ impl MonogatariMcpServer {
             .map_err(Json)
     }
 
+    /// Extract one fixed-root package into private staging and run shared runtime acceptance.
+    #[tool(annotations(
+        title = "Validate project package",
+        read_only_hint = true,
+        destructive_hint = false,
+        idempotent_hint = true,
+        open_world_hint = false
+    ))]
+    pub async fn validate_project_package(
+        &self,
+        Parameters(request): Parameters<ValidateProjectPackageRequest>,
+    ) -> Result<Json<ValidateProjectPackageOutput>, Json<McpToolError>> {
+        let package_directory = self
+            .package_directory
+            .clone()
+            .ok_or_else(McpToolError::package_output_unavailable)
+            .map_err(Json)?;
+        let _guard = self.access.read().await;
+        validate_package(self.project_root.clone(), package_directory, request)
+            .await
+            .map(Json)
+            .map_err(Json)
+    }
+
     /// Execute one bounded project Quality Suite and return complete structured evidence.
     #[tool(annotations(
         title = "Run Quality Suite",
@@ -400,9 +426,9 @@ impl ServerHandler for MonogatariMcpServer {
             "Writes are disabled; restart with --allow-write to enable apply_transaction."
         };
         let package_mode = match (self.allow_write, self.package_directory.is_some()) {
-            (true, true) => "Package inspection and export are enabled; export still requires a freshly reviewed content fingerprint.",
-            (false, true) => "Package inspection is available, but export requires --allow-write.",
-            (_, false) => "Package preview is available; inspection and export require a startup-fixed --package-output-dir.",
+            (true, true) => "Package inspection, private runtime validation, and export are enabled; export still requires a freshly reviewed content fingerprint.",
+            (false, true) => "Package inspection and private runtime validation are available, but export requires --allow-write.",
+            (_, false) => "Package preview is available; inspection, validation, and export require a startup-fixed --package-output-dir.",
         };
         ServerInfo::new(ServerCapabilities::builder().enable_tools().build())
             .with_server_info(Implementation::new(
@@ -410,7 +436,7 @@ impl ServerHandler for MonogatariMcpServer {
                 env!("CARGO_PKG_VERSION"),
             ))
             .with_instructions(format!(
-                "Author Monogatari visual novels inside the fixed project root. Inspect, list, and read before planning. Use validate_project for read-only headless acceptance, validate_delivery for declared asset readiness, and run_quality_suite for executable Quality evidence. Plan before apply. Preview a credential-free package manifest before exporting to the fixed package directory, then inspect the written archive. Package inspection does not prove runtime re-import or rendered visual acceptance. {mode} {package_mode}"
+                "Author Monogatari visual novels inside the fixed project root. Inspect, list, and read before planning. Use validate_project for read-only headless acceptance, validate_delivery for declared asset readiness, and run_quality_suite for executable Quality evidence. Plan before apply. Preview a credential-free package manifest before exporting to the fixed package directory, then inspect and privately validate the written archive. Package validation proves ephemeral extraction plus shared runtime/delivery acceptance, not installation or rendered visual acceptance. {mode} {package_mode}"
             ))
     }
 }
@@ -444,7 +470,7 @@ mod tests {
     }
 
     #[test]
-    fn exposes_eleven_schema_backed_tools_with_write_annotations() {
+    fn exposes_twelve_schema_backed_tools_with_write_annotations() {
         let root = temp_project();
         let server = MonogatariMcpServer::new(root.clone(), false).unwrap();
         let tools = server.tool_router.list_all();
@@ -465,7 +491,8 @@ mod tests {
                 "read_project_json",
                 "run_quality_suite",
                 "validate_delivery",
-                "validate_project"
+                "validate_project",
+                "validate_project_package"
             ]
         );
         assert!(tools.iter().all(|tool| tool.output_schema.is_some()));
@@ -545,6 +572,23 @@ mod tests {
             serde_json::to_string(inspect_package.output_schema.as_ref().unwrap()).unwrap();
         assert!(inspect_package_schema.contains("archive_bytes"));
         assert!(inspect_package_schema.contains("verified"));
+        let validate_package = tools
+            .iter()
+            .find(|tool| tool.name == "validate_project_package")
+            .unwrap();
+        assert_eq!(
+            validate_package
+                .annotations
+                .as_ref()
+                .unwrap()
+                .read_only_hint,
+            Some(true)
+        );
+        let validate_package_schema =
+            serde_json::to_string(validate_package.output_schema.as_ref().unwrap()).unwrap();
+        assert!(validate_package_schema.contains("passed"));
+        assert!(validate_package_schema.contains("core_runtime"));
+        assert!(validate_package_schema.contains("archive_bytes"));
         let export = tools
             .iter()
             .find(|tool| tool.name == "export_project_package")

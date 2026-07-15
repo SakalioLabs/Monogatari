@@ -2,6 +2,9 @@
 
 use tauri::State;
 
+use llm_authoring::delivery_validation::{
+    validate_project_delivery, DeliveryIssueSeverity, DeliveryValidationReport,
+};
 use llm_authoring::project_package::{extract_project_package, inspect_project_package};
 
 use crate::state::AppState;
@@ -123,39 +126,21 @@ pub async fn import_project_archive(
         }
     };
 
-    let project_state = match build_project_config_state(&staging_root) {
-        Ok(state) if state.valid => state,
-        Ok(state) => {
-            let details = state
-                .issues
-                .iter()
-                .filter(|issue| issue.severity == "error")
-                .map(|issue| issue.message.as_str())
-                .collect::<Vec<_>>()
-                .join("; ");
-            remove_import_staging(&staging_root);
-            return Err(format!(
-                "Imported project configuration is invalid: {details}"
-            ));
-        }
+    let delivery = match validate_project_delivery(&staging_root).await {
+        Ok(delivery) => delivery,
         Err(error) => {
             remove_import_staging(&staging_root);
-            return Err(error);
+            return Err(format!(
+                "Imported project runtime validation could not be completed: {error}"
+            ));
         }
     };
-    drop(project_state);
-
-    if let Err(error) = super::super::engine::load_project_content(&staging_root).await {
+    if !delivery.valid {
+        let details = delivery_failure_summary(&delivery);
         remove_import_staging(&staging_root);
-        return Err(format!("Imported runtime content is invalid: {error}"));
-    }
-    if let Err(error) = super::super::scenes::build_scene_asset_catalog(&staging_root) {
-        remove_import_staging(&staging_root);
-        return Err(format!("Imported scene content is invalid: {error}"));
-    }
-    if let Err(error) = super::super::endings::load_story_endings(&staging_root) {
-        remove_import_staging(&staging_root);
-        return Err(format!("Imported ending content is invalid: {error}"));
+        return Err(format!(
+            "Imported project failed runtime and delivery acceptance: {details}"
+        ));
     }
 
     let directory_name = match available_project_directory_name(
@@ -194,4 +179,29 @@ pub async fn import_project_archive(
         total_bytes: verified.total_bytes,
         content_sha256: verified.content_sha256,
     })
+}
+
+fn delivery_failure_summary(report: &DeliveryValidationReport) -> String {
+    let core = report.core_runtime.issues.iter().map(|issue| {
+        issue.path.as_ref().map_or_else(
+            || issue.code.clone(),
+            |path| format!("{}: {path}", issue.code),
+        )
+    });
+    let assets = report
+        .issues
+        .iter()
+        .filter(|issue| issue.severity == DeliveryIssueSeverity::Error)
+        .map(|issue| {
+            issue.path.as_ref().map_or_else(
+                || issue.code.clone(),
+                |path| format!("{}: {path}", issue.code),
+            )
+        });
+    let evidence = core.chain(assets).take(5).collect::<Vec<_>>();
+    if evidence.is_empty() {
+        "validation failed without issue evidence".to_string()
+    } else {
+        evidence.join(", ")
+    }
 }

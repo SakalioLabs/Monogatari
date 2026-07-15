@@ -18,7 +18,8 @@ use llm_authoring::runtime_validation::CoreRuntimeValidationReport;
 use monogatari_mcp::protocol::{
     ExportProjectPackageOutput, InspectProjectOutput, InspectProjectPackageOutput, McpToolError,
     McpToolErrorCode, PreviewProjectPackageOutput, RunQualitySuiteOutput,
-    MCP_PACKAGE_EXPORT_SCHEMA_V1, MCP_PACKAGE_INSPECTION_SCHEMA_V1, MCP_PACKAGE_PREVIEW_SCHEMA_V1,
+    ValidateProjectPackageOutput, MCP_PACKAGE_EXPORT_SCHEMA_V1, MCP_PACKAGE_INSPECTION_SCHEMA_V1,
+    MCP_PACKAGE_PREVIEW_SCHEMA_V1, MCP_PACKAGE_VALIDATION_SCHEMA_V1,
     MCP_QUALITY_SUITE_RUN_SCHEMA_V1,
 };
 use rmcp::model::{CallToolRequestParams, JsonObject};
@@ -101,7 +102,7 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
     let second_reader = connect(&project.root, false).await?;
     assert_no_project_lease_sidecar(&project);
     assert_competing_start_rejected(&project.root, true).await?;
-    assert_eq!(second_reader.list_all_tools().await?.len(), 11);
+    assert_eq!(second_reader.list_all_tools().await?.len(), 12);
     second_reader.cancel().await?;
 
     let tools = client.list_all_tools().await?;
@@ -123,7 +124,8 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
             "read_project_json",
             "run_quality_suite",
             "validate_delivery",
-            "validate_project"
+            "validate_project",
+            "validate_project_package"
         ]
     );
     assert!(tools.iter().all(|tool| tool.output_schema.is_some()));
@@ -250,7 +252,7 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
 }
 
 #[tokio::test]
-async fn package_preview_export_and_inspection_are_bound_to_reviewed_content_and_output_root(
+async fn package_preview_export_inspection_and_validation_are_bound_to_reviewed_content_and_output_root(
 ) -> anyhow::Result<()> {
     let project = TestProject::new("package");
     let mut settings = default_project_config();
@@ -310,6 +312,18 @@ async fn package_preview_export_and_inspection_are_bound_to_reviewed_content_and
     assert_eq!(unavailable_inspection.is_error, Some(true));
     let error: McpToolError = structured(&unavailable_inspection)?;
     assert_eq!(error.code, McpToolErrorCode::PackageOutputUnavailable);
+    let unavailable_validation = unconfigured
+        .call_tool(
+            CallToolRequestParams::new("validate_project_package").with_arguments(arguments(
+                json!({
+                    "file_name": "unconfigured.monogatari"
+                }),
+            )),
+        )
+        .await?;
+    assert_eq!(unavailable_validation.is_error, Some(true));
+    let error: McpToolError = structured(&unavailable_validation)?;
+    assert_eq!(error.code, McpToolErrorCode::PackageOutputUnavailable);
     let unavailable = unconfigured
         .call_tool(
             CallToolRequestParams::new("export_project_package").with_arguments(arguments(json!({
@@ -346,6 +360,18 @@ async fn package_preview_export_and_inspection_are_bound_to_reviewed_content_and
         .await?;
     assert_eq!(escaped_inspection.is_error, Some(true));
     let error: McpToolError = structured(&escaped_inspection)?;
+    assert_eq!(error.code, McpToolErrorCode::PackageError);
+    let escaped_validation = client
+        .call_tool(
+            CallToolRequestParams::new("validate_project_package").with_arguments(arguments(
+                json!({
+                    "file_name": "../story.monogatari"
+                }),
+            )),
+        )
+        .await?;
+    assert_eq!(escaped_validation.is_error, Some(true));
+    let error: McpToolError = structured(&escaped_validation)?;
     assert_eq!(error.code, McpToolErrorCode::PackageError);
 
     let escape_name = format!(
@@ -441,6 +467,30 @@ async fn package_preview_export_and_inspection_are_bound_to_reviewed_content_and
     assert_eq!(replaced.package.content_sha256, current.content_sha256);
     assert!(archive.is_file());
 
+    std::fs::write(
+        project.root.join("characters/aoi.json"),
+        b"{\"id\":\"aoi\",\"name\":\"Aoi Invalid\",\"knowledge_refs\":[\"missing_lore\"]}\n",
+    )?;
+    let invalid_preview = client
+        .call_tool(CallToolRequestParams::new("preview_project_package"))
+        .await?;
+    let invalid_preview: PreviewProjectPackageOutput = structured(&invalid_preview)?;
+    let invalid_export = client
+        .call_tool(
+            CallToolRequestParams::new("export_project_package").with_arguments(arguments(json!({
+                "file_name": "invalid-runtime.monogatari",
+                "expected_content_sha256": invalid_preview.content_sha256,
+                "replace_existing": false
+            }))),
+        )
+        .await?;
+    assert_eq!(invalid_export.is_error, Some(false));
+    let invalid_export: ExportProjectPackageOutput = structured(&invalid_export)?;
+    assert_eq!(
+        invalid_export.package.content_sha256,
+        invalid_preview.content_sha256
+    );
+
     client.cancel().await?;
 
     let inspector =
@@ -462,6 +512,52 @@ async fn package_preview_export_and_inspection_are_bound_to_reviewed_content_and
     assert_eq!(inspected.package.content_sha256, current.content_sha256);
     assert_eq!(inspected.package.archive_bytes, archive.metadata()?.len());
 
+    let validated = inspector
+        .call_tool(
+            CallToolRequestParams::new("validate_project_package").with_arguments(arguments(
+                json!({
+                    "file_name": "story.monogatari"
+                }),
+            )),
+        )
+        .await?;
+    assert_eq!(validated.is_error, Some(false));
+    let validated: ValidateProjectPackageOutput = structured(&validated)?;
+    assert_eq!(validated.schema, MCP_PACKAGE_VALIDATION_SCHEMA_V1);
+    assert!(validated.passed);
+    assert!(validated.delivery.valid);
+    assert!(validated.delivery.core_runtime.valid);
+    assert_eq!(
+        validated.delivery.core_runtime.acceptance_level,
+        JsonAcceptanceLevel::CoreRuntime
+    );
+    assert_eq!(validated.package.content_sha256, current.content_sha256);
+
+    let invalid_runtime = inspector
+        .call_tool(
+            CallToolRequestParams::new("validate_project_package").with_arguments(arguments(
+                json!({
+                    "file_name": "invalid-runtime.monogatari"
+                }),
+            )),
+        )
+        .await?;
+    assert_eq!(invalid_runtime.is_error, Some(false));
+    let invalid_runtime: ValidateProjectPackageOutput = structured(&invalid_runtime)?;
+    assert!(!invalid_runtime.passed);
+    assert!(!invalid_runtime.delivery.valid);
+    assert!(!invalid_runtime.delivery.core_runtime.valid);
+    assert_eq!(
+        invalid_runtime.package.content_sha256,
+        invalid_preview.content_sha256
+    );
+    assert!(invalid_runtime
+        .delivery
+        .core_runtime
+        .issues
+        .iter()
+        .any(|issue| issue.code == "character_knowledge_target_missing"));
+
     std::fs::write(&archive, b"not a project package")?;
     let damaged = inspector
         .call_tool(
@@ -474,6 +570,18 @@ async fn package_preview_export_and_inspection_are_bound_to_reviewed_content_and
         .await?;
     assert_eq!(damaged.is_error, Some(true));
     let error: McpToolError = structured(&damaged)?;
+    assert_eq!(error.code, McpToolErrorCode::PackageError);
+    let damaged_validation = inspector
+        .call_tool(
+            CallToolRequestParams::new("validate_project_package").with_arguments(arguments(
+                json!({
+                    "file_name": "story.monogatari"
+                }),
+            )),
+        )
+        .await?;
+    assert_eq!(damaged_validation.is_error, Some(true));
+    let error: McpToolError = structured(&damaged_validation)?;
     assert_eq!(error.code, McpToolErrorCode::PackageError);
     inspector.cancel().await?;
     Ok(())

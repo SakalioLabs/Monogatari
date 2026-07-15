@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use crate::ServerOptions;
 
-pub const HELP: &str = "Monogatari MCP server\n\nUsage:\n  monogatari-mcp --project-root <path> [--package-output-dir <path>] [--allow-write]\n\nOptions:\n  --project-root <path>        Fixed visual-novel project root containing settings.json\n  --package-output-dir <path>  Fixed external directory for .monogatari inspection/output\n  --allow-write                Enable fingerprint-confirmed transactions and package export\n  -h, --help                   Show this help\n  -V, --version                Show the server version";
+pub const HELP: &str = "Monogatari MCP server\n\nUsage:\n  monogatari-mcp --project-root <path> [--package-output-dir <path>] [--allow-write]\n\nOptions:\n  --project-root <path>        Fixed visual-novel project root containing settings.json\n  --package-output-dir <path>  Fixed directory for .monogatari inspect/validate/output\n  --allow-write                Enable fingerprint-confirmed transactions and package export\n  -h, --help                   Show this help\n  -V, --version                Show the server version";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CliAction {

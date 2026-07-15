@@ -3,6 +3,7 @@
 use llm_authoring::agent_transaction::{
     AgentProjectTransaction, AgentProjectTransactionResult, AgentTransactionError,
 };
+use llm_authoring::delivery_validation::DeliveryValidationReport;
 use llm_authoring::json_catalog::{
     AuthorableJsonCatalog, JsonAcceptanceLevel, JsonCatalogError, JsonCatalogReport,
 };
@@ -17,6 +18,7 @@ pub const MCP_INSPECTION_SCHEMA_V1: &str = "monogatari-mcp-project-inspection/v1
 pub const MCP_PACKAGE_EXPORT_SCHEMA_V1: &str = "monogatari-mcp-package-export/v1";
 pub const MCP_PACKAGE_INSPECTION_SCHEMA_V1: &str = "monogatari-mcp-package-inspection/v1";
 pub const MCP_PACKAGE_PREVIEW_SCHEMA_V1: &str = "monogatari-mcp-package-preview/v1";
+pub const MCP_PACKAGE_VALIDATION_SCHEMA_V1: &str = "monogatari-mcp-package-validation/v1";
 pub const MCP_QUALITY_SUITE_RUN_SCHEMA_V1: &str = "monogatari-mcp-quality-suite-run/v1";
 pub const MCP_TOOL_ERROR_SCHEMA_V1: &str = "monogatari-mcp-tool-error/v1";
 
@@ -66,6 +68,20 @@ pub struct InspectProjectPackageRequest {
 pub struct InspectProjectPackageOutput {
     pub schema: String,
     pub package: ProjectPackageInspection,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ValidateProjectPackageRequest {
+    pub file_name: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
+pub struct ValidateProjectPackageOutput {
+    pub schema: String,
+    pub passed: bool,
+    pub package: ProjectPackageInspection,
+    pub delivery: DeliveryValidationReport,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
