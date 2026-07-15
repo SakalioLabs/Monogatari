@@ -1,3 +1,4 @@
+import { loadStoryCharacters } from './storyContent'
 import { hasTauriRuntime, invokeCommand } from './tauri'
 
 export const KNOWLEDGE_AUTHORING_SCHEMA_V1 = 'monogatari-knowledge-authoring/v1'
@@ -23,7 +24,6 @@ export interface KnowledgeCatalogSnapshot {
 interface WebProjectManifest {
   schema: string
   knowledge_files?: string[]
-  character_files?: string[]
 }
 
 const browserDraftKey = 'monogatari:knowledge-authoring-catalog:v1'
@@ -196,21 +196,9 @@ function plainObject(value: unknown): Record<string, unknown> {
 }
 
 async function loadBrowserCharacterKnowledgeReferences(entryId: string): Promise<string[]> {
-  const manifest = await fetchJson<WebProjectManifest>(projectUrl('project-assets.json'))
-  if (manifest.schema !== 'monogatari-web-project-assets/v1') return []
-  const documents = await Promise.all((manifest.character_files || []).map(file => (
-    fetchJson<unknown>(projectUrl(file))
-  )))
-  const references: string[] = []
-  for (const document of documents) {
-    const values = Array.isArray(document) ? document : [document]
-    for (const value of values) {
-      const input = value && typeof value === 'object' ? value as Record<string, unknown> : {}
-      const refs = stringList(input.knowledge_refs ?? input.knowledgeRefs ?? input.knowledge)
-      if (refs.includes(entryId)) references.push(`character:${String(input.id || 'unknown')}`)
-    }
-  }
-  return references
+  return (await loadStoryCharacters())
+    .filter((character) => (character.knowledge_refs || character.knowledge || []).includes(entryId))
+    .map((character) => `character:${character.id}`)
 }
 
 function clampImportance(value: unknown): number {

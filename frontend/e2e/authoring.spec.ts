@@ -163,6 +163,51 @@ test('Ending authoring saves real references, previews, and rejects portable ID 
   await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeDisabled()
 })
 
+test('Knowledge authoring persists Agent context and protects browser character references', async ({ page }) => {
+  await page.goto('/knowledge')
+
+  await expect(page.getByRole('heading', { name: 'Knowledge Base' })).toBeVisible()
+  await page.getByRole('button', { name: 'Create Entry', exact: true }).click()
+  await page.getByLabel('Entry ID').fill('agent_knowledge_test')
+  await page.getByLabel('Name', { exact: true }).fill('Agent Knowledge Test')
+  await page.getByLabel('Content', { exact: true }).fill('Canonical browser-authored context for Agent delivery.')
+  await page.getByLabel('Tags (comma-separated)').fill('agent, delivery, agent')
+  await page.getByLabel('Related entries (comma-separated)').fill('location_park')
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page.locator('.status-toast.success')).toContainText('Knowledge entry saved')
+
+  await page.reload()
+  await page.getByPlaceholder('Search knowledge...').fill('agent_knowledge_test')
+  const knowledgeRow = page.locator('.entry-row').filter({ hasText: 'Agent Knowledge Test' })
+  await expect(knowledgeRow).toHaveCount(1)
+  await knowledgeRow.click()
+  await expect(page.locator('.related-list')).toContainText('location_park')
+
+  await page.goto('/character-editor')
+  const createCharacter = page.getByTitle('Create Character')
+  await expect(createCharacter).toBeEnabled()
+  await createCharacter.click()
+  await page.getByLabel('Character ID').fill('agent_knowledge_guard')
+  await page.getByLabel('Name').fill('Agent Knowledge Guard')
+  await page.getByLabel('Description').fill('Protects browser-authored canonical context.')
+  await page.getByRole('tab', { name: 'Knowledge', exact: true }).click()
+  await page.getByLabel('Pinned knowledge references').fill('agent_knowledge_test')
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page.getByText('Browser draft active')).toBeVisible()
+
+  await page.goto('/knowledge')
+  await page.getByPlaceholder('Search knowledge...').fill('agent_knowledge_test')
+  const protectedRow = page.locator('.entry-row').filter({ hasText: 'Agent Knowledge Test' })
+  await protectedRow.click()
+  await page.locator('.inspector-actions').getByRole('button', { name: 'Delete', exact: true }).click()
+  const deleteDialog = page.getByRole('dialog', { name: 'Confirm' })
+  await deleteDialog.getByRole('button', { name: 'Delete', exact: true }).click()
+  await expect(page.locator('.status-toast.error')).toContainText('character:agent_knowledge_guard')
+  await expect.poll(() => page.evaluate(() => (
+    localStorage.getItem('monogatari:knowledge-authoring-catalog:v1') || ''
+  ))).toContain('agent_knowledge_test')
+})
+
 test('Quality Suite workbench presents generated evidence across desktop and mobile', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 })
   await page.goto('/quality')

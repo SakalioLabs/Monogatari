@@ -53,7 +53,7 @@
             @click="selectedCategory = category"
           >
             <span>{{ categoryLabel(category) }}</span>
-            <small>{{ countByCategory(category) }}</small>
+            <small>{{ countKnowledgeEntriesByCategory(entries, category) }}</small>
           </button>
         </nav>
       </section>
@@ -300,6 +300,19 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { AlertTriangle, BookOpen, FolderTree, Hash, LoaderCircle, Network, Pencil, Plus, RotateCcw, Save, Search, Tag, Trash2, X } from '@lucide/vue'
 import { useI18n } from '../lib/i18n'
 import {
+  countKnowledgeEntriesByCategory,
+  createKnowledgeEntryEditForm,
+  emptyKnowledgeEntryEditForm,
+  filterKnowledgeEntries,
+  knowledgeEntryDefinitionFromEditForm,
+  knowledgeEntryEditFormFromDefinition,
+  knowledgeEntryEditFormSnapshot,
+  knowledgeTaxonomy,
+  validateKnowledgeEntryEditForm,
+  type KnowledgeEditingIssue,
+  type KnowledgeEntryEditForm,
+} from '../lib/knowledgeEditing'
+import {
   deleteKnowledgeEntryDefinition,
   KNOWLEDGE_AUTHORING_SCHEMA_V1,
   loadKnowledgeAuthoringCatalog,
@@ -308,17 +321,6 @@ import {
   type KnowledgeCatalogSnapshot,
   type KnowledgeEntryDefinition,
 } from '../lib/knowledgeContent'
-
-interface EditForm {
-  id: string
-  title: string
-  category: string
-  content: string
-  tagsText: string
-  relatedText: string
-  importance: number
-  metadata: Record<string, unknown>
-}
 
 type PendingConfirmation =
   | { kind: 'delete'; entry: KnowledgeEntryDefinition }
@@ -342,14 +344,15 @@ const loading = ref(true)
 const saving = ref(false)
 const statusMessage = ref('')
 const statusType = ref<'success' | 'error'>('success')
-const editForm = ref<EditForm>(emptyForm())
+const editForm = ref<KnowledgeEntryEditForm>(emptyKnowledgeEntryEditForm())
 const editBaseline = ref('')
 const pendingConfirmation = ref<PendingConfirmation | null>(null)
 const confirming = ref(false)
 let statusTimer: number | null = null
 
-const categories = computed(() => [...new Set(entries.value.map(entry => entry.category).filter(Boolean))].sort())
-const allTags = computed(() => [...new Set(entries.value.flatMap(entry => entry.tags))].sort())
+const taxonomy = computed(() => knowledgeTaxonomy(entries.value))
+const categories = computed(() => taxonomy.value.categories)
+const allTags = computed(() => taxonomy.value.tags)
 const compactCategoryFilter = computed({
   get: () => selectedCategory.value || '',
   set: (value: string) => { selectedCategory.value = value || null },
@@ -358,34 +361,21 @@ const compactTagFilter = computed({
   get: () => selectedTag.value || '',
   set: (value: string) => { selectedTag.value = value || null },
 })
-const filteredEntries = computed(() => {
-  const query = searchQuery.value.trim().toLowerCase()
-  return entries.value.filter(entry => (
-    (!selectedCategory.value || entry.category === selectedCategory.value)
-    && (!selectedTag.value || entry.tags.includes(selectedTag.value))
-    && (!query
-      || entry.id.toLowerCase().includes(query)
-      || entry.title.toLowerCase().includes(query)
-      || entry.content.toLowerCase().includes(query)
-      || entry.tags.some(tag => tag.toLowerCase().includes(query)))
-  ))
-})
+const filteredEntries = computed(() => filterKnowledgeEntries(entries.value, {
+  query: searchQuery.value,
+  category: selectedCategory.value,
+  tag: selectedTag.value,
+}))
+const validationIssue = computed(() => validateKnowledgeEntryEditForm(editForm.value, {
+  original_entry_id: originalEntryId.value,
+  existing_entry_ids: entries.value.map((entry) => entry.id),
+})[0] || null)
 const validationMessage = computed(() => {
-  if (!/^[a-z0-9_-]{1,128}$/.test(editForm.value.id)) return t('knowledge.validation.id', 'ID must use lowercase letters, numbers, underscores, or hyphens.')
-  if (!editForm.value.title.trim()) return t('knowledge.validation.title', 'Title is required.')
-  if (!editForm.value.content.trim()) return t('knowledge.validation.content', 'Content is required.')
-  if (!editForm.value.category.trim()) return t('knowledge.validation.category', 'Category is required.')
-  if (!/^[a-z0-9_-]{1,64}$/.test(editForm.value.category.trim().toLowerCase())) return t('knowledge.validation.category-format', 'Category must use lowercase letters, numbers, underscores, or hyphens.')
-  if (isNewEntry.value && entries.value.some(entry => entry.id === editForm.value.id)) return t('knowledge.validation.duplicate', 'This entry ID already exists.')
-  for (const relatedId of commaList(editForm.value.relatedText)) {
-    if (!/^[a-z0-9_-]{1,128}$/.test(relatedId)) return t('knowledge.validation.related-id', 'Related entry IDs must use lowercase letters, numbers, underscores, or hyphens.')
-    if (relatedId === editForm.value.id) return t('knowledge.validation.related-self', 'An entry cannot reference itself.')
-    if (!entries.value.some(entry => entry.id === relatedId)) return t('knowledge.validation.related-missing', 'Related entry "{id}" does not exist.', { id: relatedId })
-  }
-  return ''
+  return validationIssue.value ? knowledgeEditingIssueMessage(validationIssue.value) : ''
 })
-const canSave = computed(() => !validationMessage.value)
-const isFormDirty = computed(() => editing.value && serializeForm(editForm.value) !== editBaseline.value)
+const canSave = computed(() => !validationIssue.value)
+const isFormDirty = computed(() => editing.value
+  && knowledgeEntryEditFormSnapshot(editForm.value) !== editBaseline.value)
 const confirmationMessage = computed(() => {
   const pending = pendingConfirmation.value
   if (!pending) return ''
@@ -398,10 +388,6 @@ const confirmationActionLabel = computed(() => {
   if (pendingConfirmation.value?.kind === 'restore') return t('knowledge.restore-project', 'Restore project')
   return t('knowledge.discard', 'Discard')
 })
-
-function emptyForm(): EditForm {
-  return { id: '', title: '', category: 'world_lore', content: '', tagsText: '', relatedText: '', importance: 0.5, metadata: {} }
-}
 
 function applySnapshot(snapshot: KnowledgeCatalogSnapshot) {
   if (snapshot.schema !== KNOWLEDGE_AUTHORING_SCHEMA_V1) throw new Error(`Unsupported knowledge schema: ${snapshot.schema}`)
@@ -427,8 +413,8 @@ async function loadEntries() {
 }
 
 function createEntry() {
-  editForm.value = { ...emptyForm(), id: nextEntryId() }
-  editBaseline.value = serializeForm(editForm.value)
+  editForm.value = createKnowledgeEntryEditForm(entries.value.map((entry) => entry.id))
+  editBaseline.value = knowledgeEntryEditFormSnapshot(editForm.value)
   originalEntryId.value = null
   isNewEntry.value = true
   editing.value = true
@@ -444,17 +430,8 @@ function requestCreateEntry() {
 }
 
 function editEntry(entry: KnowledgeEntryDefinition) {
-  editForm.value = {
-    id: entry.id,
-    title: entry.title,
-    category: entry.category,
-    content: entry.content,
-    tagsText: entry.tags.join(', '),
-    relatedText: entry.related_entries.join(', '),
-    importance: entry.importance,
-    metadata: cloneMetadata(entry.metadata),
-  }
-  editBaseline.value = serializeForm(editForm.value)
+  editForm.value = knowledgeEntryEditFormFromDefinition(entry)
+  editBaseline.value = knowledgeEntryEditFormSnapshot(editForm.value)
   originalEntryId.value = entry.id
   isNewEntry.value = false
   viewingEntry.value = entry
@@ -495,7 +472,7 @@ async function saveEntry() {
   if (!canSave.value || saving.value) return
   saving.value = true
   try {
-    const entry = formEntry()
+    const entry = knowledgeEntryDefinitionFromEditForm(editForm.value)
     applySnapshot(await saveKnowledgeEntryDefinition(entry, originalEntryId.value, catalogFingerprint.value))
     viewingEntry.value = entries.value.find(item => item.id === entry.id) || null
     editing.value = false
@@ -549,39 +526,16 @@ async function confirmPendingAction() {
   }
 }
 
-function formEntry(): KnowledgeEntryDefinition {
-  return {
-    id: editForm.value.id.trim(),
-    title: editForm.value.title.trim(),
-    category: editForm.value.category.trim().toLowerCase(),
-    content: editForm.value.content.trim(),
-    tags: commaList(editForm.value.tagsText),
-    related_entries: commaList(editForm.value.relatedText),
-    importance: Math.max(0, Math.min(1, Number(editForm.value.importance) || 0)),
-    metadata: cloneMetadata(editForm.value.metadata),
-  }
-}
-
-function commaList(value: string): string[] {
-  return [...new Set(value.split(',').map(item => item.trim()).filter(Boolean))]
-}
-
-function cloneMetadata(value: Record<string, unknown>): Record<string, unknown> {
-  return JSON.parse(JSON.stringify(value)) as Record<string, unknown>
-}
-
-function serializeForm(value: EditForm): string {
-  return JSON.stringify(value)
-}
-
-function nextEntryId(): string {
-  let index = 1
-  while (entries.value.some(entry => entry.id === `new_entry_${index}`)) index += 1
-  return `new_entry_${index}`
-}
-
-function countByCategory(category: string): number {
-  return entries.value.filter(entry => entry.category === category).length
+function knowledgeEditingIssueMessage(issue: KnowledgeEditingIssue): string {
+  if (issue.code === 'invalid_id') return t('knowledge.validation.id', 'ID must use lowercase letters, numbers, underscores, or hyphens.')
+  if (issue.code === 'title_required') return t('knowledge.validation.title', 'Title is required.')
+  if (issue.code === 'content_required') return t('knowledge.validation.content', 'Content is required.')
+  if (issue.code === 'category_required') return t('knowledge.validation.category', 'Category is required.')
+  if (issue.code === 'category_format') return t('knowledge.validation.category-format', 'Category must use lowercase letters, numbers, underscores, or hyphens.')
+  if (issue.code === 'duplicate_id') return t('knowledge.validation.duplicate', 'This entry ID already exists.')
+  if (issue.code === 'related_id') return t('knowledge.validation.related-id', 'Related entry IDs must use lowercase letters, numbers, underscores, or hyphens.')
+  if (issue.code === 'related_self') return t('knowledge.validation.related-self', 'An entry cannot reference itself.')
+  return t('knowledge.validation.related-missing', 'Related entry "{id}" does not exist.', { id: issue.target_id || '' })
 }
 
 function categoryLabel(category: string): string {

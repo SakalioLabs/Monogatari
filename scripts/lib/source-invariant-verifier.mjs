@@ -58,6 +58,9 @@ export function createSourceInvariantVerifier({
     const storyPlaytestSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyPlaytest.ts'), 'utf8')
     const localConditionSource = await readFile(path.join(frontendDir, 'src', 'lib', 'localCondition.ts'), 'utf8')
     const knowledgeContentSource = await readFile(path.join(frontendDir, 'src', 'lib', 'knowledgeContent.ts'), 'utf8')
+    const knowledgeContentTestSource = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'knowledgeContent.test.ts'), 'utf8')
+    const knowledgeEditingSource = await readFile(path.join(frontendDir, 'src', 'lib', 'knowledgeEditing.ts'), 'utf8')
+    const knowledgeEditingTestSource = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'knowledgeEditing.test.ts'), 'utf8')
     const storyEndingsSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyEndings.ts'), 'utf8')
     const storyEndingEditingSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyEndingEditing.ts'), 'utf8')
     const storyEndingEditingTestSource = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'storyEndingEditing.test.ts'), 'utf8')
@@ -501,10 +504,22 @@ export function createSourceInvariantVerifier({
       [knowledgeContentSource, 'window.localStorage.setItem(browserDraftKey', 'persist Web/PWA knowledge authoring drafts'],
       [knowledgeContentSource, 'resetBrowserKnowledgeDrafts', 'restore packaged project knowledge after browser authoring'],
       [knowledgeContentSource, 'loadBrowserCharacterKnowledgeReferences', 'protect character-pinned knowledge from browser draft deletion'],
+      [knowledgeContentSource, 'loadStoryCharacters()', 'protect references from the same packaged or browser-draft character catalog used by authoring'],
       [knowledgeContentSource, 'validateKnowledgeRelations', 'validate related knowledge ids in browser authoring'],
       [knowledgeBaseViewSource, 'saveKnowledgeEntryDefinition(entry', 'wire the knowledge editor save path to real catalog persistence'],
       [knowledgeBaseViewSource, 'deleteKnowledgeEntryDefinition(pending.entry.id', 'wire the knowledge editor delete path to real catalog persistence'],
       [knowledgeBaseViewSource, 'pendingConfirmation', 'keep destructive knowledge actions inside the application confirmation flow'],
+      [knowledgeBaseViewSource, "from '../lib/knowledgeEditing'", 'delegate form, filtering, ID, and reference behavior to the pure editing domain'],
+      [knowledgeEditingSource, "from './jsonValue'", 'reuse proxy-safe JSON metadata cloning'],
+      [knowledgeEditingSource, 'export function knowledgeEntryDefinitionFromEditForm', 'shape persistence definitions outside the Vue view'],
+      [knowledgeEditingSource, 'export function filterKnowledgeEntries', 'filter knowledge catalogs outside the Vue view'],
+      [knowledgeEditingSource, 'export function nextKnowledgeEntryId', 'allocate deterministic draft IDs outside the Vue view'],
+      [knowledgeEditingSource, 'export function validateKnowledgeEntryEditForm', 'return stable knowledge validation evidence outside localization'],
+      [knowledgeEditingTestSource, 'clones reactive metadata without retaining nested references', 'test proxy-safe knowledge metadata isolation'],
+      [knowledgeEditingTestSource, 'reports invalid, self, and missing relations while accepting known references', 'test stable knowledge relation diagnostics'],
+      [knowledgeContentTestSource, 'protects references from browser-authored character drafts', 'test cross-catalog browser draft deletion protection independently'],
+      [authoringE2eSource, 'Knowledge authoring persists Agent context and protects browser character references', 'exercise cross-editor knowledge persistence and deletion protection in a real browser'],
+      [authoringE2eSource, "toContainText('character:agent_knowledge_guard')", 'prove browser-authored character references block knowledge deletion'],
     ]
     for (const [source, needle, description] of knowledgeAuthoringFrontendRequirements) {
       if (!source.includes(needle)) {
@@ -513,6 +528,21 @@ export function createSourceInvariantVerifier({
     }
     if (knowledgeBaseViewSource.includes('window.confirm')) {
       issues.push('frontend/src/views/KnowledgeBaseView.vue must not block author previews with native browser confirmation dialogs')
+    }
+    const knowledgeEditingViewLeaks = [
+      'interface EditForm',
+      'function emptyForm',
+      'function formEntry',
+      'function commaList',
+      'function cloneMetadata',
+      'function serializeForm',
+      'function nextEntryId',
+      'entries.value.filter(entry => (',
+    ]
+    for (const needle of knowledgeEditingViewLeaks) {
+      if (knowledgeBaseViewSource.includes(needle)) {
+        issues.push(`frontend/src/views/KnowledgeBaseView.vue must not redeclare knowledge editing domain logic: ${needle}`)
+      }
     }
     if (characterEditorSource.includes('window.confirm')) {
       issues.push('frontend/src/views/CharacterEditorView.vue must not block author workflows with native browser confirmation dialogs')
