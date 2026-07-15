@@ -63,6 +63,16 @@ test('release runner delegates Tauri packaging evidence to the importable module
     ),
     'utf8',
   )
+  const conversationSafetySource = await readFile(
+    path.join(
+      repositoryRoot,
+      'scripts',
+      'lib',
+      'tauri-packaging',
+      'conversation-safety-policy.mjs',
+    ),
+    'utf8',
+  )
 
   assert(source.includes("from './lib/tauri-packaging-verifier.mjs'"))
   assert(source.includes('createTauriPackagingVerifier({'))
@@ -72,11 +82,16 @@ test('release runner delegates Tauri packaging evidence to the importable module
   assert(moduleSource.includes('collectTauriPackagePolicyEvidence'))
   assert(moduleSource.includes('collectTauriInstallationPolicyEvidence'))
   assert(moduleSource.includes('collectTauriCommandRegistrationEvidence'))
+  assert(moduleSource.includes('collectTauriConversationSafetyEvidence'))
   assert(!moduleSource.includes('config.productName'))
   assert(!moduleSource.includes('const installationVerificationRequirements'))
   assert(!moduleSource.includes('commands::project_archive::commands::export_project_archive'))
   assert(!moduleSource.includes('commands::story_events::get_story_progress'))
+  assert(!moduleSource.includes('const multilingualPromptGuardRequirements'))
+  assert(!moduleSource.includes('const chatSafetyTraceRequirements'))
   assert(packagePolicySource.includes('config.productName'))
   assert(installationPolicySource.includes('const requirements'))
   assert(commandRegistrationSource.includes('extractTauriCommandRegistrations'))
+  assert(conversationSafetySource.includes('const multilingualPromptGuardRequirements'))
+  assert(conversationSafetySource.includes('const chatSafetyTraceRequirements'))
 })
