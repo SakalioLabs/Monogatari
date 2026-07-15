@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto'
 import { readdir, readFile as readFileFromDisk } from 'node:fs/promises'
 import path from 'node:path'
 
+import { isPortableProjectContentId } from './portable-id.mjs'
+
 export const requiredStoryEventRuleIds = Object.freeze([
   'first_friend',
   'close_friend',
@@ -14,14 +16,6 @@ export const requiredStoryEventRuleIds = Object.freeze([
 
 const requiredEventRules = requiredStoryEventRuleIds
 const storyEventControlPattern = /[\u0000-\u001f\u007f]/
-
-export function isPortableProjectContentId(value, maxLength) {
-  return typeof value === 'string'
-    && value.length > 0
-    && value.length <= maxLength
-    && value.trim() === value
-    && /^[A-Za-z0-9_.-]+$/.test(value)
-}
 
 export function createProjectStoryEventPolicy(options = {}) {
   const {
