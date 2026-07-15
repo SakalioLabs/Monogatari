@@ -93,6 +93,26 @@ test('release runner delegates Tauri packaging evidence to the importable module
     ),
     'utf8',
   )
+  const projectPackageSource = await readFile(
+    path.join(
+      repositoryRoot,
+      'scripts',
+      'lib',
+      'tauri-packaging',
+      'project-package-policy.mjs',
+    ),
+    'utf8',
+  )
+  const projectRuntimeSource = await readFile(
+    path.join(
+      repositoryRoot,
+      'scripts',
+      'lib',
+      'tauri-packaging',
+      'project-runtime-policy.mjs',
+    ),
+    'utf8',
+  )
 
   assert(source.includes("from './lib/tauri-packaging-verifier.mjs'"))
   assert(source.includes('createTauriPackagingVerifier({'))
@@ -105,6 +125,8 @@ test('release runner delegates Tauri packaging evidence to the importable module
   assert(moduleSource.includes('collectTauriCommandRegistrationEvidence'))
   assert(moduleSource.includes('collectTauriConversationSafetyEvidence'))
   assert(moduleSource.includes('collectTauriQualityWorkflowEvidence'))
+  assert(moduleSource.includes('collectTauriProjectPackageEvidence'))
+  assert(moduleSource.includes('collectTauriProjectRuntimeEvidence'))
   assert(!moduleSource.includes('config.productName'))
   assert(!moduleSource.includes('const installationVerificationRequirements'))
   assert(!moduleSource.includes('commands::project_archive::commands::export_project_archive'))
@@ -116,6 +138,8 @@ test('release runner delegates Tauri packaging evidence to the importable module
   assert(!moduleSource.includes('const qualityRuntimeTraceRequirements'))
   assert(!moduleSource.includes('const buildMetadataRequirements'))
   assert(!moduleSource.includes('const rustToolchainRequirements'))
+  assert(!moduleSource.includes('const runtimeDataRootRequirements'))
+  assert(!moduleSource.includes('Tauri project-scoped command'))
   assert(packagePolicySource.includes('config.productName'))
   assert(buildToolchainSource.includes('const buildMetadataRequirements'))
   assert(buildToolchainSource.includes('const rustToolchainRequirements'))
@@ -127,4 +151,8 @@ test('release runner delegates Tauri packaging evidence to the importable module
   assert(qualityWorkflowSource.includes('const workflowPreviewRequirements'))
   assert(qualityWorkflowSource.includes('const qualityExecutionRequirements'))
   assert(qualityWorkflowSource.includes('const authoringRuntimeTraceRequirements'))
+  assert(projectPackageSource.includes('const projectExportRequirements'))
+  assert(projectPackageSource.includes('const packageProtocolRequirements'))
+  assert(projectRuntimeSource.includes('const runtimeRootRequirements'))
+  assert(projectRuntimeSource.includes('const runtimeCompatibilityRequirements'))
 })
