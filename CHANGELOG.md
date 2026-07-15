@@ -1,6 +1,7 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Extracted exact Quality report contracts, generated browser preview evidence, filtering/diagnostic/export presentation logic, and their isolation tests from `QualitySuiteView.vue`; the view now owns only localization, reactive orchestration, Tauri transport, and browser downloads, while release invariants reject duplicate contracts or static preview reports and Playwright verifies the 29-scenario desktop/mobile workbench.
 - Extracted Workflow transport contracts plus pure node creation, layout, connection, document, path, and browser fallback-catalog behavior from `WorkflowEditor.vue` into independently tested frontend modules; centralized the authoritative Rust node catalog in `llm-authoring`, reduced Tauri to delegation, corrected offline `dialogue`/`llm_generate` fields and typed controls, and added release-time catalog parity checks.
 - Added the read-only, schema-backed MCP `run_quality_suite` tool over the shared headless executor, with fixed-root catalog containment, exact source fingerprints, caller provenance, complete scenario/audit evidence, and real stdio coverage for actionable failures.
 - Moved complete Quality Suite execution into `llm-authoring`, including deterministic scoring, prompt/response guards, runtime safety traces, Story Event decisions, knowledge evidence, Workflow coverage, expectation failures, audit aggregation, and caller-supplied provenance; Tauri now only loads suites, supplies build metadata, and delegates.

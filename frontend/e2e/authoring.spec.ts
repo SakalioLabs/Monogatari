@@ -51,3 +51,48 @@ test('dialogue authoring saves a graph and opens it in browser Playtest', async 
   await expect(page).toHaveURL(/\/game\?previewDialogue=agent_delivery_test&authoring=1$/)
   await expect(page.getByText('The browser delivery path is ready.')).toBeVisible()
 })
+
+test('Quality Suite workbench presents generated evidence across desktop and mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 })
+  await page.goto('/quality')
+
+  await expect(page.getByRole('heading', { name: 'Quality Suites' })).toBeVisible()
+  await expect(page.locator('.toolbar-metrics')).toContainText('29')
+  await expect(page.locator('.scenario-row')).toHaveCount(29)
+  await expect(page.locator('.diagnostics-panel')).toContainText('warm-creative-conversation')
+
+  await page.getByLabel('Search scenarios').fill('score-gate-workflow-coverage')
+  await expect(page.locator('.scenario-row')).toHaveCount(1)
+  await page.getByRole('button', { name: /score-gate-workflow-coverage/ }).click()
+  await expect(page.locator('.diagnostics-panel')).toContainText('Workflow Coverage')
+  await expect(page.locator('.diagnostics-panel')).toContainText('100%')
+
+  await page.getByRole('tab', { name: 'Audit' }).click()
+  await expect(page.locator('.category-audit-row')).toHaveCount(8)
+  await expect(page.locator('.safety-signal-list')).toContainText('Runtime guards')
+  await expect(page.locator('.workflow-audit-list')).toContainText('Score Gate Demo')
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect.poll(() => page.evaluate(() => ({
+    bodyWidth: document.body.scrollWidth,
+    viewportWidth: window.innerWidth,
+    toolbarBottom: document.querySelector('.quality-toolbar')?.getBoundingClientRect().bottom ?? 0,
+    bodyTop: document.querySelector('.quality-body')?.getBoundingClientRect().top ?? 0,
+  }))).toEqual({
+    bodyWidth: 390,
+    viewportWidth: 390,
+    toolbarBottom: expect.any(Number),
+    bodyTop: expect.any(Number),
+  })
+  const compactGeometry = await page.evaluate(() => ({
+    toolbarBottom: document.querySelector('.quality-toolbar')?.getBoundingClientRect().bottom ?? 0,
+    bodyTop: document.querySelector('.quality-body')?.getBoundingClientRect().top ?? 0,
+  }))
+  expect(compactGeometry.bodyTop).toBeGreaterThanOrEqual(compactGeometry.toolbarBottom)
+
+  const diagnostics = page.locator('.diagnostics-panel')
+  await diagnostics.getByRole('button', { name: 'Close' }).click()
+  await expect(diagnostics).not.toHaveClass(/compact-open/)
+  await page.getByRole('button', { name: 'Open diagnostics' }).click()
+  await expect(diagnostics).toHaveClass(/compact-open/)
+})

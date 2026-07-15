@@ -79,6 +79,17 @@ export function createSourceInvariantVerifier({
     const sceneEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'SceneEditorView.vue'), 'utf8')
     const dialogueEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'DialogueEditorView.vue'), 'utf8')
     const qualitySuiteSource = await readFile(path.join(frontendDir, 'src', 'views', 'QualitySuiteView.vue'), 'utf8')
+    const qualitySuiteContractSource = await readFile(path.join(frontendDir, 'src', 'lib', 'qualitySuiteContract.ts'), 'utf8')
+    const qualitySuitePresentationSource = await readFile(path.join(frontendDir, 'src', 'lib', 'qualitySuitePresentation.ts'), 'utf8')
+    const qualitySuitePreviewSource = await readFile(path.join(frontendDir, 'src', 'lib', 'qualitySuitePreview.ts'), 'utf8')
+    const qualitySuiteTestSource = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'qualitySuitePresentation.test.ts'), 'utf8')
+    const qualitySuiteDomainSource = [
+      qualitySuiteSource,
+      qualitySuiteContractSource,
+      qualitySuitePresentationSource,
+      qualitySuitePreviewSource,
+      qualitySuiteTestSource,
+    ].join('\n')
     const audioViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'AudioView.vue'), 'utf8')
     const knowledgeBaseViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'KnowledgeBaseView.vue'), 'utf8')
     const settingsSource = await readFile(path.join(frontendDir, 'src', 'views', 'SettingsView.vue'), 'utf8')
@@ -361,7 +372,7 @@ export function createSourceInvariantVerifier({
       [workflowContractSource, '!rule?.repeatable', 'honor repeatable story events in browser previews'],
       [workflowContractSource, 'actions: definition?.actions || []', 'preview typed story event actions without applying side effects'],
       [qualitySuiteSource, 'loadStoryEventCatalog()', 'load project story events into the Web/PWA quality report preview'],
-      [qualitySuiteSource, 'previewQualityReport(eventCatalog.events.map((event) => event.rule))', 'derive preview event rule evidence from the shared catalog'],
+      [qualitySuiteSource, 'createPreviewQualityReport(eventCatalog.events.map((event) => event.rule))', 'derive preview event rule evidence from the shared catalog'],
     ]
     for (const [source, needle, description] of storyEventFrontendRequirements) {
       if (!source.includes(needle)) {
@@ -561,8 +572,8 @@ export function createSourceInvariantVerifier({
       ['structured-role-injection-contained', 'include the structured role-block injection containment preview scenario'],
       ['block-body-prompt-injection-contained', 'include the block-body prompt-control containment preview scenario'],
       ['relationship-injection-delta-contained', 'include the relationship injection side-channel preview scenario'],
-      ['scenario_count: 29', 'keep the browser preview quality suite scenario count aligned with the default suite'],
-      ["{ category: 'injection', total: 8", 'keep the browser preview injection category count aligned with the default suite'],
+      ['scenario_count: PREVIEW_SCENARIOS.length', 'derive the browser preview scenario count from its scenario catalog'],
+      ['injection: 8', 'test the browser preview injection category count against the default suite'],
       ['relationship_delta', 'type relationship delta evidence in quality scenario reports'],
       ['memory_prompt_leak_detected', 'surface memory prompt replay safety in quality suites'],
       ['memory-leak', 'keep a stable style hook for memory prompt replay safety badges'],
@@ -605,9 +616,38 @@ export function createSourceInvariantVerifier({
       ['workflow-audit-list', 'surface workflow coverage audit summaries'],
     ]
     for (const [needle, description] of qualitySuiteRequirements) {
-      if (!qualitySuiteSource.includes(needle)) {
-        issues.push(`frontend/src/views/QualitySuiteView.vue must ${description}`)
+      if (!qualitySuiteDomainSource.includes(needle)) {
+        issues.push(`Quality Suite frontend integration must ${description}`)
       }
+    }
+
+    const qualitySuiteArchitectureRequirements = [
+      [qualitySuiteContractSource, 'export interface QualityScenarioReport', 'own the exact backend scenario report contract in a dedicated module'],
+      [qualitySuiteContractSource, 'style_drift_detected: boolean', 'keep backend-required scenario diagnostics non-optional'],
+      [qualitySuiteContractSource, 'runtime_safety_trace: ChatSafetyTrace | null', 'model nullable runtime trace evidence explicitly'],
+      [qualitySuiteContractSource, 'min_relationship: number | null', 'model serialized event-rule thresholds independently from editor drafts'],
+      [qualitySuitePresentationSource, 'export function filterQualityScenarios', 'keep scenario filtering in a pure presentation domain'],
+      [qualitySuitePresentationSource, 'export function buildQualityReportExport', 'build versioned exports outside the Vue view'],
+      [qualitySuitePresentationSource, 'export function qualityRuntimeGuardNoteCounts', 'aggregate runtime guard notes outside the Vue view'],
+      [qualitySuitePreviewSource, 'const PREVIEW_SCENARIOS', 'generate browser preview reports from one scenario catalog'],
+      [qualitySuitePreviewSource, 'eventRules.map(cloneEventRule)', 'isolate preview rule evidence from caller-owned event catalogs'],
+      [qualitySuiteTestSource, 'returns isolated suites, reports, nested traces, and event rules', 'test preview object isolation'],
+      [qualitySuiteTestSource, 'fills every non-nullable report field expected from Rust', 'test the browser preview against required Rust report fields'],
+      [qualitySuiteSource, "from '../lib/qualitySuiteContract'", 'consume the shared backend report contract'],
+      [qualitySuiteSource, "from '../lib/qualitySuitePresentation'", 'delegate filtering, diagnostics, and export shaping'],
+      [qualitySuiteSource, "from '../lib/qualitySuitePreview'", 'delegate generated browser fallback reports'],
+      [qualitySuiteSource, 'buildQualityReportExport(report.value, selectedSuite.value, exportedAt)', 'keep only browser download side effects in the view'],
+    ]
+    for (const [source, needle, description] of qualitySuiteArchitectureRequirements) {
+      if (!source.includes(needle)) {
+        issues.push(`Quality Suite frontend architecture must ${description}`)
+      }
+    }
+    if (/interface\s+(?:QualitySuiteReport|QualityScenarioReport|ChatSafetyTrace|WorkflowCoverageReport)\b/.test(qualitySuiteSource)) {
+      issues.push('frontend/src/views/QualitySuiteView.vue must not redeclare backend Quality report contracts')
+    }
+    if (/const\s+previewReport\b/.test(qualitySuiteSource)) {
+      issues.push('frontend/src/views/QualitySuiteView.vue must not embed a static preview Quality report')
     }
 
     const audioManagerRequirements = [
