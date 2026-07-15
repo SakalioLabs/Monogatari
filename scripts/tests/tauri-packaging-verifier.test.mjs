@@ -49,6 +49,10 @@ test('release runner delegates Tauri packaging evidence to the importable module
     path.join(repositoryRoot, 'scripts', 'lib', 'tauri-packaging', 'package-policy.mjs'),
     'utf8',
   )
+  const installationPolicySource = await readFile(
+    path.join(repositoryRoot, 'scripts', 'lib', 'tauri-packaging', 'installation-policy.mjs'),
+    'utf8',
+  )
 
   assert(source.includes("from './lib/tauri-packaging-verifier.mjs'"))
   assert(source.includes('createTauriPackagingVerifier({'))
@@ -56,7 +60,9 @@ test('release runner delegates Tauri packaging evidence to the importable module
   assert(!source.includes('const installationVerificationRequirements'))
   assert(moduleSource.includes('collectTauriPackagingEvidence'))
   assert(moduleSource.includes('collectTauriPackagePolicyEvidence'))
+  assert(moduleSource.includes('collectTauriInstallationPolicyEvidence'))
   assert(!moduleSource.includes('config.productName'))
-  assert(moduleSource.includes('const installationVerificationRequirements'))
+  assert(!moduleSource.includes('const installationVerificationRequirements'))
   assert(packagePolicySource.includes('config.productName'))
+  assert(installationPolicySource.includes('const requirements'))
 })

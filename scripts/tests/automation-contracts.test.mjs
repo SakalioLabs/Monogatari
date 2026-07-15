@@ -1,4 +1,5 @@
 import './module-test-matrix.test.mjs'
+import './tauri-installation-policy.test.mjs'
 import './tauri-package-policy.test.mjs'
 import './tauri-packaging-verifier.test.mjs'
 import './frontend-route-verifier.test.mjs'

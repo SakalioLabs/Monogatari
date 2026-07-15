@@ -1,6 +1,7 @@
 import { readFile as readFileFromDisk } from 'node:fs/promises'
 import path from 'node:path'
 
+import { collectTauriInstallationPolicyEvidence } from './tauri-packaging/installation-policy.mjs'
 import { collectTauriPackagePolicyEvidence } from './tauri-packaging/package-policy.mjs'
 
 export function createTauriPackagingVerifier(options = {}) {
@@ -36,12 +37,19 @@ export async function collectTauriPackagingEvidence(options = {}) {
     rustDirectory: rustDir,
     tauriAppDirectory: tauriAppDir,
   })
-  const issues = [...packagePolicyEvidence.issues]
+  const installationPolicyEvidence = await collectTauriInstallationPolicyEvidence({
+    ...options,
+    repositoryRoot: root,
+    tauriAppDirectory: tauriAppDir,
+  })
+  const issues = [
+    ...packagePolicyEvidence.issues,
+    ...installationPolicyEvidence.issues,
+  ]
   const tauriBuildSource = await readFile(path.join(tauriAppDir, 'build.rs'), 'utf8')
   const rustToolchainSource = await readFile(path.join(rustDir, 'rust-toolchain.toml'), 'utf8')
   const releaseVerifierSource = await readFile(path.join(root, 'scripts', 'verify-release.mjs'), 'utf8')
   const tauriMainSource = await readFile(path.join(tauriAppDir, 'src', 'main.rs'), 'utf8')
-  const tauriInstallationVerifierSource = await readFile(path.join(tauriAppDir, 'src', 'installation_verifier.rs'), 'utf8')
   const tauriStateSource = await readFile(path.join(tauriAppDir, 'src', 'state.rs'), 'utf8')
   const tauriStoryEventsSource = await readFile(path.join(tauriAppDir, 'src', 'story_events.rs'), 'utf8')
   const authoringStoryEventsSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'story_events.rs'), 'utf8')
@@ -89,47 +97,6 @@ export async function collectTauriPackagingEvidence(options = {}) {
   const tauriAnalyticsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'analytics.rs'), 'utf8')
   const tauriCloudSyncSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'cloud_sync.rs'), 'utf8')
   const tauriTtsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'tts.rs'), 'utf8')
-  const windowsInstallerVerifierSource = await readFile(path.join(root, 'scripts', 'verify-windows-installers.mjs'), 'utf8')
-
-  const installationVerificationRequirements = [
-    [tauriMainSource, 'installation_verifier::run_requested_verification()', 'run headless installation verification before opening Tauri'],
-    [tauriInstallationVerifierSource, 'monogatari-installation-verification/v1', 'version the installed-runtime report schema'],
-    [tauriInstallationVerifierSource, '--verify-installation', 'expose an explicit installed-runtime verification flag'],
-    [tauriInstallationVerifierSource, 'discover_bundled_project_data_root', 'resolve data from the installed executable resource directory'],
-    [tauriInstallationVerifierSource, 'scrub_runtime_secret_config(&settings)', 'reject bundled runtime secrets through the shared project policy'],
-    [tauriInstallationVerifierSource, 'ALLOWED_PROJECT_WARNING_CODES', 'reject every warning outside the allowed runtime-credential set'],
-    [tauriInstallationVerifierSource, 'engine::load_project_content', 'load bundled content through real runtime managers'],
-    [tauriInstallationVerifierSource, 'validate_story_ending_references', 'validate bundled ending references'],
-    [tauriInstallationVerifierSource, 'load_workflow_from_project', 'validate bundled workflows through the runtime loader'],
-    [tauriInstallationVerifierSource, 'parse_quality_suite', 'validate bundled Quality Suite schemas'],
-    [tauriInstallationVerifierSource, 'load_locale_from_project', 'validate bundled locale schemas'],
-    [tauriInstallationVerifierSource, 'build_project_export_manifest', 'fingerprint the complete bundled project inventory'],
-    [tauriInstallationVerifierSource, 'MONOGATARI_GIT_COMMIT', 'bind reports to the binary build commit'],
-    [tauriInstallationVerifierSource, 'write_envelope', 'write a structured success or failure report'],
-    [tauriInstallationVerifierSource, 'std::fs::rename(&stage_path, report_path)', 'atomically replace the verification report'],
-    [tauriInstallationVerifierSource, 'checked_in_data_passes_installed_runtime_verification', 'test checked-in data through installed-runtime verification'],
-    [windowsInstallerVerifierSource, 'monogatari-windows-installer-audit/v1', 'version Windows installer audit evidence'],
-    [windowsInstallerVerifierSource, 'WindowsInstaller.Installer', 'query MSI package metadata through the Windows Installer API'],
-    [windowsInstallerVerifierSource, 'Get-AuthenticodeSignature', 'inspect real Authenticode status'],
-    [windowsInstallerVerifierSource, 'application_signature: applicationSignature', 'inspect the extracted application signature'],
-    [windowsInstallerVerifierSource, "signature.status === 'NotSigned'", 'limit unsigned exceptions to genuinely unsigned files'],
-    [windowsInstallerVerifierSource, 'expectedSignerFragment', 'bind valid signatures to the expected publisher identity'],
-    [windowsInstallerVerifierSource, 'expectedMsiUpgradeCode', 'verify the stable MSI upgrade identity'],
-    [windowsInstallerVerifierSource, 'createReadStream', 'hash release artifacts with bounded streaming reads'],
-    [windowsInstallerVerifierSource, "spawnSync('msiexec.exe'", 'administratively extract MSI payloads'],
-    [windowsInstallerVerifierSource, 'compareContentSets(sourceData, installedData)', 'compare source and installed resource hashes'],
-    [windowsInstallerVerifierSource, "['--verify-installation', reportPath]", 'run the extracted production executable verifier'],
-    [windowsInstallerVerifierSource, 'JSON.stringify([])', 'require the bundled DirectML project to install without configuration warnings'],
-    [windowsInstallerVerifierSource, 'envelope.report.git_commit !== sourceState.git_commit', 'reject stale clean-worktree binaries'],
-    [windowsInstallerVerifierSource, "'--untracked-files=all'", 'reject untracked source content from persisted audit evidence'],
-    [windowsInstallerVerifierSource, "argSet.has('--allow-unsigned')", 'make unsigned internal audits explicit'],
-    [windowsInstallerVerifierSource, "status !== 'Valid'", 'block public audits without valid signatures'],
-  ]
-  for (const [source, needle, description] of installationVerificationRequirements) {
-    if (!source.includes(needle)) {
-      issues.push(`Installed desktop verification must ${description}`)
-    }
-  }
 
   const runtimeDataRootRequirements = [
     [tauriMainSource, 'resource_dir()', 'resolve the Tauri resource directory during setup'],
