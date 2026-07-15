@@ -11,10 +11,14 @@ public class RenderContext : IDisposable
 
     public IntPtr Renderer => _renderer;
 
-    public RenderContext(IntPtr window)
+    public RenderContext(
+        IntPtr window,
+        RendererRuntimeMode runtimeMode = RendererRuntimeMode.Interactive)
     {
-        _renderer = SDL_CreateRenderer(window, -1,
-            SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+        var rendererFlags = runtimeMode == RendererRuntimeMode.Headless
+            ? SDL_RENDERER_SOFTWARE
+            : SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC;
+        _renderer = SDL_CreateRenderer(window, -1, rendererFlags);
 
         if (_renderer == IntPtr.Zero)
         {

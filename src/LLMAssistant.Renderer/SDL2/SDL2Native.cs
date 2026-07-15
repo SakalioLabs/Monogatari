@@ -35,6 +35,7 @@ public static class SDL2Native
     public static extern void SDL_GetWindowSize(IntPtr window, out int w, out int h);
 
     public const uint SDL_WINDOW_SHOWN = 0x00000004;
+    public const uint SDL_WINDOW_HIDDEN = 0x00000008;
     public const uint SDL_WINDOW_RESIZABLE = 0x00000020;
     public const int SDL_WINDOWPOS_CENTERED = 0x2FFF0000;
 
@@ -75,6 +76,7 @@ public static class SDL2Native
     [DllImport(SDL2Lib, CallingConvention = CallingConvention.Cdecl)]
     public static extern int SDL_RenderCopyEx(IntPtr renderer, IntPtr texture, IntPtr srcRect, ref SDL_Rect dstRect, double angle, ref SDL_Point center, int flip);
 
+    public const uint SDL_RENDERER_SOFTWARE = 0x00000001;
     public const uint SDL_RENDERER_ACCELERATED = 0x00000002;
     public const uint SDL_RENDERER_PRESENTVSYNC = 0x00000004;
 
@@ -113,6 +115,9 @@ public static class SDL2Native
 
     [DllImport(SDL2Lib, CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr SDL_GetError();
+
+    [DllImport(SDL2Lib, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void SDL_ClearError();
 
     // Blend modes
     public const int SDL_BLENDMODE_BLEND = 0x00000001;

@@ -32,7 +32,7 @@ Platform-specific gates declare their supported host IDs in the matrix. The Wind
 | Rust game | `rust-game` | Unit and integration tests | Characters, dialogue, knowledge, and script parsing |
 | Tauri application | `rust-tauri`, `rust-tauri-check` | Command/project tests and compile check | Desktop commands adapt state into shared authoring domains; Scene, Dialogue, and Ending saves prove portable case aliases cannot replace existing documents; provider calls, persistent runtime effects, remaining catalogs, and packaging stay in the command crate |
 | Rust workspace | `rust-clippy` | All-target warnings-as-errors lint | Runs after crate tests so diagnostics retain module context |
-| Legacy .NET | `legacy-dotnet-native`, `legacy-dotnet-build`, `legacy-dotnet-tests` | Pinned SDL2 preparation, warnings-as-errors build, shared tests, native ABI/license probe | A headless render-loop probe is still pending |
+| Legacy .NET | `legacy-dotnet-native`, `legacy-dotnet-build`, `legacy-dotnet-tests` | Pinned SDL2 preparation, warnings-as-errors build, shared tests, native ABI/license probe, and Windows dummy-driver multi-frame render loop | Interactive and headless modes execute through the same product `WindowManager` and `RenderContext` |
 | Complete product | `release-gate` | Build, package, preview, content, security, and runtime checks | Integrated and intentionally slower |
 
 GitHub Actions runs the automation, frontend, Rust, and .NET groups as separate jobs and uploads their machine-readable reports. A green CI run therefore proves more than the previous frontend-build/Tauri-check pair, while the full release gate remains the final local or release-workflow requirement.
@@ -41,7 +41,6 @@ GitHub Actions runs the automation, frontend, Rust, and .NET groups as separate 
 
 1. Continue frontend state-machine extraction after isolating Workflow authoring, preview, and execution presentation plus Quality Suite, Settings, Character, Dialogue, Story Event, Ending, Knowledge, Scene, and Scene Asset domains; remaining large runtime/workbench views plus end-to-end browser Story Playtest workflows remain.
 2. Continue moving schema-specific catalog validation, cross-reference discovery, and packaging behind `llm-authoring`; project settings, portable paths, JSON document inspection, and transactions are now shared by Tauri or MCP without transport duplication.
-3. Extend the retained .NET renderer ABI/load coverage with a headless SDL initialization and render-loop probe, or formally remove those projects from the supported product boundary.
-4. Continue decomposing `scripts/verify-release.mjs`; frontend, AI, and path source-invariant checks plus release-channel policy validation now live in importable modules, while content, packaging, and browser gates remain in the entry point.
+3. Continue decomposing `scripts/verify-release.mjs`; frontend, AI, and path source-invariant checks plus release-channel policy validation now live in importable modules, while content, packaging, and browser gates remain in the entry point.
 
 These are explicit gaps, not implied failures. They remain part of the project-wide convergence goal until each has authoritative tests or is removed from the supported architecture.

@@ -1146,6 +1146,50 @@ export function createSourceInvariantVerifier({
     console.log('[release] Legacy C# AI invariants OK')
   }
 
+  async function verifyLegacyRendererInvariants() {
+    const issues = []
+    const runtimeModeSource = await readFile(path.join(root, 'src', 'LLMAssistant.Renderer', 'RendererRuntimeMode.cs'), 'utf8')
+    const windowSource = await readFile(path.join(root, 'src', 'LLMAssistant.Renderer', 'WindowManager.cs'), 'utf8')
+    const contextSource = await readFile(path.join(root, 'src', 'LLMAssistant.Renderer', 'RenderContext.cs'), 'utf8')
+    const nativeSource = await readFile(path.join(root, 'src', 'LLMAssistant.Renderer', 'SDL2', 'SDL2Native.cs'), 'utf8')
+    const appSource = await readFile(path.join(root, 'src', 'LLMAssistant.App', 'Program.cs'), 'utf8')
+    const testSource = await readFile(path.join(root, 'tests', 'LLMAssistant.Tests', 'RendererNativeRuntimeTests.cs'), 'utf8')
+
+    const requirements = [
+      [runtimeModeSource, 'public enum RendererRuntimeMode', 'define one explicit interactive/headless runtime boundary'],
+      [runtimeModeSource, 'Headless', 'expose the headless renderer mode'],
+      [windowSource, 'RendererRuntimeMode runtimeMode = RendererRuntimeMode.Interactive', 'preserve interactive window behavior by default'],
+      [windowSource, '? SDL_INIT_VIDEO', 'avoid requiring audio initialization for headless probes'],
+      [windowSource, '? SDL_WINDOW_HIDDEN', 'create hidden windows in headless mode'],
+      [contextSource, '? SDL_RENDERER_SOFTWARE', 'select the SDL software renderer in headless mode'],
+      [contextSource, 'SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC', 'preserve accelerated VSync rendering by default'],
+      [nativeSource, 'SDL_WINDOW_HIDDEN', 'bind the hidden-window SDL flag'],
+      [nativeSource, 'SDL_RENDERER_SOFTWARE', 'bind the software-renderer SDL flag'],
+      [nativeSource, 'SDL_ClearError', 'allow render probes to isolate current-frame SDL errors'],
+      [appSource, 'new WindowManager(engineTitle, engineWidth, engineHeight)', 'keep the retained application on the default interactive mode'],
+      [appSource, 'new RenderContext(window.Window)', 'keep the retained application on the default accelerated renderer'],
+      [testSource, 'WindowsRuntime_RendersHeadlessFramesThroughProductContext', 'execute a real headless product-renderer probe'],
+      [testSource, 'Environment.SetEnvironmentVariable("SDL_VIDEODRIVER", "dummy")', 'run the native probe without opening a visible desktop window'],
+      [testSource, 'new WindowManager(', 'initialize the product window wrapper'],
+      [testSource, 'new RenderContext(window.Window, RendererRuntimeMode.Headless)', 'initialize the product render context in headless mode'],
+      [testSource, 'frame < 3', 'render more than one frame'],
+      [testSource, 'context.Present()', 'present each headless frame'],
+      [testSource, 'SDL_PollEvent(out _)', 'exercise the native event loop'],
+      [testSource, 'SDL_GetError()', 'assert the frame loop leaves no SDL error'],
+    ]
+    for (const [source, needle, description] of requirements) {
+      if (!source.includes(needle)) {
+        issues.push(`Legacy C# renderer must ${description}`)
+      }
+    }
+
+    if (issues.length > 0) {
+      throw new Error(`Legacy C# renderer verification failed:\n${issues.join('\n')}`)
+    }
+
+    console.log('[release] Legacy C# renderer invariants OK')
+  }
+
   async function verifyAiBackendConfigInvariants() {
     const issues = []
     const aiCommandSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'ai.rs'), 'utf8')
@@ -2258,6 +2302,7 @@ export function createSourceInvariantVerifier({
   return {
     verifyFrontendSourceInvariants,
     verifyLegacyPromptBuilderInvariants,
+    verifyLegacyRendererInvariants,
     verifyAiBackendConfigInvariants,
     verifyEngineProjectRootInvariants,
     verifyAssetManagerInvariants,

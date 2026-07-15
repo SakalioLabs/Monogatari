@@ -311,6 +311,7 @@ const requiredVercelSecurityHeaders = [
 const {
   verifyFrontendSourceInvariants,
   verifyLegacyPromptBuilderInvariants,
+  verifyLegacyRendererInvariants,
   verifyAiBackendConfigInvariants,
   verifyEngineProjectRootInvariants,
   verifyAssetManagerInvariants,
@@ -355,6 +356,7 @@ async function main() {
   await verifyI18nLocalePathInvariants()
   await verifyFrontendSourceInvariants()
   await verifyLegacyPromptBuilderInvariants()
+  await verifyLegacyRendererInvariants()
   await verifyAiBackendConfigInvariants()
   await verifyEngineProjectRootInvariants()
   await verifyAssetManagerInvariants()

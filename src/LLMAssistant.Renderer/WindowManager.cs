@@ -8,22 +8,31 @@ public class WindowManager : IDisposable
 {
     private IntPtr _window;
     private bool _disposed;
+    private readonly RendererRuntimeMode _runtimeMode;
 
     public IntPtr Window => _window;
     public int Width { get; private set; }
     public int Height { get; private set; }
     public string Title { get; private set; }
 
-    public WindowManager(string title, int width = 1280, int height = 720)
+    public WindowManager(
+        string title,
+        int width = 1280,
+        int height = 720,
+        RendererRuntimeMode runtimeMode = RendererRuntimeMode.Interactive)
     {
         Title = title;
         Width = width;
         Height = height;
+        _runtimeMode = runtimeMode;
     }
 
     public bool Initialize()
     {
-        if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0)
+        var initFlags = _runtimeMode == RendererRuntimeMode.Headless
+            ? SDL_INIT_VIDEO
+            : SDL_INIT_VIDEO | SDL_INIT_AUDIO;
+        if (SDL_Init(initFlags) != 0)
         {
             Console.WriteLine($"SDL Init Error: {Marshal.PtrToStringUTF8(SDL_GetError())}");
             return false;
@@ -35,7 +44,9 @@ public class WindowManager : IDisposable
             SDL_WINDOWPOS_CENTERED,
             Width,
             Height,
-            SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
+            _runtimeMode == RendererRuntimeMode.Headless
+                ? SDL_WINDOW_HIDDEN
+                : SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
         );
 
         if (_window == IntPtr.Zero)
