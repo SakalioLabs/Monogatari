@@ -59,6 +59,8 @@ export function createSourceInvariantVerifier({
     const localConditionSource = await readFile(path.join(frontendDir, 'src', 'lib', 'localCondition.ts'), 'utf8')
     const knowledgeContentSource = await readFile(path.join(frontendDir, 'src', 'lib', 'knowledgeContent.ts'), 'utf8')
     const storyEndingsSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyEndings.ts'), 'utf8')
+    const storyEndingEditingSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyEndingEditing.ts'), 'utf8')
+    const storyEndingEditingTestSource = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'storyEndingEditing.test.ts'), 'utf8')
     const sceneAuthoringSource = await readFile(path.join(frontendDir, 'src', 'lib', 'sceneAuthoring.ts'), 'utf8')
     const dialogueAuthoringSource = await readFile(path.join(frontendDir, 'src', 'lib', 'dialogueAuthoring.ts'), 'utf8')
     const dialogueGraphEditingSource = await readFile(path.join(frontendDir, 'src', 'lib', 'dialogueGraphEditing.ts'), 'utf8')
@@ -372,11 +374,23 @@ export function createSourceInvariantVerifier({
       [storyEndingsSource, "invokeCommand<StoryEndingCatalogSnapshot>('get_story_ending_catalog')", 'load editable ending catalog snapshots'],
       [storyEndingsSource, 'expectedCatalogFingerprint', 'save and delete endings with optimistic concurrency'],
       [storyEndingsSource, 'saveBrowserStoryEndingDrafts', 'persist browser ending authoring drafts'],
+      [storyEndingsSource, 'hasStoryEndingIdCollision(definitions.map', 'reject case-folded browser Ending ID collisions before persistence'],
       [endingEditorSource, 'validateStoryEndingDefinition', 'validate ending definitions before save'],
       [endingEditorSource, 'loadStoryScenes()', 'bind endings to real project scenes'],
       [endingEditorSource, 'loadStoryDialogues()', 'bind endings to real project dialogues'],
+      [endingEditorSource, "from '../lib/storyEndingEditing'", 'delegate draft, reference, and coverage behavior to the pure Ending editing domain'],
+      [storyEndingEditingSource, 'export function filterStoryEndingEntries', 'filter Ending catalogs outside the Vue view'],
+      [storyEndingEditingSource, 'export function nextStoryEndingId', 'allocate case-folded portable Ending IDs outside the Vue view'],
+      [storyEndingEditingSource, 'export function validateStoryEndingReferences', 'return stable scene, dialogue, and ID collision evidence'],
+      [storyEndingEditingSource, 'export function storyEndingCoverageWarnings', 'derive Story Event unlock coverage outside localization'],
+      [storyEndingEditingTestSource, 'allocates IDs with portable case-folded collisions', 'test Ending ID portability independently'],
+      [storyEndingEditingTestSource, 'returns stable missing-reference and case-folded collision evidence', 'test Ending reference diagnostics independently'],
+      [storyEndingEditingTestSource, 'reports unlock coverage gaps for persisted routes only', 'test Ending unlock coverage independently'],
       [endingEditorSource, 'confirmDiscard', 'guard dirty ending drafts during navigation'],
       [endingEditorSource, "invokeCommand('preview_story_ending'", 'launch author previews without player unlock mutation'],
+      [authoringE2eSource, 'Ending authoring saves real references, previews, and rejects portable ID collisions', 'exercise Ending save, preview, and collision handling in a real browser'],
+      [authoringE2eSource, "toHaveURL(/\\/game\\?previewEnding=agent_ending_test&authoring=1$/)", 'prove the saved browser Ending reaches author preview'],
+      [authoringE2eSource, "fill('AGENT_ENDING_TEST')", 'exercise case-folded Ending ID collision handling before persistence'],
       [storyEventsSource, 'expectedCatalogFingerprint', 'save event catalogs with optimistic concurrency'],
       [storyEventEditorSource, "from '../lib/storyEventEditing'", 'delegate draft transformations and validation to the pure Story Event editing domain'],
       [storyEventEditorSource, 'metadataDirty', 'include uncommitted Metadata JSON in dirty-state protection'],
@@ -448,6 +462,18 @@ export function createSourceInvariantVerifier({
     for (const needle of storyEventEditingViewLeaks) {
       if (storyEventEditorSource.includes(needle)) {
         issues.push(`frontend/src/views/StoryEventEditorView.vue must not redeclare Story Event editing domain logic: ${needle}`)
+      }
+    }
+
+    const storyEndingEditingViewLeaks = [
+      'function definitionFrom',
+      'function nextEndingId',
+      'JSON.stringify(draft.value)',
+      'snapshot.value?.endings.some',
+    ]
+    for (const needle of storyEndingEditingViewLeaks) {
+      if (endingEditorSource.includes(needle)) {
+        issues.push(`frontend/src/views/EndingEditorView.vue must not redeclare Story Ending editing domain logic: ${needle}`)
       }
     }
 

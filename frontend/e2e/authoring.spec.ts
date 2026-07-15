@@ -137,6 +137,32 @@ test('Story Event authoring preserves metadata-only edits and reactive duplicati
   await expect(metadata).toHaveValue('{\n  "agent": "ready"\n}')
 })
 
+test('Ending authoring saves real references, previews, and rejects portable ID collisions', async ({ page }) => {
+  await page.goto('/endings')
+
+  await expect(page.getByRole('heading', { name: 'Ending Routes' })).toBeVisible()
+  await expect(page.locator('.ending-item').first()).toBeVisible()
+  await page.getByRole('button', { name: 'New', exact: true }).click()
+  await page.getByLabel('Ending ID').fill('agent_ending_test')
+  await page.getByLabel('Title', { exact: true }).fill('Agent Ending Test')
+  await page.getByLabel('Description').fill('A browser-authored ending delivery fixture.')
+  await expect(page.getByRole('combobox', { name: 'Scene', exact: true })).not.toHaveValue('')
+  await expect(page.getByRole('combobox', { name: 'Dialogue', exact: true })).not.toHaveValue('')
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+
+  await expect(page.getByText('Ending saved')).toBeVisible()
+  await page.getByRole('button', { name: 'Preview', exact: true }).click()
+  await expect(page).toHaveURL(/\/game\?previewEnding=agent_ending_test&authoring=1$/)
+  await expect(page.locator('.dialogue-box')).toBeVisible()
+
+  await page.goto('/endings')
+  await expect(page.locator('.ending-item').first()).toBeVisible()
+  await page.getByRole('button', { name: 'New', exact: true }).click()
+  await page.getByLabel('Ending ID').fill('AGENT_ENDING_TEST')
+  await expect(page.getByRole('alert')).toContainText('already exists')
+  await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeDisabled()
+})
+
 test('Quality Suite workbench presents generated evidence across desktop and mobile', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 })
   await page.goto('/quality')

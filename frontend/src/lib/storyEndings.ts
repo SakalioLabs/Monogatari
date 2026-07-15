@@ -51,16 +51,18 @@ export async function saveStoryEnding(
   const current = await browserCatalogSnapshot()
   ensureExpectedFingerprint(current, expectedCatalogFingerprint)
   const definitions = current.endings.map(endingDefinition)
-  const existingIndex = definitions.findIndex((item) => item.id === ending.id)
   if (originalEndingId) {
     if (originalEndingId !== ending.id) {
       throw new Error('Ending ids are immutable after creation. Duplicate the ending to use a new id.')
     }
+    const existingIndex = definitions.findIndex((item) => item.id === originalEndingId)
     if (existingIndex < 0) throw new Error(`Ending "${originalEndingId}" no longer exists. Reload first.`)
-    definitions.splice(existingIndex, 1, normalizedEnding(ending))
+    definitions.splice(existingIndex, 1, normalizeStoryEndingDefinition(ending))
   } else {
-    if (existingIndex >= 0) throw new Error(`Ending "${ending.id}" already exists.`)
-    definitions.push(normalizedEnding(ending))
+    if (hasStoryEndingIdCollision(definitions.map((item) => item.id), ending.id)) {
+      throw new Error(`Ending "${ending.id}" already exists.`)
+    }
+    definitions.push(normalizeStoryEndingDefinition(ending))
   }
   definitions.sort((left, right) => left.id.localeCompare(right.id))
   saveBrowserStoryEndingDrafts(definitions)
@@ -112,6 +114,28 @@ export function validateStoryEndingDefinition(ending: StoryEndingDefinition): st
   return issues
 }
 
+export function hasStoryEndingIdCollision(
+  existingIds: readonly string[],
+  candidateId: string,
+): boolean {
+  const candidateKey = candidateId.trim().toLowerCase()
+  return candidateKey.length > 0
+    && existingIds.some((id) => id.trim().toLowerCase() === candidateKey)
+}
+
+export function normalizeStoryEndingDefinition(
+  ending: StoryEndingDefinition,
+): StoryEndingDefinition {
+  return {
+    schema: STORY_ENDING_SCHEMA,
+    id: ending.id.trim(),
+    title: ending.title.trim(),
+    description: ending.description.trim(),
+    scene_id: ending.scene_id.trim(),
+    dialogue_id: ending.dialogue_id.trim(),
+  }
+}
+
 async function browserCatalogSnapshot(): Promise<StoryEndingCatalogSnapshot> {
   const draftActive = loadBrowserStoryEndingDrafts() !== null
   const endings = await loadStoryEndings()
@@ -140,18 +164,7 @@ function authoringEntry(ending: StoryEndingInfo, draftActive: boolean): StoryEnd
 }
 
 function endingDefinition(ending: StoryEndingDefinition): StoryEndingDefinition {
-  return normalizedEnding(ending)
-}
-
-function normalizedEnding(ending: StoryEndingDefinition): StoryEndingDefinition {
-  return {
-    schema: STORY_ENDING_SCHEMA,
-    id: ending.id.trim(),
-    title: ending.title.trim(),
-    description: ending.description.trim(),
-    scene_id: ending.scene_id.trim(),
-    dialogue_id: ending.dialogue_id.trim(),
-  }
+  return normalizeStoryEndingDefinition(ending)
 }
 
 function ensureExpectedFingerprint(

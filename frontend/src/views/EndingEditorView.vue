@@ -242,12 +242,24 @@ import { hasTauriRuntime, invokeCommand } from '../lib/tauri'
 import {
   deleteStoryEnding,
   loadStoryEndingCatalog,
+  normalizeStoryEndingDefinition,
   saveStoryEnding,
-  STORY_ENDING_SCHEMA,
   validateStoryEndingDefinition,
   type StoryEndingAuthoringEntry,
   type StoryEndingCatalogSnapshot,
 } from '../lib/storyEndings'
+import {
+  cloneStoryEndingDefinition,
+  createStoryEndingDraft,
+  duplicateStoryEndingDraft,
+  filterStoryEndingEntries,
+  storyEndingCoverageWarnings,
+  storyEndingDefinitionFromEntry,
+  storyEndingDraftSnapshot,
+  validateStoryEndingReferences,
+  type StoryEndingCoverageWarning,
+  type StoryEndingReferenceIssue,
+} from '../lib/storyEndingEditing'
 import {
   loadStoryDialogues,
   loadStoryScenes,
@@ -269,17 +281,11 @@ const search = ref('')
 const busy = ref(false)
 const notice = ref<{ type: 'success' | 'error'; title: string; message: string } | null>(null)
 
-const filteredEndings = computed(() => {
-  const query = search.value.toLowerCase()
-  return (snapshot.value?.endings || []).filter((ending) => !query
-    || ending.id.toLowerCase().includes(query)
-    || ending.title.toLowerCase().includes(query)
-    || ending.description.toLowerCase().includes(query))
-})
+const filteredEndings = computed(() => filterStoryEndingEntries(snapshot.value?.endings || [], search.value))
 
 const gatedCount = computed(() => (snapshot.value?.endings || []).filter((ending) => ending.access.gated).length)
 const openCount = computed(() => (snapshot.value?.ending_count || 0) - gatedCount.value)
-const serializedDraft = computed(() => draft.value ? JSON.stringify(draft.value) : '')
+const serializedDraft = computed(() => storyEndingDraftSnapshot(draft.value))
 const dirty = computed(() => serializedDraft.value !== baseline.value)
 const selectedScene = computed(() => scenes.value.find((scene) => scene.id === draft.value?.scene_id) || null)
 const selectedDialogue = computed(() => dialogues.value.find((dialogue) => dialogue.id === draft.value?.dialogue_id) || null)
@@ -290,51 +296,35 @@ const sourcePath = computed(() => selectedEntry.value?.source_path || `endings/$
 
 const validationIssues = computed(() => {
   if (!draft.value) return [t('ending.error.no-selection', 'No ending selected.')]
-  const issues = validateStoryEndingDefinition(draft.value)
-  if (draft.value.scene_id && !selectedScene.value) issues.push(t('ending.error.scene-missing', 'Scene "{id}" does not exist.', { id: draft.value.scene_id }))
-  if (draft.value.dialogue_id && !selectedDialogue.value) issues.push(t('ending.error.dialogue-missing', 'Dialogue "{id}" does not exist.', { id: draft.value.dialogue_id }))
-  if (!originalEndingId.value && snapshot.value?.endings.some((ending) => ending.id === draft.value?.id)) {
-    issues.push(t('ending.error.already-exists', 'Ending "{id}" already exists.', { id: draft.value.id }))
-  }
-  return issues
+  return [
+    ...validateStoryEndingDefinition(draft.value),
+    ...validateStoryEndingReferences(draft.value, {
+      original_ending_id: originalEndingId.value,
+      existing_ending_ids: snapshot.value?.endings.map(({ id }) => id) || [],
+      scene_ids: scenes.value.map(({ id }) => id),
+      dialogue_ids: dialogues.value.map(({ id }) => id),
+    }).map(endingReferenceIssueMessage),
+  ]
 })
 
 const warnings = computed(() => {
   if (!draft.value) return []
-  const result: string[] = []
-  if (originalEndingId.value && endingEvents.value.length === 0) {
-    result.push(t('ending.warning.no-unlock', 'No Story Event unlocks this ending, so it is available from the start.'))
-  }
-  for (const eventId of endingEvents.value) {
-    if (!selectedScene.value?.access.unlock_event_ids.includes(eventId)) {
-      result.push(t('ending.warning.scene-not-unlocked', 'Event "{event}" does not unlock scene "{scene}".', { event: eventId, scene: draft.value.scene_id }))
-    }
-    if (!selectedDialogue.value?.access.unlock_event_ids.includes(eventId)) {
-      result.push(t('ending.warning.dialogue-not-unlocked', 'Event "{event}" does not unlock dialogue "{dialogue}".', { event: eventId, dialogue: draft.value.dialogue_id }))
-    }
-  }
-  return result
+  return storyEndingCoverageWarnings({
+    original_ending_id: originalEndingId.value,
+    ending_unlock_event_ids: endingEvents.value,
+    scene_access: selectedScene.value?.access || null,
+    dialogue_access: selectedDialogue.value?.access || null,
+  }).map((warning) => endingCoverageWarningMessage(warning, draft.value!))
 })
 
 const canSave = computed(() => Boolean(draft.value && snapshot.value && dirty.value && validationIssues.value.length === 0))
 const canDuplicate = computed(() => Boolean(draft.value))
 const canPreview = computed(() => Boolean(originalEndingId.value && !dirty.value && validationIssues.value.length === 0))
 
-function definitionFrom(entry: StoryEndingAuthoringEntry): StoryEndingDefinition {
-  return {
-    schema: STORY_ENDING_SCHEMA,
-    id: entry.id,
-    title: entry.title,
-    description: entry.description,
-    scene_id: entry.scene_id,
-    dialogue_id: entry.dialogue_id,
-  }
-}
-
 function setDraft(definition: StoryEndingDefinition, originalId: string | null) {
-  draft.value = { ...definition }
+  draft.value = cloneStoryEndingDefinition(definition)
   originalEndingId.value = originalId
-  baseline.value = JSON.stringify(draft.value)
+  baseline.value = storyEndingDraftSnapshot(draft.value)
 }
 
 function confirmDiscard(): boolean {
@@ -344,33 +334,28 @@ function confirmDiscard(): boolean {
 function selectEnding(entry: StoryEndingAuthoringEntry) {
   if (entry.id === originalEndingId.value) return
   if (!confirmDiscard()) return
-  setDraft(definitionFrom(entry), entry.id)
-}
-
-function nextEndingId(base = 'new_ending'): string {
-  const ids = new Set(snapshot.value?.endings.map((ending) => ending.id) || [])
-  if (!ids.has(base)) return base
-  let index = 2
-  while (ids.has(`${base}_${index}`)) index += 1
-  return `${base}_${index}`
+  setDraft(storyEndingDefinitionFromEntry(entry), entry.id)
 }
 
 function createEnding() {
   if (!confirmDiscard()) return
-  setDraft({
-    schema: STORY_ENDING_SCHEMA,
-    id: nextEndingId(),
-    title: t('ending.new-ending', 'New Ending'),
-    description: t('ending.new-description', 'A new story conclusion.'),
-    scene_id: scenes.value[0]?.id || '',
-    dialogue_id: dialogues.value[0]?.id || '',
-  }, null)
+  setDraft(createStoryEndingDraft(
+    snapshot.value?.endings.map(({ id }) => id) || [],
+    t('ending.new-ending', 'New Ending'),
+    t('ending.new-description', 'A new story conclusion.'),
+    scenes.value[0]?.id || '',
+    dialogues.value[0]?.id || '',
+  ), null)
   baseline.value = ''
 }
 
 function duplicateEnding() {
   if (!draft.value || !confirmDiscard()) return
-  const copy = { ...draft.value, id: nextEndingId(`${draft.value.id}_copy`), title: t('authoring.copy-name', '{name} Copy', { name: draft.value.title }) }
+  const copy = duplicateStoryEndingDraft(
+    draft.value,
+    snapshot.value?.endings.map(({ id }) => id) || [],
+    t('authoring.copy-name', '{name} Copy', { name: draft.value.title }),
+  )
   setDraft(copy, null)
   baseline.value = ''
 }
@@ -388,7 +373,7 @@ async function loadCatalog(preferredId?: string | null) {
     dialogues.value = nextDialogues.sort((left, right) => left.title.localeCompare(right.title))
     const target = nextSnapshot.endings.find((ending) => ending.id === preferredId)
       || nextSnapshot.endings[0]
-    if (target) setDraft(definitionFrom(target), target.id)
+    if (target) setDraft(storyEndingDefinitionFromEntry(target), target.id)
     else {
       draft.value = null
       originalEndingId.value = null
@@ -411,18 +396,11 @@ async function saveEnding() {
   if (!draft.value || !snapshot.value || !canSave.value) return
   busy.value = true
   try {
-    const ending = {
-      ...draft.value,
-      id: draft.value.id.trim(),
-      title: draft.value.title.trim(),
-      description: draft.value.description.trim(),
-      scene_id: draft.value.scene_id.trim(),
-      dialogue_id: draft.value.dialogue_id.trim(),
-    }
+    const ending = normalizeStoryEndingDefinition(draft.value)
     const next = await saveStoryEnding(ending, originalEndingId.value, snapshot.value.catalog_fingerprint)
     snapshot.value = next
     const saved = next.endings.find((entry) => entry.id === ending.id)
-    if (saved) setDraft(definitionFrom(saved), saved.id)
+    if (saved) setDraft(storyEndingDefinitionFromEntry(saved), saved.id)
     showNotice('success', t('ending.notice.saved-title', 'Ending saved'), t('ending.notice.saved-message', '{title} passed project reload and reference validation.', { title: ending.title }))
   } catch (error) {
     showNotice('error', t('authoring.save-rejected', 'Save rejected'), String(error))
@@ -440,7 +418,7 @@ async function removeEnding() {
     const next = await deleteStoryEnding(endingId, snapshot.value.catalog_fingerprint)
     snapshot.value = next
     const target = next.endings[0]
-    if (target) setDraft(definitionFrom(target), target.id)
+    if (target) setDraft(storyEndingDefinitionFromEntry(target), target.id)
     else {
       draft.value = null
       originalEndingId.value = null
@@ -469,6 +447,35 @@ async function previewEnding() {
   } finally {
     busy.value = false
   }
+}
+
+function endingReferenceIssueMessage(issue: StoryEndingReferenceIssue): string {
+  if (issue.code === 'scene_missing') {
+    return t('ending.error.scene-missing', 'Scene "{id}" does not exist.', { id: issue.target_id })
+  }
+  if (issue.code === 'dialogue_missing') {
+    return t('ending.error.dialogue-missing', 'Dialogue "{id}" does not exist.', { id: issue.target_id })
+  }
+  return t('ending.error.already-exists', 'Ending "{id}" already exists.', { id: issue.target_id })
+}
+
+function endingCoverageWarningMessage(
+  warning: StoryEndingCoverageWarning,
+  ending: StoryEndingDefinition,
+): string {
+  if (warning.code === 'no_unlock') {
+    return t('ending.warning.no-unlock', 'No Story Event unlocks this ending, so it is available from the start.')
+  }
+  if (warning.code === 'scene_not_unlocked') {
+    return t('ending.warning.scene-not-unlocked', 'Event "{event}" does not unlock scene "{scene}".', {
+      event: warning.event_id || '',
+      scene: ending.scene_id,
+    })
+  }
+  return t('ending.warning.dialogue-not-unlocked', 'Event "{event}" does not unlock dialogue "{dialogue}".', {
+    event: warning.event_id || '',
+    dialogue: ending.dialogue_id,
+  })
 }
 
 function accessLabel(access: StoryContentAccessEntry): string {
