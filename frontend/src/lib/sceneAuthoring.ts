@@ -76,7 +76,9 @@ export async function saveSceneDefinition(
     if (existingIndex < 0) throw new Error(`Scene "${originalSceneId}" no longer exists. Reload first.`)
     definitions.splice(existingIndex, 1, normalized)
   } else {
-    if (existingIndex >= 0) throw new Error(`Scene "${normalized.id}" already exists.`)
+    if (hasSceneIdCollision(definitions.map((item) => item.id), normalized.id)) {
+      throw new Error(`Scene "${normalized.id}" already exists.`)
+    }
     definitions.push(normalized)
   }
   definitions.sort((left, right) => left.id.localeCompare(right.id))
@@ -146,6 +148,15 @@ export function validateSceneDefinition(scene: SceneDefinition): string[] {
     }
   }
   return [...new Set(issues)]
+}
+
+export function hasSceneIdCollision(
+  existingIds: readonly string[],
+  candidateId: string,
+): boolean {
+  const portableKey = candidateId.trim().toLowerCase()
+  return Boolean(portableKey)
+    && existingIds.some((id) => id.trim().toLowerCase() === portableKey)
 }
 
 async function browserCatalogSnapshot(): Promise<SceneAuthoringCatalogSnapshot> {

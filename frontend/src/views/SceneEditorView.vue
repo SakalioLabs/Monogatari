@@ -246,7 +246,20 @@ import { Copy, Play, Plus, RotateCcw, Save, Trash2 } from '@lucide/vue'
 import { resolveAssetUrl } from '../lib/assets'
 import { useI18n } from '../lib/i18n'
 import {
+  cloneSceneDefinition,
+  createSceneDraft,
+  duplicateSceneDraft,
+  filterSceneAuthoringEntries,
+  parseSceneTags,
+  relevantSceneAssetIssues,
+  sceneDefinitionFromEntry,
+  sceneDraftSnapshot,
+  sceneDraftWarnings,
+  type SceneSourceFilter,
+} from '../lib/sceneEditing'
+import {
   deleteSceneDefinition,
+  hasSceneIdCollision,
   loadSceneAuthoringCatalog,
   normalizeSceneDefinition,
   saveSceneDefinition,
@@ -273,29 +286,21 @@ const draft = ref<SceneDefinition | null>(null)
 const selectedCatalogId = ref<string | null>(null)
 const baseline = ref('')
 const search = ref('')
-const filter = ref<'all' | 'authored' | 'inferred'>('all')
+const filter = ref<SceneSourceFilter>('all')
 const busy = ref(false)
 const previewFailed = ref(false)
 const backgroundPaths = ref<Record<string, string>>({})
 const notice = ref<{ type: 'success' | 'error'; title: string; message: string } | null>(null)
 
-const filteredScenes = computed(() => {
-  const query = search.value.toLowerCase()
-  return (snapshot.value?.scenes || []).filter((scene) => {
-    const sourceMatches = filter.value === 'all'
-      || (filter.value === 'authored' && scene.metadata_authored)
-      || (filter.value === 'inferred' && !scene.metadata_authored)
-    return sourceMatches && (!query
-      || scene.id.toLowerCase().includes(query)
-      || scene.name.toLowerCase().includes(query)
-      || scene.tags.some((tag) => tag.toLowerCase().includes(query)))
-  })
-})
+const filteredScenes = computed(() => filterSceneAuthoringEntries(
+  snapshot.value?.scenes || [],
+  search.value,
+  filter.value,
+))
 
 const selectedEntry = computed(() => (snapshot.value?.scenes || [])
   .find((scene) => scene.id === selectedCatalogId.value) || null)
-const serializedDraft = computed(() => draft.value ? JSON.stringify(draft.value) : '')
-const dirty = computed(() => serializedDraft.value !== baseline.value)
+const dirty = computed(() => sceneDraftSnapshot(draft.value) !== baseline.value)
 const gatedCount = computed(() => (snapshot.value?.scenes || []).filter((scene) => scene.access.gated).length)
 const errorCount = computed(() => (snapshot.value?.issues || []).filter((issue) => issue.severity === 'error').length)
 const sourcePath = computed(() => selectedEntry.value?.source_path || `scenes/${draft.value?.id || 'new'}.json`)
@@ -308,29 +313,30 @@ const accessStatus = computed(() => {
 const tagsText = computed({
   get: () => draft.value?.tags.join(', ') || '',
   set: (value: string) => {
-    if (draft.value) draft.value.tags = value.split(',').map((tag) => tag.trim()).filter(Boolean)
+    if (draft.value) draft.value.tags = parseSceneTags(value)
   },
 })
 const validationIssues = computed(() => {
   if (!draft.value) return [t('scene.error.no-selection', 'No scene selected.')]
   const normalized = normalizeSceneDefinition(draft.value)
   const issues = validateSceneDefinition(normalized)
-  if (!selectedCatalogId.value && snapshot.value?.scenes.some((scene) => scene.id === normalized.id)) {
+  if (!selectedCatalogId.value && hasSceneIdCollision(
+    snapshot.value?.scenes.map((scene) => scene.id) || [],
+    normalized.id,
+  )) {
     issues.push(t('scene.error.already-exists', 'Scene "{id}" already exists.', { id: normalized.id }))
   }
   return issues
 })
 const warnings = computed(() => {
-  if (!draft.value) return []
-  const result: string[] = []
-  if (!draft.value.background_path?.trim()) result.push(t('scene.warning.no-background', 'No background is assigned to this scene.'))
-  if (selectedEntry.value?.background_path === draft.value.background_path && !selectedEntry.value.background_exists) {
-    result.push(t('scene.warning.unresolved-background', 'The saved background path does not resolve to a project file.'))
-  }
-  return result
+  return sceneDraftWarnings(draft.value, selectedEntry.value).map((warning) => warning.code === 'no_background'
+    ? t('scene.warning.no-background', 'No background is assigned to this scene.')
+    : t('scene.warning.unresolved-background', 'The saved background path does not resolve to a project file.'))
 })
-const relevantIssues = computed(() => (snapshot.value?.issues || []).filter((issue) =>
-  !issue.scene_id || issue.scene_id === selectedCatalogId.value))
+const relevantIssues = computed(() => relevantSceneAssetIssues(
+  snapshot.value?.issues || [],
+  selectedCatalogId.value,
+))
 const previewUrl = computed(() => {
   const path = draft.value?.background_path?.trim()
   if (!path) return null
@@ -347,22 +353,10 @@ function sceneImage(scene: SceneAuthoringEntry): string | null {
   return resolveAssetUrl(backgroundPaths.value[path] || scene.absolute_background_path || path)
 }
 
-function definitionFrom(entry: SceneAuthoringEntry): SceneDefinition {
-  return {
-    id: entry.id,
-    name: entry.name,
-    background_path: entry.background_path,
-    bgm_path: entry.bgm_path,
-    weather: entry.weather,
-    time_of_day: entry.time_of_day,
-    tags: [...entry.tags],
-  }
-}
-
 function setDraft(definition: SceneDefinition, catalogId: string | null, isSaved = true) {
-  draft.value = { ...definition, tags: [...definition.tags] }
+  draft.value = cloneSceneDefinition(definition)
   selectedCatalogId.value = catalogId
-  baseline.value = isSaved ? JSON.stringify(draft.value) : ''
+  baseline.value = isSaved ? sceneDraftSnapshot(draft.value) : ''
   previewFailed.value = false
 }
 
@@ -373,38 +367,24 @@ function confirmDiscard(): boolean {
 function selectScene(entry: SceneAuthoringEntry) {
   if (entry.id === selectedCatalogId.value) return
   if (!confirmDiscard()) return
-  setDraft(definitionFrom(entry), entry.id)
-}
-
-function nextSceneId(base = 'new_scene'): string {
-  const ids = new Set(snapshot.value?.scenes.map((scene) => scene.id) || [])
-  if (!ids.has(base)) return base
-  let index = 2
-  while (ids.has(`${base}_${index}`)) index += 1
-  return `${base}_${index}`
+  setDraft(sceneDefinitionFromEntry(entry), entry.id)
 }
 
 function createScene() {
   if (!confirmDiscard()) return
-  setDraft({
-    id: nextSceneId(),
-    name: t('scene.new-scene', 'New scene'),
-    background_path: null,
-    bgm_path: null,
-    weather: null,
-    time_of_day: null,
-    tags: [],
-  }, null, false)
+  setDraft(createSceneDraft(
+    snapshot.value?.scenes.map((scene) => scene.id) || [],
+    t('scene.new-scene', 'New scene'),
+  ), null, false)
 }
 
 function duplicateScene() {
   if (!draft.value || !confirmDiscard()) return
-  setDraft({
-    ...draft.value,
-    id: nextSceneId(`${draft.value.id}_copy`),
-    name: t('authoring.copy-name', '{name} Copy', { name: draft.value.name }),
-    tags: [...draft.value.tags],
-  }, null, false)
+  setDraft(duplicateSceneDraft(
+    draft.value,
+    snapshot.value?.scenes.map((scene) => scene.id) || [],
+    t('authoring.copy-name', '{name} Copy', { name: draft.value.name }),
+  ), null, false)
 }
 
 async function loadBackgroundPaths() {
@@ -425,7 +405,7 @@ async function loadCatalog(preferredId?: string | null) {
     ])
     snapshot.value = nextSnapshot
     const target = nextSnapshot.scenes.find((scene) => scene.id === preferredId) || nextSnapshot.scenes[0]
-    if (target) setDraft(definitionFrom(target), target.id)
+    if (target) setDraft(sceneDefinitionFromEntry(target), target.id)
     else {
       draft.value = null
       selectedCatalogId.value = null
@@ -454,7 +434,7 @@ async function saveScene() {
     snapshot.value = next
     await loadBackgroundPaths()
     const saved = next.scenes.find((entry) => entry.id === scene.id)
-    if (saved) setDraft(definitionFrom(saved), saved.id)
+    if (saved) setDraft(sceneDefinitionFromEntry(saved), saved.id)
     showNotice('success', originalId ? t('scene.notice.saved-title', 'Scene saved') : t('scene.notice.created-title', 'Scene created'), t('scene.notice.saved-message', '{name} passed project reload validation.', { name: scene.name }))
   } catch (error) {
     showNotice('error', t('authoring.save-rejected', 'Save rejected'), String(error))
@@ -473,7 +453,7 @@ async function removeScene() {
     snapshot.value = next
     await loadBackgroundPaths()
     const target = next.scenes.find((scene) => scene.id === sceneId) || next.scenes[0]
-    if (target) setDraft(definitionFrom(target), target.id)
+    if (target) setDraft(sceneDefinitionFromEntry(target), target.id)
     else {
       draft.value = null
       selectedCatalogId.value = null

@@ -65,6 +65,9 @@ export function createSourceInvariantVerifier({
     const storyEndingEditingSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyEndingEditing.ts'), 'utf8')
     const storyEndingEditingTestSource = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'storyEndingEditing.test.ts'), 'utf8')
     const sceneAuthoringSource = await readFile(path.join(frontendDir, 'src', 'lib', 'sceneAuthoring.ts'), 'utf8')
+    const sceneAuthoringTestSource = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'sceneAuthoring.test.ts'), 'utf8')
+    const sceneEditingSource = await readFile(path.join(frontendDir, 'src', 'lib', 'sceneEditing.ts'), 'utf8')
+    const sceneEditingTestSource = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'sceneEditing.test.ts'), 'utf8')
     const dialogueAuthoringSource = await readFile(path.join(frontendDir, 'src', 'lib', 'dialogueAuthoring.ts'), 'utf8')
     const dialogueGraphEditingSource = await readFile(path.join(frontendDir, 'src', 'lib', 'dialogueGraphEditing.ts'), 'utf8')
     const dialogueGraphEditingTestSource = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'dialogueGraphEditing.test.ts'), 'utf8')
@@ -350,10 +353,22 @@ export function createSourceInvariantVerifier({
       [sceneAuthoringSource, "invokeCommand<SceneAuthoringCatalogSnapshot>('get_scene_authoring_catalog')", 'load editable scene catalog snapshots'],
       [sceneAuthoringSource, 'expectedCatalogFingerprint', 'save and delete scenes with optimistic concurrency'],
       [sceneAuthoringSource, 'saveBrowserSceneDrafts', 'persist browser scene authoring drafts'],
+      [sceneAuthoringSource, 'hasSceneIdCollision(definitions.map', 'reject case-folded browser Scene ID collisions before persistence'],
       [sceneEditorSource, 'validateSceneDefinition', 'validate scene definitions before save'],
+      [sceneEditorSource, "from '../lib/sceneEditing'", 'delegate draft, filtering, warning, and diagnostic behavior to the pure Scene editing domain'],
+      [sceneEditingSource, 'export function filterSceneAuthoringEntries', 'filter Scene catalogs outside the Vue view'],
+      [sceneEditingSource, 'export function nextSceneId', 'allocate case-folded portable Scene IDs outside the Vue view'],
+      [sceneEditingSource, 'export function duplicateSceneDraft', 'duplicate isolated Scene drafts outside the Vue view'],
+      [sceneEditingSource, 'export function sceneDraftWarnings', 'derive stable Scene background warning evidence outside localization'],
+      [sceneAuthoringTestSource, 'detects case-folded portable scene ID collisions', 'test Scene ID portability independently'],
+      [sceneEditingTestSource, 'clones reactive definitions without retaining tag references', 'test proxy-safe Scene draft isolation'],
+      [sceneEditingTestSource, 'returns stable background warnings and relevant diagnostics', 'test Scene warning and diagnostic evidence independently'],
       [sceneEditorSource, 'confirmDiscard', 'guard dirty scene drafts during navigation'],
       [sceneEditorSource, 'resolveAssetUrl', 'preview real scene background assets'],
       [sceneEditorSource, "invokeCommand('set_scene'", 'launch desktop scene author previews'],
+      [authoringE2eSource, 'Scene authoring saves a real background, previews, and rejects portable ID collisions', 'exercise Scene save, Playtest, and collision handling in a real browser'],
+      [authoringE2eSource, "toHaveURL(/\\/game\\?previewScene=agent_scene_test&authoring=1$/)", 'prove the saved browser Scene reaches author Playtest'],
+      [authoringE2eSource, "fill('AGENT_SCENE_TEST')", 'exercise case-folded Scene ID collision handling before persistence'],
       [dialogueAuthoringSource, "invokeCommand<DialogueAuthoringCatalogSnapshot>('get_dialogue_authoring_catalog')", 'load editable dialogue catalog snapshots'],
       [dialogueAuthoringSource, 'expectedCatalogFingerprint', 'save and delete dialogues with optimistic concurrency'],
       [dialogueAuthoringSource, 'saveBrowserDialogueDrafts', 'persist browser dialogue authoring drafts'],
@@ -477,6 +492,19 @@ export function createSourceInvariantVerifier({
     for (const needle of storyEndingEditingViewLeaks) {
       if (endingEditorSource.includes(needle)) {
         issues.push(`frontend/src/views/EndingEditorView.vue must not redeclare Story Ending editing domain logic: ${needle}`)
+      }
+    }
+
+    const sceneEditingViewLeaks = [
+      'function definitionFrom',
+      'function nextSceneId',
+      'JSON.stringify(draft.value)',
+      "value.split(',').map((tag)",
+      'const sourceMatches = filter.value ===',
+    ]
+    for (const needle of sceneEditingViewLeaks) {
+      if (sceneEditorSource.includes(needle)) {
+        issues.push(`frontend/src/views/SceneEditorView.vue must not redeclare Scene editing domain logic: ${needle}`)
       }
     }
 

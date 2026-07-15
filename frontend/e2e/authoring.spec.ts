@@ -163,6 +163,36 @@ test('Ending authoring saves real references, previews, and rejects portable ID 
   await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeDisabled()
 })
 
+test('Scene authoring saves a real background, previews, and rejects portable ID collisions', async ({ page }) => {
+  await page.goto('/scene-editor')
+
+  await expect(page.getByRole('heading', { name: 'Scene Catalog' })).toBeVisible()
+  await expect(page.locator('.scene-item').first()).toBeVisible()
+  const projectBackground = await page.getByLabel('Background path').inputValue()
+  expect(projectBackground).not.toBe('')
+
+  await page.getByRole('button', { name: 'New', exact: true }).click()
+  await page.getByLabel('Scene ID').fill('agent_scene_test')
+  await page.getByLabel('Name', { exact: true }).fill('Agent Scene Test')
+  await page.getByLabel('Background path').fill(projectBackground)
+  await page.getByLabel('Tags').fill('agent, delivery, agent')
+  await page.locator('.header-actions').getByRole('button', { name: 'Save', exact: true }).click()
+
+  await expect(page.locator('.notice.success')).toContainText('Scene created')
+  await page.getByRole('button', { name: 'Playtest', exact: true }).click()
+  await expect(page).toHaveURL(/\/game\?previewScene=agent_scene_test&authoring=1$/)
+  await expect(page.locator('.scene-empty p')).toContainText(projectBackground)
+  await expect(page.locator('.scene-backdrop')).toHaveAttribute('style', /url\(/)
+
+  await page.goto('/scene-editor')
+  await expect(page.locator('.scene-item').first()).toBeVisible()
+  await page.getByRole('button', { name: 'New', exact: true }).click()
+  await page.getByLabel('Scene ID').fill('AGENT_SCENE_TEST')
+  await page.getByLabel('Name', { exact: true }).fill('Portable Collision')
+  await expect(page.getByRole('alert')).toContainText('already exists')
+  await expect(page.locator('.header-actions').getByRole('button', { name: 'Save', exact: true })).toBeDisabled()
+})
+
 test('Knowledge authoring persists Agent context and protects browser character references', async ({ page }) => {
   await page.goto('/knowledge')
 

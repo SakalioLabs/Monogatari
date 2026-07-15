@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import type { SceneDefinition } from '../storyContent'
-import { normalizeSceneDefinition, validateSceneDefinition } from '../sceneAuthoring'
+import {
+  hasSceneIdCollision,
+  normalizeSceneDefinition,
+  validateSceneDefinition,
+} from '../sceneAuthoring'
 
 function scene(overrides: Partial<SceneDefinition> = {}): SceneDefinition {
   return {
@@ -54,5 +58,10 @@ describe('scene authoring contracts', () => {
       'Background path must use portable project-relative segments.',
       'BGM path must use portable project-relative segments.',
     ]))
+  })
+
+  it('detects case-folded portable scene ID collisions', () => {
+    expect(hasSceneIdCollision(['studio_night', 'Agent_Route'], ' agent_route ')).toBe(true)
+    expect(hasSceneIdCollision(['studio_night'], 'new_route')).toBe(false)
   })
 })
