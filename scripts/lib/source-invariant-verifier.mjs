@@ -2006,7 +2006,7 @@ export function createSourceInvariantVerifier({
       [mcpCargoSource, 'rmcp = { version = "2.2.0"', 'use the pinned official Rust MCP SDK'],
       [mcpCargoSource, '"transport-io"', 'enable the SDK stdio transport'],
       [mcpCargoSource, '"transport-child-process"', 'exercise the server through a real child-process client'],
-      [mcpCliSource, '"--package-output-dir"', 'bind package output through one startup option'],
+      [mcpCliSource, '"--package-output-dir"', 'bind package inspection and output through one startup option'],
       [mcpLibSource, 'rmcp::transport::stdio()', 'serve MCP through the SDK stdio transport'],
       [mcpMainSource, '.with_writer(std::io::stderr)', 'reserve stdout exclusively for MCP frames'],
       [mcpServerSource, 'canonical_project_root(&project_root)', 'bind one canonical project root at startup'],
@@ -2016,6 +2016,7 @@ export function createSourceInvariantVerifier({
       [mcpServerSource, 'pub async fn list_project_json', 'expose bounded JSON catalog listing'],
       [mcpServerSource, 'pub async fn read_project_json', 'expose exact JSON document reads'],
       [mcpServerSource, 'pub async fn preview_project_package', 'expose read-only credential-free package previews'],
+      [mcpServerSource, 'pub async fn inspect_project_package', 'expose read-only fixed-root package inspection'],
       [mcpServerSource, 'pub async fn export_project_package', 'expose reviewed fixed-root package output'],
       [mcpServerSource, 'pub async fn plan_transaction', 'expose side-effect-free transaction planning'],
       [mcpServerSource, 'pub async fn apply_transaction', 'expose validated transaction application'],
@@ -2023,10 +2024,12 @@ export function createSourceInvariantVerifier({
       [mcpProtocolSource, 'expected_precondition_fingerprint', 'require the caller to confirm the reviewed plan fingerprint'],
       [mcpProtocolSource, 'expected_content_sha256', 'require the caller to confirm the reviewed package fingerprint'],
       [mcpProtocolSource, 'replace_existing', 'make package replacement explicit in the tool schema'],
+      [mcpProtocolSource, 'MCP_PACKAGE_INSPECTION_SCHEMA_V1', 'version structured package inspection evidence'],
       [mcpServerSource, 'self.access.write().await', 'serialize reads against staged write candidates'],
-      [mcpPackageTransportSource, 'PackageOutputBoundary', 'isolate package destination policy from the tool router'],
+      [mcpPackageTransportSource, 'PackageDirectoryBoundary', 'isolate fixed package directory policy from the tool router'],
       [mcpPackageTransportSource, 'root.starts_with(project_root)', 'keep package output outside the authored project root'],
       [mcpPackageTransportSource, 'validate_portable_path(file_name', 'accept one portable package file name'],
+      [mcpPackageTransportSource, 'inspect_project_package as inspect_package_archive', 'delegate archive inspection to the shared headless reader'],
       [mcpPackageTransportSource, 'ProjectPackageTargetPolicy::CreateNew', 'default package output to non-replacing creation'],
       [mcpPackageTransportSource, 'write_project_package(', 'delegate archive generation to the shared headless writer'],
       [mcpPackageTransportSource, 'tokio::task::spawn_blocking', 'keep package inventory and ZIP I/O off async executor workers'],
@@ -2056,8 +2059,10 @@ export function createSourceInvariantVerifier({
       [mcpE2eSource, 'readonly_validation_returns_structured_invalid_evidence', 'test invalid projects return structured read-only evidence'],
       [mcpE2eSource, 'readonly_delivery_validation_reports_missing_declared_assets', 'test missing declared assets return structured delivery evidence'],
       [mcpE2eSource, 'writable_stdio_requires_reviewed_fingerprint_and_rolls_back_invalid_candidate', 'test fingerprint confirmation, application, and rollback'],
-      [mcpE2eSource, 'package_preview_and_export_are_bound_to_reviewed_content_and_output_root', 'test real stdio package preview and fixed-root ZIP output'],
-      [mcpE2eSource, 'McpToolErrorCode::PackageOutputUnavailable', 'test package export requires a startup-fixed output directory'],
+      [mcpE2eSource, 'package_preview_export_and_inspection_are_bound_to_reviewed_content_and_output_root', 'test real stdio package preview, fixed-root inspection, and ZIP output'],
+      [mcpE2eSource, 'MCP_PACKAGE_INSPECTION_SCHEMA_V1', 'test versioned package inspection evidence over real stdio'],
+      [mcpE2eSource, 'b"not a project package"', 'test damaged package inspection rejection over real stdio'],
+      [mcpE2eSource, 'McpToolErrorCode::PackageOutputUnavailable', 'test package inspection and export require a startup-fixed directory'],
       [mcpE2eSource, 'PackageFingerprintMismatch', 'test stale package review rejection'],
       [mcpE2eSource, 'format!("../{escape_name}")', 'test package path traversal rejection'],
       [mcpE2eSource, 'runtime_reference_rollback', 'test real stdio rollback after core-runtime reference rejection'],
@@ -2076,8 +2081,8 @@ export function createSourceInvariantVerifier({
     if (/pub\s+project_root\s*:/.test(mcpProtocolSource)) {
       issues.push('MCP tool requests must not be able to replace the startup-bound project root')
     }
-    if (/pub\s+(?:output_path|package_output_dir)\s*:/.test(mcpProtocolSource)) {
-      issues.push('MCP tool requests must not be able to replace the startup-bound package output directory')
+    if (/pub\s+(?:archive_path|output_path|package_output_dir)\s*:/.test(mcpProtocolSource)) {
+      issues.push('MCP tool requests must not be able to replace the startup-bound package directory')
     }
 
     if (issues.length > 0) {

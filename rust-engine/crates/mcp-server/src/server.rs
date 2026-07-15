@@ -27,13 +27,14 @@ use rmcp::{tool, tool_handler, tool_router, Json, ServerHandler};
 use tokio::sync::RwLock;
 
 use crate::package_transport::{
-    export_project_package as export_package, preview_project_package as preview_package,
-    PackageOutputBoundary,
+    export_project_package as export_package, inspect_project_package as inspect_package,
+    preview_project_package as preview_package, PackageDirectoryBoundary,
 };
 use crate::project_lease::ProjectLease;
 use crate::protocol::{
     ApplyTransactionOutput, ApplyTransactionRequest, ExportProjectPackageOutput,
-    ExportProjectPackageRequest, InspectProjectOutput, ListProjectJsonRequest, McpToolError,
+    ExportProjectPackageRequest, InspectProjectOutput, InspectProjectPackageOutput,
+    InspectProjectPackageRequest, ListProjectJsonRequest, McpToolError,
     PreviewProjectPackageOutput, ReadProjectJsonRequest, RunQualitySuiteOutput,
     RunQualitySuiteRequest, MCP_INSPECTION_SCHEMA_V1, MCP_QUALITY_SUITE_RUN_SCHEMA_V1,
 };
@@ -44,7 +45,7 @@ use crate::validation::validate_candidate_core_runtime;
 pub struct MonogatariMcpServer {
     project_root: PathBuf,
     allow_write: bool,
-    package_output: Option<PackageOutputBoundary>,
+    package_directory: Option<PackageDirectoryBoundary>,
     _project_lease: Arc<ProjectLease>,
     access: Arc<RwLock<()>>,
     tool_router: ToolRouter<Self>,
@@ -65,14 +66,14 @@ impl MonogatariMcpServer {
         if !state.settings_exists {
             return Err("MCP project root must contain settings.json.".to_string());
         }
-        let package_output = package_output_dir
-            .map(|output| PackageOutputBoundary::new(&project_root, output))
+        let package_directory = package_output_dir
+            .map(|output| PackageDirectoryBoundary::new(&project_root, output))
             .transpose()?;
         let project_lease = Arc::new(ProjectLease::acquire(&project_root, allow_write)?);
         Ok(Self {
             project_root,
             allow_write,
-            package_output,
+            package_directory,
             _project_lease: project_lease,
             access: Arc::new(RwLock::new(())),
             tool_router: Self::tool_router(),
@@ -113,7 +114,7 @@ impl MonogatariMcpServer {
             schema: MCP_INSPECTION_SCHEMA_V1.to_string(),
             acceptance_level: json_catalog.acceptance_level,
             write_enabled: self.allow_write,
-            package_output_configured: self.package_output.is_some(),
+            package_output_configured: self.package_directory.is_some(),
             project,
             json_catalog,
         }))
@@ -207,7 +208,31 @@ impl MonogatariMcpServer {
         &self,
     ) -> Result<Json<PreviewProjectPackageOutput>, Json<McpToolError>> {
         let _guard = self.access.read().await;
-        preview_package(self.project_root.clone(), self.package_output.is_some())
+        preview_package(self.project_root.clone(), self.package_directory.is_some())
+            .await
+            .map(Json)
+            .map_err(Json)
+    }
+
+    /// Verify one archive inside the startup-fixed package directory without extracting it.
+    #[tool(annotations(
+        title = "Inspect project package",
+        read_only_hint = true,
+        destructive_hint = false,
+        idempotent_hint = true,
+        open_world_hint = false
+    ))]
+    pub async fn inspect_project_package(
+        &self,
+        Parameters(request): Parameters<InspectProjectPackageRequest>,
+    ) -> Result<Json<InspectProjectPackageOutput>, Json<McpToolError>> {
+        let package_directory = self
+            .package_directory
+            .clone()
+            .ok_or_else(McpToolError::package_output_unavailable)
+            .map_err(Json)?;
+        let _guard = self.access.read().await;
+        inspect_package(package_directory, request)
             .await
             .map(Json)
             .map_err(Json)
@@ -293,13 +318,13 @@ impl MonogatariMcpServer {
         if !self.allow_write {
             return Err(Json(McpToolError::write_disabled()));
         }
-        let output = self
-            .package_output
+        let package_directory = self
+            .package_directory
             .clone()
             .ok_or_else(McpToolError::package_output_unavailable)
             .map_err(Json)?;
         let _guard = self.access.write().await;
-        export_package(self.project_root.clone(), output, request)
+        export_package(self.project_root.clone(), package_directory, request)
             .await
             .map(Json)
             .map_err(Json)
@@ -374,10 +399,10 @@ impl ServerHandler for MonogatariMcpServer {
         } else {
             "Writes are disabled; restart with --allow-write to enable apply_transaction."
         };
-        let package_mode = match (self.allow_write, self.package_output.is_some()) {
-            (true, true) => "Package export is enabled and still requires a freshly reviewed content fingerprint.",
-            (false, true) => "Package preview is available, but export requires --allow-write.",
-            (_, false) => "Package preview is available; export also requires a startup-fixed --package-output-dir.",
+        let package_mode = match (self.allow_write, self.package_directory.is_some()) {
+            (true, true) => "Package inspection and export are enabled; export still requires a freshly reviewed content fingerprint.",
+            (false, true) => "Package inspection is available, but export requires --allow-write.",
+            (_, false) => "Package preview is available; inspection and export require a startup-fixed --package-output-dir.",
         };
         ServerInfo::new(ServerCapabilities::builder().enable_tools().build())
             .with_server_info(Implementation::new(
@@ -385,7 +410,7 @@ impl ServerHandler for MonogatariMcpServer {
                 env!("CARGO_PKG_VERSION"),
             ))
             .with_instructions(format!(
-                "Author Monogatari visual novels inside the fixed project root. Inspect, list, and read before planning. Use validate_project for read-only headless acceptance, validate_delivery for declared asset readiness, and run_quality_suite for executable Quality evidence. Plan before apply. Preview a credential-free package manifest before exporting to the fixed output directory. Package transport does not prove rendered visual acceptance. {mode} {package_mode}"
+                "Author Monogatari visual novels inside the fixed project root. Inspect, list, and read before planning. Use validate_project for read-only headless acceptance, validate_delivery for declared asset readiness, and run_quality_suite for executable Quality evidence. Plan before apply. Preview a credential-free package manifest before exporting to the fixed package directory, then inspect the written archive. Package inspection does not prove runtime re-import or rendered visual acceptance. {mode} {package_mode}"
             ))
     }
 }
@@ -419,7 +444,7 @@ mod tests {
     }
 
     #[test]
-    fn exposes_ten_schema_backed_tools_with_write_annotations() {
+    fn exposes_eleven_schema_backed_tools_with_write_annotations() {
         let root = temp_project();
         let server = MonogatariMcpServer::new(root.clone(), false).unwrap();
         let tools = server.tool_router.list_all();
@@ -433,6 +458,7 @@ mod tests {
                 "apply_transaction",
                 "export_project_package",
                 "inspect_project",
+                "inspect_project_package",
                 "list_project_json",
                 "plan_transaction",
                 "preview_project_package",
@@ -501,6 +527,24 @@ mod tests {
             .unwrap();
         assert!(preview_output_properties.contains_key("content_sha256"));
         assert!(preview_output_properties.contains_key("manifest"));
+        let inspect_package = tools
+            .iter()
+            .find(|tool| tool.name == "inspect_project_package")
+            .unwrap();
+        assert_eq!(
+            inspect_package.annotations.as_ref().unwrap().read_only_hint,
+            Some(true)
+        );
+        assert!(inspect_package
+            .input_schema
+            .get("properties")
+            .and_then(serde_json::Value::as_object)
+            .unwrap()
+            .contains_key("file_name"));
+        let inspect_package_schema =
+            serde_json::to_string(inspect_package.output_schema.as_ref().unwrap()).unwrap();
+        assert!(inspect_package_schema.contains("archive_bytes"));
+        assert!(inspect_package_schema.contains("verified"));
         let export = tools
             .iter()
             .find(|tool| tool.name == "export_project_package")
