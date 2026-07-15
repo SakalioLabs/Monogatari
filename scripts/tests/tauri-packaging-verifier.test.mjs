@@ -73,6 +73,16 @@ test('release runner delegates Tauri packaging evidence to the importable module
     ),
     'utf8',
   )
+  const qualityWorkflowSource = await readFile(
+    path.join(
+      repositoryRoot,
+      'scripts',
+      'lib',
+      'tauri-packaging',
+      'quality-workflow-policy.mjs',
+    ),
+    'utf8',
+  )
 
   assert(source.includes("from './lib/tauri-packaging-verifier.mjs'"))
   assert(source.includes('createTauriPackagingVerifier({'))
@@ -83,15 +93,23 @@ test('release runner delegates Tauri packaging evidence to the importable module
   assert(moduleSource.includes('collectTauriInstallationPolicyEvidence'))
   assert(moduleSource.includes('collectTauriCommandRegistrationEvidence'))
   assert(moduleSource.includes('collectTauriConversationSafetyEvidence'))
+  assert(moduleSource.includes('collectTauriQualityWorkflowEvidence'))
   assert(!moduleSource.includes('config.productName'))
   assert(!moduleSource.includes('const installationVerificationRequirements'))
   assert(!moduleSource.includes('commands::project_archive::commands::export_project_archive'))
   assert(!moduleSource.includes('commands::story_events::get_story_progress'))
   assert(!moduleSource.includes('const multilingualPromptGuardRequirements'))
   assert(!moduleSource.includes('const chatSafetyTraceRequirements'))
+  assert(!moduleSource.includes('const headlessWorkflowPreviewRequirements'))
+  assert(!moduleSource.includes('const headlessQualityExecutionRequirements'))
+  assert(!moduleSource.includes('const qualityRuntimeTraceRequirements'))
   assert(packagePolicySource.includes('config.productName'))
   assert(installationPolicySource.includes('const requirements'))
   assert(commandRegistrationSource.includes('extractTauriCommandRegistrations'))
   assert(conversationSafetySource.includes('const multilingualPromptGuardRequirements'))
   assert(conversationSafetySource.includes('const chatSafetyTraceRequirements'))
+  assert(qualityWorkflowSource.includes('const qualityInputRequirements'))
+  assert(qualityWorkflowSource.includes('const workflowPreviewRequirements'))
+  assert(qualityWorkflowSource.includes('const qualityExecutionRequirements'))
+  assert(qualityWorkflowSource.includes('const authoringRuntimeTraceRequirements'))
 })
