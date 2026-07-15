@@ -67,6 +67,7 @@ pub async fn stage_json_replacement(
             content.len()
         ));
     }
+    ensure_portable_replacement_target(target_path, label)?;
     let (temp_path, backup_path) = stage_paths(target_path)?;
     let mut file = tokio::fs::OpenOptions::new()
         .create_new(true)
@@ -221,6 +222,42 @@ pub fn source_label(project_root: &Path, path: &Path) -> String {
         .replace('\\', "/")
 }
 
+fn ensure_portable_replacement_target(target_path: &Path, label: &str) -> Result<(), String> {
+    let parent = target_path
+        .parent()
+        .ok_or_else(|| "Content target has no parent directory.".to_string())?;
+    let target_name = target_path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or_else(|| "Content target filename is not valid UTF-8.".to_string())?;
+    let entries = std::fs::read_dir(parent).map_err(|error| {
+        format!(
+            "Failed to inspect {label} target directory `{}`: {error}",
+            parent.display()
+        )
+    })?;
+
+    for entry in entries {
+        let entry = entry.map_err(|error| {
+            format!(
+                "Failed to inspect {label} target directory entry `{}`: {error}",
+                parent.display()
+            )
+        })?;
+        let Some(existing_name) = entry.file_name().to_str().map(str::to_string) else {
+            continue;
+        };
+        if existing_name.eq_ignore_ascii_case(target_name) && existing_name != target_name {
+            return Err(format!(
+                "{label} target `{}` collides with existing path `{}` by ASCII case; use the existing exact filename or choose a distinct portable filename.",
+                target_path.display(),
+                entry.path().display()
+            ));
+        }
+    }
+    Ok(())
+}
+
 fn stage_paths(target_path: &Path) -> Result<(PathBuf, PathBuf), String> {
     let parent = target_path
         .parent()
@@ -268,6 +305,25 @@ mod tests {
             .unwrap();
         staged.commit().await.unwrap();
         assert_eq!(std::fs::read(&target).unwrap(), b"final");
+        assert_eq!(std::fs::read_dir(&root).unwrap().count(), 1);
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[tokio::test]
+    async fn replacements_reject_portable_case_aliases_before_mutation() {
+        let root = temp_root("case-alias");
+        std::fs::create_dir_all(&root).unwrap();
+        let existing = root.join("Scene.json");
+        std::fs::write(&existing, b"before").unwrap();
+
+        let error = stage_json_replacement(&root.join("scene.json"), b"after", 64, "test content")
+            .await
+            .err()
+            .expect("portable case aliases must be rejected");
+
+        assert!(error.contains("collides with existing path"), "{error}");
+        assert!(error.contains("by ASCII case"), "{error}");
+        assert_eq!(std::fs::read(&existing).unwrap(), b"before");
         assert_eq!(std::fs::read_dir(&root).unwrap().count(), 1);
         std::fs::remove_dir_all(root).unwrap();
     }

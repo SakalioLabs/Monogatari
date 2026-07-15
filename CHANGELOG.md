@@ -1,6 +1,7 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Hardened the shared `llm-authoring` JSON replacement transaction against Windows-path aliasing: every replacement now rejects an existing filename that differs only by ASCII case before any temporary file or backup mutation, with independent core coverage and Scene, Dialogue, and Ending command regressions proving original documents remain unchanged.
 - Replaced the Scene Asset workbench's two-item browser sample with a project-backed catalog derived from `sceneAuthoring`; extracted desktop/browser transport, active Scene persistence, filtering, metrics, bounded history, failed-preview tracking, and byte presentation into independently tested modules, with Playwright proving full catalog visibility and active selection across reloads.
 - Extracted Scene draft cloning, filtering, tag parsing, case-folded ID allocation, warning evidence, and catalog diagnostics from `SceneEditorView.vue`; browser persistence now rejects Windows-path-aliasing Scene IDs, with independent domain tests and a Playwright flow that saves a real project background, opens author Playtest, and verifies collision refusal.
 - Extracted Knowledge Base form conversion, proxy-safe Metadata cloning, filtering, taxonomy, ID allocation, dirty snapshots, and stable validation evidence from `KnowledgeBaseView.vue`; browser deletion now resolves the unified character catalog so knowledge pinned by browser-authored character drafts cannot be removed, with independent domain/transport tests and a real cross-editor Playwright workflow.

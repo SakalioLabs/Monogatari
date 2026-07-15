@@ -659,6 +659,30 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn ending_create_rejects_portable_case_aliases_without_replacing_definition() {
+        let root = temp_root("case_alias");
+        write_project(&root);
+        let path = root.join("endings").join("finale.json");
+        let original = std::fs::read(&path).unwrap();
+        let state = AppState::new();
+        state.set_project_data_root(root.clone()).await;
+        *state.story_event_catalog.write().await =
+            StoryEventCatalog::load_from_project_root(&root).unwrap();
+        let before = ending_catalog_snapshot(&state).await.unwrap();
+        let mut alias = before.endings[0].ending.clone();
+        alias.id = "FINALE".to_string();
+
+        let error = save_story_ending_inner(&state, alias, None, &before.catalog_fingerprint)
+            .await
+            .unwrap_err();
+
+        assert!(error.contains("collides with existing path"), "{error}");
+        assert!(error.contains("by ASCII case"), "{error}");
+        assert_eq!(std::fs::read(&path).unwrap(), original);
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[tokio::test]
     async fn ending_delete_requires_event_references_to_be_removed_first() {
         let root = temp_root("delete");
         write_project(&root);

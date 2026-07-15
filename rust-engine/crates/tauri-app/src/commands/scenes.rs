@@ -1092,6 +1092,32 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn scene_create_rejects_portable_case_aliases_without_replacing_metadata() {
+        let root = temp_root("case_alias");
+        write_authoring_project(&root);
+        let path = root.join("scenes").join("park.json");
+        std::fs::write(
+            &path,
+            r#"{"id":"park","name":"Park","background_path":"assets/backgrounds/park.svg"}"#,
+        )
+        .unwrap();
+        let original = std::fs::read(&path).unwrap();
+        let state = authoring_state(&root).await;
+        let before = scene_authoring_catalog_snapshot(&state).await.unwrap();
+        let mut alias = before.scenes[0].scene.clone();
+        alias.id = "PARK".to_string();
+
+        let error = save_scene_definition_inner(&state, alias, None, &before.catalog_fingerprint)
+            .await
+            .unwrap_err();
+
+        assert!(error.contains("collides with existing path"), "{error}");
+        assert!(error.contains("by ASCII case"), "{error}");
+        assert_eq!(std::fs::read(&path).unwrap(), original);
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[tokio::test]
     async fn scene_delete_requires_event_ending_and_workflow_references_to_be_removed() {
         let root = temp_root("delete");
         write_authoring_project(&root);
