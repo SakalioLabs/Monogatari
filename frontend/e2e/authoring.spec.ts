@@ -108,6 +108,35 @@ test('dialogue authoring saves a graph and opens it in browser Playtest', async 
   await expect(page.getByText('The browser delivery path is ready.')).toBeVisible()
 })
 
+test('Story Event authoring preserves metadata-only edits and reactive duplication', async ({ page }) => {
+  await page.goto('/story-events')
+
+  await expect(page.getByRole('heading', { name: 'Story Events' })).toBeVisible()
+  await expect(page.locator('.status-strip')).toContainText('Loaded')
+  const saveButton = page.getByRole('button', { name: 'Save catalog', exact: true })
+  await expect(saveButton).toBeDisabled()
+
+  const selectedHeading = page.locator('.event-inspector h2')
+  const originalId = (await selectedHeading.textContent())?.trim()
+  if (!originalId) throw new Error('Story Event editor did not select a loaded event')
+  const metadata = page.locator('.metadata-input')
+  await metadata.fill('{"agent":"ready"}')
+  await expect(saveButton).toBeEnabled()
+
+  await page.getByRole('button', { name: 'Duplicate', exact: true }).click()
+  const duplicateId = `${originalId}_copy`
+  await expect(selectedHeading).toHaveText(duplicateId)
+  await expect(metadata).toHaveValue('{\n  "agent": "ready"\n}')
+  await saveButton.click()
+  await expect(page.locator('.status-strip')).toContainText('Saved')
+
+  await page.reload()
+  await page.getByLabel('Search events').fill(duplicateId)
+  await expect(page.locator('.event-row')).toHaveCount(1)
+  await page.locator('.event-row').click()
+  await expect(metadata).toHaveValue('{\n  "agent": "ready"\n}')
+})
+
 test('Quality Suite workbench presents generated evidence across desktop and mobile', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 })
   await page.goto('/quality')

@@ -48,6 +48,10 @@ export function createSourceInvariantVerifier({
     const pwaSource = await readFile(path.join(frontendDir, 'src', 'lib', 'pwa.ts'), 'utf8')
     const rendererAssetsSource = await readFile(path.join(frontendDir, 'src', 'lib', 'rendererAssets.ts'), 'utf8')
     const storyEventsSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyEvents.ts'), 'utf8')
+    const storyEventEditingSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyEventEditing.ts'), 'utf8')
+    const storyEventEditingTestSource = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'storyEventEditing.test.ts'), 'utf8')
+    const jsonValueSource = await readFile(path.join(frontendDir, 'src', 'lib', 'jsonValue.ts'), 'utf8')
+    const jsonValueTestSource = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'jsonValue.test.ts'), 'utf8')
     const storyProgressSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyProgress.ts'), 'utf8')
     const storyAccessSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyAccess.ts'), 'utf8')
     const storyContentSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyContent.ts'), 'utf8')
@@ -374,8 +378,23 @@ export function createSourceInvariantVerifier({
       [endingEditorSource, 'confirmDiscard', 'guard dirty ending drafts during navigation'],
       [endingEditorSource, "invokeCommand('preview_story_ending'", 'launch author previews without player unlock mutation'],
       [storyEventsSource, 'expectedCatalogFingerprint', 'save event catalogs with optimistic concurrency'],
-      [storyEventEditorSource, 'validateDocument()', 'validate edited event catalogs before save'],
-      [storyEventEditorSource, 'changeActionType', 'edit typed event effects'],
+      [storyEventEditorSource, "from '../lib/storyEventEditing'", 'delegate draft transformations and validation to the pure Story Event editing domain'],
+      [storyEventEditorSource, 'metadataDirty', 'include uncommitted Metadata JSON in dirty-state protection'],
+      [storyEventEditingSource, "from './jsonValue'", 'reuse the shared proxy-safe JSON boundary'],
+      [dialogueGraphEditingSource, "from './jsonValue'", 'reuse the shared proxy-safe JSON boundary for dialogue variables'],
+      [jsonValueSource, 'export function cloneJsonRecord', 'own proxy-safe JSON object cloning outside editor views'],
+      [jsonValueTestSource, 'clones nested Vue proxies without retaining mutable references', 'test the shared reactive JSON boundary'],
+      [storyEventEditingSource, 'export function duplicateStoryEvent', 'duplicate reactive Story Event drafts without browser structured-clone failures'],
+      [storyEventEditingSource, 'export function storyEventMetadataChanged', 'track semantic Metadata-only edits before blur'],
+      [storyEventEditingSource, 'export function setStoryEventGate', 'edit Story Event trigger gates immutably'],
+      [storyEventEditingSource, 'export function createStoryEventAction', 'create typed Story Event effects outside the Vue view'],
+      [storyEventEditingSource, 'export function validateStoryEventDocument', 'return stable Story Event validation evidence outside localization'],
+      [storyEventEditingTestSource, 'clones reactive event documents without retaining nested references', 'test proxy-safe Story Event document isolation'],
+      [storyEventEditingTestSource, 'tracks semantic metadata edits and applies them without structuredClone', 'test Metadata dirty-state and application independently'],
+      [storyEventEditingTestSource, 'reports identity, scope, threshold, action, and reference failures by code', 'test stable complete Story Event validation evidence'],
+      [authoringE2eSource, 'Story Event authoring preserves metadata-only edits and reactive duplication', 'exercise Story Event Metadata, duplication, save, and reload in a real browser'],
+      [authoringE2eSource, 'await expect(saveButton).toBeEnabled()', 'prove Metadata-only edits participate in dirty state before blur'],
+      [authoringE2eSource, 'await expect(selectedHeading).toHaveText(duplicateId)', 'prove reactive Story Event duplication completes without structured-clone failure'],
       [gameViewSource, 'loadStoryScenes()', 'populate Story Mode from the project scene catalog'],
       [gameViewSource, 'start_story_ending', 'launch gated ending assets from Story Mode'],
       [gameViewSource, 'route.query.previewEnding', 'launch browser ending author previews from saved drafts'],
@@ -413,6 +432,22 @@ export function createSourceInvariantVerifier({
     for (const [source, needle, description] of storyEventFrontendRequirements) {
       if (!source.includes(needle)) {
         issues.push(`Story event frontend integration must ${description}`)
+      }
+    }
+
+    const storyEventEditingViewLeaks = [
+      'function normalizeDraft',
+      'function uniqueEventId',
+      'function ensureRule',
+      'function makeAction',
+      'function validateDocument',
+      'function documentWarnings',
+      'structuredClone(',
+      'JSON.stringify(editableDocument.value)',
+    ]
+    for (const needle of storyEventEditingViewLeaks) {
+      if (storyEventEditorSource.includes(needle)) {
+        issues.push(`frontend/src/views/StoryEventEditorView.vue must not redeclare Story Event editing domain logic: ${needle}`)
       }
     }
 

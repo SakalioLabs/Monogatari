@@ -38,7 +38,7 @@
             :key="`${item.event.event_id}-${item.index}`"
             class="event-row"
             :class="{ active: item.index === selectedIndex }"
-            @click="selectedIndex = item.index"
+            @click="selectEvent(item.index)"
           >
             <span class="event-row-main">
               <strong>{{ item.event.event_id || t('event.untitled-id', 'untitled_event') }}</strong>
@@ -279,8 +279,34 @@ import {
   storyEventCatalogDocument,
   type StoryEventAction,
   type StoryEventDocument,
-  type StoryEventDraft,
 } from '../lib/storyEvents'
+import {
+  appendStoryEvent,
+  appendStoryEventAction,
+  applyStoryEventMetadata,
+  cloneStoryEventDocument,
+  createStoryEventAction,
+  deleteStoryEvent,
+  duplicateStoryEvent,
+  filterStoryEvents,
+  isStoryEventActionType,
+  parseStoryEventMetadata,
+  removeStoryEventAction,
+  replaceStoryEventAction,
+  setStoryEventGate,
+  storyEventActionCount,
+  storyEventDocumentSnapshot,
+  storyEventDocumentWarnings,
+  storyEventGateEnabled,
+  storyEventLockedTargetCount,
+  storyEventMetadataChanged,
+  storyEventMetadataText,
+  storyEventTypes,
+  toggleStoryEventCharacter,
+  validateStoryEventDocument,
+  type StoryEventEditingIssue,
+  type StoryEventEditingWarning,
+} from '../lib/storyEventEditing'
 
 interface CharacterSummary { id: string; name: string }
 interface SceneSummary { id: string; name: string }
@@ -300,54 +326,40 @@ const dialogues = ref<DialogueSummary[]>([])
 const endings = ref<EndingSummary[]>([])
 const newActionType = ref<StoryEventAction['type']>('unlock_scene')
 const metadataText = ref('{}')
-const metadataError = ref<string | null>(null)
 const statusMessage = ref<string | null>(null)
 const statusKind = ref<'success' | 'error' | 'info'>('info')
 const saving = ref(false)
 
 const selectedEvent = computed(() => editableDocument.value.events[selectedIndex.value] || null)
-const dirty = computed(() => JSON.stringify(editableDocument.value) !== baseline.value)
+const metadataState = computed(() => parseStoryEventMetadata(metadataText.value))
+const metadataDirty = computed(() => storyEventMetadataChanged(selectedEvent.value, metadataText.value))
+const dirty = computed(() => storyEventDocumentSnapshot(editableDocument.value) !== baseline.value || metadataDirty.value)
 const shortFingerprint = computed(() => catalogFingerprint.value ? catalogFingerprint.value.slice(0, 12) : t('event.browser-draft', 'browser draft'))
-const eventTypes = computed(() => [...new Set([
-  'relationship_milestone',
-  'special_dialogue',
-  'cumulative_achievement',
-  ...editableDocument.value.events.map((event) => event.event_type).filter(Boolean),
-])].sort())
-const filteredEvents = computed(() => editableDocument.value.events
-  .map((event, index) => ({ event, index }))
-  .filter(({ event }) => !typeFilter.value || event.event_type === typeFilter.value)
-  .filter(({ event }) => {
-    const needle = search.value.toLowerCase()
-    return !needle || `${event.event_id} ${event.event_type} ${event.description}`.toLowerCase().includes(needle)
-  }))
-const hasRelationshipGate = computed(() => selectedEvent.value?.rule?.min_relationship !== undefined)
-const hasScoreGate = computed(() => selectedEvent.value?.rule?.score_metric !== undefined || selectedEvent.value?.rule?.min_score !== undefined)
-const hasEvaluationGate = computed(() => selectedEvent.value?.rule?.min_evaluation_count !== undefined)
-const totalActions = computed(() => editableDocument.value.events.reduce((sum, event) => sum + (event.actions?.length || 0), 0))
-const lockedTargetCount = computed(() => new Set(editableDocument.value.events.flatMap((event) => (event.actions || [])
-  .filter((action) => action.type !== 'set_flag')
-  .map((action) => action.type === 'unlock_scene' ? `scene:${action.scene_id}`
-    : action.type === 'unlock_dialogue' ? `dialogue:${action.dialogue_id}` : `ending:${action.ending_id}`))).size)
-
-const issues = computed(() => validateDocument())
-const warnings = computed(() => documentWarnings())
+const eventTypes = computed(() => storyEventTypes(editableDocument.value))
+const filteredEvents = computed(() => filterStoryEvents(editableDocument.value, search.value, typeFilter.value))
+const hasRelationshipGate = computed(() => storyEventGateEnabled(selectedEvent.value, 'relationship'))
+const hasScoreGate = computed(() => storyEventGateEnabled(selectedEvent.value, 'score'))
+const hasEvaluationGate = computed(() => storyEventGateEnabled(selectedEvent.value, 'evaluation'))
+const totalActions = computed(() => storyEventActionCount(editableDocument.value))
+const lockedTargetCount = computed(() => storyEventLockedTargetCount(editableDocument.value))
+const issues = computed(() => [
+  ...(selectedEvent.value && metadataState.value.error
+    ? [t('event.error.metadata', 'Metadata: {message}', {
+        message: t('event.error.metadata-object', 'Metadata must be a JSON object'),
+      })]
+    : []),
+  ...validateStoryEventDocument(editableDocument.value, {
+    character_ids: characters.value.map(({ id }) => id),
+    scene_ids: scenes.value.map(({ id }) => id),
+    dialogue_ids: dialogues.value.map(({ id }) => id),
+    ending_ids: endings.value.map(({ id }) => id),
+  }).map(eventIssueMessage),
+])
+const warnings = computed(() => storyEventDocumentWarnings(editableDocument.value).map(eventWarningMessage))
 
 watch(selectedIndex, () => {
-  metadataError.value = null
-  metadataText.value = JSON.stringify(selectedEvent.value?.data || {}, null, 2)
+  metadataText.value = storyEventMetadataText(selectedEvent.value)
 })
-
-function normalizeDraft(event: StoryEventDraft): StoryEventDraft {
-  return {
-    ...event,
-    data: event.data && typeof event.data === 'object' ? event.data : {},
-    actions: [...(event.actions || [])],
-    character_ids: [...(event.character_ids || [])],
-    repeatable: Boolean(event.repeatable),
-    rule: { ...(event.rule || {}) },
-  }
-}
 
 async function loadCatalog(force = false) {
   if (dirty.value && !force && !window.confirm(t('event.confirm.discard', 'Discard unsaved Story Event changes?'))) return
@@ -362,14 +374,13 @@ async function loadCatalog(force = false) {
       loadStoryDialogues(),
       loadStoryEndings(),
     ])
-    const document = storyEventCatalogDocument(snapshot)
-    document.events = document.events.map(normalizeDraft)
+    const document = cloneStoryEventDocument(storyEventCatalogDocument(snapshot))
     editableDocument.value = document
     scenes.value = sceneCatalog
     dialogues.value = dialogueCatalog
     endings.value = endingCatalog
     catalogFingerprint.value = snapshot.catalog_fingerprint
-    baseline.value = JSON.stringify(document)
+    baseline.value = storyEventDocumentSnapshot(document)
     selectedIndex.value = document.events.length ? 0 : -1
     statusMessage.value = t('event.status.loaded', 'Loaded {count} events', { count: document.events.length })
     statusKind.value = 'success'
@@ -383,162 +394,128 @@ async function reloadCatalog() {
   await loadCatalog(false)
 }
 
-function uniqueEventId(base = 'new_event'): string {
-  const existing = new Set(editableDocument.value.events.map((event) => event.event_id))
-  if (!existing.has(base)) return base
-  let index = 2
-  while (existing.has(`${base}_${index}`)) index += 1
-  return `${base}_${index}`
+function selectEvent(index: number) {
+  if (index === selectedIndex.value || !applyMetadata()) return
+  selectedIndex.value = index
 }
 
 function addEvent() {
-  const event: StoryEventDraft = normalizeDraft({
-    event_id: uniqueEventId(),
-    event_type: 'special_dialogue',
-    description: t('event.new-description', 'Describe the player-facing story milestone.'),
-    actions: [],
-    rule: { min_relationship: 0.5 },
-  })
-  editableDocument.value.events.push(event)
-  selectedIndex.value = editableDocument.value.events.length - 1
+  if (!applyMetadata()) return
+  const result = appendStoryEvent(
+    editableDocument.value,
+    t('event.new-description', 'Describe the player-facing story milestone.'),
+  )
+  editableDocument.value = result.document
+  selectedIndex.value = result.selected_index
 }
 
 function duplicateEvent() {
-  if (!selectedEvent.value) return
-  const copy = structuredClone(selectedEvent.value)
-  copy.event_id = uniqueEventId(`${selectedEvent.value.event_id}_copy`)
-  editableDocument.value.events.splice(selectedIndex.value + 1, 0, copy)
-  selectedIndex.value += 1
+  if (!selectedEvent.value || !applyMetadata()) return
+  const result = duplicateStoryEvent(editableDocument.value, selectedIndex.value)
+  if (!result.changed) return
+  editableDocument.value = result.document
+  selectedIndex.value = result.selected_index
 }
 
 function deleteEvent() {
   if (!selectedEvent.value || !window.confirm(t('event.confirm.delete', 'Delete event {id}?', { id: selectedEvent.value.event_id }))) return
-  editableDocument.value.events.splice(selectedIndex.value, 1)
-  selectedIndex.value = Math.min(selectedIndex.value, editableDocument.value.events.length - 1)
-}
-
-function ensureRule() {
-  if (selectedEvent.value && !selectedEvent.value.rule) selectedEvent.value.rule = {}
+  const result = deleteStoryEvent(editableDocument.value, selectedIndex.value)
+  if (!result.changed) return
+  editableDocument.value = result.document
+  selectedIndex.value = result.selected_index
 }
 
 function toggleRelationshipGate(event: Event) {
-  ensureRule()
-  if (!selectedEvent.value?.rule) return
-  if ((event.target as HTMLInputElement).checked) selectedEvent.value.rule.min_relationship = 0.5
-  else delete selectedEvent.value.rule.min_relationship
+  if (!selectedEvent.value) return
+  Object.assign(selectedEvent.value, setStoryEventGate(
+    selectedEvent.value,
+    'relationship',
+    (event.target as HTMLInputElement).checked,
+  ))
 }
 
 function toggleScoreGate(event: Event) {
-  ensureRule()
-  if (!selectedEvent.value?.rule) return
-  if ((event.target as HTMLInputElement).checked) {
-    selectedEvent.value.rule.score_metric = 'overall'
-    selectedEvent.value.rule.min_score = 0.7
-  } else {
-    delete selectedEvent.value.rule.score_metric
-    delete selectedEvent.value.rule.min_score
-  }
+  if (!selectedEvent.value) return
+  Object.assign(selectedEvent.value, setStoryEventGate(
+    selectedEvent.value,
+    'score',
+    (event.target as HTMLInputElement).checked,
+  ))
 }
 
 function toggleEvaluationGate(event: Event) {
-  ensureRule()
-  if (!selectedEvent.value?.rule) return
-  if ((event.target as HTMLInputElement).checked) selectedEvent.value.rule.min_evaluation_count = 1
-  else delete selectedEvent.value.rule.min_evaluation_count
+  if (!selectedEvent.value) return
+  Object.assign(selectedEvent.value, setStoryEventGate(
+    selectedEvent.value,
+    'evaluation',
+    (event.target as HTMLInputElement).checked,
+  ))
 }
 
 function toggleCharacter(characterId: string) {
   if (!selectedEvent.value) return
-  const scopes = selectedEvent.value.character_ids || (selectedEvent.value.character_ids = [])
-  const index = scopes.indexOf(characterId)
-  if (index >= 0) scopes.splice(index, 1)
-  else scopes.push(characterId)
-  scopes.sort()
+  Object.assign(selectedEvent.value, toggleStoryEventCharacter(selectedEvent.value, characterId))
 }
 
-function makeAction(type: string): StoryEventAction {
-  if (type === 'unlock_dialogue') return { type, dialogue_id: dialogues.value[0]?.id || '' }
-  if (type === 'unlock_ending') return { type, ending_id: endings.value[0]?.id || 'new_ending' }
-  if (type === 'set_flag') return { type, flag: 'story.event_complete', value: true }
-  return { type: 'unlock_scene', scene_id: scenes.value[0]?.id || '' }
+function actionFor(type: StoryEventAction['type']): StoryEventAction {
+  return createStoryEventAction(type, {
+    scene_id: scenes.value[0]?.id,
+    dialogue_id: dialogues.value[0]?.id,
+    ending_id: endings.value[0]?.id,
+  })
 }
 
 function addAction() {
   if (!selectedEvent.value) return
-  if (!selectedEvent.value.actions) selectedEvent.value.actions = []
-  selectedEvent.value.actions.push(makeAction(newActionType.value))
+  Object.assign(selectedEvent.value, appendStoryEventAction(
+    selectedEvent.value,
+    actionFor(newActionType.value),
+  ))
 }
 
 function changeActionType(index: number, type: string) {
-  if (!selectedEvent.value?.actions) return
-  selectedEvent.value.actions[index] = makeAction(type)
+  if (!selectedEvent.value || !isStoryEventActionType(type)) return
+  Object.assign(selectedEvent.value, replaceStoryEventAction(selectedEvent.value, index, actionFor(type)))
 }
 
 function removeAction(index: number) {
-  selectedEvent.value?.actions?.splice(index, 1)
-}
-
-function applyMetadata() {
-  if (!selectedEvent.value) return
-  try {
-    const value = JSON.parse(metadataText.value)
-    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(t('event.error.metadata-object', 'Metadata must be a JSON object'))
-    selectedEvent.value.data = value
-    metadataError.value = null
-  } catch (error) {
-    metadataError.value = String(error)
+  if (selectedEvent.value) {
+    Object.assign(selectedEvent.value, removeStoryEventAction(selectedEvent.value, index))
   }
 }
 
-function validateDocument(): string[] {
-  const result: string[] = []
-  const ids = new Set<string>()
-  const portable = /^[A-Za-z0-9_.-]+$/
-  const sceneIds = new Set(scenes.value.map((scene) => scene.id))
-  const dialogueIds = new Set(dialogues.value.map((dialogue) => dialogue.id))
-  const endingIds = new Set(endings.value.map((ending) => ending.id))
-  const characterIds = new Set(characters.value.map((character) => character.id))
-  if (metadataError.value) result.push(t('event.error.metadata', 'Metadata: {message}', { message: metadataError.value }))
-  if (editableDocument.value.events.length > 512) result.push(t('event.error.catalog-limit', 'Catalog exceeds 512 events'))
-  for (const event of editableDocument.value.events) {
-    const label = event.event_id || t('event.untitled-id', 'untitled_event')
-    if (!portable.test(event.event_id) || event.event_id.length > 128) result.push(t('event.error.invalid-id', '{label}: invalid event ID', { label }))
-    if (ids.has(event.event_id)) result.push(t('event.error.duplicate-id', '{label}: duplicate event ID', { label }))
-    ids.add(event.event_id)
-    if (!portable.test(event.event_type) || event.event_type.length > 128) result.push(t('event.error.invalid-type', '{label}: invalid event type', { label }))
-    if (!event.description?.trim() || event.description.length > 2048) result.push(t('event.error.description', '{label}: description is required and limited to 2048 characters', { label }))
-    const scopes = event.character_ids || []
-    if (new Set(scopes).size !== scopes.length) result.push(t('event.error.duplicate-scope', '{label}: duplicate character scope', { label }))
-    for (const characterId of scopes) if (!characterIds.has(characterId)) result.push(t('event.error.unknown-character', '{label}: unknown character {id}', { label, id: characterId }))
-    const rule = event.rule || {}
-    if (rule.min_relationship !== undefined && (!Number.isFinite(rule.min_relationship) || rule.min_relationship < -1 || rule.min_relationship > 1)) result.push(t('event.error.relationship-threshold', '{label}: relationship threshold must be between -1 and 1', { label }))
-    if ((rule.score_metric === undefined) !== (rule.min_score === undefined)) result.push(t('event.error.score-pair', '{label}: score metric and threshold must be configured together', { label }))
-    if (rule.min_score !== undefined && (!Number.isFinite(rule.min_score) || rule.min_score < 0 || rule.min_score > 1)) result.push(t('event.error.score-threshold', '{label}: score threshold must be between 0 and 1', { label }))
-    if (rule.min_evaluation_count !== undefined && (!Number.isInteger(rule.min_evaluation_count) || rule.min_evaluation_count < 0 || rule.min_evaluation_count > 1_000_000)) result.push(t('event.error.evaluation-count', '{label}: evaluation count is invalid', { label }))
-    const actionKeys = new Set<string>()
-    for (const action of event.actions || []) {
-      const key = JSON.stringify(action)
-      if (actionKeys.has(key)) result.push(t('event.error.duplicate-action', '{label}: duplicate action {type}', { label, type: action.type }))
-      actionKeys.add(key)
-      if (action.type === 'unlock_scene' && !sceneIds.has(action.scene_id)) result.push(t('event.error.unknown-scene', '{label}: unknown scene {id}', { label, id: action.scene_id }))
-      if (action.type === 'unlock_dialogue' && !dialogueIds.has(action.dialogue_id)) result.push(t('event.error.unknown-dialogue', '{label}: unknown dialogue {id}', { label, id: action.dialogue_id }))
-      if (action.type === 'unlock_ending' && !endingIds.has(action.ending_id)) result.push(t('event.error.unknown-ending', '{label}: unknown ending {id}', { label, id: action.ending_id }))
-      if (action.type === 'set_flag' && !portable.test(action.flag)) result.push(t('event.error.invalid-flag', '{label}: invalid flag name', { label }))
-    }
-  }
-  return result
+function applyMetadata(): boolean {
+  if (!selectedEvent.value) return true
+  const result = applyStoryEventMetadata(selectedEvent.value, metadataText.value)
+  if (result.error) return false
+  if (result.changed) Object.assign(selectedEvent.value, result.event)
+  return true
 }
 
-function documentWarnings(): string[] {
-  const result: string[] = []
-  for (const event of editableDocument.value.events) {
-    const rule = event.rule || {}
-    if (!(event.actions?.length)) result.push(t('event.warning.no-effects', '{id}: no effects configured', { id: event.event_id }))
-    if (rule.min_relationship === undefined && rule.min_score === undefined && rule.min_evaluation_count === undefined) {
-      result.push(t('event.warning.no-trigger', '{id}: no trigger gate; eligible immediately', { id: event.event_id }))
-    }
-  }
-  return result
+function eventIssueMessage(issue: StoryEventEditingIssue): string {
+  const label = issue.event_id || t('event.untitled-id', 'untitled_event')
+  if (issue.code === 'catalog_limit') return t('event.error.catalog-limit', 'Catalog exceeds 512 events')
+  if (issue.code === 'invalid_id') return t('event.error.invalid-id', '{label}: invalid event ID', { label })
+  if (issue.code === 'duplicate_id') return t('event.error.duplicate-id', '{label}: duplicate event ID', { label })
+  if (issue.code === 'invalid_type') return t('event.error.invalid-type', '{label}: invalid event type', { label })
+  if (issue.code === 'description') return t('event.error.description', '{label}: description is required and limited to 2048 characters', { label })
+  if (issue.code === 'duplicate_scope') return t('event.error.duplicate-scope', '{label}: duplicate character scope', { label })
+  if (issue.code === 'unknown_character') return t('event.error.unknown-character', '{label}: unknown character {id}', { label, id: issue.target_id || '' })
+  if (issue.code === 'relationship_threshold') return t('event.error.relationship-threshold', '{label}: relationship threshold must be between -1 and 1', { label })
+  if (issue.code === 'score_pair') return t('event.error.score-pair', '{label}: score metric and threshold must be configured together', { label })
+  if (issue.code === 'score_threshold') return t('event.error.score-threshold', '{label}: score threshold must be between 0 and 1', { label })
+  if (issue.code === 'evaluation_count') return t('event.error.evaluation-count', '{label}: evaluation count is invalid', { label })
+  if (issue.code === 'duplicate_action') return t('event.error.duplicate-action', '{label}: duplicate action {type}', { label, type: issue.action_type || '' })
+  if (issue.code === 'unknown_scene') return t('event.error.unknown-scene', '{label}: unknown scene {id}', { label, id: issue.target_id || '' })
+  if (issue.code === 'unknown_dialogue') return t('event.error.unknown-dialogue', '{label}: unknown dialogue {id}', { label, id: issue.target_id || '' })
+  if (issue.code === 'unknown_ending') return t('event.error.unknown-ending', '{label}: unknown ending {id}', { label, id: issue.target_id || '' })
+  return t('event.error.invalid-flag', '{label}: invalid flag name', { label })
+}
+
+function eventWarningMessage(warning: StoryEventEditingWarning): string {
+  return warning.code === 'no_effects'
+    ? t('event.warning.no-effects', '{id}: no effects configured', { id: warning.event_id })
+    : t('event.warning.no-trigger', '{id}: no trigger gate; eligible immediately', { id: warning.event_id })
 }
 
 function runValidation() {
@@ -548,20 +525,24 @@ function runValidation() {
 }
 
 async function saveCatalog() {
-  applyMetadata()
-  if (issues.value.length > 0) {
+  if (!applyMetadata() || issues.value.length > 0) {
     runValidation()
     return
   }
   saving.value = true
   try {
-    const snapshot = await saveStoryEventCatalog(structuredClone(editableDocument.value), catalogFingerprint.value)
-    const document = storyEventCatalogDocument(snapshot)
-    document.events = document.events.map(normalizeDraft)
+    const selectedEventId = selectedEvent.value?.event_id || null
+    const snapshot = await saveStoryEventCatalog(cloneStoryEventDocument(editableDocument.value), catalogFingerprint.value)
+    const document = cloneStoryEventDocument(storyEventCatalogDocument(snapshot))
     editableDocument.value = document
     catalogFingerprint.value = snapshot.catalog_fingerprint
-    baseline.value = JSON.stringify(document)
-    selectedIndex.value = Math.min(selectedIndex.value, document.events.length - 1)
+    baseline.value = storyEventDocumentSnapshot(document)
+    const savedIndex = selectedEventId
+      ? document.events.findIndex((event) => event.event_id === selectedEventId)
+      : -1
+    selectedIndex.value = savedIndex >= 0
+      ? savedIndex
+      : Math.min(selectedIndex.value, document.events.length - 1)
     statusMessage.value = t('event.status.saved', 'Saved {count} events', { count: snapshot.event_count })
     statusKind.value = 'success'
   } catch (error) {

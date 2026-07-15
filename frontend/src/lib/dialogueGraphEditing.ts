@@ -5,6 +5,7 @@ import type {
   DialogueDefinition,
   DialogueNodeDefinition,
 } from './dialogueAuthoring'
+import { cloneJsonRecord, parseJsonRecord } from './jsonValue'
 
 export type DialogueFlowMode = 'linear' | 'choices' | 'end'
 
@@ -74,12 +75,7 @@ export function filterDialogueEntries(
 }
 
 export function parseDialogueVariables(value: string): Record<string, unknown> | null {
-  try {
-    const parsed = JSON.parse(value) as unknown
-    return isRecord(parsed) ? parsed : null
-  } catch {
-    return null
-  }
+  return parseJsonRecord(value)
 }
 
 export function dialogueDraftSnapshot(
@@ -476,18 +472,4 @@ function deleteError(
 
 function portableIdKey(value: string): string {
   return value.trim().toLowerCase()
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-}
-
-function cloneJsonRecord(value: Readonly<Record<string, unknown>>): Record<string, unknown> {
-  return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, cloneJsonValue(item)]))
-}
-
-function cloneJsonValue(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(cloneJsonValue)
-  if (isRecord(value)) return cloneJsonRecord(value)
-  return value
 }
