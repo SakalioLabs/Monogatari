@@ -2,7 +2,7 @@
 
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
@@ -12,9 +12,9 @@ use super::ARCHIVE_MANIFEST_PATH;
 pub const ARCHIVE_FORMAT: &str = "monogatari-project";
 pub const ARCHIVE_SCHEMA: &str = "monogatari-project-export@1";
 pub const PACKAGE_FINGERPRINT_ALGORITHM: &str = "sha256:path-size-file-sha256-v1";
-const MAX_ARCHIVE_FILES: usize = 20_000;
-const MAX_ARCHIVE_DIRECTORIES: usize = 4_000;
-const MAX_ARCHIVE_TOTAL_BYTES: u64 = 16 * 1024 * 1024 * 1024;
+pub const MAX_ARCHIVE_FILES: usize = 20_000;
+pub const MAX_ARCHIVE_DIRECTORIES: usize = 4_000;
+pub const MAX_ARCHIVE_TOTAL_BYTES: u64 = 16 * 1024 * 1024 * 1024;
 pub const MAX_ARCHIVE_FILE_BYTES: u64 = 4 * 1024 * 1024 * 1024;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -45,7 +45,7 @@ pub struct ArchivePackage {
     files: Vec<ArchiveFileRecord>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ArchiveFileRecord {
     pub category: String,
     pub path: String,

@@ -12,9 +12,11 @@ use sha2::{Digest, Sha256};
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
+use llm_authoring::project::{sanitize_export_config, scrub_runtime_secret_config};
 use llm_authoring::project_package::{
-    is_reserved_windows_segment, portable_case_key, validate_manifest, validate_portable_path,
-    ArchiveFileRecord, ARCHIVE_MANIFEST_PATH, MAX_ARCHIVE_FILE_BYTES,
+    is_reserved_windows_segment, portable_case_key, project_export_settings_bytes,
+    validate_manifest, validate_portable_path, ArchiveFileRecord, ARCHIVE_MANIFEST_PATH,
+    MAX_ARCHIVE_DIRECTORIES, MAX_ARCHIVE_FILES, MAX_ARCHIVE_FILE_BYTES,
 };
 #[cfg(test)]
 use llm_authoring::project_package::{
@@ -23,14 +25,9 @@ use llm_authoring::project_package::{
 
 #[cfg(test)]
 use super::project::build_project_export_manifest;
-use super::project::{
-    project_export_settings_bytes, sanitize_export_config, scrub_runtime_secret_config,
-};
 
 pub(crate) mod commands;
 
-const MAX_ARCHIVE_FILES: usize = 20_000;
-const MAX_ARCHIVE_DIRECTORIES: usize = 4_000;
 const MAX_ARCHIVE_COMPRESSED_BYTES: u64 = 16 * 1024 * 1024 * 1024;
 const MAX_ARCHIVE_MANIFEST_BYTES: u64 = 4 * 1024 * 1024;
 const MAX_ARCHIVE_JSON_BYTES: u64 = 64 * 1024 * 1024;

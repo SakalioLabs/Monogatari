@@ -7,6 +7,7 @@ edition.workspace = true
 schemars = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+md5 = { workspace = true }
 sha2 = { workspace = true }
 tokio = { workspace = true }
 llm-game = { workspace = true }

@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use chrono::Utc;
+use llm_authoring::project::scrub_runtime_secret_config;
 use serde::Serialize;
 use serde_json::Value;
 
@@ -137,7 +138,7 @@ pub(crate) async fn verify_installed_application(
 
     verify_required_layout(&project_root)?;
     let settings = read_bounded_json(&project_root.join("settings.json"))?;
-    if project::scrub_runtime_secret_config(&settings) != settings {
+    if scrub_runtime_secret_config(&settings) != settings {
         return Err("Bundled settings.json contains runtime secrets.".to_string());
     }
 
