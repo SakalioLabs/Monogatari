@@ -75,7 +75,13 @@ export function createSourceInvariantVerifier({
     const analyticsViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'AnalyticsView.vue'), 'utf8')
     const workflowEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'WorkflowEditor.vue'), 'utf8')
     const workflowPreviewSource = await readFile(path.join(frontendDir, 'src', 'lib', 'workflowPreview.ts'), 'utf8')
-    const workflowContractSource = `${workflowEditorSource}\n${workflowPreviewSource}`
+    const workflowExecutionPresentationSource = await readFile(path.join(frontendDir, 'src', 'lib', 'workflowExecutionPresentation.ts'), 'utf8')
+    const workflowExecutionPresentationTestSource = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'workflowExecutionPresentation.test.ts'), 'utf8')
+    const workflowContractSource = [
+      workflowEditorSource,
+      workflowPreviewSource,
+      workflowExecutionPresentationSource,
+    ].join('\n')
     const storyEventEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'StoryEventEditorView.vue'), 'utf8')
     const endingEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'EndingEditorView.vue'), 'utf8')
     const sceneEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'SceneEditorView.vue'), 'utf8')
@@ -322,6 +328,8 @@ export function createSourceInvariantVerifier({
       [characterEditorSource, 'isDirty', 'guard dirty character drafts during navigation'],
       [characterEditorSource, 'characterFormFromStory', 'delegate runtime-to-form normalization to the character domain'],
       [characterEditorSource, 'buildStoryCharacter', 'delegate save payload shaping to the character domain'],
+      [characterEditorSource, ':disabled="loadingCatalogs"', 'keep character creation unavailable until asynchronous catalogs settle'],
+      [characterEditorSource, 'if (loadingCatalogs.value) return', 'guard character creation against initialization races'],
       [characterAuthoringSource, 'validateCharacterForm', 'centralize character form validation'],
       [characterAuthoringSource, 'candidate.trim().toLowerCase() === normalizedId', 'reject cross-platform case-folded character ID collisions'],
       [characterAuthoringSource, 'characterFormSnapshot', 'derive dirty state from canonical character payloads'],
@@ -574,6 +582,38 @@ export function createSourceInvariantVerifier({
     for (const [needle, description] of workflowRunDiagnosticsRequirements) {
       if (!workflowContractSource.includes(needle)) {
         issues.push(`Frontend workflow preview integration must ${description}`)
+      }
+    }
+
+    const workflowExecutionPresentationRequirements = [
+      [workflowEditorSource, "from '../lib/workflowExecutionPresentation'", 'delegate execution evidence parsing and node-state presentation'],
+      [workflowExecutionPresentationSource, 'export function workflowExecutionStepsByNode', 'own trace indexing outside the Vue view'],
+      [workflowExecutionPresentationSource, 'export function workflowNumericValue', 'parse optional numeric evidence without coercing missing values to zero'],
+      [workflowExecutionPresentationSource, 'export function workflowEventDecision', 'parse typed Story Event decisions through a guarded record boundary'],
+      [workflowExecutionPresentationSource, 'export function workflowNodeRunOutcome', 'own node execution outcome classification outside the Vue view'],
+      [workflowExecutionPresentationSource, ".filter((choice) => ['string', 'number', 'boolean'].includes(typeof choice))", 'exclude non-scalar choice evidence from UI labels'],
+      [workflowExecutionPresentationTestSource, 'does not turn missing or blank numeric evidence into a real zero score', 'test absent score evidence independently from explicit zero'],
+      [workflowExecutionPresentationTestSource, 'reads typed event decisions, nested rule metrics, blockers, and scores defensively', 'test structured Story Event execution evidence'],
+      [authoringE2eSource, 'Workflow execution renders deterministic trace evidence across desktop and mobile', 'exercise Workflow execution evidence in a real browser'],
+      [authoringE2eSource, "await expect(page.locator('.workflow-node.run-executed')).toHaveCount(2)", 'prove execution evidence maps back onto rendered canvas nodes'],
+    ]
+    for (const [source, needle, description] of workflowExecutionPresentationRequirements) {
+      if (!source.includes(needle)) {
+        issues.push(`Workflow execution presentation must ${description}`)
+      }
+    }
+
+    const workflowExecutionViewLeaks = [
+      'function numericValue',
+      'function formatScore',
+      'function formatCoverage',
+      'function scorePercent',
+      'function eventDecision',
+      'function eventBlockers',
+    ]
+    for (const needle of workflowExecutionViewLeaks) {
+      if (workflowEditorSource.includes(needle)) {
+        issues.push(`frontend/src/views/WorkflowEditor.vue must not redeclare Workflow execution presentation logic: ${needle}`)
       }
     }
 

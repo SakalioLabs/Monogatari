@@ -1,6 +1,7 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Extracted Workflow execution-evidence indexing, optional numeric parsing, score/coverage formatting, scalar choice handling, typed Story Event decisions, and canvas node outcome presentation from `WorkflowEditor.vue`; missing scores no longer render as a real `0.00`, non-scalar evidence cannot leak as object labels, and independent Vitest plus desktop/mobile Playwright coverage proves deterministic traces map back onto the authored graph.
 - Extracted character form contracts, runtime/form conversion, validation, knowledge-reference handling, payload normalization, dirty-state snapshots, filtering, and sprite defaults from `CharacterEditorView.vue` into an independently tested pure domain; removed the form's broad index-signature escape hatch, rejected case-folded portable ID collisions before they can overwrite Windows project files, and extended browser authoring E2E coverage.
 - Extracted exact Settings transport contracts plus pure config construction, browser preview/sync state, nested path protection, runtime-secret scrubbing, manifest shaping, filename, and byte-formatting behavior from `SettingsView.vue`; added 11 isolated domain tests, release architecture invariants, and a desktop/mobile Playwright flow that parses the exported browser manifest and proves runtime credentials are absent.
 - Extracted exact Quality report contracts, generated browser preview evidence, filtering/diagnostic/export presentation logic, and their isolation tests from `QualitySuiteView.vue`; the view now owns only localization, reactive orchestration, Tauri transport, and browser downloads, while release invariants reject duplicate contracts or static preview reports and Playwright verifies the 29-scenario desktop/mobile workbench.
@@ -219,6 +220,7 @@
 - Added save-manager path isolation tests and release-gate invariants so Rust and legacy C# save/load/delete flows reject traversal-shaped save IDs and filter mismatched save files.
 
 ### Fixed
+- Disabled Character creation until its asynchronous character and knowledge catalogs finish initialization, preventing a fast user or browser Agent action from being overwritten by the default-character selection.
 - Restored `cargo check --locked -p llm-galgame-app` by aligning Tauri command dependencies and current core APIs.
 - Rebuilt corrupted zh-CN, ja-JP, and ko-KR locale JSON files with the full 280-key i18n surface.
 - Fixed frontend i18n loading so Tauri `{ locale, strings }` payloads and browser `/locales/*.json` fallback files both resolve correctly.

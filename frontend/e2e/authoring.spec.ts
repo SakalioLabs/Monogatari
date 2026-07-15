@@ -22,9 +22,42 @@ test('workspace navigation exposes the authoring surfaces', async ({ page }) => 
   await expect(page.getByRole('heading', { name: 'Dialogue Graph' })).toBeVisible()
 })
 
+test('Workflow execution renders deterministic trace evidence across desktop and mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 })
+  await page.goto('/editor')
+
+  await expect(page.getByRole('heading', { name: 'Workflow Editor' })).toBeVisible()
+  await expect(page.locator('.workflow-node')).toHaveCount(2)
+  await page.locator('.toolbar-right').getByRole('button', { name: 'Run', exact: true }).click()
+
+  await expect(page.locator('.execution-summary')).toContainText('Completed')
+  await expect(page.locator('.coverage-row')).toContainText('100%')
+  await expect(page.locator('.trace-item')).toHaveCount(2)
+  await expect(page.locator('.workflow-node.run-executed')).toHaveCount(2)
+  await expect(page.locator('.workflow-node.run-pass')).toHaveCount(1)
+  await expect(page.locator('.workflow-node.run-current')).toHaveCount(1)
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect.poll(() => page.evaluate(() => document.body.scrollWidth)).toBe(390)
+  const compactGeometry = await page.evaluate(() => {
+    const inspector = document.querySelector('.properties-panel')?.getBoundingClientRect()
+    return {
+      viewportWidth: window.innerWidth,
+      inspectorLeft: inspector?.left ?? -1,
+      inspectorRight: inspector?.right ?? -1,
+      inspectorWidth: inspector?.width ?? -1,
+    }
+  })
+  expect(compactGeometry.inspectorLeft).toBeGreaterThanOrEqual(0)
+  expect(compactGeometry.inspectorRight).toBeLessThanOrEqual(compactGeometry.viewportWidth)
+  expect(compactGeometry.inspectorWidth).toBeGreaterThan(0)
+})
+
 test('character authoring persists a validated browser draft across reloads', async ({ page }) => {
   await page.goto('/character-editor')
-  await page.getByTitle('Create Character').click()
+  const createCharacter = page.getByTitle('Create Character')
+  await expect(createCharacter).toBeEnabled()
+  await createCharacter.click()
 
   await page.getByLabel('Character ID').fill('agent_guide')
   await page.getByLabel('Name').fill('Agent Guide')

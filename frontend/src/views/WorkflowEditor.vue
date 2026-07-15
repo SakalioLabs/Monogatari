@@ -473,6 +473,26 @@ import type {
   WorkflowValidationResult,
 } from '../lib/workflowContract'
 import {
+  formatWorkflowCoverage as formatCoverage,
+  formatWorkflowScore as formatScore,
+  formatWorkflowThreshold,
+  isWorkflowEvaluationStep as isEvaluationStep,
+  isWorkflowTriggerEventStep as isTriggerEventStep,
+  isWorkflowTriggerEventTriggered as isTriggerEventTriggered,
+  lastWorkflowExecutionStep,
+  workflowChoiceOptions as choiceOptionsFor,
+  workflowEventActualScore as eventActualScore,
+  workflowEventBlockers as eventBlockers,
+  workflowEventMetric as eventMetric,
+  workflowExecutionStepsByNode,
+  workflowNodeRunClasses as executionNodeRunClasses,
+  workflowNodeRunDetail as executionNodeRunDetail,
+  workflowNodeRunOutcome as executionNodeRunOutcome,
+  workflowScorePercent as scorePercent,
+  workflowStepCanChoose as canChooseStep,
+  workflowStringValue as stringValue,
+} from '../lib/workflowExecutionPresentation'
+import {
   aggregatePresetMatrixCoverage,
   runWorkflowLocally,
   validateWorkflowLocally,
@@ -600,18 +620,9 @@ const filteredNodeCount = computed(() => nodeCategories.value.reduce((count, cat
 
 const connections = computed(() => workflowConnections(nodes.value))
 
-const executionStepsByNode = computed(() => {
-  const map = new Map<string, WorkflowExecutionStep>()
-  for (const step of executionReport.value?.steps || []) {
-    map.set(step.node_id, step)
-  }
-  return map
-})
+const executionStepsByNode = computed(() => workflowExecutionStepsByNode(executionReport.value))
 
-const lastExecutionStep = computed(() => {
-  const steps = executionReport.value?.steps || []
-  return steps.length ? steps[steps.length - 1] : null
-})
+const lastExecutionStep = computed(() => lastWorkflowExecutionStep(executionReport.value))
 
 const validationStatusLabel = computed(() => {
   if (!validationResult.value) return t('workflow.not-checked', 'Not checked')
@@ -754,7 +765,7 @@ function getConfigFields(nodeType: string): string[] {
   return workflowConfigFields(nodeTypes.value, nodeType)
 }
 
-function updateConfig(field: string, value: any) {
+function updateConfig(field: string, value: unknown) {
   if (selectedNode.value) {
     selectedNode.value.config[field] = value
     markWorkflowDirty()
@@ -984,76 +995,8 @@ async function runPresetMatrix() {
   }
 }
 
-function canChooseStep(step: WorkflowExecutionStep): boolean {
-  return step.node_type === 'choice' && step.stopped_reason === 'awaiting_choice' && choiceOptionsFor(step).length > 0
-}
-
-function choiceOptionsFor(step: WorkflowExecutionStep): string[] {
-  const choices = step.output?.choices
-  return Array.isArray(choices) ? choices.map(String) : []
-}
-
-function isEvaluationStep(step: WorkflowExecutionStep): boolean {
-  return step.node_type === 'evaluation'
-}
-
-function isTriggerEventStep(step: WorkflowExecutionStep): boolean {
-  return step.node_type === 'trigger_event'
-}
-
-function isTriggerEventTriggered(step: WorkflowExecutionStep): boolean {
-  return isTriggerEventStep(step) && step.output?.triggered === true
-}
-
-function stringValue(value: any, fallback = '-'): string {
-  if (value === null || value === undefined) return fallback
-  const text = String(value).trim()
-  return text || fallback
-}
-
-function numericValue(value: any): number | null {
-  const number = Number(value)
-  return Number.isFinite(number) ? number : null
-}
-
-function formatScore(value: any): string {
-  const number = numericValue(value)
-  return number === null ? '-' : number.toFixed(2)
-}
-
-function formatThreshold(value: any): string {
-  if (value === null || value === undefined) return t('workflow.none', 'None')
-  return formatScore(value)
-}
-
-function formatCoverage(value: any): string {
-  const number = numericValue(value)
-  return number === null ? '0%' : `${number.toFixed(0)}%`
-}
-
-function scorePercent(value: any): string {
-  const number = numericValue(value)
-  if (number === null) return '0%'
-  return `${Math.round(Math.min(1, Math.max(0, number)) * 100)}%`
-}
-
-function eventDecision(step: WorkflowExecutionStep): Record<string, any> {
-  const decision = step.output?.decision
-  return decision && typeof decision === 'object' && !Array.isArray(decision) ? decision : {}
-}
-
-function eventBlockers(step: WorkflowExecutionStep): string[] {
-  const reasons = eventDecision(step).blocked_reasons
-  return Array.isArray(reasons) ? reasons.map(String).filter(Boolean) : []
-}
-
-function eventMetric(step: WorkflowExecutionStep): string {
-  const decision = eventDecision(step)
-  return stringValue(decision.actual_score_metric ?? decision.rule?.score_metric, '-')
-}
-
-function eventActualScore(step: WorkflowExecutionStep): number | null {
-  return numericValue(eventDecision(step).actual_score)
+function formatThreshold(value: unknown): string {
+  return formatWorkflowThreshold(value, t('workflow.none', 'None'))
 }
 
 function workflowRunContextPayload(): WorkflowRunContextPayload | null {
@@ -1073,33 +1016,12 @@ function nodeExecutionStep(node: WorkflowNode): WorkflowExecutionStep | null {
 }
 
 function nodeRunOutcome(node: WorkflowNode): string {
-  const step = nodeExecutionStep(node)
-  if (!step) return ''
-  if (step.stopped_reason === 'awaiting_choice') return 'wait'
-  if (step.node_type === 'end') return 'done'
-  if (isEvaluationStep(step)) {
-    if (step.output?.passed === true) return 'pass'
-    if (step.output?.passed === false) return 'fail'
-    return 'score'
-  }
-  if (isTriggerEventStep(step)) {
-    return isTriggerEventTriggered(step) ? 'triggered' : 'blocked'
-  }
-  if (step.stopped_reason && step.stopped_reason !== 'completed') return 'blocked'
-  return 'ran'
+  return executionNodeRunOutcome(nodeExecutionStep(node))
 }
 
 function nodeRunClass(node: WorkflowNode): Record<string, boolean> {
   const step = nodeExecutionStep(node)
-  const outcome = nodeRunOutcome(node)
-  return {
-    'run-executed': Boolean(step),
-    'run-current': lastExecutionStep.value?.node_id === node.id,
-    'run-pass': outcome === 'pass' || outcome === 'triggered' || outcome === 'done',
-    'run-fail': outcome === 'fail' || outcome === 'blocked',
-    'run-wait': outcome === 'wait',
-    'run-score': outcome === 'score',
-  }
+  return executionNodeRunClasses(node.id, step, lastExecutionStep.value)
 }
 
 function nodeRunBadge(node: WorkflowNode): string {
@@ -1116,21 +1038,10 @@ function nodeRunBadge(node: WorkflowNode): string {
 }
 
 function nodeRunDetail(node: WorkflowNode): string {
-  const step = nodeExecutionStep(node)
-  if (!step) return ''
-  if (isEvaluationStep(step)) {
-    const metric = stringValue(step.output?.metric, 'overall')
-    const threshold = step.output?.threshold === null || step.output?.threshold === undefined
-      ? ''
-      : `/${formatThreshold(step.output.threshold)}`
-    return `${metric} ${formatScore(step.output?.score)}${threshold}`
-  }
-  if (isTriggerEventStep(step)) {
-    const blockers = eventBlockers(step)
-    return blockers[0] || stringValue(step.output?.event_id, 'event')
-  }
-  if (step.stopped_reason && step.stopped_reason !== 'completed') return executionReasonLabel(step.stopped_reason)
-  return step.next_node_id ? t('workflow.next-node', 'Next: {node}', { node: step.next_node_id }) : ''
+  return executionNodeRunDetail(nodeExecutionStep(node), {
+    reasonLabel: executionReasonLabel,
+    nextNodeLabel: (nodeId) => t('workflow.next-node', 'Next: {node}', { node: nodeId }),
+  })
 }
 
 function nodeRunTooltip(node: WorkflowNode): string {

@@ -7,7 +7,7 @@
           <h1>{{ t('characters.title', 'Characters') }}</h1>
           <p>{{ t('characters.editor.loaded-summary', '{visible} of {total}', { visible: filteredCharacterList.length, total: characterList.length }) }}</p>
         </div>
-        <button class="icon-command primary" :title="t('characters.create', 'Create Character')" @click="requestCreate">
+        <button class="icon-command primary" :disabled="loadingCatalogs" :title="t('characters.create', 'Create Character')" @click="requestCreate">
           <Plus :size="17" />
           <span class="sr-only">{{ t('characters.create', 'Create Character') }}</span>
         </button>
@@ -318,7 +318,7 @@
         <h2>{{ t('characters.editor', 'Character Editor') }}</h2>
         <p>{{ t('characters.editor.empty-copy', 'Select a character to edit or create a new cast member.') }}</p>
         <span class="empty-count">{{ t('characters.loaded-count', '{count} characters loaded from project data.', { count: characterList.length }) }}</span>
-        <button class="btn btn-primary btn-sm" @click="requestCreate"><Plus :size="14" />{{ t('characters.create', 'Create Character') }}</button>
+        <button class="btn btn-primary btn-sm" :disabled="loadingCatalogs" @click="requestCreate"><Plus :size="14" />{{ t('characters.create', 'Create Character') }}</button>
       </div>
     </main>
 
@@ -476,6 +476,7 @@ const searchQuery = ref('')
 const selectedId = ref<string | null>(null)
 const editing = ref(false)
 const isNew = ref(false)
+const loadingCatalogs = ref(true)
 const saving = ref(false)
 const activeTab = ref('basic')
 const statusMsg = ref<string | null>(null)
@@ -853,6 +854,7 @@ function requestSelect(characterId: string) {
 }
 
 function requestCreate() {
+  if (loadingCatalogs.value) return
   if (isDirty.value) pendingAction.value = { kind: 'create' }
   else createNew()
 }
@@ -902,18 +904,22 @@ function notify(type: 'success' | 'error', message: string) {
 }
 
 onMounted(async () => {
-  await Promise.all([loadList(), loadKnowledgeIds()])
-  if (route.query.create === '1') {
-    createNew()
-    return
+  try {
+    await Promise.all([loadList(), loadKnowledgeIds()])
+    if (route.query.create === '1') {
+      createNew()
+      return
+    }
+    const requestedCharacter = typeof route.query.character === 'string' ? route.query.character : ''
+    if (requestedCharacter && characterList.value.some(character => character.id === requestedCharacter)) {
+      await selectChar(requestedCharacter)
+      return
+    }
+    if (characterList.value.length > 0) await selectChar(characterList.value[0].id)
+    else createNew()
+  } finally {
+    loadingCatalogs.value = false
   }
-  const requestedCharacter = typeof route.query.character === 'string' ? route.query.character : ''
-  if (requestedCharacter && characterList.value.some(character => character.id === requestedCharacter)) {
-    await selectChar(requestedCharacter)
-    return
-  }
-  if (characterList.value.length > 0) await selectChar(characterList.value[0].id)
-  else createNew()
 })
 </script>
 
