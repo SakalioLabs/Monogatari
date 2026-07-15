@@ -93,6 +93,10 @@ export function createSourceInvariantVerifier({
     const audioViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'AudioView.vue'), 'utf8')
     const knowledgeBaseViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'KnowledgeBaseView.vue'), 'utf8')
     const settingsSource = await readFile(path.join(frontendDir, 'src', 'views', 'SettingsView.vue'), 'utf8')
+    const settingsContractSource = await readFile(path.join(frontendDir, 'src', 'lib', 'settingsContract.ts'), 'utf8')
+    const settingsDomainSource = await readFile(path.join(frontendDir, 'src', 'lib', 'settingsDomain.ts'), 'utf8')
+    const settingsTestSource = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'settingsDomain.test.ts'), 'utf8')
+    const authoringE2eSource = await readFile(path.join(frontendDir, 'e2e', 'authoring.spec.ts'), 'utf8')
     const projectArchiveSource = await readFile(path.join(frontendDir, 'src', 'lib', 'projectArchive.ts'), 'utf8')
     const serviceWorkerSource = await readFile(path.join(frontendDir, 'public', 'sw.js'), 'utf8')
     const frontendRuntimeFiles = (await walkFiles(path.join(frontendDir, 'src'))).filter((file) =>
@@ -669,29 +673,53 @@ export function createSourceInvariantVerifier({
     }
 
     const projectExportRequirements = [
-      ['export_project', 'call the backend project export command from Settings'],
-      ['monogatari-project-export@1', 'preserve the project export manifest schema marker'],
-      ['export_metadata', 'include project export build provenance metadata'],
-      ['git_short_commit', 'include compact source commit evidence in browser preview export manifests'],
-      ['content_summary', 'include project export content summaries in browser preview export manifests'],
-      ['monogatari-project-content-summary/v1', 'version browser preview project export content summaries'],
-      ['fingerprint_algorithm', 'include explicit project export package fingerprint algorithms in browser preview export manifests'],
-      ['category_fingerprint_algorithm', 'include project export category fingerprint algorithms in browser preview export manifests'],
-      ['category_fingerprints', 'include project export category fingerprints in browser preview export manifests'],
-      ['content_sha256', 'include whole-package content fingerprints in browser preview export manifests'],
-      ['downloadJson(', 'download project export manifests as JSON'],
-      ['sanitizeManifestSettings', 'redact sensitive settings in browser preview export manifests'],
-      ['@click="exportProjectManifest"', 'surface a project manifest export control'],
-      ['runtimeSecretSettingKeys', 'centralize frontend runtime secret setting keys'],
-      ['scrubRuntimeSecretSettings', 'scrub runtime secrets before saving project settings'],
-      ['scrubRuntimeSecretString', 'scrub token-like and assignment-shaped secrets inside setting string values'],
-      ['scrubTokenLikeValues', 'scrub token-shaped values from frontend settings payloads'],
-      ['scrubSecretAssignments', 'scrub secret assignments from frontend settings payloads'],
-      ["setConfigValue(config, ['ai', 'api', 'api_key'], '')", 'keep API keys runtime-only when saving project settings'],
+      [settingsSource, 'export_project', 'call the backend project export command from Settings'],
+      [settingsSource, 'createBrowserProjectManifest', 'delegate browser manifest construction to the Settings domain'],
+      [settingsSource, 'buildSettingsConfig', 'delegate persisted config construction to the Settings domain'],
+      [settingsSource, 'createPreviewProjectState', 'generate browser preview state from packaged runtime configuration'],
+      [settingsSource, 'downloadJson(', 'download project export manifests as JSON'],
+      [settingsSource, '@click="exportProjectManifest"', 'surface a project manifest export control'],
+      [settingsDomainSource, 'monogatari-project-export@1', 'preserve the project export manifest schema marker'],
+      [settingsDomainSource, 'export_metadata', 'include project export build provenance metadata'],
+      [settingsDomainSource, 'git_short_commit', 'include compact source commit evidence in browser preview export manifests'],
+      [settingsDomainSource, 'content_summary', 'include project export content summaries in browser preview export manifests'],
+      [settingsDomainSource, 'monogatari-project-content-summary/v1', 'version browser preview project export content summaries'],
+      [settingsDomainSource, 'fingerprint_algorithm', 'include explicit project export package fingerprint algorithms in browser preview export manifests'],
+      [settingsDomainSource, 'category_fingerprint_algorithm', 'include project export category fingerprint algorithms in browser preview export manifests'],
+      [settingsDomainSource, 'category_fingerprints', 'include project export category fingerprints in browser preview export manifests'],
+      [settingsDomainSource, 'content_sha256', 'include whole-package content fingerprints in browser preview export manifests'],
+      [settingsDomainSource, 'sanitizeManifestSettings', 'redact sensitive settings in browser preview export manifests'],
+      [settingsDomainSource, 'RUNTIME_SECRET_SETTING_KEYS', 'centralize frontend runtime secret setting keys'],
+      [settingsDomainSource, 'scrubRuntimeSecretSettings', 'scrub runtime secrets before saving project settings'],
+      [settingsDomainSource, 'scrubRuntimeSecretString', 'scrub token-like and assignment-shaped secrets inside setting string values'],
+      [settingsDomainSource, 'scrubTokenLikeValues', 'scrub token-shaped values from frontend settings payloads'],
+      [settingsDomainSource, 'scrubSecretAssignments', 'scrub secret assignments from frontend settings payloads'],
+      [settingsDomainSource, "setSettingsConfigValue(config, ['ai', 'api', 'api_key'], '')", 'keep API keys runtime-only when saving project settings'],
+      [settingsDomainSource, 'UNSAFE_PATH_SEGMENTS', 'reject prototype-polluting config paths'],
+      [settingsTestSource, "'__proto__'", 'test prototype-pollution rejection'],
+      [settingsTestSource, 'creates a stable schema-backed browser manifest', 'test browser manifest schema and redaction'],
+      [authoringE2eSource, 'Settings keeps runtime credentials out of saved browser manifests', 'exercise Settings persistence and export in a real browser'],
+      [authoringE2eSource, 'expect(JSON.stringify(manifest)).not.toContain(runtimeCredential)', 'prove exported browser manifests exclude runtime credentials'],
+      [settingsContractSource, 'story_event_catalog_fingerprint', 'mirror the complete engine-status response contract'],
+      [settingsContractSource, 'model_profile: ModelProfile', 'mirror inference backend plan model provenance'],
+      [settingsContractSource, 'host: HostCapabilities', 'mirror inference backend host evidence'],
     ]
-    for (const [needle, description] of projectExportRequirements) {
-      if (!settingsSource.includes(needle)) {
-        issues.push(`frontend/src/views/SettingsView.vue must ${description}`)
+    for (const [source, needle, description] of projectExportRequirements) {
+      if (!source.includes(needle)) {
+        issues.push(`Settings frontend architecture must ${description}`)
+      }
+    }
+    const settingsViewDomainLeaks = [
+      'interface EngineStatus',
+      'interface ProjectConfigState',
+      'function setConfigValue',
+      'function scrubRuntimeSecretSettings',
+      'function sanitizeManifestSettings',
+      'runtimeSecretSettingKeys = new Set',
+    ]
+    for (const needle of settingsViewDomainLeaks) {
+      if (settingsSource.includes(needle)) {
+        issues.push(`frontend/src/views/SettingsView.vue must not redeclare Settings domain logic: ${needle}`)
       }
     }
     const projectPackageRequirements = [
@@ -711,8 +739,8 @@ export function createSourceInvariantVerifier({
         issues.push(`Project package frontend integration must ${description}`)
       }
     }
-    if (settingsSource.includes("setConfigValue(config, ['ai', 'api', 'api_key'], apiKey.value)")) {
-      issues.push('frontend/src/views/SettingsView.vue must not persist runtime API keys into settings.json payloads')
+    if (/apiKey\s*:/m.test(settingsContractSource.match(/interface SettingsFormValues[\s\S]*?\n}/)?.[0] ?? '')) {
+      issues.push('SettingsFormValues must not expose runtime API keys to persisted project config builders')
     }
     if (settingsSource.includes("apiKey.value = getConfigValue(config, ['ai', 'api', 'api_key'])")) {
       issues.push('frontend/src/views/SettingsView.vue must not hydrate runtime API keys from project settings')
@@ -891,6 +919,7 @@ export function createSourceInvariantVerifier({
     const rustPipelineSource = await readFile(path.join(rustDir, 'crates', 'ai', 'src', 'pipeline.rs'), 'utf8')
     const rustPipelineTests = await readFile(path.join(rustDir, 'crates', 'ai', 'tests', 'pipeline_tests.rs'), 'utf8')
     const settingsViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'SettingsView.vue'), 'utf8')
+    const settingsDomainSource = await readFile(path.join(frontendDir, 'src', 'lib', 'settingsDomain.ts'), 'utf8')
     const chatViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'ChatView.vue'), 'utf8')
     const webGpuSource = await readFile(path.join(frontendDir, 'src', 'lib', 'webgpuInference.ts'), 'utf8')
     const webDistSource = await readFile(path.join(frontendDir, 'scripts', 'prepare-web-dist.mjs'), 'utf8')
@@ -1091,16 +1120,16 @@ export function createSourceInvariantVerifier({
     }
 
     const settingsRequirements = [
-      ["invokeCommand<void>('configure_onnx'", 'invoke the backend ONNX command contract'],
-      ['modelPath: modelPath.value', 'send the project-relative model path'],
-      ['tokenizerPath: tokenizerPath.value', 'send the project-relative tokenizer path'],
-      ['initializeWebGpuRuntime', 'initialize the browser WebGPU runtime'],
-      ['webGpuModelId', 'configure the packaged WebGPU model ID'],
-      ['webGpuDtype', 'configure WebGPU model precision'],
-      ["setConfigValue(config, ['ai', 'onnx', 'use_directml'], true)", 'persist DirectML as a required Windows runtime'],
+      [settingsViewSource, "invokeCommand<void>('configure_onnx'", 'invoke the backend ONNX command contract'],
+      [settingsViewSource, 'modelPath: modelPath.value', 'send the project-relative model path'],
+      [settingsViewSource, 'tokenizerPath: tokenizerPath.value', 'send the project-relative tokenizer path'],
+      [settingsViewSource, 'initializeWebGpuRuntime', 'initialize the browser WebGPU runtime'],
+      [settingsViewSource, 'webGpuModelId', 'configure the packaged WebGPU model ID'],
+      [settingsViewSource, 'webGpuDtype', 'configure WebGPU model precision'],
+      [settingsDomainSource, "setSettingsConfigValue(config, ['ai', 'onnx', 'use_directml'], true)", 'persist DirectML as a required Windows runtime'],
     ]
-    for (const [needle, description] of settingsRequirements) {
-      if (!settingsViewSource.includes(needle)) {
+    for (const [source, needle, description] of settingsRequirements) {
+      if (!source.includes(needle)) {
         issues.push(`Settings AI backend UI must ${description}`)
       }
     }

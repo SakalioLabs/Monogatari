@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises'
+
 import { expect, test } from '@playwright/test'
 
 test.beforeEach(async ({ page }) => {
@@ -95,4 +97,48 @@ test('Quality Suite workbench presents generated evidence across desktop and mob
   await expect(diagnostics).not.toHaveClass(/compact-open/)
   await page.getByRole('button', { name: 'Open diagnostics' }).click()
   await expect(diagnostics).toHaveClass(/compact-open/)
+})
+
+test('Settings keeps runtime credentials out of saved browser manifests across desktop and mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 })
+  await page.goto('/settings')
+
+  await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible()
+  await expect(page.locator('.context-notice')).toContainText('keeps project changes in memory')
+  await page.getByLabel('Project title').fill('Agent Settings Audit')
+
+  await page.locator('.settings-nav .nav-item').filter({ hasText: /^AI/ }).click()
+  await page.getByRole('button', { name: 'Development API' }).click()
+  const runtimeCredential = `sk-${'A'.repeat(30)}`
+  await page.getByLabel('API key').fill(runtimeCredential)
+  await page.getByRole('button', { name: 'Save project' }).click()
+  await expect(page.locator('.settings-toast')).toContainText('settings updated for this session')
+
+  await page.locator('.settings-nav .nav-item').filter({ hasText: /^Project/ }).click()
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Export manifest' }).click()
+  const download = await downloadPromise
+  const downloadPath = await download.path()
+  if (!downloadPath) throw new Error('Settings manifest download did not produce a readable file')
+  const manifest = JSON.parse(await readFile(downloadPath, 'utf8')) as {
+    schema: string
+    settings: {
+      render: { title: string }
+      ai: { provider: string; api: { api_key: string } }
+    }
+  }
+
+  expect(manifest.schema).toBe('monogatari-project-export@1')
+  expect(manifest.settings.render.title).toBe('Agent Settings Audit')
+  expect(manifest.settings.ai.provider).toBe('api')
+  expect(manifest.settings.ai.api.api_key).toBe('<redacted>')
+  expect(JSON.stringify(manifest)).not.toContain(runtimeCredential)
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect.poll(() => page.evaluate(() => document.body.scrollWidth)).toBe(390)
+  const compactGeometry = await page.evaluate(() => ({
+    navBottom: document.querySelector('.settings-nav')?.getBoundingClientRect().bottom ?? 0,
+    workspaceTop: document.querySelector('.settings-workspace')?.getBoundingClientRect().top ?? 0,
+  }))
+  expect(compactGeometry.workspaceTop).toBeGreaterThanOrEqual(compactGeometry.navBottom)
 })

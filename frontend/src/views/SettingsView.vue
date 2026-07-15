@@ -595,101 +595,42 @@ import {
   type ProjectArchiveExportResult,
   type ProjectArchiveInspection,
 } from '../lib/projectArchive'
+import type {
+  BackendReadiness,
+  CloudSaveEntry,
+  CloudSyncStatus,
+  EngineStatus,
+  InferenceBackendId,
+  InferenceBackendPlan,
+  ProjectConfigIssue,
+  ProjectConfigState,
+  ProjectPathStatus,
+  SettingsDocument,
+  SettingsSection,
+  SettingsAiProvider,
+  TtsSettings,
+} from '../lib/settingsContract'
+import {
+  buildSettingsConfig,
+  createBrowserProjectManifest,
+  createBrowserProjectState,
+  createBrowserSyncStatus,
+  createEmptyEngineStatus,
+  createPreviewProjectState,
+  formatSettingsBytes as formatBytes,
+  getSettingsConfigValue as getConfigValue,
+  normalizeSettingsSection,
+  safeSettingsFileName as safeFileName,
+  scrubRuntimeSecretString,
+} from '../lib/settingsDomain'
 
 const { locale, t } = useI18n()
-
-type SettingsSection = 'project' | 'ai' | 'voice' | 'sync' | 'diagnostics'
-
-interface TtsSettings {
-  provider: 'system' | 'azure' | 'elevenlabs'
-  api_url: string | null
-  api_region: string
-  api_voice_id: string
-  api_key: string
-  default_voice: string | null
-  language: string
-  speed: number
-  pitch: number
-}
-
-interface EngineStatus {
-  initialized: boolean
-  character_count: number
-  dialogue_count: number
-  knowledge_count: number
-  ai_engines: string[]
-  active_ai_engine: string | null
-}
-
-type InferenceBackendId = 'web_gpu' | 'llama_cpp' | 'win_ml_gen_ai' | 'direct_ml_onnx' | 'mlx_lm' | 'vllm' | 'sglang' | 'open_ai_compatible'
-type BackendReadiness = 'ready' | 'probe_required' | 'setup_required' | 'blocked' | 'unavailable'
-
-interface BackendAssessment {
-  backend: InferenceBackendId
-  readiness: BackendReadiness
-  reason_code: string
-  summary: string
-  accelerators: string[]
-}
-
-interface InferenceBackendPlan {
-  schema: string
-  recommended_backend: InferenceBackendId | null
-  next_probe: InferenceBackendId | null
-  fallback_order: InferenceBackendId[]
-  selection_summary: string
-  backends: BackendAssessment[]
-}
-
-interface ProjectPathStatus {
-  key: string
-  label: string
-  relative_path: string
-  absolute_path: string
-  exists: boolean
-  item_count: number
-  required: boolean
-}
-
-interface ProjectConfigIssue {
-  severity: string
-  code: string
-  path: string | null
-  message: string
-}
-
-interface ProjectConfigState {
-  project_path: string
-  settings_path: string
-  settings_exists: boolean
-  valid: boolean
-  error_count: number
-  warning_count: number
-  config: Record<string, any>
-  paths: ProjectPathStatus[]
-  issues: ProjectConfigIssue[]
-}
-
-interface CloudSyncStatus {
-  connected: boolean
-  status: string
-  last_sync: string | null
-  file_count: number
-  pending_uploads: number
-  pending_downloads: number
-  conflict_count: number
-  provider: string
-  endpoint_configured: boolean
-  token_configured: boolean
-}
 
 const projectPath = ref('./data')
 const projectState = ref<ProjectConfigState | null>(null)
 const engineStatus = ref<EngineStatus | null>(null)
 const backendPlan = ref<InferenceBackendPlan | null>(null)
-const settingsSectionIds = new Set<SettingsSection>(['project', 'ai', 'voice', 'sync', 'diagnostics'])
-const storedSection = localStorage.getItem('monogatari-settings-section') as SettingsSection | null
-const activeSection = ref<SettingsSection>(storedSection && settingsSectionIds.has(storedSection) ? storedSection : 'project')
+const activeSection = ref<SettingsSection>(normalizeSettingsSection(localStorage.getItem('monogatari-settings-section')))
 const pathsExpanded = ref(false)
 const refreshing = ref(false)
 const savingProject = ref(false)
@@ -708,7 +649,7 @@ let statusTimer: number | undefined
 
 const projectTitle = ref('Monogatari Engine')
 const targetFps = ref(60)
-const provider = ref<'api' | 'onnx' | 'webgpu'>(desktopRuntimeAvailable ? 'onnx' : 'webgpu')
+const provider = ref<SettingsAiProvider>(desktopRuntimeAvailable ? 'onnx' : 'webgpu')
 const apiBaseUrl = ref('https://api.openai.com/v1')
 const apiKey = ref('')
 const apiModel = ref('gpt-4o-mini')
@@ -721,20 +662,6 @@ const webGpuDtype = ref<WebGpuDType>(packagedWebGpuConfig.dtype)
 const webGpuMaxNewTokens = ref(packagedWebGpuConfig.maxNewTokens)
 const webGpuSupport = detectWebGpuSupport()
 const webGpuReady = ref(false)
-const runtimeSecretSettingKeys = new Set([
-  'api_key',
-  'apiKey',
-  'api-token',
-  'api_token',
-  'authorization',
-  'x-api-key',
-  'api-key',
-  'token',
-  'access_token',
-  'accessToken',
-  'secret',
-  'password',
-].map((key) => key.toLowerCase()))
 
 const ttsConfig = ref<TtsSettings>({
   provider: 'system',
@@ -757,30 +684,6 @@ const syncStatus = ref<CloudSyncStatus | null>(null)
 watch([syncProvider, syncEndpoint, syncToken], () => {
   syncStatus.value = null
 })
-
-function browserSyncStatus(): CloudSyncStatus {
-  const endpointConfigured = Boolean(syncEndpoint.value.trim())
-  const tokenConfigured = Boolean(syncToken.value.trim())
-  const status = syncProvider.value === 'local'
-    ? 'local_clean'
-    : !endpointConfigured
-      ? 'endpoint_missing'
-      : !tokenConfigured
-        ? 'token_missing'
-        : 'remote_ready'
-  return {
-    connected: syncProvider.value === 'custom' && endpointConfigured && tokenConfigured,
-    status,
-    last_sync: null,
-    file_count: 0,
-    pending_uploads: 0,
-    pending_downloads: 0,
-    conflict_count: 0,
-    provider: syncProvider.value,
-    endpoint_configured: endpointConfigured,
-    token_configured: tokenConfigured,
-  }
-}
 
 function setStatus(message: string, ok = true) {
   if (statusTimer !== undefined) window.clearTimeout(statusTimer)
@@ -807,7 +710,11 @@ async function checkSyncStatus() {
   syncLoading.value = true
   try {
     await configureSyncProvider()
-    syncStatus.value = await invokeCommand<CloudSyncStatus>('get_sync_status', undefined, browserSyncStatus)
+    syncStatus.value = await invokeCommand<CloudSyncStatus>(
+      'get_sync_status',
+      undefined,
+      () => createBrowserSyncStatus(syncProvider.value, syncEndpoint.value, syncToken.value),
+    )
   } catch (error) {
     reportFailure(t('settings.action.sync-check', 'Sync status check'), error)
   } finally {
@@ -837,7 +744,7 @@ async function pullFromCloud() {
   syncLoading.value = true
   try {
     await configureSyncProvider()
-    const entries = await invokeCommand<any[]>('pull_saves_from_cloud')
+    const entries = await invokeCommand<CloudSaveEntry[]>('pull_saves_from_cloud')
     setStatus(t('settings.notice.manifest-entries', 'Sync manifest contains {count} entries', { count: entries.length }))
     await checkSyncStatus()
   } catch (error) {
@@ -894,80 +801,9 @@ const pathEdits = reactive<Record<string, string>>({
   quality_suites: 'quality_suites',
 })
 
-const previewState: ProjectConfigState = {
-  project_path: 'Browser preview',
-  settings_path: 'Browser preview/settings.json',
-  settings_exists: true,
-  valid: true,
-  error_count: 0,
-  warning_count: 1,
-  config: {
-    render: { title: 'Monogatari Engine' },
-    engine: { target_fps: 60 },
-    ai: {
-      provider: 'webgpu',
-      api: { base_url: 'https://api.openai.com/v1', api_key: '', model: 'gpt-4o-mini' },
-      onnx: { model_path: 'models/model.onnx', tokenizer_path: 'models/tokenizer.json', use_directml: true },
-      webgpu: {
-        model_id: 'onnx-community/Qwen3.5-0.8B-Text-ONNX',
-        dtype: 'q4',
-        max_new_tokens: 256,
-        temperature: 0.7,
-        top_p: 0.9,
-      },
-    },
-    paths: {
-      characters: 'characters',
-      dialogue: 'dialogue',
-      knowledge: 'knowledge',
-      scenes: 'scenes',
-      assets: 'assets',
-      events: 'events',
-      endings: 'endings',
-      saves: 'saves',
-      quality_suites: 'quality_suites',
-    },
-  },
-  paths: [
-    { key: 'characters', label: 'Characters', relative_path: 'characters', absolute_path: '', exists: true, item_count: 1, required: true },
-    { key: 'dialogue', label: 'Dialogue', relative_path: 'dialogue', absolute_path: '', exists: true, item_count: 1, required: true },
-    { key: 'knowledge', label: 'Knowledge', relative_path: 'knowledge', absolute_path: '', exists: true, item_count: 1, required: true },
-    { key: 'scenes', label: 'Scenes', relative_path: 'scenes', absolute_path: '', exists: true, item_count: 2, required: false },
-    { key: 'assets', label: 'Assets', relative_path: 'assets', absolute_path: '', exists: true, item_count: 1, required: true },
-    { key: 'events', label: 'Story Events', relative_path: 'events', absolute_path: '', exists: true, item_count: 1, required: false },
-    { key: 'endings', label: 'Story Endings', relative_path: 'endings', absolute_path: '', exists: true, item_count: 1, required: false },
-    { key: 'saves', label: 'Saves', relative_path: 'saves', absolute_path: '', exists: false, item_count: 0, required: false },
-    { key: 'quality_suites', label: 'Quality Suites', relative_path: 'quality_suites', absolute_path: '', exists: true, item_count: 1, required: false },
-  ],
-  issues: [],
-}
+const previewState = createPreviewProjectState(packagedWebGpuConfig)
 
 const browserProjectState = ref<ProjectConfigState>(previewState)
-
-function browserStateForConfig(config: Record<string, any>): ProjectConfigState {
-  const issues: ProjectConfigIssue[] = []
-  const configuredProvider = getConfigValue(config, ['ai', 'provider']) || 'api'
-  if (configuredProvider === 'api') {
-    if (!String(getConfigValue(config, ['ai', 'api', 'base_url']) || '').trim()) {
-      issues.push({ severity: 'warning', code: 'api_base_url_missing', path: 'ai.api.base_url', message: 'API base URL is empty.' })
-    }
-    issues.push({ severity: 'warning', code: 'api_key_missing', path: 'ai.api.api_key', message: 'API key is not configured.' })
-  } else if (configuredProvider === 'onnx' && !String(getConfigValue(config, ['ai', 'onnx', 'model_path']) || '').trim()) {
-    issues.push({ severity: 'warning', code: 'onnx_model_missing', path: 'ai.onnx.model_path', message: 'ONNX model path is empty.' })
-  } else if (configuredProvider === 'webgpu' && !String(getConfigValue(config, ['ai', 'webgpu', 'model_id']) || '').trim()) {
-    issues.push({ severity: 'warning', code: 'webgpu_model_missing', path: 'ai.webgpu.model_id', message: 'WebGPU model ID is empty.' })
-  }
-  return {
-    ...previewState,
-    config,
-    warning_count: issues.length,
-    issues,
-    paths: previewState.paths.map((path) => ({
-      ...path,
-      relative_path: getConfigValue(config, ['paths', path.key]) || path.relative_path,
-    })),
-  }
-}
 
 const providerLabel = computed(() => {
   if (provider.value === 'webgpu') return t('settings.webgpu-provider', 'WebGPU browser runtime')
@@ -1170,21 +1006,21 @@ async function loadProjectConfig() {
 
 function applyProjectState(state: ProjectConfigState) {
   const config = state.config
-  projectTitle.value = getConfigValue(config, ['render', 'title'])
+  projectTitle.value = String(getConfigValue(config, ['render', 'title'])
     || getConfigValue(config, ['engine', 'title'])
-    || projectTitle.value
+    || projectTitle.value)
   targetFps.value = Number(getConfigValue(config, ['engine', 'target_fps']) || getConfigValue(config, ['engine', 'targetFps']) || targetFps.value)
   const configuredProvider = getConfigValue(config, ['ai', 'provider'])
   if (configuredProvider === 'api' || configuredProvider === 'onnx' || configuredProvider === 'webgpu') {
     provider.value = configuredProvider
   }
-  apiBaseUrl.value = getConfigValue(config, ['ai', 'api', 'base_url']) || getConfigValue(config, ['ai', 'api', 'baseUrl']) || apiBaseUrl.value
-  apiModel.value = getConfigValue(config, ['ai', 'api', 'model']) || apiModel.value
-  modelPath.value = getConfigValue(config, ['ai', 'onnx', 'model_path']) || getConfigValue(config, ['ai', 'onnx', 'modelPath']) || modelPath.value
-  tokenizerPath.value = getConfigValue(config, ['ai', 'onnx', 'tokenizer_path']) || getConfigValue(config, ['ai', 'onnx', 'tokenizerPath']) || tokenizerPath.value
+  apiBaseUrl.value = String(getConfigValue(config, ['ai', 'api', 'base_url']) || getConfigValue(config, ['ai', 'api', 'baseUrl']) || apiBaseUrl.value)
+  apiModel.value = String(getConfigValue(config, ['ai', 'api', 'model']) || apiModel.value)
+  modelPath.value = String(getConfigValue(config, ['ai', 'onnx', 'model_path']) || getConfigValue(config, ['ai', 'onnx', 'modelPath']) || modelPath.value)
+  tokenizerPath.value = String(getConfigValue(config, ['ai', 'onnx', 'tokenizer_path']) || getConfigValue(config, ['ai', 'onnx', 'tokenizerPath']) || tokenizerPath.value)
   useDirectML.value = true
-  webGpuModelId.value = getConfigValue(config, ['ai', 'webgpu', 'model_id']) || getConfigValue(config, ['ai', 'webgpu', 'modelId']) || webGpuModelId.value
-  webGpuDtype.value = getConfigValue(config, ['ai', 'webgpu', 'dtype']) || webGpuDtype.value
+  webGpuModelId.value = String(getConfigValue(config, ['ai', 'webgpu', 'model_id']) || getConfigValue(config, ['ai', 'webgpu', 'modelId']) || webGpuModelId.value)
+  webGpuDtype.value = String(getConfigValue(config, ['ai', 'webgpu', 'dtype']) || webGpuDtype.value) as WebGpuDType
   webGpuMaxNewTokens.value = Number(getConfigValue(config, ['ai', 'webgpu', 'max_new_tokens']) || getConfigValue(config, ['ai', 'webgpu', 'maxNewTokens']) || webGpuMaxNewTokens.value)
   configureWebGpuRuntime({
     modelId: webGpuModelId.value,
@@ -1205,7 +1041,7 @@ async function saveProject() {
       'save_project_config',
       { projectPath: projectPath.value, config },
       () => {
-        browserProjectState.value = browserStateForConfig(config)
+        browserProjectState.value = createBrowserProjectState(config, previewState)
         return browserProjectState.value
       }
     )
@@ -1310,46 +1146,14 @@ async function importProjectPackageFile() {
 async function exportProjectManifest() {
   exportingProject.value = true
   try {
-    const manifest = await invokeCommand<Record<string, any>>(
+    const manifest = await invokeCommand<Record<string, unknown>>(
       'export_project',
       { projectPath: projectPath.value },
-      () => ({
-        format: 'monogatari-project',
-        schema: 'monogatari-project-export@1',
-        exported_at: new Date().toISOString(),
-        export_metadata: {
-          engine_version: '0.9.5',
-          git_commit: 'preview',
-          git_short_commit: 'preview',
-        },
-        project_path: projectState.value?.project_path || projectPath.value,
-        settings: sanitizeManifestSettings(buildConfigForSave(projectState.value?.config || previewState.config)),
-        content: {},
-        content_summary: {
-          schema: 'monogatari-project-content-summary/v1',
-          file_count: 0,
-          json_file_count: 0,
-          asset_file_count: 0,
-          category_counts: {},
-          category_bytes: {},
-          category_fingerprint_algorithm: 'sha256:path-size-file-sha256-v1',
-          category_fingerprints: {},
-          exported_categories: ['characters', 'dialogue', 'knowledge', 'scenes', 'assets', 'events', 'endings', 'locales', 'quality_suites', 'workflows'],
-        },
-        package: {
-          file_count: 0,
-          total_bytes: 0,
-          fingerprint_algorithm: 'sha256:path-size-file-sha256-v1',
-          content_sha256: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-          directories: ['assets', 'characters', 'dialogue', 'endings', 'events', 'knowledge', 'locales', 'quality_suites', 'scenes', 'workflows'],
-          files: [],
-        },
-        archive: {
-          format: 'zip',
-          manifest_path: 'monogatari-project.json',
-          extension: '.monogatari',
-        },
-      })
+      () => createBrowserProjectManifest({
+        exportedAt: new Date().toISOString(),
+        projectPath: projectState.value?.project_path || projectPath.value,
+        settings: buildConfigForSave(projectState.value?.config || previewState.config),
+      }),
     )
     downloadJson(`${safeFileName(projectTitle.value || 'monogatari-project')}-manifest.json`, manifest)
     setStatus(t('settings.notice.manifest-exported', 'Project manifest exported'))
@@ -1362,14 +1166,7 @@ async function exportProjectManifest() {
 
 async function refreshStatus() {
   try {
-    engineStatus.value = await invokeCommand<EngineStatus>('get_engine_status', undefined, {
-      initialized: false,
-      character_count: 0,
-      dialogue_count: 0,
-      knowledge_count: 0,
-      ai_engines: [],
-      active_ai_engine: null,
-    })
+    engineStatus.value = await invokeCommand<EngineStatus>('get_engine_status', undefined, createEmptyEngineStatus())
   } catch {}
 }
 
@@ -1414,76 +1211,20 @@ function backendReadinessLabel(readiness: BackendReadiness): string {
   return t('settings.backend-unavailable', 'Unavailable')
 }
 
-function buildConfigForSave(source: Record<string, any>) {
-  const config = JSON.parse(JSON.stringify(source || {}))
-  setConfigValue(config, ['render', 'title'], projectTitle.value)
-  setConfigValue(config, ['engine', 'target_fps'], Number(targetFps.value) || 60)
-  setConfigValue(config, ['ai', 'provider'], provider.value)
-  setConfigValue(config, ['ai', 'api', 'base_url'], apiBaseUrl.value)
-  setConfigValue(config, ['ai', 'api', 'api_key'], '')
-  setConfigValue(config, ['ai', 'api', 'model'], apiModel.value)
-  setConfigValue(config, ['ai', 'onnx', 'model_path'], modelPath.value)
-  setConfigValue(config, ['ai', 'onnx', 'tokenizer_path'], tokenizerPath.value)
-  setConfigValue(config, ['ai', 'onnx', 'use_directml'], true)
-  setConfigValue(config, ['ai', 'webgpu', 'model_id'], webGpuModelId.value)
-  setConfigValue(config, ['ai', 'webgpu', 'dtype'], webGpuDtype.value)
-  setConfigValue(config, ['ai', 'webgpu', 'max_new_tokens'], Number(webGpuMaxNewTokens.value) || 256)
-  setConfigValue(config, ['ai', 'webgpu', 'temperature'], 0.7)
-  setConfigValue(config, ['ai', 'webgpu', 'top_p'], 0.9)
-  for (const [key, value] of Object.entries(pathEdits)) {
-    setConfigValue(config, ['paths', key], value)
-  }
-  return scrubRuntimeSecretSettings(config)
-}
-
-function getConfigValue(config: Record<string, any>, path: string[]) {
-  return path.reduce<any>((current, key) => current?.[key], config)
-}
-
-function setConfigValue(config: Record<string, any>, path: string[], value: any) {
-  let current = config
-  for (const key of path.slice(0, -1)) {
-    if (!current[key] || typeof current[key] !== 'object') current[key] = {}
-    current = current[key]
-  }
-  current[path[path.length - 1]] = value
-}
-
-function scrubRuntimeSecretSettings(value: any): any {
-  if (Array.isArray(value)) return value.map(scrubRuntimeSecretSettings)
-  if (typeof value === 'string') return scrubRuntimeSecretString(value)
-  if (!value || typeof value !== 'object') return value
-  return Object.fromEntries(Object.entries(value).map(([key, entry]) => {
-    if (isRuntimeSecretSettingKey(key)) return [key, '']
-    return [key, scrubRuntimeSecretSettings(entry)]
-  }))
-}
-
-function isRuntimeSecretSettingKey(key: string) {
-  return runtimeSecretSettingKeys.has(key.toLowerCase())
-}
-
-function scrubRuntimeSecretString(value: string) {
-  return scrubSecretAssignments(scrubTokenLikeValues(value))
-}
-
-function scrubTokenLikeValues(value: string) {
-  return value.replace(/github_pat_[A-Za-z0-9_]{20,}|ghp_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9_-]{20,}/g, '<redacted>')
-}
-
-function scrubSecretAssignments(value: string) {
-  return Array.from(runtimeSecretSettingKeys).reduce((current, key) => {
-    const pattern = new RegExp(`(^|[^A-Za-z0-9_-])(${escapeRegExp(key)})(\\s*[:=]\\s*)(?:"([^"]*)"|'([^']*)'|([^&,}\\];\\r\\n]+))`, 'gi')
-    return current.replace(pattern, (_match, prefix, matchedKey, separator, doubleQuoted, singleQuoted) => {
-      if (doubleQuoted !== undefined) return `${prefix}${matchedKey}${separator}"<redacted>"`
-      if (singleQuoted !== undefined) return `${prefix}${matchedKey}${separator}'<redacted>'`
-      return `${prefix}${matchedKey}${separator}<redacted>`
-    })
-  }, value)
-}
-
-function escapeRegExp(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+function buildConfigForSave(source: SettingsDocument): SettingsDocument {
+  return buildSettingsConfig(source, {
+    projectTitle: projectTitle.value,
+    targetFps: Number(targetFps.value),
+    provider: provider.value,
+    apiBaseUrl: apiBaseUrl.value,
+    apiModel: apiModel.value,
+    modelPath: modelPath.value,
+    tokenizerPath: tokenizerPath.value,
+    webGpuModelId: webGpuModelId.value,
+    webGpuDtype: webGpuDtype.value,
+    webGpuMaxNewTokens: Number(webGpuMaxNewTokens.value),
+    paths: pathEdits,
+  })
 }
 
 function downloadJson(filename: string, value: unknown) {
@@ -1494,29 +1235,6 @@ function downloadJson(filename: string, value: unknown) {
   link.download = filename
   link.click()
   URL.revokeObjectURL(url)
-}
-
-function safeFileName(value: string) {
-  return value.trim().replace(/[^a-z0-9._-]+/gi, '-').replace(/^-+|-+$/g, '') || 'monogatari-project'
-}
-
-function formatBytes(value: number) {
-  if (!Number.isFinite(value) || value <= 0) return '0 B'
-  const units = ['B', 'KiB', 'MiB', 'GiB']
-  const unit = Math.min(Math.floor(Math.log(value) / Math.log(1024)), units.length - 1)
-  const amount = value / (1024 ** unit)
-  return `${amount >= 10 || unit === 0 ? amount.toFixed(0) : amount.toFixed(1)} ${units[unit]}`
-}
-
-function sanitizeManifestSettings(value: any): any {
-  if (Array.isArray(value)) return value.map(sanitizeManifestSettings)
-  if (!value || typeof value !== 'object') return value
-  return Object.fromEntries(Object.entries(value).map(([key, entry]) => {
-    if (isRuntimeSecretSettingKey(key)) {
-      return [key, '<redacted>']
-    }
-    return [key, sanitizeManifestSettings(entry)]
-  }))
 }
 
 onMounted(async () => {
