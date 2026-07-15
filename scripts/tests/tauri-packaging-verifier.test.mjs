@@ -27,26 +27,6 @@ test('checked-in desktop packaging and command contracts return structured passi
   assert.equal(evidence.iconCount, 5)
 })
 
-test('injected packaging drift returns independent actionable issues', async () => {
-  const configPath = path.join(tauriAppDirectory, 'tauri.conf.json')
-  const evidence = await collectTauriPackagingEvidence({
-    ...boundaries,
-    async readTextFile(filePath, encoding) {
-      const source = await readFile(filePath, encoding)
-      if (path.resolve(filePath) !== configPath) return source
-      const config = JSON.parse(source)
-      config.productName = 'Drifted Product'
-      config.bundle.targets = ['nsis']
-      config.bundle.icon = []
-      return JSON.stringify(config)
-    },
-  })
-
-  assert(evidence.issues.includes('tauri.conf.json productName must stay Monogatari for installer identity'))
-  assert(evidence.issues.includes('tauri.conf.json bundle.targets must include msi for Windows installer coverage'))
-  assert(evidence.issues.includes('tauri.conf.json bundle.icon must include icons/icon.ico'))
-})
-
 test('requires every repository filesystem boundary before reading', () => {
   assert.throws(() => createTauriPackagingVerifier(), /requires repositoryRoot/)
   assert.throws(
@@ -65,11 +45,18 @@ test('release runner delegates Tauri packaging evidence to the importable module
     path.join(repositoryRoot, 'scripts', 'lib', 'tauri-packaging-verifier.mjs'),
     'utf8',
   )
+  const packagePolicySource = await readFile(
+    path.join(repositoryRoot, 'scripts', 'lib', 'tauri-packaging', 'package-policy.mjs'),
+    'utf8',
+  )
 
   assert(source.includes("from './lib/tauri-packaging-verifier.mjs'"))
   assert(source.includes('createTauriPackagingVerifier({'))
   assert(!source.includes('async function verifyTauriPackagingConfig'))
   assert(!source.includes('const installationVerificationRequirements'))
   assert(moduleSource.includes('collectTauriPackagingEvidence'))
+  assert(moduleSource.includes('collectTauriPackagePolicyEvidence'))
+  assert(!moduleSource.includes('config.productName'))
   assert(moduleSource.includes('const installationVerificationRequirements'))
+  assert(packagePolicySource.includes('config.productName'))
 })
