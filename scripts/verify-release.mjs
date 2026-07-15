@@ -1,17 +1,17 @@
 import { spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { createServer } from 'node:net'
 import { statSync } from 'node:fs'
 import { readdir, readFile, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { createSourceInvariantVerifier } from './lib/source-invariant-verifier.mjs'
-import {
-  expectedFrontendRoutes,
-  frontendRouteCoverageEvidence,
-} from './lib/frontend-route-verifier.mjs'
+import { frontendRouteCoverageEvidence } from './lib/frontend-route-verifier.mjs'
 import { releaseChannelPolicyIssues } from './lib/release-channel-policy-verifier.mjs'
+import {
+  createWebPreviewVerifier,
+  normalizeWebBasePath,
+} from './lib/web-preview-verifier.mjs'
 import {
   extractHtmlCsp,
   requiredTauriCspFragments,
@@ -280,6 +280,8 @@ const {
   extractHtmlCsp,
   verifyCspPolicy,
 })
+
+const verifyWebPreview = createWebPreviewVerifier({ frontendDirectory: frontendDir })
 
 async function main() {
   const started = Date.now()
@@ -3390,13 +3392,6 @@ async function verifyWebProjectAssets(distDir, projectAssetManifest, issues) {
   }
 }
 
-function normalizeWebBasePath(value) {
-  if (!value || value === './') return '/'
-  if (value.startsWith('http://') || value.startsWith('https://')) return value
-  const withLeadingSlash = value.startsWith('/') ? value : `/${value}`
-  return withLeadingSlash.endsWith('/') ? withLeadingSlash : `${withLeadingSlash}/`
-}
-
 function verifyIndexAssetBase(indexHtml, basePath, issues) {
   const urls = []
   const attrPattern = /\s(?:href|src)="([^"]+)"/g
@@ -3430,143 +3425,6 @@ function verifyIndexAssetBase(indexHtml, basePath, issues) {
       issues.push(`index.html subpath build has root-relative URL outside ${basePath}: ${url}`)
     }
   }
-}
-
-async function verifyWebPreview({ basePath = '/', env = {} } = {}) {
-  const normalizedBase = normalizeWebBasePath(basePath)
-  const port = await findOpenPort()
-  const viteBin = path.join(frontendDir, 'node_modules', 'vite', 'bin', 'vite.js')
-  const child = spawn(process.execPath, [
-    viteBin,
-    'preview',
-    '--host',
-    '127.0.0.1',
-    '--port',
-    String(port),
-    '--strictPort',
-  ], {
-    cwd: frontendDir,
-    env: { ...process.env, ...env },
-    stdio: ['ignore', 'pipe', 'pipe'],
-  })
-
-  let output = ''
-  child.stdout.on('data', (chunk) => { output += chunk.toString() })
-  child.stderr.on('data', (chunk) => { output += chunk.toString() })
-
-  try {
-    await waitForPreview(port, normalizedBase, output)
-    const issues = []
-
-    for (const route of expectedFrontendRoutes) {
-      const routeUrl = previewUrl(port, normalizedBase, route.path)
-      let response
-      let body
-      try {
-        response = await fetch(routeUrl)
-        body = await response.text()
-      } catch (error) {
-        issues.push(`${route.path}: preview request failed: ${error.message}`)
-        continue
-      }
-
-      const contentType = response.headers.get('content-type') ?? ''
-      if (response.status !== 200) {
-        issues.push(`${route.path}: expected HTTP 200 from preview, got ${response.status}`)
-      }
-      if (!contentType.includes('text/html')) {
-        issues.push(`${route.path}: expected text/html from preview, got ${contentType || '<missing content-type>'}`)
-      }
-      if (!body.includes('<div id="app">')) {
-        issues.push(`${route.path}: preview response did not include the Vue app mount point`)
-      }
-    }
-
-    try {
-      const eventResponse = await fetch(previewUrl(port, normalizedBase, '/events/story_events.json'))
-      const eventContentType = eventResponse.headers.get('content-type') ?? ''
-      const eventCatalog = await eventResponse.json()
-      if (eventResponse.status !== 200 || !eventContentType.includes('application/json')) {
-        issues.push(`story events: expected HTTP 200 application/json, got ${eventResponse.status} ${eventContentType}`)
-      }
-      if (eventCatalog?.schema !== 'monogatari-story-event-catalog/v1') {
-        issues.push('story events: preview catalog schema is invalid')
-      }
-    } catch (error) {
-      issues.push(`story events: preview request failed: ${error.message}`)
-    }
-
-    for (const content of [
-      ['/scenes/sakura_park.json', 'id', 'sakura_park'],
-      ['/dialogue/sakura_park_walk.json', 'id', 'sakura_park_walk'],
-      ['/endings/best_friend_ending.json', 'schema', 'monogatari-story-ending/v1'],
-    ]) {
-      try {
-        const response = await fetch(previewUrl(port, normalizedBase, content[0]))
-        const payload = await response.json()
-        if (response.status !== 200 || payload?.[content[1]] !== content[2]) {
-          issues.push(`${content[0]}: project content preview response is invalid`)
-        }
-      } catch (error) {
-        issues.push(`${content[0]}: preview request failed: ${error.message}`)
-      }
-    }
-
-    if (issues.length > 0) {
-      throw new Error(`Web/PWA preview smoke failed (${normalizedBase} base):\n${issues.join('\n')}\n${output}`)
-    }
-
-    console.log(`[release] Web/PWA preview smoke OK (${normalizedBase} base, ${expectedFrontendRoutes.length} route(s))`)
-  } finally {
-    await stopPreview(child)
-  }
-}
-
-async function findOpenPort(start = 4187) {
-  for (let port = start; port < start + 100; port += 1) {
-    if (await canListen(port)) return port
-  }
-  throw new Error(`Could not find an open preview port starting at ${start}`)
-}
-
-async function canListen(port) {
-  return await new Promise((resolve) => {
-    const server = createServer()
-    server.once('error', () => resolve(false))
-    server.once('listening', () => {
-      server.close(() => resolve(true))
-    })
-    server.listen(port, '127.0.0.1')
-  })
-}
-
-async function waitForPreview(port, basePath, output) {
-  const routeUrl = previewUrl(port, basePath, '/')
-  for (let attempt = 0; attempt < 80; attempt += 1) {
-    try {
-      const response = await fetch(routeUrl)
-      if (response.ok) return
-    } catch {}
-    await delay(250)
-  }
-  throw new Error(`Web/PWA preview did not become ready at ${routeUrl}\n${output}`)
-}
-
-function previewUrl(port, basePath, routePath) {
-  const pathBase = basePath === '/' ? '' : basePath.replace(/\/$/, '')
-  const normalizedRoute = routePath === '/' ? '/' : routePath
-  return `http://127.0.0.1:${port}${pathBase}${normalizedRoute}`
-}
-
-async function stopPreview(child) {
-  if (child.exitCode !== null) return
-
-  child.kill('SIGTERM')
-  for (let attempt = 0; attempt < 20; attempt += 1) {
-    if (child.exitCode !== null) return
-    await delay(100)
-  }
-  child.kill('SIGKILL')
 }
 
 async function readLocaleJson(dir, localeFile, issues) {
