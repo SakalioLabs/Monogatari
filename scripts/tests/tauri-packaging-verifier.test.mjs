@@ -113,6 +113,16 @@ test('release runner delegates Tauri packaging evidence to the importable module
     ),
     'utf8',
   )
+  const storyContentSource = await readFile(
+    path.join(
+      repositoryRoot,
+      'scripts',
+      'lib',
+      'tauri-packaging',
+      'story-content-policy.mjs',
+    ),
+    'utf8',
+  )
 
   assert(source.includes("from './lib/tauri-packaging-verifier.mjs'"))
   assert(source.includes('createTauriPackagingVerifier({'))
@@ -127,6 +137,8 @@ test('release runner delegates Tauri packaging evidence to the importable module
   assert(moduleSource.includes('collectTauriQualityWorkflowEvidence'))
   assert(moduleSource.includes('collectTauriProjectPackageEvidence'))
   assert(moduleSource.includes('collectTauriProjectRuntimeEvidence'))
+  assert(moduleSource.includes('collectTauriStoryContentEvidence'))
+  assert(!moduleSource.includes('readFileFromDisk'))
   assert(!moduleSource.includes('config.productName'))
   assert(!moduleSource.includes('const installationVerificationRequirements'))
   assert(!moduleSource.includes('commands::project_archive::commands::export_project_archive'))
@@ -140,6 +152,8 @@ test('release runner delegates Tauri packaging evidence to the importable module
   assert(!moduleSource.includes('const rustToolchainRequirements'))
   assert(!moduleSource.includes('const runtimeDataRootRequirements'))
   assert(!moduleSource.includes('Tauri project-scoped command'))
+  assert(!moduleSource.includes('const storyEventCatalogRequirements'))
+  assert(!moduleSource.includes('monogatari-story-event-catalog/v1'))
   assert(packagePolicySource.includes('config.productName'))
   assert(buildToolchainSource.includes('const buildMetadataRequirements'))
   assert(buildToolchainSource.includes('const rustToolchainRequirements'))
@@ -155,4 +169,8 @@ test('release runner delegates Tauri packaging evidence to the importable module
   assert(projectPackageSource.includes('const packageProtocolRequirements'))
   assert(projectRuntimeSource.includes('const runtimeRootRequirements'))
   assert(projectRuntimeSource.includes('const runtimeCompatibilityRequirements'))
+  assert(storyContentSource.includes('const storyCatalogRequirements'))
+  assert(storyContentSource.includes('const eventRuntimeRequirements'))
+  assert(storyContentSource.includes('const dialogueAuthoringRequirements'))
+  assert(storyContentSource.includes('const crossRuntimeRequirements'))
 })
