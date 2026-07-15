@@ -3,6 +3,7 @@ import { createServer } from 'node:net'
 import path from 'node:path'
 
 import { expectedFrontendRoutes } from './frontend-route-verifier.mjs'
+import { normalizeWebBasePath } from './web-base-path.mjs'
 
 const previewContentChecks = Object.freeze([
   ['/scenes/sakura_park.json', 'id', 'sakura_park'],
@@ -10,13 +11,6 @@ const previewContentChecks = Object.freeze([
   ['/endings/best_friend_ending.json', 'schema', 'monogatari-story-ending/v1'],
 ])
 const maxPreviewOutputCharacters = 64 * 1024
-
-export function normalizeWebBasePath(value) {
-  if (!value || value === './') return '/'
-  if (value.startsWith('http://') || value.startsWith('https://')) return value
-  const withLeadingSlash = value.startsWith('/') ? value : `/${value}`
-  return withLeadingSlash.endsWith('/') ? withLeadingSlash : `${withLeadingSlash}/`
-}
 
 export function previewUrl(port, basePath, routePath) {
   const pathBase = basePath === '/' ? '' : basePath.replace(/\/$/, '')

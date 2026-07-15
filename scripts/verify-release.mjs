@@ -9,18 +9,18 @@ import { createSourceInvariantVerifier } from './lib/source-invariant-verifier.m
 import { frontendRouteCoverageEvidence } from './lib/frontend-route-verifier.mjs'
 import { releaseChannelPolicyIssues } from './lib/release-channel-policy-verifier.mjs'
 import {
+  createWebDistributionVerifier,
+  releaseSubpathBase,
+  requiredLocaleFiles as requiredLocales,
+} from './lib/web-distribution-verifier.mjs'
+import {
   createWebPreviewVerifier,
-  normalizeWebBasePath,
 } from './lib/web-preview-verifier.mjs'
 import {
   extractHtmlCsp,
   requiredTauriCspFragments,
   requiredWebCspFragments,
-  verifyAzureStaticWebAppConfig,
   verifyCspPolicy,
-  verifyStaticHostingHeaders,
-  verifyStaticHostingRedirects,
-  verifyVercelConfig,
 } from './lib/web-hosting-verifier.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -92,27 +92,6 @@ const requiredEventRules = [
 const storyEventControlPattern = /[\u0000-\u001f\u007f]/
 const dialogueControlPattern = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/
 
-const requiredWebDistFiles = [
-  'index.html',
-  '404.html',
-  '_headers',
-  '_redirects',
-  'staticwebapp.config.json',
-  'vercel.json',
-  '.nojekyll',
-  'manifest.webmanifest',
-  'sw.js',
-  'offline.html',
-  'offline-i18n.js',
-  'project-assets.json',
-  'inference-runtime.json',
-  'events/story_events.json',
-  'favicon.svg',
-  'icons/app-icon.svg',
-  'icons/maskable-icon.svg',
-]
-const requiredPwaIcons = ['icons/app-icon.svg', 'icons/maskable-icon.svg']
-
 const rendererDataRoots = [
   { label: 'data', dir: path.join(root, 'data') },
   { label: 'rust-engine/data', dir: path.join(rustDir, 'data') },
@@ -148,9 +127,6 @@ const rendererAssetFields = [
 ]
 
 const sceneBackgroundExtensions = new Set(['.png', '.jpg', '.jpeg', '.webp', '.svg'])
-const releaseSubpathBase = '/Monogatari/'
-const requiredLocales = ['en.json', 'zh-CN.json', 'zh.json', 'ja-JP.json', 'ja.json', 'ko-KR.json', 'ko.json']
-
 const releaseCriticalRustFiles = [
   'crates/core/src/state_key.rs',
   'crates/ai/src/api_engine.rs',
@@ -281,6 +257,10 @@ const {
   verifyCspPolicy,
 })
 
+const verifyWebDist = createWebDistributionVerifier({
+  repositoryRoot: root,
+  frontendDirectory: frontendDir,
+})
 const verifyWebPreview = createWebPreviewVerifier({ frontendDirectory: frontendDir })
 
 async function main() {
@@ -3105,328 +3085,6 @@ async function verifyReleaseChannelPolicy() {
   console.log('[release] Release channel policy OK')
 }
 
-async function verifyWebDist({ basePath = '/' } = {}) {
-  const distDir = path.join(frontendDir, 'dist')
-  const issues = []
-  const normalizedBase = normalizeWebBasePath(basePath)
-
-  for (const file of requiredWebDistFiles) {
-    if (!(await fileExists(path.join(distDir, file)))) {
-      issues.push(`Missing Web/PWA dist asset: ${file}`)
-    }
-  }
-
-  const indexHtml = await readMaybe(path.join(distDir, 'index.html'))
-  const fallbackHtml = await readMaybe(path.join(distDir, '404.html'))
-  const staticHostingHeaders = await readMaybe(path.join(distDir, '_headers'))
-  const staticHostingRedirects = await readMaybe(path.join(distDir, '_redirects'))
-  const azureStaticWebAppConfig = await readJsonMaybe(path.join(distDir, 'staticwebapp.config.json'))
-  const vercelConfig = await readJsonMaybe(path.join(distDir, 'vercel.json'))
-  const manifest = await readJsonMaybe(path.join(distDir, 'manifest.webmanifest'))
-  const projectAssetManifest = await readJsonMaybe(path.join(distDir, 'project-assets.json'))
-  const inferenceRuntime = await readJsonMaybe(path.join(distDir, 'inference-runtime.json'))
-  const serviceWorker = await readMaybe(path.join(distDir, 'sw.js'))
-  const bundledAssets = await readdir(path.join(distDir, 'assets')).catch(() => [])
-
-  if (indexHtml && fallbackHtml && indexHtml !== fallbackHtml) {
-    issues.push('404.html must match index.html for static-hosting SPA fallback')
-  }
-
-  if (indexHtml && !indexHtml.includes('manifest.webmanifest')) {
-    issues.push('index.html must reference manifest.webmanifest')
-  }
-  if (indexHtml && !indexHtml.includes('icons/app-icon.svg')) {
-    issues.push('index.html must reference the dedicated PWA app icon')
-  }
-  if (indexHtml) {
-    verifyIndexAssetBase(indexHtml, normalizedBase, issues)
-    const indexCsp = extractHtmlCsp(indexHtml)
-    if (!indexCsp) {
-      issues.push('index.html must include the Web/PWA Content Security Policy meta tag')
-    } else {
-      verifyCspPolicy(indexCsp, requiredWebCspFragments, 'index.html Web/PWA CSP', issues, {
-        forbiddenFragments: ["frame-ancestors 'none'"],
-      })
-    }
-  }
-  if (fallbackHtml) {
-    const fallbackCsp = extractHtmlCsp(fallbackHtml)
-    if (!fallbackCsp) {
-      issues.push('404.html must include the Web/PWA Content Security Policy meta tag')
-    } else {
-      verifyCspPolicy(fallbackCsp, requiredWebCspFragments, '404.html Web/PWA CSP', issues, {
-        forbiddenFragments: ["frame-ancestors 'none'"],
-      })
-    }
-  }
-  if (staticHostingHeaders) {
-    verifyStaticHostingHeaders(staticHostingHeaders, issues)
-  }
-  if (staticHostingRedirects) {
-    verifyStaticHostingRedirects(staticHostingRedirects, issues)
-  }
-  if (azureStaticWebAppConfig) {
-    verifyAzureStaticWebAppConfig(azureStaticWebAppConfig, issues)
-  }
-  if (vercelConfig) {
-    verifyVercelConfig(vercelConfig, issues)
-  }
-
-  if (manifest) {
-    if (!nonEmptyString(manifest.name)) issues.push('manifest.webmanifest name is required')
-    if (!nonEmptyString(manifest.short_name)) issues.push('manifest.webmanifest short_name is required')
-    if (manifest.display !== 'standalone') issues.push('manifest.webmanifest display must be standalone')
-    if (!Array.isArray(manifest.icons) || manifest.icons.length === 0) {
-      issues.push('manifest.webmanifest must include at least one icon')
-    }
-    if (manifest.start_url !== '.') issues.push('manifest.webmanifest start_url should stay relative')
-    if (manifest.scope !== '.') issues.push('manifest.webmanifest scope should stay relative')
-    for (const icon of manifest.icons ?? []) {
-      if (typeof icon?.src !== 'string' || icon.src.startsWith('/')) {
-        issues.push('manifest.webmanifest icon src values must stay relative for subpath deployments')
-      }
-    }
-    for (const iconPath of requiredPwaIcons) {
-      if (!manifest.icons?.some((icon) => icon?.src === iconPath)) {
-        issues.push(`manifest.webmanifest must include ${iconPath}`)
-      }
-    }
-    if (!manifest.icons?.some((icon) => String(icon?.purpose ?? '').includes('maskable'))) {
-      issues.push('manifest.webmanifest must include a maskable icon for install surfaces')
-    }
-    for (const shortcut of manifest.shortcuts ?? []) {
-      if (typeof shortcut?.url !== 'string' || shortcut.url.startsWith('/')) {
-        issues.push('manifest.webmanifest shortcut URLs must stay relative for subpath deployments')
-      }
-    }
-  }
-
-  const localesDir = path.join(distDir, 'locales')
-  for (const locale of requiredLocales) {
-    if (!(await fileExists(path.join(localesDir, locale)))) {
-      issues.push(`Missing Web/PWA locale fallback: ${locale}`)
-    }
-  }
-  await verifyWebProjectAssets(distDir, projectAssetManifest, issues)
-
-  if (!bundledAssets.some((file) => /^ort-wasm-simd-threaded\.asyncify-[A-Za-z0-9_-]+\.wasm$/.test(file))) {
-    issues.push('Missing bundled WebGPU ONNX runtime WASM asset')
-  }
-
-  if (!inferenceRuntime) {
-    issues.push('Missing Web/PWA inference runtime contract: inference-runtime.json')
-  } else {
-    if (inferenceRuntime.schema !== 'monogatari-inference-runtime/v1') {
-      issues.push('inference-runtime.json must use schema monogatari-inference-runtime/v1')
-    }
-    if (inferenceRuntime.target !== 'web' || inferenceRuntime.backend !== 'webgpu') {
-      issues.push('inference-runtime.json must bind Web/PWA packages to WebGPU')
-    }
-    if (!nonEmptyString(inferenceRuntime.model_id)) {
-      issues.push('inference-runtime.json model_id is required')
-    }
-    if (!['q4', 'q4f16', 'q8', 'fp16', 'fp32'].includes(inferenceRuntime.dtype)) {
-      issues.push('inference-runtime.json dtype is unsupported')
-    }
-    if (!Number.isInteger(inferenceRuntime.max_new_tokens) || inferenceRuntime.max_new_tokens < 1 || inferenceRuntime.max_new_tokens > 2048) {
-      issues.push('inference-runtime.json max_new_tokens must be an integer from 1 to 2048')
-    }
-  }
-
-  if (serviceWorker) {
-    const packageJson = JSON.parse(await readFile(path.join(frontendDir, 'package.json'), 'utf8'))
-    if (!serviceWorker.includes(`monogatari-web-v${packageJson.version}`)) {
-      issues.push('sw.js cache name must include the frontend package version')
-    }
-    if (serviceWorker.includes('__APP_VERSION__') || serviceWorker.includes('__BUILD_FINGERPRINT__')) {
-      issues.push('sw.js production cache identity placeholders must be replaced')
-    }
-    if (!new RegExp(`monogatari-web-v${packageJson.version.replaceAll('.', '\\.')}-[a-f0-9]{12}`).test(serviceWorker)) {
-      issues.push('sw.js cache name must include a 12-character production content fingerprint')
-    }
-    for (const locale of requiredLocales) {
-      if (!serviceWorker.includes(`/locales/${locale}`)) {
-        issues.push(`sw.js app shell must include /locales/${locale}`)
-      }
-    }
-    for (const iconPath of requiredPwaIcons) {
-      if (!serviceWorker.includes(`/${iconPath}`)) {
-        issues.push(`sw.js app shell must include /${iconPath}`)
-      }
-    }
-    if (!serviceWorker.includes('/project-assets.json')) {
-      issues.push('sw.js app shell must include /project-assets.json')
-    }
-    if (!serviceWorker.includes('/inference-runtime.json')) {
-      issues.push('sw.js app shell must include /inference-runtime.json')
-    }
-    if (!serviceWorker.includes('cacheProjectAssets()')) {
-      issues.push('sw.js install flow must cache project assets from the generated manifest')
-    }
-    for (const prefix of ['/scenes/', '/dialogue/', '/endings/']) {
-      if (!serviceWorker.includes(prefix)) issues.push(`sw.js must cache and route project content under ${prefix}`)
-    }
-  }
-
-  if (issues.length > 0) {
-    throw new Error(`Web/PWA dist verification failed:\n${issues.join('\n')}`)
-  }
-
-  console.log(`[release] Web/PWA dist assets OK (${normalizedBase} base)`)
-}
-
-async function verifyWebProjectAssets(distDir, projectAssetManifest, issues) {
-  const sourceAssetsDir = path.join(root, 'data', 'assets')
-  const sourceEventsDir = path.join(root, 'data', 'events')
-  if (!(await directoryExists(sourceAssetsDir))) {
-    issues.push('data/assets must exist for Web/PWA project asset packaging')
-    return
-  }
-
-  const sourceAssets = await walkFiles(sourceAssetsDir, [])
-  if (sourceAssets.length === 0) {
-    issues.push('data/assets must contain project assets for Web/PWA packaging')
-    return
-  }
-
-  if (!projectAssetManifest) {
-    issues.push('Missing Web/PWA project asset manifest: project-assets.json')
-    return
-  }
-  if (projectAssetManifest.schema !== 'monogatari-web-project-assets/v1') {
-    issues.push('project-assets.json must use schema monogatari-web-project-assets/v1')
-  }
-  if (!Array.isArray(projectAssetManifest.assets)) {
-    issues.push('project-assets.json assets must be an array')
-    return
-  }
-  if (!Array.isArray(projectAssetManifest.event_catalogs)) {
-    issues.push('project-assets.json event_catalogs must be an array')
-    return
-  }
-
-  const manifestAssets = new Set(projectAssetManifest.assets)
-  if (manifestAssets.size !== projectAssetManifest.assets.length) {
-    issues.push('project-assets.json assets must not contain duplicates')
-  }
-
-  for (const sourceAsset of sourceAssets) {
-    const relativeAssetPath = path.relative(sourceAssetsDir, sourceAsset)
-    const manifestAssetPath = `/assets/${relativeAssetPath.replaceAll(path.sep, '/')}`
-    const distAssetPath = path.join(distDir, 'assets', relativeAssetPath)
-    if (!(await fileExists(distAssetPath))) {
-      issues.push(`Missing Web/PWA project asset: assets/${relativeAssetPath.replaceAll(path.sep, '/')}`)
-    }
-    if (!manifestAssets.has(manifestAssetPath)) {
-      issues.push(`project-assets.json must include ${manifestAssetPath}`)
-    }
-  }
-
-  for (const assetPath of projectAssetManifest.assets) {
-    if (typeof assetPath !== 'string' || !assetPath.startsWith('/assets/')) {
-      issues.push(`project-assets.json asset paths must be root-relative /assets entries: ${assetPath}`)
-      continue
-    }
-    if (!(await fileExists(path.join(distDir, assetPath.slice(1))))) {
-      issues.push(`project-assets.json references missing dist asset: ${assetPath}`)
-    }
-  }
-
-  const sourceEvents = await walkFiles(sourceEventsDir, [])
-  const manifestEvents = new Set(projectAssetManifest.event_catalogs)
-  if (manifestEvents.size !== projectAssetManifest.event_catalogs.length) {
-    issues.push('project-assets.json event_catalogs must not contain duplicates')
-  }
-  for (const sourceEvent of sourceEvents) {
-    const relativeEventPath = path.relative(sourceEventsDir, sourceEvent)
-    const manifestEventPath = `/events/${relativeEventPath.replaceAll(path.sep, '/')}`
-    if (!(await fileExists(path.join(distDir, 'events', relativeEventPath)))) {
-      issues.push(`Missing Web/PWA story event catalog: events/${relativeEventPath.replaceAll(path.sep, '/')}`)
-    }
-    if (!manifestEvents.has(manifestEventPath)) {
-      issues.push(`project-assets.json must include ${manifestEventPath}`)
-    }
-  }
-  for (const eventPath of projectAssetManifest.event_catalogs) {
-    if (typeof eventPath !== 'string' || !eventPath.startsWith('/events/')) {
-      issues.push(`project-assets.json event catalog paths must be root-relative /events entries: ${eventPath}`)
-      continue
-    }
-    if (!(await fileExists(path.join(distDir, eventPath.slice(1))))) {
-      issues.push(`project-assets.json references missing story event catalog: ${eventPath}`)
-    }
-  }
-
-  for (const content of [
-    { directory: 'scenes', manifestField: 'scene_files', prefix: '/scenes/' },
-    { directory: 'dialogue', manifestField: 'dialogue_files', prefix: '/dialogue/' },
-    { directory: 'endings', manifestField: 'ending_files', prefix: '/endings/' },
-    { directory: 'characters', manifestField: 'character_files', prefix: '/characters/' },
-    { directory: 'knowledge', manifestField: 'knowledge_files', prefix: '/knowledge/' },
-  ]) {
-    const manifestPaths = projectAssetManifest[content.manifestField]
-    if (!Array.isArray(manifestPaths)) {
-      issues.push(`project-assets.json ${content.manifestField} must be an array`)
-      continue
-    }
-    const manifestSet = new Set(manifestPaths)
-    if (manifestSet.size !== manifestPaths.length) {
-      issues.push(`project-assets.json ${content.manifestField} must not contain duplicates`)
-    }
-    const sourceDir = path.join(root, 'data', content.directory)
-    for (const sourceFile of await walkFiles(sourceDir, [])) {
-      const relativePath = path.relative(sourceDir, sourceFile).replaceAll(path.sep, '/')
-      const manifestPath = `${content.prefix}${relativePath}`
-      if (!manifestSet.has(manifestPath)) issues.push(`project-assets.json must include ${manifestPath}`)
-      if (!(await fileExists(path.join(distDir, content.directory, relativePath)))) {
-        issues.push(`Missing Web/PWA project content: ${content.directory}/${relativePath}`)
-      }
-    }
-    for (const manifestPath of manifestPaths) {
-      if (typeof manifestPath !== 'string' || !manifestPath.startsWith(content.prefix)) {
-        issues.push(`project-assets.json ${content.manifestField} path is invalid: ${manifestPath}`)
-      } else if (!(await fileExists(path.join(distDir, manifestPath.slice(1))))) {
-        issues.push(`project-assets.json references missing project content: ${manifestPath}`)
-      }
-    }
-  }
-}
-
-function verifyIndexAssetBase(indexHtml, basePath, issues) {
-  const urls = []
-  const attrPattern = /\s(?:href|src)="([^"]+)"/g
-  let match
-  while ((match = attrPattern.exec(indexHtml)) !== null) {
-    urls.push(match[1])
-  }
-
-  if (basePath === '/') {
-    for (const url of urls) {
-      if (url.startsWith(releaseSubpathBase)) {
-        issues.push(`index.html root build must not retain subpath asset URL ${url}`)
-      }
-    }
-    return
-  }
-
-  const requiredSubpathAssets = [
-    `${basePath}manifest.webmanifest`,
-    `${basePath}favicon.svg`,
-    `${basePath}assets/`,
-  ]
-  for (const needle of requiredSubpathAssets) {
-    if (!indexHtml.includes(needle)) {
-      issues.push(`index.html subpath build must reference ${needle}`)
-    }
-  }
-
-  for (const url of urls) {
-    if (url.startsWith('/') && !url.startsWith(basePath)) {
-      issues.push(`index.html subpath build has root-relative URL outside ${basePath}: ${url}`)
-    }
-  }
-}
-
 async function readLocaleJson(dir, localeFile, issues) {
   const filePath = path.join(dir, localeFile)
   try {
@@ -3500,20 +3158,6 @@ async function directoryExists(filePath) {
   } catch {
     return false
   }
-}
-
-async function readMaybe(filePath) {
-  try {
-    return await readFile(filePath, 'utf8')
-  } catch {
-    return null
-  }
-}
-
-async function readJsonMaybe(filePath) {
-  const content = await readMaybe(filePath)
-  if (!content) return null
-  return JSON.parse(content)
 }
 
 function nonEmptyString(value) {

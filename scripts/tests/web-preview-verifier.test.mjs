@@ -9,9 +9,9 @@ import { fileURLToPath } from 'node:url'
 import {
   collectWebPreviewEvidence,
   createWebPreviewVerifier,
-  normalizeWebBasePath,
   previewUrl,
 } from '../lib/web-preview-verifier.mjs'
+import { normalizeWebBasePath } from '../lib/web-base-path.mjs'
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 
