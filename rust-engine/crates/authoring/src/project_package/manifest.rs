@@ -6,67 +6,65 @@ use serde::Deserialize;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
-use super::path_validation::{
-    add_directory_and_parents, portable_case_key, validate_portable_path,
-};
+use super::portable_path::{add_directory_and_parents, portable_case_key, validate_portable_path};
 use super::ARCHIVE_MANIFEST_PATH;
 
-pub(super) const ARCHIVE_FORMAT: &str = "monogatari-project";
-pub(super) const ARCHIVE_SCHEMA: &str = "monogatari-project-export@1";
-pub(super) const PACKAGE_FINGERPRINT_ALGORITHM: &str = "sha256:path-size-file-sha256-v1";
+pub const ARCHIVE_FORMAT: &str = "monogatari-project";
+pub const ARCHIVE_SCHEMA: &str = "monogatari-project-export@1";
+pub const PACKAGE_FINGERPRINT_ALGORITHM: &str = "sha256:path-size-file-sha256-v1";
 const MAX_ARCHIVE_FILES: usize = 20_000;
 const MAX_ARCHIVE_DIRECTORIES: usize = 4_000;
 const MAX_ARCHIVE_TOTAL_BYTES: u64 = 16 * 1024 * 1024 * 1024;
-pub(super) const MAX_ARCHIVE_FILE_BYTES: u64 = 4 * 1024 * 1024 * 1024;
+pub const MAX_ARCHIVE_FILE_BYTES: u64 = 4 * 1024 * 1024 * 1024;
 
 #[derive(Debug, Clone, Deserialize)]
-pub(super) struct ArchiveManifest {
+pub struct ArchiveManifest {
     format: String,
     schema: String,
     version: String,
     #[serde(default)]
-    pub(super) export_metadata: ArchiveExportMetadata,
-    pub(super) settings: Value,
-    pub(super) package: ArchivePackage,
+    pub export_metadata: ArchiveExportMetadata,
+    pub settings: Value,
+    pub package: ArchivePackage,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
-pub(super) struct ArchiveExportMetadata {
+pub struct ArchiveExportMetadata {
     #[serde(default)]
-    pub(super) engine_version: String,
+    pub engine_version: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub(super) struct ArchivePackage {
-    pub(super) file_count: usize,
-    pub(super) total_bytes: u64,
+pub struct ArchivePackage {
+    pub file_count: usize,
+    pub total_bytes: u64,
     fingerprint_algorithm: String,
-    pub(super) content_sha256: String,
+    pub content_sha256: String,
     #[serde(default)]
-    pub(super) directories: Vec<String>,
+    pub directories: Vec<String>,
     files: Vec<ArchiveFileRecord>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub(super) struct ArchiveFileRecord {
-    pub(super) category: String,
-    pub(super) path: String,
-    pub(super) size_bytes: u64,
+pub struct ArchiveFileRecord {
+    pub category: String,
+    pub path: String,
+    pub size_bytes: u64,
     #[serde(default)]
-    pub(super) checksum_md5: String,
-    pub(super) checksum_sha256: String,
+    pub checksum_md5: String,
+    pub checksum_sha256: String,
 }
 
 #[derive(Debug, Clone)]
-pub(super) struct ValidatedManifest {
-    pub(super) raw: Value,
-    pub(super) parsed: ArchiveManifest,
-    pub(super) files_by_path: BTreeMap<String, ArchiveFileRecord>,
-    pub(super) allowed_directories: BTreeSet<String>,
-    pub(super) project_title: String,
+pub struct ValidatedManifest {
+    pub raw: Value,
+    pub parsed: ArchiveManifest,
+    pub files_by_path: BTreeMap<String, ArchiveFileRecord>,
+    pub allowed_directories: BTreeSet<String>,
+    pub project_title: String,
 }
 
-pub(super) fn validate_manifest(raw: Value) -> Result<ValidatedManifest, String> {
+pub fn validate_manifest(raw: Value) -> Result<ValidatedManifest, String> {
     let parsed = serde_json::from_value::<ArchiveManifest>(raw.clone())
         .map_err(|error| format!("Project package manifest has an invalid shape: {error}"))?;
     if parsed.format != ARCHIVE_FORMAT {
@@ -239,7 +237,7 @@ pub(super) fn validate_manifest(raw: Value) -> Result<ValidatedManifest, String>
     })
 }
 
-pub(super) fn validate_package_path_topology(
+pub fn validate_package_path_topology(
     files_by_path: &BTreeMap<String, ArchiveFileRecord>,
     directory_keys: &HashSet<String>,
 ) -> Result<(), String> {
@@ -273,9 +271,7 @@ pub(super) fn validate_package_path_topology(
     Ok(())
 }
 
-pub(super) fn package_fingerprint<'a>(
-    records: impl Iterator<Item = &'a ArchiveFileRecord>,
-) -> String {
+pub fn package_fingerprint<'a>(records: impl Iterator<Item = &'a ArchiveFileRecord>) -> String {
     let mut hasher = Sha256::new();
     for record in records {
         hasher.update(record.path.as_bytes());
@@ -352,5 +348,115 @@ mod tests {
         manifest["package"]["files"][0]["category"] = json!("Invalid-Category");
         let error = validate_manifest(manifest).unwrap_err();
         assert!(error.contains("invalid category"), "{error}");
+    }
+
+    #[test]
+    fn manifest_rejects_traversal_and_portable_collisions_without_zip_io() {
+        let settings = br#"{"render":{"title":"Unsafe"}}"#;
+        let settings_sha = format!("{:x}", Sha256::digest(settings));
+        let traversal = json!({
+            "format": ARCHIVE_FORMAT,
+            "schema": ARCHIVE_SCHEMA,
+            "version": "1.0",
+            "settings": { "render": { "title": "Unsafe" } },
+            "package": {
+                "file_count": 1,
+                "total_bytes": settings.len(),
+                "fingerprint_algorithm": PACKAGE_FINGERPRINT_ALGORITHM,
+                "content_sha256": "0".repeat(64),
+                "directories": ["characters"],
+                "files": [{
+                    "category": "settings",
+                    "path": "../settings.json",
+                    "size_bytes": settings.len(),
+                    "checksum_sha256": settings_sha
+                }]
+            }
+        });
+        assert!(validate_manifest(traversal)
+            .unwrap_err()
+            .contains("unsafe path segment"));
+
+        let empty_sha = format!("{:x}", Sha256::digest([]));
+        let collision = json!({
+            "format": ARCHIVE_FORMAT,
+            "schema": ARCHIVE_SCHEMA,
+            "version": "1.0",
+            "settings": { "render": { "title": "Unsafe" } },
+            "package": {
+                "file_count": 2,
+                "total_bytes": 0,
+                "fingerprint_algorithm": PACKAGE_FINGERPRINT_ALGORITHM,
+                "content_sha256": "0".repeat(64),
+                "directories": ["characters"],
+                "files": [
+                    { "category": "characters", "path": "characters/A.json", "size_bytes": 0, "checksum_sha256": empty_sha },
+                    { "category": "characters", "path": "characters/a.json", "size_bytes": 0, "checksum_sha256": empty_sha }
+                ]
+            }
+        });
+        assert!(validate_manifest(collision)
+            .unwrap_err()
+            .contains("duplicate portable file path"));
+    }
+
+    #[test]
+    fn manifest_rejects_file_directory_topology_conflicts_without_zip_io() {
+        let record = |path: &str| ArchiveFileRecord {
+            category: "assets".to_string(),
+            path: path.to_string(),
+            size_bytes: 0,
+            checksum_md5: String::new(),
+            checksum_sha256: format!("{:x}", Sha256::digest([])),
+        };
+
+        let exact_conflict = BTreeMap::from([
+            ("settings.json".to_string(), record("settings.json")),
+            ("assets/portraits".to_string(), record("assets/portraits")),
+        ]);
+        let directories = HashSet::from([
+            portable_case_key("assets"),
+            portable_case_key("assets/portraits"),
+        ]);
+        let error = validate_package_path_topology(&exact_conflict, &directories).unwrap_err();
+        assert!(error.contains("both a file and a directory"), "{error}");
+
+        let ancestor_conflict = BTreeMap::from([
+            ("settings.json".to_string(), record("settings.json")),
+            ("assets/portraits".to_string(), record("assets/portraits")),
+            (
+                "assets/portraits/guide.png".to_string(),
+                record("assets/portraits/guide.png"),
+            ),
+        ]);
+        let directories = HashSet::from([portable_case_key("assets")]);
+        let error = validate_package_path_topology(&ancestor_conflict, &directories).unwrap_err();
+        assert!(error.contains("cannot contain descendant"), "{error}");
+    }
+
+    #[test]
+    fn manifest_rejects_declared_size_bombs_without_allocating() {
+        let manifest = json!({
+            "format": ARCHIVE_FORMAT,
+            "schema": ARCHIVE_SCHEMA,
+            "version": "1.0",
+            "settings": {},
+            "package": {
+                "file_count": 1,
+                "total_bytes": MAX_ARCHIVE_FILE_BYTES + 1,
+                "fingerprint_algorithm": PACKAGE_FINGERPRINT_ALGORITHM,
+                "content_sha256": "0".repeat(64),
+                "directories": [],
+                "files": [{
+                    "category": "settings",
+                    "path": "settings.json",
+                    "size_bytes": MAX_ARCHIVE_FILE_BYTES + 1,
+                    "checksum_sha256": format!("{:x}", Sha256::digest([]))
+                }]
+            }
+        });
+        assert!(validate_manifest(manifest)
+            .unwrap_err()
+            .contains("per-file limit"));
     }
 }

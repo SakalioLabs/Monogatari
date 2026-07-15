@@ -1,4 +1,4 @@
-//! Pure portable-path rules shared by archive manifests and ZIP entries.
+//! Pure portable-path rules shared by package manifests and transport adapters.
 
 use std::collections::BTreeSet;
 
@@ -6,7 +6,7 @@ const MAX_PORTABLE_PATH_BYTES: usize = 512;
 const MAX_PORTABLE_SEGMENTS: usize = 32;
 const MAX_PORTABLE_SEGMENT_BYTES: usize = 160;
 
-pub(super) fn validate_portable_path(value: &str, label: &str) -> Result<(), String> {
+pub fn validate_portable_path(value: &str, label: &str) -> Result<(), String> {
     if value.is_empty()
         || value.len() > MAX_PORTABLE_PATH_BYTES
         || value.starts_with('/')
@@ -42,7 +42,7 @@ pub(super) fn validate_portable_path(value: &str, label: &str) -> Result<(), Str
     Ok(())
 }
 
-pub(super) fn is_reserved_windows_segment(segment: &str) -> bool {
+pub fn is_reserved_windows_segment(segment: &str) -> bool {
     let stem = segment
         .split('.')
         .next()
@@ -75,7 +75,7 @@ pub(super) fn is_reserved_windows_segment(segment: &str) -> bool {
     )
 }
 
-pub(super) fn portable_case_key(value: &str) -> String {
+pub fn portable_case_key(value: &str) -> String {
     value.to_lowercase()
 }
 

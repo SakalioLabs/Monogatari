@@ -164,6 +164,9 @@ const releaseCriticalRustFiles = [
   'crates/authoring/src/filesystem.rs',
   'crates/authoring/src/paths.rs',
   'crates/authoring/src/project.rs',
+  'crates/authoring/src/project_package.rs',
+  'crates/authoring/src/project_package/manifest.rs',
+  'crates/authoring/src/project_package/portable_path.rs',
   'crates/authoring/src/agent_transaction.rs',
   'crates/authoring/src/agent_transaction/plan.rs',
   'crates/authoring/src/agent_transaction/protocol.rs',
@@ -2282,6 +2285,9 @@ async function verifyTauriPackagingConfig() {
   const tauriStoryAccessSource = await readFile(path.join(tauriAppDir, 'src', 'story_access.rs'), 'utf8')
   const authoringFilesystemSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'filesystem.rs'), 'utf8')
   const authoringProjectSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'project.rs'), 'utf8')
+  const authoringProjectPackageSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'project_package.rs'), 'utf8')
+  const authoringProjectPackagePathSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'project_package', 'portable_path.rs'), 'utf8')
+  const authoringProjectPackageManifestSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'project_package', 'manifest.rs'), 'utf8')
   const tauriContentReferencesSource = await readFile(path.join(tauriAppDir, 'src', 'content_references.rs'), 'utf8')
   const tauriStoryEventCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'story_events.rs'), 'utf8')
   const tauriEndingCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'endings.rs'), 'utf8')
@@ -2294,8 +2300,6 @@ async function verifyTauriPackagingConfig() {
   const tauriProjectSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'project.rs'), 'utf8')
   const tauriProjectArchiveSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'project_archive.rs'), 'utf8')
   const tauriProjectArchiveCommandsSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'project_archive', 'commands.rs'), 'utf8')
-  const tauriProjectArchivePathSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'project_archive', 'path_validation.rs'), 'utf8')
-  const tauriProjectArchiveManifestSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'project_archive', 'manifest.rs'), 'utf8')
   const defaultCapabilitySource = await readFile(path.join(tauriAppDir, 'capabilities', 'default.json'), 'utf8')
   const tauriScenesSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'scenes.rs'), 'utf8')
   const tauriChatSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'chat.rs'), 'utf8')
@@ -2577,15 +2581,17 @@ async function verifyTauriPackagingConfig() {
     [tauriProjectSource, 'validate_project_export_path_shape', 'bound export path depth and length before hashing'],
     [tauriProjectSource, 'MAX_PROJECT_EXPORT_TOTAL_BYTES', 'bound project inventory bytes before packaging'],
     [tauriProjectSource, 'checksum_export_file', 'stream project inventory checksums with fixed memory'],
-    [tauriProjectArchiveSource, 'ARCHIVE_MANIFEST_PATH', 'pin the project package manifest path'],
-    [tauriProjectArchiveSource, 'mod manifest;', 'isolate project package manifest semantics'],
-    [tauriProjectArchiveManifestSource, 'MAX_ARCHIVE_TOTAL_BYTES', 'bound expanded project package sizes'],
-    [tauriProjectArchiveManifestSource, 'MAX_ARCHIVE_FILE_BYTES', 'bound individual project package files'],
+    [authoringProjectPackageSource, 'pub const ARCHIVE_MANIFEST_PATH', 'pin the shared project package manifest path'],
+    [authoringProjectPackageSource, 'mod manifest;', 'isolate shared project package manifest semantics'],
+    [authoringProjectPackageManifestSource, 'MAX_ARCHIVE_TOTAL_BYTES', 'bound expanded project package sizes'],
+    [authoringProjectPackageManifestSource, 'MAX_ARCHIVE_FILE_BYTES', 'bound individual project package files'],
     [tauriProjectArchiveSource, 'MAX_ARCHIVE_FILES', 'bound project package file counts'],
-    [tauriProjectArchiveSource, 'mod path_validation;', 'isolate reusable project package path policy'],
-    [tauriProjectArchivePathSource, 'validate_portable_path', 'reject traversal and non-portable archive paths'],
-    [tauriProjectArchivePathSource, 'portable_paths_reject_escape_reserved_and_platform_specific_shapes', 'independently test portable archive path rejection'],
-    [tauriProjectArchiveManifestSource, 'minimal_manifest_validates_without_zip_io', 'independently test project package manifest acceptance'],
+    [authoringProjectPackageSource, 'mod portable_path;', 'isolate shared project package path policy'],
+    [authoringProjectPackagePathSource, 'validate_portable_path', 'reject traversal and non-portable archive paths'],
+    [authoringProjectPackagePathSource, 'portable_paths_reject_escape_reserved_and_platform_specific_shapes', 'independently test portable archive path rejection'],
+    [authoringProjectPackageManifestSource, 'minimal_manifest_validates_without_zip_io', 'independently test project package manifest acceptance'],
+    [authoringProjectPackageManifestSource, 'manifest_rejects_declared_size_bombs_without_allocating', 'independently test package size-bomb rejection'],
+    [tauriProjectArchiveSource, 'use llm_authoring::project_package::{', 'reuse the shared project package protocol'],
     [tauriProjectArchiveSource, 'reject_non_regular_zip_entry', 'reject symlink and special ZIP entries'],
     [tauriProjectArchiveSource, 'verify_and_extract_entry', 'stream and verify project package contents during import'],
     [tauriProjectArchiveSource, 'write_export_record', 'stream project files into ZIP output with fixed memory'],
@@ -2614,6 +2620,9 @@ async function verifyTauriPackagingConfig() {
     if (!source.includes(needle)) {
       issues.push(`Tauri runtime data-root handling must ${description}`)
     }
+  }
+  if (tauriProjectArchiveSource.includes('mod manifest;') || tauriProjectArchiveSource.includes('mod path_validation;')) {
+    issues.push('Tauri project archive commands must not redeclare shared package manifest or portable-path policy modules')
   }
   if (tauriProjectSource.includes('state.set_project_data_root(root.clone()).await')) {
     issues.push('saving settings.json must not switch the active project without loading its content managers')

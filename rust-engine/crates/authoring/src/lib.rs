@@ -9,6 +9,7 @@ pub mod filesystem;
 pub mod json_catalog;
 pub mod paths;
 pub mod project;
+pub mod project_package;
 pub mod prompt_guard;
 pub mod quality_suite_execution;
 pub mod quality_suite_validation;

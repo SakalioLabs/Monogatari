@@ -12,6 +12,15 @@ use sha2::{Digest, Sha256};
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
+use llm_authoring::project_package::{
+    is_reserved_windows_segment, portable_case_key, validate_manifest, validate_portable_path,
+    ArchiveFileRecord, ARCHIVE_MANIFEST_PATH, MAX_ARCHIVE_FILE_BYTES,
+};
+#[cfg(test)]
+use llm_authoring::project_package::{
+    package_fingerprint, ARCHIVE_FORMAT, ARCHIVE_SCHEMA, PACKAGE_FINGERPRINT_ALGORITHM,
+};
+
 #[cfg(test)]
 use super::project::build_project_export_manifest;
 use super::project::{
@@ -20,25 +29,12 @@ use super::project::{
 
 pub(crate) mod commands;
 
-const ARCHIVE_MANIFEST_PATH: &str = "monogatari-project.json";
 const MAX_ARCHIVE_FILES: usize = 20_000;
 const MAX_ARCHIVE_DIRECTORIES: usize = 4_000;
 const MAX_ARCHIVE_COMPRESSED_BYTES: u64 = 16 * 1024 * 1024 * 1024;
 const MAX_ARCHIVE_MANIFEST_BYTES: u64 = 4 * 1024 * 1024;
 const MAX_ARCHIVE_JSON_BYTES: u64 = 64 * 1024 * 1024;
 static ARCHIVE_STAGE_COUNTER: AtomicU64 = AtomicU64::new(0);
-
-mod path_validation;
-use path_validation::{is_reserved_windows_segment, portable_case_key, validate_portable_path};
-mod manifest;
-#[cfg(test)]
-use manifest::{
-    package_fingerprint, validate_package_path_topology, ARCHIVE_FORMAT, ARCHIVE_SCHEMA,
-    PACKAGE_FINGERPRINT_ALGORITHM,
-};
-use manifest::{validate_manifest, ArchiveFileRecord, MAX_ARCHIVE_FILE_BYTES};
-#[cfg(test)]
-use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ProjectArchiveInspection {
@@ -952,89 +948,6 @@ mod tests {
     }
 
     #[test]
-    fn archive_manifest_rejects_traversal_and_portable_collisions() {
-        let settings = br#"{"render":{"title":"Unsafe"}}"#;
-        let settings_sha = sha256_hex(settings);
-        let base = json!({
-            "format": ARCHIVE_FORMAT,
-            "schema": ARCHIVE_SCHEMA,
-            "version": "1.0",
-            "settings": { "render": { "title": "Unsafe" } },
-            "package": {
-                "file_count": 1,
-                "total_bytes": settings.len(),
-                "fingerprint_algorithm": PACKAGE_FINGERPRINT_ALGORITHM,
-                "content_sha256": "0".repeat(64),
-                "directories": ["characters"],
-                "files": [{
-                    "category": "settings",
-                    "path": "../settings.json",
-                    "size_bytes": settings.len(),
-                    "checksum_sha256": settings_sha
-                }]
-            }
-        });
-        assert!(validate_manifest(base)
-            .unwrap_err()
-            .contains("unsafe path segment"));
-
-        let collision = json!({
-            "format": ARCHIVE_FORMAT,
-            "schema": ARCHIVE_SCHEMA,
-            "version": "1.0",
-            "settings": { "render": { "title": "Unsafe" } },
-            "package": {
-                "file_count": 2,
-                "total_bytes": 0,
-                "fingerprint_algorithm": PACKAGE_FINGERPRINT_ALGORITHM,
-                "content_sha256": "0".repeat(64),
-                "directories": ["characters"],
-                "files": [
-                    { "category": "characters", "path": "characters/A.json", "size_bytes": 0, "checksum_sha256": sha256_hex(b"") },
-                    { "category": "characters", "path": "characters/a.json", "size_bytes": 0, "checksum_sha256": sha256_hex(b"") }
-                ]
-            }
-        });
-        assert!(validate_manifest(collision)
-            .unwrap_err()
-            .contains("duplicate portable file path"));
-    }
-
-    #[test]
-    fn archive_manifest_rejects_file_directory_topology_conflicts() {
-        let record = |path: &str| ArchiveFileRecord {
-            category: "assets".to_string(),
-            path: path.to_string(),
-            size_bytes: 0,
-            checksum_md5: String::new(),
-            checksum_sha256: sha256_hex(b""),
-        };
-
-        let exact_conflict = BTreeMap::from([
-            ("settings.json".to_string(), record("settings.json")),
-            ("assets/portraits".to_string(), record("assets/portraits")),
-        ]);
-        let directories = HashSet::from([
-            portable_case_key("assets"),
-            portable_case_key("assets/portraits"),
-        ]);
-        let error = validate_package_path_topology(&exact_conflict, &directories).unwrap_err();
-        assert!(error.contains("both a file and a directory"), "{error}");
-
-        let ancestor_conflict = BTreeMap::from([
-            ("settings.json".to_string(), record("settings.json")),
-            ("assets/portraits".to_string(), record("assets/portraits")),
-            (
-                "assets/portraits/guide.png".to_string(),
-                record("assets/portraits/guide.png"),
-            ),
-        ]);
-        let directories = HashSet::from([portable_case_key("assets")]);
-        let error = validate_package_path_topology(&ancestor_conflict, &directories).unwrap_err();
-        assert!(error.contains("cannot contain descendant"), "{error}");
-    }
-
-    #[test]
     fn archive_verification_rejects_tampered_content() {
         let root = temp_root("tampered");
         std::fs::create_dir_all(&root).unwrap();
@@ -1105,32 +1018,6 @@ mod tests {
                 .to_string_lossy()
                 .starts_with(".monogatari-export-")));
         std::fs::remove_dir_all(root).unwrap();
-    }
-
-    #[test]
-    fn archive_manifest_rejects_declared_size_bombs_without_allocating() {
-        let manifest = json!({
-            "format": ARCHIVE_FORMAT,
-            "schema": ARCHIVE_SCHEMA,
-            "version": "1.0",
-            "settings": {},
-            "package": {
-                "file_count": 1,
-                "total_bytes": MAX_ARCHIVE_FILE_BYTES + 1,
-                "fingerprint_algorithm": PACKAGE_FINGERPRINT_ALGORITHM,
-                "content_sha256": "0".repeat(64),
-                "directories": [],
-                "files": [{
-                    "category": "settings",
-                    "path": "settings.json",
-                    "size_bytes": MAX_ARCHIVE_FILE_BYTES + 1,
-                    "checksum_sha256": sha256_hex(b"")
-                }]
-            }
-        });
-        assert!(validate_manifest(manifest)
-            .unwrap_err()
-            .contains("per-file limit"));
     }
 
     #[test]
