@@ -1,6 +1,7 @@
 import './module-test-matrix.test.mjs'
 import './project-dialogue-policy.test.mjs'
 import './project-story-event-policy.test.mjs'
+import './project-workflow-policy.test.mjs'
 import './tauri-build-toolchain-policy.test.mjs'
 import './tauri-command-registration-policy.test.mjs'
 import './tauri-conversation-safety-policy.test.mjs'
