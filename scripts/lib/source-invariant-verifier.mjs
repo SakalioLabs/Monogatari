@@ -57,6 +57,8 @@ export function createSourceInvariantVerifier({
     const storyEndingsSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyEndings.ts'), 'utf8')
     const sceneAuthoringSource = await readFile(path.join(frontendDir, 'src', 'lib', 'sceneAuthoring.ts'), 'utf8')
     const dialogueAuthoringSource = await readFile(path.join(frontendDir, 'src', 'lib', 'dialogueAuthoring.ts'), 'utf8')
+    const dialogueGraphEditingSource = await readFile(path.join(frontendDir, 'src', 'lib', 'dialogueGraphEditing.ts'), 'utf8')
+    const dialogueGraphEditingTestSource = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'dialogueGraphEditing.test.ts'), 'utf8')
     const live2dCanvasSource = await readFile(path.join(frontendDir, 'src', 'components', 'Live2DCanvas.vue'), 'utf8')
     const characterModelSource = await readFile(path.join(frontendDir, 'src', 'components', 'CharacterModelView.vue'), 'utf8')
     const offlineSource = await readFile(path.join(frontendDir, 'public', 'offline.html'), 'utf8')
@@ -347,10 +349,22 @@ export function createSourceInvariantVerifier({
       [dialogueAuthoringSource, 'expectedCatalogFingerprint', 'save and delete dialogues with optimistic concurrency'],
       [dialogueAuthoringSource, 'saveBrowserDialogueDrafts', 'persist browser dialogue authoring drafts'],
       [dialogueAuthoringSource, 'validateDialogueDefinition', 'validate complete dialogue graphs before save'],
-      [dialogueEditorSource, 'renameNode', 'rename nodes while preserving graph references'],
-      [dialogueEditorSource, 'relationship_changes', 'edit per-character choice relationship effects'],
+      [dialogueAuthoringSource, 'hasDialogueIdCollision(definitions.map', 'reject case-folded browser dialogue ID collisions before persistence'],
+      [dialogueEditorSource, "from '../lib/dialogueGraphEditing'", 'delegate graph transformations to the pure dialogue editing domain'],
+      [dialogueGraphEditingSource, 'export function parseDialogueVariables', 'parse dialogue variables outside the Vue view'],
+      [dialogueGraphEditingSource, 'export function renameDialogueNode', 'rename nodes while preserving graph references'],
+      [dialogueGraphEditingSource, 'export function deleteDialogueNode', 'guard graph deletion through immutable domain results'],
+      [dialogueGraphEditingSource, 'export function setDialogueNodeFlowMode', 'normalize node flow changes outside the Vue view'],
+      [dialogueGraphEditingSource, 'export function dialogueRelationshipEntries', 'edit per-character choice relationship effects outside the Vue view'],
+      [dialogueGraphEditingTestSource, 'cloneDialogueDefinition(reactive(source))', 'test cloning Vue reactive dialogue drafts without structured-clone failures'],
+      [dialogueGraphEditingTestSource, 'allocates portable case-folded dialogue ids', 'test portable dialogue ID allocation and collision handling'],
+      [dialogueGraphEditingTestSource, 'renames nodes and every graph reference without mutating the source', 'test immutable node renames and reference rewrites'],
+      [dialogueGraphEditingTestSource, 'protects referenced, start, and final nodes and deletes isolated nodes immutably', 'test graph deletion blockers and immutable success'],
       [dialogueEditorSource, 'confirmDiscard', 'guard dirty dialogue drafts during navigation'],
       [dialogueEditorSource, "invokeCommand('preview_dialogue'", 'launch desktop dialogue author previews'],
+      [authoringE2eSource, 'agent_delivery_end', 'author and rename a second dialogue node in a real browser'],
+      [authoringE2eSource, "toHaveValue('agent_delivery_end')", 'prove the authored linear edge targets the renamed node'],
+      [authoringE2eSource, 'The browser delivery path is ready.', 'play the saved second node through the browser runtime'],
       [storyEndingsSource, "invokeCommand<StoryEndingCatalogSnapshot>('get_story_ending_catalog')", 'load editable ending catalog snapshots'],
       [storyEndingsSource, 'expectedCatalogFingerprint', 'save and delete endings with optimistic concurrency'],
       [storyEndingsSource, 'saveBrowserStoryEndingDrafts', 'persist browser ending authoring drafts'],
@@ -399,6 +413,21 @@ export function createSourceInvariantVerifier({
     for (const [source, needle, description] of storyEventFrontendRequirements) {
       if (!source.includes(needle)) {
         issues.push(`Story event frontend integration must ${description}`)
+      }
+    }
+
+    const dialogueGraphViewLeaks = [
+      'function nextDialogueId',
+      'function emptyNode',
+      'function nextNodeId',
+      'function derivedCharacters',
+      'function flowMode',
+      'function relationshipEntries',
+      'JSON.parse(JSON.stringify(dialogue))',
+    ]
+    for (const needle of dialogueGraphViewLeaks) {
+      if (dialogueEditorSource.includes(needle)) {
+        issues.push(`frontend/src/views/DialogueEditorView.vue must not redeclare dialogue graph domain logic: ${needle}`)
       }
     }
 

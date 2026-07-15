@@ -1,4 +1,5 @@
 import type { StoryContentAccessEntry } from './storyAccess'
+import { hasDialogueIdCollision } from './dialogueGraphEditing'
 import {
   loadBrowserDialogueDrafts,
   loadStoryDialogues,
@@ -91,15 +92,17 @@ export async function saveDialogueDefinition(
   const current = await browserCatalogSnapshot()
   ensureExpectedFingerprint(current, expectedCatalogFingerprint)
   const definitions = current.dialogues.map(dialogueDefinition)
-  const existingIndex = definitions.findIndex((item) => item.id === normalized.id)
   if (originalDialogueId) {
     if (originalDialogueId !== normalized.id) {
       throw new Error('Dialogue ids are immutable after creation. Duplicate the dialogue to use a new id.')
     }
+    const existingIndex = definitions.findIndex((item) => item.id === originalDialogueId)
     if (existingIndex < 0) throw new Error(`Dialogue "${originalDialogueId}" no longer exists. Reload first.`)
     definitions.splice(existingIndex, 1, normalized)
   } else {
-    if (existingIndex >= 0) throw new Error(`Dialogue "${normalized.id}" already exists.`)
+    if (hasDialogueIdCollision(definitions.map((item) => item.id), normalized.id)) {
+      throw new Error(`Dialogue "${normalized.id}" already exists.`)
+    }
     definitions.push(normalized)
   }
   definitions.sort((left, right) => left.id.localeCompare(right.id))

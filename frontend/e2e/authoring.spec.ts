@@ -85,12 +85,26 @@ test('dialogue authoring saves a graph and opens it in browser Playtest', async 
   await page.getByLabel('Dialogue ID').fill('agent_delivery_test')
   await page.getByLabel('Title', { exact: true }).fill('Agent Delivery Test')
   await page.getByRole('button', { name: 'Node', exact: true }).click()
+
+  await page.getByRole('button', { name: 'Add Node', exact: true }).click()
+  await page.locator('.rename-row input').fill('agent_delivery_end')
+  await page.getByRole('button', { name: 'Rename', exact: true }).click()
   await page.getByLabel('Dialogue text').fill('The browser delivery path is ready.')
+  await page.getByRole('group', { name: 'Node flow mode' }).getByRole('button', { name: 'End', exact: true }).click()
+
+  await page.locator('.node-card').filter({ has: page.locator('.node-heading b', { hasText: /^start$/ }) }).click()
+  await page.getByLabel('Dialogue text').fill('The browser delivery route begins.')
+  await page.getByRole('group', { name: 'Node flow mode' }).getByRole('button', { name: 'Linear', exact: true }).click()
+  await expect(page.getByLabel('Next node')).toHaveValue('agent_delivery_end')
   await page.getByRole('button', { name: 'Save', exact: true }).first().click()
 
   await expect(page.getByText('Dialogue created')).toBeVisible()
   await page.getByRole('button', { name: 'Playtest', exact: true }).click()
   await expect(page).toHaveURL(/\/game\?previewDialogue=agent_delivery_test&authoring=1$/)
+  await expect(page.getByText('The browser delivery route begins.')).toBeVisible()
+  const continueButton = page.getByRole('button', { name: 'Continue', exact: true })
+  await expect(continueButton).toBeVisible()
+  await continueButton.click()
   await expect(page.getByText('The browser delivery path is ready.')).toBeVisible()
 })
 

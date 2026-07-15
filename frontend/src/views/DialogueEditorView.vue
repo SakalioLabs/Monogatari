@@ -370,15 +370,41 @@ import {
   type DialogueAuthoringEntry,
   type DialogueChoiceDefinition,
   type DialogueDefinition,
-  type DialogueNodeDefinition,
 } from '../lib/dialogueAuthoring'
+import {
+  addDialogueRelationship as addRelationshipToChoice,
+  appendDialogueChoice,
+  appendDialogueNode,
+  availableDialogueRelationshipCharacters,
+  cloneDialogueDefinition,
+  createDialogueDraft,
+  deleteDialogueNode as deleteNodeFromGraph,
+  dialogueDefinitionFromEntry,
+  dialogueDraftSnapshot,
+  dialogueFlowMode as flowMode,
+  dialogueImplicitTerminalIds,
+  dialogueNodeOrder as orderDialogueNodes,
+  dialogueRelationshipEntries as relationshipEntries,
+  dialogueTargetNodeIds,
+  dialogueTerminalCount,
+  duplicateDialogueDraft,
+  filterDialogueEntries,
+  hasDialogueIdCollision,
+  mergeDialogueCharacters,
+  parseDialogueVariables,
+  removeDialogueChoice,
+  removeDialogueRelationship as removeRelationshipFromChoice,
+  renameDialogueNode,
+  renameDialogueRelationship as renameRelationshipInChoice,
+  setDialogueNodeFlowMode,
+  setDialogueRelationshipDelta,
+  type DialogueCharacterIdentity,
+  type DialogueFlowMode,
+} from '../lib/dialogueGraphEditing'
 import { hasTauriRuntime, invokeCommand } from '../lib/tauri'
 import { useI18n } from '../lib/i18n'
 
-interface CharacterInfo {
-  id: string
-  name: string
-}
+type CharacterInfo = DialogueCharacterIdentity
 
 const router = useRouter()
 const { t } = useI18n()
@@ -395,71 +421,38 @@ const characters = ref<CharacterInfo[]>([])
 const busy = ref(false)
 const notice = ref<{ type: 'success' | 'error'; title: string; message: string } | null>(null)
 
-const filteredDialogues = computed(() => {
-  const query = search.value.toLowerCase()
-  return (snapshot.value?.dialogues || []).filter((dialogue) => !query
-    || dialogue.id.toLowerCase().includes(query)
-    || dialogue.title.toLowerCase().includes(query)
-    || dialogue.description?.toLowerCase().includes(query))
-})
+const filteredDialogues = computed(() => filterDialogueEntries(snapshot.value?.dialogues || [], search.value))
 const selectedEntry = computed(() => (snapshot.value?.dialogues || [])
   .find((dialogue) => dialogue.id === selectedDialogueId.value) || null)
 const selectedNode = computed(() => selectedNodeId.value && draft.value
   ? draft.value.nodes[selectedNodeId.value] || null
   : null)
-const serializedDraft = computed(() => draft.value
-  ? JSON.stringify({ dialogue: draft.value, variablesText: variablesText.value })
-  : '')
+const serializedDraft = computed(() => dialogueDraftSnapshot(draft.value, variablesText.value))
 const dirty = computed(() => serializedDraft.value !== baseline.value)
-const parsedVariables = computed<Record<string, unknown> | null>(() => {
-  try {
-    const value = JSON.parse(variablesText.value) as unknown
-    return value && typeof value === 'object' && !Array.isArray(value)
-      ? value as Record<string, unknown>
-      : null
-  } catch {
-    return null
-  }
-})
+const parsedVariables = computed<Record<string, unknown> | null>(() => parseDialogueVariables(variablesText.value))
 const validationIssues = computed(() => {
   if (!draft.value) return [t('dialogue.error.no-selection', 'No dialogue selected.')]
   if (!parsedVariables.value) return [t('dialogue.error.variables-json', 'Variables must be a valid JSON object.')]
   const candidate = { ...draft.value, variables: parsedVariables.value }
   const issues = validateDialogueDefinition(candidate, characters.value.map((character) => character.id))
-  if (!selectedDialogueId.value && snapshot.value?.dialogues.some((dialogue) => dialogue.id === candidate.id.trim())) {
+  if (!selectedDialogueId.value && hasDialogueIdCollision(
+    snapshot.value?.dialogues.map((dialogue) => dialogue.id) || [],
+    candidate.id,
+  )) {
     issues.push(t('dialogue.error.already-exists', 'Dialogue "{id}" already exists.', { id: candidate.id.trim() }))
   }
   return issues
 })
 const warnings = computed(() => {
   if (!draft.value) return []
-  const implicitTerminals = Object.entries(draft.value.nodes)
-    .filter(([, node]) => !node.next_node_id && node.choices.length === 0 && !node.is_ending)
-    .map(([nodeId]) => nodeId)
+  const implicitTerminals = dialogueImplicitTerminalIds(draft.value)
   return implicitTerminals.length > 0
     ? [t('dialogue.warning.implicit-terminals', 'Terminal nodes without an ending marker: {nodes}.', { nodes: implicitTerminals.join(', ') })]
     : []
 })
-const nodeOrder = computed(() => {
-  if (!draft.value) return []
-  const result: string[] = []
-  const visited = new Set<string>()
-  const queue = [draft.value.start_node_id]
-  while (queue.length > 0) {
-    const nodeId = queue.shift()!
-    if (visited.has(nodeId) || !draft.value.nodes[nodeId]) continue
-    visited.add(nodeId)
-    result.push(nodeId)
-    const node = draft.value.nodes[nodeId]
-    if (node.next_node_id) queue.push(node.next_node_id)
-    node.choices.forEach((choice) => queue.push(choice.next_node_id))
-  }
-  result.push(...Object.keys(draft.value.nodes).filter((nodeId) => !visited.has(nodeId)).sort())
-  return result
-})
-const targetNodeIds = computed(() => Object.keys(draft.value?.nodes || {}).sort())
-const terminalCount = computed(() => Object.values(draft.value?.nodes || {})
-  .filter((node) => !node.next_node_id && node.choices.length === 0).length)
+const nodeOrder = computed(() => draft.value ? orderDialogueNodes(draft.value) : [])
+const targetNodeIds = computed(() => draft.value ? dialogueTargetNodeIds(draft.value) : [])
+const terminalCount = computed(() => draft.value ? dialogueTerminalCount(draft.value) : 0)
 const gatedCount = computed(() => (snapshot.value?.dialogues || []).filter((dialogue) => dialogue.access.gated).length)
 const sourcePath = computed(() => selectedEntry.value?.source_path || `dialogue/${draft.value?.id || 'new'}.json`)
 const accessStatus = computed(() => {
@@ -475,22 +468,14 @@ function truncate(value: string, length: number): string {
   return value.length > length ? `${value.slice(0, length)}...` : value
 }
 
-function cloneDefinition(dialogue: DialogueDefinition): DialogueDefinition {
-  return JSON.parse(JSON.stringify(dialogue)) as DialogueDefinition
-}
-
-function definitionFrom(entry: DialogueAuthoringEntry): DialogueDefinition {
-  return cloneDefinition(entry)
-}
-
 function setDraft(definition: DialogueDefinition, dialogueId: string | null, isSaved = true) {
-  const normalized = normalizeDialogueDefinition(cloneDefinition(definition))
+  const normalized = normalizeDialogueDefinition(cloneDialogueDefinition(definition))
   draft.value = normalized
   selectedDialogueId.value = dialogueId
   selectedNodeId.value = normalized.start_node_id || Object.keys(normalized.nodes)[0] || null
   nodeIdInput.value = selectedNodeId.value || ''
   variablesText.value = JSON.stringify(normalized.variables, null, 2)
-  baseline.value = isSaved ? JSON.stringify({ dialogue: draft.value, variablesText: variablesText.value }) : ''
+  baseline.value = isSaved ? dialogueDraftSnapshot(draft.value, variablesText.value) : ''
   propertyTab.value = 'node'
 }
 
@@ -501,7 +486,7 @@ function confirmDiscard(): boolean {
 function selectDialogue(entry: DialogueAuthoringEntry) {
   if (entry.id === selectedDialogueId.value) return
   if (!confirmDiscard()) return
-  setDraft(definitionFrom(entry), entry.id)
+  setDraft(dialogueDefinitionFromEntry(entry), entry.id)
 }
 
 function selectNode(nodeId: string) {
@@ -510,201 +495,116 @@ function selectNode(nodeId: string) {
   propertyTab.value = 'node'
 }
 
-function nextDialogueId(base = 'new_dialogue'): string {
-  const ids = new Set(snapshot.value?.dialogues.map((dialogue) => dialogue.id) || [])
-  if (!ids.has(base)) return base
-  let index = 2
-  while (ids.has(`${base}_${index}`)) index += 1
-  return `${base}_${index}`
-}
-
 function createDialogue() {
   if (!confirmDiscard()) return
   const speaker = characters.value[0]?.id || null
-  setDraft({
-    id: nextDialogueId(),
-    title: t('dialogue.new-dialogue', 'New Dialogue'),
-    description: null,
-    start_node_id: 'start',
-    nodes: { start: emptyNode(speaker, t('dialogue.new-line', 'New dialogue line.')) },
-    variables: {},
-  }, null, false)
+  setDraft(createDialogueDraft(
+    snapshot.value?.dialogues.map((dialogue) => dialogue.id) || [],
+    t('dialogue.new-dialogue', 'New Dialogue'),
+    t('dialogue.new-line', 'New dialogue line.'),
+    speaker,
+  ), null, false)
 }
 
 function duplicateDialogue() {
   if (!draft.value || !confirmDiscard()) return
-  const copy = cloneDefinition(draft.value)
-  copy.id = nextDialogueId(`${draft.value.id}_copy`)
-  copy.title = t('authoring.copy-name', '{name} Copy', { name: draft.value.title })
+  const copy = duplicateDialogueDraft(
+    draft.value,
+    snapshot.value?.dialogues.map((dialogue) => dialogue.id) || [],
+    t('authoring.copy-name', '{name} Copy', { name: draft.value.title }),
+  )
   setDraft(copy, null, false)
-}
-
-function emptyNode(speakerId: string | null = null, text = ''): DialogueNodeDefinition {
-  return {
-    speaker_id: speakerId,
-    text,
-    next_node_id: null,
-    choices: [],
-    condition: null,
-    script: null,
-    emotion: null,
-    use_llm: false,
-    llm_prompt: null,
-    llm_system_prompt: null,
-    is_ending: false,
-    ending_type: null,
-  }
-}
-
-function nextNodeId(base = 'node'): string {
-  const ids = new Set(Object.keys(draft.value?.nodes || {}))
-  if (!ids.has(base)) return base
-  let index = 2
-  while (ids.has(`${base}_${index}`)) index += 1
-  return `${base}_${index}`
 }
 
 function addNode() {
   if (!draft.value) return
-  const nodeId = nextNodeId()
-  draft.value.nodes[nodeId] = emptyNode(selectedNode.value?.speaker_id || characters.value[0]?.id || null)
-  selectNode(nodeId)
+  const result = appendDialogueNode(draft.value, selectedNode.value?.speaker_id || characters.value[0]?.id || null)
+  draft.value = result.dialogue
+  selectNode(result.node_id)
 }
 
 function renameNode() {
   if (!draft.value || !selectedNodeId.value) return
-  const before = selectedNodeId.value
-  const after = nodeIdInput.value.trim()
-  if (!/^[A-Za-z0-9_.-]{1,128}$/.test(after)) {
+  const result = renameDialogueNode(draft.value, selectedNodeId.value, nodeIdInput.value)
+  if (result.error === 'invalid_id') {
     showNotice('error', t('dialogue.notice.rename-rejected', 'Rename rejected'), t('dialogue.error.node-id', 'Node ID must be a portable 1-128 character ID.'))
     return
   }
-  if (after !== before && draft.value.nodes[after]) {
-    showNotice('error', t('dialogue.notice.rename-rejected', 'Rename rejected'), t('dialogue.error.node-exists', 'Node "{id}" already exists.', { id: after }))
+  if (result.error === 'node_exists') {
+    showNotice('error', t('dialogue.notice.rename-rejected', 'Rename rejected'), t('dialogue.error.node-exists', 'Node "{id}" already exists.', { id: nodeIdInput.value.trim() }))
     return
   }
-  if (after === before) return
-  const entries = Object.entries(draft.value.nodes).map(([nodeId, node]) => [nodeId === before ? after : nodeId, node] as const)
-  draft.value.nodes = Object.fromEntries(entries)
-  if (draft.value.start_node_id === before) draft.value.start_node_id = after
-  for (const node of Object.values(draft.value.nodes)) {
-    if (node.next_node_id === before) node.next_node_id = after
-    node.choices.forEach((choice) => {
-      if (choice.next_node_id === before) choice.next_node_id = after
-    })
-  }
-  selectedNodeId.value = after
-  nodeIdInput.value = after
+  if (!result.changed) return
+  draft.value = result.dialogue
+  selectedNodeId.value = result.node_id
+  nodeIdInput.value = result.node_id
 }
 
 function deleteNode() {
-  if (!draft.value || !selectedNodeId.value || Object.keys(draft.value.nodes).length <= 1) return
-  const nodeId = selectedNodeId.value
-  const references: string[] = []
-  for (const [sourceId, node] of Object.entries(draft.value.nodes)) {
-    if (node.next_node_id === nodeId) references.push(sourceId)
-    if (node.choices.some((choice) => choice.next_node_id === nodeId)) references.push(sourceId)
-  }
-  if (references.length > 0) {
-    showNotice('error', t('dialogue.notice.node-referenced', 'Node is referenced'), t('dialogue.error.remove-transitions', 'Remove transitions from: {nodes}.', { nodes: [...new Set(references)].join(', ') }))
+  if (!draft.value || !selectedNodeId.value) return
+  const result = deleteNodeFromGraph(draft.value, selectedNodeId.value)
+  if (result.error === 'node_referenced') {
+    showNotice('error', t('dialogue.notice.node-referenced', 'Node is referenced'), t('dialogue.error.remove-transitions', 'Remove transitions from: {nodes}.', { nodes: result.references.join(', ') }))
     return
   }
-  if (draft.value.start_node_id === nodeId) {
+  if (result.error === 'start_node') {
     showNotice('error', t('dialogue.notice.start-protected', 'Start node protected'), t('dialogue.error.choose-start', 'Choose another start node before deleting this node.'))
     return
   }
-  delete draft.value.nodes[nodeId]
-  selectNode(nodeOrder.value.find((candidate) => candidate !== nodeId) || Object.keys(draft.value.nodes)[0])
+  if (!result.changed || !result.selected_node_id) return
+  draft.value = result.dialogue
+  selectNode(result.selected_node_id)
 }
 
 function setStartNode() {
   if (draft.value && selectedNodeId.value) draft.value.start_node_id = selectedNodeId.value
 }
 
-function flowMode(node: DialogueNodeDefinition): 'linear' | 'choices' | 'end' {
-  if (node.choices.length > 0) return 'choices'
-  if (node.next_node_id) return 'linear'
-  return 'end'
-}
-
-function setFlowMode(mode: 'linear' | 'choices' | 'end') {
-  if (!selectedNode.value) return
-  if (mode === 'linear') {
-    selectedNode.value.choices = []
-    selectedNode.value.is_ending = false
-    selectedNode.value.ending_type = null
-    selectedNode.value.next_node_id ||= targetNodeIds.value.find((nodeId) => nodeId !== selectedNodeId.value) || null
-  } else if (mode === 'choices') {
-    selectedNode.value.next_node_id = null
-    selectedNode.value.is_ending = false
-    selectedNode.value.ending_type = null
-    if (selectedNode.value.choices.length === 0) addChoice()
-  } else {
-    selectedNode.value.next_node_id = null
-    selectedNode.value.choices = []
-    selectedNode.value.is_ending = true
-  }
+function setFlowMode(mode: DialogueFlowMode) {
+  if (!selectedNode.value || !selectedNodeId.value) return
+  Object.assign(selectedNode.value, setDialogueNodeFlowMode(
+    selectedNode.value,
+    selectedNodeId.value,
+    mode,
+    targetNodeIds.value,
+    t('dialogue.new-choice', 'New choice'),
+  ))
 }
 
 function addChoice() {
-  if (!selectedNode.value || selectedNode.value.choices.length >= 32) return
-  selectedNode.value.next_node_id = null
-  selectedNode.value.is_ending = false
-  selectedNode.value.ending_type = null
-  selectedNode.value.choices.push({
-    text: t('dialogue.new-choice', 'New choice'),
-    next_node_id: targetNodeIds.value.find((nodeId) => nodeId !== selectedNodeId.value) || '',
-    relationship_changes: {},
-    condition: null,
-  })
+  if (!selectedNode.value || !selectedNodeId.value) return
+  Object.assign(selectedNode.value, appendDialogueChoice(
+    selectedNode.value,
+    selectedNodeId.value,
+    targetNodeIds.value,
+    t('dialogue.new-choice', 'New choice'),
+  ))
 }
 
 function removeChoice(index: number) {
-  selectedNode.value?.choices.splice(index, 1)
-}
-
-function relationshipEntries(choice: DialogueChoiceDefinition): Array<[string, number]> {
-  return Object.entries(choice.relationship_changes).sort(([left], [right]) => left.localeCompare(right))
+  if (selectedNode.value) Object.assign(selectedNode.value, removeDialogueChoice(selectedNode.value, index))
 }
 
 function availableRelationshipCharacters(choice: DialogueChoiceDefinition): CharacterInfo[] {
-  return characters.value.filter((character) => !(character.id in choice.relationship_changes))
+  return availableDialogueRelationshipCharacters(choice, characters.value)
 }
 
 function addRelationship(choice: DialogueChoiceDefinition) {
   const character = availableRelationshipCharacters(choice)[0]
-  if (character) choice.relationship_changes[character.id] = 0.1
+  if (character) Object.assign(choice, addRelationshipToChoice(choice, character.id))
 }
 
 function removeRelationship(choice: DialogueChoiceDefinition, characterId: string) {
-  delete choice.relationship_changes[characterId]
+  Object.assign(choice, removeRelationshipFromChoice(choice, characterId))
 }
 
 function renameRelationship(choice: DialogueChoiceDefinition, before: string, event: Event) {
   const after = (event.target as HTMLSelectElement).value
-  if (!after || after === before || after in choice.relationship_changes) return
-  const delta = choice.relationship_changes[before]
-  delete choice.relationship_changes[before]
-  choice.relationship_changes[after] = delta
+  Object.assign(choice, renameRelationshipInChoice(choice, before, after))
 }
 
 function setRelationshipDelta(choice: DialogueChoiceDefinition, characterId: string, event: Event) {
-  choice.relationship_changes[characterId] = Number((event.target as HTMLInputElement).value)
-}
-
-function derivedCharacters(catalog: DialogueAuthoringCatalogSnapshot): CharacterInfo[] {
-  const ids = new Set<string>()
-  for (const dialogue of catalog.dialogues) {
-    for (const node of Object.values(dialogue.nodes)) {
-      if (node.speaker_id) ids.add(node.speaker_id)
-      node.choices.forEach((choice) => Object.keys(choice.relationship_changes).forEach((id) => ids.add(id)))
-    }
-  }
-  return [...ids].sort().map((id) => ({ id, name: titleFromId(id) }))
-}
-
-function titleFromId(id: string): string {
-  return id.split(/[_-]/).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ')
+  Object.assign(choice, setDialogueRelationshipDelta(choice, characterId, (event.target as HTMLInputElement).value))
 }
 
 async function loadCatalog(preferredId?: string | null) {
@@ -715,11 +615,9 @@ async function loadCatalog(preferredId?: string | null) {
       invokeCommand<CharacterInfo[]>('get_characters', undefined, []),
     ])
     snapshot.value = nextSnapshot
-    const byId = new Map<string, CharacterInfo>()
-    for (const character of [...derivedCharacters(nextSnapshot), ...projectCharacters]) byId.set(character.id, character)
-    characters.value = [...byId.values()].sort((left, right) => left.name.localeCompare(right.name))
+    characters.value = mergeDialogueCharacters(nextSnapshot, projectCharacters)
     const target = nextSnapshot.dialogues.find((dialogue) => dialogue.id === preferredId) || nextSnapshot.dialogues[0]
-    if (target) setDraft(definitionFrom(target), target.id)
+    if (target) setDraft(dialogueDefinitionFromEntry(target), target.id)
     else {
       draft.value = null
       selectedDialogueId.value = null
@@ -744,7 +642,7 @@ async function saveDialogue() {
   busy.value = true
   try {
     const wasExisting = selectedDialogueId.value !== null
-    const dialogue = normalizeDialogueDefinition({ ...cloneDefinition(draft.value), variables: parsedVariables.value })
+    const dialogue = normalizeDialogueDefinition({ ...cloneDialogueDefinition(draft.value), variables: parsedVariables.value })
     const next = await saveDialogueDefinition(
       dialogue,
       selectedDialogueId.value,
@@ -753,7 +651,7 @@ async function saveDialogue() {
     )
     snapshot.value = next
     const saved = next.dialogues.find((entry) => entry.id === dialogue.id)
-    if (saved) setDraft(definitionFrom(saved), saved.id)
+    if (saved) setDraft(dialogueDefinitionFromEntry(saved), saved.id)
     showNotice('success', wasExisting ? t('dialogue.notice.saved-title', 'Dialogue saved') : t('dialogue.notice.created-title', 'Dialogue created'), t('dialogue.notice.saved-message', '{title} passed graph and project validation.', { title: dialogue.title }))
   } catch (error) {
     showNotice('error', t('authoring.save-rejected', 'Save rejected'), String(error))
@@ -771,7 +669,7 @@ async function removeDialogue() {
     const next = await deleteDialogueDefinition(dialogueId, snapshot.value.catalog_fingerprint)
     snapshot.value = next
     const target = next.dialogues[0]
-    if (target) setDraft(definitionFrom(target), target.id)
+    if (target) setDraft(dialogueDefinitionFromEntry(target), target.id)
     else {
       draft.value = null
       selectedDialogueId.value = null
