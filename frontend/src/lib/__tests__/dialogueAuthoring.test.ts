@@ -10,6 +10,7 @@ import {
 function node(overrides: Partial<DialogueNodeDefinition> = {}): DialogueNodeDefinition {
   return {
     speaker_id: 'aoi',
+    scene_id: null,
     text: 'Hello.',
     next_node_id: null,
     choices: [],
@@ -42,7 +43,25 @@ function dialogue(overrides: Partial<DialogueDefinition> = {}): DialogueDefiniti
 
 describe('dialogue authoring contracts', () => {
   it('accepts a reachable graph with known speakers', () => {
-    expect(validateDialogueDefinition(dialogue(), ['aoi'])).toEqual([])
+    expect(validateDialogueDefinition(
+      dialogue({ nodes: { start: node({ scene_id: 'archive', next_node_id: 'end' }), end: node({ is_ending: true }) } }),
+      ['aoi'],
+      ['archive'],
+    )).toEqual([])
+  })
+
+  it('rejects missing and non-portable scene transitions', () => {
+    const missing = validateDialogueDefinition(
+      dialogue({ nodes: { start: node({ scene_id: 'missing', next_node_id: 'end' }), end: node({ is_ending: true }) } }),
+      ['aoi'],
+      ['archive'],
+    )
+    expect(missing).toContain('Node "start" references unknown scene "missing".')
+
+    const invalid = validateDialogueDefinition(
+      dialogue({ nodes: { start: node({ scene_id: '../archive', next_node_id: 'end' }), end: node({ is_ending: true }) } }),
+    )
+    expect(invalid).toContain('Node "start" scene "../archive" is not portable.')
   })
 
   it('normalizes stable maps and authored text', () => {

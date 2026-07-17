@@ -8,6 +8,7 @@ fn node(text: &str, is_ending: bool) -> DialogueNode {
     DialogueNode {
         id: String::new(),
         speaker_id: None,
+        scene_id: None,
         text: text.to_string(),
         next_node_id: None,
         choices: Vec::new(),
@@ -51,6 +52,7 @@ fn normalization_canonicalizes_editable_fields() {
     let start = dialogue.nodes.get_mut("start").unwrap();
     start.id = " start ".to_string();
     start.speaker_id = Some(" aoi ".to_string());
+    start.scene_id = Some(" archive_room ".to_string());
     start.text = " Hello world. ".to_string();
     start.emotion = Some(" calm ".to_string());
 
@@ -63,6 +65,7 @@ fn normalization_canonicalizes_editable_fields() {
     let start = &normalized.nodes["start"];
     assert!(start.id.is_empty());
     assert_eq!(start.speaker_id.as_deref(), Some("aoi"));
+    assert_eq!(start.scene_id.as_deref(), Some("archive_room"));
     assert_eq!(start.text, "Hello world.");
     assert_eq!(start.emotion.as_deref(), Some("calm"));
 }
@@ -125,6 +128,16 @@ fn validation_reports_authoring_limits_beyond_runtime_topology() {
     assert!(issue_codes.contains("dialogue_text_invalid"));
     assert!(issue_codes.contains("dialogue_llm_prompt_missing"));
     assert!(!issue_codes.contains("dialogue_graph_invalid"));
+}
+
+#[test]
+fn validation_rejects_non_portable_scene_ids() {
+    let mut dialogue = valid_dialogue();
+    dialogue.nodes.get_mut("start").unwrap().scene_id = Some("../archive".to_string());
+
+    let result = validate_dialogue_script(&dialogue, &HashSet::new());
+
+    assert!(codes(&result).contains("dialogue_scene_id_invalid"));
 }
 
 #[test]

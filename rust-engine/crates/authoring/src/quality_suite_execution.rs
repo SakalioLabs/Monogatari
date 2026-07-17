@@ -124,6 +124,7 @@ pub struct QualityWorkflowCoverageReport {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct QualityWorkflowRunReport {
     pub index: usize,
+    pub choice_selections: BTreeMap<String, usize>,
     pub completed: bool,
     pub stopped_reason: Option<String>,
     pub coverage_percent: f32,
@@ -812,26 +813,30 @@ fn scenario_workflow_coverage(
         }
     };
 
-    let run_contexts = if scenario.workflow_run_contexts.is_empty() {
-        vec![None]
-    } else {
-        scenario
-            .workflow_run_contexts
-            .iter()
-            .cloned()
-            .map(Some)
-            .collect()
-    };
-
-    let mut run_reports = Vec::with_capacity(run_contexts.len());
+    let run_count = scenario
+        .workflow_run_contexts
+        .len()
+        .max(scenario.workflow_choice_selections.len())
+        .max(1);
+    let mut run_reports = Vec::with_capacity(run_count);
     let mut executed = HashSet::new();
-    for (index, run_context) in run_contexts.into_iter().enumerate() {
+    for index in 0..run_count {
+        let run_context = scenario.workflow_run_contexts.get(index).cloned();
+        let choice_selections = scenario
+            .workflow_choice_selections
+            .get(index)
+            .cloned()
+            .unwrap_or_default();
         match execute_workflow_preview(
             &workflow,
             event_catalog,
             WorkflowPreviewEnvironment::default(),
             WorkflowPreviewOptions {
                 max_steps: scenario.workflow_max_steps,
+                choice_selections: choice_selections
+                    .iter()
+                    .map(|(node_id, selection)| (node_id.clone(), *selection))
+                    .collect(),
                 run_context,
                 ..WorkflowPreviewOptions::default()
             },
@@ -842,6 +847,7 @@ fn scenario_workflow_coverage(
                 }
                 run_reports.push(QualityWorkflowRunReport {
                     index,
+                    choice_selections,
                     completed: report.completed,
                     stopped_reason: report.stopped_reason,
                     coverage_percent: report.coverage_percent,

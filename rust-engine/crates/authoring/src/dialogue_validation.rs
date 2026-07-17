@@ -50,6 +50,7 @@ pub fn normalize_dialogue_script(mut dialogue: DialogueScript) -> Result<Dialogu
         }
         node.id.clear();
         node.speaker_id = normalize_optional(node.speaker_id.take());
+        node.scene_id = normalize_optional(node.scene_id.take());
         node.text = node.text.trim().to_string();
         node.next_node_id = normalize_optional(node.next_node_id.take());
         node.condition = normalize_optional(node.condition.take());
@@ -202,6 +203,20 @@ pub fn validate_dialogue_script(
                 );
             }
         }
+        if let Some(scene_id) = node.scene_id.as_deref() {
+            if !portable_id(scene_id) {
+                push_issue(
+                    &mut issues,
+                    "dialogue_scene_id_invalid",
+                    Some(node_id),
+                    None,
+                    format!(
+                        "Dialogue `{}` node `{node_id}` has non-portable scene id `{scene_id}`.",
+                        dialogue.id
+                    ),
+                );
+            }
+        }
         if let Some(emotion) = node.emotion.as_deref() {
             validate_text(
                 &mut issues,
@@ -324,6 +339,15 @@ pub fn validate_dialogue_script(
         error_count: issues.len(),
         issues,
     }
+}
+
+fn portable_id(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 128
+        && value.trim() == value
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-' | b'.'))
 }
 
 pub fn ensure_valid_dialogue_script(

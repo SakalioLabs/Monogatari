@@ -1,0 +1,8 @@
+{
+  "description": "移除人格化公开叙述，仅发布坐标与避难路线，同时为未来复审封存完整证据。",
+  "dialogue_id": "blue_frame_silence_epilogue",
+  "id": "blue_frame_silence_ending",
+  "scene_id": "blue_frame_still",
+  "schema": "monogatari-story-ending/v1",
+  "title": "静默：有限封存"
+}

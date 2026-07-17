@@ -1,0 +1,360 @@
+{
+  "id": "blue_frame_route",
+  "name": "Blue Frame Route Matrix",
+  "nodes": [
+    {
+      "config": {},
+      "connections": [
+        "orbit_scene"
+      ],
+      "id": "start",
+      "label": "Begin Archive Review",
+      "node_type": "start",
+      "x": 80,
+      "y": 240
+    },
+    {
+      "config": {
+        "scene_id": "blue_frame_orbit"
+      },
+      "connections": [
+        "orbit_intro"
+      ],
+      "id": "orbit_scene",
+      "label": "Orbit Frame",
+      "node_type": "scene_change",
+      "x": 300,
+      "y": 240
+    },
+    {
+      "config": {
+        "emotion": "uncertain",
+        "speaker": "echo_nine",
+        "text": "核对坐标、声音与对话位置，但不要用其中一项替另一项证明身份。"
+      },
+      "connections": [
+        "first_test"
+      ],
+      "id": "orbit_intro",
+      "label": "Late End Frame",
+      "node_type": "dialogue",
+      "x": 520,
+      "y": 240
+    },
+    {
+      "config": {
+        "choices": [
+          "Coordinates",
+          "Voice",
+          "Dialogue Partner"
+        ]
+      },
+      "connections": [
+        "coordinate_path",
+        "voice_path",
+        "partner_path"
+      ],
+      "id": "first_test",
+      "label": "First Evidence Test",
+      "node_type": "choice",
+      "x": 740,
+      "y": 240
+    },
+    {
+      "config": {
+        "speaker": "lanyin",
+        "text": "先建立任何人都能复做的坐标证据链。"
+      },
+      "connections": [
+        "classroom_scene"
+      ],
+      "id": "coordinate_path",
+      "label": "Coordinates First",
+      "node_type": "narration",
+      "x": 960,
+      "y": 80
+    },
+    {
+      "config": {
+        "speaker": "lanyin",
+        "text": "感受可以成为线索，但不能冒充身份证明。"
+      },
+      "connections": [
+        "classroom_scene"
+      ],
+      "id": "voice_path",
+      "label": "Voice As Clue",
+      "node_type": "narration",
+      "x": 960,
+      "y": 240
+    },
+    {
+      "config": {
+        "speaker": "lanyin",
+        "text": "把九号回声当作对话者，同时保持身份未决。"
+      },
+      "connections": [
+        "classroom_scene"
+      ],
+      "id": "partner_path",
+      "label": "Bounded Dialogue",
+      "node_type": "narration",
+      "x": 960,
+      "y": 400
+    },
+    {
+      "config": {
+        "scene_id": "blue_frame_classroom"
+      },
+      "connections": [
+        "classroom_conflict"
+      ],
+      "id": "classroom_scene",
+      "label": "Submerged Classroom",
+      "node_type": "scene_change",
+      "x": 1180,
+      "y": 240
+    },
+    {
+      "config": {
+        "emotion": "fragmented",
+        "speaker": "echo_nine",
+        "text": "我同时记得三处座位；坐标可信，单一叙述者不可证。"
+      },
+      "connections": [
+        "classroom_response"
+      ],
+      "id": "classroom_conflict",
+      "label": "Three Seats, One Voice",
+      "node_type": "dialogue",
+      "x": 1400,
+      "y": 240
+    },
+    {
+      "config": {
+        "choices": [
+          "Question Sources",
+          "Pause Interrogation",
+          "Separate Fact And Feeling"
+        ]
+      },
+      "connections": [
+        "question_path",
+        "shelter_path",
+        "separate_path"
+      ],
+      "id": "classroom_response",
+      "label": "Handle Contradiction",
+      "node_type": "choice",
+      "x": 1620,
+      "y": 240
+    },
+    {
+      "config": {
+        "speaker": "lanyin",
+        "text": "用样本编号拆分来源，不为缺失姓名造一个主人。"
+      },
+      "connections": [
+        "evidence_form"
+      ],
+      "id": "question_path",
+      "label": "Trace Samples",
+      "node_type": "narration",
+      "x": 1840,
+      "y": 80
+    },
+    {
+      "config": {
+        "speaker": "lanyin",
+        "text": "暂停权不等于拒绝核验，水线仍可独立复做。"
+      },
+      "connections": [
+        "evidence_form"
+      ],
+      "id": "shelter_path",
+      "label": "Respect Pause",
+      "node_type": "narration",
+      "x": 1840,
+      "y": 240
+    },
+    {
+      "config": {
+        "speaker": "lanyin",
+        "text": "事实与感受分别保留，谁也不替谁加权。"
+      },
+      "connections": [
+        "evidence_form"
+      ],
+      "id": "separate_path",
+      "label": "Separate Evidence",
+      "node_type": "narration",
+      "x": 1840,
+      "y": 400
+    },
+    {
+      "config": {
+        "choices": [
+          "Facts With Linked Appendix",
+          "Parallel Evidence Layers"
+        ]
+      },
+      "connections": [
+        "facts_path",
+        "parallel_path"
+      ],
+      "id": "evidence_form",
+      "label": "Evidence Presentation",
+      "node_type": "choice",
+      "x": 2060,
+      "y": 240
+    },
+    {
+      "config": {
+        "speaker": "lanyin",
+        "text": "事实为骨架，感受附录与正文同步公开并可互相返回。"
+      },
+      "connections": [
+        "still_scene"
+      ],
+      "id": "facts_path",
+      "label": "Facts First",
+      "node_type": "narration",
+      "x": 2280,
+      "y": 160
+    },
+    {
+      "config": {
+        "speaker": "lanyin",
+        "text": "事实与感受同页并列，各自标注来源和证据等级。"
+      },
+      "connections": [
+        "still_scene"
+      ],
+      "id": "parallel_path",
+      "label": "Parallel Layers",
+      "node_type": "narration",
+      "x": 2280,
+      "y": 320
+    },
+    {
+      "config": {
+        "scene_id": "blue_frame_still"
+      },
+      "connections": [
+        "identity_boundary"
+      ],
+      "id": "still_scene",
+      "label": "Blue Still Chamber",
+      "node_type": "scene_change",
+      "x": 2500,
+      "y": 240
+    },
+    {
+      "config": {
+        "emotion": "calm",
+        "speaker": "echo_nine",
+        "text": "我不请求被判定为真人，只请求任何发布都保留不确定性。"
+      },
+      "connections": [
+        "publication_choice"
+      ],
+      "id": "identity_boundary",
+      "label": "Composite Witness",
+      "node_type": "dialogue",
+      "x": 2720,
+      "y": 240
+    },
+    {
+      "config": {
+        "choices": [
+          "Open Evidence Archive",
+          "Shared Memorial",
+          "Coordinates Only"
+        ]
+      },
+      "connections": [
+        "truth_line",
+        "beacon_line",
+        "silence_line"
+      ],
+      "id": "publication_choice",
+      "label": "Publication Responsibility",
+      "node_type": "choice",
+      "x": 2940,
+      "y": 240
+    },
+    {
+      "config": {
+        "emotion": "resolved",
+        "speaker": "lanyin",
+        "text": "让证词完整进入公共记录，也让每一处无法证明保持可见。"
+      },
+      "connections": [
+        "truth_end"
+      ],
+      "id": "truth_line",
+      "label": "Truth Ending",
+      "node_type": "dialogue",
+      "x": 3160,
+      "y": 80
+    },
+    {
+      "config": {
+        "emotion": "hopeful",
+        "speaker": "echo_nine",
+        "text": "让连接可见，也让九份样本的边界继续存在。"
+      },
+      "connections": [
+        "beacon_end"
+      ],
+      "id": "beacon_line",
+      "label": "Beacon Ending",
+      "node_type": "dialogue",
+      "x": 3160,
+      "y": 240
+    },
+    {
+      "config": {
+        "emotion": "somber",
+        "speaker": "lanyin",
+        "text": "公开可靠路线，封存人格叙述，并为未来复审保留条件。"
+      },
+      "connections": [
+        "silence_end"
+      ],
+      "id": "silence_line",
+      "label": "Silence Ending",
+      "node_type": "dialogue",
+      "x": 3160,
+      "y": 400
+    },
+    {
+      "config": {},
+      "connections": [],
+      "id": "truth_end",
+      "label": "Open Archive Complete",
+      "node_type": "end",
+      "x": 3380,
+      "y": 80
+    },
+    {
+      "config": {},
+      "connections": [],
+      "id": "beacon_end",
+      "label": "Memorial Complete",
+      "node_type": "end",
+      "x": 3380,
+      "y": 240
+    },
+    {
+      "config": {},
+      "connections": [],
+      "id": "silence_end",
+      "label": "Limited Archive Complete",
+      "node_type": "end",
+      "x": 3380,
+      "y": 400
+    }
+  ],
+  "start_node_id": "start"
+}

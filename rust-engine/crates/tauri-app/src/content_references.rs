@@ -2,7 +2,9 @@
 
 use std::path::Path;
 
+use llm_authoring::dialogue_validation::MAX_DIALOGUE_FILE_BYTES;
 use llm_game::characters::Character;
+use llm_game::dialogue::DialogueScript;
 
 use crate::commands::endings::load_story_endings;
 use crate::commands::workflow::Workflow;
@@ -10,6 +12,7 @@ use crate::story_events::{StoryEventAction, StoryEventCatalog};
 
 const MAX_WORKFLOW_REFERENCE_FILES: usize = 512;
 const MAX_WORKFLOW_REFERENCE_BYTES: u64 = 1024 * 1024;
+const MAX_DIALOGUE_REFERENCE_FILES: usize = 512;
 const MAX_CHARACTER_REFERENCE_FILES: usize = 512;
 const MAX_CHARACTER_REFERENCE_BYTES: u64 = 2 * 1024 * 1024;
 
@@ -23,9 +26,92 @@ pub fn scene_references(project_root: &Path, scene_id: &str) -> Result<Vec<Strin
             references.push(format!("ending:{}", ending.id));
         }
     }
+    references.extend(dialogue_scene_references(project_root, scene_id)?);
     references.extend(workflow_scene_references(project_root, scene_id)?);
     references.sort();
     references.dedup();
+    Ok(references)
+}
+
+fn dialogue_scene_references(project_root: &Path, scene_id: &str) -> Result<Vec<String>, String> {
+    let dialogue_root = project_root.join("dialogue");
+    if !dialogue_root.exists() {
+        return Ok(Vec::new());
+    }
+    let root_metadata = std::fs::symlink_metadata(&dialogue_root).map_err(|error| {
+        format!(
+            "Failed to inspect dialogue directory `{}`: {error}",
+            dialogue_root.display()
+        )
+    })?;
+    if root_metadata.file_type().is_symlink() || !root_metadata.is_dir() {
+        return Err("Dialogue reference path must be a regular directory.".to_string());
+    }
+    let canonical_root = dialogue_root.canonicalize().map_err(|error| {
+        format!(
+            "Failed to resolve dialogue directory `{}`: {error}",
+            dialogue_root.display()
+        )
+    })?;
+    let mut paths = std::fs::read_dir(&dialogue_root)
+        .map_err(|error| {
+            format!(
+                "Failed to read dialogue directory `{}`: {error}",
+                dialogue_root.display()
+            )
+        })?
+        .map(|entry| entry.map(|value| value.path()))
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|error| format!("Failed to enumerate dialogue files: {error}"))?;
+    paths.retain(|path| {
+        path.extension()
+            .and_then(|extension| extension.to_str())
+            .is_some_and(|extension| extension.eq_ignore_ascii_case("json"))
+    });
+    paths.sort();
+    if paths.len() > MAX_DIALOGUE_REFERENCE_FILES {
+        return Err(format!(
+            "Dialogue directory contains {} JSON files; the reference-scan limit is {MAX_DIALOGUE_REFERENCE_FILES}.",
+            paths.len()
+        ));
+    }
+
+    let mut references = Vec::new();
+    for path in paths {
+        let metadata = std::fs::symlink_metadata(&path)
+            .map_err(|error| format!("Failed to inspect dialogue `{}`: {error}", path.display()))?;
+        if metadata.file_type().is_symlink() || !metadata.is_file() {
+            return Err(format!(
+                "Dialogue must be a regular file: {}",
+                path.display()
+            ));
+        }
+        if metadata.len() > MAX_DIALOGUE_FILE_BYTES {
+            return Err(format!(
+                "Dialogue `{}` is {} bytes; the reference-scan limit is {MAX_DIALOGUE_FILE_BYTES} bytes.",
+                path.display(),
+                metadata.len()
+            ));
+        }
+        let canonical_path = path
+            .canonicalize()
+            .map_err(|error| format!("Failed to resolve dialogue `{}`: {error}", path.display()))?;
+        if !canonical_path.starts_with(&canonical_root) {
+            return Err(format!(
+                "Dialogue escapes the project dialogue directory: {}",
+                path.display()
+            ));
+        }
+        let source = std::fs::read_to_string(&canonical_path)
+            .map_err(|error| format!("Failed to read dialogue `{}`: {error}", path.display()))?;
+        let dialogue: DialogueScript = serde_json::from_str(&source)
+            .map_err(|error| format!("Invalid dialogue JSON in `{}`: {error}", path.display()))?;
+        for (node_id, node) in dialogue.nodes {
+            if node.scene_id.as_deref() == Some(scene_id) {
+                references.push(format!("dialogue:{}/{}", dialogue.id, node_id));
+            }
+        }
+    }
     Ok(references)
 }
 
@@ -237,5 +323,30 @@ mod tests {
         let _ = std::fs::remove_dir_all(&root);
 
         assert_eq!(references, vec!["character:aoi"]);
+    }
+
+    #[test]
+    fn scene_references_find_dialogue_node_transitions() {
+        let root = temp_root("dialogue-scene");
+        let dialogues = root.join("dialogue");
+        std::fs::create_dir_all(&dialogues).unwrap();
+        std::fs::write(
+            dialogues.join("route.json"),
+            r#"{
+              "id":"archive_route",
+              "title":"Archive Route",
+              "start_node_id":"arrival",
+              "nodes":{
+                "arrival":{"text":"Arrival","scene_id":"archive","next_node_id":"end"},
+                "end":{"text":"End","is_ending":true}
+              }
+            }"#,
+        )
+        .unwrap();
+
+        let references = scene_references(&root, "archive").unwrap();
+        let _ = std::fs::remove_dir_all(&root);
+
+        assert_eq!(references, vec!["dialogue:archive_route/arrival"]);
     }
 }

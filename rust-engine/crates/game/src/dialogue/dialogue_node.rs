@@ -28,6 +28,9 @@ pub struct DialogueNode {
     /// ID of the character speaking (if any).
     #[serde(default)]
     pub speaker_id: Option<String>,
+    /// Optional project scene to activate when this node is entered.
+    #[serde(default)]
+    pub scene_id: Option<String>,
     /// The dialogue text to display.
     pub text: String,
     /// ID of the next node (for linear progression).

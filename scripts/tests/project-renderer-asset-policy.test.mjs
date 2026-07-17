@@ -29,17 +29,19 @@ test('checked-in renderer assets return cross-root passing evidence', async () =
       characterCount: evidence.characterCount,
       sceneCount: evidence.sceneCount,
       sceneBackgroundCount: evidence.sceneBackgroundCount,
+      sceneModel3dCount: evidence.sceneModel3dCount,
       declaredCharacterAssetCount: evidence.declaredCharacterAssetCount,
     },
     {
       characterCount: 40,
-      sceneCount: 18,
-      sceneBackgroundCount: 18,
+      sceneCount: 24,
+      sceneBackgroundCount: 24,
+      sceneModel3dCount: 6,
       declaredCharacterAssetCount: 34,
     },
   )
   assert.deepEqual(messages, [
-    '[release] Renderer assets OK (40 character record(s), 18/18 scene background(s), 34 declared character asset(s))',
+    '[release] Renderer assets OK (40 character record(s), 24/24 scene background(s), 6 scene 3D model(s), 34 declared character asset(s))',
   ])
 })
 
@@ -48,6 +50,7 @@ test('character and scene asset drift stays independently actionable', async () 
   const sakuraPath = path.join(repositoryRoot, 'data', 'characters', 'sakura.json')
   const crossroadsPath = path.join(repositoryRoot, 'data', 'scenes', 'crossroads.json')
   const libraryPath = path.join(repositoryRoot, 'data', 'scenes', 'great_library.json')
+  const orbitPath = path.join(repositoryRoot, 'data', 'scenes', 'blue_frame_orbit.json')
   const evidence = await collectProjectRendererAssetEvidence({
     ...boundaries,
     async readFile(filePath, encoding) {
@@ -74,6 +77,11 @@ test('character and scene asset drift stays independently actionable', async () 
         scene.background_path = 'assets/backgrounds/missing.bmp'
         return JSON.stringify(scene)
       }
+      if (resolved === orbitPath) {
+        const scene = JSON.parse(source)
+        scene.model_3d_path = 'assets/models/missing.glb'
+        return JSON.stringify(scene)
+      }
       return source
     },
   })
@@ -84,6 +92,7 @@ test('character and scene asset drift stays independently actionable', async () 
     'data/scenes/crossroads.json background: checked-in renderer assets must use project-relative paths, got https://example.invalid/crossroads.svg',
     'data/scenes/great_library.json background: unsupported renderer asset extension .bmp',
     'data/scenes/great_library.json background: renderer asset does not exist: data/assets/backgrounds/missing.bmp',
+    'data/scenes/blue_frame_orbit.json 3D model: renderer asset does not exist: data/assets/models/missing.glb',
   ]) {
     assert(evidence.issues.includes(issue), issue)
   }

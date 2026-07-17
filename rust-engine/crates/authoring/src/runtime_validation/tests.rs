@@ -203,6 +203,39 @@ async fn validates_scene_and_ending_references_with_the_loaded_dialogue_runtime(
 }
 
 #[tokio::test]
+async fn validates_dialogue_scene_transitions_against_the_scene_catalog() {
+    let root = project_root("dialogue_scene_transition");
+    write_valid_core(&root);
+    std::fs::write(
+        root.join("scenes/archive.json"),
+        r#"{"id":"archive","name":"Archive"}"#,
+    )
+    .unwrap();
+    std::fs::write(
+        root.join("dialogue/intro.json"),
+        r#"{"id":"intro","title":"Intro","start_node_id":"start","nodes":{"start":{"speaker_id":"aoi","scene_id":"archive","text":"Hello","next_node_id":"end"},"end":{"scene_id":"missing","text":"Done","is_ending":true}}}"#,
+    )
+    .unwrap();
+
+    let report = validate_core_runtime_project(&root).await.unwrap();
+
+    assert!(!report.valid);
+    assert_eq!(
+        report
+            .issues
+            .iter()
+            .filter(|issue| issue.code == "dialogue_scene_target_missing")
+            .count(),
+        1
+    );
+    assert!(report.issues.iter().any(|issue| {
+        issue.code == "dialogue_scene_target_missing"
+            && issue.path.as_deref() == Some("dialogue/intro/end")
+    }));
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
 async fn reports_cross_catalog_reference_failures_deterministically() {
     let root = project_root("references");
     write_valid_core(&root);

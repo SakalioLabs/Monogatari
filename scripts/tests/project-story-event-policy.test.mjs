@@ -18,7 +18,7 @@ test('checked-in Story Event and Ending catalogs return cross-root passing evide
   assert.deepEqual(evidence.issues, [])
   assert.equal(evidence.fileCount, 4)
   assert.equal(evidence.eventCount, 10)
-  assert.equal(evidence.endingCount, 4)
+  assert.equal(evidence.endingCount, 7)
   assert.equal(
     evidence.catalogFingerprint,
     'dd87c91c64c6affaaa139c5aac073f9b0a47aab9f135bb95760c88f0099a0f0f',

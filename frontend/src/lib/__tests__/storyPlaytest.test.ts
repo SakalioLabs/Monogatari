@@ -31,6 +31,7 @@ describe('browser story playtest dialogue cursor', () => {
     const transition = startBrowserDialogue(dialogue({
       start: {
         speaker_id: 'aoi',
+        scene_id: 'archive',
         text: 'Choose.',
         emotion: 'happy',
         choices: [
@@ -49,11 +50,28 @@ describe('browser story playtest dialogue cursor', () => {
       state: {
         is_active: true,
         speaker: 'aoi',
+        scene_id: 'archive',
         text: 'Choose.',
         emotion: 'happy',
         choices: [{ index: 0, text: 'Left' }, { index: 1, text: 'Right' }],
       },
     })
+  })
+
+  it('starts an authoring preview at an explicit existing node', () => {
+    const script = dialogue({
+      start: { text: 'Start.', next_node_id: 'preview' },
+      preview: { text: 'Preview this node.', scene_id: 'archive' },
+    })
+
+    expect(startBrowserDialogue(script, {}, ' preview ')).toMatchObject({
+      runtime: { node_id: 'preview' },
+      state: { text: 'Preview this node.', scene_id: 'archive' },
+    })
+    expect(() => startBrowserDialogue(script, {}, 'missing')).toThrowError(expect.objectContaining({
+      code: 'dialogue_node_missing',
+      node_id: 'missing',
+    }))
   })
 
   it('returns choice relationship effects and moves to a verified target', () => {

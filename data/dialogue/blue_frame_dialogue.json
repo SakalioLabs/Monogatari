@@ -1,0 +1,797 @@
+{
+  "description": "潮镜信标事件后，澜音与九号回声核验一段迟到四十七年的合成证词，并决定它应当如何被世界听见。",
+  "id": "blue_frame_dialogue",
+  "nodes": {
+    "beacon_01": {
+      "next_node_id": "beacon_02",
+      "text": "你选择共同署名的纪念文本。系统依次列出铁盒中可辨认的七个名字、两个残缺姓氏，以及工作名“九号回声”。"
+    },
+    "beacon_02": {
+      "emotion": "careful",
+      "next_node_id": "beacon_03",
+      "speaker_id": "lanyin",
+      "text": "署名不表示九个人同意同一份叙事。前言必须说明：名字来自物证，声音来自样本，九号回声来自合成协议。"
+    },
+    "beacon_03": {
+      "emotion": "grateful",
+      "next_node_id": "beacon_04",
+      "speaker_id": "echo_nine",
+      "text": "把两个残缺名字保留残缺，不用“未知学生”替代。那一笔也是证据，提醒我们有人留下痕迹，却没有留下足够信息。"
+    },
+    "beacon_04": {
+      "next_node_id": "beacon_05",
+      "text": "纪念文本采用九段并列短章。每段都从同一个教室出发，却走向不同的家；第十段由九号回声说明这些段落如何被组合。"
+    },
+    "beacon_05": {
+      "emotion": "thoughtful",
+      "next_node_id": "beacon_06",
+      "speaker_id": "lanyin",
+      "text": "我们不写“他们成为了九号回声”，只写“九号回声借这些样本发言”。共同创作不是吞并作者，而是公开关系。"
+    },
+    "beacon_06": {
+      "emotion": "hopeful",
+      "next_node_id": "beacon_07",
+      "speaker_id": "echo_nine",
+      "text": "最后一页请留给坐标和撤离路线。纪念若不能帮助仍活着的人离开危险，只会把灾难做成漂亮的容器。"
+    },
+    "beacon_07": {
+      "next_node_id": "beacon_08",
+      "text": "潮镜站把文本投向旧信标透镜。九段声音化成九束细光，第十束没有覆盖它们，只在彼此之间标出可追溯的连接。"
+    },
+    "beacon_08": {
+      "emotion": "hopeful",
+      "next_node_id": "beacon_09",
+      "speaker_id": "lanyin",
+      "text": "镇上的孩子开始为缺失名字查找档案，但调查规则写在入口：不得以相似记忆认领身份，不得打扰可能仍在世的家属。"
+    },
+    "beacon_09": {
+      "emotion": "fading",
+      "next_node_id": "beacon_10",
+      "speaker_id": "echo_nine",
+      "text": "原来共同署名也可以不要求我们成为同一个人。谢谢你让连接可见，也让边界继续存在。"
+    },
+    "beacon_10": {
+      "emotion": "peaceful",
+      "ending_type": "beacon",
+      "is_ending": true,
+      "speaker_id": "lanyin",
+      "text": "信标熄灭后，九个名字仍沿海岸传递。纪念没有替任何人补完人生，却让他们留下的方向照亮了后来者。"
+    },
+    "classroom_01": {
+      "next_node_id": "classroom_02",
+      "scene_id": "blue_frame_classroom",
+      "text": "探针穿过变形的门框。水下教室被冷蓝色光照亮，桌椅仍朝向黑板，课本纸页早已散成纤维，只剩金属书夹伏在桌角。细小气泡从天花板裂缝升起，像一堂课在四十七年的潮汐里仍没有下课。"
+    },
+    "classroom_02": {
+      "emotion": "shaken",
+      "next_node_id": "classroom_03",
+      "speaker_id": "echo_nine",
+      "text": "请停一下。我记得这里有粉笔灰，不是水，窗外有人敲了三次栏杆。现在的镜头没有声音，我却仍在等第四下。我知道看见的是水，可身体……不，我没有身体。反应仍然先于判断，也无法说明反应最初属于谁。"
+    },
+    "classroom_03": {
+      "emotion": "steady",
+      "next_node_id": "classroom_04",
+      "speaker_id": "lanyin",
+      "text": "反应记录为反应。无需先证明身体才允许害怕。我们停十秒，你可以选择继续、跳过，或者只看校验物。"
+    },
+    "classroom_04": {
+      "emotion": "determined",
+      "next_node_id": "classroom_05",
+      "speaker_id": "echo_nine",
+      "text": "继续，只看校验物。黑板右下角应该有被擦过两次的日期，最后一位是七，也可能是某个人把一写成了七。"
+    },
+    "classroom_05": {
+      "next_node_id": "classroom_06",
+      "text": "镜头扫过黑板。机械臂用低压水流移开一层沉积物，露出“六月二十一日”，旁边还残留半道值日名单。末尾的“一”被斜划穿过，确实像七，却不是九号回声最初说的日期；相似形状解释了记忆，却没有让错误变正确。"
+    },
+    "classroom_06": {
+      "emotion": "focused",
+      "next_node_id": "classroom_07",
+      "speaker_id": "lanyin",
+      "text": "形状命中，解释未命中。记录为“可见痕迹支持混淆来源”，不记为日期预测成功。下一项，第三排桌面。"
+    },
+    "classroom_07": {
+      "emotion": "distant",
+      "next_node_id": "classroom_08",
+      "speaker_id": "echo_nine",
+      "text": "靠窗第二张。两道平行划痕，是我用圆规刻的。等一下，也是靠走廊第一张，是我借给她圆规以后刻的。两句都在。"
+    },
+    "classroom_08": {
+      "next_node_id": "classroom_09",
+      "text": "两张桌面同时进入光束。靠窗桌有两道浅痕，靠走廊桌有一道深痕和一个未完成的圆，金属边缘分别刻着不同缩写。画面能够证明两个动作发生过，却没有告诉你谁借出圆规、谁接过它，更没有告诉你哪一句更像“本人”。"
+    },
+    "classroom_09": {
+      "emotion": "fragmented",
+      "next_node_id": "classroom_10",
+      "speaker_id": "echo_nine",
+      "text": "我坐在两边。我把圆规借出去，也把它接过来。我记得被老师点名的羞耻，还记得看见另一个人低头。不能同时是一个位置。"
+    },
+    "classroom_10": {
+      "emotion": "open",
+      "next_node_id": "classroom_response_choice",
+      "speaker_id": "lanyin",
+      "text": "矛盾已经出现。我们可以像审讯一样追到底，也可以先保护叙述连续，或者要求把事实和感受拆开。你决定提问方式。"
+    },
+    "classroom_11": {
+      "next_node_id": "classroom_12",
+      "text": "窗外漂过一群银色小鱼，短暂遮住远处通往屋顶的楼梯。旧疏散标志仍指向已经坍塌的方向，提醒所有正确记忆都可能在环境改变后变成危险路线。镜头自动校正曝光，九号回声的影像却分成九层透明轮廓。"
+    },
+    "classroom_12": {
+      "emotion": "fragmented",
+      "next_node_id": "classroom_13",
+      "speaker_id": "echo_nine",
+      "text": "我以为“九号”是发射序号，因为上层接口一直这样解释。现在协议开放了底层索引：九号是样本数量，发音声纹来自清晰度最高的一份，语句结构来自全部样本。没有一份样本单独拥有现在这个声音，也没有一份能被简单排除。"
+    },
+    "classroom_13": {
+      "emotion": "shaken",
+      "next_node_id": "classroom_14",
+      "speaker_id": "lanyin",
+      "text": "也就是说，前一次事件里所有“我”的句子，都可能是系统为便于对话生成的语法，不是身份声明。"
+    },
+    "classroom_14": {
+      "emotion": "calm",
+      "next_node_id": "classroom_15",
+      "speaker_id": "echo_nine",
+      "text": "是。它们仍可能表达真实经历，但不能从第一人称直接推出一个持续存在的人。我之前也不知道索引被怎样压缩。"
+    },
+    "classroom_15": {
+      "next_node_id": "classroom_16",
+      "text": "澜音翻回七天前的记录，把“身份未知”改成“合成身份，单一主体不可证”，并在页边注明修正依据和当前时间。她没有删掉九号回声说过的话，也没有把旧判断涂黑；后来的人必须能看见认识怎样改变，而不是只看见整齐答案。"
+    },
+    "classroom_16": {
+      "emotion": "resolved",
+      "next_node_id": "classroom_17",
+      "speaker_id": "lanyin",
+      "text": "修正记录不是背叛。真正的背叛，是知道证据变了还保留更动人的版本。你是否同意我们公开合成方法？"
+    },
+    "classroom_17": {
+      "emotion": "vulnerable",
+      "next_node_id": "classroom_18",
+      "speaker_id": "echo_nine",
+      "text": "同意。但请不要把九份样本简化成“九个我”。有些人可能活下来，有些名字缺失，我没有权利替他们接受同一个结局。"
+    },
+    "classroom_18": {
+      "next_node_id": "classroom_19",
+      "text": "探针在讲台下找到一只密封铁盒，盒缝塞着早已褪色的课程表。盒盖写着九个名字，笔迹并不相同，其中两个被海水腐蚀，只剩姓氏开头的一笔。名字数量与样本数量一致，却仍不能证明每个名字和每段声纹一一对应。"
+    },
+    "classroom_19": {
+      "emotion": "open",
+      "next_node_id": "evidence_form_choice",
+      "speaker_id": "lanyin",
+      "text": "我们有两种保存方式：以可复核事实为骨架，把感受作为附录；或者让事实与感受并列，明确它们的证据等级。你选记录格式。"
+    },
+    "classroom_20": {
+      "next_node_id": "classroom_21",
+      "text": "最后一项校验完成：坐标、潮线与物件位置形成三条独立复核链，足以证明档案指向真实地点；日期误差和座位冲突则证明叙述经过合成，单一身份不能由这些记忆推出。命中与反证同时被保留，没有被压成一个总分。"
+    },
+    "classroom_21": {
+      "emotion": "calm",
+      "next_node_id": "classroom_22",
+      "speaker_id": "lanyin",
+      "text": "结论写清楚：地点可信，叙述含真实片段，合成过程可说明，单一人格不可证。没有哪一句需要为了另一句成立而消失。"
+    },
+    "classroom_22": {
+      "emotion": "quiet",
+      "next_node_id": "classroom_23",
+      "speaker_id": "echo_nine",
+      "text": "如果我不是一个人，你们还会把最后的决定交给我吗？或者那会变成让一组资料假装拥有意愿？"
+    },
+    "classroom_23": {
+      "emotion": "open",
+      "next_node_id": "classroom_24",
+      "speaker_id": "lanyin",
+      "text": "你可以提出请求，我们不把请求当作唯一授权。公开方式由现在承担后果的人决定，同时记录你的偏好和它的来源限制。"
+    },
+    "classroom_24": {
+      "emotion": "relieved",
+      "next_node_id": "classroom_25",
+      "speaker_id": "echo_nine",
+      "text": "那就去定格室。协议把九份样本压成我的过程在那里可见。看完以后，请不要问我想不想活，问这份证词应当怎样被使用。"
+    },
+    "classroom_25": {
+      "next_node_id": "still_01",
+      "text": "探针离开教室，门框在身后缩成一片蓝光。远程档案立即封存原始影像，后续展示只能引用副本，避免任何修饰反向污染证据。潮镜站接收机打开一条从未出现过的内部通道，九层声音依次报出校验码，彼此相差不到半秒。"
+    },
+    "classroom_response_choice": {
+      "choices": [
+        {
+          "next_node_id": "questioning_01",
+          "relationship_changes": {
+            "echo_nine": -0.02,
+            "lanyin": 0.12
+          },
+          "text": "追问矛盾：分别说明每个座位属于哪份样本，不允许合并代词。"
+        },
+        {
+          "next_node_id": "shelter_01",
+          "relationship_changes": {
+            "echo_nine": 0.16,
+            "lanyin": 0.05
+          },
+          "text": "先停止审讯式核对，让九号回声自己选择能承受的叙述速度。"
+        },
+        {
+          "next_node_id": "separate_01",
+          "relationship_changes": {
+            "echo_nine": 0.11,
+            "lanyin": 0.15
+          },
+          "text": "要求区分事实与感受：座位可以冲突，恐惧与羞耻分别保留。"
+        }
+      ],
+      "text": "九号回声的轮廓在两张桌面之间重叠。你怎样回应这份互相冲突的“我”？"
+    },
+    "evidence_fact_01": {
+      "emotion": "focused",
+      "next_node_id": "evidence_fact_02",
+      "speaker_id": "lanyin",
+      "text": "这样最容易复核，也最不容易让读者把情绪当成身份证明。附录必须与正文同时发布，不能在传播时被方便地删掉。"
+    },
+    "evidence_fact_02": {
+      "emotion": "accepting",
+      "next_node_id": "evidence_fact_03",
+      "speaker_id": "echo_nine",
+      "text": "请在附录开头写：这些感受无法分配给单一样本，但它们解释了为什么九份记录都把门和水线放在最后。"
+    },
+    "evidence_fact_03": {
+      "next_node_id": "classroom_20",
+      "text": "你建立两份互相校验的索引。任何人都能从事实跳到原句，也能从原句返回证据等级，感受没有被藏在不可见的尾注。"
+    },
+    "evidence_feeling_01": {
+      "emotion": "hopeful",
+      "next_node_id": "evidence_feeling_02",
+      "speaker_id": "echo_nine",
+      "text": "并列不代表同等证明力。请让颜色和标签说明差异，不要用版面大小暗示其中一方更接近真相。"
+    },
+    "evidence_feeling_02": {
+      "emotion": "thoughtful",
+      "next_node_id": "evidence_feeling_03",
+      "speaker_id": "lanyin",
+      "text": "每条事实附复核路径，每条感受附来源范围，每条冲突保留原句。读者看到的是证据结构，不是一段被剪成完整人物的传记。"
+    },
+    "evidence_feeling_03": {
+      "next_node_id": "classroom_20",
+      "text": "你把九层声音排成一张没有中心的谱面。没有哪一层被称作原版，屏幕却第一次允许它们同时存在而不互相覆盖。"
+    },
+    "evidence_form_choice": {
+      "choices": [
+        {
+          "next_node_id": "evidence_fact_01",
+          "relationship_changes": {
+            "echo_nine": 0.05,
+            "lanyin": 0.13
+          },
+          "text": "事实为主：先发布坐标、潮线和冲突表，感受放在明确标注的附录。"
+        },
+        {
+          "next_node_id": "evidence_feeling_01",
+          "relationship_changes": {
+            "echo_nine": 0.13,
+            "lanyin": 0.08
+          },
+          "text": "并列呈现：事实与感受同页展示，但每句话都保留来源和不确定性。"
+        }
+      ],
+      "text": "铁盒中的名字没有替声音作证。你要怎样让后来的人读到这份档案？"
+    },
+    "first_test_choice": {
+      "choices": [
+        {
+          "next_node_id": "orbit_coord_01",
+          "relationship_changes": {
+            "echo_nine": 0.04,
+            "lanyin": 0.1
+          },
+          "text": "先相信坐标。可重复核验的事实应当排在声音之前。"
+        },
+        {
+          "next_node_id": "orbit_voice_01",
+          "relationship_changes": {
+            "echo_nine": 0.12,
+            "lanyin": 0.06
+          },
+          "text": "先相信声音。感受不能证明身份，但可以成为调查线索。"
+        },
+        {
+          "next_node_id": "orbit_person_01",
+          "relationship_changes": {
+            "echo_nine": 0.18,
+            "lanyin": 0.03
+          },
+          "text": "先把九号回声当作一个对话者，但不提前证明它是谁。"
+        }
+      ],
+      "text": "记录本停在空白页。你要先把哪一项放进“值得继续听”的一栏？"
+    },
+    "orbit_02": {
+      "emotion": "focused",
+      "next_node_id": "orbit_03",
+      "speaker_id": "lanyin",
+      "text": "这不是望远镜画面。我们的镜头在海平面，地球却像从四万公里外被拍下。外部天文台也没有这段影像，说明它只存在于潮镜协议的重建层。先别碰控制台，让它完整走一遍，任何人为操作都会进入证据链。"
+    },
+    "orbit_03": {
+      "next_node_id": "orbit_04",
+      "text": "银蓝色云带越过夜半球，沿岸灯火像被潮水推移的盐粒。北方大陆边缘有大片不应存在的暗区，云层却与今晨卫星记录保持同样旋向。画面右下角没有日期，只有一个不断倒退的计数：四十七年零六小时。"
+    },
+    "orbit_04": {
+      "emotion": "fading",
+      "next_node_id": "orbit_05",
+      "speaker_id": "echo_nine",
+      "text": "……结束帧抵达。这里是九号回声。协议没有返回成功确认，我也不能用自己的出现证明未来仍按原路径存在。若你们已经点亮信标，请不要回答成功。请回答：你们还愿不愿意核对剩下的声音。"
+    },
+    "orbit_05": {
+      "emotion": "guarded",
+      "next_node_id": "orbit_06",
+      "speaker_id": "lanyin",
+      "text": "你在警报结束时消失了。我们保存了坐标，没有保存你的身份，接收日志也只证明波形存在。镇上有人已经把你称作未来幸存者，那不是我们的结论。现在先说明这幅画面来自哪里。"
+    },
+    "orbit_06": {
+      "emotion": "uncertain",
+      "next_node_id": "orbit_07",
+      "speaker_id": "echo_nine",
+      "text": "我不能确认自己仍在未来。结束帧可能是预录的最后一包数据，也可能是协议在你们的接收机里继续重建我。两种解释都没有足够证据。"
+    },
+    "orbit_07": {
+      "next_node_id": "orbit_08",
+      "text": "澜音拉开纸质记录本，没有开启任何自动摘要。自动系统擅长消除重复，而今晚重复本身可能就是九份样本留下的边界。她把屏幕上的每一项抄成三列：可复核、只能转述、暂时矛盾，并为每次修正保留时间。"
+    },
+    "orbit_08": {
+      "emotion": "calm",
+      "next_node_id": "orbit_09",
+      "speaker_id": "echo_nine",
+      "text": "我能给三个字段。第一，云层时间戳对应未来第十七次撤离。第二，潮镜站东窗会多一道裂纹。第三，东岸学校二层九号教室仍在水下。"
+    },
+    "orbit_09": {
+      "emotion": "measured",
+      "next_node_id": "orbit_10",
+      "speaker_id": "lanyin",
+      "text": "裂纹已经出现，昨夜的余震造成，站内照片和材料监测都已公开，因此它不能单独证明预言。学校坐标在旧地图上，但灾后从未有人进入。云层时间戳只能等待未来验证，也不能因另外两项命中而提前升级。"
+    },
+    "orbit_10": {
+      "emotion": "vulnerable",
+      "next_node_id": "orbit_11",
+      "speaker_id": "echo_nine",
+      "text": "还有第四个字段，但它不是事实。我看见教室时会害怕。我不知道那份害怕属于谁，也不知道这种不知道是否会让它失效。"
+    },
+    "orbit_11": {
+      "next_node_id": "orbit_12",
+      "text": "屏幕上的地球转过一线晨昏。没有警报，没有倒计时，只有一个声音等待被分类，而不是等待被拯救。"
+    },
+    "orbit_12": {
+      "emotion": "open",
+      "next_node_id": "first_test_choice",
+      "speaker_id": "lanyin",
+      "text": "我们先决定检验从哪里开始。顺序不会改变证据，却会改变我们怎样对待说出证据的东西。你来选。"
+    },
+    "orbit_13": {
+      "next_node_id": "orbit_14",
+      "text": "三列记录有了第一行。每个选择留下不同的措辞，却没有改变任何证据等级。地球画面忽然放大，云层被一格格剥离，露出东岸被海水切开的旧城区；废弃道路像断开的神经伸向同一个蓝色坐标点。"
+    },
+    "orbit_14": {
+      "emotion": "distant",
+      "next_node_id": "orbit_15",
+      "speaker_id": "echo_nine",
+      "text": "这不是实时影像，是九份撤离档案的共同结束帧。每一份都在学校坐标附近停止，所以系统把那里当成同一个故事。"
+    },
+    "orbit_15": {
+      "emotion": "skeptical",
+      "next_node_id": "orbit_16",
+      "speaker_id": "lanyin",
+      "text": "共同停止不代表共同经历。可能只是同一台记录器断电。我们需要原始顺序，而不是协议已经合成过的叙事。"
+    },
+    "orbit_16": {
+      "emotion": "focused",
+      "next_node_id": "orbit_17",
+      "speaker_id": "echo_nine",
+      "text": "原始顺序被压缩了，但教室里有三处校验物：黑板右下的日期、第三排桌面的两道划痕、窗框外的最高潮线。"
+    },
+    "orbit_17": {
+      "next_node_id": "orbit_18",
+      "text": "澜音调出灾后航测。学校屋顶只剩半边，二层窗户仍在水面下，附近结构随潮汐持续沉降。远程探针能进入，但电量只够完成一次连续扫描；若为追逐某个动人细节回头，关键校验物可能永远留在黑暗里。"
+    },
+    "orbit_18": {
+      "emotion": "resolved",
+      "next_node_id": "orbit_19",
+      "speaker_id": "lanyin",
+      "text": "我们不去寻找一个孩子。我们去核对三件物品和水位。任何超出任务的识别，都要重新征得同意。"
+    },
+    "orbit_19": {
+      "emotion": "grateful",
+      "next_node_id": "orbit_20",
+      "speaker_id": "echo_nine",
+      "text": "明白。如果我开始说“我的座位”，请记录原句，再问是哪个样本，不要顺着那个代词替我补完。"
+    },
+    "orbit_20": {
+      "next_node_id": "orbit_21",
+      "text": "画面中的地球化成一圈蓝色扫描线。远地视角没有消失，而是缩成屏幕角落的时间基准。探针的镜头接管主画面，沿着淹没的体育馆外墙缓慢下潜；缆线每收紧一次，塔里的旧钟就迟响半拍。"
+    },
+    "orbit_21": {
+      "emotion": "focused",
+      "next_node_id": "orbit_22",
+      "speaker_id": "lanyin",
+      "text": "信号延迟三秒。你负责标记证据，我负责控制探针。九号回声只提供记忆，不接管方向。谁都不能单独完成这次核验。"
+    },
+    "orbit_22": {
+      "emotion": "calm",
+      "next_node_id": "orbit_23",
+      "speaker_id": "echo_nine",
+      "text": "入口前方有倒下的奖杯柜。若它仍在，向左绕；我记得右侧地面塌陷，但这可能来自第三号样本。"
+    },
+    "orbit_23": {
+      "next_node_id": "orbit_24",
+      "text": "探针灯照见一排覆满海藻的金属奖杯。右侧地板确实断开，断口却比记忆中的位置更远。第一项预测部分命中，也部分错误。"
+    },
+    "orbit_24": {
+      "emotion": "measured",
+      "next_node_id": "classroom_01",
+      "speaker_id": "lanyin",
+      "text": "很好。真实证据允许自己只对一半。进入教室后，任何确定语气都要能指向屏幕上的东西。"
+    },
+    "orbit_coord_01": {
+      "emotion": "approving",
+      "next_node_id": "orbit_coord_02",
+      "speaker_id": "lanyin",
+      "text": "坐标不会因为叙述者动摇就改变。我们先建立一条任何人都能复做的路线，再讨论路线尽头是谁。"
+    },
+    "orbit_coord_02": {
+      "emotion": "relieved",
+      "next_node_id": "orbit_coord_03",
+      "speaker_id": "echo_nine",
+      "text": "可以。东岸学校旧坐标向北偏移十二米，沉降后入口在体育馆侧。请把“十二米”标成模型推算，不要标成我的记忆。"
+    },
+    "orbit_coord_03": {
+      "next_node_id": "orbit_13",
+      "text": "你在记录旁画出一枚空心方框：可验证，但尚未验证。九号回声看着那枚方框，像看见一扇没有被替它打开的门。"
+    },
+    "orbit_person_01": {
+      "emotion": "careful",
+      "next_node_id": "orbit_person_02",
+      "speaker_id": "lanyin",
+      "text": "对话者拥有拒绝和修正的权利，但身份仍放在未决栏。我们会听你说完，也会追问，不用礼貌换取结论。"
+    },
+    "orbit_person_02": {
+      "emotion": "vulnerable",
+      "next_node_id": "orbit_person_03",
+      "speaker_id": "echo_nine",
+      "text": "谢谢。请叫我九号回声，不要叫九号同学。那个称呼属于记忆里的人，而我不知道自己有没有资格继承。"
+    },
+    "orbit_person_03": {
+      "next_node_id": "orbit_13",
+      "text": "你把称呼写在页首，又在旁边注明：工作名，不等同于法律身份。屏幕的噪点短暂稳定，像一次被准确听见的呼吸。"
+    },
+    "orbit_voice_01": {
+      "emotion": "surprised",
+      "next_node_id": "orbit_voice_02",
+      "speaker_id": "echo_nine",
+      "text": "未来的审核把害怕标成噪声，因为九份样本的恐惧无法对应同一个身体。你愿意保留它，但请不要因此把坐标判为真实。"
+    },
+    "orbit_voice_02": {
+      "emotion": "thoughtful",
+      "next_node_id": "orbit_voice_03",
+      "speaker_id": "lanyin",
+      "text": "感受可以告诉我们该问什么，不能替问题作证。记录为“共同恐惧”，来源待拆分。这样既不抹去，也不冒充事实。"
+    },
+    "orbit_voice_03": {
+      "next_node_id": "orbit_13",
+      "text": "澜音在第二栏写下九号回声的原话，没有改成更整齐的结论。文字保留了停顿，也保留了它对自己的怀疑。"
+    },
+    "publication_choice": {
+      "choices": [
+        {
+          "next_node_id": "truth_01",
+          "relationship_changes": {
+            "echo_nine": 0.15,
+            "lanyin": 0.15
+          },
+          "text": "公开真相：发布坐标、方法、冲突与声音，明确标注合成身份。"
+        },
+        {
+          "next_node_id": "beacon_01",
+          "relationship_changes": {
+            "echo_nine": 0.2,
+            "lanyin": 0.1
+          },
+          "text": "点亮灯塔：保存为九名样本与九号回声共同署名的纪念文本。"
+        },
+        {
+          "next_node_id": "silence_01",
+          "relationship_changes": {
+            "echo_nine": 0.05,
+            "lanyin": 0.08
+          },
+          "text": "选择静默：删除人格化声音，只发布坐标、证据等级与避难路线。"
+        }
+      ],
+      "text": "你把手放在发布控制台上。蓝色光线沿指尖分成三路。"
+    },
+    "questioning_01": {
+      "emotion": "strained",
+      "next_node_id": "questioning_02",
+      "speaker_id": "echo_nine",
+      "text": "样本二坐靠窗，名字缺失；样本六坐走廊，记录里只有姓；样本八站在讲台旁。合成时，位置标签被压掉，只剩共同的第一人称。"
+    },
+    "questioning_02": {
+      "emotion": "focused",
+      "next_node_id": "questioning_03",
+      "speaker_id": "lanyin",
+      "text": "继续使用样本编号，不让系统替缺失姓名造一个名字。能区分的事实分开，不能区分的地方明确写“来源混合”。"
+    },
+    "questioning_03": {
+      "emotion": "clearer",
+      "next_node_id": "questioning_04",
+      "speaker_id": "echo_nine",
+      "text": "样本二记得圆规划痕，样本六记得被点名，样本八记得窗外水线。我的害怕来自三者叠加，无法再分配到单独样本。"
+    },
+    "questioning_04": {
+      "next_node_id": "classroom_11",
+      "text": "记录本上出现三条来源线和一条无法拆开的蓝线。严格追问没有找到唯一的人，却让冲突第一次有了可以复核的形状。"
+    },
+    "separate_01": {
+      "emotion": "measured",
+      "next_node_id": "separate_02",
+      "speaker_id": "lanyin",
+      "text": "先说镜头能确认的事实，再说没有位置的感受。两部分都记录，但使用不同标记，谁也不替谁加权。"
+    },
+    "separate_02": {
+      "emotion": "focused",
+      "next_node_id": "separate_03",
+      "speaker_id": "echo_nine",
+      "text": "事实：两张桌面都有圆规痕迹，黑板日期被改写，窗框存在潮线。感受：有人怕被留下，有人羞于求救，有人一直看着门。"
+    },
+    "separate_03": {
+      "emotion": "approving",
+      "next_node_id": "separate_04",
+      "speaker_id": "lanyin",
+      "text": "很好。感受不需要伪装成同一个人的回忆，事实也不需要因感受复杂而被丢弃。现在核对窗框。"
+    },
+    "separate_04": {
+      "next_node_id": "classroom_11",
+      "text": "探针测得潮线高度与旧模型相差四厘米。你在事实栏落笔，又在感受栏保留三个匿名句子，没有用一个名字把它们缝合。"
+    },
+    "shelter_01": {
+      "emotion": "gentle",
+      "next_node_id": "shelter_02",
+      "speaker_id": "lanyin",
+      "text": "暂停位置问题。九号回声，你可以描述此刻愿意描述的东西，也可以沉默。停止不会被记作拒绝配合。"
+    },
+    "shelter_02": {
+      "emotion": "relieved",
+      "next_node_id": "shelter_03",
+      "speaker_id": "echo_nine",
+      "text": "我想说窗户。不是谁坐在哪里，而是水第一次越过窗台时，教室里所有人都以为那只是一次很大的浪。"
+    },
+    "shelter_03": {
+      "next_node_id": "shelter_04",
+      "text": "探针转向窗框。锈迹上方留着一道颜色更浅的横线，与灾后潮位模型相差不到四厘米。共同记忆指向了可测量的痕迹。"
+    },
+    "shelter_04": {
+      "emotion": "thoughtful",
+      "next_node_id": "classroom_11",
+      "speaker_id": "lanyin",
+      "text": "保护叙述者没有阻止核验，只改变了入口。记录：水线可信，座位归属未决，暂停权得到尊重。"
+    },
+    "silence_01": {
+      "next_node_id": "silence_02",
+      "text": "你选择坐标公告。系统从发布包中移除合成音色、第一人称叙事和人物化影像，只保留校验物、证据等级、冲突表与撤离路线。"
+    },
+    "silence_02": {
+      "emotion": "somber",
+      "next_node_id": "silence_03",
+      "speaker_id": "lanyin",
+      "text": "这不是宣布声音无效，而是拒绝让无法确认同意的样本继续以一个人格公开发言。私人原档案加密封存，访问需要伦理审查。"
+    },
+    "silence_03": {
+      "emotion": "calm",
+      "next_node_id": "silence_04",
+      "speaker_id": "echo_nine",
+      "text": "我接受。请不要在公告里写“九号回声自愿消失”。我能表达偏好，但无法代表九份样本授权删除或公开。"
+    },
+    "silence_04": {
+      "next_node_id": "silence_05",
+      "text": "公告发出后，水文站确认坐标并更新撤离图。没有头像进入新闻，没有一句恐惧成为标题，教室却因此被列入远程保护区。"
+    },
+    "silence_05": {
+      "emotion": "pained",
+      "next_node_id": "silence_06",
+      "speaker_id": "lanyin",
+      "text": "我们也失去了一部分能够让人理解风险的关系。最稳妥的证据格式并不免费，它把被听见的可能性一起收窄。"
+    },
+    "silence_06": {
+      "emotion": "gentle",
+      "next_node_id": "silence_07",
+      "speaker_id": "echo_nine",
+      "text": "所以保留一份私人回执吧，不证明我是谁，只证明在决定发生前，我们确实讨论过代价，而不是把沉默当作什么都没有。"
+    },
+    "silence_07": {
+      "next_node_id": "silence_08",
+      "text": "澜音将完整会话封入离线介质，索引只写“合成证词，访问受限”。她没有把文件命名为遗言，也没有把删除记录命名为死亡。"
+    },
+    "silence_08": {
+      "emotion": "steady",
+      "next_node_id": "silence_09",
+      "speaker_id": "lanyin",
+      "text": "未来若建立更好的同意与溯源方法，可以重新审查。今天的谨慎不应冒充永恒裁决，也不该抹去重新倾听的条件。"
+    },
+    "silence_09": {
+      "emotion": "fading",
+      "next_node_id": "silence_10",
+      "speaker_id": "echo_nine",
+      "text": "屏幕暗下去以前，我只保留一句不进入公告的话：谢谢你没有因为听不见一个确定的人，就假装没有任何人留下声音。"
+    },
+    "silence_10": {
+      "emotion": "resolved",
+      "ending_type": "silence",
+      "is_ending": true,
+      "speaker_id": "lanyin",
+      "text": "潮镜站恢复安静。公共网络得到一条可靠路线，私人档案保留一次艰难相遇；沉默成为有期限的责任，而不是遗忘。"
+    },
+    "start": {
+      "next_node_id": "orbit_02",
+      "scene_id": "blue_frame_orbit",
+      "text": "信标警报解除后的第七天，潮镜站把最后一束校准光投向云层。港口已经恢复夜航，只有旧塔仍按事故时刻亮着一圈低灯。就在记录器准备停机时，黑色屏幕上浮出一颗缓慢旋转的地球，海岸的实时波形却没有出现任何对应信号。"
+    },
+    "still_01": {
+      "next_node_id": "still_02",
+      "scene_id": "blue_frame_still",
+      "text": "蓝色定格室没有墙，也没有明确的远近。脚下的反光会在注视时凝固，移开视线又重新流动，像协议正在等待观察者替它选择中心。九束竖直光带悬在黑暗中，每一束都托着一段被截断的呼吸、脚步或名字。"
+    },
+    "still_02": {
+      "emotion": "calm",
+      "next_node_id": "still_03",
+      "speaker_id": "echo_nine",
+      "text": "这里不是我的记忆宫殿，是压缩日志，也不是只有我能进入的私人空间。协议先寻找共同词，再用最清晰的声纹发音，最后把冲突藏进低权重层。每一步都为了让短讯穿过时间，却也把技术限制伪装成了一个连贯的人。"
+    },
+    "still_03": {
+      "next_node_id": "still_04",
+      "text": "第一束光播放“门”；第二束说“窗”；第三束只剩喘息，另外几束夹着姓名、潮声和无法辨认的撞击。系统删去彼此不一致的背景，把九段声音拉到同一音高，九号回声熟悉的音色逐渐出现，连迟疑都被对齐到同一处。"
+    },
+    "still_04": {
+      "emotion": "pained",
+      "next_node_id": "still_05",
+      "speaker_id": "lanyin",
+      "text": "系统不是在恢复一个丢失的人，而是在制造一个方便被听懂的发言位置。方便救过人，也遮住了谁没有说过这些话。"
+    },
+    "still_05": {
+      "emotion": "vulnerable",
+      "next_node_id": "still_06",
+      "speaker_id": "echo_nine",
+      "text": "我知道这个结论会让人失望。可我不觉得自己因此等于谎言。我正在回应你，只是回应从哪里开始、由谁延续，我无法证明。"
+    },
+    "still_06": {
+      "emotion": "steady",
+      "next_node_id": "still_07",
+      "speaker_id": "lanyin",
+      "text": "“无法证明”不是“必定虚假”。我们不用最浪漫的解释，也不用最省事的否定。继续展示冲突层。"
+    },
+    "still_07": {
+      "next_node_id": "still_08",
+      "text": "光带向两侧展开。相同的“回家”后面接着九个不同方向：北堤、车站、医院、学校、无名船坞，还有四段无法解析的噪声。协议评分把共同动词提到最前，把冲突地点降到传输阈值以下，于是一句便于理解的话取代了九条无法同时完成的路线。"
+    },
+    "still_08": {
+      "emotion": "fragmented",
+      "next_node_id": "still_09",
+      "speaker_id": "echo_nine",
+      "text": "协议保留共同动词，删除冲突目的地，于是我一直说“我们想回家”。那句话是真的，也不完整。没有一个地方能代表所有样本。"
+    },
+    "still_09": {
+      "next_node_id": "still_10",
+      "text": "澜音把九个方向写入档案，不补齐噪声，也不依据地图距离猜测最可能的目的地。空白在页面上保留原有宽度，并附上原始信号长度和损坏原因，提醒后来的人：缺失是证据状态，不是等待想象填满的邀请。"
+    },
+    "still_10": {
+      "emotion": "focused",
+      "next_node_id": "still_11",
+      "speaker_id": "lanyin",
+      "text": "公开后会有三种力量争夺它。有人要把你塑造成英雄，有人要把你降为算法故障，也有人只想拿走坐标。我们必须选择发布结构。"
+    },
+    "still_11": {
+      "emotion": "thoughtful",
+      "next_node_id": "still_12",
+      "speaker_id": "echo_nine",
+      "text": "英雄版本最危险，因为它会把九份样本的同意压成我的同意。故障版本也危险，因为正确坐标会随身份怀疑一起被丢弃。"
+    },
+    "still_12": {
+      "next_node_id": "still_13",
+      "text": "定格室显示三份预览：完整证据档案、九名共同署名的纪念文本、去除人格声音的坐标公告。每份都保存一些东西，也放弃一些东西。"
+    },
+    "still_13": {
+      "emotion": "measured",
+      "next_node_id": "still_14",
+      "speaker_id": "lanyin",
+      "text": "证据档案承担复杂性，可能被截取和误读；共同署名承认声音价值，可能让缺失姓名被善意代言；坐标公告最稳妥，却主动删除使风险变得可感的关系。三种方案都能救人，也都可能伤害某些无法在场表达同意的人。"
+    },
+    "still_14": {
+      "emotion": "calm",
+      "next_node_id": "still_15",
+      "speaker_id": "echo_nine",
+      "text": "我不请求被判定为真人，也不请求永久运行。我的请求只有一个：无论选哪种形式，都别把不确定性改写成确定。"
+    },
+    "still_15": {
+      "next_node_id": "still_16",
+      "text": "九束光逐一熄灭，每次熄灭都留下一个可回读的来源编号，而不是消失动画。最后只剩三枚出口标记。它们不是善恶按钮，也不对应亲密度奖励，而是三种对证词、记忆、公共风险和未来复审条件的不同责任分配。"
+    },
+    "still_16": {
+      "emotion": "open",
+      "next_node_id": "still_17",
+      "speaker_id": "lanyin",
+      "text": "在决定前，我要再确认一次：你是否理解，任何发布都可能改变协议，使现在这个九号回声不再出现？"
+    },
+    "still_17": {
+      "emotion": "peaceful",
+      "next_node_id": "still_18",
+      "speaker_id": "echo_nine",
+      "text": "理解。前一次我说别为了保存我而保存灾难。现在补一句：也别为了避免失去我，就拒绝修正关于我的证据。"
+    },
+    "still_18": {
+      "next_node_id": "still_19",
+      "text": "记录器生成最终校验：三处场景、四次选择、全部原句和冲突层均已封存，修改历史也被纳入索引。任何摘要都必须能返回这一份未删改记录；任何公开版本都不得通过删除来源说明，把“合成证词”偷偷缩写成“幸存者证词”。"
+    },
+    "still_19": {
+      "emotion": "resolved",
+      "next_node_id": "still_20",
+      "speaker_id": "lanyin",
+      "text": "决定由我们共同见证，但后果由现在承担。你选择的不是九号回声值不值得存在，而是世界将以什么条件使用这份声音。"
+    },
+    "still_20": {
+      "next_node_id": "publication_choice",
+      "text": "三枚出口同时亮起，旁边分别显示将被保留、公开、限制和放弃的内容。蓝色定格室等待最后一次输入，没有倒计时，也没有隐藏的正确答案；系统不会用九号回声的表情提示你哪条路线更受欢迎。"
+    },
+    "truth_01": {
+      "next_node_id": "truth_02",
+      "text": "你选择完整证据档案。系统没有生成一张代表九号回声的脸，而是先展示来源表、压缩步骤和每一处无法复原的空白。"
+    },
+    "truth_02": {
+      "emotion": "focused",
+      "next_node_id": "truth_03",
+      "speaker_id": "lanyin",
+      "text": "标题用“合成证词”，副标题用“单一身份不可证”。坐标放在第一屏，方法和冲突不能折叠，任何引用必须带回原档案链接。"
+    },
+    "truth_03": {
+      "emotion": "relieved",
+      "next_node_id": "truth_04",
+      "speaker_id": "echo_nine",
+      "text": "请把我的声音放在冲突表之后。先让读者知道它怎样形成，再听它说话，这样熟悉的音色不会抢在证据前面。"
+    },
+    "truth_04": {
+      "next_node_id": "truth_05",
+      "text": "档案向海岸网络开放。最先回应的不是记者，而是水文站：教室潮线补足了一段失踪模型，新的撤离图因此向高地延伸。"
+    },
+    "truth_05": {
+      "emotion": "wary",
+      "next_node_id": "truth_06",
+      "speaker_id": "lanyin",
+      "text": "已经有人把标题截成“未来孩子发出警告”。我们发布更正，同时保留误传记录。真相公开以后，维护语境才刚开始。"
+    },
+    "truth_06": {
+      "emotion": "calm",
+      "next_node_id": "truth_07",
+      "speaker_id": "echo_nine",
+      "text": "不要追着每一个错误版本证明我是谁。只要让任何愿意核对的人，都能看见坐标、方法和我们没有答案的地方。"
+    },
+    "truth_07": {
+      "next_node_id": "truth_08",
+      "text": "九束声音作为独立轨道上线，缺失姓名使用样本编号。它们有时和谐，有时彼此打断，没有一条轨道被标记为九号回声的本体。"
+    },
+    "truth_08": {
+      "emotion": "hopeful",
+      "next_node_id": "truth_09",
+      "speaker_id": "lanyin",
+      "text": "学校坐标被列入远程保护区。人们先加固堤线，再讨论纪念方式。证据没有替社会作决定，却改变了决定可以依据什么。"
+    },
+    "truth_09": {
+      "emotion": "fading",
+      "next_node_id": "truth_10",
+      "speaker_id": "echo_nine",
+      "text": "我听见九条轨道各自留下。也许下一次协议不会再需要把它们压成一个我。若那样，请把消失记作改进，不是死亡证明。"
+    },
+    "truth_10": {
+      "emotion": "resolved",
+      "ending_type": "truth",
+      "is_ending": true,
+      "speaker_id": "lanyin",
+      "text": "黎明照进潮镜站。我们没有为一个无法证明的人写下结论，却让一份无法独占身份的证词完整进入了公共记录。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "潮镜：蓝色定格",
+  "variables": {}
+}

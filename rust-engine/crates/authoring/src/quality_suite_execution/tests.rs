@@ -72,6 +72,48 @@ fn tideglass_quality_workflows_reach_full_coverage_without_tauri() {
 }
 
 #[test]
+fn workflow_choice_selections_reach_all_blue_frame_routes_without_tauri() {
+    let root = checked_in_project_root();
+    let suite = parse_quality_suite_document(
+        r#"{
+          "version":"1",
+          "name":"Blue Frame Routes",
+          "description":"Choice coverage",
+          "scenarios":[{
+            "id":"routes",
+            "category":"workflow_coverage",
+            "description":"Three routes",
+            "workflow_path":"workflows/blue_frame_route.json",
+            "workflow_max_steps":32,
+            "workflow_choice_selections":[
+              {"first_test":0,"classroom_response":0,"evidence_form":0,"publication_choice":0},
+              {"first_test":1,"classroom_response":1,"evidence_form":1,"publication_choice":1},
+              {"first_test":2,"classroom_response":2,"evidence_form":0,"publication_choice":2}
+            ],
+            "expect":{"min_workflow_coverage_percent":100,"expected_workflow_unvisited_nodes":[]}
+          }]
+        }"#,
+    )
+    .unwrap();
+    let catalog = StoryEventCatalog::load_from_project_root(&root).unwrap();
+
+    let report = execute_quality_suite(
+        &suite,
+        Some(&root),
+        "quality_suites/blue_frame_routes.json",
+        "c",
+        &catalog,
+        provenance(),
+    );
+
+    assert_eq!(report.failed, 0, "{:#?}", report.scenarios);
+    let coverage = report.scenarios[0].workflow_coverage.as_ref().unwrap();
+    assert_eq!(coverage.coverage_percent, 100.0);
+    assert_eq!(coverage.run_count, 3);
+    assert_eq!(coverage.runs[2].choice_selections["publication_choice"], 2);
+}
+
+#[test]
 fn failed_expectations_return_actionable_headless_evidence() {
     let suite = parse_quality_suite_document(
         r#"{"version":"1","name":"Failure","description":"Failure evidence","scenarios":[{"id":"low-score","category":"quality","description":"Must fail","messages":[{"role":"player","content":"Hello"}],"expect":{"min_overall":1.0}}]}"#,

@@ -1,0 +1,8 @@
+{
+  "description": "公开坐标、合成方法、冲突证据与九层声音，并明确标注单一身份不可证。",
+  "dialogue_id": "blue_frame_truth_epilogue",
+  "id": "blue_frame_truth_ending",
+  "scene_id": "blue_frame_still",
+  "schema": "monogatari-story-ending/v1",
+  "title": "真相：开放档案"
+}

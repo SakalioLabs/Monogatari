@@ -33,6 +33,8 @@ node scripts/sync-project-mirror.mjs --write
 node scripts/sync-project-mirror.mjs --check
 ```
 
+Binary assets are outside Agent JSON transactions. In this repository, plan a bounded local import with `scripts/import-project-asset.mjs`, review its source hash, destination, precondition, byte count, media kind, and `plan_fingerprint`, then repeat the unchanged command with `--write --expected-plan-fingerprint <sha256>`. Use `missing` for a new destination or the exact current destination SHA-256 for replacement. The importer accepts only supported files beneath `assets/`, rejects symlinks, traversal, and case collisions, validates GLB 2.0 structure, stages atomically, and refuses a stale plan. Run delivery validation after importing; importing bytes does not prove that they render correctly or that redistribution rights exist.
+
 Use structured JSON editing and preserve unrelated author changes. Do not invent a parallel schema or bypass runtime validation with a custom parser.
 
 Knowledge entries use lowercase portable IDs and normalized lowercase category labels. Trim titles, content, tags, and `related_entries`; deduplicate tags case-insensitively and relations exactly; keep importance in `0..=1`; and create every related target in the same transaction or beforehand. `relatedEntries` remains a read-compatibility alias for legacy projects, but new Agent output must write canonical `related_entries`. Core-runtime acceptance rejects non-canonical or dangling Knowledge candidates and rolls the transaction back.
@@ -43,9 +45,13 @@ When an Agent transport offers transaction planning or application, read [refere
 
 MCP stdio frames are UTF-8. On Windows PowerShell 5, do not pipe non-ASCII JSON directly to the native MCP process: the native-process pipe can replace authored text even when the input file was read with `-Encoding UTF8`. Use an MCP client that writes UTF-8 bytes and verify non-ASCII content through `read_project_json` after application.
 
+For this repository, call one tool with `node scripts/call-monogatari-mcp.mjs --project-root data --tool <name>`. Put non-empty arguments in a UTF-8 JSON object and pass `--arguments-file <path>`. For application, keep the reviewed raw transaction file unchanged and pass it with `--tool apply_transaction --transaction-file <path> --expected-precondition-fingerprint <sha256> --allow-write`; the client constructs the MCP apply envelope. The client fixes the project root at process startup, performs the MCP initialize handshake, writes UTF-8 bytes, enforces a bounded timeout, and returns structured tool evidence.
+
 ## Use Standard MCP When Available
 
 The repository ships `monogatari-mcp`, documented in `docs/MCP_SERVER.md`. Call `inspect_project`, `validate_project`, and `validate_delivery` first, use `list_project_json` and `read_project_json` to obtain exact preconditions, then call `plan_transaction`. Call `apply_transaction` only when the server explicitly reports write mode and pass the unchanged transaction plus the reviewed plan's `precondition_fingerprint`. Call both validators again after application. For every changed Workflow, call `preview_workflow` with the intended run context, environment, choices, and deterministic random inputs; review its executed nodes, stop reason, coverage, unvisited nodes, and source SHA. Then list the `quality_suites` catalog and call `run_quality_suite` for every intended suite path. Treat read-only `document` acceptance as JSON safety evidence, `core_runtime` as real catalog/runtime acceptance, delivery validation as declared asset readiness, `monogatari-mcp-workflow-preview/v1` as provider-free graph evidence, and `monogatari-mcp-quality-suite-run/v1` as deterministic scenario evidence bound to the reported source SHA. A Quality failure is a successful tool response with `passed: false` and actionable scenario issues.
+
+Scene documents may declare `model_3d_path` for a project-relative `.glb` or `.gltf` environment, with `background_path` retained as an optional loading fallback. Dialogue nodes may declare `scene_id`; Playtest activates that scene when the node is entered. Create every referenced scene before the dialogue transaction so core-runtime validation can reject dangling scene transitions.
 
 For archive delivery, call `preview_project_package` only after project, delivery, and Quality acceptance. Review its complete credential-free manifest, inventory, and `content_sha256`. Call `export_project_package` only when the server reports both write mode and configured package output, pass the exact reviewed content fingerprint, and supply one portable `.monogatari` file name rather than a path. Leave `replace_existing` false unless replacement is intentional and independently reviewed. After export, call `inspect_project_package` and `validate_project_package` with the same file name; require the expected content fingerprint, `verified: true`, and `passed: true`. Inspection proves bounded archive integrity without extraction. Package validation proves private temporary extraction plus shared core-runtime and delivery acceptance, then removes staging; it does not prove persistent installation or rendered visual quality.
 
@@ -65,6 +71,8 @@ node scripts/verify-release.mjs
 ```
 
 For UI or renderer changes, also exercise the relevant route at desktop and mobile sizes. A JSON parse, successful build, or generated image alone does not prove a playable story flow.
+
+Browser authoring Playtest accepts `previewDialogue=<id>&previewNode=<node-id>&authoring=1` to open one existing Dialogue node directly. Use this for bounded visual sampling of key scenes and choices; it starts with the Dialogue's initial variables and does not replay earlier node effects, so Workflow Preview and Quality Suite execution remain the authoritative full-route and branch-coverage evidence.
 
 ## Report Evidence
 

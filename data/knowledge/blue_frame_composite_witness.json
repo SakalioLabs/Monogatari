@@ -1,0 +1,17 @@
+{
+  "category": "rule",
+  "content": "九号回声由九份幸存者语音和残缺记忆压缩为同一发声者。它可以陈述可核对的坐标、共同感受与样本冲突，却不能证明单一身份，也不能证明自己等同于其中任意一人。使用其证词时必须同时保留合成方法、冲突证据和不确定性；承认证词值得被听见，不等于宣判一个无法证明的身份。",
+  "id": "blue_frame_composite_witness",
+  "importance": 1,
+  "related_entries": [
+    "blue_frame_archive",
+    "tideglass_echo_protocol"
+  ],
+  "tags": [
+    "blue_frame",
+    "composite_witness",
+    "identity",
+    "ethics"
+  ],
+  "title": "合成证词的身份边界"
+}

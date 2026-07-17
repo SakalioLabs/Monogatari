@@ -23,7 +23,7 @@ test('checked-in Dialogue catalogs return cross-root passing evidence', async ()
       nodeCount: evidence.nodeCount,
       choiceCount: evidence.choiceCount,
     },
-    { fileCount: 44, nodeCount: 654, choiceCount: 582 },
+    { fileCount: 52, nodeCount: 938, choiceCount: 604 },
   )
 })
 
@@ -39,6 +39,7 @@ test('document, graph, character, relationship, and mirror drift stays independe
       dialogue.unexpected_field = true
       dialogue.start_node_id = 'missing_node'
       dialogue.nodes.start.speaker_id = 'missing_character'
+      dialogue.nodes.start.scene_id = 'missing_scene'
       dialogue.nodes.start.choices = [{
         text: 'Broken branch',
         next_node_id: 'missing_node',
@@ -52,6 +53,7 @@ test('document, graph, character, relationship, and mirror drift stays independe
     'data/dialogue/example_dialogue.json: unknown dialogue fields unexpected_field',
     'data/dialogue/example_dialogue.json: start_node_id must identify an existing node',
     'data/dialogue/example_dialogue.json:start: unknown speaker missing_character',
+    'data/dialogue/example_dialogue.json:start: unknown scene missing_scene',
     'data/dialogue/example_dialogue.json:start:choice-1: target must identify an existing node',
     'data/dialogue/example_dialogue.json:start:choice-1: unknown relationship character missing_character',
     'data/dialogue/example_dialogue.json:start:choice-1: relationship delta for missing_character must be between -1 and 1',

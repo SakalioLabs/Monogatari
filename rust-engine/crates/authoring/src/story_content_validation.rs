@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 
 pub const STORY_ENDING_SCHEMA_V1: &str = "monogatari-story-ending/v1";
 const BACKGROUND_EXTENSIONS: &[&str] = &["png", "jpg", "jpeg", "webp", "bmp", "gif", "svg"];
+const MODEL_3D_EXTENSIONS: &[&str] = &["glb", "gltf"];
 const MAX_SCENE_FILES: usize = 512;
 const MAX_SCENE_FILE_BYTES: u64 = 64 * 1024;
 const MAX_SCENE_TAGS: usize = 64;
@@ -22,6 +23,8 @@ pub struct SceneDefinition {
     pub name: String,
     #[serde(default, alias = "backgroundPath")]
     pub background_path: Option<String>,
+    #[serde(default, alias = "model3dPath", alias = "model3DPath")]
+    pub model_3d_path: Option<String>,
     #[serde(default, alias = "bgmPath")]
     pub bgm_path: Option<String>,
     #[serde(default)]
@@ -244,6 +247,7 @@ pub fn normalize_scene_definition(mut scene: SceneDefinition) -> SceneDefinition
     scene.id = scene.id.trim().to_string();
     scene.name = scene.name.trim().to_string();
     scene.background_path = normalize_optional(scene.background_path);
+    scene.model_3d_path = normalize_optional(scene.model_3d_path);
     scene.bgm_path = normalize_optional(scene.bgm_path);
     scene.weather = normalize_optional(scene.weather);
     scene.time_of_day = normalize_optional(scene.time_of_day);
@@ -298,6 +302,21 @@ pub fn validate_scene_definition(root: &Path, scene: &SceneDefinition) -> Result
         if !resolved.is_file() {
             return Err(format!(
                 "Scene `{}` background does not exist: {path}",
+                scene.id
+            ));
+        }
+    }
+    if let Some(path) = &scene.model_3d_path {
+        let resolved = resolve_project_relative(root, path)?;
+        if !supported_extension(Path::new(path), MODEL_3D_EXTENSIONS) {
+            return Err(format!(
+                "Scene `{}` 3D model uses an unsupported file type: {path}",
+                scene.id
+            ));
+        }
+        if !resolved.is_file() {
+            return Err(format!(
+                "Scene `{}` 3D model does not exist: {path}",
                 scene.id
             ));
         }
@@ -373,9 +392,13 @@ fn is_portable_id(value: &str) -> bool {
             .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-' | b'.'))
 }
 fn supported_background(path: &Path) -> bool {
+    supported_extension(path, BACKGROUND_EXTENSIONS)
+}
+
+fn supported_extension(path: &Path, extensions: &[&str]) -> bool {
     path.extension()
         .and_then(|value| value.to_str())
-        .is_some_and(|value| BACKGROUND_EXTENSIONS.contains(&value.to_ascii_lowercase().as_str()))
+        .is_some_and(|value| extensions.contains(&value.to_ascii_lowercase().as_str()))
 }
 
 fn resolve_project_relative(root: &Path, relative: &str) -> Result<PathBuf, String> {

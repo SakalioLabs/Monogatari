@@ -1,6 +1,13 @@
 <template>
   <div class="game-container">
     <div class="scene-backdrop" :style="sceneBackdropStyle">
+      <CharacterModelView
+        v-if="activeSceneModel3dPath"
+        class="scene-model-backdrop"
+        :model-path="activeSceneModel3dPath"
+        presentation="scene"
+        @load-error="markRendererAssetFailed"
+      />
       <div class="scene-horizon"></div>
     </div>
 
@@ -315,6 +322,7 @@ interface SceneInfo {
   id: string
   name: string
   background_path: string | null
+  model_3d_path?: string | null
   bgm_path: string | null
   weather: string | null
   time_of_day: string | null
@@ -322,6 +330,8 @@ interface SceneInfo {
   source: string
   background_exists: boolean
   absolute_background_path: string | null
+  model_3d_exists?: boolean
+  absolute_model_3d_path?: string | null
 }
 
 interface StoryEndingLaunch {
@@ -420,6 +430,14 @@ const sceneBackdropStyle = computed(() => {
   }
 })
 
+const activeSceneModel3dPath = computed(() => {
+  const path = activeScene.value?.absolute_model_3d_path || activeScene.value?.model_3d_path
+  if (!path) return null
+  const resolved = resolveAssetUrl(path)
+  if (!resolved || failedRendererAssets.value[path] || failedRendererAssets.value[resolved]) return null
+  return resolved
+})
+
 const currentRendererAsset = computed(() =>
   selectCharacterRendererAsset(currentCharacter.value, {
     expression: currentExpression.value,
@@ -512,6 +530,7 @@ async function updateDialogueState() {
     dialogueState.value = await invokeCommand<DialogueState>('get_dialogue_state', undefined, {
       is_active: false,
       speaker: null,
+      scene_id: null,
       text: '',
       emotion: null,
       choices: [],
@@ -523,6 +542,7 @@ async function updateDialogueState() {
     if (dialogueState.value?.emotion) {
       currentExpression.value = dialogueState.value.emotion
     }
+    await syncDialogueScene(dialogueState.value)
     syncCurrentCharacter()
     if (dialogueState.value?.text) {
       typewriterEffect(dialogueState.value.text)
@@ -588,7 +608,7 @@ async function enterScene(scene: StorySceneInfo) {
   }
 }
 
-async function startStoryDialogue(dialogue: StoryDialogueInfo) {
+async function startStoryDialogue(dialogue: StoryDialogueInfo, previewNodeId?: string | null) {
   isLoading.value = true
   errorMessage.value = null
   try {
@@ -596,7 +616,7 @@ async function startStoryDialogue(dialogue: StoryDialogueInfo) {
       dialogueState.value = await invokeCommand<DialogueState>('start_dialogue', { dialogueId: dialogue.id })
     } else {
       webActiveDialogue.value = dialogue
-      applyBrowserDialogueTransition(startBrowserDialogue(dialogue, webDialogueFlags.value))
+      await applyBrowserDialogueTransition(startBrowserDialogue(dialogue, webDialogueFlags.value, previewNodeId))
     }
     const state = dialogueState.value
     if (!state) throw new Error('Dialogue runtime did not return a state.')
@@ -628,7 +648,7 @@ async function startEnding(ending: StoryEndingInfo) {
     dialogueState.value = launch.dialogue
     if (!hasTauriRuntime()) {
       webActiveDialogue.value = fallbackDialogue
-      applyBrowserDialogueTransition(startBrowserDialogue(fallbackDialogue, webDialogueFlags.value))
+      await applyBrowserDialogueTransition(startBrowserDialogue(fallbackDialogue, webDialogueFlags.value))
     }
     const state = dialogueState.value
     if (!state) throw new Error('Ending runtime did not return a dialogue state.')
@@ -649,7 +669,7 @@ async function selectChoice(index: number) {
       if (!webDialogueRuntime.value) throw new Error('Browser dialogue runtime is unavailable.')
       const transition = selectBrowserDialogueChoice(webActiveDialogue.value, webDialogueRuntime.value, index)
       applyBrowserChoiceRelationships(transition.relationship_changes)
-      applyBrowserDialogueTransition(transition)
+      await applyBrowserDialogueTransition(transition)
       syncCurrentCharacter()
       typewriterEffect(transition.state.text)
     } else {
@@ -668,7 +688,7 @@ async function advanceDialogue() {
       if (!webDialogueRuntime.value) throw new Error('Browser dialogue runtime is unavailable.')
       const transition = advanceBrowserDialogue(webActiveDialogue.value, webDialogueRuntime.value)
       if (transition.blocked_reason === 'choice_required') return
-      applyBrowserDialogueTransition(transition)
+      await applyBrowserDialogueTransition(transition)
       if (transition.state.is_active) {
         syncCurrentCharacter()
         typewriterEffect(transition.state.text)
@@ -684,11 +704,21 @@ async function advanceDialogue() {
   }
 }
 
-function applyBrowserDialogueTransition(transition: BrowserDialogueTransition) {
+async function applyBrowserDialogueTransition(transition: BrowserDialogueTransition) {
   webDialogueRuntime.value = transition.runtime
   webDialogueFlags.value = transition.runtime.flags
   dialogueState.value = transition.state
+  await syncDialogueScene(transition.state)
   if (transition.completed) webActiveDialogue.value = null
+}
+
+async function syncDialogueScene(state: DialogueState | null) {
+  const sceneId = state?.scene_id?.trim()
+  if (!sceneId || activeScene.value?.id === sceneId) return
+  const scene = storyScenes.value.find((item) => item.id === sceneId)
+  if (!scene) throw new Error(`Dialogue references unavailable scene "${sceneId}".`)
+  activeScene.value = await invokeCommand<SceneInfo>('enter_story_scene', { sceneId }, scene)
+  localStorage.setItem(activeSceneStorageKey, JSON.stringify(activeScene.value))
 }
 
 function applyBrowserChoiceRelationships(changes: Record<string, number>) {
@@ -789,8 +819,10 @@ onMounted(async () => {
   await updateDialogueState()
   await loadSaves()
   await loadStoryLibrary()
+  await syncDialogueScene(dialogueState.value)
   const previewSceneId = route.query.previewScene
   const previewDialogueId = route.query.previewDialogue
+  const previewNodeId = route.query.previewNode
   const previewEndingId = route.query.previewEnding
   if (!desktopRuntime && route.query.authoring === '1') {
     if (typeof previewSceneId === 'string') {
@@ -798,7 +830,10 @@ onMounted(async () => {
       if (scene) await enterScene(scene)
     } else if (typeof previewDialogueId === 'string') {
       const dialogue = storyDialogues.value.find((item) => item.id === previewDialogueId)
-      if (dialogue) await startStoryDialogue(dialogue)
+      if (dialogue) await startStoryDialogue(
+        dialogue,
+        typeof previewNodeId === 'string' ? previewNodeId : undefined,
+      )
     } else if (typeof previewEndingId === 'string') {
       const ending = storyEndings.value.find((item) => item.id === previewEndingId)
       if (ending) await startEnding(ending)
@@ -861,7 +896,17 @@ onUnmounted(() => {
 
 .scene-backdrop {
   background: var(--surface-0);
+  overflow: hidden;
 }
+
+.scene-model-backdrop {
+  position: absolute;
+  inset: 0;
+  min-height: 0;
+  border-radius: 0;
+}
+
+.scene-horizon { z-index: 1; pointer-events: none; }
 
 .scene-horizon {
   background: rgba(15,17,21,0.46);

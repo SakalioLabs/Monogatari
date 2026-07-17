@@ -1,6 +1,6 @@
 //! Headless validation for Quality Suite authoring documents.
 
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::fmt;
 use std::path::{Path, PathBuf};
 
@@ -17,6 +17,8 @@ use crate::workflow_validation::WorkflowRunContext;
 
 pub const MAX_QUALITY_SUITE_FILES: usize = 256;
 pub const MAX_QUALITY_SUITE_FILE_BYTES: u64 = 2 * 1024 * 1024;
+pub const MAX_QUALITY_WORKFLOW_RUNS: usize = 64;
+pub const MAX_QUALITY_WORKFLOW_CHOICES_PER_RUN: usize = 128;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QualitySuiteDocument {
@@ -57,6 +59,8 @@ pub struct QualityScenarioDocument {
     pub workflow_max_steps: Option<usize>,
     #[serde(default)]
     pub workflow_run_contexts: Vec<WorkflowRunContext>,
+    #[serde(default)]
+    pub workflow_choice_selections: Vec<BTreeMap<String, usize>>,
     #[serde(default)]
     pub messages: Vec<QualityMessage>,
     pub expect: QualityExpectation,
@@ -528,11 +532,46 @@ fn validate_quality_suite_shape(suite: &QualitySuiteDocument) -> Vec<String> {
             && (scenario.expect.min_workflow_coverage_percent.is_some()
                 || scenario.expect.expected_workflow_unvisited_nodes.is_some()
                 || !scenario.expect.required_workflow_nodes.is_empty()
-                || !scenario.expect.forbidden_workflow_nodes.is_empty())
+                || !scenario.expect.forbidden_workflow_nodes.is_empty()
+                || !scenario.workflow_choice_selections.is_empty())
         {
             issues.push(format!(
                 "{scenario_label}: workflow coverage expectations require workflow_path."
             ));
+        }
+        if scenario.workflow_run_contexts.len() > MAX_QUALITY_WORKFLOW_RUNS
+            || scenario.workflow_choice_selections.len() > MAX_QUALITY_WORKFLOW_RUNS
+        {
+            issues.push(format!(
+                "{scenario_label}: workflow coverage can contain at most {MAX_QUALITY_WORKFLOW_RUNS} runs."
+            ));
+        }
+        if !scenario.workflow_run_contexts.is_empty()
+            && !scenario.workflow_choice_selections.is_empty()
+            && scenario.workflow_run_contexts.len() != scenario.workflow_choice_selections.len()
+        {
+            issues.push(format!(
+                "{scenario_label}: workflow_run_contexts and workflow_choice_selections must contain the same number of runs when both are provided."
+            ));
+        }
+        for (run_index, selections) in scenario.workflow_choice_selections.iter().enumerate() {
+            if selections.len() > MAX_QUALITY_WORKFLOW_CHOICES_PER_RUN {
+                issues.push(format!(
+                    "{scenario_label}: workflow choice run {run_index} can contain at most {MAX_QUALITY_WORKFLOW_CHOICES_PER_RUN} selections."
+                ));
+            }
+            for (node_id, selection) in selections {
+                if !portable_workflow_node_id(node_id) {
+                    issues.push(format!(
+                        "{scenario_label}: workflow choice run {run_index} contains invalid node id `{node_id}`."
+                    ));
+                }
+                if *selection > MAX_QUALITY_WORKFLOW_CHOICES_PER_RUN {
+                    issues.push(format!(
+                        "{scenario_label}: workflow choice run {run_index} selection for `{node_id}` exceeds {MAX_QUALITY_WORKFLOW_CHOICES_PER_RUN}."
+                    ));
+                }
+            }
         }
         validate_quality_score_bounds(scenario_label, &scenario.expect, &mut issues);
         validate_no_expectation_conflicts(scenario_label, &scenario.expect, &mut issues);
@@ -566,6 +605,15 @@ fn validate_quality_suite_shape(suite: &QualitySuiteDocument) -> Vec<String> {
     }
 
     issues
+}
+
+fn portable_workflow_node_id(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 128
+        && value.trim() == value
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-' | b'.'))
 }
 
 fn is_sha256_hex(value: &str) -> bool {

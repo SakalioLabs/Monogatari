@@ -18,7 +18,10 @@
   "id": "echo_nine",
   "knowledge": [
     "tideglass_echo_protocol",
-    "tideglass_station_lore"
+    "tideglass_station_lore",
+    "blue_frame_archive",
+    "blue_frame_classroom_record",
+    "blue_frame_composite_witness"
   ],
   "live2d_model_path": null,
   "name": "九号回声",

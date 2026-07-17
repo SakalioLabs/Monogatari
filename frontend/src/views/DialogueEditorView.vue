@@ -216,6 +216,15 @@
                 <span>{{ t('dialogue.emotion', 'Emotion') }}</span>
                 <input v-model="selectedNode.emotion" class="input" maxlength="64" placeholder="neutral" />
               </label>
+              <label class="form-field">
+                <span>{{ t('dialogue.scene', 'Scene') }}</span>
+                <select v-model="selectedNode.scene_id" class="input">
+                  <option :value="null">{{ t('dialogue.keep-scene', 'Keep current scene') }}</option>
+                  <option v-for="scene in scenes" :key="scene.id" :value="scene.id">
+                    {{ scene.name }} · {{ scene.id }}
+                  </option>
+                </select>
+              </label>
             </div>
             <label class="form-field">
               <span>{{ t('dialogue.dialogue-text', 'Dialogue text') }}</span>
@@ -403,6 +412,7 @@ import {
 } from '../lib/dialogueGraphEditing'
 import { hasTauriRuntime, invokeCommand } from '../lib/tauri'
 import { useI18n } from '../lib/i18n'
+import { loadStoryScenes, type StorySceneInfo } from '../lib/storyContent'
 
 type CharacterInfo = DialogueCharacterIdentity
 
@@ -418,6 +428,7 @@ const baseline = ref('')
 const search = ref('')
 const propertyTab = ref<'node' | 'script'>('node')
 const characters = ref<CharacterInfo[]>([])
+const scenes = ref<StorySceneInfo[]>([])
 const busy = ref(false)
 const notice = ref<{ type: 'success' | 'error'; title: string; message: string } | null>(null)
 
@@ -434,7 +445,11 @@ const validationIssues = computed(() => {
   if (!draft.value) return [t('dialogue.error.no-selection', 'No dialogue selected.')]
   if (!parsedVariables.value) return [t('dialogue.error.variables-json', 'Variables must be a valid JSON object.')]
   const candidate = { ...draft.value, variables: parsedVariables.value }
-  const issues = validateDialogueDefinition(candidate, characters.value.map((character) => character.id))
+  const issues = validateDialogueDefinition(
+    candidate,
+    characters.value.map((character) => character.id),
+    scenes.value.map((scene) => scene.id),
+  )
   if (!selectedDialogueId.value && hasDialogueIdCollision(
     snapshot.value?.dialogues.map((dialogue) => dialogue.id) || [],
     candidate.id,
@@ -610,12 +625,14 @@ function setRelationshipDelta(choice: DialogueChoiceDefinition, characterId: str
 async function loadCatalog(preferredId?: string | null) {
   busy.value = true
   try {
-    const [nextSnapshot, projectCharacters] = await Promise.all([
+    const [nextSnapshot, projectCharacters, projectScenes] = await Promise.all([
       loadDialogueAuthoringCatalog(),
       invokeCommand<CharacterInfo[]>('get_characters', undefined, []),
+      loadStoryScenes(),
     ])
     snapshot.value = nextSnapshot
     characters.value = mergeDialogueCharacters(nextSnapshot, projectCharacters)
+    scenes.value = projectScenes
     const target = nextSnapshot.dialogues.find((dialogue) => dialogue.id === preferredId) || nextSnapshot.dialogues[0]
     if (target) setDraft(dialogueDefinitionFromEntry(target), target.id)
     else {
@@ -648,6 +665,7 @@ async function saveDialogue() {
       selectedDialogueId.value,
       snapshot.value.catalog_fingerprint,
       characters.value.map((character) => character.id),
+      scenes.value.map((scene) => scene.id),
     )
     snapshot.value = next
     const saved = next.dialogues.find((entry) => entry.id === dialogue.id)

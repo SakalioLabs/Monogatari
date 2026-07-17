@@ -34,13 +34,13 @@ test('checked-in Quality Suites return source-bound passing evidence', async () 
       sourceDataRootLabel: evidence.sourceDataRootLabel,
     },
     {
-      suiteCount: 2,
-      scenarioCount: 34,
+      suiteCount: 3,
+      scenarioCount: 41,
       defaultScenarioCount: 29,
       sourceDataRootLabel: 'data',
     },
   )
-  assert.deepEqual(messages, ['[release] Quality suites OK (2 suite file(s))'])
+  assert.deepEqual(messages, ['[release] Quality suites OK (3 suite file(s))'])
 })
 
 test('pure Quality Suite shape validation reports schema, bounds, conflicts, and rule drift', () => {
@@ -58,6 +58,7 @@ test('pure Quality Suite shape validation reports schema, bounds, conflicts, and
         workflow_path: '',
         workflow_max_steps: 0,
         workflow_run_contexts: {},
+        workflow_choice_selections: [{ '../invalid': 129 }],
         expect: {
           min_friendliness: 1.1,
           max_friendliness: -0.1,
@@ -98,6 +99,8 @@ test('pure Quality Suite shape validation reports schema, bounds, conflicts, and
     'fixture.json:duplicate: workflow_path must be a non-empty string when provided',
     'fixture.json:duplicate: workflow_max_steps must be a positive integer when provided',
     'fixture.json:duplicate: workflow_run_contexts must be an array when provided',
+    'fixture.json:duplicate: workflow choice run 0 contains invalid node id ../invalid',
+    'fixture.json:duplicate: workflow choice run 0 selection for ../invalid must be an integer between 0 and 128',
     'fixture.json:duplicate: min_friendliness must be a finite number between 0 and 1',
     'fixture.json:duplicate: max_friendliness must be a finite number between 0 and 1',
     'fixture.json:duplicate: min_friendliness must be less than or equal to max_friendliness',

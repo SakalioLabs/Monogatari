@@ -41,7 +41,7 @@ Use `monogatari-agent-project-transaction/v1` to plan or apply a bounded set of 
 
 v1 accepts lowercase `.json` files beneath `assets`, `characters`, `dialogue`, `endings`, `events`, `knowledge`, `locales`, `quality_suites`, `scenes`, or `workflows`. Paths use bounded portable ASCII segments. Absolute paths, URI/drive prefixes, traversal, hidden segments, missing parent directories, symlinks, duplicate targets, and ASCII case collisions are rejected.
 
-`settings.json`, saves, analytics, generated audio, arbitrary root files, and binary assets are outside v1. Use their dedicated validated operations instead of encoding them as JSON transactions.
+`settings.json`, saves, analytics, generated audio, arbitrary root files, and binary assets are outside v1. For this repository's local Skill workflow, use the reviewed `scripts/import-project-asset.mjs` plan/apply operation for supported files beneath `assets/`; do not encode binary payloads as JSON transactions.
 
 ## Apply Semantics
 

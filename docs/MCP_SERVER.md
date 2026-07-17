@@ -19,6 +19,16 @@ The project root is required at startup and must contain `settings.json`. It is 
 
 MCP stdio frames are UTF-8. Windows PowerShell 5 can encode text sent to a native process with the active system code page even when `Get-Content -Encoding UTF8` decoded the source correctly. Do not pipe non-ASCII request JSON directly from Windows PowerShell 5; use an MCP client that writes UTF-8 bytes, and call `read_project_json` after applying a transaction to verify authored non-ASCII content.
 
+This repository includes a bounded UTF-8 client for one-shot tool calls:
+
+```powershell
+node scripts/call-monogatari-mcp.mjs --project-root data --tool inspect_project
+node scripts/call-monogatari-mcp.mjs --project-root data --tool plan_transaction --arguments-file transaction.json
+node scripts/call-monogatari-mcp.mjs --project-root data --tool apply_transaction --transaction-file transaction.json --expected-precondition-fingerprint <sha256> --allow-write
+```
+
+Use `--allow-write` only with a reviewed `apply_transaction` request. The client initializes the MCP session, fixes the server project root through startup arguments, enforces response and timeout bounds, and prints structured content without routing authored text through the PowerShell native-process pipeline.
+
 ## Client Configuration
 
 A generic local MCP client configuration looks like this:
@@ -46,7 +56,7 @@ This is read-only. Add `--allow-write` to `args` only for a client that should b
 | `list_project_json` | Read | Lists exact byte SHA-256, semantic content fingerprint, size, kind, and portable path; accepts an optional catalog filter |
 | `read_project_json` | Read | Reads one exact-case JSON path beneath an authorable catalog |
 | `preview_workflow` | Read | Executes one project Workflow through the deterministic provider-free preview domain and returns versioned trace, stop, coverage, and exact source SHA evidence |
-| `run_quality_suite` | Read | Executes one exact `quality_suites/...json` path through the shared headless domain and returns versioned scenario/audit evidence bound to its byte SHA-256 |
+| `run_quality_suite` | Read | Executes one exact `quality_suites/...json` path through the shared headless domain, including bounded per-run Workflow choice maps, and returns versioned scenario/audit evidence bound to its byte SHA-256 |
 | `preview_project_package` | Read | Builds the complete credential-free package manifest and deterministic content fingerprint without writing; reports whether an output directory is configured |
 | `inspect_project_package` | Read | Verifies one portable `.monogatari` file name inside the startup-fixed external package directory through the shared bounded archive reader; does not extract or write |
 | `validate_project_package` | Read | Extracts one fixed-directory package into private process-owned staging, runs shared core-runtime and delivery acceptance, returns structured pass/failure evidence, and removes staging |
@@ -66,7 +76,7 @@ The authorable JSON catalogs are `assets`, `characters`, `dialogue`, `endings`, 
 6. Call `apply_transaction` with the unchanged transaction and reviewed `expected_precondition_fingerprint`.
 7. Call `validate_project` and `validate_delivery` again.
 8. List the `workflows` catalog and call `preview_workflow` for every changed graph with the intended environment, run context, choices, step bound, seed, or injected random values. Review the source SHA, executed nodes, stop reason, coverage, and unvisited nodes; no model provider or persistent project state is used.
-9. List the `quality_suites` catalog and call `run_quality_suite` for every intended suite path. Accept the run only when `passed` is `true`; `passed: false` is a successful protocol response whose report contains actionable failed-scenario evidence.
+9. List the `quality_suites` catalog and call `run_quality_suite` for every intended suite path. Use `workflow_choice_selections` when deterministic choice nodes must be covered without desktop state; each map is one run and reports its applied selections, while multiple runs aggregate union coverage. Accept the suite only when `passed` is `true`; `passed: false` is a successful protocol response whose report contains actionable failed-scenario evidence.
 10. Call `preview_project_package` and review the full manifest, file inventory, scrubbed settings, and `content_sha256`.
 11. If an archive is required and the package directory is configured, call `export_project_package` with that exact fingerprint and one file name. Keep `replace_existing` false unless replacing the existing artifact is intentional; any intervening project change invalidates the fingerprint.
 12. Call `inspect_project_package` with the same file name and require `verified: true` plus the expected content fingerprint.

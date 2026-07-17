@@ -35,6 +35,7 @@ export interface ChatSafetyTrace {
 
 export interface WorkflowCoverageRunReport {
   index: number
+  choice_selections: Record<string, number>
   completed: boolean
   stopped_reason: string | null
   coverage_percent: number

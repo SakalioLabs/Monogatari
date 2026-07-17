@@ -1,0 +1,33 @@
+{
+  "description": "《潮镜：蓝色定格》开放档案结局短章。",
+  "id": "blue_frame_truth_epilogue",
+  "nodes": {
+    "echo": {
+      "choices": [],
+      "emotion": "calm",
+      "next_node_id": "final",
+      "speaker_id": "echo_nine",
+      "text": "若下一代协议不再需要把九条轨道压成一个我，请把那次消失记作方法变得更诚实，而不是谁终于被证明死亡。"
+    },
+    "final": {
+      "choices": [],
+      "ending_type": "truth",
+      "is_ending": true,
+      "text": "蓝色定格解除。真相没有获得一张脸，却获得了公开、可追溯、允许反驳的未来。"
+    },
+    "lanyin": {
+      "choices": [],
+      "emotion": "quiet",
+      "next_node_id": "echo",
+      "speaker_id": "lanyin",
+      "text": "我们没有替一个无法证明的人写下结论，也没有因为结论困难就删掉证词。以后每一次引用，都必须把不确定性一起带走。"
+    },
+    "scene": {
+      "choices": [],
+      "next_node_id": "lanyin",
+      "text": "开放档案上线后的第一个清晨，潮镜站收到的不是身份认领，而是水文站更新后的撤离图。坐标、方法、冲突与九条声音仍在同一页上，任何人都能回到原始证据。"
+    }
+  },
+  "start_node_id": "scene",
+  "title": "真相：开放档案"
+}

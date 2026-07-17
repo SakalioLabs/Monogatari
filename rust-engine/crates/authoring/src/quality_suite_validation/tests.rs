@@ -174,6 +174,27 @@ fn rejects_malformed_typed_workflow_run_contexts_without_tauri_runtime() {
 }
 
 #[test]
+fn validates_bounded_per_run_workflow_choice_selections() {
+    let suite = parse_quality_suite_document(
+        r#"{"version":"1","name":"Choices","description":"Choice coverage","scenarios":[{"id":"routes","category":"workflow_coverage","description":"Routes","workflow_path":"workflows/routes.json","workflow_choice_selections":[{"route":0},{"route":1}],"expect":{"min_workflow_coverage_percent":100}}]}"#,
+    )
+    .unwrap();
+    assert_eq!(suite.scenarios[0].workflow_choice_selections.len(), 2);
+
+    let mismatched = parse_quality_suite_document(
+        r#"{"version":"1","name":"Choices","description":"Choice coverage","scenarios":[{"id":"routes","category":"workflow_coverage","description":"Routes","workflow_path":"workflows/routes.json","workflow_run_contexts":[{"enabled":true}],"workflow_choice_selections":[{"route":0},{"route":1}],"expect":{}}]}"#,
+    )
+    .unwrap_err();
+    assert!(mismatched.contains("must contain the same number of runs"));
+
+    let invalid_node = parse_quality_suite_document(
+        r#"{"version":"1","name":"Choices","description":"Choice coverage","scenarios":[{"id":"routes","category":"workflow_coverage","description":"Routes","workflow_path":"workflows/routes.json","workflow_choice_selections":[{"../route":0}],"expect":{}}]}"#,
+    )
+    .unwrap_err();
+    assert!(invalid_node.contains("invalid node id"));
+}
+
+#[test]
 fn reports_cross_catalog_quality_references() {
     let suite = parse_quality_suite_document(
         r#"{"version":"1","name":"Refs","description":"Reference suite","scenarios":[{"id":"base","category":"story","description":"Base","character_id":"missing","workflow_path":"workflows/missing.json","expect":{"required_knowledge_refs":["missing_lore"],"expected_events":["missing_event"]}}]}"#,

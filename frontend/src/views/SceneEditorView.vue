@@ -75,21 +75,28 @@
 
       <section v-if="draft" class="scene-form">
         <div class="scene-stage">
+          <CharacterModelView
+            v-if="previewModelUrl && !modelPreviewFailed"
+            class="scene-model-preview"
+            :model-path="previewModelUrl"
+            presentation="scene"
+            @load-error="modelPreviewFailed = true"
+          />
           <img
-            v-if="previewUrl && !previewFailed"
+            v-else-if="previewUrl && !previewFailed"
             :src="previewUrl"
             :alt="draft.name || draft.id"
             @error="previewFailed = true"
           />
           <div v-else class="stage-empty">
             <span>SC</span>
-            <strong>{{ draft.background_path ? t('scene.background-unavailable', 'Background unavailable') : t('scene.no-background-assigned', 'No background assigned') }}</strong>
+            <strong>{{ draft.background_path || draft.model_3d_path ? t('scene.visual-unavailable', 'Scene visual unavailable') : t('scene.no-visual-assigned', 'No scene visual assigned') }}</strong>
           </div>
           <div class="stage-shade"></div>
           <div class="stage-caption">
             <span>{{ draft.time_of_day || t('scene.any-time', 'Any time') }}</span>
             <h2>{{ draft.name || t('scene.untitled', 'Untitled scene') }}</h2>
-            <p>{{ draft.background_path || t('scene.no-background-path', 'No background path') }}</p>
+            <p>{{ draft.model_3d_path || draft.background_path || t('scene.no-visual-path', 'No visual path') }}</p>
           </div>
           <span class="source-badge" :class="selectedEntry?.metadata_authored ? 'authored' : 'inferred'">
             {{ selectedEntry?.metadata_authored ? t('scene.metadata', 'Metadata') : selectedEntry ? t('scene.background-inferred', 'Background inferred') : t('scene.new-scene', 'New scene') }}
@@ -106,7 +113,7 @@
         </div>
         <div v-else class="validation-banner valid">
           <strong>{{ t('scene.valid', 'Scene valid') }}</strong>
-          <span>{{ selectedEntry?.background_exists ? t('scene.background-resolved', 'Background resolved') : t('scene.ready-validation', 'Ready for project validation') }}</span>
+          <span>{{ selectedEntry?.model_3d_exists ? t('scene.model-resolved', '3D scene resolved') : selectedEntry?.background_exists ? t('scene.background-resolved', 'Background resolved') : t('scene.ready-validation', 'Ready for project validation') }}</span>
         </div>
 
         <div class="form-scroll">
@@ -136,14 +143,18 @@
                 <span class="eyebrow">{{ t('scene.assets', 'Assets') }}</span>
                 <h2>{{ t('scene.stage-media', 'Stage media') }}</h2>
               </div>
-              <span class="state-label" :class="selectedEntry?.background_exists ? 'ready' : 'pending'">
-                {{ selectedEntry?.background_exists ? t('authoring.resolved', 'Resolved') : t('authoring.pending', 'Pending') }}
+              <span class="state-label" :class="selectedEntry?.background_exists || selectedEntry?.model_3d_exists ? 'ready' : 'pending'">
+                {{ selectedEntry?.background_exists || selectedEntry?.model_3d_exists ? t('authoring.resolved', 'Resolved') : t('authoring.pending', 'Pending') }}
               </span>
             </div>
             <div class="field-grid">
               <label class="form-field full-field">
                 <span>{{ t('scene.background-path', 'Background path') }}</span>
                 <input v-model="draft.background_path" class="input mono" placeholder="assets/backgrounds/scene.svg" />
+              </label>
+              <label class="form-field full-field">
+                <span>{{ t('scene.model-3d-path', '3D scene model') }}</span>
+                <input v-model="draft.model_3d_path" class="input mono" placeholder="assets/models/scene.glb" />
               </label>
               <label class="form-field full-field">
                 <span>{{ t('scene.bgm', 'BGM path') }}</span>
@@ -217,6 +228,7 @@
           <span class="eyebrow">{{ t('authoring.document', 'Document') }}</span>
           <div class="metric-row"><span>{{ t('authoring.source', 'Source') }}</span><strong>{{ selectedEntry?.metadata_authored ? 'JSON' : selectedEntry ? t('authoring.asset', 'Asset') : t('authoring.draft', 'Draft') }}</strong></div>
           <div class="metric-row"><span>{{ t('scene.background', 'Background') }}</span><strong>{{ selectedEntry?.background_exists ? t('authoring.found', 'Found') : t('authoring.unchecked', 'Unchecked') }}</strong></div>
+          <div class="metric-row"><span>{{ t('scene.model-3d', '3D model') }}</span><strong>{{ selectedEntry?.model_3d_exists ? t('authoring.found', 'Found') : t('authoring.unchecked', 'Unchecked') }}</strong></div>
           <div class="fingerprint">{{ selectedEntry?.content_fingerprint || t('authoring.not-saved', 'Not saved') }}</div>
         </section>
         <section class="inspector-section issue-section">
@@ -243,6 +255,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import { Copy, Play, Plus, RotateCcw, Save, Trash2 } from '@lucide/vue'
+import CharacterModelView from '../components/CharacterModelView.vue'
 import { resolveAssetUrl } from '../lib/assets'
 import { useI18n } from '../lib/i18n'
 import {
@@ -289,6 +302,7 @@ const search = ref('')
 const filter = ref<SceneSourceFilter>('all')
 const busy = ref(false)
 const previewFailed = ref(false)
+const modelPreviewFailed = ref(false)
 const backgroundPaths = ref<Record<string, string>>({})
 const notice = ref<{ type: 'success' | 'error'; title: string; message: string } | null>(null)
 
@@ -329,9 +343,11 @@ const validationIssues = computed(() => {
   return issues
 })
 const warnings = computed(() => {
-  return sceneDraftWarnings(draft.value, selectedEntry.value).map((warning) => warning.code === 'no_background'
-    ? t('scene.warning.no-background', 'No background is assigned to this scene.')
-    : t('scene.warning.unresolved-background', 'The saved background path does not resolve to a project file.'))
+  return sceneDraftWarnings(draft.value, selectedEntry.value).map((warning) => {
+    if (warning.code === 'no_visual') return t('scene.warning.no-visual', 'No background or 3D model is assigned to this scene.')
+    if (warning.code === 'unresolved_model_3d') return t('scene.warning.unresolved-model', 'The saved 3D model path does not resolve to a project file.')
+    return t('scene.warning.unresolved-background', 'The saved background path does not resolve to a project file.')
+  })
 })
 const relevantIssues = computed(() => relevantSceneAssetIssues(
   snapshot.value?.issues || [],
@@ -342,10 +358,16 @@ const previewUrl = computed(() => {
   if (!path) return null
   return resolveAssetUrl(backgroundPaths.value[path] || selectedEntry.value?.absolute_background_path || path)
 })
+const previewModelUrl = computed(() => {
+  const path = draft.value?.model_3d_path?.trim()
+  if (!path) return null
+  return resolveAssetUrl(selectedEntry.value?.absolute_model_3d_path || path)
+})
 const canSave = computed(() => Boolean(draft.value && snapshot.value && dirty.value && validationIssues.value.length === 0))
 const canPreview = computed(() => Boolean(selectedCatalogId.value && !dirty.value && validationIssues.value.length === 0))
 
 watch(previewUrl, () => { previewFailed.value = false })
+watch(previewModelUrl, () => { modelPreviewFailed.value = false })
 
 function sceneImage(scene: SceneAuthoringEntry): string | null {
   const path = scene.background_path
@@ -358,6 +380,7 @@ function setDraft(definition: SceneDefinition, catalogId: string | null, isSaved
   selectedCatalogId.value = catalogId
   baseline.value = isSaved ? sceneDraftSnapshot(draft.value) : ''
   previewFailed.value = false
+  modelPreviewFailed.value = false
 }
 
 function confirmDiscard(): boolean {
@@ -653,6 +676,7 @@ onUnmounted(() => {
   background: #11151b;
 }
 .scene-stage > img { width: 100%; height: 100%; object-fit: cover; }
+.scene-model-preview { position: absolute; inset: 0; min-height: 0; border-radius: 0; }
 .stage-empty { position: absolute; inset: 0; display: grid; place-content: center; gap: 8px; color: var(--text-tertiary); text-align: center; }
 .stage-empty span { font-family: var(--font-mono); font-size: 26px; font-weight: 900; }
 .stage-empty strong { font-size: 12px; }

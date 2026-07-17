@@ -306,6 +306,7 @@ function previewWorkflowCoverage(): WorkflowCoverageReport {
     runs: [
       {
         index: 0,
+        choice_selections: {},
         completed: true,
         stopped_reason: null,
         coverage_percent: 75,
@@ -314,6 +315,7 @@ function previewWorkflowCoverage(): WorkflowCoverageReport {
       },
       {
         index: 1,
+        choice_selections: {},
         completed: true,
         stopped_reason: null,
         coverage_percent: 100,

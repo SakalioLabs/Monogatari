@@ -42,6 +42,7 @@ pub struct DialogueCatalogEntry {
 pub struct DialogueState {
     pub is_active: bool,
     pub speaker: Option<String>,
+    pub scene_id: Option<String>,
     pub text: String,
     pub emotion: Option<String>,
     pub choices: Vec<ChoiceInfo>,
@@ -671,6 +672,7 @@ fn get_dialogue_state_inner(dm: &DialogueManager) -> Result<DialogueState, Strin
         return Ok(DialogueState {
             is_active: false,
             speaker: None,
+            scene_id: None,
             text: String::new(),
             emotion: None,
             choices: Vec::new(),
@@ -692,6 +694,7 @@ fn get_dialogue_state_inner(dm: &DialogueManager) -> Result<DialogueState, Strin
     Ok(DialogueState {
         is_active: true,
         speaker: node.speaker_id.clone(),
+        scene_id: node.scene_id.clone(),
         text: node.text.clone(),
         emotion: node.emotion.clone(),
         choices,

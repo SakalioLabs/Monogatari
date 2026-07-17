@@ -4,6 +4,7 @@ import type { SceneDefinition } from '../storyContent'
 import {
   hasSceneIdCollision,
   normalizeSceneDefinition,
+  sceneDialogueReferences,
   validateSceneDefinition,
 } from '../sceneAuthoring'
 
@@ -12,6 +13,7 @@ function scene(overrides: Partial<SceneDefinition> = {}): SceneDefinition {
     id: 'studio_night',
     name: 'Studio Night',
     background_path: 'assets/backgrounds/studio_night.svg',
+    model_3d_path: null,
     bgm_path: 'assets/audio/studio.ogg',
     weather: null,
     time_of_day: 'night',
@@ -34,7 +36,7 @@ describe('scene authoring contracts', () => {
   })
 
   it('accepts a portable scene with supported media', () => {
-    expect(validateSceneDefinition(scene())).toEqual([])
+    expect(validateSceneDefinition(scene({ model_3d_path: 'assets/models/studio.glb' }))).toEqual([])
   })
 
   it('rejects traversal, unsupported media, control text, and invalid ids', () => {
@@ -43,11 +45,13 @@ describe('scene authoring contracts', () => {
       name: 'Bad\u0000Name',
       background_path: 'assets/../private/studio.svg',
       bgm_path: 'assets/audio/studio.exe',
+      model_3d_path: 'assets/models/studio.exe',
     }))
     expect(issues).toContain('Scene ID must be a portable 1-128 character id.')
     expect(issues).toContain('Name must contain 1-256 non-control characters.')
     expect(issues).toContain('Background path must use portable project-relative segments.')
     expect(issues).toContain('BGM path must use a supported audio extension.')
+    expect(issues).toContain('3D model path must use .glb or .gltf.')
   })
 
   it('rejects whitespace and non-ASCII asset path segments', () => {
@@ -63,5 +67,17 @@ describe('scene authoring contracts', () => {
   it('detects case-folded portable scene ID collisions', () => {
     expect(hasSceneIdCollision(['studio_night', 'Agent_Route'], ' agent_route ')).toBe(true)
     expect(hasSceneIdCollision(['studio_night'], 'new_route')).toBe(false)
+  })
+
+  it('discovers dialogue nodes that still reference a scene', () => {
+    expect(sceneDialogueReferences([
+      {
+        id: 'archive_route',
+        nodes: {
+          arrival: { scene_id: 'archive' },
+          departure: { scene_id: 'station' },
+        },
+      },
+    ], 'archive')).toEqual(['dialogue:archive_route/arrival'])
   })
 })

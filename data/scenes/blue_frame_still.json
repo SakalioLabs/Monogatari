@@ -1,0 +1,14 @@
+{
+  "background_path": "assets/backgrounds/tideglass_lantern_chamber.png",
+  "id": "blue_frame_still",
+  "model_3d_path": "assets/models/blue_frame_still.glb",
+  "name": "蓝色定格室",
+  "tags": [
+    "blue_frame",
+    "still",
+    "composite",
+    "decision"
+  ],
+  "time_of_day": "timeless",
+  "weather": "sealed"
+}

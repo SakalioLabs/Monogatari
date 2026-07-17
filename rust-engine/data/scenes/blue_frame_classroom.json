@@ -1,0 +1,14 @@
+{
+  "background_path": "assets/backgrounds/tideglass_control_room.png",
+  "id": "blue_frame_classroom",
+  "model_3d_path": "assets/models/blue_frame_classroom.glb",
+  "name": "沉水九号教室",
+  "tags": [
+    "blue_frame",
+    "classroom",
+    "underwater",
+    "evidence"
+  ],
+  "time_of_day": "memory_unknown",
+  "weather": "submerged"
+}

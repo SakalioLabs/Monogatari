@@ -120,9 +120,13 @@ pub async fn load_core_runtime_project(project_root: &Path) -> Result<CoreRuntim
         .map(|entry| entry.id.clone())
         .collect::<HashSet<_>>();
     validate_character_references(&characters, &character_ids, &knowledge_ids, &mut issues).await;
-    validate_dialogue_documents(&dialogues, &character_ids, &mut issues);
-
     let story_content = validate_story_content(project_root, &dialogues, &mut issues);
+    validate_dialogue_documents(
+        &dialogues,
+        &character_ids,
+        &story_content.scene_ids,
+        &mut issues,
+    );
     let story_events = validate_story_events(
         project_root,
         &character_ids,
@@ -485,6 +489,7 @@ async fn validate_character_references(
 fn validate_dialogue_documents(
     dialogues: &DialogueManager,
     character_ids: &HashSet<String>,
+    scene_ids: &HashSet<String>,
     issues: &mut Vec<CoreRuntimeValidationIssue>,
 ) {
     for dialogue in dialogues.scripts() {
@@ -525,6 +530,20 @@ fn validate_dialogue_documents(
                 Some(path),
                 validation_issue.message,
             ));
+        }
+        for (node_id, node) in &dialogue.nodes {
+            if let Some(scene_id) = node.scene_id.as_deref() {
+                if !scene_ids.contains(scene_id) {
+                    issues.push(issue(
+                        "dialogue_scene_target_missing",
+                        Some(format!("dialogue/{}/{node_id}", dialogue.id)),
+                        format!(
+                            "Dialogue `{}` node `{node_id}` references unknown scene `{scene_id}`.",
+                            dialogue.id
+                        ),
+                    ));
+                }
+            }
         }
     }
 }

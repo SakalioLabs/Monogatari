@@ -21,7 +21,7 @@
 | Project configuration | `settings.json` | Configured content paths and render metadata |
 | Character identity | `characters/` | Character IDs, knowledge refs, renderer assets |
 | World knowledge | `knowledge/` | Entry IDs, tags, related entry IDs |
-| Story space | `scenes/` and `assets/` | Scene IDs and project-relative asset paths |
+| Story space | `scenes/` and `assets/` | Scene IDs, 2D/3D presentation, and project-relative asset paths |
 | Branching prose | `dialogue/` | Dialogue IDs, node IDs, speaker IDs, next-node IDs |
 | Progression | `events/` | Event IDs, character scopes, unlock targets, flags |
 | Conclusions | `endings/` | Ending IDs plus scene/dialogue targets |
@@ -34,6 +34,7 @@
 - Use portable relative paths. Reject absolute paths, URIs, traversal, control characters, and case-insensitive path collisions.
 - Keep IDs stable after downstream references exist. Prefer lowercase ASCII IDs with underscores or hyphens unless the active runtime contract is stricter.
 - Make every dialogue and workflow node reachable from its start node, with intentional terminal paths.
+- Resolve every dialogue-node `scene_id` and every scene `model_3d_path`; keep a 2D background fallback when delivery needs graceful GPU/load failure behavior.
 - Do not reference a character, scene, dialogue, ending, event, knowledge entry, or asset that does not exist.
 - Write Knowledge with canonical `related_entries`, lowercase portable IDs/categories, trimmed unique tags and relations, bounded metadata, and importance in `0..=1`; relations cannot target the source entry itself.
 - Keep generated story text separate from system prompts, tool calls, hidden reasoning, and runtime control data.
@@ -41,6 +42,7 @@
 - Do not ship secrets in `settings.json`, project packages, logs, fixtures, or verification reports.
 - For Agent transactions, require `missing` on creates and an exact current SHA-256 on updates/deletes; never use a blind overwrite operation.
 - Treat MCP stdio as UTF-8 end to end. Avoid Windows PowerShell 5 native-process pipelines for non-ASCII frames, and read the applied documents back through MCP before accepting authored text.
+- Keep binary renderer assets outside JSON transactions. Require a reviewed source hash, exact destination precondition, supported media validation, plan fingerprint, atomic import, delivery validation, rendered desktop/mobile evidence, and explicit provenance or license status.
 
 For the checked-in built-in project, synchronize the canonical root into the desktop mirror and then prove exact parity:
 

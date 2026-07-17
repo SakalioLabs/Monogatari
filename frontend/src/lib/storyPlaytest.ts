@@ -4,6 +4,7 @@ import type { StoryDialogueInfo, WebDialogueNode } from './storyContent'
 export interface DialogueState {
   is_active: boolean
   speaker: string | null
+  scene_id: string | null
   text: string
   emotion: string | null
   choices: { index: number; text: string }[]
@@ -76,8 +77,9 @@ export function applyBrowserRelationshipChanges<T extends {
 export function startBrowserDialogue(
   dialogue: StoryDialogueInfo,
   initialFlags: Record<string, boolean> = {},
+  previewNodeId?: string | null,
 ): BrowserDialogueTransition {
-  const startNodeId = dialogue.start_node_id.trim()
+  const startNodeId = previewNodeId?.trim() || dialogue.start_node_id.trim()
   if (!startNodeId) {
     throw new StoryPlaytestError(
       'dialogue_start_missing',
@@ -164,6 +166,7 @@ export function inactiveDialogueState(): DialogueState {
   return {
     is_active: false,
     speaker: null,
+    scene_id: null,
     text: '',
     emotion: null,
     choices: [],
@@ -238,6 +241,7 @@ function dialogueState(node: WebDialogueNode, runtime: BrowserDialogueRuntime): 
   return {
     is_active: true,
     speaker: node.speaker_id || null,
+    scene_id: node.scene_id || null,
     text: node.text,
     emotion: node.emotion || null,
     choices: availableChoices(node, runtime).map(({ choice, index }) => ({ index, text: choice.text })),

@@ -50,7 +50,7 @@ export function createProjectDialoguePolicy(options = {}) {
     const topFields = new Set(['id', 'title', 'description', 'start_node_id', 'nodes', 'variables'])
     const nodeFields = new Set([
       'id', 'speaker_id', 'text', 'next_node_id', 'choices', 'condition', 'script', 'emotion',
-      'use_llm', 'llm_prompt', 'llm_system_prompt', 'is_ending', 'ending_type',
+      'use_llm', 'llm_prompt', 'llm_system_prompt', 'is_ending', 'ending_type', 'scene_id',
     ])
     const choiceFields = new Set(['text', 'next_node_id', 'relationship_changes', 'condition'])
 
@@ -62,6 +62,12 @@ export function createProjectDialoguePolicy(options = {}) {
         for (const character of characters) {
           if (portableStoryEventId(character?.id, 128)) characterIds.add(character.id)
         }
+      }
+
+      const sceneIds = new Set()
+      for (const file of await jsonFilesInDir(path.join(dataRoot.dir, 'scenes'), issues)) {
+        const scene = JSON.parse(await readFile(file, 'utf8'))
+        if (portableStoryEventId(scene?.id, 128)) sceneIds.add(scene.id)
       }
 
       const files = await jsonFilesInDir(path.join(dataRoot.dir, 'dialogue'), issues)
@@ -121,6 +127,10 @@ export function createProjectDialoguePolicy(options = {}) {
           if (node.speaker_id !== undefined && node.speaker_id !== null) {
             if (!portableStoryEventId(node.speaker_id, 128)) issues.push(`${nodeLabel}: speaker_id must be portable`)
             else if (!characterIds.has(node.speaker_id)) issues.push(`${nodeLabel}: unknown speaker ${node.speaker_id}`)
+          }
+          if (node.scene_id !== undefined && node.scene_id !== null) {
+            if (!portableStoryEventId(node.scene_id, 128)) issues.push(`${nodeLabel}: scene_id must be portable`)
+            else if (!sceneIds.has(node.scene_id)) issues.push(`${nodeLabel}: unknown scene ${node.scene_id}`)
           }
           const choices = node.choices ?? []
           if (!Array.isArray(choices)) {

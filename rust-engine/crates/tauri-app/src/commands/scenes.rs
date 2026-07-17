@@ -22,6 +22,7 @@ use crate::story_access::{
 };
 
 const BACKGROUND_EXTENSIONS: &[&str] = &["png", "jpg", "jpeg", "webp", "bmp", "gif", "svg"];
+const MODEL_3D_EXTENSIONS: &[&str] = &["glb", "gltf"];
 const SCENE_AUTHORING_CATALOG_SCHEMA_V1: &str = "monogatari-scene-authoring-catalog/v1";
 const MAX_SCENE_FILE_BYTES: u64 = 64 * 1024;
 
@@ -31,6 +32,8 @@ pub struct SceneInfo {
     pub name: String,
     #[serde(default, alias = "backgroundPath")]
     pub background_path: Option<String>,
+    #[serde(default, alias = "model3dPath", alias = "model3DPath")]
+    pub model_3d_path: Option<String>,
     #[serde(default, alias = "bgmPath")]
     pub bgm_path: Option<String>,
     #[serde(default)]
@@ -45,6 +48,10 @@ pub struct SceneInfo {
     pub background_exists: bool,
     #[serde(default)]
     pub absolute_background_path: Option<String>,
+    #[serde(default)]
+    pub model_3d_exists: bool,
+    #[serde(default)]
+    pub absolute_model_3d_path: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -63,6 +70,8 @@ pub struct SceneAuthoringEntry {
     pub metadata_authored: bool,
     pub background_exists: bool,
     pub absolute_background_path: Option<String>,
+    pub model_3d_exists: bool,
+    pub absolute_model_3d_path: Option<String>,
     pub access: StoryContentAccessEntry,
 }
 
@@ -244,6 +253,7 @@ pub(crate) async fn set_scene_inner(
             id: scene_id.clone(),
             name: name.clone().unwrap_or_else(|| humanize_id(&scene_id)),
             background_path: background_path.clone(),
+            model_3d_path: None,
             bgm_path: bgm_path.clone(),
             weather: None,
             time_of_day: None,
@@ -251,6 +261,8 @@ pub(crate) async fn set_scene_inner(
             source: "runtime".to_string(),
             background_exists: false,
             absolute_background_path: None,
+            model_3d_exists: false,
+            absolute_model_3d_path: None,
         });
 
     if let Some(custom_name) = name {
@@ -266,8 +278,12 @@ pub(crate) async fn set_scene_inner(
     }
 
     attach_background_status(&root, &mut scene)?;
+    attach_model_3d_status(&root, &mut scene)?;
     if scene.background_path.is_some() && !scene.background_exists {
         return Err(format!("Scene background is missing for `{}`", scene.id));
+    }
+    if scene.model_3d_path.is_some() && !scene.model_3d_exists {
+        return Err(format!("Scene 3D model is missing for `{}`", scene.id));
     }
 
     *state.active_scene_id.write().await = Some(scene.id.clone());
@@ -333,6 +349,8 @@ async fn scene_authoring_snapshot_from_parts(
                 metadata_authored: source.is_some(),
                 background_exists: scene.background_exists,
                 absolute_background_path: scene.absolute_background_path.clone(),
+                model_3d_exists: scene.model_3d_exists,
+                absolute_model_3d_path: scene.absolute_model_3d_path.clone(),
                 scene: definition,
             }
         })
@@ -545,6 +563,7 @@ fn scene_definition_from_info(scene: &SceneInfo) -> SceneDefinition {
         id: scene.id.clone(),
         name: scene.name.clone(),
         background_path: scene.background_path.clone(),
+        model_3d_path: scene.model_3d_path.clone(),
         bgm_path: scene.bgm_path.clone(),
         weather: scene.weather.clone(),
         time_of_day: scene.time_of_day.clone(),
@@ -586,7 +605,7 @@ pub(crate) fn build_scene_asset_catalog(project_root: &Path) -> Result<SceneAsse
                     "Scene background file does not exist.",
                 );
             }
-        } else if scene.source == "metadata" {
+        } else if scene.source == "metadata" && scene.model_3d_path.is_none() {
             push_issue(
                 &mut issues,
                 "warning",
@@ -595,6 +614,27 @@ pub(crate) fn build_scene_asset_catalog(project_root: &Path) -> Result<SceneAsse
                 None,
                 "Scene metadata has no background_path.",
             );
+        }
+        if let Err(error) = attach_model_3d_status(project_root, scene) {
+            push_issue(
+                &mut issues,
+                "error",
+                "scene_model_3d_path_invalid",
+                Some(scene.id.clone()),
+                scene.model_3d_path.clone(),
+                error,
+            );
+        } else if let Some(model_path) = &scene.model_3d_path {
+            if !scene.model_3d_exists {
+                push_issue(
+                    &mut issues,
+                    "error",
+                    "scene_model_3d_missing",
+                    Some(scene.id.clone()),
+                    Some(model_path.clone()),
+                    "Scene 3D model file does not exist.",
+                );
+            }
         }
     }
 
@@ -608,6 +648,7 @@ pub(crate) fn build_scene_asset_catalog(project_root: &Path) -> Result<SceneAsse
             id: virtual_id,
             name: humanize_id(&asset.id),
             background_path: Some(asset.relative_path.clone()),
+            model_3d_path: None,
             bgm_path: None,
             weather: None,
             time_of_day: None,
@@ -615,6 +656,8 @@ pub(crate) fn build_scene_asset_catalog(project_root: &Path) -> Result<SceneAsse
             source: "background".to_string(),
             background_exists: true,
             absolute_background_path: Some(asset.absolute_path.clone()),
+            model_3d_exists: false,
+            absolute_model_3d_path: None,
         });
     }
 
@@ -790,6 +833,24 @@ fn attach_background_status(project_root: &Path, scene: &mut SceneInfo) -> Resul
     Ok(())
 }
 
+fn attach_model_3d_status(project_root: &Path, scene: &mut SceneInfo) -> Result<(), String> {
+    scene.model_3d_exists = false;
+    scene.absolute_model_3d_path = None;
+
+    let Some(model_path) = scene.model_3d_path.as_deref() else {
+        return Ok(());
+    };
+    if !is_supported_extension(Path::new(model_path), MODEL_3D_EXTENSIONS) {
+        return Err("Scene 3D models must use .glb or .gltf.".to_string());
+    }
+    let resolved = resolve_project_relative(project_root, model_path)?;
+    scene.model_3d_exists = resolved.is_file();
+    if scene.model_3d_exists {
+        scene.absolute_model_3d_path = Some(resolved.to_string_lossy().to_string());
+    }
+    Ok(())
+}
+
 fn background_directories(project_root: &Path) -> Vec<PathBuf> {
     vec![
         project_root.join("assets").join("backgrounds"),
@@ -799,9 +860,13 @@ fn background_directories(project_root: &Path) -> Vec<PathBuf> {
 }
 
 fn is_supported_background(path: &Path) -> bool {
+    is_supported_extension(path, BACKGROUND_EXTENSIONS)
+}
+
+fn is_supported_extension(path: &Path, extensions: &[&str]) -> bool {
     path.extension()
         .and_then(|ext| ext.to_str())
-        .map(|ext| BACKGROUND_EXTENSIONS.contains(&ext.to_ascii_lowercase().as_str()))
+        .map(|ext| extensions.contains(&ext.to_ascii_lowercase().as_str()))
         .unwrap_or(false)
 }
 
@@ -1023,6 +1088,28 @@ mod tests {
         std::fs::remove_dir_all(root).unwrap();
     }
 
+    #[test]
+    fn resolves_authored_3d_scene_models_without_inventing_virtual_scenes() {
+        let root = temp_root("model_catalog");
+        std::fs::create_dir_all(root.join("scenes")).unwrap();
+        std::fs::create_dir_all(root.join("assets/models")).unwrap();
+        std::fs::write(root.join("assets/models/archive.glb"), b"glTF fixture").unwrap();
+        std::fs::write(
+            root.join("scenes/archive.json"),
+            r#"{"id":"archive","name":"Archive","model_3d_path":"assets/models/archive.glb"}"#,
+        )
+        .unwrap();
+
+        let catalog = build_scene_asset_catalog(&root).unwrap();
+
+        assert!(catalog.valid, "{:?}", catalog.issues);
+        assert_eq!(catalog.scenes.len(), 1);
+        assert!(catalog.scenes[0].model_3d_exists);
+        assert!(catalog.scenes[0].absolute_model_3d_path.is_some());
+        assert!(catalog.backgrounds.is_empty());
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
     #[tokio::test]
     async fn scene_save_promotes_inferred_assets_and_rejects_stale_or_invalid_updates() {
         let root = temp_root("save");
@@ -1039,6 +1126,7 @@ mod tests {
             id: "park".to_string(),
             name: "Moonlit Park".to_string(),
             background_path: Some("assets/backgrounds/park.svg".to_string()),
+            model_3d_path: None,
             bgm_path: Some("assets/audio/moon.ogg".to_string()),
             weather: Some("clear".to_string()),
             time_of_day: Some("night".to_string()),

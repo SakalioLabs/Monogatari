@@ -1,6 +1,7 @@
 import type { StoryContentAccessEntry } from './storyAccess'
 import {
   loadBrowserSceneDrafts,
+  loadStoryDialogues,
   loadStoryEndings,
   loadStoryScenes,
   saveBrowserSceneDrafts,
@@ -25,6 +26,8 @@ export interface SceneAuthoringEntry extends SceneDefinition {
   metadata_authored: boolean
   background_exists: boolean
   absolute_background_path: string | null
+  model_3d_exists?: boolean
+  absolute_model_3d_path?: string | null
   access: StoryContentAccessEntry
 }
 
@@ -40,6 +43,7 @@ export interface SceneAuthoringCatalogSnapshot {
 
 const PORTABLE_ID = /^[A-Za-z0-9_.-]{1,128}$/
 const BACKGROUND_EXTENSION = /\.(png|jpe?g|webp|bmp|gif|svg)$/i
+const MODEL_3D_EXTENSION = /\.(glb|gltf)$/i
 const AUDIO_EXTENSION = /\.(mp3|ogg|wav|m4a|aac|flac)$/i
 
 export async function loadSceneAuthoringCatalog(): Promise<SceneAuthoringCatalogSnapshot> {
@@ -102,7 +106,8 @@ export async function deleteSceneDefinition(
   const target = current.scenes.find((scene) => scene.id === sceneId)
   if (!target) throw new Error(`Scene "${sceneId}" does not exist.`)
   const references = target.access.unlock_event_ids.map((eventId) => `event:${eventId}`)
-  const endings = await loadStoryEndings()
+  const [dialogues, endings] = await Promise.all([loadStoryDialogues(), loadStoryEndings()])
+  references.push(...sceneDialogueReferences(dialogues, sceneId))
   references.push(...endings.filter((ending) => ending.scene_id === sceneId).map((ending) => `ending:${ending.id}`))
   if (references.length > 0) {
     throw new Error(`Scene "${sceneId}" is still referenced by: ${references.join(', ')}.`)
@@ -111,11 +116,22 @@ export async function deleteSceneDefinition(
   return browserCatalogSnapshot()
 }
 
+export function sceneDialogueReferences(
+  dialogues: readonly { id: string; nodes?: Record<string, { scene_id?: string | null }> }[],
+  sceneId: string,
+): string[] {
+  const references = dialogues.flatMap((dialogue) => Object.entries(dialogue.nodes || {})
+    .filter(([, node]) => node.scene_id === sceneId)
+    .map(([nodeId]) => `dialogue:${dialogue.id}/${nodeId}`))
+  return [...new Set(references)].sort()
+}
+
 export function normalizeSceneDefinition(scene: SceneDefinition): SceneDefinition {
   return {
     id: scene.id.trim(),
     name: scene.name.trim(),
     background_path: optionalText(scene.background_path),
+    model_3d_path: optionalText(scene.model_3d_path),
     bgm_path: optionalText(scene.bgm_path),
     weather: optionalText(scene.weather),
     time_of_day: optionalText(scene.time_of_day),
@@ -138,6 +154,13 @@ export function validateSceneDefinition(scene: SceneDefinition): string[] {
       issues.push('Background path must use portable project-relative segments.')
     } else if (!BACKGROUND_EXTENSION.test(scene.background_path)) {
       issues.push('Background path must use a supported image extension.')
+    }
+  }
+  if (scene.model_3d_path !== null && scene.model_3d_path !== undefined) {
+    if (!isPortableProjectPath(scene.model_3d_path)) {
+      issues.push('3D model path must use portable project-relative segments.')
+    } else if (!MODEL_3D_EXTENSION.test(scene.model_3d_path)) {
+      issues.push('3D model path must use .glb or .gltf.')
     }
   }
   if (scene.bgm_path !== null) {
@@ -188,6 +211,8 @@ function authoringEntry(scene: StorySceneInfo, draftActive: boolean): SceneAutho
     metadata_authored: true,
     background_exists: scene.background_exists,
     absolute_background_path: scene.absolute_background_path,
+    model_3d_exists: Boolean(scene.model_3d_exists),
+    absolute_model_3d_path: scene.absolute_model_3d_path || null,
     access: scene.access,
   }
 }
@@ -196,7 +221,7 @@ function sceneDefinition(scene: SceneDefinition): SceneDefinition {
   return normalizeSceneDefinition(scene)
 }
 
-function optionalText(value: string | null): string | null {
+function optionalText(value: string | null | undefined): string | null {
   const normalized = value?.trim() || ''
   return normalized || null
 }

@@ -8,8 +8,9 @@ import type { SceneDefinition } from './storyContent'
 export type SceneSourceFilter = 'all' | 'authored' | 'inferred'
 
 export type SceneDraftWarningCode =
-  | 'no_background'
+  | 'no_visual'
   | 'unresolved_background'
+  | 'unresolved_model_3d'
 
 export interface SceneDraftWarning {
   code: SceneDraftWarningCode
@@ -20,6 +21,7 @@ export function cloneSceneDefinition(scene: SceneDefinition): SceneDefinition {
     id: scene.id,
     name: scene.name,
     background_path: scene.background_path,
+    model_3d_path: scene.model_3d_path || null,
     bgm_path: scene.bgm_path,
     weather: scene.weather,
     time_of_day: scene.time_of_day,
@@ -75,6 +77,7 @@ export function createSceneDraft(
     id: nextSceneId(existingIds),
     name,
     background_path: null,
+    model_3d_path: null,
     bgm_path: null,
     weather: null,
     time_of_day: null,
@@ -104,9 +107,14 @@ export function sceneDraftWarnings(
 ): SceneDraftWarning[] {
   if (!draft) return []
   const warnings: SceneDraftWarning[] = []
-  if (!draft.background_path?.trim()) warnings.push({ code: 'no_background' })
+  if (!draft.background_path?.trim() && !draft.model_3d_path?.trim()) warnings.push({ code: 'no_visual' })
   if (selectedEntry?.background_path === draft.background_path && !selectedEntry.background_exists) {
     warnings.push({ code: 'unresolved_background' })
+  }
+  if (draft.model_3d_path?.trim()
+    && selectedEntry?.model_3d_path === draft.model_3d_path
+    && !selectedEntry?.model_3d_exists) {
+    warnings.push({ code: 'unresolved_model_3d' })
   }
   return warnings
 }

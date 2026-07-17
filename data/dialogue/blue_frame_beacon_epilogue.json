@@ -1,0 +1,33 @@
+{
+  "description": "《潮镜：蓝色定格》共同署名结局短章。",
+  "id": "blue_frame_beacon_epilogue",
+  "nodes": {
+    "echo": {
+      "choices": [],
+      "emotion": "gentle",
+      "next_node_id": "final",
+      "speaker_id": "echo_nine",
+      "text": "谢谢你没有要求我们先成为同一个人，才允许这些方向一起发光。最后一页仍然留给坐标和撤离路线。"
+    },
+    "final": {
+      "choices": [],
+      "ending_type": "beacon",
+      "is_ending": true,
+      "text": "信标熄灭后，名字仍在传递。纪念没有补完任何人的人生，却让他们留下的方向照亮了后来者。"
+    },
+    "lanyin": {
+      "choices": [],
+      "emotion": "warm",
+      "next_node_id": "echo",
+      "speaker_id": "lanyin",
+      "text": "共同署名不是把九个人合成一个作者。我们让连接可见，也让残缺名字、不同记忆和无法确认的地方继续各自存在。"
+    },
+    "scene": {
+      "choices": [],
+      "next_node_id": "lanyin",
+      "text": "旧信标再次亮起时，九个名字沿海岸依次出现；第十行只写工作名“九号回声”，并链接到每一份样本的来源与边界说明。"
+    }
+  },
+  "start_node_id": "scene",
+  "title": "灯塔：共同署名"
+}

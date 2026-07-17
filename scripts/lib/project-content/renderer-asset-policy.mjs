@@ -33,6 +33,7 @@ const rendererAssetFields = [
 ]
 
 const sceneBackgroundExtensions = new Set(['.png', '.jpg', '.jpeg', '.webp', '.svg'])
+const sceneModel3dExtensions = new Set(['.glb', '.gltf'])
 export function createProjectRendererAssetPolicy(options = {}) {
   const {
     repositoryRoot,
@@ -61,6 +62,7 @@ export function createProjectRendererAssetPolicy(options = {}) {
     let characterCount = 0
     let sceneCount = 0
     let sceneBackgroundCount = 0
+    let sceneModel3dCount = 0
     let declaredCharacterAssetCount = 0
 
     for (const dataRoot of rendererDataRoots) {
@@ -110,18 +112,30 @@ export function createProjectRendererAssetPolicy(options = {}) {
         if (!nonEmptyString(scene.id)) issues.push(`${relative(file)}: scene id is required`)
         if (!nonEmptyString(scene.name)) issues.push(`${relative(file)}: scene name is required`)
         const backgroundPath = stringField(scene, ['background_path', 'backgroundPath'])
-        if (!backgroundPath) {
-          issues.push(`${relative(file)}: scene background_path is required for renderer staging`)
-          continue
+        const model3dPath = stringField(scene, ['model_3d_path', 'model3dPath', 'model3DPath'])
+        if (!backgroundPath && !model3dPath) {
+          issues.push(`${relative(file)}: scene must declare background_path or model_3d_path for renderer staging`)
         }
-        sceneBackgroundCount += 1
-        verifyLocalAssetPath({
-          value: backgroundPath,
-          dataRoot,
-          label: `${relative(file)} background`,
-          extensions: sceneBackgroundExtensions,
-          issues,
-        })
+        if (backgroundPath) {
+          sceneBackgroundCount += 1
+          verifyLocalAssetPath({
+            value: backgroundPath,
+            dataRoot,
+            label: `${relative(file)} background`,
+            extensions: sceneBackgroundExtensions,
+            issues,
+          })
+        }
+        if (model3dPath) {
+          sceneModel3dCount += 1
+          verifyLocalAssetPath({
+            value: model3dPath,
+            dataRoot,
+            label: `${relative(file)} 3D model`,
+            extensions: sceneModel3dExtensions,
+            issues,
+          })
+        }
       }
     }
 
@@ -134,6 +148,7 @@ export function createProjectRendererAssetPolicy(options = {}) {
       characterCount,
       sceneCount,
       sceneBackgroundCount,
+      sceneModel3dCount,
       declaredCharacterAssetCount,
     }
   }
@@ -283,7 +298,7 @@ export function createProjectRendererAssetPolicy(options = {}) {
       throw new Error(`Renderer asset verification failed:\n${evidence.issues.join('\n')}`)
     }
     log(
-      `[release] Renderer assets OK (${evidence.characterCount} character record(s), ${evidence.sceneBackgroundCount}/${evidence.sceneCount} scene background(s), ${evidence.declaredCharacterAssetCount} declared character asset(s))`,
+      `[release] Renderer assets OK (${evidence.characterCount} character record(s), ${evidence.sceneBackgroundCount}/${evidence.sceneCount} scene background(s), ${evidence.sceneModel3dCount} scene 3D model(s), ${evidence.declaredCharacterAssetCount} declared character asset(s))`,
     )
     return evidence
   }

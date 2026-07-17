@@ -1,9 +1,13 @@
 <template>
   <div
     class="character-model-view"
+    :class="`presentation-${presentation}`"
     ref="containerRef"
+    :data-presentation="presentation"
+    :data-model-path="props.modelPath || ''"
     :data-model-state="modelState"
     :data-model-animations="animationClipCount"
+    :data-framing-excluded-objects="framingExcludedObjects"
     :data-canvas-signature="canvasSignature"
     :data-canvas-unique-colors="canvasUniqueColors"
     :data-canvas-luminance-range="canvasLuminanceRange"
@@ -27,6 +31,12 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from '../lib/i18n'
+import {
+  calculateModelCameraDistance,
+  selectPrimaryModelBounds,
+  type ModelBounds3,
+  type ModelPresentation,
+} from '../lib/modelFraming'
 
 const { t } = useI18n()
 
@@ -34,6 +44,7 @@ const props = defineProps<{
   modelPath?: string | null
   expression?: string
   motion?: string
+  presentation?: ModelPresentation
 }>()
 
 const emit = defineEmits<{
@@ -44,6 +55,7 @@ const containerRef = ref<HTMLDivElement>()
 const modelLoaded = ref(false)
 const modelError = ref<string | null>(null)
 const animationClipCount = ref(0)
+const framingExcludedObjects = ref(0)
 const canvasSignature = ref('')
 const canvasUniqueColors = ref(0)
 const canvasLuminanceRange = ref('')
@@ -52,6 +64,7 @@ const canvasContentBounds = ref('')
 const canvasMotionDetected = ref(false)
 const canvasPreviewDataUrl = ref('')
 const modelErrorDisplay = computed(() => t('renderer.model3d.load-failed', 'Could not load the 3D model'))
+const presentation = computed(() => props.presentation || 'character')
 const modelState = computed(() => {
   if (modelError.value) return 'error'
   if (!modelLoaded.value) return 'loading'
@@ -120,7 +133,7 @@ async function initScene() {
     animationId = requestAnimationFrame(animate)
     controls.update()
     if (mixer) mixer.update(0.016)
-    if (activeModel && !mixer) activeModel.rotation.y += 0.004
+    if (activeModel && !mixer && presentation.value === 'character') activeModel.rotation.y += 0.004
     renderer.render(scene, camera)
     if (shouldProbeCanvas()) {
       canvasProbeFrame += 1
@@ -141,6 +154,7 @@ async function loadModel(path: string, THREE: any, GLTFLoader: any) {
   modelError.value = null
   modelLoaded.value = false
   animationClipCount.value = 0
+  framingExcludedObjects.value = 0
   resetCanvasProbe()
   const loader = new GLTFLoader()
   try {
@@ -191,20 +205,21 @@ function showPlaceholder(THREE: any) {
 
 function normalizeAndFrameModel(model: any, THREE: any) {
   model.updateMatrixWorld(true)
-  const sourceBox = new THREE.Box3().setFromObject(model)
+  const sourceBox = modelFrameBounds(model, THREE)
   const sourceSize = sourceBox.getSize(new THREE.Vector3())
   const sourceExtent = Math.max(sourceSize.x, sourceSize.y, sourceSize.z)
   if (!Number.isFinite(sourceExtent) || sourceExtent <= 0.0001) {
     throw new Error('3D model has no visible bounds')
   }
 
-  model.scale.multiplyScalar(1.8 / sourceExtent)
+  const targetExtent = presentation.value === 'scene' ? 2.8 : 1.8
+  model.scale.multiplyScalar(targetExtent / sourceExtent)
   model.updateMatrixWorld(true)
 
-  const scaledBox = new THREE.Box3().setFromObject(model)
+  const scaledBox = modelFrameBounds(model, THREE)
   const center = scaledBox.getCenter(new THREE.Vector3())
   model.position.x -= center.x
-  model.position.y -= scaledBox.min.y
+  model.position.y -= presentation.value === 'scene' ? center.y : scaledBox.min.y
   model.position.z -= center.z
   model.updateMatrixWorld(true)
   frameModel(model, THREE)
@@ -212,15 +227,16 @@ function normalizeAndFrameModel(model: any, THREE: any) {
 
 function frameModel(model: any, THREE: any) {
   if (!camera || !controls || !containerRef.value) return
-  const bounds = new THREE.Box3().setFromObject(model)
+  const bounds = modelFrameBounds(model, THREE)
   const size = bounds.getSize(new THREE.Vector3())
   const targetY = bounds.min.y + size.y * 0.5
   const verticalFov = THREE.MathUtils.degToRad(camera.fov)
-  const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * Math.max(camera.aspect, 0.1))
-  const heightDistance = size.y / Math.max(2 * Math.tan(verticalFov / 2), 0.01)
-  const widthDistance = size.x / Math.max(2 * Math.tan(horizontalFov / 2), 0.01)
-  const depthDistance = size.z * 0.7
-  const distance = Math.max(heightDistance, widthDistance, depthDistance, 1) * 1.55
+  const distance = calculateModelCameraDistance(
+    [size.x, size.y, size.z],
+    verticalFov,
+    camera.aspect,
+    presentation.value,
+  )
 
   controls.target.set(0, targetY, 0)
   camera.position.set(0, targetY, distance)
@@ -230,6 +246,35 @@ function frameModel(model: any, THREE: any) {
   controls.minDistance = Math.max(distance * 0.45, 0.5)
   controls.maxDistance = Math.max(distance * 4, 8)
   controls.update()
+}
+
+function modelFrameBounds(model: any, THREE: any) {
+  if (presentation.value !== 'scene') {
+    framingExcludedObjects.value = 0
+    return new THREE.Box3().setFromObject(model)
+  }
+
+  const meshBounds: ModelBounds3[] = []
+  model.traverse((object: any) => {
+    if (!object?.isMesh || object.visible === false) return
+    const bounds = new THREE.Box3().setFromObject(object)
+    if (bounds.isEmpty()) return
+    meshBounds.push({
+      min: [bounds.min.x, bounds.min.y, bounds.min.z],
+      max: [bounds.max.x, bounds.max.y, bounds.max.z],
+    })
+  })
+  const selection = selectPrimaryModelBounds(meshBounds)
+  if (!selection) {
+    framingExcludedObjects.value = 0
+    return new THREE.Box3().setFromObject(model)
+  }
+
+  framingExcludedObjects.value = selection.excludedIndices.length
+  return new THREE.Box3(
+    new THREE.Vector3(...selection.bounds.min),
+    new THREE.Vector3(...selection.bounds.max),
+  )
 }
 
 function shouldProbeCanvas(): boolean {
@@ -432,6 +477,11 @@ watch(() => props.modelPath, (newPath) => {
   position: relative; width: 100%; height: 100%;
   min-height: 300px; background: var(--surface-0);
   border-radius: var(--radius); overflow: hidden;
+}
+
+.character-model-view.presentation-scene {
+  min-height: 0;
+  border-radius: 0;
 }
 
 :deep(.character-model-canvas) {

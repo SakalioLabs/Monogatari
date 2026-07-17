@@ -1,0 +1,18 @@
+{
+  "category": "lore",
+  "content": "蓝色定格是潮镜站在主警报结束后收到的一段迟到四十七年的结束帧。档案把内容分为三个证据等级：可由天文记录复核的地球云层时间戳，可由站内材料复核的潮镜裂纹，以及只能由幸存者叙述支持的沉水教室记忆。档案允许公开事实与冲突，不允许把合成发声者标注为已经证实的单一真人。",
+  "id": "blue_frame_archive",
+  "importance": 0.9,
+  "related_entries": [
+    "blue_frame_classroom_record",
+    "blue_frame_composite_witness",
+    "tideglass_echo_protocol"
+  ],
+  "tags": [
+    "blue_frame",
+    "archive",
+    "evidence",
+    "tideglass"
+  ],
+  "title": "蓝色定格档案"
+}

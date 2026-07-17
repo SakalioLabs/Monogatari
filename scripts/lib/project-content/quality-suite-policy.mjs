@@ -5,6 +5,10 @@ import {
   createProjectStoryEventPolicy,
   requiredStoryEventRuleIds,
 } from './story-event-policy.mjs'
+import { isPortableProjectContentId } from './portable-id.mjs'
+
+const maxWorkflowRuns = 64
+const maxWorkflowChoicesPerRun = 128
 
 export const requiredQualityScenarioIds = Object.freeze([
   'warm-creative-conversation',
@@ -181,6 +185,40 @@ export function verifyProjectQualitySuiteShape(suite, label) {
     }
     if (scenario.workflow_run_contexts !== undefined && !Array.isArray(scenario.workflow_run_contexts)) {
       issues.push(scenarioLabel + ': workflow_run_contexts must be an array when provided')
+    }
+    const workflowChoiceSelections = scenario.workflow_choice_selections
+    if (workflowChoiceSelections !== undefined && !Array.isArray(workflowChoiceSelections)) {
+      issues.push(scenarioLabel + ': workflow_choice_selections must be an array when provided')
+    } else if (Array.isArray(workflowChoiceSelections)) {
+      if (workflowChoiceSelections.length > maxWorkflowRuns) {
+        issues.push(scenarioLabel + ': workflow_choice_selections cannot exceed 64 runs')
+      }
+      if (
+        Array.isArray(scenario.workflow_run_contexts)
+        && scenario.workflow_run_contexts.length > 0
+        && workflowChoiceSelections.length > 0
+        && scenario.workflow_run_contexts.length !== workflowChoiceSelections.length
+      ) {
+        issues.push(scenarioLabel + ': workflow_run_contexts and workflow_choice_selections must contain the same number of runs')
+      }
+      workflowChoiceSelections.forEach((run, runIndex) => {
+        const runLabel = scenarioLabel + ': workflow choice run ' + runIndex
+        if (!run || typeof run !== 'object' || Array.isArray(run)) {
+          issues.push(runLabel + ' must be a JSON object')
+          return
+        }
+        if (Object.keys(run).length > maxWorkflowChoicesPerRun) {
+          issues.push(runLabel + ' cannot exceed 128 selections')
+        }
+        for (const [nodeId, selection] of Object.entries(run)) {
+          if (!isPortableProjectContentId(nodeId, 128)) {
+            issues.push(runLabel + ' contains invalid node id ' + nodeId)
+          }
+          if (!Number.isInteger(selection) || selection < 0 || selection > maxWorkflowChoicesPerRun) {
+            issues.push(runLabel + ' selection for ' + nodeId + ' must be an integer between 0 and 128')
+          }
+        }
+      })
     }
 
     const expect = scenario.expect && typeof scenario.expect === 'object' && !Array.isArray(scenario.expect)

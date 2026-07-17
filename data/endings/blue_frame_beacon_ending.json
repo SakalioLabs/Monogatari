@@ -1,0 +1,8 @@
+{
+  "description": "让九名样本与工作名九号回声并列署名，以可追溯的纪念文本照亮后来者。",
+  "dialogue_id": "blue_frame_beacon_epilogue",
+  "id": "blue_frame_beacon_ending",
+  "scene_id": "blue_frame_still",
+  "schema": "monogatari-story-ending/v1",
+  "title": "灯塔：共同署名"
+}

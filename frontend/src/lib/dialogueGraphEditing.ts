@@ -138,6 +138,7 @@ export function createDialogueNode(
 ): DialogueNodeDefinition {
   return {
     speaker_id: speakerId,
+    scene_id: null,
     text,
     next_node_id: null,
     choices: [],

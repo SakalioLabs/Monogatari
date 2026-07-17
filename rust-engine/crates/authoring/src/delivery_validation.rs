@@ -94,6 +94,18 @@ pub async fn validate_project_delivery(
     let mut declared_audio_asset_count = 0;
     let mut existing_audio_asset_count = 0;
     for loaded in load_scene_documents(project_root)? {
+        if let Some(path) = &loaded.scene.model_3d_path {
+            declared_renderer_asset_count += 1;
+            validate_declared_asset(
+                project_root,
+                &loaded.scene.id,
+                "scene_model3d",
+                path,
+                &["glb", "gltf"],
+                &mut existing_renderer_asset_count,
+                &mut issues,
+            );
+        }
         if let Some(path) = &loaded.scene.bgm_path {
             declared_audio_asset_count += 1;
             validate_declared_asset(

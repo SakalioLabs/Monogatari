@@ -1,0 +1,17 @@
+{
+  "category": "location",
+  "content": "记录指向东岸学校旧教学楼二层九号教室。黑板日期、第三排桌面划痕和窗外最高潮线均能与灾后勘测相互印证；但同一段口述同时认领三名学生的座位，因此坐标和环境细节可信，单一叙述者身份不可证。该区只允许远程取证，不应因追索身份而改变避难路线。",
+  "id": "blue_frame_classroom_record",
+  "importance": 0.85,
+  "related_entries": [
+    "blue_frame_archive",
+    "tideglass_station_lore"
+  ],
+  "tags": [
+    "blue_frame",
+    "classroom",
+    "coordinates",
+    "evidence"
+  ],
+  "title": "东岸学校沉水教室记录"
+}

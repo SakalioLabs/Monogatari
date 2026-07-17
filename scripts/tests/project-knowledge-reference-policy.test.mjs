@@ -31,10 +31,10 @@ test('checked-in Knowledge references return cross-root passing evidence', async
       knowledgeCount: evidence.knowledgeCount,
       characterCount: evidence.characterCount,
     },
-    { pinnedRefCount: 48, relatedRefCount: 6, knowledgeCount: 66, characterCount: 40 },
+    { pinnedRefCount: 60, relatedRefCount: 22, knowledgeCount: 72, characterCount: 40 },
   )
   assert.deepEqual(messages, [
-    '[release] Knowledge refs OK (48 pinned ref(s), 6 related ref(s), 66 knowledge record(s), 40 character record(s))',
+    '[release] Knowledge refs OK (60 pinned ref(s), 22 related ref(s), 72 knowledge record(s), 40 character record(s))',
   ])
 })
 

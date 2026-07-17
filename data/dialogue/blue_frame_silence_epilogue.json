@@ -1,0 +1,33 @@
+{
+  "description": "《潮镜：蓝色定格》有限封存结局短章。",
+  "id": "blue_frame_silence_epilogue",
+  "nodes": {
+    "echo": {
+      "choices": [],
+      "emotion": "quiet",
+      "next_node_id": "final",
+      "speaker_id": "echo_nine",
+      "text": "谢谢你没有因为听不见一个确定的人，就假装没有任何人留下声音。若以后有更好的同意与溯源方法，请重新审查。"
+    },
+    "final": {
+      "choices": [],
+      "ending_type": "silence",
+      "is_ending": true,
+      "text": "潮镜站恢复安静。公共路线已经更新，私人档案仍保留相遇的代价；沉默成为有期限的责任，而不是遗忘。"
+    },
+    "lanyin": {
+      "choices": [],
+      "emotion": "solemn",
+      "next_node_id": "echo",
+      "speaker_id": "lanyin",
+      "text": "今天的谨慎不冒充永恒裁决。索引只写“合成证词，访问受限”，不把封存命名为遗忘，也不把删除命名为死亡。"
+    },
+    "scene": {
+      "choices": [],
+      "next_node_id": "lanyin",
+      "text": "公共网络只收到坐标、证据等级与避难路线。没有头像进入新闻，没有一句恐惧成为标题；完整会话则被封入等待未来复审的离线介质。"
+    }
+  },
+  "start_node_id": "scene",
+  "title": "静默：有限封存"
+}

@@ -23,6 +23,7 @@ export interface DialogueChoiceDefinition {
 
 export interface DialogueNodeDefinition {
   speaker_id: string | null
+  scene_id?: string | null
   text: string
   next_node_id: string | null
   choices: DialogueChoiceDefinition[]
@@ -76,9 +77,10 @@ export async function saveDialogueDefinition(
   originalDialogueId: string | null,
   expectedCatalogFingerprint: string,
   characterIds: string[] = [],
+  sceneIds: string[] = [],
 ): Promise<DialogueAuthoringCatalogSnapshot> {
   const normalized = normalizeDialogueDefinition(dialogue)
-  const issues = validateDialogueDefinition(normalized, characterIds)
+  const issues = validateDialogueDefinition(normalized, characterIds, sceneIds)
   if (issues.length > 0) throw new Error(issues[0])
   if (hasTauriRuntime()) {
     const snapshot = await invokeCommand<DialogueAuthoringCatalogSnapshot>('save_dialogue_definition', {
@@ -161,9 +163,11 @@ export function normalizeDialogueDefinition(dialogue: DialogueDefinition): Dialo
 export function validateDialogueDefinition(
   dialogue: DialogueDefinition,
   characterIds: string[] = [],
+  sceneIds: string[] = [],
 ): string[] {
   const issues: string[] = []
   const knownCharacters = new Set(characterIds)
+  const knownScenes = new Set(sceneIds)
   if (!portableId(dialogue.id)) issues.push('Dialogue ID must be a portable 1-128 character id.')
   validateText(issues, 'Title', dialogue.title, 1, 256)
   if (dialogue.description !== null) validateText(issues, 'Description', dialogue.description, 1, 2048)
@@ -185,6 +189,11 @@ export function validateDialogueDefinition(
       issues.push(`Node "${nodeId}" speaker "${node.speaker_id}" is not portable.`)
     } else if (node.speaker_id && knownCharacters.size > 0 && !knownCharacters.has(node.speaker_id)) {
       issues.push(`Node "${nodeId}" references unknown speaker "${node.speaker_id}".`)
+    }
+    if (node.scene_id && !portableId(node.scene_id)) {
+      issues.push(`Node "${nodeId}" scene "${node.scene_id}" is not portable.`)
+    } else if (node.scene_id && knownScenes.size > 0 && !knownScenes.has(node.scene_id)) {
+      issues.push(`Node "${nodeId}" references unknown scene "${node.scene_id}".`)
     }
     if (node.emotion !== null) validateText(issues, `Node "${nodeId}" emotion`, node.emotion, 1, 64)
     if (node.next_node_id && node.choices.length > 0) {
@@ -307,6 +316,7 @@ function authoringEntry(dialogue: StoryDialogueInfo, draftActive: boolean): Dial
 function nodeFromWeb(node: WebDialogueNode): DialogueNodeDefinition {
   return {
     speaker_id: node.speaker_id || null,
+    scene_id: node.scene_id || null,
     text: node.text || '',
     next_node_id: node.next_node_id || null,
     choices: (node.choices || []).map(choiceFromWeb),
@@ -333,6 +343,7 @@ function choiceFromWeb(choice: WebDialogueChoice): DialogueChoiceDefinition {
 function normalizeNode(node: DialogueNodeDefinition): DialogueNodeDefinition {
   return {
     speaker_id: optionalText(node.speaker_id),
+    scene_id: optionalText(node.scene_id),
     text: node.text.trim(),
     next_node_id: optionalText(node.next_node_id),
     choices: node.choices.map((choice) => ({

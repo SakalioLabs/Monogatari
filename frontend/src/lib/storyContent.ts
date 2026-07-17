@@ -5,6 +5,7 @@ export interface StorySceneInfo {
   id: string
   name: string
   background_path: string | null
+  model_3d_path?: string | null
   bgm_path: string | null
   weather: string | null
   time_of_day: string | null
@@ -12,6 +13,8 @@ export interface StorySceneInfo {
   source: string
   background_exists: boolean
   absolute_background_path: string | null
+  model_3d_exists?: boolean
+  absolute_model_3d_path?: string | null
   access: StoryContentAccessEntry
 }
 
@@ -55,6 +58,7 @@ export interface WebDialogueChoice {
 
 export interface WebDialogueNode {
   speaker_id?: string | null
+  scene_id?: string | null
   text: string
   emotion?: string | null
   next_node_id?: string | null
@@ -108,6 +112,7 @@ export interface SceneDefinition {
   id: string
   name: string
   background_path: string | null
+  model_3d_path?: string | null
   bgm_path: string | null
   weather: string | null
   time_of_day: string | null
@@ -118,6 +123,8 @@ interface SceneDocument extends Partial<SceneDefinition> {
   id: string
   name: string
   backgroundPath?: string | null
+  model3dPath?: string | null
+  model3DPath?: string | null
   bgmPath?: string | null
 }
 
@@ -175,10 +182,12 @@ export async function loadStoryScenes(): Promise<StorySceneInfo[]> {
     const documents = await fetchDocuments<SceneDocument>(manifest.scene_files)
     return documents.map((scene) => {
       const backgroundPath = scene.background_path ?? scene.backgroundPath ?? null
+      const model3dPath = scene.model_3d_path ?? scene.model3dPath ?? scene.model3DPath ?? null
       return storySceneInfo({
         id: scene.id,
         name: scene.name,
         background_path: backgroundPath,
+        model_3d_path: model3dPath,
         bgm_path: scene.bgm_path ?? scene.bgmPath ?? null,
         weather: scene.weather ?? null,
         time_of_day: scene.time_of_day ?? null,
@@ -381,8 +390,8 @@ function isSceneDefinition(value: unknown): value is SceneDefinition {
   const scene = value as Record<string, unknown>
   return typeof scene.id === 'string'
     && typeof scene.name === 'string'
-    && ['background_path', 'bgm_path', 'weather', 'time_of_day']
-      .every((field) => scene[field] === null || typeof scene[field] === 'string')
+    && ['background_path', 'model_3d_path', 'bgm_path', 'weather', 'time_of_day']
+      .every((field) => scene[field] === undefined || scene[field] === null || typeof scene[field] === 'string')
     && Array.isArray(scene.tags)
     && scene.tags.every((tag) => typeof tag === 'string')
 }
@@ -408,6 +417,8 @@ function storySceneInfo(
     source,
     background_exists: Boolean(scene.background_path),
     absolute_background_path: null,
+    model_3d_exists: Boolean(scene.model_3d_path),
+    absolute_model_3d_path: null,
     access: contentAccess(access, 'scene', scene.id),
   }
 }
@@ -438,6 +449,7 @@ const browserSceneFallback: Omit<StorySceneInfo, 'access'>[] = [
   id,
   name: titleFromId(id),
   background_path: backgroundPath,
+  model_3d_path: null,
   bgm_path: null,
   weather: null,
   time_of_day: null,
@@ -445,6 +457,8 @@ const browserSceneFallback: Omit<StorySceneInfo, 'access'>[] = [
   source: 'web_bundled_fallback',
   background_exists: true,
   absolute_background_path: null,
+  model_3d_exists: false,
+  absolute_model_3d_path: null,
 }))
 
 const browserDialogueFallback: Omit<StoryDialogueInfo, 'access'>[] = [

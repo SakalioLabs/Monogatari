@@ -21,6 +21,7 @@ function definition(overrides: Partial<SceneDefinition> = {}): SceneDefinition {
     id: 'studio_night',
     name: 'Studio Night',
     background_path: 'assets/backgrounds/studio_night.svg',
+    model_3d_path: null,
     bgm_path: 'assets/audio/studio.ogg',
     weather: null,
     time_of_day: 'night',
@@ -37,6 +38,8 @@ function entry(overrides: Partial<SceneAuthoringEntry> = {}): SceneAuthoringEntr
     metadata_authored: true,
     background_exists: true,
     absolute_background_path: null,
+    model_3d_exists: false,
+    absolute_model_3d_path: null,
     access: {
       content_type: 'scene',
       content_id: 'studio_night',
@@ -90,6 +93,7 @@ describe('scene editing domain', () => {
       id: 'new_scene_2',
       name: 'New Scene',
       background_path: null,
+      model_3d_path: null,
       bgm_path: null,
       weather: null,
       time_of_day: null,
@@ -110,7 +114,7 @@ describe('scene editing domain', () => {
 
   it('returns stable background warnings and relevant diagnostics', () => {
     expect(sceneDraftWarnings(definition({ background_path: null }), null))
-      .toEqual([{ code: 'no_background' }])
+      .toEqual([{ code: 'no_visual' }])
     expect(sceneDraftWarnings(definition(), entry({ background_exists: false })))
       .toEqual([{ code: 'unresolved_background' }])
 

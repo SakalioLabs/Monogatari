@@ -145,6 +145,7 @@ Scenes are stored in `rust-engine/data/scenes/`.
   "id": "scene_id",
   "name": "Scene Name",
   "background_path": "assets/backgrounds/scene.svg",
+  "model_3d_path": "assets/models/scene.glb",
   "bgm_path": null,
   "weather": "spring|summer|autumn|winter|clear|rain|snow|enchanted",
   "time_of_day": "day|night|dawn|dusk|golden_hour|eternal_twilight",
@@ -152,7 +153,9 @@ Scenes are stored in `rust-engine/data/scenes/`.
 }
 ```
 
-Scene IDs and asset paths are portable. Backgrounds must use a supported image extension and resolve to an existing project file; BGM references use supported audio extensions. The `monogatari-scene-authoring-catalog/v1` snapshot includes both JSON-authored scenes and virtual scenes inferred from unclaimed background files. Saving an inferred entry promotes it into `scenes/<id>.json`. Deleting removes only that metadata document and never deletes the background asset; deletion is blocked by matching Story Event, ending, or workflow scene references. Desktop writes use an expected catalog fingerprint and rollback-capable replacement, while browser builds keep a complete local draft read by Playtest.
+Scene IDs and asset paths are portable. Backgrounds must use a supported image extension, 3D scene models use `.glb` or `.gltf`, and both resolve to existing project files; BGM references use supported audio extensions. Playtest renders `model_3d_path` as the full scene presentation and retains `background_path` as a loading fallback. The `monogatari-scene-authoring-catalog/v1` snapshot includes both JSON-authored scenes and virtual scenes inferred from unclaimed background files. Saving an inferred entry promotes it into `scenes/<id>.json`. Deleting removes only that metadata document and never deletes the background asset; deletion is blocked by matching Story Event, ending, workflow, or dialogue-node scene references. Desktop writes use an expected catalog fingerprint and rollback-capable replacement, while browser builds keep a complete local draft read by Playtest.
+
+Dialogue nodes may add `"scene_id": "scene_id"`. The runtime activates that scene when the node is entered, enabling one validated dialogue graph to drive visual scene changes. Core-runtime validation rejects unknown scene IDs.
 
 ## Story Event Catalog Format
 
@@ -240,3 +243,36 @@ Workflows are stored as JSON files and loaded via the Workflow Editor.
 
 ### Node Types
 See the Workflow Editor documentation for all 21 available node types and their configurable fields.
+
+## Quality Suite Format
+
+Quality Suites are stored under `quality_suites/` and execute deterministic character, safety, Knowledge, Story Event, and Workflow expectations without requiring a model provider. Each file contains a version, name, description, and bounded scenario array. A Workflow scenario references one project Workflow and may provide typed run contexts, explicit choice maps, or both:
+
+```json
+{
+  "version": "0.1.0",
+  "name": "Route Acceptance",
+  "description": "Provider-free branch evidence.",
+  "scenarios": [
+    {
+      "id": "all-routes",
+      "category": "workflow_coverage",
+      "description": "Three deterministic runs cover every terminal.",
+      "messages": [{ "role": "player", "content": "Preview all routes." }],
+      "workflow_path": "workflows/story_route.json",
+      "workflow_max_steps": 64,
+      "workflow_choice_selections": [
+        { "opening_choice": 0, "ending_choice": 0 },
+        { "opening_choice": 1, "ending_choice": 1 },
+        { "opening_choice": 2, "ending_choice": 2 }
+      ],
+      "expect": {
+        "min_workflow_coverage_percent": 100,
+        "expected_workflow_unvisited_nodes": []
+      }
+    }
+  ]
+}
+```
+
+`workflow_choice_selections` is an array of run maps from portable Workflow choice-node IDs to zero-based option indices. A scenario can contain at most 64 run maps and each map at most 128 selections; indices are bounded to 128. When `workflow_run_contexts` is also present, both arrays must have the same run count and are paired by index. Complete Quality execution runs the greater of the context count, choice-map count, or one default run, records each applied selection map, and aggregates union coverage and unvisited nodes across those runs. Workflow expectations or selections require `workflow_path`. Files are limited to 2 MiB and catalogs to 256 regular JSON files.
