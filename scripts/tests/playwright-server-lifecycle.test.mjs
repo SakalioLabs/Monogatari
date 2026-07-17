@@ -68,11 +68,14 @@ test('E2E server lifecycle closes a partially started Vite server', async () => 
 test('Playwright delegates server ownership without a shell child process', async () => {
   const config = await readFile(path.join(repositoryRoot, 'frontend', 'playwright.config.ts'), 'utf8')
   const setup = await readFile(path.join(repositoryRoot, 'frontend', 'e2e', 'global-setup.mjs'), 'utf8')
+  const lifecycle = await readFile(path.join(repositoryRoot, 'frontend', 'e2e', 'server-lifecycle.mjs'), 'utf8')
 
   assert(config.includes("globalSetup: './e2e/global-setup.mjs'"))
   assert(!config.includes('webServer:'))
   assert(!config.includes('npm run dev'))
   assert(setup.includes('startE2eServer'))
+  assert(lifecycle.includes("await import('vite')"))
+  assert(!lifecycle.includes("from 'vite'"))
   assert.equal(e2eHost, '127.0.0.1')
   assert.equal(e2ePort, 4317)
 })

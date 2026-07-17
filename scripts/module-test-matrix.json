@@ -157,6 +157,18 @@
       "owner_paths": ["rust-engine/crates", "rust-engine/Cargo.toml", "rust-engine/Cargo.lock"]
     },
     {
+      "id": "legacy-dotnet-hash",
+      "label": "Legacy SDL archive hashing unit test",
+      "group": "dotnet",
+      "kind": "unit",
+      "default": true,
+      "platforms": ["win32"],
+      "cwd": ".",
+      "command": "powershell",
+      "args": ["-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/tests/legacy-sdl-hash.test.ps1"],
+      "owner_paths": ["scripts/lib/legacy-sdl-hash.ps1", "scripts/tests/legacy-sdl-hash.test.ps1"]
+    },
+    {
       "id": "legacy-dotnet-native",
       "label": "Pinned legacy SDL2 runtime preparation",
       "group": "dotnet",
@@ -166,7 +178,7 @@
       "cwd": ".",
       "command": "powershell",
       "args": ["-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/prepare-legacy-sdl.ps1"],
-      "owner_paths": ["scripts/prepare-legacy-sdl.ps1", "src/LLMAssistant.App"]
+      "owner_paths": ["scripts/prepare-legacy-sdl.ps1", "scripts/lib/legacy-sdl-hash.ps1", "src/LLMAssistant.App"]
     },
     {
       "id": "legacy-dotnet-build",

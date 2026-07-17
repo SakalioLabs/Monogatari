@@ -1,12 +1,15 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { createServer as createViteServer } from 'vite'
-
 export const e2eHost = '127.0.0.1'
 export const e2ePort = 4317
 
 const frontendDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+
+async function createViteServer(config) {
+  const { createServer } = await import('vite')
+  return createServer(config)
+}
 
 export async function startE2eServer(options = {}) {
   const createServer = options.createServer ?? createViteServer

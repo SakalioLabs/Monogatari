@@ -6,6 +6,8 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+. (Join-Path $PSScriptRoot 'lib\legacy-sdl-hash.ps1')
+
 $isWindowsHost = [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform(
     [System.Runtime.InteropServices.OSPlatform]::Windows
 )
@@ -26,12 +28,6 @@ function Assert-RepositoryPath {
         throw "Generated path escapes the repository root: $resolved"
     }
     return $resolved
-}
-
-function Get-LowerSha256 {
-    param([Parameter(Mandatory = $true)][string]$Path)
-
-    return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 
 $archives = @(
