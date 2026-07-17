@@ -1,6 +1,7 @@
 import './module-test-matrix.test.mjs'
 import './playwright-server-lifecycle.test.mjs'
 import './project-dialogue-policy.test.mjs'
+import './project-knowledge-reference-policy.test.mjs'
 import './project-renderer-asset-policy.test.mjs'
 import './project-story-event-policy.test.mjs'
 import './project-workflow-policy.test.mjs'

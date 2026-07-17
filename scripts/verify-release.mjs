@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { createSourceInvariantVerifier } from './lib/source-invariant-verifier.mjs'
 import { frontendRouteCoverageEvidence } from './lib/frontend-route-verifier.mjs'
 import { createProjectDialoguePolicy } from './lib/project-content/dialogue-policy.mjs'
+import { createProjectKnowledgeReferencePolicy } from './lib/project-content/knowledge-reference-policy.mjs'
 import { createProjectRendererAssetPolicy } from './lib/project-content/renderer-asset-policy.mjs'
 import {
   createProjectStoryEventPolicy,
@@ -244,6 +245,11 @@ const { verifyDialogueCatalogs } = createProjectDialoguePolicy({
   rustDirectory: rustDir,
   dataRoots: rendererDataRoots,
 })
+const { verifyKnowledgeReferences } = createProjectKnowledgeReferencePolicy({
+  repositoryRoot: root,
+  rustDirectory: rustDir,
+  dataRoots: rendererDataRoots,
+})
 const { verifyRendererAssets } = createProjectRendererAssetPolicy({
   repositoryRoot: root,
   rustDirectory: rustDir,
@@ -265,7 +271,7 @@ async function main() {
   await verifyDialogueCatalogs()
   await verifyWorkflowFiles()
   await verifyRendererAssets()
-  await verifyKnowledgeRefs()
+  await verifyKnowledgeReferences()
   await verifyQualitySuites()
   await verifySensitivePatterns()
   await verifyUiTextArtifacts()
@@ -446,113 +452,6 @@ async function verifyJsonFiles() {
   }
 
   console.log(`[release] JSON parse OK (${files.length} files)`)
-}
-
-async function verifyKnowledgeRefs() {
-  const issues = []
-  let characterCount = 0
-  let knowledgeCount = 0
-  let pinnedRefCount = 0
-
-  for (const dataRoot of rendererDataRoots) {
-    const knowledgeDir = path.join(dataRoot.dir, 'knowledge')
-    const charactersDir = path.join(dataRoot.dir, 'characters')
-    const knowledgeIds = new Set()
-
-    for (const file of await jsonFilesInDir(knowledgeDir, issues)) {
-      const value = JSON.parse(await readFile(file, 'utf8'))
-      const entries = Array.isArray(value) ? value : [value]
-      for (const entry of entries) {
-        const entryLabel = `${relative(file)}:${entry?.id || '<missing-knowledge-id>'}`
-        if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
-          issues.push(`${relative(file)}: knowledge records must be JSON objects`)
-          continue
-        }
-        const id = stringField(entry, ['id'])
-        if (!id) {
-          issues.push(`${entryLabel}: knowledge id is required`)
-          continue
-        }
-        if (knowledgeIds.has(id)) {
-          issues.push(`${entryLabel}: duplicate knowledge id in ${dataRoot.label}`)
-          continue
-        }
-        knowledgeIds.add(id)
-        knowledgeCount += 1
-      }
-    }
-
-    for (const file of await jsonFilesInDir(charactersDir, issues)) {
-      const value = JSON.parse(await readFile(file, 'utf8'))
-      const characters = Array.isArray(value) ? value : [value]
-      for (const character of characters) {
-        characterCount += 1
-        const characterLabel = `${relative(file)}:${character?.id || character?.name || '<missing-character-id>'}`
-        if (!character || typeof character !== 'object' || Array.isArray(character)) {
-          issues.push(`${relative(file)}: character records must be JSON objects`)
-          continue
-        }
-
-        for (const [fieldName, refs] of knowledgeRefFields(character, characterLabel, issues)) {
-          for (const ref of refs) {
-            pinnedRefCount += 1
-            if (!knowledgeIds.has(ref)) {
-              issues.push(`${characterLabel} ${fieldName}: missing pinned knowledge ref "${ref}" in ${dataRoot.label}/knowledge`)
-            }
-          }
-        }
-      }
-    }
-  }
-
-  if (issues.length > 0) {
-    throw new Error(`Knowledge ref verification failed:\n${issues.join('\n')}`)
-  }
-
-  console.log(
-    `[release] Knowledge refs OK (${pinnedRefCount} pinned ref(s), ${knowledgeCount} knowledge record(s), ${characterCount} character record(s))`,
-  )
-}
-
-async function jsonFilesInDir(dir, issues) {
-  try {
-    return (await readdir(dir, { withFileTypes: true }))
-      .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
-      .map((entry) => path.join(dir, entry.name))
-  } catch (error) {
-    issues.push(`${relative(dir)}: ${error.message}`)
-    return []
-  }
-}
-
-function knowledgeRefFields(character, characterLabel, issues) {
-  const fields = []
-  for (const fieldName of ['knowledge_refs', 'knowledgeRefs', 'knowledge']) {
-    const value = character?.[fieldName]
-    if (value === undefined || value === null) continue
-    if (!Array.isArray(value)) {
-      issues.push(`${characterLabel} ${fieldName}: pinned knowledge refs must be an array`)
-      continue
-    }
-    const refs = []
-    for (const [index, item] of value.entries()) {
-      if (typeof item !== 'string' || !item.trim()) {
-        issues.push(`${characterLabel} ${fieldName}[${index}]: pinned knowledge ref must be a non-empty string`)
-        continue
-      }
-      refs.push(item.trim())
-    }
-    fields.push([fieldName, refs])
-  }
-  return fields
-}
-
-function stringField(object, names) {
-  for (const name of names) {
-    const value = object?.[name]
-    if (typeof value === 'string' && value.trim()) return value.trim()
-  }
-  return null
 }
 
 async function verifyQualitySuites() {
