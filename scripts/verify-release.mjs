@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 
 import { createSourceInvariantVerifier } from './lib/source-invariant-verifier.mjs'
 import { frontendRouteCoverageEvidence } from './lib/frontend-route-verifier.mjs'
+import { createLocaleCoveragePolicy, localeMessages } from './lib/locale-coverage-policy.mjs'
 import { createProjectDialoguePolicy } from './lib/project-content/dialogue-policy.mjs'
 import { createProjectKnowledgeReferencePolicy } from './lib/project-content/knowledge-reference-policy.mjs'
 import { createProjectQualitySuitePolicy } from './lib/project-content/quality-suite-policy.mjs'
@@ -14,6 +15,7 @@ import { createProjectWorkflowPolicy } from './lib/project-content/workflow-poli
 import { releaseChannelPolicyIssues } from './lib/release-channel-policy-verifier.mjs'
 import { createRepositoryFileWalker } from './lib/repository-file-walker.mjs'
 import { createRepositoryJsonPolicy } from './lib/repository-json-policy.mjs'
+import { createRepositoryTextPolicy } from './lib/repository-text-policy.mjs'
 import { createTauriPackagingVerifier } from './lib/tauri-packaging-verifier.mjs'
 import {
   createWebDistributionVerifier,
@@ -34,24 +36,6 @@ const frontendDir = path.join(root, 'frontend')
 const rustDir = path.join(root, 'rust-engine')
 const tauriAppDir = path.join(rustDir, 'crates', 'tauri-app')
 const releasePolicyPath = path.join(root, 'scripts', 'release-channel-policy.json')
-
-const textExtensions = new Set([
-  '.cs',
-  '.css',
-  '.html',
-  '.js',
-  '.json',
-  '.md',
-  '.mjs',
-  '.ps1',
-  '.rs',
-  '.toml',
-  '.ts',
-  '.vue',
-  '.xml',
-  '.yml',
-  '.yaml',
-])
 
 const rendererDataRoots = [
   { label: 'data', dir: path.join(root, 'data') },
@@ -142,21 +126,22 @@ const releaseCriticalRustFiles = [
   'crates/tauri-app/src/commands/workflow.rs',
 ]
 
-const sensitivePatterns = [
-  { label: 'OpenAI-style API key', pattern: /sk-[A-Za-z0-9_-]{20,}/ },
-  { label: 'GitHub classic token', pattern: /ghp_[A-Za-z0-9]{20,}/ },
-  { label: 'GitHub fine-grained token', pattern: /github_pat_[A-Za-z0-9_]{20,}/ },
-]
-
-const frontendSourceExtensions = new Set(['.css', '.html', '.js', '.mjs', '.ts', '.vue'])
-const uiTextArtifactPatterns = [
-  { label: 'replacement character', pattern: /\uFFFD/ },
-  { label: 'mojibake separator', pattern: /\u74BA\?/ },
-  { label: 'mojibake CJK fragment', pattern: /[\u9354\u9288\u979D\u9802]/ },
-  { label: 'stray Chinese road separator', pattern: /\s\u8DEF\s/ },
-]
-
 const walkFiles = createRepositoryFileWalker()
+const {
+  frontendSourceExtensions,
+  verifySensitivePatterns,
+  verifyUiTextArtifacts,
+} = createRepositoryTextPolicy({
+  repositoryRoot: root,
+  frontendDirectory: frontendDir,
+  walkFiles,
+  relativePath: relative,
+})
+const { verifyLocaleCoverage } = createLocaleCoveragePolicy({
+  repositoryRoot: root,
+  frontendDirectory: frontendDir,
+  requiredLocaleFiles: requiredLocales,
+})
 const { verifyRepositoryJsonFiles } = createRepositoryJsonPolicy({
   repositoryRoot: root,
   walkFiles,
@@ -400,96 +385,6 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-async function verifySensitivePatterns() {
-  const files = await walkFiles(root)
-  const hits = []
-
-  for (const file of files) {
-    if (!textExtensions.has(path.extname(file))) continue
-    const info = await stat(file)
-    if (info.size > 4 * 1024 * 1024) continue
-    const content = await readFile(file, 'utf8')
-    for (const rule of sensitivePatterns) {
-      if (rule.pattern.test(content)) {
-        hits.push(`${relative(file)} (${rule.label})`)
-      }
-    }
-  }
-
-  if (hits.length > 0) {
-    throw new Error(`Sensitive token-like content found:\n${hits.join('\n')}`)
-  }
-
-  console.log('[release] Sensitive token pattern scan OK')
-}
-
-async function verifyUiTextArtifacts() {
-  const sourceDir = path.join(frontendDir, 'src')
-  const files = (await walkFiles(sourceDir)).filter((file) => {
-    const relativePath = path.relative(sourceDir, file).replaceAll(path.sep, '/')
-    return !relativePath.startsWith('locales/') && frontendSourceExtensions.has(path.extname(file))
-  })
-  const hits = []
-
-  for (const file of files) {
-    const content = await readFile(file, 'utf8')
-    for (const rule of uiTextArtifactPatterns) {
-      if (rule.pattern.test(content)) {
-        hits.push(`${relative(file)} (${rule.label})`)
-      }
-    }
-  }
-
-  if (hits.length > 0) {
-    throw new Error(`UI text artifact scan failed:\n${hits.join('\n')}`)
-  }
-
-  console.log('[release] UI text artifact scan OK')
-}
-
-async function verifyLocaleCoverage() {
-  const dataLocaleDir = path.join(root, 'data', 'locales')
-  const publicLocaleDir = path.join(frontendDir, 'public', 'locales')
-  const sourceLocaleDir = path.join(frontendDir, 'src', 'locales')
-  const embeddedLocaleFiles = ['zh-CN.json', 'ja-JP.json', 'ko-KR.json']
-  const issues = []
-
-  const baseLocale = await readLocaleJson(dataLocaleDir, 'en.json', issues)
-  const baseMessages = localeMessages(baseLocale)
-  const baseKeys = baseMessages ? Object.keys(baseMessages).sort() : []
-
-  if (baseKeys.length === 0) {
-    issues.push('data/locales/en.json must include a non-empty strings object')
-  }
-
-  for (const localeFile of requiredLocales) {
-    const dataLocale = await readLocaleJson(dataLocaleDir, localeFile, issues)
-    const publicLocale = await readLocaleJson(publicLocaleDir, localeFile, issues)
-    verifyLocaleShape(dataLocale, `data/locales/${localeFile}`, baseKeys, issues)
-    verifyLocaleShape(publicLocale, `frontend/public/locales/${localeFile}`, baseKeys, issues)
-
-    if (dataLocale && publicLocale && stableStringify(dataLocale) !== stableStringify(publicLocale)) {
-      issues.push(`frontend/public/locales/${localeFile} must match data/locales/${localeFile}`)
-    }
-  }
-
-  for (const localeFile of embeddedLocaleFiles) {
-    const sourceLocale = await readLocaleJson(sourceLocaleDir, localeFile, issues)
-    const dataLocale = await readLocaleJson(dataLocaleDir, localeFile, issues)
-    verifyLocaleShape(sourceLocale, `frontend/src/locales/${localeFile}`, baseKeys, issues)
-
-    if (sourceLocale && dataLocale && stableStringify(sourceLocale) !== stableStringify(dataLocale)) {
-      issues.push(`frontend/src/locales/${localeFile} must match data/locales/${localeFile}`)
-    }
-  }
-
-  if (issues.length > 0) {
-    throw new Error(`Locale coverage verification failed:\n${issues.join('\n')}`)
-  }
-
-  console.log(`[release] Locale coverage OK (${baseKeys.length} keys, ${requiredLocales.length} public locale(s))`)
-}
-
 async function verifyI18nLocalePathInvariants() {
   const issues = []
   const i18nCommandSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'i18n.rs'), 'utf8')
@@ -559,63 +454,6 @@ async function verifyReleaseChannelPolicy() {
   }
 
   console.log('[release] Release channel policy OK')
-}
-
-async function readLocaleJson(dir, localeFile, issues) {
-  const filePath = path.join(dir, localeFile)
-  try {
-    return JSON.parse(await readFile(filePath, 'utf8'))
-  } catch (error) {
-    issues.push(`${relative(filePath)} could not be read as locale JSON: ${error.message}`)
-    return null
-  }
-}
-
-function localeMessages(locale) {
-  if (!locale || typeof locale !== 'object' || Array.isArray(locale)) return null
-  if (!locale.strings || typeof locale.strings !== 'object' || Array.isArray(locale.strings)) return null
-  return locale.strings
-}
-
-function verifyLocaleShape(locale, label, baseKeys, issues) {
-  if (!locale) return
-
-  const expectedLocale = label.split('/').pop().replace(/\.json$/, '')
-  if (locale.locale !== expectedLocale) {
-    issues.push(`${label}: locale must be ${expectedLocale}`)
-  }
-
-  const messages = localeMessages(locale)
-  if (!messages) {
-    issues.push(`${label}: strings object is required`)
-    return
-  }
-
-  const keys = Object.keys(messages).sort()
-  const missing = baseKeys.filter((key) => !keys.includes(key))
-  const extra = keys.filter((key) => !baseKeys.includes(key))
-  if (missing.length > 0) {
-    issues.push(`${label}: missing locale keys ${missing.slice(0, 10).join(', ')}`)
-  }
-  if (extra.length > 0) {
-    issues.push(`${label}: unexpected locale keys ${extra.slice(0, 10).join(', ')}`)
-  }
-
-  for (const key of keys) {
-    if (typeof messages[key] !== 'string') {
-      issues.push(`${label}: locale key ${key} must be a string`)
-    }
-  }
-}
-
-function stableStringify(value) {
-  if (Array.isArray(value)) {
-    return `[${value.map(stableStringify).join(',')}]`
-  }
-  if (value && typeof value === 'object') {
-    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`
-  }
-  return JSON.stringify(value)
 }
 
 async function fileExists(filePath) {
