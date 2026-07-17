@@ -76,7 +76,13 @@ export function spawnSpecForPlatform(
   { platform = process.platform, nodeExecutable = process.execPath } = {},
 ) {
   if (platform === 'win32' && ['npm', 'npx'].includes(command)) {
-    const cliPath = path.join(path.dirname(nodeExecutable), 'node_modules', 'npm', 'bin', `${command}-cli.js`)
+    const cliPath = path.win32.join(
+      path.win32.dirname(nodeExecutable),
+      'node_modules',
+      'npm',
+      'bin',
+      `${command}-cli.js`,
+    )
     return { command: nodeExecutable, args: [cliPath, ...args] }
   }
   return { command, args: [...args] }
