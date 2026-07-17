@@ -56,6 +56,8 @@ export function createSourceInvariantVerifier({
     const storyAccessSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyAccess.ts'), 'utf8')
     const storyContentSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyContent.ts'), 'utf8')
     const storyPlaytestSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyPlaytest.ts'), 'utf8')
+    const storyTextPlaybackSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyTextPlayback.ts'), 'utf8')
+    const storyTextPlaybackTestSource = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'storyTextPlayback.test.ts'), 'utf8')
     const localConditionSource = await readFile(path.join(frontendDir, 'src', 'lib', 'localCondition.ts'), 'utf8')
     const knowledgeContentSource = await readFile(path.join(frontendDir, 'src', 'lib', 'knowledgeContent.ts'), 'utf8')
     const knowledgeContentTestSource = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'knowledgeContent.test.ts'), 'utf8')
@@ -124,6 +126,7 @@ export function createSourceInvariantVerifier({
     const settingsDomainSource = await readFile(path.join(frontendDir, 'src', 'lib', 'settingsDomain.ts'), 'utf8')
     const settingsTestSource = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'settingsDomain.test.ts'), 'utf8')
     const authoringE2eSource = await readFile(path.join(frontendDir, 'e2e', 'authoring.spec.ts'), 'utf8')
+    const tideglassE2eSource = await readFile(path.join(frontendDir, 'e2e', 'tideglass.spec.ts'), 'utf8')
     const projectArchiveSource = await readFile(path.join(frontendDir, 'src', 'lib', 'projectArchive.ts'), 'utf8')
     const serviceWorkerSource = await readFile(path.join(frontendDir, 'public', 'sw.js'), 'utf8')
     const frontendRuntimeFiles = (await walkFiles(path.join(frontendDir, 'src'))).filter((file) =>
@@ -452,8 +455,21 @@ export function createSourceInvariantVerifier({
       [gameViewSource, 'route.query.previewDialogue', 'launch browser dialogue author previews from saved drafts'],
       [gameViewSource, 'webDialogueRuntime', 'retain browser dialogue cursor, variables, and flags across transitions'],
       [gameViewSource, "from '../lib/storyPlaytest'", 'delegate browser dialogue traversal to the Story Playtest domain module'],
+      [gameViewSource, "from '../lib/storyTextPlayback'", 'delegate text timer lifecycle to the Story playback controller'],
+      [gameViewSource, 'textPlayback.start(text)', 'delegate typewriter progression to the Story playback controller'],
+      [gameViewSource, 'if (textPlayback.complete()) return', 'complete the active line before advancing dialogue state'],
+      [gameViewSource, 'textPlayback.dispose()', 'dispose Story playback timers with the Vue lifecycle'],
       [workflowPreviewSource, "from './localCondition'", 'share local condition evaluation instead of owning a workflow-only parser'],
       [storyPlaytestSource, "from './localCondition'", 'reuse the shared bounded browser condition evaluator'],
+      [storyTextPlaybackSource, 'export function createStoryTextPlaybackController', 'own text and autoplay timers outside the Vue view'],
+      [storyTextPlaybackSource, 'new Intl.Segmenter', 'preserve complete graphemes during multilingual typewriter playback'],
+      [storyTextPlaybackSource, 'if (options.shouldAutoAdvance()) options.onAutoAdvance()', 'recheck autoplay policy before advancing'],
+      [storyTextPlaybackTestSource, 'types one grapheme per tick and schedules auto advance after completion', 'test deterministic text and autoplay progression'],
+      [storyTextPlaybackTestSource, 'completes the active line without scheduling automatic advancement', 'test manual line completion independently'],
+      [storyTextPlaybackTestSource, 'cancels stale timers when a new line starts', 'test playback reentry cancellation'],
+      [storyTextPlaybackTestSource, 'rechecks autoplay policy and clears every timer on cancellation or disposal', 'test playback policy and lifecycle cleanup'],
+      [tideglassE2eSource, 'browser Playtest completes the active line before advancing', 'exercise text completion and dialogue advancement in a real browser'],
+      [tideglassE2eSource, 'await page.clock.fastForward(30)', 'control Playtest timer progression deterministically'],
       [localConditionSource, 'evaluateLocalCondition', 'expose one pure browser condition evaluation boundary'],
       [localConditionSource, 'getVariable', 'read local preview variables from shared browser conditions'],
       [localConditionSource, 'hasFlag', 'read local preview flags from shared browser conditions'],
@@ -482,6 +498,14 @@ export function createSourceInvariantVerifier({
     for (const [source, needle, description] of storyEventFrontendRequirements) {
       if (!source.includes(needle)) {
         issues.push(`Story event frontend integration must ${description}`)
+      }
+    }
+    if (storyTextPlaybackSource.includes("from 'vue'")) {
+      issues.push('Story text playback must remain usable without the Vue runtime')
+    }
+    for (const timerName of ['typingTimer', 'autoPlayTimer']) {
+      if (gameViewSource.includes(timerName)) {
+        issues.push(`GameView must not own Story text playback timer state: ${timerName}`)
       }
     }
 

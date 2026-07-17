@@ -125,6 +125,31 @@ for (const route of routes) {
   })
 }
 
+test('browser Playtest completes the active line before advancing', async ({ page }) => {
+  await page.clock.install()
+  const runtimeErrors = captureRuntimeErrors(page)
+  await page.goto('/game?previewDialogue=tideglass_signal&authoring=1')
+
+  const dialogue = page.locator('.dialogue-text')
+  const advance = page.locator('.advance-hint')
+  await expect(advance).toBeVisible()
+  await page.clock.fastForward(30)
+  const partialText = (await dialogue.textContent())?.trim() || ''
+  expect(partialText.length).toBeGreaterThan(0)
+
+  await advance.click()
+  const completedText = (await dialogue.textContent())?.trim() || ''
+  expect(completedText.length).toBeGreaterThan(partialText.length)
+  await expect(advance).toContainText('Continue')
+
+  await advance.click()
+  await page.clock.fastForward(30)
+  const nextText = (await dialogue.textContent())?.trim() || ''
+  expect(nextText.length).toBeGreaterThan(0)
+  expect(nextText).not.toBe(completedText)
+  expect(runtimeErrors, runtimeErrors.join('\n')).toEqual([])
+})
+
 test('browser Playtest does not expose or schedule desktop-only saves', async ({ page }) => {
   await page.clock.install()
   const runtimeErrors = captureRuntimeErrors(page)

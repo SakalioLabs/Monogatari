@@ -267,6 +267,7 @@ import { resolveAssetUrl } from '../lib/assets'
 import { selectCharacterRendererAsset } from '../lib/rendererAssets'
 import { reloadStoryEventCatalog } from '../lib/storyEvents'
 import { loadStoryContentAccess, type StoryContentAccessEntry, type StoryContentAccessSnapshot } from '../lib/storyAccess'
+import { createStoryTextPlaybackController } from '../lib/storyTextPlayback'
 import {
   advanceBrowserDialogue,
   applyBrowserRelationshipChanges,
@@ -377,8 +378,21 @@ const settings = ref({
   voiceVolume: 80,
 })
 
-let typingTimer: number | null = null
-let autoPlayTimer: number | null = null
+const textPlayback = createStoryTextPlaybackController({
+  scheduler: {
+    setInterval: (callback, delay) => window.setInterval(callback, delay),
+    clearInterval: (timerId) => window.clearInterval(timerId),
+    setTimeout: (callback, delay) => window.setTimeout(callback, delay),
+    clearTimeout: (timerId) => window.clearTimeout(timerId),
+  },
+  readTextIntervalMs: () => settings.value.textSpeed,
+  readAutoAdvanceDelayMs: () => settings.value.autoPlaySpeed,
+  shouldAutoAdvance: () => settings.value.autoPlay && dialogueState.value?.choices.length === 0,
+  onTextChange: (text) => { displayedText.value = text },
+  onTypingChange: (typing) => { isTyping.value = typing },
+  onAutoAdvance: () => { void advanceDialogue() },
+})
+
 let autoSaveTimer: number | null = null
 const activeSceneStorageKey = 'monogatari.activeScene'
 
@@ -519,23 +533,7 @@ async function updateDialogueState() {
 }
 
 function typewriterEffect(text: string) {
-  if (typingTimer) clearInterval(typingTimer)
-  if (autoPlayTimer) clearTimeout(autoPlayTimer)
-  displayedText.value = ''
-  isTyping.value = true
-  let i = 0
-  typingTimer = window.setInterval(() => {
-    if (i < text.length) {
-      displayedText.value += text[i]
-      i += 1
-    } else {
-      if (typingTimer) clearInterval(typingTimer)
-      isTyping.value = false
-      if (settings.value.autoPlay && dialogueState.value?.choices.length === 0) {
-        autoPlayTimer = window.setTimeout(advanceDialogue, settings.value.autoPlaySpeed)
-      }
-    }
-  }, settings.value.textSpeed)
+  textPlayback.start(text)
 }
 
 function unlockHint(access: StoryContentAccessEntry): string {
@@ -664,12 +662,7 @@ async function selectChoice(index: number) {
 }
 
 async function advanceDialogue() {
-  if (isTyping.value) {
-    if (typingTimer) clearInterval(typingTimer)
-    isTyping.value = false
-    displayedText.value = dialogueState.value?.text || displayedText.value
-    return
-  }
+  if (textPlayback.complete()) return
   try {
     if (!hasTauriRuntime() && webActiveDialogue.value) {
       if (!webDialogueRuntime.value) throw new Error('Browser dialogue runtime is unavailable.')
@@ -829,8 +822,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
-  if (typingTimer) clearInterval(typingTimer)
-  if (autoPlayTimer) clearTimeout(autoPlayTimer)
+  textPlayback.dispose()
   if (autoSaveTimer) clearInterval(autoSaveTimer)
 })
 </script>
