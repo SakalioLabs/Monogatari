@@ -1,6 +1,19 @@
 use super::*;
 use crate::story_events::StoryEventCatalog;
 use crate::workflow_validation::WorkflowNode;
+use sha2::{Digest, Sha256};
+use std::path::PathBuf;
+use std::sync::atomic::{AtomicU64, Ordering};
+
+static NEXT_PROJECT_ROOT: AtomicU64 = AtomicU64::new(0);
+
+fn project_root(label: &str) -> PathBuf {
+    std::env::temp_dir().join(format!(
+        "monogatari-workflow-preview-{label}-{}-{}",
+        std::process::id(),
+        NEXT_PROJECT_ROOT.fetch_add(1, Ordering::Relaxed)
+    ))
+}
 
 fn node(id: &str, node_type: &str, connections: &[&str], config: Value) -> WorkflowNode {
     WorkflowNode {
@@ -163,6 +176,49 @@ fn random_branches_are_deterministic_and_injectable() {
     assert_eq!(left.steps[1].next_node_id.as_deref(), Some("left"));
     assert_eq!(right.steps[1].next_node_id.as_deref(), Some("right"));
     assert_eq!(seeded_a.executed_node_ids, seeded_b.executed_node_ids);
+}
+
+#[tokio::test]
+async fn project_preview_binds_execution_to_exact_workflow_source() {
+    let root = project_root("source");
+    std::fs::create_dir_all(root.join("workflows")).unwrap();
+    let workflow = workflow(vec![
+        node("start", "start", &["random"], json!({})),
+        node(
+            "random",
+            "random_branch",
+            &["left", "right"],
+            json!({"weights":[1, 1]}),
+        ),
+        node("left", "end", &[], json!({})),
+        node("right", "end", &[], json!({})),
+    ]);
+    let source = serde_json::to_vec_pretty(&workflow).unwrap();
+    std::fs::write(root.join("workflows/branch.json"), &source).unwrap();
+
+    let preview = execute_project_workflow_preview(
+        &root,
+        "workflows/branch.json",
+        WorkflowPreviewEnvironment::default(),
+        WorkflowPreviewOptions {
+            random_values: vec![0.9],
+            ..WorkflowPreviewOptions::default()
+        },
+    )
+    .await
+    .unwrap();
+    let _ = std::fs::remove_dir_all(&root);
+
+    assert_eq!(preview.source_path, "workflows/branch.json");
+    assert_eq!(
+        preview.source_sha256,
+        format!("{:x}", Sha256::digest(source))
+    );
+    assert!(preview.report.completed);
+    assert_eq!(
+        preview.report.executed_node_ids,
+        ["start", "random", "right"]
+    );
 }
 
 #[test]

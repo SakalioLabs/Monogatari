@@ -4,6 +4,7 @@ use crate::conversation_quality::ConversationEvaluation;
 use crate::story_events::StoryEventCatalog;
 use llm_core::normalize_script_state_key;
 use llm_scripting::validate_condition_source;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::{Path, PathBuf};
@@ -33,7 +34,7 @@ pub struct Workflow {
     pub start_node_id: String,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 pub struct WorkflowRunContext {
     #[serde(default)]
     pub enabled: bool,
@@ -232,7 +233,7 @@ pub struct WorkflowFileSummary {
     pub node_count: usize,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct WorkflowValidationIssue {
     pub severity: String,
     pub code: String,
@@ -240,7 +241,7 @@ pub struct WorkflowValidationIssue {
     pub message: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct WorkflowValidationResult {
     pub valid: bool,
     pub error_count: usize,

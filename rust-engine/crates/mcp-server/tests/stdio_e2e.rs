@@ -17,10 +17,10 @@ use llm_authoring::quality_suite_validation::MAX_QUALITY_SUITE_FILE_BYTES;
 use llm_authoring::runtime_validation::CoreRuntimeValidationReport;
 use monogatari_mcp::protocol::{
     ExportProjectPackageOutput, InspectProjectOutput, InspectProjectPackageOutput, McpToolError,
-    McpToolErrorCode, PreviewProjectPackageOutput, RunQualitySuiteOutput,
+    McpToolErrorCode, PreviewProjectPackageOutput, PreviewWorkflowOutput, RunQualitySuiteOutput,
     ValidateProjectPackageOutput, MCP_PACKAGE_EXPORT_SCHEMA_V1, MCP_PACKAGE_INSPECTION_SCHEMA_V1,
     MCP_PACKAGE_PREVIEW_SCHEMA_V1, MCP_PACKAGE_VALIDATION_SCHEMA_V1,
-    MCP_QUALITY_SUITE_RUN_SCHEMA_V1,
+    MCP_QUALITY_SUITE_RUN_SCHEMA_V1, MCP_WORKFLOW_PREVIEW_SCHEMA_V1,
 };
 use rmcp::model::{CallToolRequestParams, JsonObject};
 use rmcp::service::RunningService;
@@ -98,11 +98,25 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
             ]
         }"#,
     )?;
+    std::fs::write(
+        project.root.join("workflows/mcp_preview.json"),
+        r#"{
+            "id":"mcp_preview",
+            "name":"MCP Preview",
+            "start_node_id":"start",
+            "nodes":[
+                {"id":"start","node_type":"start","label":"Start","x":0.0,"y":0.0,"config":{},"connections":["random"]},
+                {"id":"random","node_type":"random_branch","label":"Branch","x":100.0,"y":0.0,"config":{"weights":[1,1]},"connections":["left","right"]},
+                {"id":"left","node_type":"end","label":"Left","x":200.0,"y":-50.0,"config":{},"connections":[]},
+                {"id":"right","node_type":"end","label":"Right","x":200.0,"y":50.0,"config":{},"connections":[]}
+            ]
+        }"#,
+    )?;
     let client = connect(&project.root, false).await?;
     let second_reader = connect(&project.root, false).await?;
     assert_no_project_lease_sidecar(&project);
     assert_competing_start_rejected(&project.root, true).await?;
-    assert_eq!(second_reader.list_all_tools().await?.len(), 12);
+    assert_eq!(second_reader.list_all_tools().await?.len(), 13);
     second_reader.cancel().await?;
 
     let tools = client.list_all_tools().await?;
@@ -121,6 +135,7 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
             "list_project_json",
             "plan_transaction",
             "preview_project_package",
+            "preview_workflow",
             "read_project_json",
             "run_quality_suite",
             "validate_delivery",
@@ -177,6 +192,48 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
     let read: JsonCatalogDocument = structured(&read)?;
     assert_eq!(read.document["name"], "Aoi");
     assert_eq!(read.metadata.content_fingerprint.len(), 64);
+
+    let workflow_listing = client
+        .call_tool(
+            CallToolRequestParams::new("list_project_json")
+                .with_arguments(arguments(json!({"catalog": "workflows"}))),
+        )
+        .await?;
+    let workflow_listing: JsonCatalogReport = structured(&workflow_listing)?;
+    assert_eq!(workflow_listing.document_count, 1);
+
+    let workflow_preview = client
+        .call_tool(
+            CallToolRequestParams::new("preview_workflow").with_arguments(arguments(json!({
+                "path": "workflows/mcp_preview.json",
+                "options": {"random_values": [0.9]}
+            }))),
+        )
+        .await?;
+    assert_eq!(workflow_preview.is_error, Some(false));
+    let workflow_preview: PreviewWorkflowOutput = structured(&workflow_preview)?;
+    assert_eq!(workflow_preview.schema, MCP_WORKFLOW_PREVIEW_SCHEMA_V1);
+    assert_eq!(workflow_preview.source_path, "workflows/mcp_preview.json");
+    assert_eq!(
+        workflow_preview.source_sha256,
+        workflow_listing.documents[0].sha256
+    );
+    assert!(workflow_preview.report.completed);
+    assert_eq!(
+        workflow_preview.report.executed_node_ids,
+        ["start", "random", "right"]
+    );
+    assert_eq!(workflow_preview.report.coverage_percent, 75.0);
+
+    let wrong_workflow_catalog = client
+        .call_tool(
+            CallToolRequestParams::new("preview_workflow")
+                .with_arguments(arguments(json!({"path": "characters/aoi.json"}))),
+        )
+        .await?;
+    assert_eq!(wrong_workflow_catalog.is_error, Some(true));
+    let error: McpToolError = structured(&wrong_workflow_catalog)?;
+    assert_eq!(error.code, McpToolErrorCode::ProjectInvalid);
 
     let quality_listing = client
         .call_tool(

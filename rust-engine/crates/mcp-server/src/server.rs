@@ -20,6 +20,7 @@ use llm_authoring::runtime_validation::{
     validate_core_runtime_project, CoreRuntimeValidationReport,
 };
 use llm_authoring::story_events::StoryEventCatalog;
+use llm_authoring::workflow_preview::execute_project_workflow_preview;
 use rmcp::handler::server::{router::tool::ToolRouter, wrapper::Parameters};
 use rmcp::model::{Implementation, ServerCapabilities, ServerInfo};
 use rmcp::{tool, tool_handler, tool_router, Json, ServerHandler};
@@ -35,9 +36,10 @@ use crate::protocol::{
     ApplyTransactionOutput, ApplyTransactionRequest, ExportProjectPackageOutput,
     ExportProjectPackageRequest, InspectProjectOutput, InspectProjectPackageOutput,
     InspectProjectPackageRequest, ListProjectJsonRequest, McpToolError,
-    PreviewProjectPackageOutput, ReadProjectJsonRequest, RunQualitySuiteOutput,
-    RunQualitySuiteRequest, ValidateProjectPackageOutput, ValidateProjectPackageRequest,
-    MCP_INSPECTION_SCHEMA_V1, MCP_QUALITY_SUITE_RUN_SCHEMA_V1,
+    PreviewProjectPackageOutput, PreviewWorkflowOutput, PreviewWorkflowRequest,
+    ReadProjectJsonRequest, RunQualitySuiteOutput, RunQualitySuiteRequest,
+    ValidateProjectPackageOutput, ValidateProjectPackageRequest, MCP_INSPECTION_SCHEMA_V1,
+    MCP_QUALITY_SUITE_RUN_SCHEMA_V1, MCP_WORKFLOW_PREVIEW_SCHEMA_V1,
 };
 use crate::provenance::quality_suite_run_provenance;
 use crate::validation::validate_candidate_core_runtime;
@@ -299,6 +301,38 @@ impl MonogatariMcpServer {
         }))
     }
 
+    /// Execute one deterministic provider-free Workflow preview with source evidence.
+    #[tool(annotations(
+        title = "Preview Workflow",
+        read_only_hint = true,
+        destructive_hint = false,
+        idempotent_hint = true,
+        open_world_hint = false
+    ))]
+    pub async fn preview_workflow(
+        &self,
+        Parameters(request): Parameters<PreviewWorkflowRequest>,
+    ) -> Result<Json<PreviewWorkflowOutput>, Json<McpToolError>> {
+        let _guard = self.access.read().await;
+        let preview = execute_project_workflow_preview(
+            &self.project_root,
+            &request.path,
+            request.environment,
+            request.options,
+        )
+        .await
+        .map_err(|message| {
+            McpToolError::project(message, Some(serde_json::json!({ "path": request.path })))
+        })
+        .map_err(Json)?;
+        Ok(Json(PreviewWorkflowOutput {
+            schema: MCP_WORKFLOW_PREVIEW_SCHEMA_V1.to_string(),
+            source_path: preview.source_path,
+            source_sha256: preview.source_sha256,
+            report: preview.report,
+        }))
+    }
+
     /// Export one reviewed package into the startup-fixed output directory.
     #[tool(annotations(
         title = "Export project package",
@@ -438,7 +472,7 @@ impl ServerHandler for MonogatariMcpServer {
                 env!("CARGO_PKG_VERSION"),
             ))
             .with_instructions(format!(
-                "Author Monogatari visual novels inside the fixed project root. Inspect, list, and read before planning. Use validate_project for read-only headless acceptance, validate_delivery for declared asset readiness, and run_quality_suite for executable Quality evidence. Plan before apply. Preview a credential-free package manifest before exporting to the fixed package directory, then inspect and privately validate the written archive. Package validation proves ephemeral extraction plus shared runtime/delivery acceptance, not installation or rendered visual acceptance. {mode} {package_mode}"
+                "Author Monogatari visual novels inside the fixed project root. Inspect, list, and read before planning. Use validate_project for read-only headless acceptance, validate_delivery for declared asset readiness, preview_workflow for deterministic provider-free graph evidence, and run_quality_suite for executable Quality evidence. Plan before apply. Preview a credential-free package manifest before exporting to the fixed package directory, then inspect and privately validate the written archive. Package validation proves ephemeral extraction plus shared runtime/delivery acceptance, not installation or rendered visual acceptance. {mode} {package_mode}"
             ))
     }
 }
@@ -472,7 +506,7 @@ mod tests {
     }
 
     #[test]
-    fn exposes_twelve_schema_backed_tools_with_write_annotations() {
+    fn exposes_thirteen_schema_backed_tools_with_write_annotations() {
         let root = temp_project();
         let server = MonogatariMcpServer::new(root.clone(), false).unwrap();
         let tools = server.tool_router.list_all();
@@ -490,6 +524,7 @@ mod tests {
                 "list_project_json",
                 "plan_transaction",
                 "preview_project_package",
+                "preview_workflow",
                 "read_project_json",
                 "run_quality_suite",
                 "validate_delivery",
@@ -539,6 +574,34 @@ mod tests {
         assert!(serde_json::to_string(quality_output_schema)
             .unwrap()
             .contains("scenarios"));
+        let workflow = tools
+            .iter()
+            .find(|tool| tool.name == "preview_workflow")
+            .unwrap();
+        assert_eq!(
+            workflow.annotations.as_ref().unwrap().read_only_hint,
+            Some(true)
+        );
+        let workflow_input_properties = workflow
+            .input_schema
+            .get("properties")
+            .and_then(serde_json::Value::as_object)
+            .unwrap();
+        assert!(workflow_input_properties.contains_key("path"));
+        assert!(workflow_input_properties.contains_key("environment"));
+        assert!(workflow_input_properties.contains_key("options"));
+        let workflow_output_schema = workflow.output_schema.as_ref().unwrap();
+        let workflow_output_properties = workflow_output_schema
+            .get("properties")
+            .and_then(serde_json::Value::as_object)
+            .unwrap();
+        assert!(workflow_output_properties.contains_key("schema"));
+        assert!(workflow_output_properties.contains_key("source_path"));
+        assert!(workflow_output_properties.contains_key("source_sha256"));
+        assert!(workflow_output_properties.contains_key("report"));
+        let workflow_schema = serde_json::to_string(workflow_output_schema).unwrap();
+        assert!(workflow_schema.contains("executed_node_ids"));
+        assert!(workflow_schema.contains("coverage_percent"));
         let preview = tools
             .iter()
             .find(|tool| tool.name == "preview_project_package")

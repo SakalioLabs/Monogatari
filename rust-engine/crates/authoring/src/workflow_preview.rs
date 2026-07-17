@@ -1,14 +1,17 @@
 //! Deterministic, side-effect-free Workflow preview execution.
 
 use std::collections::HashMap;
+use std::path::Path;
 
 use rhai::Dynamic;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 use crate::conversation_quality::ConversationEvaluation;
 use crate::prompt_guard;
 use crate::story_events::{EventScoreSnapshot, EventTriggerContext, StoryEventCatalog};
+use crate::workflow_documents::load_project_workflow_document;
 use crate::workflow_execution_policy::{
     config_duration_ms, config_string, config_string_list, optional_config_f32,
     select_weighted_branch, workflow_branch_weights, workflow_execution_coverage,
@@ -23,7 +26,7 @@ use llm_scripting::{validate_condition_source, ScriptEngine};
 
 const DEFAULT_RANDOM_SEED: u64 = 0x4d4f_4e4f_4741_5441;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct WorkflowPreviewCharacterState {
     #[serde(default = "default_emotion")]
     pub emotion: String,
@@ -52,14 +55,14 @@ impl Default for WorkflowPreviewCharacterState {
     }
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 pub struct WorkflowPreviewAppliedEvent {
     pub event_id: String,
     #[serde(default)]
     pub character_id: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 pub struct WorkflowPreviewEnvironment {
     #[serde(default)]
     pub script_variables: HashMap<String, Value>,
@@ -73,7 +76,7 @@ pub struct WorkflowPreviewEnvironment {
     pub scene_access: HashMap<String, Value>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct WorkflowPreviewOptions {
     #[serde(default)]
     pub max_steps: Option<usize>,
@@ -97,6 +100,29 @@ impl Default for WorkflowPreviewOptions {
             random_values: Vec::new(),
         }
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct ProjectWorkflowPreviewReport {
+    pub source_path: String,
+    pub source_sha256: String,
+    pub report: WorkflowExecutionReport,
+}
+
+pub async fn execute_project_workflow_preview(
+    project_root: &Path,
+    requested_path: &str,
+    environment: WorkflowPreviewEnvironment,
+    options: WorkflowPreviewOptions,
+) -> Result<ProjectWorkflowPreviewReport, String> {
+    let loaded = load_project_workflow_document(project_root, requested_path).await?;
+    let event_catalog = StoryEventCatalog::load_from_project_root(project_root)?;
+    let report = execute_workflow_preview(&loaded.workflow, &event_catalog, environment, options)?;
+    Ok(ProjectWorkflowPreviewReport {
+        source_path: loaded.source_path,
+        source_sha256: loaded.source_sha256,
+        report,
+    })
 }
 
 struct WorkflowPreviewState {

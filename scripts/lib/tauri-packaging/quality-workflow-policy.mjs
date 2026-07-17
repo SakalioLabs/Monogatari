@@ -50,6 +50,23 @@ const workflowPreviewRequirements = [
   ['qualityExecution', 'execute_workflow_preview(', 'run Quality Workflow coverage without desktop state'],
 ]
 
+const workflowProjectPreviewRequirements = [
+  ['workflowDocuments', 'pub struct LoadedWorkflowDocument', 'own loaded Workflow source evidence'],
+  ['workflowDocuments', 'pub source_sha256: String', 'carry exact Workflow source fingerprints'],
+  ['workflowDocuments', 'pub async fn load_project_workflow_document', 'load validated Workflows with source evidence'],
+  ['workflowDocumentsTests', 'loaded_source.source_sha256', 'test Workflow source fingerprints without a transport'],
+  ['workflowPreview', 'pub struct ProjectWorkflowPreviewReport', 'own project Workflow preview evidence'],
+  ['workflowPreview', 'pub async fn execute_project_workflow_preview', 'own project-backed provider-free previews'],
+  ['workflowPreviewTests', 'project_preview_binds_execution_to_exact_workflow_source', 'test project preview source binding without Tauri'],
+  ['mcpProtocol', 'MCP_WORKFLOW_PREVIEW_SCHEMA_V1', 'version MCP Workflow preview evidence'],
+  ['mcpProtocol', 'pub struct PreviewWorkflowRequest', 'expose schema-backed Workflow preview input'],
+  ['mcpProtocol', 'pub struct PreviewWorkflowOutput', 'expose schema-backed Workflow preview output'],
+  ['mcpServer', 'pub async fn preview_workflow', 'expose read-only Workflow previews to Agents'],
+  ['mcpServer', 'execute_project_workflow_preview(', 'delegate MCP Workflow previews to the headless project domain'],
+  ['mcpE2e', 'MCP_WORKFLOW_PREVIEW_SCHEMA_V1', 'test versioned Workflow preview evidence over real stdio'],
+  ['mcpE2e', 'CallToolRequestParams::new("preview_workflow")', 'execute Workflow preview through a real MCP child process'],
+]
+
 const workflowExecutionPolicyRequirements = [
   ['workflowExecutionPolicy', 'pub struct WorkflowExecutionStep', 'own the shared execution-step model'],
   ['workflowExecutionPolicy', 'pub struct WorkflowExecutionReport', 'own the shared execution-report model'],
@@ -129,6 +146,8 @@ export async function collectTauriQualityWorkflowEvidence(options = {}) {
     qualityExecution: await readFile(path.join(authoringDirectory, 'quality_suite_execution.rs'), 'utf8'),
     qualityExecutionTests: await readFile(path.join(authoringDirectory, 'quality_suite_execution', 'tests.rs'), 'utf8'),
     qualitySuite: await readFile(path.join(authoringDirectory, 'quality_suite_validation.rs'), 'utf8'),
+    workflowDocuments: await readFile(path.join(authoringDirectory, 'workflow_documents.rs'), 'utf8'),
+    workflowDocumentsTests: await readFile(path.join(authoringDirectory, 'workflow_documents', 'tests.rs'), 'utf8'),
     workflow: await readFile(path.join(authoringDirectory, 'workflow_validation.rs'), 'utf8'),
     workflowExecutionPolicy: await readFile(path.join(authoringDirectory, 'workflow_execution_policy.rs'), 'utf8'),
     workflowExecutionPolicyTests: await readFile(path.join(authoringDirectory, 'workflow_execution_policy', 'tests.rs'), 'utf8'),
@@ -138,6 +157,8 @@ export async function collectTauriQualityWorkflowEvidence(options = {}) {
     tauriQuality: await readFile(path.join(commandDirectory, 'quality_suite.rs'), 'utf8'),
     tauriWorkflow: await readFile(path.join(commandDirectory, 'workflow.rs'), 'utf8'),
     mcpServer: await readFile(path.join(rustDirectory, 'crates', 'mcp-server', 'src', 'server.rs'), 'utf8'),
+    mcpProtocol: await readFile(path.join(rustDirectory, 'crates', 'mcp-server', 'src', 'protocol.rs'), 'utf8'),
+    mcpE2e: await readFile(path.join(rustDirectory, 'crates', 'mcp-server', 'tests', 'stdio_e2e.rs'), 'utf8'),
   }
   const issues = []
 
@@ -204,6 +225,33 @@ export async function collectTauriQualityWorkflowEvidence(options = {}) {
 
   appendSourceRequirements(
     sources,
+    workflowProjectPreviewRequirements,
+    'Project Workflow preview',
+    issues,
+  )
+  const projectWorkflowPreviewSource = sources.workflowPreview.match(
+    /pub async fn execute_project_workflow_preview[\s\S]*?\n\}/,
+  )?.[0] ?? ''
+  if (
+    !projectWorkflowPreviewSource.includes('load_project_workflow_document(')
+    || !projectWorkflowPreviewSource.includes('execute_workflow_preview(')
+  ) {
+    issues.push('Project Workflow preview must compose shared source loading and headless execution')
+  }
+  const mcpWorkflowStart = sources.mcpServer.indexOf('pub async fn preview_workflow')
+  const mcpWorkflowEnd = sources.mcpServer.indexOf('/// Export one reviewed package', mcpWorkflowStart)
+  const mcpWorkflowSource = mcpWorkflowStart >= 0
+    ? sources.mcpServer.slice(mcpWorkflowStart, mcpWorkflowEnd >= 0 ? mcpWorkflowEnd : undefined)
+    : ''
+  if (
+    !mcpWorkflowSource.includes('execute_project_workflow_preview(')
+    || /(?:std::fs|tokio::fs|serde_json::from_)/.test(mcpWorkflowSource)
+  ) {
+    issues.push('MCP Workflow preview must delegate without filesystem or parser ownership')
+  }
+
+  appendSourceRequirements(
+    sources,
     workflowExecutionPolicyRequirements,
     'Shared Workflow execution policy',
     issues,
@@ -242,12 +290,13 @@ export async function collectTauriQualityWorkflowEvidence(options = {}) {
       qualityInput: qualityInputRequirements.length,
       qualitySource: qualitySourceRequirements.length,
       workflowPreview: workflowPreviewRequirements.length,
+      workflowProjectPreview: workflowProjectPreviewRequirements.length,
       workflowExecutionPolicy: workflowExecutionPolicyRequirements.length,
       qualityExecution: qualityExecutionRequirements.length,
       runtimeTrace:
         authoringRuntimeTraceRequirements.length + tauriRuntimeTraceRequirements.length,
     },
-    structuralCheckCount: 13,
+    structuralCheckCount: 15,
   }
 }
 

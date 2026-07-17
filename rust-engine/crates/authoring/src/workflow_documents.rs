@@ -3,6 +3,8 @@
 use std::io::ErrorKind;
 use std::path::{Component, Path, PathBuf};
 
+use sha2::{Digest, Sha256};
+
 use crate::filesystem::{ensure_regular_project_directory, stage_json_replacement};
 use crate::story_events::StoryEventCatalog;
 use crate::workflow_validation::{
@@ -14,6 +16,14 @@ const WORKFLOW_DIRECTORY: &str = "workflows";
 const MAX_WORKFLOW_PATH_BYTES: usize = 512;
 const MAX_WORKFLOW_PATH_SEGMENTS: usize = 16;
 const MAX_WORKFLOW_PATH_SEGMENT_BYTES: usize = 128;
+
+#[derive(Debug, Clone)]
+pub struct LoadedWorkflowDocument {
+    pub workflow: Workflow,
+    pub source_path: String,
+    pub source_sha256: String,
+    pub absolute_path: PathBuf,
+}
 
 /// List parseable Workflow documents under the fixed project catalog.
 pub fn list_project_workflow_summaries(
@@ -74,18 +84,37 @@ pub async fn load_project_workflow(
     project_root: &Path,
     requested_path: &str,
 ) -> Result<Workflow, String> {
+    Ok(load_project_workflow_document(project_root, requested_path)
+        .await?
+        .workflow)
+}
+
+/// Load one validated Workflow with exact source provenance.
+pub async fn load_project_workflow_document(
+    project_root: &Path,
+    requested_path: &str,
+) -> Result<LoadedWorkflowDocument, String> {
+    let relative_path = normalize_workflow_relative_path(requested_path)?;
     let target_path = workflow_target_path_for_load(project_root, requested_path)?;
-    let content = tokio::fs::read_to_string(&target_path)
+    let content = tokio::fs::read(&target_path)
         .await
         .map_err(|error| format!("Failed to read Workflow document: {error}"))?;
-    let workflow: Workflow = serde_json::from_str(&content)
+    let workflow: Workflow = serde_json::from_slice(&content)
         .map_err(|error| format!("Invalid Workflow JSON: {error}"))?;
     let event_catalog = StoryEventCatalog::load_from_project_root(project_root)?;
     let validation = validate_workflow_with_catalog(&workflow, &event_catalog);
     if !validation.valid {
         return Err(format_validation_errors(&validation));
     }
-    Ok(workflow)
+    Ok(LoadedWorkflowDocument {
+        workflow,
+        source_path: format!(
+            "{WORKFLOW_DIRECTORY}/{}",
+            relative_path.to_string_lossy().replace('\\', "/")
+        ),
+        source_sha256: format!("{:x}", Sha256::digest(&content)),
+        absolute_path: target_path,
+    })
 }
 
 fn collect_workflow_summaries(

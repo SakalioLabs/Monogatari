@@ -20,17 +20,20 @@ test('checked-in Quality and Workflow headless contracts return passing evidence
     qualityInput: 11,
     qualitySource: 18,
     workflowPreview: 11,
+    workflowProjectPreview: 14,
     workflowExecutionPolicy: 27,
     qualityExecution: 9,
     runtimeTrace: 22,
   })
-  assert.equal(evidence.structuralCheckCount, 13)
+  assert.equal(evidence.structuralCheckCount, 15)
 })
 
 test('input, preview, execution, trace, and adapter drift stays independently actionable', async () => {
   const qualitySuitePath = path.join(authoringDirectory, 'quality_suite_validation.rs')
   const qualitySuiteTestsPath = path.join(authoringDirectory, 'quality_suite_validation', 'tests.rs')
   const workflowPath = path.join(authoringDirectory, 'workflow_validation.rs')
+  const workflowDocumentsPath = path.join(authoringDirectory, 'workflow_documents.rs')
+  const workflowDocumentsTestsPath = path.join(authoringDirectory, 'workflow_documents', 'tests.rs')
   const workflowExecutionPolicyPath = path.join(authoringDirectory, 'workflow_execution_policy.rs')
   const workflowExecutionPolicyTestsPath = path.join(authoringDirectory, 'workflow_execution_policy', 'tests.rs')
   const workflowPreviewPath = path.join(authoringDirectory, 'workflow_preview.rs')
@@ -38,6 +41,8 @@ test('input, preview, execution, trace, and adapter drift stays independently ac
   const tauriQualityPath = path.join(commandDirectory, 'quality_suite.rs')
   const tauriWorkflowPath = path.join(commandDirectory, 'workflow.rs')
   const mcpServerPath = path.join(rustDirectory, 'crates', 'mcp-server', 'src', 'server.rs')
+  const mcpProtocolPath = path.join(rustDirectory, 'crates', 'mcp-server', 'src', 'protocol.rs')
+  const mcpE2ePath = path.join(rustDirectory, 'crates', 'mcp-server', 'tests', 'stdio_e2e.rs')
   const evidence = await collectTauriQualityWorkflowEvidence({
     ...boundaries,
     async readTextFile(filePath, encoding) {
@@ -58,6 +63,14 @@ test('input, preview, execution, trace, and adapter drift stays independently ac
       if (resolved === workflowPath) {
         return source.replaceAll('pub struct WorkflowRunContext', 'pub struct DriftedWorkflowRunContext')
       }
+      if (resolved === workflowDocumentsPath) {
+        return source
+          .replaceAll('pub struct LoadedWorkflowDocument', 'pub struct DriftedLoadedWorkflowDocument')
+          .replaceAll('pub async fn load_project_workflow_document', 'pub async fn load_drifted_workflow_document')
+      }
+      if (resolved === workflowDocumentsTestsPath) {
+        return source.replaceAll('loaded_source.source_sha256', 'loaded_source.drifted_sha256')
+      }
       if (resolved === workflowExecutionPolicyPath) {
         return source.replaceAll('pub fn workflow_next_node', 'pub fn drifted_workflow_next_node')
       }
@@ -69,7 +82,10 @@ test('input, preview, execution, trace, and adapter drift stays independently ac
       }
       if (resolved === workflowPreviewPath) {
         return [
-          source.replaceAll('struct DeterministicRandom', 'struct NondeterministicRandom'),
+          source
+            .replaceAll('struct DeterministicRandom', 'struct NondeterministicRandom')
+            .replaceAll('pub async fn execute_project_workflow_preview', 'pub async fn execute_drifted_project_workflow_preview')
+            .replaceAll('load_project_workflow_document(', 'load_desktop_workflow_document('),
           'pub struct WorkflowExecutionReport {}',
           '',
         ].join('\n')
@@ -113,10 +129,17 @@ test('input, preview, execution, trace, and adapter drift stays independently ac
       if (resolved === mcpServerPath) {
         return source
           .replaceAll('load_project_quality_suite_document', 'read_project_json')
+          .replaceAll('execute_project_workflow_preview(', 'execute_desktop_workflow_preview(')
           .replace(
             'let loaded = read_project_json(&self.project_root, &request.path)',
             'let source = serde_json::to_string(&request.path).unwrap();\n        let loaded = read_project_json(&self.project_root, &request.path)',
           )
+      }
+      if (resolved === mcpProtocolPath) {
+        return source.replaceAll('MCP_WORKFLOW_PREVIEW_SCHEMA_V1', 'MCP_DRIFTED_WORKFLOW_PREVIEW_SCHEMA_V1')
+      }
+      if (resolved === mcpE2ePath) {
+        return source.replaceAll('CallToolRequestParams::new("preview_workflow")', 'CallToolRequestParams::new("drifted_workflow")')
       }
       return source
     },
@@ -141,6 +164,15 @@ test('input, preview, execution, trace, and adapter drift stays independently ac
     'Headless Workflow preview must make random branches reproducible',
     'Tauri Workflow commands must not redeclare the headless preview state machine',
     'Quality Workflow coverage must execute through the headless preview domain',
+    'Project Workflow preview must own loaded Workflow source evidence',
+    'Project Workflow preview must load validated Workflows with source evidence',
+    'Project Workflow preview must test Workflow source fingerprints without a transport',
+    'Project Workflow preview must own project-backed provider-free previews',
+    'Project Workflow preview must version MCP Workflow preview evidence',
+    'Project Workflow preview must delegate MCP Workflow previews to the headless project domain',
+    'Project Workflow preview must execute Workflow preview through a real MCP child process',
+    'Project Workflow preview must compose shared source loading and headless execution',
+    'MCP Workflow preview must delegate without filesystem or parser ownership',
     'Shared Workflow execution policy must own next-node and stop-reason decisions',
     'Shared Workflow execution policy must test every branching transition contract',
     'Workflow adapters must not redeclare shared execution report or coverage models',

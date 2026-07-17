@@ -119,10 +119,33 @@ async fn save_and_load_are_atomic_and_scoped_to_project_workflows() {
     save_project_workflow(&root, &workflow, "nested/test.json")
         .await
         .unwrap();
+    let loaded_source = load_project_workflow_document(&root, "workflows/nested/test.json")
+        .await
+        .unwrap();
     let loaded = load_project_workflow(&root, "workflows/nested/test.json")
         .await
         .unwrap();
 
+    let source_bytes = std::fs::read(
+        root.join(WORKFLOW_DIRECTORY)
+            .join("nested")
+            .join("test.json"),
+    )
+    .unwrap();
+    assert_eq!(loaded_source.workflow.id, "wf_test");
+    assert_eq!(loaded_source.source_path, "workflows/nested/test.json");
+    assert_eq!(
+        loaded_source.source_sha256,
+        format!("{:x}", Sha256::digest(source_bytes))
+    );
+    assert_eq!(
+        loaded_source.absolute_path,
+        root.canonicalize()
+            .unwrap()
+            .join(WORKFLOW_DIRECTORY)
+            .join("nested")
+            .join("test.json")
+    );
     assert_eq!(loaded.id, "wf_test");
     assert!(root
         .join(WORKFLOW_DIRECTORY)

@@ -2,6 +2,7 @@
 
 use std::collections::{HashMap, HashSet};
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -11,7 +12,7 @@ use crate::workflow_validation::{WorkflowNode, WorkflowValidationResult};
 pub const DEFAULT_WORKFLOW_MAX_STEPS: usize = 64;
 pub const WORKFLOW_MAX_STEPS_LIMIT: usize = 256;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct WorkflowExecutionStep {
     pub step_index: usize,
     pub node_id: String,
@@ -22,7 +23,7 @@ pub struct WorkflowExecutionStep {
     pub stopped_reason: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct WorkflowExecutionReport {
     pub workflow_id: String,
     pub workflow_name: String,
