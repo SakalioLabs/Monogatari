@@ -163,6 +163,7 @@ test('release runner delegates Tauri packaging evidence to the importable module
   assert(conversationSafetySource.includes('const chatSafetyTraceRequirements'))
   assert(qualityWorkflowSource.includes('const qualityInputRequirements'))
   assert(qualityWorkflowSource.includes('const workflowPreviewRequirements'))
+  assert(qualityWorkflowSource.includes('const workflowExecutionPolicyRequirements'))
   assert(qualityWorkflowSource.includes('const qualityExecutionRequirements'))
   assert(qualityWorkflowSource.includes('const authoringRuntimeTraceRequirements'))
   assert(projectPackageSource.includes('const projectExportRequirements'))

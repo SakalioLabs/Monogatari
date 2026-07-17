@@ -29,6 +29,36 @@ const workflowPreviewRequirements = [
   ['qualityExecution', 'execute_workflow_preview(', 'run Quality Workflow coverage without desktop state'],
 ]
 
+const workflowExecutionPolicyRequirements = [
+  ['workflowExecutionPolicy', 'pub struct WorkflowExecutionStep', 'own the shared execution-step model'],
+  ['workflowExecutionPolicy', 'pub struct WorkflowExecutionReport', 'own the shared execution-report model'],
+  ['workflowExecutionPolicy', 'pub struct WorkflowExecutionCoverage', 'own unique trace-coverage evidence'],
+  ['workflowExecutionPolicy', 'pub fn workflow_step_limit', 'own bounded traversal limits'],
+  ['workflowExecutionPolicy', 'pub fn workflow_next_node', 'own next-node and stop-reason decisions'],
+  ['workflowExecutionPolicy', 'pub fn workflow_execution_coverage', 'own execution coverage calculation'],
+  ['workflowExecutionPolicy', 'pub fn config_string', 'own normalized string config reads'],
+  ['workflowExecutionPolicy', 'pub fn config_string_list', 'own normalized list config reads'],
+  ['workflowExecutionPolicy', 'pub fn config_duration_ms', 'own duration config normalization'],
+  ['workflowExecutionPolicy', 'pub fn config_usize', 'own choice-index config normalization'],
+  ['workflowExecutionPolicy', 'pub fn optional_config_f32', 'own optional score config normalization'],
+  ['workflowExecutionPolicy', 'pub fn workflow_score_metric', 'own Workflow score metric normalization'],
+  ['workflowExecutionPolicy', 'pub fn workflow_metric_score', 'own Workflow score selection'],
+  ['workflowExecutionPolicy', 'pub fn workflow_branch_weights', 'own random branch weight normalization'],
+  ['workflowExecutionPolicy', 'pub fn select_weighted_branch', 'own weighted branch selection'],
+  ['workflowExecutionPolicyTests', 'normalizes_workflow_step_limits', 'test bounded traversal limits'],
+  ['workflowExecutionPolicyTests', 'parses_workflow_config_values_consistently', 'test shared config normalization'],
+  ['workflowExecutionPolicyTests', 'normalizes_workflow_metrics_and_reads_scores', 'test score metric decisions'],
+  ['workflowExecutionPolicyTests', 'normalizes_and_selects_weighted_branches', 'test weighted branch decisions'],
+  ['workflowExecutionPolicyTests', 'resolves_node_transitions_for_every_branching_contract', 'test every branching transition contract'],
+  ['workflowExecutionPolicyTests', 'reports_unique_execution_coverage_in_trace_order', 'test deterministic trace coverage'],
+  ['workflowPreview', 'pub use crate::workflow_execution_policy', 'preserve preview report-model compatibility'],
+  ['tauriWorkflow', 'pub use llm_authoring::workflow_execution_policy', 'expose shared reports through desktop commands'],
+  ['workflowPreview', 'workflow_step_limit(options.max_steps)', 'delegate preview traversal bounds'],
+  ['tauriWorkflow', 'workflow_step_limit(max_steps)', 'delegate live traversal bounds'],
+  ['workflowPreview', 'select_weighted_branch(&weights, state.random.next_unit())', 'delegate deterministic preview branch selection'],
+  ['tauriWorkflow', 'select_weighted_branch(&weights, rand::random::<f64>())', 'delegate live random branch selection'],
+]
+
 const qualityExecutionRequirements = [
   ['qualityExecution', 'pub fn execute_quality_suite', 'own complete Quality Suite execution'],
   ['qualityExecution', 'fn run_quality_scenario', 'own scenario evidence aggregation'],
@@ -86,6 +116,8 @@ export async function collectTauriQualityWorkflowEvidence(options = {}) {
     qualityExecutionTests: await readFile(path.join(authoringDirectory, 'quality_suite_execution', 'tests.rs'), 'utf8'),
     qualitySuite: await readFile(path.join(authoringDirectory, 'quality_suite_validation.rs'), 'utf8'),
     workflow: await readFile(path.join(authoringDirectory, 'workflow_validation.rs'), 'utf8'),
+    workflowExecutionPolicy: await readFile(path.join(authoringDirectory, 'workflow_execution_policy.rs'), 'utf8'),
+    workflowExecutionPolicyTests: await readFile(path.join(authoringDirectory, 'workflow_execution_policy', 'tests.rs'), 'utf8'),
     workflowPreview: await readFile(path.join(authoringDirectory, 'workflow_preview.rs'), 'utf8'),
     workflowPreviewTests: await readFile(path.join(authoringDirectory, 'workflow_preview', 'tests.rs'), 'utf8'),
     tauriQuality: await readFile(path.join(commandDirectory, 'quality_suite.rs'), 'utf8'),
@@ -124,6 +156,22 @@ export async function collectTauriQualityWorkflowEvidence(options = {}) {
     issues.push('Quality Workflow coverage must execute through the headless preview domain')
   }
 
+  appendSourceRequirements(
+    sources,
+    workflowExecutionPolicyRequirements,
+    'Shared Workflow execution policy',
+    issues,
+  )
+  const workflowAdapters = `${sources.workflowPreview}\n${sources.tauriWorkflow}`
+  if (/struct\s+Workflow(?:ExecutionStep|ExecutionReport|ExecutionCoverage)\s*\{/.test(workflowAdapters)) {
+    issues.push('Workflow adapters must not redeclare shared execution report or coverage models')
+  }
+  if (
+    /fn\s+(?:workflow_step_limit|workflow_next_node|workflow_execution_coverage|workflow_score_metric|workflow_metric_score|workflow_branch_weights|select_weighted_branch|config_string|config_string_list|config_duration_ms|config_usize|optional_config_f32)\s*\(/.test(workflowAdapters)
+  ) {
+    issues.push('Workflow adapters must not redeclare shared execution policy functions')
+  }
+
   appendSourceRequirements(sources, qualityExecutionRequirements, 'Headless Quality execution', issues)
   if (/fn\s+(?:run_quality_scenario|scenario_knowledge_evidence|validate_scenario_expectations)\s*\(/.test(sources.tauriQuality)) {
     issues.push('Tauri Quality commands must not redeclare headless scenario execution or evidence logic')
@@ -147,11 +195,12 @@ export async function collectTauriQualityWorkflowEvidence(options = {}) {
     requirementCounts: {
       qualityInput: qualityInputRequirements.length,
       workflowPreview: workflowPreviewRequirements.length,
+      workflowExecutionPolicy: workflowExecutionPolicyRequirements.length,
       qualityExecution: qualityExecutionRequirements.length,
       runtimeTrace:
         authoringRuntimeTraceRequirements.length + tauriRuntimeTraceRequirements.length,
     },
-    structuralCheckCount: 6,
+    structuralCheckCount: 8,
   }
 }
 

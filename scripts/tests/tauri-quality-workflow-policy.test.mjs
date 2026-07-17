@@ -19,15 +19,18 @@ test('checked-in Quality and Workflow headless contracts return passing evidence
   assert.deepEqual(evidence.requirementCounts, {
     qualityInput: 11,
     workflowPreview: 11,
+    workflowExecutionPolicy: 27,
     qualityExecution: 9,
     runtimeTrace: 29,
   })
-  assert.equal(evidence.structuralCheckCount, 6)
+  assert.equal(evidence.structuralCheckCount, 8)
 })
 
 test('input, preview, execution, trace, and adapter drift stays independently actionable', async () => {
   const qualitySuitePath = path.join(authoringDirectory, 'quality_suite_validation.rs')
   const workflowPath = path.join(authoringDirectory, 'workflow_validation.rs')
+  const workflowExecutionPolicyPath = path.join(authoringDirectory, 'workflow_execution_policy.rs')
+  const workflowExecutionPolicyTestsPath = path.join(authoringDirectory, 'workflow_execution_policy', 'tests.rs')
   const workflowPreviewPath = path.join(authoringDirectory, 'workflow_preview.rs')
   const qualityExecutionPath = path.join(authoringDirectory, 'quality_suite_execution.rs')
   const tauriQualityPath = path.join(commandDirectory, 'quality_suite.rs')
@@ -43,8 +46,21 @@ test('input, preview, execution, trace, and adapter drift stays independently ac
       if (resolved === workflowPath) {
         return source.replaceAll('pub struct WorkflowRunContext', 'pub struct DriftedWorkflowRunContext')
       }
+      if (resolved === workflowExecutionPolicyPath) {
+        return source.replaceAll('pub fn workflow_next_node', 'pub fn drifted_workflow_next_node')
+      }
+      if (resolved === workflowExecutionPolicyTestsPath) {
+        return source.replaceAll(
+          'resolves_node_transitions_for_every_branching_contract',
+          'drifts_node_transitions_for_every_branching_contract',
+        )
+      }
       if (resolved === workflowPreviewPath) {
-        return source.replaceAll('struct DeterministicRandom', 'struct NondeterministicRandom')
+        return [
+          source.replaceAll('struct DeterministicRandom', 'struct NondeterministicRandom'),
+          'pub struct WorkflowExecutionReport {}',
+          '',
+        ].join('\n')
       }
       if (resolved === qualityExecutionPath) {
         return source
@@ -66,7 +82,13 @@ test('input, preview, execution, trace, and adapter drift stays independently ac
         ].join('\\n')
       }
       if (resolved === tauriWorkflowPath) {
-        return [source, 'pub struct WorkflowRunContext {}', 'struct WorkflowPreviewState {}', ''].join('\\n')
+        return [
+          source,
+          'pub struct WorkflowRunContext {}',
+          'struct WorkflowPreviewState {}',
+          'fn workflow_next_node() {}',
+          '',
+        ].join('\\n')
       }
       return source
     },
@@ -81,6 +103,10 @@ test('input, preview, execution, trace, and adapter drift stays independently ac
     'Headless Workflow preview must make random branches reproducible',
     'Tauri Workflow commands must not redeclare the headless preview state machine',
     'Quality Workflow coverage must execute through the headless preview domain',
+    'Shared Workflow execution policy must own next-node and stop-reason decisions',
+    'Shared Workflow execution policy must test every branching transition contract',
+    'Workflow adapters must not redeclare shared execution report or coverage models',
+    'Workflow adapters must not redeclare shared execution policy functions',
     'Headless Quality execution must own complete Quality Suite execution',
     'Tauri Quality commands must not redeclare headless scenario execution or evidence logic',
     'Quality suite runtime safety tracing must reuse the chat safety trace contract in quality reports',

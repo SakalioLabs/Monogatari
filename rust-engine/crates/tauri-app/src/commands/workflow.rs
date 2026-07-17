@@ -1,6 +1,8 @@
 //! Workflow editor commands (Dify-style no-code workflow).
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
+#[cfg(test)]
+use std::collections::HashSet;
 use std::path::{Component, Path, PathBuf};
 
 use llm_scripting::validate_condition_source;
@@ -14,17 +16,22 @@ use crate::story_events::{
     EventScoreSnapshot, EventTriggerContext, StoryEventCatalog, StoryEventDefinition,
 };
 
-const DEFAULT_WORKFLOW_MAX_STEPS: usize = 64;
-const WORKFLOW_MAX_STEPS_LIMIT: usize = 256;
 const WORKFLOW_LIST_MAX_FILES: usize = 1_000;
 const WORKFLOW_LIST_MAX_DEPTH: usize = 8;
 const WORKFLOW_LIST_MAX_FILE_BYTES: u64 = 2 * 1024 * 1024;
 
+use llm_authoring::workflow_execution_policy::{
+    config_duration_ms, config_string, config_string_list, optional_config_f32,
+    select_weighted_branch, workflow_branch_weights, workflow_execution_coverage,
+    workflow_metric_score, workflow_next_node, workflow_score_metric, workflow_step_limit,
+};
+pub use llm_authoring::workflow_execution_policy::{
+    WorkflowExecutionReport, WorkflowExecutionStep,
+};
 use llm_authoring::workflow_preview::{
     execute_workflow_preview, WorkflowPreviewAppliedEvent, WorkflowPreviewCharacterState,
     WorkflowPreviewEnvironment, WorkflowPreviewOptions,
 };
-pub use llm_authoring::workflow_preview::{WorkflowExecutionReport, WorkflowExecutionStep};
 #[cfg(test)]
 use llm_authoring::workflow_validation::validate_workflow_graph as validate_workflow_inner;
 use llm_authoring::workflow_validation::{
@@ -107,9 +114,7 @@ pub(crate) async fn execute_workflow_inner(
         .cloned()
         .map(|node| (node.id.clone(), node))
         .collect();
-    let step_limit = max_steps
-        .unwrap_or(DEFAULT_WORKFLOW_MAX_STEPS)
-        .clamp(1, WORKFLOW_MAX_STEPS_LIMIT);
+    let step_limit = workflow_step_limit(max_steps);
     let mut current_node_id = workflow.start_node_id.clone();
     let mut steps = Vec::new();
     let mut completed = false;
@@ -419,17 +424,7 @@ async fn execute_workflow_node_inner(
         }
         "random_branch" => {
             let weights = workflow_branch_weights(&node.config, node.connections.len());
-            let total: f64 = weights.iter().sum();
-            let r = rand::random::<f64>() * total;
-            let mut acc = 0.0;
-            let mut selected = 0usize;
-            for (i, w) in weights.iter().enumerate() {
-                acc += w;
-                if r < acc {
-                    selected = i;
-                    break;
-                }
-            }
+            let selected = select_weighted_branch(&weights, rand::random::<f64>());
             let chosen = node.connections.get(selected).cloned().unwrap_or_default();
             Ok(serde_json::json!({
                 "action": "random_branch",
@@ -630,198 +625,6 @@ fn workflow_inference_options(config: &serde_json::Value) -> llm_ai::InferenceOp
     options
 }
 
-fn workflow_next_node(
-    node: &WorkflowNode,
-    output: &serde_json::Value,
-    choice_selections: &HashMap<String, usize>,
-) -> (Option<String>, Option<String>) {
-    match node.node_type.as_str() {
-        "end" => (None, Some("completed".to_string())),
-        "choice" => {
-            if node.connections.is_empty() {
-                return (None, Some("choice_has_no_connections".to_string()));
-            }
-            if let Some(index) = choice_selections
-                .get(&node.id)
-                .copied()
-                .or_else(|| config_usize(&node.config, &["selected_index", "default_choice_index"]))
-            {
-                return node
-                    .connections
-                    .get(index)
-                    .cloned()
-                    .map(|next| (Some(next), None))
-                    .unwrap_or_else(|| (None, Some("choice_index_out_of_range".to_string())));
-            }
-            (None, Some("awaiting_choice".to_string()))
-        }
-        "condition" => branch_by_bool(
-            &node.connections,
-            output.get("result").and_then(|value| value.as_bool()),
-            "condition_result_missing",
-        ),
-        "evaluation" => branch_by_bool(
-            &node.connections,
-            output.get("passed").and_then(|value| value.as_bool()),
-            "evaluation_threshold_missing",
-        ),
-        "trigger_event" => branch_by_bool(
-            &node.connections,
-            output.get("triggered").and_then(|value| value.as_bool()),
-            "event_trigger_result_missing",
-        ),
-        "random_branch" => output
-            .get("chosen_connection")
-            .and_then(|value| value.as_str())
-            .filter(|value| !value.trim().is_empty())
-            .map(|value| (Some(value.to_string()), None))
-            .unwrap_or_else(|| (None, Some("random_branch_has_no_choice".to_string()))),
-        _ => first_connection(&node.connections),
-    }
-}
-
-#[derive(Debug, Clone)]
-struct WorkflowExecutionCoverage {
-    node_count: usize,
-    executed_node_count: usize,
-    coverage_percent: f32,
-    executed_node_ids: Vec<String>,
-    unvisited_node_ids: Vec<String>,
-}
-
-fn workflow_execution_coverage(
-    nodes: &[WorkflowNode],
-    steps: &[WorkflowExecutionStep],
-) -> WorkflowExecutionCoverage {
-    let node_count = nodes.len();
-    let mut seen = HashSet::new();
-    let mut executed_node_ids = Vec::new();
-
-    for step in steps {
-        if seen.insert(step.node_id.clone()) {
-            executed_node_ids.push(step.node_id.clone());
-        }
-    }
-
-    let unvisited_node_ids: Vec<String> = nodes
-        .iter()
-        .filter(|node| !seen.contains(&node.id))
-        .map(|node| node.id.clone())
-        .collect();
-    let executed_node_count = executed_node_ids.len();
-    let coverage_percent = if node_count == 0 {
-        0.0
-    } else {
-        (executed_node_count as f32 / node_count as f32) * 100.0
-    };
-
-    WorkflowExecutionCoverage {
-        node_count,
-        executed_node_count,
-        coverage_percent,
-        executed_node_ids,
-        unvisited_node_ids,
-    }
-}
-
-fn first_connection(connections: &[String]) -> (Option<String>, Option<String>) {
-    connections
-        .first()
-        .cloned()
-        .map(|next| (Some(next), None))
-        .unwrap_or((None, Some("no_next_node".to_string())))
-}
-
-fn branch_by_bool(
-    connections: &[String],
-    value: Option<bool>,
-    missing_reason: &str,
-) -> (Option<String>, Option<String>) {
-    match value {
-        Some(true) => connections
-            .first()
-            .cloned()
-            .map(|next| (Some(next), None))
-            .unwrap_or((None, Some("true_branch_missing".to_string()))),
-        Some(false) => connections
-            .get(1)
-            .cloned()
-            .map(|next| (Some(next), None))
-            .unwrap_or((None, Some("false_branch_missing".to_string()))),
-        None => connections
-            .first()
-            .cloned()
-            .map(|next| (Some(next), None))
-            .unwrap_or((None, Some(missing_reason.to_string()))),
-    }
-}
-
-fn config_string(config: &serde_json::Value, fields: &[&str]) -> Option<String> {
-    fields.iter().find_map(|field| {
-        config
-            .get(field)
-            .and_then(|value| value.as_str())
-            .map(str::trim)
-            .filter(|value| !value.is_empty())
-            .map(ToString::to_string)
-    })
-}
-
-fn config_string_list(config: &serde_json::Value, field: &str) -> Vec<String> {
-    match config.get(field) {
-        Some(serde_json::Value::Array(items)) => items
-            .iter()
-            .filter_map(|item| item.as_str())
-            .map(str::trim)
-            .filter(|item| !item.is_empty())
-            .map(ToString::to_string)
-            .collect(),
-        Some(serde_json::Value::String(text)) => text
-            .lines()
-            .map(str::trim)
-            .filter(|line| !line.is_empty())
-            .map(ToString::to_string)
-            .collect(),
-        _ => Vec::new(),
-    }
-}
-
-fn config_duration_ms(config: &serde_json::Value, default_ms: u64) -> u64 {
-    if let Some(ms) = config.get("duration_ms").and_then(value_as_u64) {
-        return ms;
-    }
-    if let Some(seconds) = config.get("duration").and_then(value_as_f64) {
-        return (seconds.max(0.0) * 1000.0).round() as u64;
-    }
-    default_ms
-}
-
-fn value_as_u64(value: &serde_json::Value) -> Option<u64> {
-    match value {
-        serde_json::Value::Number(number) => number.as_u64(),
-        serde_json::Value::String(text) => text.trim().parse::<u64>().ok(),
-        _ => None,
-    }
-}
-
-fn value_as_f64(value: &serde_json::Value) -> Option<f64> {
-    match value {
-        serde_json::Value::Number(number) => number.as_f64(),
-        serde_json::Value::String(text) => text.trim().parse::<f64>().ok(),
-        _ => None,
-    }
-}
-
-fn config_usize(config: &serde_json::Value, fields: &[&str]) -> Option<usize> {
-    fields.iter().find_map(|field| {
-        config.get(field).and_then(|value| match value {
-            serde_json::Value::Number(number) => number.as_u64().map(|value| value as usize),
-            serde_json::Value::String(text) => text.trim().parse::<usize>().ok(),
-            _ => None,
-        })
-    })
-}
-
 async fn record_workflow_scene_change(state: &AppState, scene_id: &str) {
     *state.active_scene_id.write().await = Some(scene_id.to_string());
     let mut history = state.scene_history.write().await;
@@ -832,77 +635,6 @@ async fn record_workflow_scene_change(state: &AppState, scene_id: &str) {
         let overflow = history.len() - 24;
         history.drain(0..overflow);
     }
-}
-
-fn workflow_score_metric(config: &serde_json::Value) -> String {
-    config
-        .get("metric")
-        .or_else(|| config.get("criteria"))
-        .and_then(|value| value.as_str())
-        .map(normalize_workflow_score_metric)
-        .unwrap_or_else(|| "overall".to_string())
-}
-
-fn normalize_workflow_score_metric(metric: &str) -> String {
-    match metric.trim().to_lowercase().as_str() {
-        "overall_score" | "overall score" | "total" => "overall".to_string(),
-        "friendliness_score" | "friendliness score" | "friendly" => "friendliness".to_string(),
-        "engagement_score" | "engagement score" | "engaged" => "engagement".to_string(),
-        "creativity_score" | "creativity score" | "creative" => "creativity".to_string(),
-        "" => "overall".to_string(),
-        value => value.to_string(),
-    }
-}
-
-fn workflow_metric_score(evaluation: &chat::ConversationEvaluation, metric: &str) -> Option<f32> {
-    match metric {
-        "friendliness" => Some(evaluation.friendliness),
-        "engagement" => Some(evaluation.engagement),
-        "creativity" => Some(evaluation.creativity),
-        "overall" => Some(evaluation.overall_score),
-        _ => None,
-    }
-}
-
-fn optional_config_f32(config: &serde_json::Value, field: &str) -> Option<f32> {
-    config.get(field).and_then(|value| match value {
-        serde_json::Value::Number(number) => number.as_f64().map(|value| value as f32),
-        serde_json::Value::String(text) => text.trim().parse::<f32>().ok(),
-        _ => None,
-    })
-}
-
-fn workflow_branch_weights(config: &serde_json::Value, connection_count: usize) -> Vec<f64> {
-    if connection_count == 0 {
-        return Vec::new();
-    }
-
-    let mut weights = match config.get("weights") {
-        Some(serde_json::Value::Array(items)) => items
-            .iter()
-            .map(|value| value_as_f64(value).unwrap_or(1.0))
-            .collect::<Vec<_>>(),
-        Some(serde_json::Value::String(text)) => text
-            .lines()
-            .map(|line| line.trim().parse::<f64>().unwrap_or(1.0))
-            .collect::<Vec<_>>(),
-        _ => Vec::new(),
-    };
-
-    weights.resize(connection_count, 1.0);
-    weights.truncate(connection_count);
-
-    for weight in &mut weights {
-        if !weight.is_finite() || *weight <= 0.0 {
-            *weight = 0.0;
-        }
-    }
-
-    if weights.iter().sum::<f64>() <= 0.0 {
-        weights.fill(1.0);
-    }
-
-    weights
 }
 
 async fn workflow_character_id_from_state(
@@ -1767,26 +1499,6 @@ mod tests {
             "max_tokens": 0
         }));
         assert_eq!(options.max_tokens, 1);
-    }
-
-    #[test]
-    fn workflow_branch_weights_normalize_invalid_and_missing_entries() {
-        assert!(workflow_branch_weights(&serde_json::json!({}), 0).is_empty());
-
-        assert_eq!(
-            workflow_branch_weights(&serde_json::json!({"weights": [-1, 0, "0.25"]}), 4),
-            vec![0.0, 0.0, 0.25, 1.0]
-        );
-
-        assert_eq!(
-            workflow_branch_weights(&serde_json::json!({"weights": [-1, 0, -0.5]}), 3),
-            vec![1.0, 1.0, 1.0]
-        );
-
-        assert_eq!(
-            workflow_branch_weights(&serde_json::json!({"weights": "2\nbad\n-1"}), 4),
-            vec![2.0, 1.0, 0.0, 1.0]
-        );
     }
 
     #[tokio::test]
@@ -2690,27 +2402,6 @@ mod tests {
                 .abs()
                 < 0.0001
         );
-    }
-
-    #[test]
-    fn parses_workflow_evaluation_metric_and_threshold() {
-        let config = serde_json::json!({
-            "criteria": "overall_score",
-            "threshold": "0.75"
-        });
-        let evaluation = chat::ConversationEvaluation {
-            friendliness: 0.2,
-            engagement: 0.4,
-            creativity: 0.6,
-            overall_score: 0.8,
-            summary: "test".to_string(),
-        };
-
-        let metric = workflow_score_metric(&config);
-
-        assert_eq!(metric, "overall");
-        assert_eq!(workflow_metric_score(&evaluation, &metric), Some(0.8));
-        assert_eq!(optional_config_f32(&config, "threshold"), Some(0.75));
     }
 
     #[test]
