@@ -1,6 +1,4 @@
 import { spawn } from 'node:child_process'
-import { createHash } from 'node:crypto'
-import { statSync } from 'node:fs'
 import { readdir, readFile, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -8,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { createSourceInvariantVerifier } from './lib/source-invariant-verifier.mjs'
 import { frontendRouteCoverageEvidence } from './lib/frontend-route-verifier.mjs'
 import { createProjectDialoguePolicy } from './lib/project-content/dialogue-policy.mjs'
+import { createProjectRendererAssetPolicy } from './lib/project-content/renderer-asset-policy.mjs'
 import {
   createProjectStoryEventPolicy,
   requiredStoryEventRuleIds as requiredEventRules,
@@ -90,37 +89,6 @@ const rendererDataRoots = [
   { label: 'data', dir: path.join(root, 'data') },
   { label: 'rust-engine/data', dir: path.join(rustDir, 'data') },
 ]
-
-const requiredRendererAssetCharacterIds = ['sakura', 'luna', 'kenji']
-const requiredModel3dFixtureCharacterId = 'renderer_fox'
-const requiredModel3dFixturePath = 'assets/models/fox.glb'
-const requiredModel3dFixtureLicensePath = 'assets/models/fox.LICENSE.txt'
-const requiredModel3dFixtureSha256 = 'd97044e701822bac5a62696459b27d7b375aada5de8574ed4362edbba94771f7'
-
-const rendererAssetFields = [
-  {
-    names: ['live2d_model_path', 'live2dModelPath'],
-    label: 'Live2D model',
-    extensions: new Set(['.json', '.model3.json']),
-  },
-  {
-    names: ['model_3d_path', 'model3dPath', 'model3DPath'],
-    label: '3D model',
-    extensions: new Set(['.glb', '.gltf']),
-  },
-  {
-    names: ['portrait_path', 'portraitPath'],
-    label: 'portrait',
-    extensions: new Set(['.png', '.jpg', '.jpeg', '.webp', '.svg']),
-  },
-  {
-    names: ['sprite_path', 'spritePath'],
-    label: 'sprite',
-    extensions: new Set(['.png', '.jpg', '.jpeg', '.webp', '.svg']),
-  },
-]
-
-const sceneBackgroundExtensions = new Set(['.png', '.jpg', '.jpeg', '.webp', '.svg'])
 const releaseCriticalRustFiles = [
   'crates/core/src/state_key.rs',
   'crates/ai/src/api_engine.rs',
@@ -272,6 +240,11 @@ const {
   verifyStoryEventCatalogs,
 } = projectStoryEventPolicy
 const { verifyDialogueCatalogs } = createProjectDialoguePolicy({
+  repositoryRoot: root,
+  rustDirectory: rustDir,
+  dataRoots: rendererDataRoots,
+})
+const { verifyRendererAssets } = createProjectRendererAssetPolicy({
   repositoryRoot: root,
   rustDirectory: rustDir,
   dataRoots: rendererDataRoots,
@@ -475,123 +448,6 @@ async function verifyJsonFiles() {
   console.log(`[release] JSON parse OK (${files.length} files)`)
 }
 
-async function verifyRendererAssets() {
-  const issues = []
-  let characterCount = 0
-  let sceneCount = 0
-  let sceneBackgroundCount = 0
-  let declaredCharacterAssetCount = 0
-
-  for (const dataRoot of rendererDataRoots) {
-    const charactersDir = path.join(dataRoot.dir, 'characters')
-    const scenesDir = path.join(dataRoot.dir, 'scenes')
-    const coreCharactersWithRendererAssets = new Set()
-    let model3dFixtureDeclared = false
-
-    for (const file of await jsonFilesInDir(charactersDir, issues)) {
-      const value = JSON.parse(await readFile(file, 'utf8'))
-      const characters = Array.isArray(value) ? value : [value]
-      for (const character of characters) {
-        characterCount += 1
-        const assetCount = verifyCharacterRendererAssets(
-          character,
-          dataRoot,
-          relative(file),
-          issues,
-        )
-        declaredCharacterAssetCount += assetCount
-        if (assetCount > 0 && requiredRendererAssetCharacterIds.includes(character?.id)) {
-          coreCharactersWithRendererAssets.add(character.id)
-        }
-        if (character?.id === requiredModel3dFixtureCharacterId) {
-          const modelPath = stringField(character, ['model_3d_path', 'model3dPath', 'model3DPath'])
-          model3dFixtureDeclared = modelPath === requiredModel3dFixturePath
-          if (!model3dFixtureDeclared) {
-            issues.push(`${relative(file)}:${requiredModel3dFixtureCharacterId} must reference ${requiredModel3dFixturePath}`)
-          }
-        }
-      }
-    }
-
-    for (const characterId of requiredRendererAssetCharacterIds) {
-      if (!coreCharactersWithRendererAssets.has(characterId)) {
-        issues.push(`${dataRoot.label}: core sample character ${characterId} must declare a checked-in renderer asset`)
-      }
-    }
-    if (!model3dFixtureDeclared) {
-      issues.push(`${dataRoot.label}: ${requiredModel3dFixtureCharacterId} must declare the checked-in animated GLB fixture`)
-    }
-    await verifyModel3dFixture(dataRoot, issues)
-
-    for (const file of await jsonFilesInDir(scenesDir, issues)) {
-      const scene = JSON.parse(await readFile(file, 'utf8'))
-      sceneCount += 1
-      if (!nonEmptyString(scene.id)) issues.push(`${relative(file)}: scene id is required`)
-      if (!nonEmptyString(scene.name)) issues.push(`${relative(file)}: scene name is required`)
-      const backgroundPath = stringField(scene, ['background_path', 'backgroundPath'])
-      if (!backgroundPath) {
-        issues.push(`${relative(file)}: scene background_path is required for renderer staging`)
-        continue
-      }
-      sceneBackgroundCount += 1
-      verifyLocalAssetPath({
-        value: backgroundPath,
-        dataRoot,
-        label: `${relative(file)} background`,
-        extensions: sceneBackgroundExtensions,
-        issues,
-      })
-    }
-  }
-
-  if (characterCount === 0) issues.push('Renderer asset verification found no character files')
-  if (sceneCount === 0) issues.push('Renderer asset verification found no scene files')
-  if (sceneBackgroundCount === 0) issues.push('Renderer asset verification found no scene backgrounds')
-
-  if (issues.length > 0) {
-    throw new Error(`Renderer asset verification failed:\n${issues.join('\n')}`)
-  }
-
-  console.log(
-    `[release] Renderer assets OK (${characterCount} character record(s), ${sceneBackgroundCount}/${sceneCount} scene background(s), ${declaredCharacterAssetCount} declared character asset(s))`,
-  )
-}
-
-async function verifyModel3dFixture(dataRoot, issues) {
-  const modelPath = path.join(dataRoot.dir, requiredModel3dFixturePath)
-  const licensePath = path.join(dataRoot.dir, requiredModel3dFixtureLicensePath)
-  try {
-    const model = await readFile(modelPath)
-    if (model.length < 20 || model.subarray(0, 4).toString('ascii') !== 'glTF') {
-      issues.push(`${dataRoot.label}: 3D fixture must be a binary glTF file`)
-      return
-    }
-    if (model.readUInt32LE(4) !== 2) {
-      issues.push(`${dataRoot.label}: 3D fixture must use glTF version 2`)
-    }
-    if (model.readUInt32LE(8) !== model.length) {
-      issues.push(`${dataRoot.label}: 3D fixture declared length must match file size`)
-    }
-    const sha256 = createHash('sha256').update(model).digest('hex')
-    if (sha256 !== requiredModel3dFixtureSha256) {
-      issues.push(`${dataRoot.label}: 3D fixture SHA-256 mismatch: ${sha256}`)
-    }
-  } catch (error) {
-    issues.push(`${dataRoot.label}: cannot read 3D fixture: ${error.message}`)
-  }
-
-  try {
-    const license = await readFile(licensePath, 'utf8')
-    for (const requiredText of ['PixelMannen', 'tomkranis', 'CC BY 4.0']) {
-      if (!license.includes(requiredText)) {
-        issues.push(`${dataRoot.label}: 3D fixture attribution must include ${requiredText}`)
-      }
-    }
-  } catch (error) {
-    issues.push(`${dataRoot.label}: cannot read 3D fixture attribution: ${error.message}`)
-  }
-}
-
 async function verifyKnowledgeRefs() {
   const issues = []
   let characterCount = 0
@@ -669,56 +525,6 @@ async function jsonFilesInDir(dir, issues) {
   }
 }
 
-function verifyCharacterRendererAssets(character, dataRoot, fileLabel, issues) {
-  const characterLabel = `${fileLabel}:${character?.id || character?.name || '<missing-character-id>'}`
-  let declaredAssetCount = 0
-
-  if (!character || typeof character !== 'object' || Array.isArray(character)) {
-    issues.push(`${fileLabel}: character records must be JSON objects`)
-    return declaredAssetCount
-  }
-  if (!nonEmptyString(character.id)) issues.push(`${characterLabel}: character id is required`)
-  if (!nonEmptyString(character.name)) issues.push(`${characterLabel}: character name is required`)
-
-  for (const field of rendererAssetFields) {
-    const value = stringField(character, field.names)
-    if (!value) continue
-    declaredAssetCount += 1
-    verifyLocalAssetPath({
-      value,
-      dataRoot,
-      label: `${characterLabel} ${field.label}`,
-      extensions: field.extensions,
-      issues,
-    })
-  }
-
-  for (const [fieldName, value] of rendererMapFields(character)) {
-    declaredAssetCount += 1
-    verifyLocalAssetPath({
-      value,
-      dataRoot,
-      label: `${characterLabel} ${fieldName}`,
-      extensions: rendererAssetFields.find((field) => field.label === 'sprite').extensions,
-      issues,
-    })
-  }
-
-  return declaredAssetCount
-}
-
-function rendererMapFields(character) {
-  const fields = []
-  for (const fieldName of ['sprite_paths', 'spritePaths', 'sprites']) {
-    const value = character?.[fieldName]
-    if (!value || typeof value !== 'object' || Array.isArray(value)) continue
-    for (const [key, pathValue] of Object.entries(value)) {
-      if (nonEmptyString(pathValue)) fields.push([`${fieldName}.${key}`, pathValue])
-    }
-  }
-  return fields
-}
-
 function knowledgeRefFields(character, characterLabel, issues) {
   const fields = []
   for (const fieldName of ['knowledge_refs', 'knowledgeRefs', 'knowledge']) {
@@ -747,52 +553,6 @@ function stringField(object, names) {
     if (typeof value === 'string' && value.trim()) return value.trim()
   }
   return null
-}
-
-function verifyLocalAssetPath({ value, dataRoot, label, extensions, issues }) {
-  const normalized = value.replaceAll('\\', '/').trim()
-  if (!normalized) return
-  if (/^(https?:|data:|blob:|asset:)/i.test(normalized)) {
-    issues.push(`${label}: checked-in renderer assets must use project-relative paths, got ${value}`)
-    return
-  }
-  if (/^[a-zA-Z]:\//.test(normalized) || normalized.startsWith('//')) {
-    issues.push(`${label}: renderer asset path must not be absolute: ${value}`)
-    return
-  }
-  if (normalized.split('/').includes('..')) {
-    issues.push(`${label}: renderer asset path must not contain parent traversal: ${value}`)
-    return
-  }
-
-  const extension = assetExtension(normalized)
-  if (!extensions.has(extension)) {
-    issues.push(`${label}: unsupported renderer asset extension ${extension || '<none>'}`)
-  }
-
-  const candidate = path.resolve(dataRoot.dir, normalized)
-  const rootPath = path.resolve(dataRoot.dir)
-  if (!candidate.startsWith(rootPath + path.sep) && candidate !== rootPath) {
-    issues.push(`${label}: renderer asset path escapes ${dataRoot.label}: ${value}`)
-    return
-  }
-  if (!fileExistsSync(candidate)) {
-    issues.push(`${label}: renderer asset does not exist: ${dataRoot.label}/${normalized}`)
-  }
-}
-
-function assetExtension(value) {
-  const lower = value.toLowerCase()
-  if (lower.endsWith('.model3.json')) return '.model3.json'
-  return path.extname(lower)
-}
-
-function fileExistsSync(filePath) {
-  try {
-    return statSync(filePath).isFile()
-  } catch {
-    return false
-  }
 }
 
 async function verifyQualitySuites() {
