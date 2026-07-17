@@ -790,7 +790,12 @@ async fn writable_stdio_requires_reviewed_fingerprint_and_rolls_back_invalid_can
                 "id": "rejected",
                 "title": "Rejected",
                 "start_node_id": "start",
-                "nodes": {"start": {"speaker_id": "missing", "text": "Rejected", "is_ending": true}}
+                "nodes": {"start": {
+                    "speaker_id": "missing",
+                    "text": "",
+                    "use_llm": true,
+                    "is_ending": true
+                }}
             }),
             precondition: AgentFilePrecondition::Missing,
         }],
@@ -801,6 +806,8 @@ async fn writable_stdio_requires_reviewed_fingerprint_and_rolls_back_invalid_can
     let error: McpToolError = structured(&rejected)?;
     assert_eq!(error.code, McpToolErrorCode::TransactionError);
     assert!(error.message.contains("dialogue_speaker_missing"));
+    assert!(error.message.contains("dialogue_text_invalid"));
+    assert!(error.message.contains("dialogue_llm_prompt_missing"));
     assert!(!invalid_reference
         .root
         .join("dialogue/rejected.json")

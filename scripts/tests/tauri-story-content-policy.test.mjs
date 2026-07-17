@@ -19,18 +19,22 @@ test('checked-in Story Content authoring and runtime contracts return passing ev
   assert.deepEqual(evidence.requirementCounts, {
     storyCatalog: 21,
     eventRuntime: 20,
-    dialogueAuthoring: 12,
+    dialogueAuthoring: 19,
     knowledgeAuthoring: 12,
     sceneAuthoring: 8,
     endingAuthoring: 13,
     crossRuntime: 7,
   })
+  assert.equal(evidence.structuralCheckCount, 1)
 })
 
 test('catalog, runtime, authoring surface, and progress drift stays independently actionable', async () => {
   const paths = {
     facade: path.join(tauriSourceDirectory, 'story_events.rs'),
     catalog: path.join(rustDirectory, 'crates', 'authoring', 'src', 'story_events.rs'),
+    dialogueValidation: path.join(rustDirectory, 'crates', 'authoring', 'src', 'dialogue_validation.rs'),
+    dialogueValidationTests: path.join(rustDirectory, 'crates', 'authoring', 'src', 'dialogue_validation', 'tests.rs'),
+    runtimeValidation: path.join(rustDirectory, 'crates', 'authoring', 'src', 'runtime_validation.rs'),
     progress: path.join(tauriSourceDirectory, 'story_progress.rs'),
     access: path.join(tauriSourceDirectory, 'story_access.rs'),
     storyCommands: path.join(commandDirectory, 'story_events.rs'),
@@ -56,6 +60,30 @@ test('catalog, runtime, authoring surface, and progress drift stays independentl
       if (resolved === paths.catalog) {
         return source.replaceAll('monogatari-story-event-catalog/v1', 'story-event-catalog-drifted')
       }
+      if (resolved === paths.dialogueValidation) {
+        return source
+          .replaceAll('pub fn normalize_dialogue_script', 'pub fn normalize_desktop_dialogue_script')
+          .replaceAll('pub fn validate_dialogue_script', 'pub fn validate_desktop_dialogue_script')
+      }
+      if (resolved === paths.dialogueValidationTests) {
+        return source
+          .replaceAll(
+            'validation_reports_authoring_limits_beyond_runtime_topology',
+            'validation_only_reports_runtime_topology',
+          )
+          .replaceAll(
+            'validation_evidence_is_deterministic_and_bounded',
+            'validation_evidence_is_unbounded',
+          )
+      }
+      if (resolved === paths.runtimeValidation) {
+        return source
+          .replaceAll(
+            'validate_dialogue_script(&dialogue, character_ids)',
+            'validate_runtime_dialogue_script(&dialogue, character_ids)',
+          )
+          .replaceAll('dialogue_not_canonical', 'dialogue_normalization_ignored')
+      }
       if (resolved === paths.storyCommands) {
         return source.replaceAll('save_story_event_catalog', 'store_story_event_catalog')
       }
@@ -69,7 +97,10 @@ test('catalog, runtime, authoring surface, and progress drift stays independentl
         return source.replaceAll('ensure_story_content_access', 'allow_story_content_access')
       }
       if (resolved === paths.dialogue) {
-        return source.replaceAll('dialogue_authoring_catalog_fingerprint', 'dialogue_catalog_revision')
+        return `${source
+          .replaceAll('dialogue_authoring_catalog_fingerprint', 'dialogue_catalog_revision')
+          .replaceAll('ensure_valid_dialogue_script', 'validate_desktop_dialogue_script')}
+fn validate_dialogue_script() {}`
       }
       if (resolved === paths.knowledge) {
         return source.replaceAll('knowledge_catalog_fingerprint', 'knowledge_catalog_revision')
@@ -98,6 +129,14 @@ test('catalog, runtime, authoring surface, and progress drift stays independentl
     'Story content integration must validate workflow event references against the active catalog',
     'Story content integration must centralize scene, dialogue, and ending access enforcement',
     'Story content integration must fingerprint complete dialogue catalogs for optimistic concurrency',
+    'Story content integration must own canonical Dialogue normalization in the headless authoring domain',
+    'Story content integration must own Dialogue graph, bounds, character, and relationship validation in the headless authoring domain',
+    'Story content integration must test Dialogue authoring limits independently of Tauri',
+    'Story content integration must bound and stabilize structured Dialogue validation evidence',
+    'Story content integration must apply shared Dialogue authoring rules to Agent runtime acceptance',
+    'Story content integration must reject Agent Dialogue files that only pass after in-memory normalization',
+    'Story content integration must delegate desktop Dialogue validation to the headless authoring domain',
+    'Story content integration must keep Dialogue normalization and validation out of Tauri commands',
     'Story content integration must fingerprint knowledge catalogs for optimistic concurrency',
     'Story content integration must fingerprint authored and inferred scenes for optimistic concurrency',
     'Story content integration must fingerprint ending catalogs for optimistic concurrency',

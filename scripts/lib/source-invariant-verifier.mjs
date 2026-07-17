@@ -2050,6 +2050,7 @@ export function createSourceInvariantVerifier({
       mcpE2eSource,
       jsonCatalogSource,
       runtimeValidationSource,
+      readmeSource,
     ] = await Promise.all([
       readFile(path.join(mcpRoot, 'Cargo.toml'), 'utf8'),
       readFile(path.join(mcpRoot, 'src', 'cli.rs'), 'utf8'),
@@ -2072,10 +2073,13 @@ export function createSourceInvariantVerifier({
       ].map((relativePath) => readFile(path.join(rustDir, 'crates', 'authoring', 'src', relativePath), 'utf8')))
         .then((sources) => sources.join('\n')),
       Promise.all([
+        'dialogue_validation.rs',
+        'dialogue_validation/tests.rs',
         'runtime_validation.rs',
         'runtime_validation/tests.rs',
       ].map((relativePath) => readFile(path.join(rustDir, 'crates', 'authoring', 'src', relativePath), 'utf8')))
         .then((sources) => sources.join('\n')),
+      readFile(path.join(root, 'README.md'), 'utf8'),
     ])
     const requirements = [
       [mcpCargoSource, 'rmcp = { version = "2.2.0"', 'use the pinned official Rust MCP SDK'],
@@ -2097,6 +2101,7 @@ export function createSourceInvariantVerifier({
       [mcpServerSource, 'pub async fn export_project_package', 'expose reviewed fixed-root package output'],
       [mcpServerSource, 'pub async fn plan_transaction', 'expose side-effect-free transaction planning'],
       [mcpServerSource, 'pub async fn apply_transaction', 'expose validated transaction application'],
+      [readmeSource, 'thirteen standard stdio tools', 'keep the documented MCP tool count aligned with the schema-backed server'],
       [mcpServerSource, 'if !self.allow_write', 'keep writes disabled unless startup explicitly enables them'],
       [mcpProtocolSource, 'expected_precondition_fingerprint', 'require the caller to confirm the reviewed plan fingerprint'],
       [mcpProtocolSource, 'expected_content_sha256', 'require the caller to confirm the reviewed package fingerprint'],
@@ -2132,7 +2137,11 @@ export function createSourceInvariantVerifier({
       [runtimeValidationSource, 'DialogueManager::new()', 'load candidate dialogue graphs through the real runtime manager'],
       [runtimeValidationSource, 'KnowledgeBase::new()', 'load candidate knowledge through the real runtime manager'],
       [runtimeValidationSource, 'validate_character_references', 'validate character relationship and knowledge references'],
-      [runtimeValidationSource, 'validate_dialogue_references', 'validate dialogue speaker and relationship references'],
+      [runtimeValidationSource, 'validate_dialogue_documents', 'validate candidate Dialogues through the shared authoring boundary'],
+      [runtimeValidationSource, 'validate_dialogue_script(&dialogue, character_ids)', 'reuse desktop Dialogue authoring constraints for Agent candidates'],
+      [runtimeValidationSource, 'MAX_DIALOGUE_VALIDATION_ISSUES', 'bound structured Dialogue rejection evidence'],
+      [runtimeValidationSource, 'dialogue_not_canonical', 'reject non-canonical Agent Dialogue documents'],
+      [runtimeValidationSource, 'rejects_dialogue_authoring_limits_that_runtime_topology_accepts', 'test Agent rejection beyond graph topology'],
       [runtimeValidationSource, 'rejects_duplicate_runtime_ids_instead_of_accepting_loader_overwrites', 'test duplicate runtime IDs are rejected'],
       [jsonCatalogSource, 'monogatari-json-catalog-report/v1', 'version shared JSON catalog reports'],
       [jsonCatalogSource, 'MAX_AUTHORABLE_JSON_BYTES', 'bound JSON reads and transaction writes consistently'],
@@ -2168,6 +2177,9 @@ export function createSourceInvariantVerifier({
     }
     if (mcpServerSource.includes('project_root.join(".monogatari-mcp-project.lock")')) {
       issues.push('monogatari-mcp must keep coordination leases outside the authored project tree')
+    }
+    if (readmeSource.includes('twelve standard stdio tools')) {
+      issues.push('MCP Agent authoring must not retain the obsolete twelve-tool README contract')
     }
     if (/pub\s+project_root\s*:/.test(mcpProtocolSource)) {
       issues.push('MCP tool requests must not be able to replace the startup-bound project root')

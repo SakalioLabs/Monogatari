@@ -73,6 +73,8 @@ The authorable JSON catalogs are `assets`, `characters`, `dialogue`, `endings`, 
 13. Call `validate_project_package` with the same file name and require `passed: true`; `passed: false` is a successful protocol response with actionable extracted-runtime or delivery evidence.
 14. Run persistent installation and rendered visual gates appropriate to the deliverable. When editing the repository's built-in `data/` project, also run `node scripts/sync-project-mirror.mjs --write` followed by `node scripts/sync-project-mirror.mjs --check` so `rust-engine/data/` remains byte-equivalent.
 
+Dialogue changes are accepted only when they pass the shared headless normalization and authoring rules used by the desktop editor, including bounded text and prompts, graph validity, LLM prompt requirements, character references, and relationship targets/deltas.
+
 Planning and application both re-read current state. Any intervening file change invalidates the SHA precondition or plan fingerprint instead of overwriting newer work.
 
 ## Acceptance Boundary

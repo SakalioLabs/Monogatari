@@ -9,6 +9,7 @@ use llm_game::knowledge::KnowledgeBase;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use crate::dialogue_validation::{normalize_dialogue_script, validate_dialogue_script};
 use crate::json_catalog::{
     inspect_project_json_catalog, JsonAcceptanceLevel, JsonCatalogIssueSeverity,
 };
@@ -119,7 +120,7 @@ pub async fn load_core_runtime_project(project_root: &Path) -> Result<CoreRuntim
         .map(|entry| entry.id.clone())
         .collect::<HashSet<_>>();
     validate_character_references(&characters, &character_ids, &knowledge_ids, &mut issues).await;
-    validate_dialogue_references(&dialogues, &character_ids, &mut issues);
+    validate_dialogue_documents(&dialogues, &character_ids, &mut issues);
 
     let story_content = validate_story_content(project_root, &dialogues, &mut issues);
     let story_events = validate_story_events(
@@ -469,40 +470,49 @@ async fn validate_character_references(
     }
 }
 
-fn validate_dialogue_references(
+fn validate_dialogue_documents(
     dialogues: &DialogueManager,
     character_ids: &HashSet<String>,
     issues: &mut Vec<CoreRuntimeValidationIssue>,
 ) {
     for dialogue in dialogues.scripts() {
-        for (node_id, node) in &dialogue.nodes {
-            if let Some(speaker_id) = node.speaker_id.as_deref() {
-                if !character_ids.contains(speaker_id) {
-                    issues.push(issue(
-                        "dialogue_speaker_missing",
-                        Some(format!("dialogue/{}/{}", dialogue.id, node_id)),
-                        format!(
-                            "Dialogue `{}` references unknown speaker `{speaker_id}`.",
-                            dialogue.id
-                        ),
-                    ));
-                }
+        let mut source_shape = dialogue.clone();
+        for node in source_shape.nodes.values_mut() {
+            node.id.clear();
+        }
+        let dialogue = match normalize_dialogue_script(dialogue) {
+            Ok(dialogue) => dialogue,
+            Err(message) => {
+                issues.push(issue(
+                    "dialogue_normalization_invalid",
+                    Some("dialogue"),
+                    message,
+                ));
+                continue;
             }
-            for (choice_index, choice) in node.choices.iter().enumerate() {
-                for character_id in choice.relationship_changes.keys() {
-                    if !character_ids.contains(character_id) {
-                        issues.push(issue(
-                            "dialogue_relationship_target_missing",
-                            Some(format!("dialogue/{}/{}", dialogue.id, node_id)),
-                            format!(
-                                "Dialogue `{}` node `{node_id}` choice {} changes unknown character `{character_id}`.",
-                                dialogue.id,
-                                choice_index + 1
-                            ),
-                        ));
-                    }
-                }
-            }
+        };
+        if dialogue != source_shape {
+            issues.push(issue(
+                "dialogue_not_canonical",
+                Some(format!("dialogue/{}", dialogue.id)),
+                format!(
+                    "Dialogue `{}` contains non-canonical authoring fields; normalize it before acceptance.",
+                    dialogue.id
+                ),
+            ));
+        }
+        let validation = validate_dialogue_script(&dialogue, character_ids);
+        for validation_issue in validation.issues {
+            let path = validation_issue
+                .node_id
+                .as_deref()
+                .map(|node_id| format!("dialogue/{}/{node_id}", dialogue.id))
+                .unwrap_or_else(|| format!("dialogue/{}", dialogue.id));
+            issues.push(issue(
+                validation_issue.code,
+                Some(path),
+                validation_issue.message,
+            ));
         }
     }
 }

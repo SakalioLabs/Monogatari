@@ -15,6 +15,18 @@ export async function collectTauriStoryContentEvidence(options = {}) {
     path.join(authoringDirectory, 'story_events.rs'),
     'utf8',
   )
+  const authoringDialogueValidationSource = await readFile(
+    path.join(authoringDirectory, 'dialogue_validation.rs'),
+    'utf8',
+  )
+  const authoringDialogueValidationTestsSource = await readFile(
+    path.join(authoringDirectory, 'dialogue_validation', 'tests.rs'),
+    'utf8',
+  )
+  const authoringRuntimeValidationSource = await readFile(
+    path.join(authoringDirectory, 'runtime_validation.rs'),
+    'utf8',
+  )
   const tauriStoryProgressSource = await readFile(
     path.join(tauriSourceDirectory, 'story_progress.rs'),
     'utf8',
@@ -105,7 +117,14 @@ export async function collectTauriStoryContentEvidence(options = {}) {
     [tauriDialogueCommandsSource, 'list_dialogues', 'expose dialogue metadata with access decisions'],
     [tauriDialogueCommandsSource, 'monogatari-dialogue-authoring-catalog/v1', 'version dialogue authoring catalog snapshots'],
     [tauriDialogueCommandsSource, 'dialogue_authoring_catalog_fingerprint', 'fingerprint complete dialogue catalogs for optimistic concurrency'],
-    [tauriDialogueCommandsSource, 'validate_dialogue_script', 'validate dialogue graph, character, script, and relationship references'],
+    [authoringDialogueValidationSource, 'pub fn normalize_dialogue_script', 'own canonical Dialogue normalization in the headless authoring domain'],
+    [authoringDialogueValidationSource, 'pub fn validate_dialogue_script', 'own Dialogue graph, bounds, character, and relationship validation in the headless authoring domain'],
+    [authoringDialogueValidationSource, 'pub struct DialogueValidationResult', 'return structured transport-neutral Dialogue validation evidence'],
+    [authoringDialogueValidationTestsSource, 'validation_reports_authoring_limits_beyond_runtime_topology', 'test Dialogue authoring limits independently of Tauri'],
+    [authoringDialogueValidationTestsSource, 'validation_evidence_is_deterministic_and_bounded', 'bound and stabilize structured Dialogue validation evidence'],
+    [authoringRuntimeValidationSource, 'validate_dialogue_script(&dialogue, character_ids)', 'apply shared Dialogue authoring rules to Agent runtime acceptance'],
+    [authoringRuntimeValidationSource, 'dialogue_not_canonical', 'reject Agent Dialogue files that only pass after in-memory normalization'],
+    [tauriDialogueCommandsSource, 'ensure_valid_dialogue_script', 'delegate desktop Dialogue validation to the headless authoring domain'],
     [tauriDialogueCommandsSource, 'stage_json_replacement', 'atomically stage dialogue saves'],
     [tauriDialogueCommandsSource, 'dialogue_references', 'protect event- and ending-referenced dialogues from deletion'],
     [tauriDialogueCommandsSource, 'replace_scripts(runtime_scripts)', 'hot-reload validated dialogue catalogs into runtime state'],
@@ -174,12 +193,16 @@ export async function collectTauriStoryContentEvidence(options = {}) {
   for (const requirements of Object.values(requirementGroups)) {
     appendRequirements(requirements, issues)
   }
+  if (/fn (?:normalize_dialogue_script|validate_dialogue_script|validate_dialogue_text)\s*\(/.test(tauriDialogueCommandsSource)) {
+    issues.push('Story content integration must keep Dialogue normalization and validation out of Tauri commands')
+  }
 
   return {
     issues,
     requirementCounts: Object.fromEntries(
       Object.entries(requirementGroups).map(([name, requirements]) => [name, requirements.length]),
     ),
+    structuralCheckCount: 1,
   }
 }
 

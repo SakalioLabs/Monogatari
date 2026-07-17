@@ -1,19 +1,20 @@
 //! Dialogue runtime and project authoring commands.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use llm_authoring::dialogue_validation::{
+    ensure_valid_dialogue_script, normalize_dialogue_script, MAX_DIALOGUE_FILE_BYTES,
+};
 use llm_authoring::filesystem::{
     ensure_regular_project_directory, sha256_json, source_label, stage_json_deletion,
     stage_json_replacement,
 };
-use llm_core::normalize_script_state_map;
 use llm_game::characters::{Character, CharacterManager};
 use llm_game::dialogue::{
     DialogueChoiceEffects, DialogueManager, DialogueScript, DialogueScriptSummary,
 };
-use llm_scripting::{validate_condition_source, validate_script_source};
 use serde::Serialize;
 use serde_json::{json, Value};
 use tauri::State;
@@ -29,13 +30,6 @@ use crate::story_access::{
 
 const DIALOGUE_AUTHORING_CATALOG_SCHEMA_V1: &str = "monogatari-dialogue-authoring-catalog/v1";
 const MAX_DIALOGUE_FILES: usize = 512;
-const MAX_DIALOGUE_FILE_BYTES: u64 = 1024 * 1024;
-const MAX_DIALOGUE_NODES: usize = 2048;
-const MAX_DIALOGUE_CHOICES_PER_NODE: usize = 32;
-const MAX_RELATIONSHIP_CHANGES_PER_CHOICE: usize = 128;
-const MAX_DIALOGUE_VARIABLES: usize = 512;
-const MAX_DIALOGUE_TEXT_CHARS: usize = 16_384;
-const MAX_DIALOGUE_PROMPT_CHARS: usize = 20_000;
 
 #[derive(Serialize)]
 pub struct DialogueCatalogEntry {
@@ -351,7 +345,7 @@ async fn save_dialogue_definition_inner(
     let project_root = state.current_project_data_root().await;
     let character_ids = load_project_character_ids(&project_root).await?;
     let dialogue = normalize_dialogue_script(dialogue)?;
-    validate_dialogue_script(&dialogue, &character_ids)?;
+    ensure_valid_dialogue_script(&dialogue, &character_ids)?;
     let current = load_dialogue_documents(&project_root, &character_ids)?;
     ensure_dialogue_catalog_fingerprint(&current, expected_catalog_fingerprint)?;
     let dialogue_root =
@@ -592,7 +586,7 @@ fn load_dialogue_documents(
             .map_err(|error| format!("Invalid dialogue JSON in `{}`: {error}", path.display()))?;
         let dialogue = normalize_dialogue_script(dialogue)
             .map_err(|error| format!("Invalid dialogue `{}`: {error}", path.display()))?;
-        validate_dialogue_script(&dialogue, character_ids)
+        ensure_valid_dialogue_script(&dialogue, character_ids)
             .map_err(|error| format!("Invalid dialogue `{}`: {error}", path.display()))?;
         if !seen.insert(dialogue.id.clone()) {
             return Err(format!("Duplicate dialogue id `{}`.", dialogue.id));
@@ -605,235 +599,6 @@ fn load_dialogue_documents(
     }
     dialogues.sort_by(|left, right| left.dialogue.id.cmp(&right.dialogue.id));
     Ok(dialogues)
-}
-
-fn normalize_dialogue_script(mut dialogue: DialogueScript) -> Result<DialogueScript, String> {
-    dialogue.id = dialogue.id.trim().to_string();
-    dialogue.title = dialogue.title.trim().to_string();
-    dialogue.description = normalize_optional(dialogue.description);
-    dialogue.start_node_id = dialogue.start_node_id.trim().to_string();
-    dialogue.variables = normalize_script_state_map(dialogue.variables)
-        .map_err(|error| format!("Dialogue variables are invalid: {error}"))?;
-    for (node_id, node) in &mut dialogue.nodes {
-        if !node.id.is_empty() && node.id.trim() != node_id {
-            return Err(format!(
-                "Embedded node id `{}` does not match map key `{node_id}`.",
-                node.id
-            ));
-        }
-        node.id.clear();
-        node.speaker_id = normalize_optional(node.speaker_id.take());
-        node.text = node.text.trim().to_string();
-        node.next_node_id = normalize_optional(node.next_node_id.take());
-        node.condition = normalize_optional(node.condition.take());
-        node.script = normalize_optional(node.script.take());
-        node.emotion = normalize_optional(node.emotion.take());
-        node.llm_prompt = normalize_optional(node.llm_prompt.take());
-        node.llm_system_prompt = normalize_optional(node.llm_system_prompt.take());
-        node.ending_type = normalize_optional(node.ending_type.take());
-        for choice in &mut node.choices {
-            choice.text = choice.text.trim().to_string();
-            choice.next_node_id = choice.next_node_id.trim().to_string();
-            choice.condition = normalize_optional(choice.condition.take());
-            let mut normalized_changes = HashMap::with_capacity(choice.relationship_changes.len());
-            for (character_id, delta) in std::mem::take(&mut choice.relationship_changes) {
-                let character_id = character_id.trim().to_string();
-                if normalized_changes
-                    .insert(character_id.clone(), delta)
-                    .is_some()
-                {
-                    return Err(format!(
-                        "Choice has duplicate relationship target `{character_id}` after normalization."
-                    ));
-                }
-            }
-            choice.relationship_changes = normalized_changes;
-        }
-    }
-    Ok(dialogue)
-}
-
-fn normalize_optional(value: Option<String>) -> Option<String> {
-    value
-        .map(|value| value.trim().to_string())
-        .filter(|value| !value.is_empty())
-}
-
-fn validate_dialogue_script(
-    dialogue: &DialogueScript,
-    character_ids: &HashSet<String>,
-) -> Result<(), String> {
-    dialogue
-        .validate_graph()
-        .map_err(|error| error.to_string())?;
-    validate_dialogue_text(&dialogue.title, "title", 1, 256, &dialogue.id, None)?;
-    if let Some(description) = dialogue.description.as_deref() {
-        validate_dialogue_text(description, "description", 1, 2_048, &dialogue.id, None)?;
-    }
-    if dialogue.nodes.is_empty() || dialogue.nodes.len() > MAX_DIALOGUE_NODES {
-        return Err(format!(
-            "Dialogue `{}` must contain 1 to {MAX_DIALOGUE_NODES} nodes.",
-            dialogue.id
-        ));
-    }
-    if dialogue.variables.len() > MAX_DIALOGUE_VARIABLES {
-        return Err(format!(
-            "Dialogue `{}` has too many variables; the limit is {MAX_DIALOGUE_VARIABLES}.",
-            dialogue.id
-        ));
-    }
-    let variable_bytes = serde_json::to_vec(&dialogue.variables)
-        .map_err(|error| format!("Dialogue variables cannot be serialized: {error}"))?
-        .len();
-    if variable_bytes > MAX_DIALOGUE_FILE_BYTES as usize / 2 {
-        return Err(format!(
-            "Dialogue `{}` variables exceed the catalog size budget.",
-            dialogue.id
-        ));
-    }
-
-    for (node_id, node) in &dialogue.nodes {
-        validate_dialogue_text(
-            &node.text,
-            "text",
-            1,
-            MAX_DIALOGUE_TEXT_CHARS,
-            &dialogue.id,
-            Some(node_id),
-        )?;
-        if node.choices.len() > MAX_DIALOGUE_CHOICES_PER_NODE {
-            return Err(format!(
-                "Dialogue `{}` node `{node_id}` has too many choices; the limit is {MAX_DIALOGUE_CHOICES_PER_NODE}.",
-                dialogue.id
-            ));
-        }
-        if let Some(speaker_id) = node.speaker_id.as_deref() {
-            if !character_ids.contains(speaker_id) {
-                return Err(format!(
-                    "Dialogue `{}` node `{node_id}` references unknown speaker `{speaker_id}`.",
-                    dialogue.id
-                ));
-            }
-        }
-        if let Some(emotion) = node.emotion.as_deref() {
-            validate_dialogue_text(emotion, "emotion", 1, 64, &dialogue.id, Some(node_id))?;
-        }
-        if let Some(ending_type) = node.ending_type.as_deref() {
-            validate_dialogue_text(
-                ending_type,
-                "ending type",
-                1,
-                64,
-                &dialogue.id,
-                Some(node_id),
-            )?;
-        }
-        if let Some(condition) = node.condition.as_deref() {
-            validate_condition_source(condition).map_err(|error| {
-                format!(
-                    "Dialogue `{}` node `{node_id}` condition is invalid: {error}",
-                    dialogue.id
-                )
-            })?;
-        }
-        if let Some(script) = node.script.as_deref() {
-            validate_script_source(script).map_err(|error| {
-                format!(
-                    "Dialogue `{}` node `{node_id}` script is invalid: {error}",
-                    dialogue.id
-                )
-            })?;
-        }
-        if node.use_llm && node.llm_prompt.is_none() {
-            return Err(format!(
-                "Dialogue `{}` node `{node_id}` enables LLM generation without an LLM prompt.",
-                dialogue.id
-            ));
-        }
-        for (label, prompt) in [
-            ("LLM prompt", node.llm_prompt.as_deref()),
-            ("LLM system prompt", node.llm_system_prompt.as_deref()),
-        ] {
-            if let Some(prompt) = prompt {
-                validate_dialogue_text(
-                    prompt,
-                    label,
-                    1,
-                    MAX_DIALOGUE_PROMPT_CHARS,
-                    &dialogue.id,
-                    Some(node_id),
-                )?;
-            }
-        }
-        for (choice_index, choice) in node.choices.iter().enumerate() {
-            validate_dialogue_text(
-                &choice.text,
-                &format!("choice {} text", choice_index + 1),
-                1,
-                2_048,
-                &dialogue.id,
-                Some(node_id),
-            )?;
-            if choice.relationship_changes.len() > MAX_RELATIONSHIP_CHANGES_PER_CHOICE {
-                return Err(format!(
-                    "Dialogue `{}` node `{node_id}` choice {} has too many relationship changes.",
-                    dialogue.id,
-                    choice_index + 1
-                ));
-            }
-            if let Some(condition) = choice.condition.as_deref() {
-                validate_condition_source(condition).map_err(|error| {
-                    format!(
-                        "Dialogue `{}` node `{node_id}` choice {} condition is invalid: {error}",
-                        dialogue.id,
-                        choice_index + 1
-                    )
-                })?;
-            }
-            for (character_id, delta) in &choice.relationship_changes {
-                if !character_ids.contains(character_id) {
-                    return Err(format!(
-                        "Dialogue `{}` node `{node_id}` choice {} changes unknown character `{character_id}`.",
-                        dialogue.id,
-                        choice_index + 1
-                    ));
-                }
-                if !delta.is_finite() || !(-1.0..=1.0).contains(delta) {
-                    return Err(format!(
-                        "Dialogue `{}` node `{node_id}` choice {} relationship delta for `{character_id}` must be between -1 and 1.",
-                        dialogue.id,
-                        choice_index + 1
-                    ));
-                }
-            }
-        }
-    }
-    Ok(())
-}
-
-fn validate_dialogue_text(
-    value: &str,
-    label: &str,
-    min: usize,
-    max: usize,
-    dialogue_id: &str,
-    node_id: Option<&str>,
-) -> Result<(), String> {
-    let count = value.chars().count();
-    if count < min
-        || count > max
-        || value
-            .chars()
-            .any(|character| character.is_control() && !matches!(character, '\n' | '\r' | '\t'))
-    {
-        let location = node_id
-            .map(|node_id| format!(" node `{node_id}`"))
-            .unwrap_or_default();
-        return Err(format!(
-            "Dialogue `{dialogue_id}`{location} {label} must contain {min} to {max} supported characters."
-        ));
-    }
-    Ok(())
 }
 
 fn ensure_dialogue_catalog_fingerprint(

@@ -5,6 +5,7 @@
 pub mod agent_transaction;
 pub mod conversation_quality;
 pub mod delivery_validation;
+pub mod dialogue_validation;
 pub mod filesystem;
 pub mod json_catalog;
 pub mod paths;

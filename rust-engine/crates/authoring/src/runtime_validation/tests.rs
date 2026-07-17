@@ -67,6 +67,30 @@ async fn validates_real_core_runtime_catalogs_and_references() {
 }
 
 #[tokio::test]
+async fn rejects_dialogue_authoring_limits_that_runtime_topology_accepts() {
+    let root = project_root("dialogue_authoring_limits");
+    write_valid_core(&root);
+    std::fs::write(
+        root.join("dialogue/intro.json"),
+        r#"{"id":"intro","title":"Intro","start_node_id":"start","nodes":{"start":{"text":"  ","use_llm":true,"is_ending":true}}}"#,
+    )
+    .unwrap();
+
+    let report = validate_core_runtime_project(&root).await.unwrap();
+    let codes = report
+        .issues
+        .iter()
+        .map(|issue| issue.code.as_str())
+        .collect::<HashSet<_>>();
+
+    assert!(!report.valid);
+    assert!(codes.contains("dialogue_not_canonical"));
+    assert!(codes.contains("dialogue_text_invalid"));
+    assert!(codes.contains("dialogue_llm_prompt_missing"));
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
 async fn rejects_story_event_actions_with_unknown_content_targets() {
     let root = project_root("story_events");
     write_valid_core(&root);
