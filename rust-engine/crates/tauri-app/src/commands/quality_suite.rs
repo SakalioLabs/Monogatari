@@ -2,8 +2,6 @@
 
 use std::path::{Path, PathBuf};
 
-use serde::Serialize;
-use sha2::{Digest, Sha256};
 use tauri::State;
 
 pub use llm_authoring::quality_suite_execution::QualitySuiteReport;
@@ -12,12 +10,18 @@ use llm_authoring::quality_suite_execution::{execute_quality_suite, QualitySuite
 use llm_authoring::quality_suite_execution::{
     validate_scenario_expectations, ScenarioExpectationEvidence,
 };
-use llm_authoring::quality_suite_validation::parse_quality_suite_document;
 #[cfg(test)]
 use llm_authoring::quality_suite_validation::QualityScenarioDocument as QualityScenario;
-pub use llm_authoring::quality_suite_validation::QualitySuiteDocument as QualitySuite;
+use llm_authoring::quality_suite_validation::{
+    list_project_quality_suite_summaries, load_project_quality_suite_document,
+    parse_quality_suite_document, quality_suite_sha256, quality_suite_summary,
+    LoadedQualitySuiteDocument,
+};
 #[cfg(test)]
 use llm_authoring::quality_suite_validation::{QualityExpectation, QualityMessage};
+pub use llm_authoring::quality_suite_validation::{
+    QualitySuiteDocument as QualitySuite, QualitySuiteSummary,
+};
 
 #[cfg(test)]
 use crate::commands::{chat, prompt_guard};
@@ -28,46 +32,16 @@ const DEFAULT_SUITE_JSON: &str =
     include_str!("../../../../../data/quality_suites/character_stability.json");
 const DEFAULT_SUITE_PATH: &str = "quality_suites/character_stability.json";
 
-#[derive(Debug, Clone, Serialize)]
-pub struct QualitySuiteSummary {
-    pub name: String,
-    pub version: String,
-    pub description: String,
-    pub scenario_count: usize,
-    pub path: String,
-    pub suite_sha256: String,
-}
 #[tauri::command]
 pub async fn list_quality_suites(
     state: State<'_, AppState>,
 ) -> Result<Vec<QualitySuiteSummary>, String> {
     let root = project_root(&state).await;
-    let suite_dir = root.join("quality_suites");
-    let mut summaries = Vec::new();
-
-    if suite_dir.exists() {
-        for entry in std::fs::read_dir(&suite_dir).map_err(|e| e.to_string())? {
-            let entry = entry.map_err(|e| e.to_string())?;
-            let path = entry.path();
-            if path.extension().and_then(|ext| ext.to_str()) != Some("json") {
-                continue;
-            }
-            let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
-            let suite = parse_quality_suite(&content)?;
-            summaries.push(summary_for_suite(
-                &suite,
-                path.strip_prefix(&root)
-                    .unwrap_or(&path)
-                    .to_string_lossy()
-                    .as_ref(),
-                &quality_suite_sha256(&content),
-            ));
-        }
-    }
+    let mut summaries = list_project_quality_suite_summaries(&root)?;
 
     if summaries.is_empty() {
         let suite = parse_quality_suite(DEFAULT_SUITE_JSON)?;
-        summaries.push(summary_for_suite(
+        summaries.push(quality_suite_summary(
             &suite,
             "built-in:character_stability",
             &quality_suite_sha256(DEFAULT_SUITE_JSON),
@@ -106,36 +80,33 @@ fn load_quality_suite_from_root(
     root: &Path,
     suite_path: Option<String>,
 ) -> Result<LoadedQualitySuite, String> {
-    let path =
-        match suite_path {
-            Some(path) if path == "built-in:character_stability" => None,
-            Some(path) => Some(resolve_suite_path(root, &path)?),
-            None => {
-                let default_path = root.join(DEFAULT_SUITE_PATH);
-                if default_path.exists() {
-                    Some(default_path.canonicalize().map_err(|e| {
-                        format!("Failed to resolve default quality suite path: {e}")
-                    })?)
-                } else {
-                    None
-                }
-            }
-        };
-
-    if let Some(path) = path {
-        let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
-        Ok(LoadedQualitySuite {
-            suite: parse_quality_suite(&content)?,
-            source_path: quality_suite_source_path(root, &path),
-            source_sha256: quality_suite_sha256(&content),
-        })
-    } else {
-        Ok(LoadedQualitySuite {
-            suite: parse_quality_suite(DEFAULT_SUITE_JSON)?,
-            source_path: "built-in:character_stability".to_string(),
-            source_sha256: quality_suite_sha256(DEFAULT_SUITE_JSON),
-        })
+    match suite_path {
+        Some(path) if path == "built-in:character_stability" => built_in_quality_suite(),
+        Some(path) => load_project_quality_suite_document(root, &path)
+            .map(adapt_project_quality_suite)
+            .map_err(|error| error.to_string()),
+        None => match load_project_quality_suite_document(root, DEFAULT_SUITE_PATH) {
+            Ok(loaded) => Ok(adapt_project_quality_suite(loaded)),
+            Err(error) if error.is_missing() => built_in_quality_suite(),
+            Err(error) => Err(error.to_string()),
+        },
     }
+}
+
+fn adapt_project_quality_suite(loaded: LoadedQualitySuiteDocument) -> LoadedQualitySuite {
+    LoadedQualitySuite {
+        suite: loaded.suite,
+        source_path: loaded.source_path,
+        source_sha256: loaded.source_sha256,
+    }
+}
+
+fn built_in_quality_suite() -> Result<LoadedQualitySuite, String> {
+    Ok(LoadedQualitySuite {
+        suite: parse_quality_suite(DEFAULT_SUITE_JSON)?,
+        source_path: "built-in:character_stability".to_string(),
+        source_sha256: quality_suite_sha256(DEFAULT_SUITE_JSON),
+    })
 }
 
 async fn project_root(state: &State<'_, AppState>) -> PathBuf {
@@ -151,61 +122,8 @@ fn find_project_data_root(start: &Path) -> Option<PathBuf> {
     crate::state::discover_project_data_root(start)
 }
 
-fn resolve_suite_path(project_root: &Path, suite_path: &str) -> Result<PathBuf, String> {
-    let candidate = PathBuf::from(suite_path);
-    let path = if candidate.is_absolute() {
-        candidate
-    } else {
-        project_root.join(candidate)
-    };
-
-    if !path.exists() {
-        return Err(format!("Quality suite not found: {}", path.display()));
-    }
-
-    let root = project_root
-        .canonicalize()
-        .map_err(|e| format!("Failed to resolve project root: {e}"))?;
-    let path = path
-        .canonicalize()
-        .map_err(|e| format!("Failed to resolve quality suite path: {e}"))?;
-
-    if !path.starts_with(&root) {
-        return Err("Quality suite path must stay inside the project root.".to_string());
-    }
-
-    Ok(path)
-}
-
-fn quality_suite_source_path(project_root: &Path, suite_path: &Path) -> String {
-    let root = project_root
-        .canonicalize()
-        .unwrap_or_else(|_| project_root.to_path_buf());
-    suite_path
-        .strip_prefix(&root)
-        .unwrap_or(suite_path)
-        .to_string_lossy()
-        .replace('\\', "/")
-}
-
-fn quality_suite_sha256(content: &str) -> String {
-    let digest = Sha256::digest(content.as_bytes());
-    digest.iter().map(|byte| format!("{byte:02x}")).collect()
-}
-
 pub(crate) fn parse_quality_suite(content: &str) -> Result<QualitySuite, String> {
     parse_quality_suite_document(content)
-}
-
-fn summary_for_suite(suite: &QualitySuite, path: &str, suite_sha256: &str) -> QualitySuiteSummary {
-    QualitySuiteSummary {
-        name: suite.name.clone(),
-        version: suite.version.clone(),
-        description: suite.description.clone(),
-        scenario_count: suite.scenarios.len(),
-        path: path.replace('\\', "/"),
-        suite_sha256: suite_sha256.to_string(),
-    }
 }
 
 async fn run_quality_suite_inner(
@@ -316,9 +234,26 @@ mod tests {
     }
 
     #[test]
+    fn default_loader_falls_back_only_when_project_suite_is_missing() {
+        let root = unique_temp_root("suite-fallback");
+        make_data_root(&root, true);
+
+        let fallback = load_quality_suite_from_root(&root, None).expect("load built-in fallback");
+        assert_eq!(fallback.source_path, "built-in:character_stability");
+
+        std::fs::write(root.join(DEFAULT_SUITE_PATH), "{}").unwrap();
+        let error = load_quality_suite_from_root(&root, None)
+            .err()
+            .expect("invalid project suite must not fall back");
+        let _ = std::fs::remove_dir_all(&root);
+
+        assert!(error.contains("missing field"), "{error}");
+    }
+
+    #[test]
     fn quality_suite_summary_reports_source_fingerprint() {
         let suite = parse_quality_suite(DEFAULT_SUITE_JSON).unwrap();
-        let summary = summary_for_suite(
+        let summary = quality_suite_summary(
             &suite,
             DEFAULT_SUITE_PATH,
             &quality_suite_sha256(DEFAULT_SUITE_JSON),

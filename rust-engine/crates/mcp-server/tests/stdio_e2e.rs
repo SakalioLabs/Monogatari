@@ -247,6 +247,28 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
     assert_eq!(error.code, McpToolErrorCode::ProjectInvalid);
     assert!(error.message.contains("cannot exceed"));
 
+    std::fs::write(
+        project.root.join("quality_suites/invalid.json"),
+        br#"{"version":"1","name":"Invalid","description":"No scenarios","scenarios":[]}"#,
+    )?;
+    let invalid = client
+        .call_tool(
+            CallToolRequestParams::new("run_quality_suite")
+                .with_arguments(arguments(json!({"path": "quality_suites/invalid.json"}))),
+        )
+        .await?;
+    assert_eq!(invalid.is_error, Some(true));
+    let error: McpToolError = structured(&invalid)?;
+    assert_eq!(error.code, McpToolErrorCode::ProjectInvalid);
+    assert!(error.message.contains("at least one scenario"));
+    assert_eq!(
+        error
+            .details
+            .as_ref()
+            .and_then(|details| details["path"].as_str()),
+        Some("quality_suites/invalid.json")
+    );
+
     client.cancel().await?;
     Ok(())
 }

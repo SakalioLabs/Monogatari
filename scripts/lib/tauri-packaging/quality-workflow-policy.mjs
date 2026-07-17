@@ -15,6 +15,27 @@ const qualityInputRequirements = [
   ['tauriWorkflow', 'WorkflowRunContext', 'reuse the shared Workflow run-context model'],
 ]
 
+const qualitySourceRequirements = [
+  ['qualitySuite', 'pub struct QualitySuiteSummary', 'own the Quality Suite summary model'],
+  ['qualitySuite', 'pub source_sha256: String', 'carry exact source fingerprints with loaded suites'],
+  ['qualitySuite', 'pub enum QualitySuiteSourceError', 'own structured Quality source errors'],
+  ['qualitySuite', 'pub fn parse_quality_suite_value', 'parse already-decoded Quality documents'],
+  ['qualitySuite', 'pub fn quality_suite_sha256', 'own built-in Quality source fingerprints'],
+  ['qualitySuite', 'pub fn quality_suite_summary', 'own Quality summary projection'],
+  ['qualitySuite', 'pub fn load_project_quality_suite_document', 'own exact bounded Quality source loading'],
+  ['qualitySuite', 'pub fn list_project_quality_suite_summaries', 'own deterministic Quality summary listing'],
+  ['qualitySuiteTests', 'loads_exact_quality_sources_with_stable_hashes_and_sorted_summaries', 'test exact source provenance and summary ordering'],
+  ['qualitySuiteTests', 'rejects_non_quality_oversized_and_case_aliased_sources', 'test catalog, size, and exact-case boundaries'],
+  ['qualitySuiteTests', 'distinguishes_missing_quality_sources_for_builtin_fallbacks', 'test explicit built-in fallback evidence'],
+  ['tauriQuality', 'QualitySuiteDocument as QualitySuite, QualitySuiteSummary', 'reuse the shared Quality summary model'],
+  ['tauriQuality', 'list_project_quality_suite_summaries(&root)', 'delegate Quality listing to the shared source domain'],
+  ['tauriQuality', 'load_project_quality_suite_document(root, &path)', 'delegate selected Quality loading to the shared source domain'],
+  ['tauriQuality', 'Err(error) if error.is_missing()', 'limit built-in fallback to missing project sources'],
+  ['tauriQuality', 'default_loader_falls_back_only_when_project_suite_is_missing', 'test that invalid project suites cannot hide behind the built-in fallback'],
+  ['mcpServer', 'load_project_quality_suite_document(&self.project_root, &request.path)', 'delegate MCP Quality loading to the shared source domain'],
+  ['mcpServer', 'fn quality_suite_source_error', 'adapt shared Quality source errors at the MCP boundary'],
+]
+
 const workflowPreviewRequirements = [
   ['workflowPreview', 'pub fn execute_workflow_preview', 'expose deterministic Workflow preview execution'],
   ['workflowPreview', 'pub struct WorkflowPreviewEnvironment', 'accept transport-neutral preview state'],
@@ -92,13 +113,6 @@ const authoringRuntimeTraceRequirements = [
 ]
 
 const tauriRuntimeTraceRequirements = [
-  ['pub struct QualitySuiteSummary', 'export quality suite summaries for the workbench'],
-  ['LoadedQualitySuite', 'return backend-confirmed quality suite source paths with loaded suites'],
-  ['source_sha256', 'return backend-confirmed quality suite content fingerprints with loaded suites'],
-  ['quality_suite_source_path', 'normalize quality suite source paths for QA reports'],
-  ['quality_suite_sha256', 'hash quality suite source content for QA reports'],
-  ['quality_suite_loader_reports_relative_source_path', 'test quality suite report source paths stay project-relative'],
-  ['quality_suite_summary_reports_source_fingerprint', 'test quality suite summaries expose source fingerprints'],
   ['pinned_knowledge_ref_count', 'carry pinned knowledge evidence into quality runtime traces'],
   ['CARGO_PKG_VERSION', 'bind quality suite run metadata to the engine package version'],
   ['MONOGATARI_GIT_COMMIT', 'bind quality suite run metadata to the build git commit'],
@@ -120,8 +134,10 @@ export async function collectTauriQualityWorkflowEvidence(options = {}) {
     workflowExecutionPolicyTests: await readFile(path.join(authoringDirectory, 'workflow_execution_policy', 'tests.rs'), 'utf8'),
     workflowPreview: await readFile(path.join(authoringDirectory, 'workflow_preview.rs'), 'utf8'),
     workflowPreviewTests: await readFile(path.join(authoringDirectory, 'workflow_preview', 'tests.rs'), 'utf8'),
+    qualitySuiteTests: await readFile(path.join(authoringDirectory, 'quality_suite_validation', 'tests.rs'), 'utf8'),
     tauriQuality: await readFile(path.join(commandDirectory, 'quality_suite.rs'), 'utf8'),
     tauriWorkflow: await readFile(path.join(commandDirectory, 'workflow.rs'), 'utf8'),
+    mcpServer: await readFile(path.join(rustDirectory, 'crates', 'mcp-server', 'src', 'server.rs'), 'utf8'),
   }
   const issues = []
 
@@ -140,6 +156,36 @@ export async function collectTauriQualityWorkflowEvidence(options = {}) {
     || tauriQualityParserSource.includes('serde_json::from_str')
   ) {
     issues.push('Tauri Quality parsing must delegate directly to the shared headless parser')
+  }
+
+  appendSourceRequirements(sources, qualitySourceRequirements, 'Headless Quality sources', issues)
+  const sharedQualityLoaderSource = sources.qualitySuite.match(
+    /pub fn load_project_quality_suite_document[\s\S]*?\n\}/,
+  )?.[0] ?? ''
+  if (!sharedQualityLoaderSource.includes('read_project_json(project_root, requested_path)?')) {
+    issues.push('Shared Quality source loading must reuse the exact bounded JSON catalog reader')
+  }
+  if (/pub\s+struct\s+QualitySuiteSummary\s*\{/.test(sources.tauriQuality)) {
+    issues.push('Tauri Quality commands must not redeclare the shared summary model')
+  }
+  if (/fn\s+(?:resolve_suite_path|quality_suite_source_path|quality_suite_sha256|summary_for_suite)\s*\(/.test(sources.tauriQuality)) {
+    issues.push('Tauri Quality commands must not redeclare shared source path, hash, or summary helpers')
+  }
+  const tauriQualityRuntimeSource = sources.tauriQuality.split('#[cfg(test)]\nmod tests')[0]
+  if (/std::fs::(?:read_dir|read_to_string)\s*\(/.test(tauriQualityRuntimeSource)) {
+    issues.push('Tauri Quality commands must not read project suite files outside the shared source domain')
+  }
+  const mcpQualityStart = sources.mcpServer.indexOf('pub async fn run_quality_suite')
+  const mcpQualityEnd = sources.mcpServer.indexOf('/// Export one reviewed package', mcpQualityStart)
+  const mcpQualitySource = mcpQualityStart >= 0
+    ? sources.mcpServer.slice(mcpQualityStart, mcpQualityEnd >= 0 ? mcpQualityEnd : undefined)
+    : ''
+  if (
+    !mcpQualitySource.includes('load_project_quality_suite_document(')
+    || mcpQualitySource.includes('serde_json::to_string')
+    || mcpQualitySource.includes('parse_quality_suite_document')
+  ) {
+    issues.push('MCP Quality execution must consume the shared loaded source without reserialization')
   }
 
   appendSourceRequirements(sources, workflowPreviewRequirements, 'Headless Workflow preview', issues)
@@ -194,13 +240,14 @@ export async function collectTauriQualityWorkflowEvidence(options = {}) {
     issues,
     requirementCounts: {
       qualityInput: qualityInputRequirements.length,
+      qualitySource: qualitySourceRequirements.length,
       workflowPreview: workflowPreviewRequirements.length,
       workflowExecutionPolicy: workflowExecutionPolicyRequirements.length,
       qualityExecution: qualityExecutionRequirements.length,
       runtimeTrace:
         authoringRuntimeTraceRequirements.length + tauriRuntimeTraceRequirements.length,
     },
-    structuralCheckCount: 8,
+    structuralCheckCount: 13,
   }
 }
 

@@ -1,10 +1,17 @@
 //! Headless validation for Quality Suite authoring documents.
 
 use std::collections::HashSet;
+use std::fmt;
 use std::path::{Path, PathBuf};
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use sha2::{Digest, Sha256};
 
+use crate::json_catalog::{
+    read_project_json, AuthorableJsonCatalog, JsonCatalogError, JsonCatalogErrorCode,
+};
 use crate::story_events::EventTriggerRule;
 use crate::workflow_validation::WorkflowRunContext;
 
@@ -135,9 +142,31 @@ pub struct QualityExpectation {
     pub expected_event_rules: Vec<EventTriggerRule>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+pub struct QualitySuiteSummary {
+    pub name: String,
+    pub version: String,
+    pub description: String,
+    pub scenario_count: usize,
+    pub path: String,
+    pub suite_sha256: String,
+}
+
 pub fn parse_quality_suite_document(content: &str) -> Result<QualitySuiteDocument, String> {
     let suite: QualitySuiteDocument =
         serde_json::from_str(content).map_err(|error| error.to_string())?;
+    validate_parsed_quality_suite(suite)
+}
+
+pub fn parse_quality_suite_value(value: Value) -> Result<QualitySuiteDocument, String> {
+    let suite: QualitySuiteDocument =
+        serde_json::from_value(value).map_err(|error| error.to_string())?;
+    validate_parsed_quality_suite(suite)
+}
+
+fn validate_parsed_quality_suite(
+    suite: QualitySuiteDocument,
+) -> Result<QualitySuiteDocument, String> {
     let issues = validate_quality_suite_shape(&suite);
     if issues.is_empty() {
         Ok(suite)
@@ -149,11 +178,129 @@ pub fn parse_quality_suite_document(content: &str) -> Result<QualitySuiteDocumen
     }
 }
 
+pub fn quality_suite_sha256(content: &str) -> String {
+    format!("{:x}", Sha256::digest(content.as_bytes()))
+}
+
+pub fn quality_suite_summary(
+    suite: &QualitySuiteDocument,
+    path: &str,
+    suite_sha256: &str,
+) -> QualitySuiteSummary {
+    QualitySuiteSummary {
+        name: suite.name.clone(),
+        version: suite.version.clone(),
+        description: suite.description.clone(),
+        scenario_count: suite.scenarios.len(),
+        path: path.replace('\\', "/"),
+        suite_sha256: suite_sha256.to_string(),
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct LoadedQualitySuiteDocument {
     pub suite: QualitySuiteDocument,
     pub source_path: String,
+    pub source_sha256: String,
     pub absolute_path: PathBuf,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum QualitySuiteSourceError {
+    Catalog(JsonCatalogError),
+    WrongCatalog {
+        path: String,
+        actual_catalog: AuthorableJsonCatalog,
+    },
+    FileTooLarge {
+        path: String,
+        size_bytes: u64,
+        max_size_bytes: u64,
+    },
+    InvalidDocument {
+        path: String,
+        message: String,
+    },
+}
+
+impl QualitySuiteSourceError {
+    pub fn is_missing(&self) -> bool {
+        matches!(
+            self,
+            Self::Catalog(error)
+                if matches!(
+                    error.code,
+                    JsonCatalogErrorCode::CatalogMissing | JsonCatalogErrorCode::FileNotFound
+                )
+        )
+    }
+}
+
+impl fmt::Display for QualitySuiteSourceError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Catalog(error) => error.fmt(formatter),
+            Self::WrongCatalog { .. } => formatter
+                .write_str("Quality Suite execution only accepts paths inside `quality_suites`."),
+            Self::FileTooLarge { max_size_bytes, .. } => write!(
+                formatter,
+                "Quality Suite documents cannot exceed {max_size_bytes} bytes."
+            ),
+            Self::InvalidDocument { message, .. } => formatter.write_str(message),
+        }
+    }
+}
+
+impl std::error::Error for QualitySuiteSourceError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Catalog(error) => Some(error),
+            _ => None,
+        }
+    }
+}
+
+impl From<JsonCatalogError> for QualitySuiteSourceError {
+    fn from(error: JsonCatalogError) -> Self {
+        Self::Catalog(error)
+    }
+}
+
+pub fn load_project_quality_suite_document(
+    project_root: &Path,
+    requested_path: &str,
+) -> Result<LoadedQualitySuiteDocument, QualitySuiteSourceError> {
+    let document = read_project_json(project_root, requested_path)?;
+    let metadata = document.metadata;
+    if metadata.catalog != AuthorableJsonCatalog::QualitySuites {
+        return Err(QualitySuiteSourceError::WrongCatalog {
+            path: metadata.path,
+            actual_catalog: metadata.catalog,
+        });
+    }
+    if metadata.size_bytes > MAX_QUALITY_SUITE_FILE_BYTES {
+        return Err(QualitySuiteSourceError::FileTooLarge {
+            path: metadata.path,
+            size_bytes: metadata.size_bytes,
+            max_size_bytes: MAX_QUALITY_SUITE_FILE_BYTES,
+        });
+    }
+    let suite = parse_quality_suite_value(document.document).map_err(|message| {
+        QualitySuiteSourceError::InvalidDocument {
+            path: metadata.path.clone(),
+            message,
+        }
+    })?;
+    let absolute_path = project_root
+        .canonicalize()
+        .unwrap_or_else(|_| project_root.to_path_buf())
+        .join(&metadata.path);
+    Ok(LoadedQualitySuiteDocument {
+        suite,
+        source_path: metadata.path,
+        source_sha256: metadata.sha256,
+        absolute_path,
+    })
 }
 
 pub fn load_project_quality_suites(
@@ -195,7 +342,7 @@ pub fn load_project_quality_suites(
         .filter(|path| {
             path.extension()
                 .and_then(|value| value.to_str())
-                .is_some_and(|value| value.eq_ignore_ascii_case("json"))
+                .is_some_and(|value| value == "json")
         })
         .collect::<Vec<_>>();
     files.sort();
@@ -233,16 +380,30 @@ pub fn load_project_quality_suites(
                 path.display()
             ));
         }
-        let content = std::fs::read_to_string(&canonical).map_err(|error| {
-            format!("Failed to read Quality Suite `{}`: {error}", path.display())
-        })?;
-        loaded.push(LoadedQualitySuiteDocument {
-            suite: parse_quality_suite_document(&content)?,
-            source_path: source_label(project_root, &path),
-            absolute_path: canonical,
-        });
+        let source_path = source_label(project_root, &canonical);
+        loaded.push(
+            load_project_quality_suite_document(project_root, &source_path)
+                .map_err(|error| error.to_string())?,
+        );
     }
     Ok(loaded)
+}
+
+pub fn list_project_quality_suite_summaries(
+    project_root: &Path,
+) -> Result<Vec<QualitySuiteSummary>, String> {
+    let mut summaries = load_project_quality_suites(project_root)?
+        .into_iter()
+        .map(|loaded| {
+            quality_suite_summary(&loaded.suite, &loaded.source_path, &loaded.source_sha256)
+        })
+        .collect::<Vec<_>>();
+    summaries.sort_by(|left, right| {
+        left.name
+            .cmp(&right.name)
+            .then_with(|| left.path.cmp(&right.path))
+    });
+    Ok(summaries)
 }
 
 pub fn validate_quality_suite_references(

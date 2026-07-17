@@ -9,13 +9,12 @@ use llm_authoring::agent_transaction::{
 };
 use llm_authoring::delivery_validation::{validate_project_delivery, DeliveryValidationReport};
 use llm_authoring::json_catalog::{
-    inspect_project_json_catalog, read_project_json, AuthorableJsonCatalog, JsonCatalogDocument,
-    JsonCatalogReport,
+    inspect_project_json_catalog, read_project_json, JsonCatalogDocument, JsonCatalogReport,
 };
 use llm_authoring::project::{canonical_project_root, inspect_project_config, ProjectConfigState};
 use llm_authoring::quality_suite_execution::execute_quality_suite;
 use llm_authoring::quality_suite_validation::{
-    parse_quality_suite_document, MAX_QUALITY_SUITE_FILE_BYTES,
+    load_project_quality_suite_document, QualitySuiteSourceError,
 };
 use llm_authoring::runtime_validation::{
     validate_core_runtime_project, CoreRuntimeValidationReport,
@@ -277,37 +276,8 @@ impl MonogatariMcpServer {
         Parameters(request): Parameters<RunQualitySuiteRequest>,
     ) -> Result<Json<RunQualitySuiteOutput>, Json<McpToolError>> {
         let _guard = self.access.read().await;
-        let document = read_project_json(&self.project_root, &request.path)
-            .map_err(McpToolError::catalog)
-            .map_err(Json)?;
-        if document.metadata.catalog != AuthorableJsonCatalog::QualitySuites {
-            return Err(Json(McpToolError::project(
-                "Quality Suite execution only accepts paths inside `quality_suites`.",
-                Some(serde_json::json!({
-                    "path": request.path,
-                    "required_catalog": "quality_suites"
-                })),
-            )));
-        }
-        if document.metadata.size_bytes > MAX_QUALITY_SUITE_FILE_BYTES {
-            return Err(Json(McpToolError::project(
-                format!(
-                    "Quality Suite documents cannot exceed {MAX_QUALITY_SUITE_FILE_BYTES} bytes."
-                ),
-                Some(serde_json::json!({
-                    "path": document.metadata.path,
-                    "size_bytes": document.metadata.size_bytes,
-                    "max_size_bytes": MAX_QUALITY_SUITE_FILE_BYTES
-                })),
-            )));
-        }
-        let source = serde_json::to_string(&document.document)
-            .map_err(|_| McpToolError::internal("Quality Suite JSON could not be serialized."))
-            .map_err(Json)?;
-        let suite = parse_quality_suite_document(&source)
-            .map_err(|message| {
-                McpToolError::project(message, Some(serde_json::json!({ "path": request.path })))
-            })
+        let loaded = load_project_quality_suite_document(&self.project_root, &request.path)
+            .map_err(quality_suite_source_error)
             .map_err(Json)?;
         let event_catalog = StoryEventCatalog::load_from_project_root(&self.project_root)
             .map_err(|message| {
@@ -315,10 +285,10 @@ impl MonogatariMcpServer {
             })
             .map_err(Json)?;
         let report = execute_quality_suite(
-            &suite,
+            &loaded.suite,
             Some(&self.project_root),
-            &document.metadata.path,
-            &document.metadata.sha256,
+            &loaded.source_path,
+            &loaded.source_sha256,
             &event_catalog,
             quality_suite_run_provenance(),
         );
@@ -414,6 +384,38 @@ impl MonogatariMcpServer {
         .map(Json)
         .map_err(McpToolError::transaction)
         .map_err(Json)
+    }
+}
+
+fn quality_suite_source_error(error: QualitySuiteSourceError) -> McpToolError {
+    match error {
+        QualitySuiteSourceError::Catalog(error) => McpToolError::catalog(error),
+        QualitySuiteSourceError::WrongCatalog {
+            path,
+            actual_catalog,
+        } => McpToolError::project(
+            "Quality Suite execution only accepts paths inside `quality_suites`.",
+            Some(serde_json::json!({
+                "path": path,
+                "actual_catalog": actual_catalog.as_str(),
+                "required_catalog": "quality_suites"
+            })),
+        ),
+        QualitySuiteSourceError::FileTooLarge {
+            path,
+            size_bytes,
+            max_size_bytes,
+        } => McpToolError::project(
+            format!("Quality Suite documents cannot exceed {max_size_bytes} bytes."),
+            Some(serde_json::json!({
+                "path": path,
+                "size_bytes": size_bytes,
+                "max_size_bytes": max_size_bytes
+            })),
+        ),
+        QualitySuiteSourceError::InvalidDocument { path, message } => {
+            McpToolError::project(message, Some(serde_json::json!({ "path": path })))
+        }
     }
 }
 

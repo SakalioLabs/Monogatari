@@ -18,16 +18,18 @@ test('checked-in Quality and Workflow headless contracts return passing evidence
   assert.deepEqual(evidence.issues, [])
   assert.deepEqual(evidence.requirementCounts, {
     qualityInput: 11,
+    qualitySource: 18,
     workflowPreview: 11,
     workflowExecutionPolicy: 27,
     qualityExecution: 9,
-    runtimeTrace: 29,
+    runtimeTrace: 22,
   })
-  assert.equal(evidence.structuralCheckCount, 8)
+  assert.equal(evidence.structuralCheckCount, 13)
 })
 
 test('input, preview, execution, trace, and adapter drift stays independently actionable', async () => {
   const qualitySuitePath = path.join(authoringDirectory, 'quality_suite_validation.rs')
+  const qualitySuiteTestsPath = path.join(authoringDirectory, 'quality_suite_validation', 'tests.rs')
   const workflowPath = path.join(authoringDirectory, 'workflow_validation.rs')
   const workflowExecutionPolicyPath = path.join(authoringDirectory, 'workflow_execution_policy.rs')
   const workflowExecutionPolicyTestsPath = path.join(authoringDirectory, 'workflow_execution_policy', 'tests.rs')
@@ -35,13 +37,23 @@ test('input, preview, execution, trace, and adapter drift stays independently ac
   const qualityExecutionPath = path.join(authoringDirectory, 'quality_suite_execution.rs')
   const tauriQualityPath = path.join(commandDirectory, 'quality_suite.rs')
   const tauriWorkflowPath = path.join(commandDirectory, 'workflow.rs')
+  const mcpServerPath = path.join(rustDirectory, 'crates', 'mcp-server', 'src', 'server.rs')
   const evidence = await collectTauriQualityWorkflowEvidence({
     ...boundaries,
     async readTextFile(filePath, encoding) {
       const source = await readFile(filePath, encoding)
       const resolved = path.resolve(filePath)
       if (resolved === qualitySuitePath) {
-        return source.replaceAll('pub struct QualitySuiteDocument', 'pub struct DriftedQualitySuiteDocument')
+        return source
+          .replaceAll('pub struct QualitySuiteDocument', 'pub struct DriftedQualitySuiteDocument')
+          .replaceAll('pub fn load_project_quality_suite_document', 'pub fn load_drifted_quality_suite_document')
+          .replaceAll('read_project_json(project_root, requested_path)?', 'read_drifted_project_json(project_root, requested_path)?')
+      }
+      if (resolved === qualitySuiteTestsPath) {
+        return source.replaceAll(
+          'rejects_non_quality_oversized_and_case_aliased_sources',
+          'drifts_non_quality_oversized_and_case_aliased_sources',
+        )
       }
       if (resolved === workflowPath) {
         return source.replaceAll('pub struct WorkflowRunContext', 'pub struct DriftedWorkflowRunContext')
@@ -75,8 +87,16 @@ test('input, preview, execution, trace, and adapter drift stays independently ac
               'parse_quality_suite_document(content)',
               'serde_json::from_str(content).map_err(|error| error.to_string())',
             )
-            .replaceAll('pub struct QualitySuiteSummary', 'pub struct DriftedQualitySuiteSummary'),
+            .replaceAll('QualitySuiteSummary', 'DriftedQualitySuiteSummary')
+            .replaceAll('list_project_quality_suite_summaries', 'list_drifted_quality_suite_summaries')
+            .replaceAll('load_project_quality_suite_document', 'load_drifted_quality_suite_document')
+            .replace(
+              'pub(crate) fn parse_quality_suite',
+              'fn drifted_quality_file_read() { let _ = std::fs::read_to_string("suite.json"); }\n\npub(crate) fn parse_quality_suite',
+            ),
+          'pub struct QualitySuiteSummary {}',
           'pub struct QualityScenario {}',
+          'fn quality_suite_sha256() {}',
           'fn run_quality_scenario() {}',
           '',
         ].join('\\n')
@@ -90,6 +110,14 @@ test('input, preview, execution, trace, and adapter drift stays independently ac
           '',
         ].join('\\n')
       }
+      if (resolved === mcpServerPath) {
+        return source
+          .replaceAll('load_project_quality_suite_document', 'read_project_json')
+          .replace(
+            'let loaded = read_project_json(&self.project_root, &request.path)',
+            'let source = serde_json::to_string(&request.path).unwrap();\n        let loaded = read_project_json(&self.project_root, &request.path)',
+          )
+      }
       return source
     },
   })
@@ -100,6 +128,16 @@ test('input, preview, execution, trace, and adapter drift stays independently ac
     'Tauri Quality commands must not duplicate shared headless input models',
     'Tauri Workflow commands must not duplicate the shared run-context model',
     'Tauri Quality parsing must delegate directly to the shared headless parser',
+    'Headless Quality sources must own exact bounded Quality source loading',
+    'Headless Quality sources must test catalog, size, and exact-case boundaries',
+    'Headless Quality sources must reuse the shared Quality summary model',
+    'Headless Quality sources must delegate Quality listing to the shared source domain',
+    'Headless Quality sources must delegate MCP Quality loading to the shared source domain',
+    'Shared Quality source loading must reuse the exact bounded JSON catalog reader',
+    'Tauri Quality commands must not redeclare the shared summary model',
+    'Tauri Quality commands must not redeclare shared source path, hash, or summary helpers',
+    'Tauri Quality commands must not read project suite files outside the shared source domain',
+    'MCP Quality execution must consume the shared loaded source without reserialization',
     'Headless Workflow preview must make random branches reproducible',
     'Tauri Workflow commands must not redeclare the headless preview state machine',
     'Quality Workflow coverage must execute through the headless preview domain',
@@ -110,7 +148,6 @@ test('input, preview, execution, trace, and adapter drift stays independently ac
     'Headless Quality execution must own complete Quality Suite execution',
     'Tauri Quality commands must not redeclare headless scenario execution or evidence logic',
     'Quality suite runtime safety tracing must reuse the chat safety trace contract in quality reports',
-    'Quality suite runtime safety tracing must export quality suite summaries for the workbench',
   ]) {
     assert(evidence.issues.includes(issue), issue)
   }
