@@ -35,6 +35,8 @@ node scripts/sync-project-mirror.mjs --check
 
 Use structured JSON editing and preserve unrelated author changes. Do not invent a parallel schema or bypass runtime validation with a custom parser.
 
+Knowledge entries use lowercase portable IDs and normalized lowercase category labels. Trim titles, content, tags, and `related_entries`; deduplicate tags case-insensitively and relations exactly; keep importance in `0..=1`; and create every related target in the same transaction or beforehand. `relatedEntries` remains a read-compatibility alias for legacy projects, but new Agent output must write canonical `related_entries`. Core-runtime acceptance rejects non-canonical or dangling Knowledge candidates and rolls the transaction back.
+
 ## Apply Agent Transactions Safely
 
 When an Agent transport offers transaction planning or application, read [references/agent-transaction.md](references/agent-transaction.md). Use `missing` only for new files and an exact current SHA-256 for updates or deletions. Plan first, review every resolved path and resulting hash, then apply with the authoritative candidate-project validator. Do not use the transaction API as a substitute for graph, runtime, package, or experience validation.

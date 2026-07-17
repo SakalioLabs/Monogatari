@@ -8,6 +8,8 @@ pub mod delivery_validation;
 pub mod dialogue_validation;
 pub mod filesystem;
 pub mod json_catalog;
+pub mod knowledge_documents;
+pub mod knowledge_validation;
 pub mod paths;
 pub mod project;
 pub mod project_package;

@@ -35,6 +35,7 @@
 - Keep IDs stable after downstream references exist. Prefer lowercase ASCII IDs with underscores or hyphens unless the active runtime contract is stricter.
 - Make every dialogue and workflow node reachable from its start node, with intentional terminal paths.
 - Do not reference a character, scene, dialogue, ending, event, knowledge entry, or asset that does not exist.
+- Write Knowledge with canonical `related_entries`, lowercase portable IDs/categories, trimmed unique tags and relations, bounded metadata, and importance in `0..=1`; relations cannot target the source entry itself.
 - Keep generated story text separate from system prompts, tool calls, hidden reasoning, and runtime control data.
 - Prove important branches with Quality Suite scenarios, including negative cases and boundary thresholds.
 - Do not ship secrets in `settings.json`, project packages, logs, fixtures, or verification reports.

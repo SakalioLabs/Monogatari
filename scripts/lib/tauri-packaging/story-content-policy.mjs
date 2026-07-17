@@ -23,8 +23,36 @@ export async function collectTauriStoryContentEvidence(options = {}) {
     path.join(authoringDirectory, 'dialogue_validation', 'tests.rs'),
     'utf8',
   )
+  const authoringKnowledgeDocumentsSource = await readFile(
+    path.join(authoringDirectory, 'knowledge_documents.rs'),
+    'utf8',
+  )
+  const authoringKnowledgeDocumentsTestsSource = await readFile(
+    path.join(authoringDirectory, 'knowledge_documents', 'tests.rs'),
+    'utf8',
+  )
+  const authoringKnowledgeValidationSource = await readFile(
+    path.join(authoringDirectory, 'knowledge_validation.rs'),
+    'utf8',
+  )
+  const authoringKnowledgeValidationTestsSource = await readFile(
+    path.join(authoringDirectory, 'knowledge_validation', 'tests.rs'),
+    'utf8',
+  )
   const authoringRuntimeValidationSource = await readFile(
     path.join(authoringDirectory, 'runtime_validation.rs'),
+    'utf8',
+  )
+  const authoringRuntimeValidationTestsSource = await readFile(
+    path.join(authoringDirectory, 'runtime_validation', 'tests.rs'),
+    'utf8',
+  )
+  const gameKnowledgeEntrySource = await readFile(
+    path.join(rustDirectory, 'crates', 'game', 'src', 'knowledge', 'knowledge_entry.rs'),
+    'utf8',
+  )
+  const gameKnowledgeBaseSource = await readFile(
+    path.join(rustDirectory, 'crates', 'game', 'src', 'knowledge', 'knowledge_base.rs'),
     'utf8',
   )
   const tauriStoryProgressSource = await readFile(
@@ -141,9 +169,30 @@ export async function collectTauriStoryContentEvidence(options = {}) {
     [tauriKnowledgeCommandsSource, 'stage_json_replacement', 'stage atomic knowledge document replacements'],
     [tauriKnowledgeCommandsSource, 'staged.rollback().await?', 'restore rejected knowledge document replacements'],
     [tauriKnowledgeCommandsSource, 'knowledge_references(&project_root', 'protect referenced knowledge entries from deletion'],
-    [tauriKnowledgeCommandsSource, 'validate_knowledge_relations', 'validate related knowledge ids before catalog activation'],
-    [tauriKnowledgeCommandsSource, 'authoring_loader_supports_single_and_array_documents', 'test single-entry and array knowledge documents'],
-    [tauriKnowledgeCommandsSource, 'validation_rejects_non_portable_ids_and_out_of_range_importance', 'test knowledge authoring validation boundaries'],
+    [tauriKnowledgeCommandsSource, 'load_knowledge_documents(project_root', 'delegate desktop Knowledge loading to the headless document domain'],
+    [tauriKnowledgeCommandsSource, 'ensure_valid_knowledge_catalog', 'delegate desktop Knowledge saves to shared catalog validation'],
+    [tauriKnowledgeCommandsSource, 'knowledge_save_rejects_stale_or_invalid_updates_and_hot_reloads_runtime', 'test Knowledge save, stale-write, validation, and hot-reload behavior'],
+    [tauriKnowledgeCommandsSource, 'knowledge_delete_requires_character_and_related_entry_references_to_be_removed', 'test complete Knowledge deletion reference protection'],
+    [authoringKnowledgeValidationSource, 'pub fn normalize_knowledge_entry', 'own canonical Knowledge normalization in the headless authoring domain'],
+    [authoringKnowledgeValidationSource, 'pub fn validate_knowledge_catalog', 'own Knowledge field, bound, duplicate, and relation validation in the headless authoring domain'],
+    [authoringKnowledgeValidationSource, 'pub struct KnowledgeValidationResult', 'return structured transport-neutral Knowledge validation evidence'],
+    [authoringKnowledgeValidationSource, 'MAX_KNOWLEDGE_VALIDATION_ISSUES', 'bound structured Knowledge validation evidence'],
+    [authoringKnowledgeValidationTestsSource, 'validation_reports_authoring_rules_beyond_runtime_deserialization', 'test Knowledge authoring limits independently of Tauri'],
+    [authoringKnowledgeValidationTestsSource, 'validation_evidence_is_deterministic_and_bounded', 'stabilize and bound Knowledge validation evidence'],
+    [authoringKnowledgeDocumentsSource, 'pub fn load_knowledge_documents', 'own bounded Knowledge document loading in the headless authoring domain'],
+    [authoringKnowledgeDocumentsSource, 'MAX_KNOWLEDGE_FILES', 'bound Knowledge catalog file counts'],
+    [authoringKnowledgeDocumentsSource, 'MAX_KNOWLEDGE_CATALOG_BYTES', 'bound aggregate Knowledge catalog bytes'],
+    [authoringKnowledgeDocumentsSource, 'metadata.file_type().is_symlink()', 'reject symlinked Knowledge files'],
+    [authoringKnowledgeDocumentsSource, 'knowledge_unknown_field', 'reject unknown Knowledge entry fields'],
+    [authoringKnowledgeDocumentsSource, 'pub fn knowledge_base_from_documents', 'build runtime Knowledge from the validated normalized catalog'],
+    [authoringKnowledgeDocumentsTestsSource, 'loader_supports_single_and_array_documents_with_legacy_relations', 'test Knowledge shapes, legacy relations, and category fidelity independently'],
+    [authoringKnowledgeDocumentsTestsSource, 'loader_returns_structured_authoring_validation_evidence', 'test structured Knowledge loader rejection evidence'],
+    [authoringRuntimeValidationSource, 'load_knowledge_documents(project_root, directory)', 'apply shared Knowledge loading and authoring rules to Agent runtime acceptance'],
+    [authoringRuntimeValidationTestsSource, 'rejects_knowledge_authoring_rules_that_runtime_deserialization_accepts', 'test Agent Knowledge rejection beyond deserialization'],
+    [gameKnowledgeEntrySource, 'alias = "relatedEntries"', 'preserve legacy Knowledge relation fields in the real runtime model'],
+    [gameKnowledgeEntrySource, '_ => KnowledgeCategory::Other(normalized)', 'preserve creator-defined normalized Knowledge categories'],
+    [gameKnowledgeBaseSource, '.total_cmp(&left.0)', 'keep Knowledge search ordering total and panic-free'],
+    [gameKnowledgeBaseSource, 'entries.sort_by(|left, right| left.id.cmp(&right.id))', 'return deterministic Knowledge entry order'],
     [tauriContentReferencesSource, 'pub fn knowledge_references', 'discover character-pinned knowledge references'],
     [tauriContentReferencesSource, 'knowledge_references_find_character_pins', 'test character-pinned knowledge reference discovery'],
   ]
@@ -196,13 +245,16 @@ export async function collectTauriStoryContentEvidence(options = {}) {
   if (/fn (?:normalize_dialogue_script|validate_dialogue_script|validate_dialogue_text)\s*\(/.test(tauriDialogueCommandsSource)) {
     issues.push('Story content integration must keep Dialogue normalization and validation out of Tauri commands')
   }
+  if (/fn (?:normalize_knowledge_entry|validate_knowledge_entry|validate_knowledge_catalog|load_knowledge_documents|knowledge_catalog_fingerprint)\s*\(/.test(tauriKnowledgeCommandsSource)) {
+    issues.push('Story content integration must keep Knowledge normalization, validation, and loading out of Tauri commands')
+  }
 
   return {
     issues,
     requirementCounts: Object.fromEntries(
       Object.entries(requirementGroups).map(([name, requirements]) => [name, requirements.length]),
     ),
-    structuralCheckCount: 1,
+    structuralCheckCount: 2,
   }
 }
 

@@ -20,12 +20,12 @@ test('checked-in Story Content authoring and runtime contracts return passing ev
     storyCatalog: 21,
     eventRuntime: 20,
     dialogueAuthoring: 19,
-    knowledgeAuthoring: 12,
+    knowledgeAuthoring: 33,
     sceneAuthoring: 8,
     endingAuthoring: 13,
     crossRuntime: 7,
   })
-  assert.equal(evidence.structuralCheckCount, 1)
+  assert.equal(evidence.structuralCheckCount, 2)
 })
 
 test('catalog, runtime, authoring surface, and progress drift stays independently actionable', async () => {
@@ -34,7 +34,14 @@ test('catalog, runtime, authoring surface, and progress drift stays independentl
     catalog: path.join(rustDirectory, 'crates', 'authoring', 'src', 'story_events.rs'),
     dialogueValidation: path.join(rustDirectory, 'crates', 'authoring', 'src', 'dialogue_validation.rs'),
     dialogueValidationTests: path.join(rustDirectory, 'crates', 'authoring', 'src', 'dialogue_validation', 'tests.rs'),
+    knowledgeDocuments: path.join(rustDirectory, 'crates', 'authoring', 'src', 'knowledge_documents.rs'),
+    knowledgeDocumentsTests: path.join(rustDirectory, 'crates', 'authoring', 'src', 'knowledge_documents', 'tests.rs'),
+    knowledgeValidation: path.join(rustDirectory, 'crates', 'authoring', 'src', 'knowledge_validation.rs'),
+    knowledgeValidationTests: path.join(rustDirectory, 'crates', 'authoring', 'src', 'knowledge_validation', 'tests.rs'),
     runtimeValidation: path.join(rustDirectory, 'crates', 'authoring', 'src', 'runtime_validation.rs'),
+    runtimeValidationTests: path.join(rustDirectory, 'crates', 'authoring', 'src', 'runtime_validation', 'tests.rs'),
+    gameKnowledgeEntry: path.join(rustDirectory, 'crates', 'game', 'src', 'knowledge', 'knowledge_entry.rs'),
+    gameKnowledgeBase: path.join(rustDirectory, 'crates', 'game', 'src', 'knowledge', 'knowledge_base.rs'),
     progress: path.join(tauriSourceDirectory, 'story_progress.rs'),
     access: path.join(tauriSourceDirectory, 'story_access.rs'),
     storyCommands: path.join(commandDirectory, 'story_events.rs'),
@@ -76,6 +83,38 @@ test('catalog, runtime, authoring surface, and progress drift stays independentl
             'validation_evidence_is_unbounded',
           )
       }
+      if (resolved === paths.knowledgeDocuments) {
+        return source
+          .replaceAll('pub fn load_knowledge_documents', 'pub fn load_desktop_knowledge_documents')
+          .replaceAll('knowledge_unknown_field', 'accepted_unknown_knowledge_field')
+      }
+      if (resolved === paths.knowledgeDocumentsTests) {
+        return source
+          .replaceAll(
+            'loader_supports_single_and_array_documents_with_legacy_relations',
+            'loader_ignores_legacy_relations',
+          )
+          .replaceAll(
+            'loader_returns_structured_authoring_validation_evidence',
+            'loader_returns_string_only_validation_evidence',
+          )
+      }
+      if (resolved === paths.knowledgeValidation) {
+        return source
+          .replaceAll('pub fn normalize_knowledge_entry', 'pub fn normalize_desktop_knowledge_entry')
+          .replaceAll('pub fn validate_knowledge_catalog', 'pub fn validate_desktop_knowledge_catalog')
+      }
+      if (resolved === paths.knowledgeValidationTests) {
+        return source
+          .replaceAll(
+            'validation_reports_authoring_rules_beyond_runtime_deserialization',
+            'validation_only_reports_deserialization_failures',
+          )
+          .replaceAll(
+            'validation_evidence_is_deterministic_and_bounded',
+            'validation_evidence_is_unbounded',
+          )
+      }
       if (resolved === paths.runtimeValidation) {
         return source
           .replaceAll(
@@ -83,6 +122,29 @@ test('catalog, runtime, authoring surface, and progress drift stays independentl
             'validate_runtime_dialogue_script(&dialogue, character_ids)',
           )
           .replaceAll('dialogue_not_canonical', 'dialogue_normalization_ignored')
+          .replaceAll(
+            'load_knowledge_documents(project_root, directory)',
+            'load_runtime_knowledge_documents(project_root, directory)',
+          )
+      }
+      if (resolved === paths.runtimeValidationTests) {
+        return source.replaceAll(
+          'rejects_knowledge_authoring_rules_that_runtime_deserialization_accepts',
+          'accepts_knowledge_authoring_rules_after_deserialization',
+        )
+      }
+      if (resolved === paths.gameKnowledgeEntry) {
+        return source
+          .replaceAll('alias = "relatedEntries"', 'alias = "legacyRelationsIgnored"')
+          .replaceAll('_ => KnowledgeCategory::Other(normalized)', '_ => KnowledgeCategory::Lore')
+      }
+      if (resolved === paths.gameKnowledgeBase) {
+        return source
+          .replaceAll('.total_cmp(&left.0)', '.partial_cmp(&left.0).unwrap()')
+          .replaceAll(
+            'entries.sort_by(|left, right| left.id.cmp(&right.id))',
+            'entries.reverse()',
+          )
       }
       if (resolved === paths.storyCommands) {
         return source.replaceAll('save_story_event_catalog', 'store_story_event_catalog')
@@ -103,7 +165,10 @@ test('catalog, runtime, authoring surface, and progress drift stays independentl
 fn validate_dialogue_script() {}`
       }
       if (resolved === paths.knowledge) {
-        return source.replaceAll('knowledge_catalog_fingerprint', 'knowledge_catalog_revision')
+        return `${source
+          .replaceAll('knowledge_catalog_fingerprint', 'knowledge_catalog_revision')
+          .replaceAll('ensure_valid_knowledge_catalog', 'validate_desktop_knowledge_catalog')}
+fn validate_knowledge_catalog() {}`
       }
       if (resolved === paths.scenes) {
         return source.replaceAll('scene_authoring_catalog_fingerprint', 'scene_catalog_revision')
@@ -138,6 +203,22 @@ fn validate_dialogue_script() {}`
     'Story content integration must delegate desktop Dialogue validation to the headless authoring domain',
     'Story content integration must keep Dialogue normalization and validation out of Tauri commands',
     'Story content integration must fingerprint knowledge catalogs for optimistic concurrency',
+    'Story content integration must own canonical Knowledge normalization in the headless authoring domain',
+    'Story content integration must own Knowledge field, bound, duplicate, and relation validation in the headless authoring domain',
+    'Story content integration must test Knowledge authoring limits independently of Tauri',
+    'Story content integration must stabilize and bound Knowledge validation evidence',
+    'Story content integration must own bounded Knowledge document loading in the headless authoring domain',
+    'Story content integration must reject unknown Knowledge entry fields',
+    'Story content integration must test Knowledge shapes, legacy relations, and category fidelity independently',
+    'Story content integration must test structured Knowledge loader rejection evidence',
+    'Story content integration must apply shared Knowledge loading and authoring rules to Agent runtime acceptance',
+    'Story content integration must test Agent Knowledge rejection beyond deserialization',
+    'Story content integration must preserve legacy Knowledge relation fields in the real runtime model',
+    'Story content integration must preserve creator-defined normalized Knowledge categories',
+    'Story content integration must keep Knowledge search ordering total and panic-free',
+    'Story content integration must return deterministic Knowledge entry order',
+    'Story content integration must delegate desktop Knowledge saves to shared catalog validation',
+    'Story content integration must keep Knowledge normalization, validation, and loading out of Tauri commands',
     'Story content integration must fingerprint authored and inferred scenes for optimistic concurrency',
     'Story content integration must fingerprint ending catalogs for optimistic concurrency',
     'Story content integration must run quality scenarios against project event rules',

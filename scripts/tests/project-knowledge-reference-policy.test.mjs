@@ -27,13 +27,14 @@ test('checked-in Knowledge references return cross-root passing evidence', async
   assert.deepEqual(
     {
       pinnedRefCount: evidence.pinnedRefCount,
+      relatedRefCount: evidence.relatedRefCount,
       knowledgeCount: evidence.knowledgeCount,
       characterCount: evidence.characterCount,
     },
-    { pinnedRefCount: 48, knowledgeCount: 66, characterCount: 40 },
+    { pinnedRefCount: 48, relatedRefCount: 6, knowledgeCount: 66, characterCount: 40 },
   )
   assert.deepEqual(messages, [
-    '[release] Knowledge refs OK (48 pinned ref(s), 66 knowledge record(s), 40 character record(s))',
+    '[release] Knowledge refs OK (48 pinned ref(s), 6 related ref(s), 66 knowledge record(s), 40 character record(s))',
   ])
 })
 
@@ -41,6 +42,7 @@ test('record, id, alias, item, and missing-reference drift stays independently a
   const invalidKnowledgePath = path.join(repositoryRoot, 'data', 'knowledge', 'aoi_herbal_lore.json')
   const missingIdPath = path.join(repositoryRoot, 'data', 'knowledge', 'constellation_map.json')
   const duplicateIdPath = path.join(repositoryRoot, 'data', 'knowledge', 'sakura_art_knowledge.json')
+  const relatedPath = path.join(repositoryRoot, 'data', 'knowledge', 'example_world.json')
   const invalidCharacterPath = path.join(repositoryRoot, 'data', 'characters', 'kenji.json')
   const sakuraPath = path.join(repositoryRoot, 'data', 'characters', 'sakura.json')
   const evidence = await collectProjectKnowledgeReferenceEvidence({
@@ -59,6 +61,13 @@ test('record, id, alias, item, and missing-reference drift stays independently a
         entries[0].id = 'sakura_nature'
         return JSON.stringify(entries)
       }
+      if (resolved === relatedPath) {
+        const entries = JSON.parse(source)
+        entries[0].relatedEntries = ['location_park', 'missing_related', ' ', 7, 'missing_related']
+        entries[1].related_entries = { invalid: true }
+        entries[2].related_entries = ['location_park']
+        return JSON.stringify(entries)
+      }
       if (resolved === invalidCharacterPath) return 'null'
       if (resolved === sakuraPath) {
         const character = JSON.parse(source)
@@ -75,6 +84,14 @@ test('record, id, alias, item, and missing-reference drift stays independently a
     'data/knowledge/aoi_herbal_lore.json: knowledge records must be JSON objects',
     'data/knowledge/constellation_map.json:<missing-knowledge-id>: knowledge id is required',
     'data/knowledge/sakura_nature.json:sakura_nature: duplicate knowledge id in data',
+    'data/knowledge/example_world.json:location_park relatedEntries: knowledge entries cannot reference themselves',
+    'data/knowledge/example_world.json:location_park relatedEntries: missing related knowledge ref "missing_related" in data/knowledge',
+    'data/knowledge/example_world.json:location_park relatedEntries[2]: related knowledge ref must be a non-empty string',
+    'data/knowledge/example_world.json:location_park relatedEntries[3]: related knowledge ref must be a non-empty string',
+    'data/knowledge/example_world.json:location_park relatedEntries: duplicate related knowledge ref "missing_related"',
+    'data/knowledge/example_world.json:item_cherry_blossom: related_entries and relatedEntries cannot both be present',
+    'data/knowledge/example_world.json:item_cherry_blossom related_entries: related knowledge refs must be an array',
+    'data/knowledge/example_world.json:lore_world: related_entries and relatedEntries cannot both be present',
     'data/characters/kenji.json: character records must be JSON objects',
     'data/characters/sakura.json:sakura knowledgeRefs: pinned knowledge refs must be an array',
     'data/characters/sakura.json:sakura knowledge_refs[2]: pinned knowledge ref must be a non-empty string',
@@ -118,5 +135,7 @@ test('release runner delegates Knowledge references without retaining reference 
   assert(!runnerSource.includes('missing pinned knowledge ref'))
   assert(policySource.includes('async function collectKnowledgeReferenceEvidence'))
   assert(policySource.includes('function knowledgeRefFields'))
+  assert(policySource.includes('function relatedKnowledgeRefFields'))
   assert(policySource.includes('missing pinned knowledge ref'))
+  assert(policySource.includes('missing related knowledge ref'))
 })

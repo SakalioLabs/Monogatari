@@ -21,16 +21,7 @@ impl Serialize for KnowledgeCategory {
     where
         S: Serializer,
     {
-        let value = match self {
-            KnowledgeCategory::Location => "location",
-            KnowledgeCategory::Character => "character",
-            KnowledgeCategory::Item => "item",
-            KnowledgeCategory::Lore => "lore",
-            KnowledgeCategory::Event => "event",
-            KnowledgeCategory::Rule => "rule",
-            KnowledgeCategory::Other(value) => value,
-        };
-        serializer.serialize_str(value)
+        serializer.serialize_str(self.as_str())
     }
 }
 
@@ -40,21 +31,41 @@ impl<'de> Deserialize<'de> for KnowledgeCategory {
         D: Deserializer<'de>,
     {
         let value = String::deserialize(deserializer)?;
+        Ok(Self::from_label(&value))
+    }
+}
+
+impl KnowledgeCategory {
+    /// Return the normalized category label stored in project JSON.
+    pub fn as_str(&self) -> &str {
+        match self {
+            KnowledgeCategory::Location => "location",
+            KnowledgeCategory::Character => "character",
+            KnowledgeCategory::Item => "item",
+            KnowledgeCategory::Lore => "lore",
+            KnowledgeCategory::Event => "event",
+            KnowledgeCategory::Rule => "rule",
+            KnowledgeCategory::Other(value) => value,
+        }
+    }
+
+    /// Normalize a project category while preserving creator-defined labels.
+    pub fn from_label(value: &str) -> Self {
         let normalized = value.trim().to_ascii_lowercase();
-        Ok(match normalized.as_str() {
+        match normalized.as_str() {
             "location" => KnowledgeCategory::Location,
             "character" => KnowledgeCategory::Character,
             "item" => KnowledgeCategory::Item,
-            "lore" | "world_lore" => KnowledgeCategory::Lore,
+            "lore" => KnowledgeCategory::Lore,
             "event" => KnowledgeCategory::Event,
             "rule" => KnowledgeCategory::Rule,
             _ => KnowledgeCategory::Other(normalized),
-        })
+        }
     }
 }
 
 /// A single knowledge base entry.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct KnowledgeEntry {
     /// Unique identifier.
     pub id: String,
@@ -74,7 +85,7 @@ pub struct KnowledgeEntry {
     #[serde(default)]
     pub metadata: HashMap<String, serde_json::Value>,
     /// IDs of related entries.
-    #[serde(default)]
+    #[serde(default, alias = "relatedEntries")]
     pub related_entries: Vec<String>,
 }
 

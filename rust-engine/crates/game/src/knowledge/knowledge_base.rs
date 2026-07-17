@@ -1,6 +1,6 @@
 //! Knowledge base with keyword-based relevance search.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
 use tracing::info;
@@ -30,12 +30,27 @@ impl KnowledgeBase {
     pub fn add_entry(&mut self, entry: KnowledgeEntry) {
         let id = entry.id.clone();
 
+        if self.entries.remove(&id).is_some() {
+            self.tag_index.retain(|_, ids| {
+                ids.retain(|existing_id| existing_id != &id);
+                !ids.is_empty()
+            });
+            self.category_index.retain(|_, ids| {
+                ids.retain(|existing_id| existing_id != &id);
+                !ids.is_empty()
+            });
+        }
+
         // Index by tags
+        let mut indexed_tags = HashSet::new();
         for tag in &entry.tags {
-            self.tag_index
-                .entry(tag.to_lowercase())
-                .or_default()
-                .push(id.clone());
+            let normalized = tag.to_lowercase();
+            if indexed_tags.insert(normalized.clone()) {
+                self.tag_index
+                    .entry(normalized)
+                    .or_default()
+                    .push(id.clone());
+            }
         }
 
         // Index by category
@@ -105,7 +120,12 @@ impl KnowledgeBase {
             })
             .collect();
 
-        scored.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
+        scored.sort_by(|left, right| {
+            right
+                .0
+                .total_cmp(&left.0)
+                .then_with(|| left.1.id.cmp(&right.1.id))
+        });
         scored.into_iter().take(limit).map(|(_, e)| e).collect()
     }
 
@@ -174,17 +194,23 @@ impl KnowledgeBase {
 
     /// Get all entries as a vector.
     pub fn all_entries(&self) -> Vec<&KnowledgeEntry> {
-        self.entries.values().collect()
+        let mut entries = self.entries.values().collect::<Vec<_>>();
+        entries.sort_by(|left, right| left.id.cmp(&right.id));
+        entries
     }
 
     /// Get all unique tags across all entries.
     pub fn all_tags(&self) -> Vec<String> {
-        self.tag_index.keys().cloned().collect()
+        let mut tags = self.tag_index.keys().cloned().collect::<Vec<_>>();
+        tags.sort();
+        tags
     }
 
     /// Get all unique categories across all entries.
     pub fn all_categories(&self) -> Vec<KnowledgeCategory> {
-        self.category_index.keys().cloned().collect()
+        let mut categories = self.category_index.keys().cloned().collect::<Vec<_>>();
+        categories.sort_by(|left, right| left.as_str().cmp(right.as_str()));
+        categories
     }
 
     /// Get the total number of entries.
@@ -233,7 +259,10 @@ mod tests {
 
         assert_eq!(loaded, 1);
         let entry = knowledge.get_entry("sakura_nature").unwrap();
-        assert_eq!(entry.category, KnowledgeCategory::Lore);
+        assert_eq!(
+            entry.category,
+            KnowledgeCategory::Other("world_lore".to_string())
+        );
     }
 
     #[tokio::test]
@@ -256,5 +285,81 @@ mod tests {
         let _ = std::fs::remove_file(&file_path);
         assert!(error.to_string().contains("Duplicate knowledge id: lore"));
         assert_eq!(knowledge.all_entries().len(), 1);
+    }
+
+    #[tokio::test]
+    async fn loading_preserves_custom_categories_and_legacy_relations() {
+        let file_path = std::env::temp_dir().join(format!(
+            "monogatari-knowledge-alias-{}-{}.json",
+            std::process::id(),
+            chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+        ));
+        std::fs::write(
+            &file_path,
+            r#"{
+              "id":"world","category":"World_Lore","title":"World","content":"Lore",
+              "relatedEntries":["place"]
+            }"#,
+        )
+        .unwrap();
+
+        let mut knowledge = KnowledgeBase::new();
+        knowledge.load_from_file(&file_path).await.unwrap();
+        let _ = std::fs::remove_file(&file_path);
+
+        let entry = knowledge.get_entry("world").unwrap();
+        assert_eq!(entry.category.as_str(), "world_lore");
+        assert_eq!(entry.related_entries, ["place"]);
+    }
+
+    #[test]
+    fn replacement_rebuilds_indexes_and_public_lists_are_sorted() {
+        let mut knowledge = KnowledgeBase::new();
+        let mut original = KnowledgeEntry::new(
+            "entry_b",
+            KnowledgeCategory::Lore,
+            "Shared",
+            "Shared content",
+        );
+        original.tags = vec!["Old".to_string(), "old".to_string()];
+        knowledge.add_entry(original);
+        knowledge.add_entry(KnowledgeEntry::new(
+            "entry_a",
+            KnowledgeCategory::Character,
+            "Shared",
+            "Shared content",
+        ));
+
+        let mut replacement = KnowledgeEntry::new(
+            "entry_b",
+            KnowledgeCategory::Rule,
+            "Shared",
+            "Shared content",
+        );
+        replacement.tags = vec!["New".to_string()];
+        knowledge.add_entry(replacement);
+
+        assert!(knowledge.get_by_tag("old").is_empty());
+        assert_eq!(knowledge.get_by_tag("new").len(), 1);
+        assert!(knowledge
+            .get_by_category(&KnowledgeCategory::Lore)
+            .is_empty());
+        assert_eq!(
+            knowledge
+                .all_entries()
+                .into_iter()
+                .map(|entry| entry.id.as_str())
+                .collect::<Vec<_>>(),
+            ["entry_a", "entry_b"]
+        );
+        assert_eq!(knowledge.all_tags(), ["new"]);
+        assert_eq!(
+            knowledge
+                .search("shared", 10)
+                .into_iter()
+                .map(|entry| entry.id.as_str())
+                .collect::<Vec<_>>(),
+            ["entry_a", "entry_b"]
+        );
     }
 }

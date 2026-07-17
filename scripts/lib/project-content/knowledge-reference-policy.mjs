@@ -28,11 +28,13 @@ export function createProjectKnowledgeReferencePolicy(options = {}) {
     let characterCount = 0
     let knowledgeCount = 0
     let pinnedRefCount = 0
+    let relatedRefCount = 0
 
     for (const dataRoot of dataRoots) {
       const knowledgeDir = path.join(dataRoot.dir, 'knowledge')
       const charactersDir = path.join(dataRoot.dir, 'characters')
       const knowledgeIds = new Set()
+      const knowledgeRecords = []
 
       for (const file of await jsonFilesInDir(knowledgeDir, issues)) {
         const value = JSON.parse(await readTextFile(file, 'utf8'))
@@ -53,7 +55,27 @@ export function createProjectKnowledgeReferencePolicy(options = {}) {
             continue
           }
           knowledgeIds.add(id)
+          knowledgeRecords.push({ entry, entryLabel, id })
           knowledgeCount += 1
+        }
+      }
+
+      for (const { entry, entryLabel, id } of knowledgeRecords) {
+        for (const [fieldName, refs] of relatedKnowledgeRefFields(entry, entryLabel, issues)) {
+          const seen = new Set()
+          for (const ref of refs) {
+            relatedRefCount += 1
+            if (seen.has(ref)) {
+              issues.push(`${entryLabel} ${fieldName}: duplicate related knowledge ref "${ref}"`)
+              continue
+            }
+            seen.add(ref)
+            if (ref === id) {
+              issues.push(`${entryLabel} ${fieldName}: knowledge entries cannot reference themselves`)
+            } else if (!knowledgeIds.has(ref)) {
+              issues.push(`${entryLabel} ${fieldName}: missing related knowledge ref "${ref}" in ${dataRoot.label}/knowledge`)
+            }
+          }
         }
       }
 
@@ -83,6 +105,7 @@ export function createProjectKnowledgeReferencePolicy(options = {}) {
     return {
       issues,
       pinnedRefCount,
+      relatedRefCount,
       knowledgeCount,
       characterCount,
     }
@@ -94,7 +117,7 @@ export function createProjectKnowledgeReferencePolicy(options = {}) {
       throw new Error(`Knowledge ref verification failed:\n${evidence.issues.join('\n')}`)
     }
     log(
-      `[release] Knowledge refs OK (${evidence.pinnedRefCount} pinned ref(s), ${evidence.knowledgeCount} knowledge record(s), ${evidence.characterCount} character record(s))`,
+      `[release] Knowledge refs OK (${evidence.pinnedRefCount} pinned ref(s), ${evidence.relatedRefCount} related ref(s), ${evidence.knowledgeCount} knowledge record(s), ${evidence.characterCount} character record(s))`,
     )
     return evidence
   }
@@ -122,6 +145,32 @@ function knowledgeRefFields(character, characterLabel, issues) {
     for (const [index, item] of value.entries()) {
       if (typeof item !== 'string' || !item.trim()) {
         issues.push(`${characterLabel} ${fieldName}[${index}]: pinned knowledge ref must be a non-empty string`)
+        continue
+      }
+      refs.push(item.trim())
+    }
+    fields.push([fieldName, refs])
+  }
+  return fields
+}
+
+function relatedKnowledgeRefFields(entry, entryLabel, issues) {
+  const fields = []
+  const present = ['related_entries', 'relatedEntries']
+    .filter((fieldName) => entry?.[fieldName] !== undefined && entry?.[fieldName] !== null)
+  if (present.length > 1) {
+    issues.push(`${entryLabel}: related_entries and relatedEntries cannot both be present`)
+  }
+  for (const fieldName of present) {
+    const value = entry[fieldName]
+    if (!Array.isArray(value)) {
+      issues.push(`${entryLabel} ${fieldName}: related knowledge refs must be an array`)
+      continue
+    }
+    const refs = []
+    for (const [index, item] of value.entries()) {
+      if (typeof item !== 'string' || !item.trim()) {
+        issues.push(`${entryLabel} ${fieldName}[${index}]: related knowledge ref must be a non-empty string`)
         continue
       }
       refs.push(item.trim())

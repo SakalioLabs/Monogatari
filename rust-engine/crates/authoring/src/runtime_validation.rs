@@ -13,6 +13,7 @@ use crate::dialogue_validation::{normalize_dialogue_script, validate_dialogue_sc
 use crate::json_catalog::{
     inspect_project_json_catalog, JsonAcceptanceLevel, JsonCatalogIssueSeverity,
 };
+use crate::knowledge_documents::{knowledge_base_from_documents, load_knowledge_documents};
 use crate::project::inspect_project_config;
 use crate::quality_suite_validation::{
     load_project_quality_suites, validate_quality_suite_references,
@@ -107,8 +108,7 @@ pub async fn load_core_runtime_project(project_root: &Path) -> Result<CoreRuntim
     load_characters(&mut characters, &characters_dir, &mut issues).await;
     let mut dialogues = DialogueManager::new();
     load_dialogues(&mut dialogues, &dialogue_dir, &mut issues).await;
-    let mut knowledge = KnowledgeBase::new();
-    load_knowledge(&mut knowledge, &knowledge_dir, &mut issues).await;
+    let knowledge = load_knowledge(project_root, &knowledge_dir, &mut issues);
 
     let character_ids = characters
         .character_ids()
@@ -402,23 +402,35 @@ async fn load_dialogues(
     }
 }
 
-async fn load_knowledge(
-    knowledge: &mut KnowledgeBase,
+fn load_knowledge(
+    project_root: &Path,
     directory: &Path,
     issues: &mut Vec<CoreRuntimeValidationIssue>,
-) {
-    match knowledge.load_from_directory(directory).await {
-        Ok(_) => {}
+) -> KnowledgeBase {
+    match load_knowledge_documents(project_root, directory) {
+        Ok(documents) => knowledge_base_from_documents(&documents),
         Err(error) => {
-            issues.push(issue(
-                if error.to_string().contains("Duplicate knowledge id") {
-                    "duplicate_knowledge_id"
-                } else {
-                    "knowledge_runtime_load_failed"
-                },
-                Some("knowledge"),
-                format!("Knowledge runtime loading failed: {error}"),
-            ));
+            if error.validation_issues().is_empty() {
+                issues.push(CoreRuntimeValidationIssue {
+                    code: error.code().to_string(),
+                    path: error.path().map(str::to_string),
+                    message: error.to_string(),
+                });
+            } else {
+                for validation_issue in error.validation_issues() {
+                    issues.push(CoreRuntimeValidationIssue {
+                        code: validation_issue.code.clone(),
+                        path: validation_issue
+                            .entry_id
+                            .as_deref()
+                            .filter(|entry_id| !entry_id.is_empty())
+                            .map(|entry_id| format!("knowledge/{entry_id}"))
+                            .or_else(|| error.path().map(str::to_string)),
+                        message: validation_issue.message.clone(),
+                    });
+                }
+            }
+            KnowledgeBase::new()
         }
     }
 }

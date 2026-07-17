@@ -119,17 +119,22 @@ The Dialogue Editor consumes `monogatari-dialogue-authoring-catalog/v1` snapshot
 
 ## Knowledge Format
 
-Knowledge entries are stored in `rust-engine/data/knowledge/`.
+Knowledge entries are stored as one object or a non-empty object array under the project `knowledge/` directory. The checked-in project is mirrored at `data/knowledge/` and `rust-engine/data/knowledge/`.
 
 ```json
 {
   "id": "knowledge_id",
   "title": "Entry Title",
   "content": "Detailed knowledge content for AI context",
-  "category": "location|character|lore|event",
-  "tags": ["tag1", "tag2"]
+  "category": "world_lore",
+  "tags": ["tag1", "tag2"],
+  "importance": 0.8,
+  "metadata": { "era": "spring" },
+  "related_entries": ["another_knowledge_id"]
 }
 ```
+
+IDs and category labels use 1 to 128 and 1 to 64 lowercase portable ASCII characters respectively. Titles, content, tags, metadata, relation counts, entries, files, and aggregate catalog bytes are bounded; importance is finite and in `0..=1`. Author output trims fields, deduplicates tags case-insensitively and relations exactly, and must reference existing non-self entries. `relatedEntries` is accepted only as a legacy read alias; canonical writes use `related_entries`. Unknown fields, empty arrays, duplicates, invalid UTF-8/JSON, symlinks, and non-canonical Agent candidates are rejected before runtime construction. Custom normalized categories such as `world_lore` are preserved rather than collapsed into a built-in category.
 
 ## Scene Format
 

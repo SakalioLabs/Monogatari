@@ -814,6 +814,39 @@ async fn writable_stdio_requires_reviewed_fingerprint_and_rolls_back_invalid_can
         .exists());
     client.cancel().await?;
 
+    let invalid_knowledge = TestProject::new("knowledge-runtime-rollback");
+    let client = connect(&invalid_knowledge.root, true).await?;
+    let transaction = AgentProjectTransaction {
+        schema: AGENT_TRANSACTION_SCHEMA_V1.to_string(),
+        transaction_id: "knowledge_authoring_rollback".to_string(),
+        operations: vec![AgentProjectOperation::PutJson {
+            path: "knowledge/rejected.json".to_string(),
+            document: json!({
+                "id": "rejected",
+                "category": "world_lore",
+                "title": "Rejected",
+                "content": "Invalid authoring fields must roll back.",
+                "tags": [" lore "],
+                "importance": 2,
+                "related_entries": ["missing"]
+            }),
+            precondition: AgentFilePrecondition::Missing,
+        }],
+    };
+    let plan = call_plan(&client, &transaction).await?;
+    let rejected = call_apply(&client, &transaction, &plan.precondition_fingerprint).await?;
+    assert_eq!(rejected.is_error, Some(true));
+    let error: McpToolError = structured(&rejected)?;
+    assert_eq!(error.code, McpToolErrorCode::TransactionError);
+    assert!(error.message.contains("knowledge_importance_invalid"));
+    assert!(error.message.contains("knowledge_not_canonical"));
+    assert!(error.message.contains("knowledge_relation_target_missing"));
+    assert!(!invalid_knowledge
+        .root
+        .join("knowledge/rejected.json")
+        .exists());
+    client.cancel().await?;
+
     let invalid_ending = TestProject::new("ending-runtime-rollback");
     let client = connect(&invalid_ending.root, true).await?;
     let transaction = AgentProjectTransaction {

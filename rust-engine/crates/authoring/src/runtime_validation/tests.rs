@@ -91,6 +91,35 @@ async fn rejects_dialogue_authoring_limits_that_runtime_topology_accepts() {
 }
 
 #[tokio::test]
+async fn rejects_knowledge_authoring_rules_that_runtime_deserialization_accepts() {
+    let root = project_root("knowledge_authoring_limits");
+    write_valid_core(&root);
+    std::fs::write(
+        root.join("knowledge/aoi_lore.json"),
+        r#"{"id":"aoi_lore","title":"  ","content":"Aoi remembers.","category":"character","tags":[" lore "],"importance":2,"related_entries":["missing_lore"]}"#,
+    )
+    .unwrap();
+
+    let report = validate_core_runtime_project(&root).await.unwrap();
+    let codes = report
+        .issues
+        .iter()
+        .map(|issue| issue.code.as_str())
+        .collect::<HashSet<_>>();
+
+    assert!(!report.valid);
+    for code in [
+        "knowledge_importance_invalid",
+        "knowledge_not_canonical",
+        "knowledge_relation_target_missing",
+        "knowledge_title_invalid",
+    ] {
+        assert!(codes.contains(code), "missing {code}: {:?}", report.issues);
+    }
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
 async fn rejects_story_event_actions_with_unknown_content_targets() {
     let root = project_root("story_events");
     write_valid_core(&root);

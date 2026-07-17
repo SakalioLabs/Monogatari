@@ -2075,6 +2075,10 @@ export function createSourceInvariantVerifier({
       Promise.all([
         'dialogue_validation.rs',
         'dialogue_validation/tests.rs',
+        'knowledge_documents.rs',
+        'knowledge_documents/tests.rs',
+        'knowledge_validation.rs',
+        'knowledge_validation/tests.rs',
         'runtime_validation.rs',
         'runtime_validation/tests.rs',
       ].map((relativePath) => readFile(path.join(rustDir, 'crates', 'authoring', 'src', relativePath), 'utf8')))
@@ -2142,6 +2146,11 @@ export function createSourceInvariantVerifier({
       [runtimeValidationSource, 'MAX_DIALOGUE_VALIDATION_ISSUES', 'bound structured Dialogue rejection evidence'],
       [runtimeValidationSource, 'dialogue_not_canonical', 'reject non-canonical Agent Dialogue documents'],
       [runtimeValidationSource, 'rejects_dialogue_authoring_limits_that_runtime_topology_accepts', 'test Agent rejection beyond graph topology'],
+      [runtimeValidationSource, 'load_knowledge_documents(project_root, directory)', 'load Agent Knowledge candidates through the shared bounded document domain'],
+      [runtimeValidationSource, 'validate_knowledge_catalog', 'reuse desktop Knowledge authoring constraints for Agent candidates'],
+      [runtimeValidationSource, 'MAX_KNOWLEDGE_VALIDATION_ISSUES', 'bound structured Knowledge rejection evidence'],
+      [runtimeValidationSource, 'knowledge_unknown_field', 'reject unknown Agent Knowledge fields'],
+      [runtimeValidationSource, 'rejects_knowledge_authoring_rules_that_runtime_deserialization_accepts', 'test Agent Knowledge rejection beyond deserialization'],
       [runtimeValidationSource, 'rejects_duplicate_runtime_ids_instead_of_accepting_loader_overwrites', 'test duplicate runtime IDs are rejected'],
       [jsonCatalogSource, 'monogatari-json-catalog-report/v1', 'version shared JSON catalog reports'],
       [jsonCatalogSource, 'MAX_AUTHORABLE_JSON_BYTES', 'bound JSON reads and transaction writes consistently'],
@@ -2166,6 +2175,8 @@ export function createSourceInvariantVerifier({
       [mcpE2eSource, 'PackageFingerprintMismatch', 'test stale package review rejection'],
       [mcpE2eSource, 'format!("../{escape_name}")', 'test package path traversal rejection'],
       [mcpE2eSource, 'runtime_reference_rollback', 'test real stdio rollback after core-runtime reference rejection'],
+      [mcpE2eSource, 'knowledge_authoring_rollback', 'test real stdio rollback after shared Knowledge authoring rejection'],
+      [mcpE2eSource, 'knowledge_relation_target_missing', 'return actionable Knowledge relation rejection evidence over real stdio'],
     ]
     for (const [source, needle, description] of requirements) {
       if (!source.includes(needle)) {
