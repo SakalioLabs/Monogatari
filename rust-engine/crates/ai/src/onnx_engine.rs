@@ -604,10 +604,8 @@ mod tests {
 
         let error = rt.block_on(engine.initialize()).unwrap_err();
 
-        #[cfg(target_os = "windows")]
-        assert!(error.to_string().contains("load ONNX model"));
-        #[cfg(not(target_os = "windows"))]
-        assert!(error.to_string().contains(ONNX_RUNTIME_UNAVAILABLE_MESSAGE));
+        assert!(matches!(&error, llm_core::EngineError::Inference(_)));
+        assert!(error.to_string().contains("[DirectML]"));
         assert!(!engine.is_ready());
         std::fs::remove_dir_all(dir).unwrap();
     }
