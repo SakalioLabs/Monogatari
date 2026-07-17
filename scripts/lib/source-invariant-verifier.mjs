@@ -778,6 +778,8 @@ export function createSourceInvariantVerifier({
       [workflowExecutionPresentationTestSource, 'reads typed event decisions, nested rule metrics, blockers, and scores defensively', 'test structured Story Event execution evidence'],
       [authoringE2eSource, 'Workflow execution renders deterministic trace evidence across desktop and mobile', 'exercise Workflow execution evidence in a real browser'],
       [authoringE2eSource, "await expect(page.locator('.workflow-node.run-executed')).toHaveCount(2)", 'prove execution evidence maps back onto rendered canvas nodes'],
+      [authoringE2eSource, 'Workflow canvas delegates drag and connection gestures', 'exercise delegated canvas interactions in a real browser'],
+      [authoringE2eSource, "await expect(page.locator('.connections path')).toHaveCount(2)", 'prove a pointer gesture creates a rendered Workflow connection'],
     ]
     for (const [source, needle, description] of workflowExecutionPresentationRequirements) {
       if (!source.includes(needle)) {
@@ -1752,6 +1754,8 @@ export function createSourceInvariantVerifier({
     const workflowValidationTests = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'workflow_validation', 'tests.rs'), 'utf8')
     const workflowAuthoringSource = await readFile(path.join(frontendDir, 'src', 'lib', 'workflowAuthoring.ts'), 'utf8')
     const workflowAuthoringTests = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'workflowAuthoring.test.ts'), 'utf8')
+    const workflowCanvasInteractionSource = await readFile(path.join(frontendDir, 'src', 'lib', 'workflowCanvasInteractions.ts'), 'utf8')
+    const workflowCanvasInteractionTests = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'workflowCanvasInteractions.test.ts'), 'utf8')
     const workflowEditorSource = await readFile(path.join(frontendDir, 'src', 'views', 'WorkflowEditor.vue'), 'utf8')
     const mainSource = await readFile(path.join(tauriAppDir, 'src', 'main.rs'), 'utf8')
 
@@ -1817,13 +1821,31 @@ export function createSourceInvariantVerifier({
       [workflowAuthoringTests, 'mirrors the authoritative node catalog fields', 'test browser catalog compatibility'],
       [workflowAuthoringTests, 'treats boolean and integer-backed fields as typed controls', 'test typed node controls'],
       [workflowAuthoringTests, 'connects and removes nodes without mutating the source graph', 'test immutable graph editing'],
+      [workflowCanvasInteractionSource, 'export function createWorkflowCanvasInteractionController', 'own canvas pointer-listener lifecycle outside the Vue view'],
+      [workflowCanvasInteractionSource, 'workflowDraggedNodePosition(', 'delegate bounded drag geometry to a pure function'],
+      [workflowCanvasInteractionSource, 'connectWorkflowNodes(', 'reuse immutable graph connections from the authoring domain'],
+      [workflowCanvasInteractionTests, 'drags nodes immutably and releases global listeners on mouseup', 'test immutable drag updates and listener release'],
+      [workflowCanvasInteractionTests, 'connects hit nodes while rejecting self, duplicate, and missing targets', 'test canvas connection hit policy'],
+      [workflowCanvasInteractionTests, 'cancels prior interactions on reentry, missing state, and disposal', 'test canvas interaction cancellation and disposal'],
       [workflowEditorSource, 'isWorkflowBooleanField(selectedNode.node_type, field)', 'render boolean fields through the authoring contract'],
       [workflowEditorSource, 'createDefaultWorkflowFlow(', 'delegate default graph construction to the authoring domain'],
       [workflowEditorSource, 'synchronizeWorkflowDocument(', 'delegate document synchronization to the authoring domain'],
+      [workflowEditorSource, "from '../lib/workflowCanvasInteractions'", 'delegate pointer interactions to the canvas controller'],
+      [workflowEditorSource, 'canvasInteractions.startNodeDrag(event, node.id)', 'delegate node dragging to the canvas controller'],
+      [workflowEditorSource, 'canvasInteractions.startConnection(event, node.id)', 'delegate connection gestures to the canvas controller'],
+      [workflowEditorSource, 'canvasInteractions.dispose()', 'dispose canvas listeners with the Vue lifecycle'],
     ]
     for (const [source, needle, description] of workflowAuthoringRequirements) {
       if (!source.includes(needle)) {
         issues.push(`Workflow authoring boundaries must ${description}`)
+      }
+    }
+    if (workflowCanvasInteractionSource.includes("from 'vue'")) {
+      issues.push('Workflow canvas interactions must remain usable without the Vue runtime')
+    }
+    for (const listener of ["window.addEventListener('mousemove'", "window.addEventListener('mouseup'"]) {
+      if (workflowEditorSource.includes(listener)) {
+        issues.push(`WorkflowEditor must not own global pointer listeners: ${listener}`)
       }
     }
 

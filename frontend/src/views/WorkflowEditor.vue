@@ -435,7 +435,6 @@ import {
 import { hasTauriRuntime, invokeCommand } from '../lib/tauri'
 import { loadStoryEventCatalog, type StoryEventDefinition } from '../lib/storyEvents'
 import {
-  connectWorkflowNodes,
   createDefaultWorkflowFlow,
   createDefaultWorkflowNodeTypes,
   createWorkflowNode as buildWorkflowNode,
@@ -452,14 +451,13 @@ import {
   workflowConfigFields,
   workflowConnectionPath as connectionPath,
   workflowConnections,
-  workflowNodeAtPoint,
   workflowNodeIcon as getNodeIcon,
   workflowNumericFieldStep as numericFieldStep,
-  WORKFLOW_NODE_HEIGHT as NODE_HEIGHT,
   WORKFLOW_NODE_WIDTH as NODE_WIDTH,
   type WorkflowFileSummary,
   type WorkflowNodeTypeInfo,
 } from '../lib/workflowAuthoring'
+import { createWorkflowCanvasInteractionController } from '../lib/workflowCanvasInteractions'
 import type {
   Workflow,
   WorkflowExecutionReport,
@@ -593,9 +591,18 @@ const runContextPresets = computed<WorkflowRunContextPreset[]>(() => [
 ])
 
 let nextNodeId = 1
-let draggingNode: WorkflowNode | null = null
-let connectingFrom: WorkflowNode | null = null
-let dragOffset = { x: 0, y: 0 }
+const canvasInteractions = createWorkflowCanvasInteractionController({
+  eventTarget: window,
+  getCanvasBounds: () => canvasRef.value?.getBoundingClientRect() ?? null,
+  getNodes: () => nodes.value,
+  commitNodes(updatedNodes, changedNodeId) {
+    nodes.value = updatedNodes
+    if (selectedNode.value?.id === changedNodeId) {
+      selectedNode.value = nodes.value.find((node) => node.id === changedNodeId) || null
+    }
+    markWorkflowDirty()
+  },
+})
 
 const nodeCategories = computed(() => {
   const query = paletteQuery.value.trim().toLocaleLowerCase()
@@ -1072,6 +1079,7 @@ function selectNode(node: WorkflowNode) {
 
 function deleteNode() {
   if (!selectedNode.value) return
+  canvasInteractions.cancel()
   const id = selectedNode.value.id
   nodes.value = removeWorkflowNode(nodes.value, id)
   selectedNode.value = null
@@ -1141,72 +1149,19 @@ function onDrop(event: DragEvent) {
 }
 
 function onNodeMouseDown(event: MouseEvent, node: WorkflowNode) {
-  draggingNode = node
-  dragOffset.x = event.clientX - node.x
-  dragOffset.y = event.clientY - node.y
-
-  const onMouseMove = (e: MouseEvent) => {
-    if (!draggingNode || !canvasRef.value) return
-    const rect = canvasRef.value.getBoundingClientRect()
-    draggingNode.x = Math.min(
-      Math.max(0, rect.width - NODE_WIDTH),
-      Math.max(0, e.clientX - rect.left - (dragOffset.x - rect.left)),
-    )
-    draggingNode.y = Math.min(
-      Math.max(0, rect.height - NODE_HEIGHT),
-      Math.max(0, e.clientY - rect.top - (dragOffset.y - rect.top)),
-    )
-    markWorkflowDirty()
-  }
-
-  const onMouseUp = () => {
-    draggingNode = null
-    window.removeEventListener('mousemove', onMouseMove)
-    window.removeEventListener('mouseup', onMouseUp)
-  }
-
-  window.addEventListener('mousemove', onMouseMove)
-  window.addEventListener('mouseup', onMouseUp)
+  canvasInteractions.startNodeDrag(event, node.id)
 }
 
 function onCanvasMouseDown() {
   selectedNode.value = null
 }
 
-function getNodeAtClientPoint(event: MouseEvent): WorkflowNode | undefined {
-  if (!canvasRef.value) return undefined
-  const rect = canvasRef.value.getBoundingClientRect()
-  return workflowNodeAtPoint(nodes.value, {
-    x: event.clientX - rect.left,
-    y: event.clientY - rect.top,
-  })
-}
-
 function startConnection(event: MouseEvent, node: WorkflowNode) {
-  event.preventDefault()
-  connectingFrom = node
-
-  const onMouseUp = (e: MouseEvent) => {
-    const target = getNodeAtClientPoint(e)
-    if (connectingFrom && target) {
-      const sourceId = connectingFrom.id
-      const update = connectWorkflowNodes(nodes.value, sourceId, target.id)
-      if (update.changed) {
-        nodes.value = update.nodes
-        if (selectedNode.value?.id === sourceId) {
-          selectedNode.value = nodes.value.find((node) => node.id === sourceId) || null
-        }
-        markWorkflowDirty()
-      }
-    }
-    connectingFrom = null
-    window.removeEventListener('mouseup', onMouseUp)
-  }
-
-  window.addEventListener('mouseup', onMouseUp)
+  canvasInteractions.startConnection(event, node.id)
 }
 
 function createNewWorkflow(markDirty = true) {
+  canvasInteractions.cancel()
   workflow.value = {
     id: `wf_${Date.now()}`,
     name: t('workflow.new-name', 'New Workflow'),
@@ -1291,6 +1246,7 @@ async function loadWorkflowPath(path: string) {
 }
 
 function applyLoadedWorkflow(loaded: Workflow, path: string) {
+  canvasInteractions.cancel()
   workflow.value = loaded
   nodes.value = loaded.nodes
   selectedNode.value = null
@@ -1452,6 +1408,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  canvasInteractions.dispose()
   window.removeEventListener('beforeunload', handleBeforeUnload)
   clearNotice()
 })
@@ -1898,7 +1855,7 @@ onUnmounted(() => {
   align-content: center;
   gap: 2px;
   padding: 0 30px 0 11px;
-  overflow: hidden;
+  overflow: visible;
   color: var(--text-tertiary);
   font-family: var(--font-mono);
   font-size: 9px;
@@ -1921,6 +1878,7 @@ onUnmounted(() => {
   position: absolute;
   top: 50%;
   right: -8px;
+  z-index: 3;
   width: 15px;
   height: 15px;
   border: 2px solid var(--surface-0);

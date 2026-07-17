@@ -53,6 +53,45 @@ test('Workflow execution renders deterministic trace evidence across desktop and
   expect(compactGeometry.inspectorWidth).toBeGreaterThan(0)
 })
 
+test('Workflow canvas delegates drag and connection gestures', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 })
+  await page.goto('/editor')
+
+  const startNode = page.locator('.workflow-node.node-type-start')
+  await expect(startNode).toHaveCount(1)
+  const beforeDrag = await startNode.boundingBox()
+  expect(beforeDrag).not.toBeNull()
+  await page.mouse.move(beforeDrag!.x + 80, beforeDrag!.y + 40)
+  await page.mouse.down()
+  await page.mouse.move(beforeDrag!.x + 120, beforeDrag!.y + 70)
+  await page.mouse.up()
+  await expect.poll(async () => (await startNode.boundingBox())?.x ?? -1)
+    .toBeGreaterThan(beforeDrag!.x + 20)
+
+  await expect(page.locator('.connections path')).toHaveCount(1)
+  await page.locator('.palette-node').filter({ hasText: 'Narration' }).click()
+  await expect(page.locator('.workflow-node')).toHaveCount(3)
+
+  const narrationPort = page.locator('.workflow-node.node-type-narration .node-port.output')
+  const endNode = page.locator('.workflow-node.node-type-end')
+  const [portBox, endBox] = await Promise.all([narrationPort.boundingBox(), endNode.boundingBox()])
+  expect(portBox).not.toBeNull()
+  expect(endBox).not.toBeNull()
+  const portCenter = {
+    x: portBox!.x + portBox!.width / 2,
+    y: portBox!.y + portBox!.height / 2,
+  }
+  expect(await page.evaluate(({ x, y }) => (
+    document.elementFromPoint(x, y) as HTMLElement | null
+  )?.className ?? '', portCenter)).toContain('node-port')
+  await page.mouse.move(portCenter.x, portCenter.y)
+  await page.mouse.down()
+  await page.mouse.move(endBox!.x + endBox!.width - 20, endBox!.y + endBox!.height / 2)
+  await page.mouse.up()
+
+  await expect(page.locator('.connections path')).toHaveCount(2)
+})
+
 test('character authoring persists a validated browser draft across reloads', async ({ page }) => {
   await page.goto('/character-editor')
   const createCharacter = page.getByTitle('Create Character')
