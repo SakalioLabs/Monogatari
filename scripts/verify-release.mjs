@@ -12,6 +12,8 @@ import { createProjectRendererAssetPolicy } from './lib/project-content/renderer
 import { createProjectStoryEventPolicy } from './lib/project-content/story-event-policy.mjs'
 import { createProjectWorkflowPolicy } from './lib/project-content/workflow-policy.mjs'
 import { releaseChannelPolicyIssues } from './lib/release-channel-policy-verifier.mjs'
+import { createRepositoryFileWalker } from './lib/repository-file-walker.mjs'
+import { createRepositoryJsonPolicy } from './lib/repository-json-policy.mjs'
 import { createTauriPackagingVerifier } from './lib/tauri-packaging-verifier.mjs'
 import {
   createWebDistributionVerifier,
@@ -33,7 +35,6 @@ const rustDir = path.join(root, 'rust-engine')
 const tauriAppDir = path.join(rustDir, 'crates', 'tauri-app')
 const releasePolicyPath = path.join(root, 'scripts', 'release-channel-policy.json')
 
-const skipDirs = new Set(['.git', 'node_modules', 'target', 'dist', 'release', 'bin', 'obj'])
 const textExtensions = new Set([
   '.cs',
   '.css',
@@ -155,6 +156,12 @@ const uiTextArtifactPatterns = [
   { label: 'stray Chinese road separator', pattern: /\s\u8DEF\s/ },
 ]
 
+const walkFiles = createRepositoryFileWalker()
+const { verifyRepositoryJsonFiles } = createRepositoryJsonPolicy({
+  repositoryRoot: root,
+  walkFiles,
+})
+
 const {
   verifyFrontendSourceInvariants,
   verifyLegacyPromptBuilderInvariants,
@@ -235,7 +242,7 @@ async function main() {
   const started = Date.now()
   console.log('[release] Starting Monogatari release verification')
 
-  await verifyJsonFiles()
+  await verifyRepositoryJsonFiles()
   await verifyStoryEventCatalogs()
   await verifyDialogueCatalogs()
   await verifyWorkflowFiles()
@@ -392,37 +399,6 @@ async function verifyWindowsInstallersIfPresent() {
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
-
-async function walkFiles(dir, files = []) {
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    if (entry.isDirectory()) {
-      if (!skipDirs.has(entry.name)) await walkFiles(path.join(dir, entry.name), files)
-    } else if (entry.isFile()) {
-      files.push(path.join(dir, entry.name))
-    }
-  }
-  return files
-}
-
-async function verifyJsonFiles() {
-  const files = (await walkFiles(root)).filter((file) => path.extname(file) === '.json')
-  const issues = []
-
-  for (const file of files) {
-    try {
-      JSON.parse(await readFile(file, 'utf8'))
-    } catch (error) {
-      issues.push(`${relative(file)}: ${error.message}`)
-    }
-  }
-
-  if (issues.length > 0) {
-    throw new Error(`Invalid JSON files:\n${issues.join('\n')}`)
-  }
-
-  console.log(`[release] JSON parse OK (${files.length} files)`)
-}
-
 
 async function verifySensitivePatterns() {
   const files = await walkFiles(root)
