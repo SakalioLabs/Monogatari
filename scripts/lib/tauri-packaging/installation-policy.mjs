@@ -64,8 +64,8 @@ export async function collectTauriInstallationPolicyEvidence(options = {}) {
     ],
     [
       installationVerifierSource,
-      'load_workflow_from_project',
-      'validate bundled workflows through the runtime loader',
+      'load_project_workflow',
+      'validate bundled workflows through the shared headless document loader',
     ],
     [
       installationVerifierSource,

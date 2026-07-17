@@ -8,9 +8,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::{Path, PathBuf};
 
-const MAX_WORKFLOW_FILES: usize = 1_000;
-const MAX_WORKFLOW_DEPTH: usize = 8;
-const MAX_WORKFLOW_FILE_BYTES: u64 = 2 * 1024 * 1024;
+pub const MAX_WORKFLOW_FILES: usize = 1_000;
+pub const MAX_WORKFLOW_DEPTH: usize = 8;
+pub const MAX_WORKFLOW_FILE_BYTES: u64 = 2 * 1024 * 1024;
 
 /// A workflow node in the visual editor.
 #[derive(Debug, Clone, Serialize, Deserialize)]

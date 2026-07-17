@@ -9,10 +9,11 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use chrono::Utc;
 use llm_authoring::project::scrub_runtime_secret_config;
+use llm_authoring::workflow_documents::load_project_workflow;
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::commands::{endings, engine, i18n, project, quality_suite, scenes, workflow};
+use crate::commands::{endings, engine, i18n, project, quality_suite, scenes};
 use crate::state::discover_bundled_project_data_root;
 
 const VERIFY_FLAG: &str = "--verify-installation";
@@ -192,7 +193,7 @@ pub(crate) async fn verify_installed_application(
 
     let workflow_paths = collect_json_paths(&project_root, "workflows")?;
     for path in &workflow_paths {
-        workflow::load_workflow_from_project(&project_root, path).await?;
+        load_project_workflow(&project_root, path).await?;
     }
     let quality_suite_paths = collect_json_paths(&project_root, "quality_suites")?;
     for path in &quality_suite_paths {

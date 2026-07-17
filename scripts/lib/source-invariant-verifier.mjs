@@ -1774,6 +1774,8 @@ export function createSourceInvariantVerifier({
   async function verifyWorkflowCommandInvariants() {
     const issues = []
     const workflowSource = await readFile(path.join(tauriAppDir, 'src', 'commands', 'workflow.rs'), 'utf8')
+    const workflowDocumentsSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'workflow_documents.rs'), 'utf8')
+    const workflowDocumentsTests = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'workflow_documents', 'tests.rs'), 'utf8')
     const workflowValidationSource = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'workflow_validation.rs'), 'utf8')
     const workflowValidationTests = await readFile(path.join(rustDir, 'crates', 'authoring', 'src', 'workflow_validation', 'tests.rs'), 'utf8')
     const workflowAuthoringSource = await readFile(path.join(frontendDir, 'src', 'lib', 'workflowAuthoring.ts'), 'utf8')
@@ -1785,8 +1787,10 @@ export function createSourceInvariantVerifier({
 
     const workflowRequirements = [
       ['state.current_project_data_root().await', 'resolve workflow commands against the active project root'],
-      ['workflow_path_in_project', 'resolve workflow files through a project-scoped path helper'],
-      ['normalize_workflow_relative_path', 'normalize and validate workflow paths before file access'],
+      ['save_project_workflow(', 'delegate Workflow saves to headless authoring'],
+      ['list_project_workflow_summaries(', 'delegate Workflow discovery to headless authoring'],
+      ['load_project_workflow(', 'delegate Workflow loads to headless authoring'],
+      ['story_content_authoring_lock.lock().await', 'serialize Workflow saves with project content authoring'],
       ['workflow_validation_rejects_invalid_state_keys', 'test workflow validation rejects invalid state keys'],
       ['validate_condition_source', 'reuse shared condition expression validation'],
       ['workflow_condition_scope_variables', 'expose score and relationship context to workflow condition expressions'],
@@ -1802,17 +1806,6 @@ export function createSourceInvariantVerifier({
       ['workflow_llm_output_falls_back_when_guard_has_no_story_text', 'test workflow LLM guard-only output does not become story text'],
       ['workflow_branch_weights', 'normalize random branch weights before selecting workflow branches'],
       ['random_branch_uses_normalized_weights', 'test random branch execution uses normalized weights'],
-      ['project_root.join("workflows")', 'scope workflow files to the project workflows directory'],
-      ['Workflow paths cannot contain empty, current, or parent directory segments', 'reject traversal-shaped workflow paths'],
-      ['Workflow paths must end with .json', 'limit workflow command file access to JSON workflow files'],
-      ['tokio::fs::create_dir_all(parent)', 'create only the validated workflow parent directory before saving'],
-      ['workflow_paths_resolve_under_project_workflows', 'test compatible project workflow path resolution'],
-      ['workflow_paths_reject_escape_attempts', 'test workflow path traversal and absolute path rejection'],
-      ['save_and_load_workflow_stay_inside_project_workflows', 'test workflow save/load containment under project workflows'],
-      ['list_workflow_summaries', 'list only project-scoped loadable workflow files'],
-      ['WORKFLOW_LIST_MAX_FILES', 'bound workflow file discovery'],
-      ['WORKFLOW_LIST_MAX_DEPTH', 'bound recursive workflow discovery'],
-      ['workflow_listing_is_sorted_scoped_and_skips_invalid_files', 'test sorted scoped workflow discovery'],
     ]
     const workflowDomainRequirements = [
       ['normalize_script_state_key', 'validate workflow state keys during workflow validation'],
@@ -1823,7 +1816,27 @@ export function createSourceInvariantVerifier({
       ['node_condition_invalid', 'report invalid workflow conditions before execution'],
       ['load_project_workflows', 'load bounded project Workflow catalogs for Agent validation'],
       ['validate_workflow_references', 'validate Workflow cross-catalog references'],
+      ['pub const MAX_WORKFLOW_FILES', 'share the Workflow catalog file limit with document discovery'],
+      ['pub const MAX_WORKFLOW_DEPTH', 'share the Workflow catalog depth limit with document discovery'],
+      ['pub const MAX_WORKFLOW_FILE_BYTES', 'share the Workflow document size limit with persistence'],
       ['pub fn workflow_node_types()', 'own the authoritative Rust node catalog'],
+    ]
+    const workflowDocumentRequirements = [
+      [workflowDocumentsSource, 'normalize_workflow_relative_path', 'normalize compatible Workflow paths in the shared domain'],
+      [workflowDocumentsSource, 'MAX_WORKFLOW_PATH_BYTES', 'bound Workflow path input'],
+      [workflowDocumentsSource, 'MAX_WORKFLOW_FILES', 'bound Workflow file discovery'],
+      [workflowDocumentsSource, 'MAX_WORKFLOW_DEPTH', 'bound recursive Workflow discovery'],
+      [workflowDocumentsSource, 'ensure_regular_project_directory', 'create only a verified Workflow catalog root'],
+      [workflowDocumentsSource, 'ensure_workflow_directory', 'verify every nested Workflow directory component'],
+      [workflowDocumentsSource, 'ensure_no_workflow_directory_case_alias', 'reject portable aliases for nested Workflow directories'],
+      [workflowDocumentsSource, 'stage_json_replacement', 'persist Workflow documents atomically'],
+      [workflowDocumentsSource, 'validate_workflow_with_catalog', 'validate Workflow documents against the project Event catalog'],
+      [workflowDocumentsTests, 'workflow_paths_preserve_compatible_project_scoping', 'test compatible project Workflow path resolution'],
+      [workflowDocumentsTests, 'workflow_paths_reject_escape_and_unbounded_inputs', 'test Workflow traversal, absolute, and bounded path rejection'],
+      [workflowDocumentsTests, 'workflow_listing_is_sorted_scoped_and_skips_invalid_files', 'test sorted scoped Workflow discovery'],
+      [workflowDocumentsTests, 'save_and_load_are_atomic_and_scoped_to_project_workflows', 'test atomic Workflow save/load containment'],
+      [workflowDocumentsTests, 'rejected_replacements_preserve_the_previous_workflow', 'test failed Workflow replacement preservation'],
+      [workflowDocumentsTests, 'workflow_saves_reject_portable_case_aliases', 'test portable Workflow filename collisions'],
     ]
     for (const [needle, description] of workflowRequirements) {
       if (!workflowSource.includes(needle)) {
@@ -1833,6 +1846,20 @@ export function createSourceInvariantVerifier({
     for (const [needle, description] of workflowDomainRequirements) {
       if (!workflowValidationSource.includes(needle)) {
         issues.push(`Workflow domain must ${description}`)
+      }
+    }
+    for (const [source, needle, description] of workflowDocumentRequirements) {
+      if (!source.includes(needle)) {
+        issues.push(`Workflow document domain must ${description}`)
+      }
+    }
+    for (const tauriOwnedImplementation of [
+      'fn normalize_workflow_relative_path',
+      'fn collect_workflow_summaries',
+      'async fn save_workflow_to_project',
+    ]) {
+      if (workflowSource.includes(tauriOwnedImplementation)) {
+        issues.push(`Tauri Workflow commands must not retain document policy: ${tauriOwnedImplementation}`)
       }
     }
 
