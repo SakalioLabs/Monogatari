@@ -36,6 +36,7 @@ for (const viewport of viewports) {
       excludedObjects: 3,
       minimumNonBackground: 40,
     })
+    await expectNpcConversationPanel(page)
 
     await openDialogueNode(page, 'first_test_choice', '记录本停在空白页')
     await expectChoicesInsideViewport(page, 3)
@@ -212,6 +213,26 @@ async function expectChoicesInsideViewport(page: Page, expectedCount: number): P
     expect(box.bottom).toBeLessThanOrEqual(viewport.height + 1)
     expect(box.scrollWidth).toBeLessThanOrEqual(box.clientWidth + 1)
   }
+}
+
+async function expectNpcConversationPanel(page: Page): Promise<void> {
+  await page.getByTestId('npc-trigger').click()
+  const panel = page.getByTestId('npc-panel')
+  await expect(panel).toBeVisible()
+  await expect(panel).toHaveAttribute('data-npc-runtime', 'webgpu')
+  await expect(panel).toContainText('九号回声')
+  const composer = page.getByTestId('npc-input')
+  await expect(composer).toBeVisible()
+  const bounds = await composer.boundingBox()
+  const viewport = page.viewportSize()
+  expect(bounds).not.toBeNull()
+  expect(viewport).not.toBeNull()
+  expect(bounds!.x).toBeGreaterThanOrEqual(0)
+  expect(bounds!.y).toBeGreaterThanOrEqual(0)
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewport!.width)
+  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewport!.height)
+  await page.getByTestId('npc-close').click()
+  await expect(panel).toHaveCount(0)
 }
 
 async function expectLayoutInsideViewport(page: Page): Promise<void> {

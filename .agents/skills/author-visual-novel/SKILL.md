@@ -26,6 +26,8 @@ Build project data that the real Monogatari runtime can load. Treat a project as
 7. Add or update a Quality Suite that proves critical branches, character identity, knowledge boundaries, and prompt-safety behavior.
 8. Keep mirrored `data/` and `rust-engine/data/` roots byte-equivalent when editing the built-in project.
 
+If the brief requires a runtime LLM NPC, do not treat authored Dialogue, an `llm_generate` Workflow node, or provider-free preview simulation as delivery evidence. Give the character an explicit personality and pinned Knowledge references, keep the required mainline playable without inference, and verify the real in-story NPC entry plus its desktop or WebGPU runtime path separately.
+
 Synchronize and verify the built-in project after an accepted transaction:
 
 ```powershell
@@ -71,6 +73,8 @@ node scripts/verify-release.mjs
 ```
 
 For UI or renderer changes, also exercise the relevant route at desktop and mobile sizes. A JSON parse, successful build, or generated image alone does not prove a playable story flow.
+
+For runtime LLM NPCs, verify that the in-story panel opens on the intended character without leaving the current Dialogue, composer input cannot advance the story, and the configured runtime receives character identity, personality, bounded history, and pinned Knowledge. Report actual provider or hardware generation separately from mocked adapter and layout evidence.
 
 Browser authoring Playtest accepts `previewDialogue=<id>&previewNode=<node-id>&authoring=1` to open one existing Dialogue node directly. Use this for bounded visual sampling of key scenes and choices; it starts with the Dialogue's initial variables and does not replay earlier node effects, so Workflow Preview and Quality Suite execution remain the authoritative full-route and branch-coverage evidence.
 

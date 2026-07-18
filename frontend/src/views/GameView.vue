@@ -19,6 +19,14 @@
       </div>
       <div class="top-actions">
         <button class="control-btn library-trigger" :title="t('game.story-library', 'Story library')" :aria-label="t('game.story-library', 'Story library')" @click="openStoryLibrary"><LibraryBig :size="16" /></button>
+        <button
+          v-if="currentCharacter && dialogueState?.is_active"
+          class="control-btn icon-control npc-trigger"
+          data-testid="npc-trigger"
+          :title="t('npc.open', 'Talk to {name}', { name: currentCharacter.name })"
+          :aria-label="t('npc.open', 'Talk to {name}', { name: currentCharacter.name })"
+          @click="openNpcConversation"
+        ><MessageCircleMore :size="16" /></button>
         <button v-if="desktopRuntime" class="control-btn" @click="saveGame"><Save :size="15" />{{ t('game.save', 'Save') }}</button>
         <button v-if="desktopRuntime" class="control-btn" @click="openLoadDialog"><FolderOpen :size="15" />{{ t('game.load', 'Load') }}</button>
         <button class="control-btn" @click="$router.push('/backlog')"><History :size="15" />{{ t('nav.backlog', 'Backlog') }}</button>
@@ -211,6 +219,16 @@
       </div>
     </Transition>
 
+    <NpcConversationPanel
+      :open="showNpcConversation"
+      :character="currentCharacter"
+      :desktop-runtime="desktopRuntime"
+      :locale="locale"
+      @close="showNpcConversation = false"
+      @emotion="applyNpcEmotion"
+      @story-progress="loadStoryLibrary"
+    />
+
     <Transition name="slide">
       <aside v-if="showSettings" class="settings-panel">
         <div class="settings-header">
@@ -260,6 +278,7 @@ import {
   History,
   House,
   LibraryBig,
+  MessageCircleMore,
   PanelsTopLeft,
   Play,
   Save,
@@ -268,6 +287,7 @@ import {
 } from '@lucide/vue'
 import Live2DCanvas from '../components/Live2DCanvas.vue'
 import CharacterModelView from '../components/CharacterModelView.vue'
+import NpcConversationPanel from '../components/NpcConversationPanel.vue'
 import { hasTauriRuntime, invokeCommand } from '../lib/tauri'
 import { useI18n } from '../lib/i18n'
 import { resolveAssetUrl } from '../lib/assets'
@@ -291,6 +311,7 @@ import {
   loadStoryScenes,
   type StoryDialogueInfo,
   type StoryEndingInfo,
+  type StoryCharacterInfo,
   type StorySceneInfo,
 } from '../lib/storyContent'
 
@@ -298,17 +319,11 @@ const { locale, t } = useI18n()
 const route = useRoute()
 const desktopRuntime = hasTauriRuntime()
 
-interface CharacterInfo {
-  id: string
-  name: string
-  description: string
-  emotion: string
+type CharacterInfo = StoryCharacterInfo & {
   live2d_model_path: string | null
   model_3d_path: string | null
   portrait_path: string | null
   sprite_path: string | null
-  sprite_paths?: Record<string, string>
-  relationships?: Record<string, number>
 }
 
 interface SaveInfo {
@@ -357,6 +372,7 @@ const showLoadDialog = ref(false)
 const showStoryLibrary = ref(false)
 const showSettings = ref(false)
 const showPause = ref(false)
+const showNpcConversation = ref(false)
 const saves = ref<SaveInfo[]>([])
 const errorMessage = ref<string | null>(null)
 const toastMessage = ref<string | null>(null)
@@ -397,7 +413,9 @@ const textPlayback = createStoryTextPlaybackController({
   },
   readTextIntervalMs: () => settings.value.textSpeed,
   readAutoAdvanceDelayMs: () => settings.value.autoPlaySpeed,
-  shouldAutoAdvance: () => settings.value.autoPlay && dialogueState.value?.choices.length === 0,
+  shouldAutoAdvance: () => settings.value.autoPlay
+    && !showNpcConversation.value
+    && dialogueState.value?.choices.length === 0,
   onTextChange: (text) => { displayedText.value = text },
   onTypingChange: (typing) => { isTyping.value = typing },
   onAutoAdvance: () => { void advanceDialogue() },
@@ -788,7 +806,35 @@ function toggleSettings() {
   showSettings.value = !showSettings.value
 }
 
+function openNpcConversation() {
+  if (!currentCharacter.value || !dialogueState.value?.is_active) return
+  showStoryLibrary.value = false
+  showLoadDialog.value = false
+  showSettings.value = false
+  showPause.value = false
+  showNpcConversation.value = true
+}
+
+function applyNpcEmotion(emotion: string) {
+  currentExpression.value = emotion.trim() || currentExpression.value
+}
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  return target instanceof HTMLInputElement
+    || target instanceof HTMLTextAreaElement
+    || target.isContentEditable
+}
+
 function handleKeydown(e: KeyboardEvent) {
+  if (showNpcConversation.value) {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      showNpcConversation.value = false
+    }
+    return
+  }
+  if (isEditableTarget(e.target)) return
   if (e.key === 'Escape') {
     e.preventDefault()
     showPause.value = !showPause.value

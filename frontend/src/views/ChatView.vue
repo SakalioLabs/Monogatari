@@ -267,7 +267,13 @@ import {
 } from '@lucide/vue'
 import { hasTauriRuntime, invokeCommand } from '../lib/tauri'
 import { useI18n } from '../lib/i18n'
-import { loadStoryCharacters } from '../lib/storyContent'
+import { loadKnowledgeAuthoringCatalog, type KnowledgeEntryDefinition } from '../lib/knowledgeContent'
+import {
+  buildWebNpcChatMessages,
+  sanitizeWebNpcReply,
+  stripWebNpcPrivateReasoning,
+} from '../lib/npcConversation'
+import { loadStoryCharacters, type StoryCharacterInfo } from '../lib/storyContent'
 import { generateWebGpuChat } from '../lib/webgpuInference'
 import type { StoryEventAction } from '../lib/storyEvents'
 import {
@@ -366,13 +372,7 @@ interface ChatSessionAuditReport {
   triggerable_events: TriggeredEvent[]
 }
 
-interface CharacterInfo {
-  id: string
-  name: string
-  description: string
-  emotion: string
-  live2d_model_path: string | null
-}
+type CharacterInfo = StoryCharacterInfo
 
 type InsightTab = 'evaluation' | 'safety' | 'events' | 'runtime'
 
@@ -398,6 +398,7 @@ const compactInsightOpen = ref(false)
 const clearConfirmationOpen = ref(false)
 const messagesRef = ref<HTMLDivElement>()
 const inputRef = ref<HTMLTextAreaElement>()
+const webKnowledgeEntries = ref<KnowledgeEntryDefinition[]>([])
 const STREAM_FAILURE_BUBBLE = 'Generation failed before the streamed reply completed.'
 const desktopRuntimeAvailable = hasTauriRuntime()
 
@@ -583,24 +584,22 @@ function browserPreviewEvaluationReport(): ConversationEvaluationReport {
 async function completeWebGpuReply(assistantMessage: ChatMessage, character: CharacterInfo) {
   const conversation = messages.value
     .filter((message) => message !== assistantMessage && message.content.trim())
-    .slice(-16)
     .map((message) => ({
-      role: message.role === 'player' ? 'user' as const : 'assistant' as const,
+      role: message.role === 'player' ? 'player' as const : 'character' as const,
       content: message.content,
     }))
-  const generated = await generateWebGpuChat([
+  let rawReply = ''
+  const generated = await generateWebGpuChat(
+    buildWebNpcChatMessages(character, locale.value, conversation, webKnowledgeEntries.value),
     {
-      role: 'system',
-      content: `You are ${character.name}. Stay in character and reply in ${locale.value}. Character context: ${character.description}`,
+      onChunk: (chunk) => {
+        rawReply += chunk
+        assistantMessage.content = stripWebNpcPrivateReasoning(rawReply)
+        scrollToBottom()
+      },
     },
-    ...conversation,
-  ], {
-    onChunk: (chunk) => {
-      assistantMessage.content += chunk
-      scrollToBottom()
-    },
-  })
-  if (!assistantMessage.content.trim()) assistantMessage.content = generated
+  )
+  assistantMessage.content = sanitizeWebNpcReply(rawReply || generated)
   assistantMessage.emotion = character.emotion || 'neutral'
   currentEmotion.value = assistantMessage.emotion || 'neutral'
   isStreaming.value = false
@@ -796,17 +795,15 @@ async function clearChat() {
 
 onMounted(async () => {
   try {
-    const [loadedCharacters, progress] = await Promise.all([
+    const [loadedCharacters, progress, knowledgeEntries] = await Promise.all([
       loadStoryCharacters(),
       loadStoryProgress(),
+      desktopRuntimeAvailable
+        ? Promise.resolve<KnowledgeEntryDefinition[]>([])
+        : loadKnowledgeAuthoringCatalog().then((catalog) => catalog.entries).catch(() => []),
     ])
-    characters.value = loadedCharacters.map(character => ({
-      id: character.id,
-      name: character.name,
-      description: character.description,
-      emotion: character.emotion,
-      live2d_model_path: character.live2d_model_path ?? null,
-    }))
+    characters.value = loadedCharacters
+    webKnowledgeEntries.value = knowledgeEntries
     storyProgress.value = progress
     const requestedCharacter = typeof route.query.character === 'string' ? route.query.character : ''
     const initialCharacter = characters.value.find(character => character.id === requestedCharacter)
