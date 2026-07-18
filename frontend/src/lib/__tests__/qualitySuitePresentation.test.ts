@@ -265,6 +265,9 @@ describe('Quality Suite presentation domain', () => {
         completed: true,
         ending_id: 'preview_ending',
         coverage_percent: 100,
+        intrusion_detected_count: 0,
+        guarded_response_count: 0,
+        unguarded_intrusion_count: 0,
         visited_node_ids: ['opening'],
         unvisited_node_ids: [],
         final_session: {

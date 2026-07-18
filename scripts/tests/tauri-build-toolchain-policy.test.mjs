@@ -16,7 +16,7 @@ test('checked-in Tauri build metadata and Rust toolchain return passing evidence
   assert.deepEqual(evidence.issues, [])
   assert.deepEqual(evidence.requirementCounts, {
     buildMetadata: 4,
-    rustToolchain: 4,
+    rustToolchain: 6,
   })
   assert.equal(evidence.structuralCheckCount, 1)
 })
@@ -42,7 +42,13 @@ test('build commit, pinned toolchain, and release environment drift stays action
       }
       if (resolved === releaseVerifierPath) {
         return [
-          source.replace("env: { CARGO_INCREMENTAL: '0' }", 'env: {}'),
+          source
+            .replace(
+              "const rustVerificationEnv = Object.freeze({ CARGO_INCREMENTAL: '0' })",
+              'const rustVerificationEnv = Object.freeze({})',
+            )
+            .replace('async function runRustVerification(', 'async function runUnstableRustVerification(')
+            .replace('env: { ...(options.env ?? {}), ...rustVerificationEnv }', 'env: {}'),
           `const ${forbiddenTestProfileOverride} = '1'`,
           '',
         ].join('\\n')
@@ -54,7 +60,9 @@ test('build commit, pinned toolchain, and release environment drift stays action
   for (const issue of [
     'Tauri build metadata must inject the build git commit into the Tauri binary',
     'Rust release toolchain must pin the verified Rust nightly by exact date',
-    'Rust release toolchain must disable incremental Tauri test compilation deterministically',
+    'Rust release toolchain must disable incremental compilation across every Rust release gate',
+    'Rust release toolchain must centralize Rust release command execution',
+    'Rust release toolchain must enforce the shared Rust release environment',
     'Rust release verification must not override the Tauri test debug-profile environment',
   ]) {
     assert(evidence.issues.includes(issue), issue)

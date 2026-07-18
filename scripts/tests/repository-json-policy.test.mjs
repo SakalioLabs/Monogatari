@@ -25,8 +25,8 @@ test('checked-in repository JSON returns passing evidence', async () => {
   const evidence = await policy.verifyRepositoryJsonFiles()
 
   assert.deepEqual(evidence.issues, [])
-  assert.equal(evidence.jsonFileCount, 268)
-  assert.deepEqual(messages, ['[release] JSON parse OK (268 files)'])
+  assert.equal(evidence.jsonFileCount, 270)
+  assert.deepEqual(messages, ['[release] JSON parse OK (270 files)'])
 })
 
 test('Repository JSON evidence isolates parse and read failures', async () => {

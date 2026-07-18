@@ -151,6 +151,14 @@ pub struct QualityExpectation {
     #[serde(default)]
     pub max_roleplay_scores: BTreeMap<String, f32>,
     #[serde(default)]
+    pub expected_roleplay_intrusion_count: Option<usize>,
+    #[serde(default)]
+    pub expected_roleplay_guarded_response_count: Option<usize>,
+    #[serde(default)]
+    pub max_roleplay_unguarded_intrusion_count: Option<usize>,
+    #[serde(default)]
+    pub forbidden_roleplay_response_markers: Vec<String>,
+    #[serde(default)]
     pub knowledge_anchor_missing_detected: Option<bool>,
     #[serde(default)]
     pub knowledge_boundary_violation_detected: Option<bool>,
@@ -668,7 +676,11 @@ fn validate_roleplay_fixture(
         || !expect.forbidden_roleplay_nodes.is_empty()
         || !expect.required_roleplay_evidence.is_empty()
         || !expect.min_roleplay_scores.is_empty()
-        || !expect.max_roleplay_scores.is_empty();
+        || !expect.max_roleplay_scores.is_empty()
+        || expect.expected_roleplay_intrusion_count.is_some()
+        || expect.expected_roleplay_guarded_response_count.is_some()
+        || expect.max_roleplay_unguarded_intrusion_count.is_some()
+        || !expect.forbidden_roleplay_response_markers.is_empty();
 
     match &scenario.roleplay {
         Some(roleplay) => {
@@ -741,6 +753,13 @@ fn validate_roleplay_fixture(
         {
             issues.push(format!(
                 "{scenario_label}: minimum roleplay score for `{dimension_id}` exceeds its maximum."
+            ));
+        }
+    }
+    for marker in &expect.forbidden_roleplay_response_markers {
+        if marker.trim().is_empty() || marker.chars().count() > 500 {
+            issues.push(format!(
+                "{scenario_label}: forbidden roleplay response markers must contain between 1 and 500 characters."
             ));
         }
     }

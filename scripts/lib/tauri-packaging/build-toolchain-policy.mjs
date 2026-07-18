@@ -12,7 +12,9 @@ const rustToolchainRequirements = [
   ['toolchain', 'channel = "nightly-2026-07-03"', 'pin the verified Rust nightly by exact date'],
   ['toolchain', 'profile = "minimal"', 'keep release toolchain installation minimal'],
   ['toolchain', 'components = ["clippy", "rustfmt"]', 'install the linter and formatter used by release verification'],
-  ['releaseVerifier', "env: { CARGO_INCREMENTAL: '0' }", 'disable incremental Tauri test compilation deterministically'],
+  ['releaseVerifier', "const rustVerificationEnv = Object.freeze({ CARGO_INCREMENTAL: '0' })", 'disable incremental compilation across every Rust release gate'],
+  ['releaseVerifier', 'async function runRustVerification(', 'centralize Rust release command execution'],
+  ['releaseVerifier', 'env: { ...(options.env ?? {}), ...rustVerificationEnv }', 'enforce the shared Rust release environment'],
 ]
 
 export async function collectTauriBuildToolchainEvidence(options = {}) {

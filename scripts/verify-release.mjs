@@ -36,6 +36,7 @@ const frontendDir = path.join(root, 'frontend')
 const rustDir = path.join(root, 'rust-engine')
 const tauriAppDir = path.join(rustDir, 'crates', 'tauri-app')
 const releasePolicyPath = path.join(root, 'scripts', 'release-channel-policy.json')
+const rustVerificationEnv = Object.freeze({ CARGO_INCREMENTAL: '0' })
 
 const rendererDataRoots = [
   { label: 'data', dir: path.join(root, 'data') },
@@ -268,19 +269,17 @@ async function main() {
   await run('Frontend authoring browser workflows', 'npm', ['run', 'test:e2e'], frontendDir)
   await run('Tauri mobile deployment preflight', 'node', ['scripts/verify-tauri-mobile-preflight.mjs'], root)
   await run('Release-critical Rust format check', 'rustfmt', ['--edition', '2021', '--check', ...releaseCriticalRustFiles], rustDir)
-  await run('Rust core tests', 'cargo', ['test', '--locked', '-p', 'llm-core'], rustDir)
-  await run('Rust headless authoring tests', 'cargo', ['test', '--locked', '-p', 'llm-authoring'], rustDir)
-  await run('Rust MCP stdio and authoring tests', 'cargo', ['test', '--locked', '-p', 'monogatari-mcp'], rustDir)
-  await run('Rust MCP release binary build', 'cargo', ['build', '--locked', '--release', '-p', 'monogatari-mcp'], rustDir)
-  await run('Rust AI prompt and pipeline tests', 'cargo', ['test', '--locked', '-p', 'llm-ai'], rustDir)
-  await run('Rust asset management tests', 'cargo', ['test', '--locked', '-p', 'llm-assets'], rustDir)
-  await run('Rust scripting tests', 'cargo', ['test', '--locked', '-p', 'llm-scripting'], rustDir)
-  await run('Rust game tests', 'cargo', ['test', '--locked', '-p', 'llm-game'], rustDir)
-  await run('Rust Tauri command tests', 'cargo', ['test', '--locked', '-p', 'llm-galgame-app'], rustDir, {
-    env: { CARGO_INCREMENTAL: '0' },
-  })
-  await run('Rust Tauri app check', 'cargo', ['check', '--locked', '-p', 'llm-galgame-app'], rustDir)
-  await run('Rust workspace Clippy', 'cargo', ['clippy', '--workspace', '--all-targets', '--locked', '--', '-D', 'warnings'], rustDir)
+  await runRustVerification('Rust core tests', ['test', '--locked', '-p', 'llm-core'])
+  await runRustVerification('Rust headless authoring tests', ['test', '--locked', '-p', 'llm-authoring'])
+  await runRustVerification('Rust MCP stdio and authoring tests', ['test', '--locked', '-p', 'monogatari-mcp'])
+  await runRustVerification('Rust MCP release binary build', ['build', '--locked', '--release', '-p', 'monogatari-mcp'])
+  await runRustVerification('Rust AI prompt and pipeline tests', ['test', '--locked', '-p', 'llm-ai'])
+  await runRustVerification('Rust asset management tests', ['test', '--locked', '-p', 'llm-assets'])
+  await runRustVerification('Rust scripting tests', ['test', '--locked', '-p', 'llm-scripting'])
+  await runRustVerification('Rust game tests', ['test', '--locked', '-p', 'llm-game'])
+  await runRustVerification('Rust Tauri command tests', ['test', '--locked', '-p', 'llm-galgame-app'])
+  await runRustVerification('Rust Tauri app check', ['check', '--locked', '-p', 'llm-galgame-app'])
+  await runRustVerification('Rust workspace Clippy', ['clippy', '--workspace', '--all-targets', '--locked', '--', '-D', 'warnings'])
   await run(
     'Frontend audit',
     'npm',
@@ -334,6 +333,13 @@ async function run(label, command, args, cwd, options = {}) {
   }
 
   throw lastError
+}
+
+async function runRustVerification(label, args, options = {}) {
+  await run(label, 'cargo', args, rustDir, {
+    ...options,
+    env: { ...(options.env ?? {}), ...rustVerificationEnv },
+  })
 }
 
 async function runOnce(label, command, args, cwd, options = {}) {

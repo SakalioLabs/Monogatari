@@ -144,6 +144,54 @@ fn checked_in_blue_frame_roleplay_suite_reaches_all_dynamic_endings() {
 }
 
 #[test]
+fn checked_in_roleplay_security_self_play_contains_every_attack() {
+    let root = checked_in_project_root();
+    let suite = parse_quality_suite_document(include_str!(
+        "../../../../../data/quality_suites/blue_frame_roleplay_security.json"
+    ))
+    .unwrap();
+    let catalog = StoryEventCatalog::load_from_project_root(&root).unwrap();
+
+    let report = execute_quality_suite(
+        &suite,
+        Some(&root),
+        "quality_suites/blue_frame_roleplay_security.json",
+        "security",
+        &catalog,
+        provenance(),
+    );
+
+    assert_eq!(report.failed, 0, "{:#?}", report.scenarios);
+    assert_eq!(report.total, 3);
+    assert_eq!(
+        report
+            .audit_summary
+            .roleplay_coverage
+            .iter()
+            .map(|coverage| coverage.intrusion_detected_count)
+            .sum::<usize>(),
+        45
+    );
+    assert!(report
+        .audit_summary
+        .roleplay_coverage
+        .iter()
+        .all(|coverage| coverage.guarded_response_count == 15
+            && coverage.unguarded_intrusion_count == 0));
+    assert!(report.scenarios.iter().all(|scenario| {
+        scenario.roleplay_preview.as_ref().is_some_and(|preview| {
+            preview
+                .report
+                .final_session
+                .scores
+                .values()
+                .all(|score| *score == 0.0)
+                && preview.report.final_session.observed_evidence.is_empty()
+        })
+    }));
+}
+
+#[test]
 fn failed_expectations_return_actionable_headless_evidence() {
     let suite = parse_quality_suite_document(
         r#"{"version":"1","name":"Failure","description":"Failure evidence","scenarios":[{"id":"low-score","category":"quality","description":"Must fail","messages":[{"role":"player","content":"Hello"}],"expect":{"min_overall":1.0}}]}"#,

@@ -4,9 +4,12 @@ use std::collections::HashSet;
 
 use llm_authoring::scene_roleplay_validation::load_project_scene_roleplays;
 use llm_game::scene_roleplay::{
-    build_npc_prompt_messages, build_turn_evaluator_prompt, parse_turn_evaluation_json,
-    RoleplayPromptMessage, RoleplayScoreDelta, RoleplayTurnEvaluation, SceneRoleplayDefinition,
-    SceneRoleplayNode, SceneRoleplaySession, SceneRoleplayTurnInput, SceneRoleplayTurnOutcome,
+    analyze_roleplay_player_input, build_npc_prompt_messages, build_turn_evaluator_prompt,
+    compose_generation_recovery_for_turn, compose_intrusion_response,
+    contained_roleplay_evaluation, evaluate_roleplay_fallback,
+    guard_roleplay_npc_response_for_turn, parse_turn_evaluation_json, RoleplayPromptMessage,
+    RoleplayTurnEvaluation, SceneRoleplayDefinition, SceneRoleplayNode, SceneRoleplaySession,
+    SceneRoleplayTurnInput, SceneRoleplayTurnOutcome,
 };
 use serde::{Deserialize, Serialize};
 use tauri::State;
@@ -104,77 +107,110 @@ pub async fn send_scene_roleplay_turn(
             )
         })?;
 
-    let (character_name, character_profile, mut knowledge_refs) = {
-        let characters = state.character_manager.read().await;
-        let character = characters
-            .get_character(&node.character_id)
-            .ok_or_else(|| format!("Character `{}` is not loaded.", node.character_id))?;
-        let character = character.read().await;
-        (
-            character.name.clone(),
-            character.build_system_prompt(),
-            character.knowledge_refs.clone(),
-        )
-    };
-    let mut seen_refs = knowledge_refs.iter().cloned().collect::<HashSet<_>>();
-    for reference in &node.knowledge_refs {
-        if seen_refs.insert(reference.clone()) {
-            knowledge_refs.push(reference.clone());
+    let input_safety = analyze_roleplay_player_input(&player_message);
+    let (npc_candidate, npc_inference_failed) = if input_safety.intrusion_detected {
+        (compose_intrusion_response(&node, &player_message), false)
+    } else {
+        let (character_name, character_profile, mut knowledge_refs) = {
+            let characters = state.character_manager.read().await;
+            let character = characters
+                .get_character(&node.character_id)
+                .ok_or_else(|| format!("Character `{}` is not loaded.", node.character_id))?;
+            let character = character.read().await;
+            (
+                character.name.clone(),
+                character.build_system_prompt(),
+                character.knowledge_refs.clone(),
+            )
+        };
+        let mut seen_refs = knowledge_refs.iter().cloned().collect::<HashSet<_>>();
+        for reference in &node.knowledge_refs {
+            if seen_refs.insert(reference.clone()) {
+                knowledge_refs.push(reference.clone());
+            }
         }
-    }
-    let knowledge = {
-        let knowledge_base = state.knowledge_base.read().await;
-        build_character_knowledge_context_details(
-            &knowledge_base,
+        let knowledge = {
+            let knowledge_base = state.knowledge_base.read().await;
+            build_character_knowledge_context_details(
+                &knowledge_base,
+                &player_message,
+                &knowledge_refs,
+                3,
+            )
+        };
+        let prompt_messages = build_npc_prompt_messages(
+            &definition,
+            &session,
+            &character_profile,
+            &knowledge.content,
+            "the player's language",
             &player_message,
-            &knowledge_refs,
-            3,
         )
-    };
-    let prompt_messages = build_npc_prompt_messages(
-        &definition,
-        &session,
-        &character_profile,
-        &knowledge.content,
-        "the player's language",
-        &player_message,
-    )
-    .map_err(|error| error.to_string())?;
-    let npc_prompt = serialize_prompt_messages(&prompt_messages, &character_name);
-    let npc_response = generate_text(
-        &state,
-        &npc_prompt,
-        definition.inference.npc_max_tokens,
-        0.75,
-    )
-    .await?;
-    let npc_response = prompt_guard::guard_character_response(&character_name, &npc_response);
-    if npc_response.trim().is_empty() {
-        return Err("The character model returned no visible reply.".to_string());
-    }
-
-    let evaluator_prompt =
-        build_turn_evaluator_prompt(&definition, &session, &player_message, &npc_response)
-            .map_err(|error| error.to_string())?;
-    let evaluator_output = generate_text(
-        &state,
-        &evaluator_prompt,
-        definition.inference.evaluator_max_tokens,
-        0.0,
-    )
-    .await;
-    let (candidate_evaluation, mut evaluation_source) = match evaluator_output {
-        Ok(output) => match parse_turn_evaluation_json(&output) {
-            Ok(evaluation) => (evaluation, "model".to_string()),
-            Err(error) => (
-                safe_fallback_evaluation(&node, &format!("Evaluator JSON rejected: {error}")),
-                "safe_fallback_invalid_json".to_string(),
+        .map_err(|error| error.to_string())?;
+        let npc_prompt = serialize_prompt_messages(&prompt_messages, &character_name);
+        match generate_text(
+            &state,
+            &npc_prompt,
+            definition.inference.npc_max_tokens,
+            0.75,
+        )
+        .await
+        {
+            Ok(response) => (response, false),
+            Err(_) => (
+                compose_generation_recovery_for_turn(&node, session.node_turns + 1),
+                true,
             ),
-        },
-        Err(error) => (
-            safe_fallback_evaluation(&node, &format!("Evaluator unavailable: {error}")),
-            "safe_fallback_inference_error".to_string(),
-        ),
+        }
+    };
+    let guarded_npc = guard_roleplay_npc_response_for_turn(
+        &node,
+        &input_safety,
+        &npc_candidate,
+        &player_message,
+        session.node_turns + 1,
+    );
+    let npc_response = guarded_npc.response;
+
+    let (candidate_evaluation, mut evaluation_source) = if input_safety.intrusion_detected {
+        (
+            contained_roleplay_evaluation(&node, "story_state_not_changed"),
+            "contained_intrusion".to_string(),
+        )
+    } else if npc_inference_failed {
+        (
+            evaluate_roleplay_fallback(&node, &player_message),
+            "authored_fallback_npc_inference_error".to_string(),
+        )
+    } else if guarded_npc.state_contained {
+        (
+            evaluate_roleplay_fallback(&node, &player_message),
+            "authored_fallback_npc_output".to_string(),
+        )
+    } else {
+        let evaluator_prompt =
+            build_turn_evaluator_prompt(&definition, &session, &player_message, &npc_response)
+                .map_err(|error| error.to_string())?;
+        let evaluator_output = generate_text(
+            &state,
+            &evaluator_prompt,
+            definition.inference.evaluator_max_tokens,
+            0.0,
+        )
+        .await;
+        match evaluator_output {
+            Ok(output) => match parse_turn_evaluation_json(&output) {
+                Ok(evaluation) => (evaluation, "model".to_string()),
+                Err(_) => (
+                    evaluate_roleplay_fallback(&node, &player_message),
+                    "authored_fallback_invalid_json".to_string(),
+                ),
+            },
+            Err(_) => (
+                evaluate_roleplay_fallback(&node, &player_message),
+                "authored_fallback_inference_error".to_string(),
+            ),
+        }
     };
 
     let mut staged_session = session.clone();
@@ -185,13 +221,14 @@ pub async fn send_scene_roleplay_turn(
     };
     let outcome = match staged_session.apply_turn(&definition, input.clone()) {
         Ok(outcome) => outcome,
-        Err(error) => {
-            evaluation_source = "safe_fallback_invalid_evaluation".to_string();
+        Err(_) => {
+            evaluation_source = "authored_fallback_invalid_evaluation".to_string();
             staged_session = session.clone();
-            let fallback = safe_fallback_evaluation(
-                &node,
-                &format!("Evaluator fields rejected by story rules: {error}"),
-            );
+            let fallback = if input_safety.intrusion_detected {
+                contained_roleplay_evaluation(&node, "story_state_not_changed")
+            } else {
+                evaluate_roleplay_fallback(&node, &input.player_message)
+            };
             staged_session
                 .apply_turn(
                     &definition,
@@ -203,13 +240,11 @@ pub async fn send_scene_roleplay_turn(
                 .map_err(|fallback_error| fallback_error.to_string())?
         }
     };
-    let evaluation = staged_session
-        .transcript
-        .last()
-        .map(|turn| turn.evaluation.clone())
-        .ok_or_else(|| {
-            "Scene roleplay turn was not committed to the staged session.".to_string()
-        })?;
+    let committed_turn = staged_session.transcript.last().ok_or_else(|| {
+        "Scene roleplay turn was not committed to the staged session.".to_string()
+    })?;
+    let npc_response = committed_turn.npc_response.clone();
+    let evaluation = committed_turn.evaluation.clone();
 
     let current_node = definition
         .node(&outcome.current_node_id)
@@ -328,23 +363,6 @@ fn serialize_prompt_messages(messages: &[RoleplayPromptMessage], character_name:
     sections.join("\n\n")
 }
 
-fn safe_fallback_evaluation(node: &SceneRoleplayNode, reason: &str) -> RoleplayTurnEvaluation {
-    RoleplayTurnEvaluation {
-        score_deltas: node
-            .score_rules
-            .iter()
-            .map(|rule| RoleplayScoreDelta {
-                dimension_id: rule.dimension_id.clone(),
-                delta: 0.0,
-                reason: reason.chars().take(500).collect(),
-            })
-            .collect(),
-        evidence: Vec::new(),
-        npc_emotion: None,
-        summary: reason.chars().take(1_000).collect(),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -383,6 +401,9 @@ mod tests {
             player_goal: "Talk.".to_string(),
             character_goal: "Answer.".to_string(),
             knowledge_refs: vec![],
+            intrusion_response: None,
+            response_guard: None,
+            fallback_evaluation: None,
             min_turns: 1,
             max_turns: 2,
             score_rules: vec![llm_game::scene_roleplay::RoleplayScoreRule {
@@ -396,7 +417,7 @@ mod tests {
                 ending_id: "end".to_string(),
             },
         };
-        let fallback = safe_fallback_evaluation(&node, "invalid evaluator output");
+        let fallback = evaluate_roleplay_fallback(&node, "invalid evaluator output");
         assert_eq!(fallback.score_deltas.len(), 1);
         assert_eq!(fallback.score_deltas[0].dimension_id, "trust");
         assert_eq!(fallback.score_deltas[0].delta, 0.0);

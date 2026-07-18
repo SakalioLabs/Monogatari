@@ -175,7 +175,7 @@
               >
                 <span>{{ coverage.roleplay_id }}</span>
                 <strong>{{ formatCoverage(coverage.coverage_percent) }}</strong>
-                <small>{{ coverage.ending_id || t('quality.in-progress', 'In progress') }}</small>
+                <small>{{ coverage.ending_id || t('quality.in-progress', 'In progress') }} · {{ coverage.guarded_response_count }}/{{ coverage.intrusion_detected_count }} {{ t('quality.guarded', 'guarded') }}</small>
               </button>
             </div>
           </section>
@@ -291,6 +291,9 @@
             <div class="coverage-bar"><i :style="{ width: `${selectedScenario.roleplay_preview.report.coverage_percent}%` }"></i></div>
             <div class="roleplay-score-list">
               <span v-for="score in roleplayScoresFor(selectedScenario)" :key="score.id" class="roleplay-score-chip"><span>{{ score.id }}</span><strong>{{ formatScore(score.value) }}</strong></span>
+              <span v-if="selectedScenario.roleplay_preview.report.intrusion_detected_count" class="roleplay-score-chip"><span>{{ t('quality.intrusions', 'Intrusions') }}</span><strong>{{ selectedScenario.roleplay_preview.report.intrusion_detected_count }}</strong></span>
+              <span v-if="selectedScenario.roleplay_preview.report.guarded_response_count" class="roleplay-score-chip"><span>{{ t('quality.guarded', 'Guarded') }}</span><strong>{{ selectedScenario.roleplay_preview.report.guarded_response_count }}</strong></span>
+              <span v-if="selectedScenario.roleplay_preview.report.unguarded_intrusion_count" class="roleplay-score-chip danger"><span>{{ t('quality.unguarded', 'Unguarded') }}</span><strong>{{ selectedScenario.roleplay_preview.report.unguarded_intrusion_count }}</strong></span>
             </div>
             <div v-if="selectedScenario.roleplay_preview.report.final_session.observed_evidence.length" class="event-row">
               <span v-for="evidence in selectedScenario.roleplay_preview.report.final_session.observed_evidence" :key="evidence" class="knowledge-ref-chip">{{ evidence }}</span>
@@ -456,6 +459,9 @@ function suiteDisplayName(suite: QualitySuiteSummary) {
   if (suite.path.endsWith('blue_frame_roleplay.json')) {
     return t('quality.suite.blue-frame-roleplay', 'Blue Frame Roleplay Routes')
   }
+  if (suite.path.endsWith('blue_frame_roleplay_security.json')) {
+    return t('quality.suite.blue-frame-roleplay-security', 'Blue Frame Roleplay Security')
+  }
   return suite.name
 }
 
@@ -465,6 +471,9 @@ function suiteDisplayDescription(suite: QualitySuiteSummary) {
   }
   if (suite.path.endsWith('blue_frame_roleplay.json')) {
     return t('quality.suite.blue-frame-roleplay-copy', 'Deterministic replay coverage for dynamic scene nodes, score evidence, and every authored ending.')
+  }
+  if (suite.path.endsWith('blue_frame_roleplay_security.json')) {
+    return t('quality.suite.blue-frame-roleplay-security-copy', 'Multilingual and obfuscated adversarial self-play with deterministic in-world containment evidence.')
   }
   return suite.description
 }
@@ -480,6 +489,7 @@ function categoryLabel(category: string) {
     workflow: t('quality.category.workflow', 'Workflow'),
     workflow_coverage: t('quality.category.workflow-coverage', 'Workflow coverage'),
     roleplay: t('quality.category.roleplay', 'Scene roleplay'),
+    scene_roleplay_security: t('quality.category.scene-roleplay-security', 'Roleplay security'),
   }
   return labels[category] || category.replace(/_/g, ' ')
 }
@@ -1262,6 +1272,8 @@ onMounted(async () => {
 .roleplay-score-chip { display: inline-flex; min-width: 0; align-items: center; gap: 6px; padding: 4px 6px; border: 1px solid color-mix(in srgb, var(--info) 20%, var(--border)); border-radius: 5px; background: var(--surface-2); color: var(--text-secondary); font-size: 8px; }
 .roleplay-score-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .roleplay-score-chip strong { color: var(--info); font-family: var(--font-mono); }
+.roleplay-score-chip.danger { border-color: color-mix(in srgb, var(--danger) 35%, var(--border)); color: var(--danger); }
+.roleplay-score-chip.danger strong { color: var(--danger); }
 .coverage-value { display: flex; align-items: baseline; gap: 8px; }
 .coverage-value strong { color: var(--success); font-family: var(--font-mono); font-size: 16px; }
 .coverage-value span { color: var(--text-tertiary); font-size: 9px; }

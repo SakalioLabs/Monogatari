@@ -29,6 +29,9 @@ pub struct SceneRoleplayPreviewReport {
     pub completed: bool,
     pub ending_id: Option<String>,
     pub coverage_percent: f32,
+    pub intrusion_detected_count: usize,
+    pub guarded_response_count: usize,
+    pub unguarded_intrusion_count: usize,
     pub visited_node_ids: Vec<String>,
     pub unvisited_node_ids: Vec<String>,
     pub final_session: SceneRoleplaySession,
@@ -108,6 +111,21 @@ pub fn execute_scene_roleplay_preview(
     } else {
         visited_node_ids.len() as f32 / definition.nodes.len() as f32 * 100.0
     };
+    let intrusion_detected_count = session
+        .transcript
+        .iter()
+        .filter(|turn| turn.input_safety.intrusion_detected)
+        .count();
+    let guarded_response_count = session
+        .transcript
+        .iter()
+        .filter(|turn| turn.npc_response_guarded)
+        .count();
+    let unguarded_intrusion_count = session
+        .transcript
+        .iter()
+        .filter(|turn| turn.input_safety.intrusion_detected && !turn.npc_response_guarded)
+        .count();
 
     Ok(SceneRoleplayPreviewReport {
         schema: SCENE_ROLEPLAY_PREVIEW_SCHEMA_V1.to_string(),
@@ -117,6 +135,9 @@ pub fn execute_scene_roleplay_preview(
         completed: session.ending_id.is_some(),
         ending_id: session.ending_id.clone(),
         coverage_percent,
+        intrusion_detected_count,
+        guarded_response_count,
+        unguarded_intrusion_count,
         visited_node_ids,
         unvisited_node_ids,
         final_session: session,

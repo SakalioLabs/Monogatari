@@ -607,6 +607,10 @@ mod tests {
         assert!(serde_json::to_string(quality_output_schema)
             .unwrap()
             .contains("scenarios"));
+        let quality_schema = serde_json::to_string(quality_output_schema).unwrap();
+        assert!(quality_schema.contains("intrusion_detected_count"));
+        assert!(quality_schema.contains("guarded_response_count"));
+        assert!(quality_schema.contains("unguarded_intrusion_count"));
         let workflow = tools
             .iter()
             .find(|tool| tool.name == "preview_workflow")
@@ -655,6 +659,9 @@ mod tests {
         assert!(roleplay_schema.contains("source_sha256"));
         assert!(roleplay_schema.contains("visited_node_ids"));
         assert!(roleplay_schema.contains("final_session"));
+        assert!(roleplay_schema.contains("input_safety"));
+        assert!(roleplay_schema.contains("intrusion_detected_count"));
+        assert!(roleplay_schema.contains("guarded_response_count"));
         let preview = tools
             .iter()
             .find(|tool| tool.name == "preview_project_package")

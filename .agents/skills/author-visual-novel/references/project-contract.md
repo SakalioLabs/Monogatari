@@ -11,7 +11,7 @@
 - `docs/MCP_SERVER.md`: MCP startup, tool, write-mode, and acceptance boundaries.
 - `agent-transaction.md`: versioned optimistic multi-file JSON operation format.
 - `data/quality_suites/character_stability.json`: executable story and safety acceptance examples.
-- `data/roleplays/blue_frame_roleplay.json` and `data/quality_suites/blue_frame_roleplay.json`: dynamic roleplay and provider-free route acceptance examples.
+- `data/roleplays/blue_frame_roleplay.json`, `data/quality_suites/blue_frame_roleplay.json`, and `data/quality_suites/blue_frame_roleplay_security.json`: dynamic roleplay, route acceptance, and 45-turn adversarial containment examples.
 - `scripts/module-test-matrix.json`: independently runnable engineering gates.
 - `scripts/verify-release.mjs`: final integrated release gate.
 
@@ -38,7 +38,8 @@
 - Make every roleplay, dialogue, and workflow node reachable from its start node, with intentional terminal paths.
 - Resolve every roleplay node's scene, main/supporting characters, Knowledge refs, node targets, timeout target, exhaustion ending, and score/evidence IDs.
 - Keep authority separated: the NPC generator writes only the visible response, the evaluator proposes structured score/evidence observations, and the deterministic roleplay state machine validates, clamps, records, and selects transitions or endings.
-- Bound roleplay context, recent turns, generated tokens, total turns, node turns, and retained transcript size. A failed evaluator must produce an explicit zero-score fallback and must not invent evidence.
+- Give each AI roleplay node scene-specific intrusion anchors, ambiguous interpretations, redirects, forbidden output markers, a closed grounding vocabulary with a minimum distinct-match count, and bounded rotating recoveries. Detected control attempts must be omitted from model context, skip generation/evaluation where supported, receive zero score/evidence, and remain inside the fiction without asserting a real diagnosis.
+- Bound roleplay context, recent turns, generated tokens, total turns, node turns, and retained transcript size. Author conservative fallback score/evidence signals for clean NPC/evaluator inference failures; every fallback evidence item must still quote the exact player message. Attacks must never activate those signals.
 - Resolve every dialogue-node `scene_id` and every scene `model_3d_path`; keep a 2D background fallback when delivery needs graceful GPU/load failure behavior.
 - Do not reference a character, scene, roleplay, dialogue, ending, event, knowledge entry, or asset that does not exist.
 - Write Knowledge with canonical `related_entries`, lowercase portable IDs/categories, trimmed unique tags and relations, bounded metadata, and importance in `0..=1`; relations cannot target the source entry itself.

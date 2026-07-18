@@ -380,6 +380,9 @@ function previewReport(scenarios: QualityScenarioReport[]): QualitySuiteReport {
             source_sha256: scenario.roleplay_preview.source_sha256,
             ending_id: scenario.roleplay_preview.report.ending_id,
             coverage_percent: scenario.roleplay_preview.report.coverage_percent,
+            intrusion_detected_count: scenario.roleplay_preview.report.intrusion_detected_count,
+            guarded_response_count: scenario.roleplay_preview.report.guarded_response_count,
+            unguarded_intrusion_count: scenario.roleplay_preview.report.unguarded_intrusion_count,
             visited_node_ids: [...scenario.roleplay_preview.report.visited_node_ids],
             unvisited_node_ids: [...scenario.roleplay_preview.report.unvisited_node_ids],
           }]

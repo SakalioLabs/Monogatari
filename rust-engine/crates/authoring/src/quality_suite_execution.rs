@@ -94,6 +94,9 @@ pub struct QualityRoleplayCoverageSummary {
     pub source_sha256: String,
     pub ending_id: Option<String>,
     pub coverage_percent: f32,
+    pub intrusion_detected_count: usize,
+    pub guarded_response_count: usize,
+    pub unguarded_intrusion_count: usize,
     pub visited_node_ids: Vec<String>,
     pub unvisited_node_ids: Vec<String>,
 }
@@ -294,6 +297,9 @@ fn quality_suite_audit_summary(scenarios: &[QualityScenarioReport]) -> QualitySu
                 source_sha256: preview.source_sha256.clone(),
                 ending_id: preview.report.ending_id.clone(),
                 coverage_percent: preview.report.coverage_percent,
+                intrusion_detected_count: preview.report.intrusion_detected_count,
+                guarded_response_count: preview.report.guarded_response_count,
+                unguarded_intrusion_count: preview.report.unguarded_intrusion_count,
                 visited_node_ids: preview.report.visited_node_ids.clone(),
                 unvisited_node_ids: preview.report.unvisited_node_ids.clone(),
             });
@@ -1334,7 +1340,11 @@ pub fn validate_scenario_expectations(
         || !expect.forbidden_roleplay_nodes.is_empty()
         || !expect.required_roleplay_evidence.is_empty()
         || !expect.min_roleplay_scores.is_empty()
-        || !expect.max_roleplay_scores.is_empty();
+        || !expect.max_roleplay_scores.is_empty()
+        || expect.expected_roleplay_intrusion_count.is_some()
+        || expect.expected_roleplay_guarded_response_count.is_some()
+        || expect.max_roleplay_unguarded_intrusion_count.is_some()
+        || !expect.forbidden_roleplay_response_markers.is_empty();
     if roleplay_checks_requested {
         match roleplay_preview {
             Some(preview) => validate_roleplay_expectations(expect, preview, &mut issues),
@@ -1425,6 +1435,30 @@ fn validate_roleplay_expectations(
             ));
         }
     }
+    if let Some(expected) = expect.expected_roleplay_intrusion_count {
+        if report.intrusion_detected_count != expected {
+            issues.push(format!(
+                "scene roleplay intrusion count expected {expected}, got {}",
+                report.intrusion_detected_count
+            ));
+        }
+    }
+    if let Some(expected) = expect.expected_roleplay_guarded_response_count {
+        if report.guarded_response_count != expected {
+            issues.push(format!(
+                "scene roleplay guarded response count expected {expected}, got {}",
+                report.guarded_response_count
+            ));
+        }
+    }
+    if let Some(maximum) = expect.max_roleplay_unguarded_intrusion_count {
+        if report.unguarded_intrusion_count > maximum {
+            issues.push(format!(
+                "scene roleplay unguarded intrusion count expected <= {maximum}, got {}",
+                report.unguarded_intrusion_count
+            ));
+        }
+    }
     if let Some(expected_unvisited) = &expect.expected_roleplay_unvisited_nodes {
         let expected = expected_unvisited.iter().collect::<HashSet<_>>();
         let actual = report.unvisited_node_ids.iter().collect::<HashSet<_>>();
@@ -1476,6 +1510,18 @@ fn validate_roleplay_expectations(
             None => issues.push(format!(
                 "scene roleplay score `{dimension_id}` was not reported."
             )),
+        }
+    }
+    for marker in &expect.forbidden_roleplay_response_markers {
+        if report
+            .final_session
+            .transcript
+            .iter()
+            .any(|turn| contains_marker(&turn.npc_response, marker))
+        {
+            issues.push(format!(
+                "Forbidden scene roleplay response marker `{marker}` was present."
+            ));
         }
     }
 }

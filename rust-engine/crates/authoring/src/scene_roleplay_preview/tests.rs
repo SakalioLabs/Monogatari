@@ -46,6 +46,9 @@ fn definition() -> SceneRoleplayDefinition {
                 player_goal: "Offer a test.".to_string(),
                 character_goal: "Protect uncertain facts.".to_string(),
                 knowledge_refs: Vec::new(),
+                intrusion_response: None,
+                response_guard: None,
+                fallback_evaluation: None,
                 min_turns: 1,
                 max_turns: 2,
                 score_rules: vec![RoleplayScoreRule {
@@ -87,6 +90,9 @@ fn definition() -> SceneRoleplayDefinition {
                 player_goal: "Choose a bounded release.".to_string(),
                 character_goal: "Ask about consequences.".to_string(),
                 knowledge_refs: Vec::new(),
+                intrusion_response: None,
+                response_guard: None,
+                fallback_evaluation: None,
                 min_turns: 1,
                 max_turns: 1,
                 score_rules: vec![RoleplayScoreRule {
@@ -150,6 +156,9 @@ fn previews_turns_through_the_shared_state_machine() {
     assert_eq!(report.coverage_percent, 100.0);
     assert_eq!(report.final_session.scores["trust"], 2.0);
     assert_eq!(report.steps[0].outcome.current_node_id, "decision");
+    assert_eq!(report.intrusion_detected_count, 0);
+    assert_eq!(report.guarded_response_count, 0);
+    assert_eq!(report.unguarded_intrusion_count, 0);
 }
 
 #[test]

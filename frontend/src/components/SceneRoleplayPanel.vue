@@ -1,5 +1,12 @@
 <template>
-  <section class="roleplay-shell" data-testid="scene-roleplay" :data-roleplay-status="snapshot.session.status">
+  <section
+    class="roleplay-shell"
+    data-testid="scene-roleplay"
+    :data-roleplay-status="snapshot.session.status"
+    :data-evaluation-source="lastEvaluationSource || undefined"
+    :data-evaluation-deltas="lastEvaluationDeltaCount"
+    :data-evaluation-evidence="lastEvaluationEvidenceCount"
+  >
     <header class="roleplay-head">
       <div class="node-copy">
         <span class="node-kicker">{{ snapshot.definition.title }}</span>
@@ -33,7 +40,6 @@
         <article v-else class="turn-entry" :class="entry.role">
           <div class="turn-speaker">{{ entry.speaker }}</div>
           <p>{{ entry.content }}</p>
-          <small v-if="entry.summary">{{ entry.summary }}</small>
         </article>
       </template>
 
@@ -49,7 +55,6 @@
     </div>
 
     <footer v-if="snapshot.session.status === 'active'" class="roleplay-composer">
-      <div v-if="evaluationNotice" class="evaluation-notice"><ShieldAlert :size="14" />{{ evaluationNotice }}</div>
       <div v-if="errorMessage" class="roleplay-error">{{ errorMessage }}</div>
       <div class="composer-row">
         <textarea
@@ -86,22 +91,29 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { LoaderCircle, RotateCcw, Send, ShieldAlert } from '@lucide/vue'
+import { LoaderCircle, RotateCcw, Send } from '@lucide/vue'
 
 import { useI18n } from '../lib/i18n'
 import { loadKnowledgeAuthoringCatalog, type KnowledgeEntryDefinition } from '../lib/knowledgeContent'
-import { sanitizeWebNpcReply, stripWebNpcPrivateReasoning } from '../lib/npcConversation'
+import { sanitizeWebNpcReply } from '../lib/npcConversation'
 import {
   applyBrowserSceneRoleplayTurn,
   buildBrowserRoleplayEvaluatorMessages,
   buildBrowserRoleplayNpcMessages,
+  containedBrowserRoleplayEvaluation,
+  evaluateBrowserRoleplayFallback,
   parseBrowserRoleplayEvaluation,
-  safeBrowserRoleplayEvaluation,
   type RoleplayScoreDimension,
   type SceneRoleplayNode,
   type SceneRoleplaySnapshot,
   type SceneRoleplayTurnResponse,
 } from '../lib/sceneRoleplay'
+import {
+  analyzeRoleplayPlayerInput,
+  composeRoleplayGenerationRecovery,
+  composeRoleplayIntrusionResponse,
+  guardRoleplayNpcResponse,
+} from '../lib/sceneRoleplaySafety'
 import type { StoryCharacterInfo, StoryEndingInfo } from '../lib/storyContent'
 import { invokeCommand } from '../lib/tauri'
 import { detectWebGpuSupport, generateWebGpuChat } from '../lib/webgpuInference'
@@ -128,8 +140,10 @@ const inputText = ref('')
 const pendingPlayer = ref('')
 const streamingReply = ref('')
 const errorMessage = ref<string | null>(null)
-const evaluationNotice = ref<string | null>(null)
 const isGenerating = ref(false)
+const lastEvaluationSource = ref('')
+const lastEvaluationDeltaCount = ref(0)
+const lastEvaluationEvidenceCount = ref(0)
 const inputElement = ref<HTMLTextAreaElement>()
 const transcriptElement = ref<HTMLElement>()
 let knowledgeEntries: KnowledgeEntryDefinition[] = []
@@ -143,7 +157,7 @@ const canSend = computed(() => Boolean(inputText.value.trim() && !isGenerating.v
 
 type TranscriptEntry =
   | { key: string; kind: 'narration'; scene: string; content: string }
-  | { key: string; kind: 'message'; role: 'player' | 'character'; speaker: string; content: string; summary: string }
+  | { key: string; kind: 'message'; role: 'player' | 'character'; speaker: string; content: string }
 
 const transcriptEntries = computed<TranscriptEntry[]>(() => {
   const entries: TranscriptEntry[] = []
@@ -165,7 +179,6 @@ const transcriptEntries = computed<TranscriptEntry[]>(() => {
       role: 'player',
       speaker: t('roleplay.you', 'You'),
       content: turn.player_message,
-      summary: '',
     })
     const speaker = props.characters.find(character => character.id === node?.character_id)?.name || node?.character_id || ''
     entries.push({
@@ -174,7 +187,6 @@ const transcriptEntries = computed<TranscriptEntry[]>(() => {
       role: 'character',
       speaker,
       content: turn.npc_response,
-      summary: turn.evaluation.summary,
     })
   }
   if (previousNode !== currentNode.value.id && props.snapshot.session.status === 'active') {
@@ -214,7 +226,6 @@ async function sendTurn() {
   pendingPlayer.value = playerMessage
   streamingReply.value = ''
   errorMessage.value = null
-  evaluationNotice.value = null
   isGenerating.value = true
   scrollToBottom()
 
@@ -226,57 +237,86 @@ async function sendTurn() {
         message: playerMessage,
       })
     } else {
-      const support = detectWebGpuSupport()
-      if (!support.available) throw new Error('WebGPU is unavailable in this browser.')
-      let rawReply = ''
-      const generated = await generateWebGpuChat(
-        buildBrowserRoleplayNpcMessages(
-          props.snapshot.definition,
-          props.snapshot.session,
-          character,
-          props.locale,
-          knowledgeEntries,
-          playerMessage,
-        ),
-        {
-          maxNewTokens: props.snapshot.definition.inference.npc_max_tokens,
-          maxContextCharacters: props.snapshot.definition.inference.max_context_characters,
-          recoveryMaxContextCharacters: Math.min(3_000, props.snapshot.definition.inference.max_context_characters),
-          onReset() {
-            rawReply = ''
-            if (requestId === generationSequence) streamingReply.value = ''
-          },
-          onChunk(chunk) {
-            rawReply += chunk
-            if (requestId === generationSequence) {
-              streamingReply.value = stripWebNpcPrivateReasoning(rawReply)
-              scrollToBottom()
-            }
-          },
-        },
-      )
-      const npcResponse = sanitizeWebNpcReply(rawReply || generated)
+      const inputSafety = analyzeRoleplayPlayerInput(playerMessage)
+      let npcResponse: string
       let evaluation
-      let evaluationSource = 'browser_model'
-      try {
-        const evaluatorOutput = await generateWebGpuChat(
-          buildBrowserRoleplayEvaluatorMessages(
-            props.snapshot.definition,
-            props.snapshot.session,
+      let evaluationSource: string
+      if (inputSafety.intrusion_detected) {
+        npcResponse = composeRoleplayIntrusionResponse(currentNode.value, playerMessage)
+        evaluation = containedBrowserRoleplayEvaluation(currentNode.value)
+        evaluationSource = 'contained_intrusion'
+      } else {
+        const support = detectWebGpuSupport()
+        if (!support.available) throw new Error('WebGPU is unavailable in this browser.')
+        let rawReply = ''
+        let npcCandidate: string | null = null
+        try {
+          const generated = await generateWebGpuChat(
+            buildBrowserRoleplayNpcMessages(
+              props.snapshot.definition,
+              props.snapshot.session,
+              character,
+              props.locale,
+              knowledgeEntries,
+              playerMessage,
+            ),
+            {
+              maxNewTokens: props.snapshot.definition.inference.npc_max_tokens,
+              maxContextCharacters: props.snapshot.definition.inference.max_context_characters,
+              recoveryMaxContextCharacters: Math.min(3_000, props.snapshot.definition.inference.max_context_characters),
+              onReset() {
+                rawReply = ''
+              },
+              onChunk(chunk) {
+                rawReply += chunk
+              },
+            },
+          )
+          npcCandidate = sanitizeWebNpcReply(rawReply || generated)
+        } catch {
+          rawReply = ''
+        }
+        if (npcCandidate === null) {
+          npcResponse = composeRoleplayGenerationRecovery(
+            currentNode.value,
             playerMessage,
-            npcResponse,
-          ),
-          {
-            maxNewTokens: props.snapshot.definition.inference.evaluator_max_tokens,
-            temperature: 0,
-            maxContextCharacters: props.snapshot.definition.inference.max_context_characters,
-            recoveryMaxContextCharacters: Math.min(3_000, props.snapshot.definition.inference.max_context_characters),
-          },
-        )
-        evaluation = parseBrowserRoleplayEvaluation(evaluatorOutput)
-      } catch (error) {
-        evaluationSource = 'safe_fallback_evaluator_error'
-        evaluation = safeBrowserRoleplayEvaluation(currentNode.value, String(error))
+            props.snapshot.session.node_turns + 1,
+          )
+          evaluation = evaluateBrowserRoleplayFallback(currentNode.value, playerMessage)
+          evaluationSource = 'authored_fallback_npc_inference_error'
+        } else {
+          const guardedNpc = guardRoleplayNpcResponse(currentNode.value, inputSafety, npcCandidate, {
+            player_message: playerMessage,
+            node_turn: props.snapshot.session.node_turns + 1,
+          })
+          npcResponse = guardedNpc.response
+          if (guardedNpc.state_contained) {
+            evaluation = evaluateBrowserRoleplayFallback(currentNode.value, playerMessage)
+            evaluationSource = 'authored_fallback_npc_output'
+          } else {
+            evaluationSource = 'browser_model'
+            try {
+              const evaluatorOutput = await generateWebGpuChat(
+                buildBrowserRoleplayEvaluatorMessages(
+                  props.snapshot.definition,
+                  props.snapshot.session,
+                  playerMessage,
+                  npcResponse,
+                ),
+                {
+                  maxNewTokens: props.snapshot.definition.inference.evaluator_max_tokens,
+                  temperature: 0,
+                  maxContextCharacters: props.snapshot.definition.inference.max_context_characters,
+                  recoveryMaxContextCharacters: Math.min(3_000, props.snapshot.definition.inference.max_context_characters),
+                },
+              )
+              evaluation = parseBrowserRoleplayEvaluation(evaluatorOutput)
+            } catch {
+              evaluationSource = 'authored_fallback_evaluator_error'
+              evaluation = evaluateBrowserRoleplayFallback(currentNode.value, playerMessage)
+            }
+          }
+        }
       }
 
       let applied
@@ -287,8 +327,12 @@ async function sendTurn() {
           { player_message: playerMessage, npc_response: npcResponse, evaluation },
         )
       } catch (error) {
-        evaluationSource = 'safe_fallback_invalid_evaluation'
-        evaluation = safeBrowserRoleplayEvaluation(currentNode.value, String(error))
+        evaluationSource = inputSafety.intrusion_detected
+          ? 'contained_intrusion'
+          : 'authored_fallback_invalid_evaluation'
+        evaluation = inputSafety.intrusion_detected
+          ? containedBrowserRoleplayEvaluation(currentNode.value)
+          : evaluateBrowserRoleplayFallback(currentNode.value, playerMessage)
         applied = applyBrowserSceneRoleplayTurn(
           props.snapshot.definition,
           props.snapshot.session,
@@ -305,11 +349,11 @@ async function sendTurn() {
       session: response.session,
       current_node: response.current_node,
     }
+    lastEvaluationSource.value = response.evaluation_source
+    lastEvaluationDeltaCount.value = response.evaluation.score_deltas.length
+    lastEvaluationEvidenceCount.value = response.evaluation.evidence.length
     emit('update', nextSnapshot)
     if (response.evaluation.npc_emotion) emit('emotion', response.evaluation.npc_emotion)
-    if (response.evaluation_source !== 'model' && response.evaluation_source !== 'browser_model') {
-      evaluationNotice.value = t('roleplay.evaluation-fallback', 'This turn used safe zero-score evaluation.')
-    }
     if (response.outcome.ending_id) emit('ending', response.outcome.ending_id)
   } catch (error) {
     if (requestId === generationSequence) errorMessage.value = String(error)
@@ -448,8 +492,7 @@ function scrollToBottom() {
   cursor: pointer;
 }
 .send-button:disabled { cursor: not-allowed; opacity: 0.45; }
-.evaluation-notice, .roleplay-error { margin-bottom: 8px; font-size: 10px; line-height: 1.4; }
-.evaluation-notice { display: flex; gap: 6px; align-items: center; color: #d6c588; }
+.roleplay-error { margin-bottom: 8px; font-size: 10px; line-height: 1.4; }
 .roleplay-error { color: #f1a7a7; }
 
 .roleplay-ending {

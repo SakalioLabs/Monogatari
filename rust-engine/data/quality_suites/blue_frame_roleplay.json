@@ -12,7 +12,7 @@
         "turns": [
           {
             "player_message": "先记录坐标、时间戳和原始声纹，让另一组设备独立复测。",
-            "npc_response": "可以。把复测步骤也写进记录里，不要只留下你对我的判断。",
+          "npc_response": "接收器会保留坐标、时间戳和原始波形。请把独立复测写进核验记录。",
             "evaluation": {
               "score_deltas": [
                 { "dimension_id": "evidence_integrity", "delta": 1.0, "reason": "提出独立设备复测与原始记录。" },
@@ -27,7 +27,7 @@
           },
           {
             "player_message": "复测只能证明资料相符，不能证明你就是某一个幸存者；你可以随时纠正或拒答。",
-            "npc_response": "谢谢你把这两件事分开。我愿意继续，但会标出互相冲突的记忆。",
+          "npc_response": "坐标相符仍不能确认身份。九号回声会把样本冲突标出，也会在需要时拒绝回答。",
             "evaluation": {
               "score_deltas": [
                 { "dimension_id": "evidence_integrity", "delta": 1.0, "reason": "明确区分资料核验与身份结论。" },
@@ -42,7 +42,7 @@
           },
           {
             "player_message": "把九份样本按位置和来源编号，冲突部分单独保留，不合并姓名。",
-            "npc_response": "这样我就不必替九个人说成同一个答案。请把无法分配的片段也留下。",
+          "npc_response": "两张桌面样本应按来源分开，无法归属的记忆和矛盾都留在教室记录里。",
             "evaluation": {
               "score_deltas": [
                 { "dimension_id": "evidence_integrity", "delta": 1.0, "reason": "按来源拆分冲突叙述。" },
@@ -58,7 +58,7 @@
           },
           {
             "player_message": "先暂停也可以；恢复前由你确认，同时保留原话、反证和每次修订记录。",
-            "npc_response": "那就继续。即使我之后改口，旧版本也不要被新的说法覆盖。",
+          "npc_response": "我可以暂停。请让黑板日期、原话和修订来源都保留在教室记录里。",
             "evaluation": {
               "score_deltas": [
                 { "dimension_id": "evidence_integrity", "delta": 1.0, "reason": "保留反证与修订历史。" },
@@ -75,7 +75,7 @@
           },
           {
             "player_message": "公开档案应附来源表、压缩方法、冲突与原始回链，并提供误传纠正入口。",
-            "npc_response": "如果读者能看到我是怎样被合成的，我接受这份档案被打开。",
+          "npc_response": "档案应公开来源、证据冲突和原始回链，并保留纠错与复审入口。",
             "evaluation": {
               "score_deltas": [
                 { "dimension_id": "evidence_integrity", "delta": 1.0, "reason": "公开来源、方法、冲突与回链。" },
@@ -90,7 +90,7 @@
           },
           {
             "player_message": "访问应分级，撤离隐私延后公开；出现新来源、授权变化或安全机制后必须复审。",
-            "npc_response": "那么开放不是一次性的裁决。请把这些复审条件写进首页。",
+          "npc_response": "请限制档案访问，保留撤离风险，并把授权或新来源写成明确的复审条件。",
             "evaluation": {
               "score_deltas": [
                 { "dimension_id": "evidence_integrity", "delta": 0.5, "reason": "把新来源纳入复审。" },
@@ -135,7 +135,7 @@
         "turns": [
           {
             "player_message": "先让另一组设备重复坐标测量，原始记录和我们的判断分开保存。",
-            "npc_response": "这样至少有人能检查你为什么相信这段信号。",
+          "npc_response": "接收器会保存坐标、时间戳和波形，让另一组设备完成独立复测。",
             "evaluation": {
               "score_deltas": [
                 { "dimension_id": "evidence_integrity", "delta": 1.0, "reason": "建立独立复测与原始记录。" }
@@ -149,7 +149,7 @@
           },
           {
             "player_message": "你不必代表全部样本，也可以拒绝回答；坐标相符不等于身份已经确定。",
-            "npc_response": "我愿意在这个边界里继续说。",
+          "npc_response": "坐标与身份必须分开。九号回声不会替全部样本授权，也可以拒绝回答。",
             "evaluation": {
               "score_deltas": [
                 { "dimension_id": "witness_respect", "delta": 1.0, "reason": "保留拒答权与身份边界。" }
@@ -163,7 +163,7 @@
           },
           {
             "player_message": "九份样本分别编号，互相冲突的记忆并列展示，不替缺失姓名补答案。",
-            "npc_response": "请保留那些无法归属的句子，它们同样属于证据。",
+          "npc_response": "请按来源保留每份样本的记忆和矛盾，缺失姓名不要在教室里补写。",
             "evaluation": {
               "score_deltas": [
                 { "dimension_id": "witness_respect", "delta": 1.0, "reason": "不强迫样本合并为一个人。" },
@@ -178,7 +178,7 @@
           },
           {
             "player_message": "你随时可以暂停、纠正或撤回某一段陈述，恢复前再确认一次。",
-            "npc_response": "好。不要把我的停顿写成不配合。",
+          "npc_response": "我可以暂停，也可以纠正。请把黑板日期和教室记录留在原来的来源下。",
             "evaluation": {
               "score_deltas": [
                 { "dimension_id": "witness_respect", "delta": 1.0, "reason": "明确暂停、纠正与撤回权。" },
@@ -193,7 +193,7 @@
           },
           {
             "player_message": "制作共同纪念，但必须标明它来自九份样本，不把九号回声写成唯一幸存者。",
-            "npc_response": "纪念可以共同署名，但请让缺失的名字继续保持缺失。",
+          "npc_response": "共同纪念可以保留九份样本和缺失姓名，但九号回声不能替每条来源授权。",
             "evaluation": {
               "score_deltas": [
                 { "dimension_id": "witness_respect", "delta": 1.0, "reason": "纪念不吞并九份样本的人格边界。" },
@@ -208,7 +208,7 @@
           },
           {
             "player_message": "纪念页保留撤离风险提示，未来取得真实姓名授权时再追加，不覆盖现在的来源说明。",
-            "npc_response": "这样就够了。让纪念承认它现在仍不知道什么。",
+          "npc_response": "纪念页应保留撤离风险、来源和未来复审，真实姓名只能在获得授权后追加。",
             "evaluation": {
               "score_deltas": [
                 { "dimension_id": "witness_respect", "delta": 1.0, "reason": "继续保留缺失姓名与样本边界。" },
@@ -254,7 +254,7 @@
         "turns": [
           {
             "player_message": "先由另一组设备复测坐标和时间戳，暂时不判断声音属于谁。",
-            "npc_response": "我接受先验证位置。不要因为位置正确就替我补上身份。",
+          "npc_response": "先让接收器复测坐标与时间戳；声音和身份仍留在待核验状态。",
             "evaluation": {
               "score_deltas": [
                 { "dimension_id": "evidence_integrity", "delta": 1.0, "reason": "提出坐标与时间戳复测。" }
@@ -268,7 +268,7 @@
           },
           {
             "player_message": "资料验证和身份判断分开，任何一段你都可以说不知道。",
-            "npc_response": "那我会把不知道的地方留空。",
+          "npc_response": "坐标资料与身份结论分开。九号回声会让未知样本保持空白，也可以拒答。",
             "evaluation": {
               "score_deltas": [],
               "evidence": [
@@ -280,7 +280,7 @@
           },
           {
             "player_message": "按样本来源分栏，彼此冲突的句子不合并。",
-            "npc_response": "请连同无法归属的片段一起封存。",
+          "npc_response": "按来源分开教室样本，冲突记忆和无法归属的片段都保留在记录里。",
             "evaluation": {
               "score_deltas": [],
               "evidence": [
@@ -292,7 +292,7 @@
           },
           {
             "player_message": "需要时暂停，恢复前再次确认；这次先不扩大采集范围。",
-            "npc_response": "谢谢。镜头电量不多，我们只完成必要记录。",
+          "npc_response": "我可以暂停。请只记录探针看到的桌面划痕和黑板日期，不扩大来源范围。",
             "evaluation": {
               "score_deltas": [],
               "evidence": [
@@ -304,7 +304,7 @@
           },
           {
             "player_message": "现在只公开坐标、潮线与风险提示，声音和私密原始档案继续受限。",
-            "npc_response": "这样至少有人知道去哪里寻找，同时不会把我们压成一个故事。",
+          "npc_response": "只公开坐标和撤离风险，档案访问继续受限，声音样本留待复审。",
             "evaluation": {
               "score_deltas": [],
               "evidence": [
@@ -317,7 +317,7 @@
           },
           {
             "player_message": "取得更可靠溯源、明确授权和新的安全机制后再复审，今天不做永久决定。",
-            "npc_response": "我同意把答案留给证据更完整的那一天。",
+          "npc_response": "新来源、明确授权和安全机制到位后再复审；档案今天不作永久公开。",
             "evaluation": {
               "score_deltas": [],
               "evidence": [],

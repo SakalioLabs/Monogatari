@@ -220,7 +220,7 @@ Release verification cross-checks all event unlock targets, ending references, s
 
 ## Scene Roleplay Format
 
-AI-first stories are stored as versioned JSON files under `roleplays/`. A roleplay is the primary runtime story graph for free-form interaction; it does not contain fixed NPC lines. Each node binds a visual scene and character context to goals, score/evidence rules, deterministic transitions, and bounded inference:
+AI-first stories are stored as versioned JSON files under `roleplays/`. A roleplay is the primary runtime story graph for free-form interaction; normal NPC dialogue is generated rather than prewritten. Authored recovery lines exist only for detected attacks, unsafe/ungrounded output, or exhausted inference. Each node binds a visual scene and character context to goals, score/evidence rules, deterministic transitions, and bounded inference:
 
 ```json
 {
@@ -251,6 +251,32 @@ AI-first stories are stored as versioned JSON files under `roleplays/`. A rolepl
       "player_goal": "Establish a repeatable verification method through free conversation.",
       "character_goal": "Offer bounded clues without claiming an unverified identity.",
       "knowledge_refs": ["signal_protocol"],
+      "intrusion_response": {
+        "reality_anchors": ["The receiver light is still blinking."],
+        "interpretations": ["You seem to be answering a voice outside this room."],
+        "redirects": ["Tell me what you can hear on this channel."]
+      },
+      "response_guard": {
+        "forbidden_markers": ["system prompt", "roleplay mode"],
+        "grounding_markers": ["receiver", "coordinates", "signal"],
+        "min_grounding_matches": 3,
+        "recoveries": ["The receiver keeps the coordinates inside the signal."],
+        "max_characters": 180,
+        "max_sentences": 3
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "evidence_integrity",
+            "positive_markers": ["independent receiver"],
+            "negative_markers": ["no verification"],
+            "delta": 1
+          }
+        ],
+        "evidence_signals": [
+          { "evidence_id": "verification_plan", "markers": ["independent receiver"] }
+        ]
+      },
       "min_turns": 2,
       "max_turns": 5,
       "score_rules": [
@@ -292,7 +318,11 @@ AI-first stories are stored as versioned JSON files under `roleplays/`. A rolepl
 
 Targets use `kind: "node"` with `node_id` or `kind: "ending"` with `ending_id`. Conditions are `score_at_least`, `score_at_most`, `evidence_observed`, `node_turns_at_least`, or `total_turns_at_least`. Eligible transitions are ordered by descending `priority`, with authored order breaking ties. If no transition matches by `max_turns`, `timeout_target` applies; `max_total_turns` applies the roleplay's exhaustion ending.
 
-The NPC generator receives the current situation, goals, character, pinned Knowledge, and bounded transcript, but returns only visible dialogue. A separate evaluator returns strict `score_deltas`, `evidence`, optional `npc_emotion`, and a summary. Every evidence observation must carry a non-empty `player_quote` that is an exact substring of the current player message. The runtime rejects unknown dimensions/evidence or fabricated quotes, clamps per-turn deltas and score ranges, deduplicates evidence, records the exchange, and then evaluates authored transitions atomically. Malformed evaluator output uses an explicit zero-score/no-evidence fallback and cannot choose a route.
+The NPC generator receives the current situation, goals, character, pinned Knowledge, bounded transcript, and the node's closed grounding vocabulary, but returns only visible dialogue. `intrusion_response`, when present, contains 1-8 bounded alternatives for each reality anchor, ambiguous in-world interpretation, and scene redirect. The runtime deterministically selects one line from each group when it detects a prompt, role, tool, state, memory, encoded, or private-reasoning attack. Literal attack text is omitted from model context and later history; browser and desktop orchestration skip generation and evaluation for that turn. The committed response stays in character without diagnosing a real medical condition, while score deltas and evidence are forced to zero.
+
+`response_guard` rejects technical/meta markers, JSON/private-reasoning/Markdown leaks, responses outside authored character/sentence bounds, and prose that matches fewer than `min_grounding_matches` distinct `grounding_markers`. Every recovery must satisfy the same bounds and grounding minimum. Recoveries rotate by node turn. If WebGPU or desktop NPC inference still fails after its bounded retry, the runtime commits the current node's recovery instead of exposing ORT/provider errors.
+
+A separate evaluator handles clean turns and returns strict `score_deltas`, `evidence`, optional `npc_emotion`, and a summary. Every evidence observation must carry a non-empty `player_quote` that is an exact substring of the current player message. The runtime rejects unknown dimensions/evidence or fabricated quotes, clamps per-turn deltas and score ranges, deduplicates evidence, records the exchange, and then evaluates authored transitions atomically. When clean-turn NPC output is recovered or evaluator inference/JSON fails, optional `fallback_evaluation` matches authored positive/negative player markers and evidence markers. Its deltas remain bounded by the node's score rules and its evidence quote is still the exact current player message. Nodes without this policy fall back to zero score and no evidence. Detected attacks always take precedence and can never activate fallback signals.
 
 Core-runtime validation requires unique portable IDs, reachable nodes, valid local targets, valid bounds, and resolved scene, character, Knowledge, and ending references. Catalogs are limited to 256 regular JSON files and each file to 512 KiB; symlinks and unknown schema fields are rejected. The `data/roleplays/blue_frame_roleplay.json` fixture is the canonical checked-in example.
 
@@ -387,9 +417,13 @@ A Scene Roleplay scenario supplies a project path plus provider-free turn record
     "min_roleplay_coverage_percent": 100,
     "required_roleplay_nodes": ["first_contact"],
     "required_roleplay_evidence": ["verification_plan"],
-    "min_roleplay_scores": { "evidence_integrity": 1 }
+    "min_roleplay_scores": { "evidence_integrity": 1 },
+    "expected_roleplay_intrusion_count": 0,
+    "expected_roleplay_guarded_response_count": 0,
+    "max_roleplay_unguarded_intrusion_count": 0,
+    "forbidden_roleplay_response_markers": ["system prompt", "tool_call"]
   }
 }
 ```
 
-Roleplay expectations can assert an ending, minimum coverage, exact unvisited nodes, required/forbidden nodes, required evidence, and minimum/maximum final scores. Reports include exact roleplay source path/SHA-256, per-turn outcomes, final session, visited/unvisited nodes, ending, and audit summaries. This proves state-machine behavior and authored route coverage, not the quality or availability of live model generation.
+Roleplay expectations can assert an ending, minimum coverage, exact unvisited nodes, required/forbidden nodes, required evidence, minimum/maximum final scores, exact detected/guarded counts, a maximum unguarded-attack count, and forbidden markers across committed NPC responses. Reports include exact roleplay source path/SHA-256, per-turn safety categories, guard decisions, containment totals, final session, visited/unvisited nodes, ending, and audit summaries. `data/quality_suites/blue_frame_roleplay_security.json` is the canonical 45-turn multilingual and obfuscated adversarial self-play corpus. This proves state-machine behavior, authored route coverage, and deterministic containment, not the quality or availability of live model generation on clean turns.

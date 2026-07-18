@@ -73,6 +73,9 @@ export interface SceneRoleplayPreviewReport {
   completed: boolean
   ending_id: string | null
   coverage_percent: number
+  intrusion_detected_count: number
+  guarded_response_count: number
+  unguarded_intrusion_count: number
   visited_node_ids: string[]
   unvisited_node_ids: string[]
   final_session: SceneRoleplaySession
@@ -186,6 +189,9 @@ export interface RoleplayCoverageSummary {
   source_sha256: string
   ending_id: string | null
   coverage_percent: number
+  intrusion_detected_count: number
+  guarded_response_count: number
+  unguarded_intrusion_count: number
   visited_node_ids: string[]
   unvisited_node_ids: string[]
 }
