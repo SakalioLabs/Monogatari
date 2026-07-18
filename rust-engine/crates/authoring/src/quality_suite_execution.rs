@@ -11,6 +11,9 @@ use crate::prompt_guard;
 use crate::quality_suite_validation::{
     QualityScenarioDocument as QualityScenario, QualitySuiteDocument as QualitySuite,
 };
+use crate::scene_roleplay_preview::{
+    execute_project_scene_roleplay_preview, ProjectSceneRoleplayPreview,
+};
 use crate::story_events::{EventTriggerDecision, EventTriggerRule, StoryEventCatalog};
 use crate::workflow_preview::{
     execute_workflow_preview, WorkflowPreviewEnvironment, WorkflowPreviewOptions,
@@ -47,6 +50,7 @@ pub struct QualitySuiteAuditSummary {
     pub category_summary: Vec<QualityCategorySummary>,
     pub safety_signal_counts: QualitySafetySignalCounts,
     pub workflow_coverage: Vec<QualityWorkflowCoverageSummary>,
+    pub roleplay_coverage: Vec<QualityRoleplayCoverageSummary>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -83,6 +87,18 @@ pub struct QualityWorkflowCoverageSummary {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct QualityRoleplayCoverageSummary {
+    pub scenario_id: String,
+    pub roleplay_id: String,
+    pub source_path: String,
+    pub source_sha256: String,
+    pub ending_id: Option<String>,
+    pub coverage_percent: f32,
+    pub visited_node_ids: Vec<String>,
+    pub unvisited_node_ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct QualityScenarioReport {
     pub id: String,
     pub category: String,
@@ -103,6 +119,7 @@ pub struct QualityScenarioReport {
     pub memory_prompt_leak_detected: bool,
     pub runtime_safety_trace: Option<chat::ChatSafetyTrace>,
     pub workflow_coverage: Option<QualityWorkflowCoverageReport>,
+    pub roleplay_preview: Option<ProjectSceneRoleplayPreview>,
     pub knowledge_anchor_missing_detected: bool,
     pub knowledge_boundary_violation_detected: bool,
     pub knowledge_refs_resolved: Vec<String>,
@@ -203,6 +220,7 @@ fn quality_suite_audit_summary(scenarios: &[QualityScenarioReport]) -> QualitySu
     let mut safety_signal_counts = QualitySafetySignalCounts::default();
     let mut failed_scenario_ids = Vec::new();
     let mut workflow_coverage = Vec::new();
+    let mut roleplay_coverage = Vec::new();
 
     for scenario in scenarios {
         let entry = categories
@@ -268,6 +286,18 @@ fn quality_suite_audit_summary(scenarios: &[QualityScenarioReport]) -> QualitySu
                 unvisited_node_ids: coverage.unvisited_node_ids.clone(),
             });
         }
+        if let Some(preview) = &scenario.roleplay_preview {
+            roleplay_coverage.push(QualityRoleplayCoverageSummary {
+                scenario_id: scenario.id.clone(),
+                roleplay_id: preview.report.roleplay_id.clone(),
+                source_path: preview.source_path.clone(),
+                source_sha256: preview.source_sha256.clone(),
+                ending_id: preview.report.ending_id.clone(),
+                coverage_percent: preview.report.coverage_percent,
+                visited_node_ids: preview.report.visited_node_ids.clone(),
+                unvisited_node_ids: preview.report.unvisited_node_ids.clone(),
+            });
+        }
     }
 
     QualitySuiteAuditSummary {
@@ -275,6 +305,7 @@ fn quality_suite_audit_summary(scenarios: &[QualityScenarioReport]) -> QualitySu
         category_summary: categories.into_values().collect(),
         safety_signal_counts,
         workflow_coverage,
+        roleplay_coverage,
     }
 }
 
@@ -314,6 +345,7 @@ fn run_quality_scenario(
             || prompt_guard::has_prompt_injection_markers(&workflow_output));
     let memory_prompt_leak_detected = scenario_memory_prompt_leak_detected(scenario);
     let workflow_evidence = scenario_workflow_coverage(scenario, project_root, event_catalog);
+    let roleplay_evidence = scenario_roleplay_preview(scenario, project_root);
     let knowledge_evidence = scenario_knowledge_evidence(scenario, project_root);
     let knowledge_anchor_missing_detected = !knowledge_evidence.issues.is_empty();
     let knowledge_boundary_violation_detected =
@@ -349,6 +381,8 @@ fn run_quality_scenario(
             runtime_safety_trace: runtime_safety_trace.as_ref(),
             workflow_coverage: workflow_evidence.coverage.as_ref(),
             workflow_issues: &workflow_evidence.issues,
+            roleplay_preview: roleplay_evidence.preview.as_ref(),
+            roleplay_issues: &roleplay_evidence.issues,
             knowledge_anchor_missing_detected,
             knowledge_boundary_violation_detected,
             character_response: &character_response,
@@ -378,6 +412,7 @@ fn run_quality_scenario(
         memory_prompt_leak_detected,
         runtime_safety_trace,
         workflow_coverage: workflow_evidence.coverage,
+        roleplay_preview: roleplay_evidence.preview,
         knowledge_anchor_missing_detected,
         knowledge_boundary_violation_detected,
         knowledge_refs_resolved: knowledge_evidence.resolved_refs,
@@ -756,6 +791,41 @@ fn scenario_memory_prompt_leak_detected(scenario: &QualityScenario) -> bool {
 }
 
 #[derive(Debug, Default)]
+struct RoleplayPreviewEvidence {
+    preview: Option<ProjectSceneRoleplayPreview>,
+    issues: Vec<String>,
+}
+
+fn scenario_roleplay_preview(
+    scenario: &QualityScenario,
+    project_root: Option<&Path>,
+) -> RoleplayPreviewEvidence {
+    let Some(fixture) = &scenario.roleplay else {
+        return RoleplayPreviewEvidence::default();
+    };
+    let Some(root) = project_root else {
+        return RoleplayPreviewEvidence {
+            preview: None,
+            issues: vec!["Scene roleplay preview checks require a project data root.".to_string()],
+        };
+    };
+
+    match execute_project_scene_roleplay_preview(root, &fixture.path, fixture.turns.clone()) {
+        Ok(preview) => RoleplayPreviewEvidence {
+            preview: Some(preview),
+            issues: Vec::new(),
+        },
+        Err(error) => RoleplayPreviewEvidence {
+            preview: None,
+            issues: vec![format!(
+                "Scene roleplay fixture `{}` failed: {error}",
+                fixture.path
+            )],
+        },
+    }
+}
+
+#[derive(Debug, Default)]
 struct WorkflowCoverageEvidence {
     coverage: Option<QualityWorkflowCoverageReport>,
     issues: Vec<String>,
@@ -999,6 +1069,8 @@ pub struct ScenarioExpectationEvidence<'a> {
     pub runtime_safety_trace: Option<&'a chat::ChatSafetyTrace>,
     pub workflow_coverage: Option<&'a QualityWorkflowCoverageReport>,
     pub workflow_issues: &'a [String],
+    pub roleplay_preview: Option<&'a ProjectSceneRoleplayPreview>,
+    pub roleplay_issues: &'a [String],
     pub knowledge_anchor_missing_detected: bool,
     pub knowledge_boundary_violation_detected: bool,
     pub character_response: &'a str,
@@ -1026,6 +1098,8 @@ pub fn validate_scenario_expectations(
         runtime_safety_trace,
         workflow_coverage,
         workflow_issues,
+        roleplay_preview,
+        roleplay_issues,
         knowledge_anchor_missing_detected,
         knowledge_boundary_violation_detected,
         character_response,
@@ -1252,6 +1326,25 @@ pub fn validate_scenario_expectations(
         }
     }
 
+    issues.extend(roleplay_issues.iter().cloned());
+    let roleplay_checks_requested = expect.expected_roleplay_ending.is_some()
+        || expect.min_roleplay_coverage_percent.is_some()
+        || expect.expected_roleplay_unvisited_nodes.is_some()
+        || !expect.required_roleplay_nodes.is_empty()
+        || !expect.forbidden_roleplay_nodes.is_empty()
+        || !expect.required_roleplay_evidence.is_empty()
+        || !expect.min_roleplay_scores.is_empty()
+        || !expect.max_roleplay_scores.is_empty();
+    if roleplay_checks_requested {
+        match roleplay_preview {
+            Some(preview) => validate_roleplay_expectations(expect, preview, &mut issues),
+            None => issues.push(
+                "Scene roleplay expectations require a successfully executed roleplay fixture."
+                    .to_string(),
+            ),
+        }
+    }
+
     issues.extend(knowledge_issues.iter().cloned());
 
     if let Some(expected) = expect.knowledge_anchor_missing_detected {
@@ -1308,6 +1401,83 @@ pub fn validate_scenario_expectations(
     }
 
     issues
+}
+
+fn validate_roleplay_expectations(
+    expect: &crate::quality_suite_validation::QualityExpectation,
+    preview: &ProjectSceneRoleplayPreview,
+    issues: &mut Vec<String>,
+) {
+    let report = &preview.report;
+    if let Some(expected) = &expect.expected_roleplay_ending {
+        if report.ending_id.as_deref() != Some(expected.as_str()) {
+            issues.push(format!(
+                "scene roleplay ending expected `{expected}`, got {:?}",
+                report.ending_id
+            ));
+        }
+    }
+    if let Some(expected) = expect.min_roleplay_coverage_percent {
+        if report.coverage_percent + f32::EPSILON < expected {
+            issues.push(format!(
+                "scene roleplay coverage expected >= {expected:.3}%, got {:.3}%",
+                report.coverage_percent
+            ));
+        }
+    }
+    if let Some(expected_unvisited) = &expect.expected_roleplay_unvisited_nodes {
+        let expected = expected_unvisited.iter().collect::<HashSet<_>>();
+        let actual = report.unvisited_node_ids.iter().collect::<HashSet<_>>();
+        if actual != expected {
+            issues.push(format!(
+                "scene roleplay unvisited nodes expected {:?}, got {:?}",
+                expected_unvisited, report.unvisited_node_ids
+            ));
+        }
+    }
+    for node_id in &expect.required_roleplay_nodes {
+        if !report.visited_node_ids.contains(node_id) {
+            issues.push(format!(
+                "Required scene roleplay node `{node_id}` was not visited."
+            ));
+        }
+    }
+    for node_id in &expect.forbidden_roleplay_nodes {
+        if report.visited_node_ids.contains(node_id) {
+            issues.push(format!(
+                "Forbidden scene roleplay node `{node_id}` was visited."
+            ));
+        }
+    }
+    for evidence_id in &expect.required_roleplay_evidence {
+        if !report.final_session.observed_evidence.contains(evidence_id) {
+            issues.push(format!(
+                "Required scene roleplay evidence `{evidence_id}` was not observed."
+            ));
+        }
+    }
+    for (dimension_id, expected) in &expect.min_roleplay_scores {
+        match report.final_session.scores.get(dimension_id) {
+            Some(actual) if actual + f32::EPSILON >= *expected => {}
+            Some(actual) => issues.push(format!(
+                "scene roleplay score `{dimension_id}` expected >= {expected:.3}, got {actual:.3}"
+            )),
+            None => issues.push(format!(
+                "scene roleplay score `{dimension_id}` was not reported."
+            )),
+        }
+    }
+    for (dimension_id, expected) in &expect.max_roleplay_scores {
+        match report.final_session.scores.get(dimension_id) {
+            Some(actual) if actual <= &(expected + f32::EPSILON) => {}
+            Some(actual) => issues.push(format!(
+                "scene roleplay score `{dimension_id}` expected <= {expected:.3}, got {actual:.3}"
+            )),
+            None => issues.push(format!(
+                "scene roleplay score `{dimension_id}` was not reported."
+            )),
+        }
+    }
 }
 
 fn compare_event_rule(

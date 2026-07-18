@@ -792,6 +792,7 @@ async function saveTts() {
 const pathEdits = reactive<Record<string, string>>({
   characters: 'characters',
   dialogue: 'dialogue',
+  roleplays: 'roleplays',
   knowledge: 'knowledge',
   scenes: 'scenes',
   assets: 'assets',
@@ -949,6 +950,7 @@ function selectSection(section: SettingsSection) {
 function pathDisplayLabel(path: ProjectPathStatus) {
   if (path.key === 'characters') return t('settings.path.characters', 'Characters')
   if (path.key === 'dialogue') return t('settings.path.dialogue', 'Dialogue')
+  if (path.key === 'roleplays') return t('settings.path.roleplays', 'Scene roleplays')
   if (path.key === 'knowledge') return t('settings.path.knowledge', 'Knowledge')
   if (path.key === 'scenes') return t('settings.path.scenes', 'Scenes')
   if (path.key === 'assets') return t('settings.path.assets', 'Assets')

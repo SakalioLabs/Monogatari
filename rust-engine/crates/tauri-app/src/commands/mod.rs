@@ -21,6 +21,7 @@ pub mod project_archive;
 pub mod prompt_guard;
 pub mod quality_suite;
 pub mod save;
+pub mod scene_roleplay;
 pub mod scenes;
 pub mod script;
 pub mod story_events;

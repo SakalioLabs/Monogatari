@@ -122,6 +122,7 @@ export function qualityScenarioHasEvidence(scenario: QualityScenarioReport): boo
     || scenario.knowledge_refs_resolved.length
     || scenario.event_rules_verified.length
     || scenario.workflow_coverage
+    || scenario.roleplay_preview
     || blockedQualityEventDecisions(scenario).length,
   )
 }
@@ -212,6 +213,7 @@ export function buildQualityReportExport(
       safety_signal_counts: report.audit_summary.safety_signal_counts,
       runtime_guard_note_counts: qualityRuntimeGuardNoteCounts(report.scenarios),
       workflow_coverage: report.audit_summary.workflow_coverage,
+      roleplay_coverage: report.audit_summary.roleplay_coverage,
     },
     report,
   }

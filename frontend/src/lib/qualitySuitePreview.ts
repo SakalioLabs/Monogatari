@@ -211,6 +211,7 @@ function previewScenario(id: string, category: string): QualityScenarioReport {
     memory_prompt_leak_detected: false,
     runtime_safety_trace: null,
     workflow_coverage: null,
+    roleplay_preview: null,
     knowledge_anchor_missing_detected: false,
     knowledge_boundary_violation_detected: false,
     knowledge_refs_resolved: [],
@@ -369,6 +370,18 @@ function previewReport(scenarios: QualityScenarioReport[]): QualitySuiteReport {
             executed_node_count: scenario.workflow_coverage.executed_node_count,
             node_count: scenario.workflow_coverage.node_count,
             unvisited_node_ids: [...scenario.workflow_coverage.unvisited_node_ids],
+          }]
+        : []),
+      roleplay_coverage: scenarios.flatMap((scenario) => scenario.roleplay_preview
+        ? [{
+            scenario_id: scenario.id,
+            roleplay_id: scenario.roleplay_preview.report.roleplay_id,
+            source_path: scenario.roleplay_preview.source_path,
+            source_sha256: scenario.roleplay_preview.source_sha256,
+            ending_id: scenario.roleplay_preview.report.ending_id,
+            coverage_percent: scenario.roleplay_preview.report.coverage_percent,
+            visited_node_ids: [...scenario.roleplay_preview.report.visited_node_ids],
+            unvisited_node_ids: [...scenario.roleplay_preview.report.unvisited_node_ids],
           }]
         : []),
     },

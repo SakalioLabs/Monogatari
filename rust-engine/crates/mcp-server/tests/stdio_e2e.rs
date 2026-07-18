@@ -17,10 +17,11 @@ use llm_authoring::quality_suite_validation::MAX_QUALITY_SUITE_FILE_BYTES;
 use llm_authoring::runtime_validation::CoreRuntimeValidationReport;
 use monogatari_mcp::protocol::{
     ExportProjectPackageOutput, InspectProjectOutput, InspectProjectPackageOutput, McpToolError,
-    McpToolErrorCode, PreviewProjectPackageOutput, PreviewWorkflowOutput, RunQualitySuiteOutput,
-    ValidateProjectPackageOutput, MCP_PACKAGE_EXPORT_SCHEMA_V1, MCP_PACKAGE_INSPECTION_SCHEMA_V1,
-    MCP_PACKAGE_PREVIEW_SCHEMA_V1, MCP_PACKAGE_VALIDATION_SCHEMA_V1,
-    MCP_QUALITY_SUITE_RUN_SCHEMA_V1, MCP_WORKFLOW_PREVIEW_SCHEMA_V1,
+    McpToolErrorCode, PreviewProjectPackageOutput, PreviewSceneRoleplayOutput,
+    PreviewWorkflowOutput, RunQualitySuiteOutput, ValidateProjectPackageOutput,
+    MCP_PACKAGE_EXPORT_SCHEMA_V1, MCP_PACKAGE_INSPECTION_SCHEMA_V1, MCP_PACKAGE_PREVIEW_SCHEMA_V1,
+    MCP_PACKAGE_VALIDATION_SCHEMA_V1, MCP_QUALITY_SUITE_RUN_SCHEMA_V1,
+    MCP_SCENE_ROLEPLAY_PREVIEW_SCHEMA_V1, MCP_WORKFLOW_PREVIEW_SCHEMA_V1,
 };
 use rmcp::model::{CallToolRequestParams, JsonObject};
 use rmcp::service::RunningService;
@@ -116,7 +117,7 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
     let second_reader = connect(&project.root, false).await?;
     assert_no_project_lease_sidecar(&project);
     assert_competing_start_rejected(&project.root, true).await?;
-    assert_eq!(second_reader.list_all_tools().await?.len(), 13);
+    assert_eq!(second_reader.list_all_tools().await?.len(), 14);
     second_reader.cancel().await?;
 
     let tools = client.list_all_tools().await?;
@@ -135,6 +136,7 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
             "list_project_json",
             "plan_transaction",
             "preview_project_package",
+            "preview_scene_roleplay",
             "preview_workflow",
             "read_project_json",
             "run_quality_suite",
@@ -233,6 +235,115 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
         .await?;
     assert_eq!(wrong_workflow_catalog.is_error, Some(true));
     let error: McpToolError = structured(&wrong_workflow_catalog)?;
+    assert_eq!(error.code, McpToolErrorCode::ProjectInvalid);
+
+    std::fs::write(
+        project.root.join("roleplays/mcp_preview.json"),
+        r#"{
+            "schema":"monogatari-scene-roleplay/v1",
+            "id":"mcp_roleplay",
+            "title":"MCP Roleplay",
+            "start_node_id":"contact",
+            "exhaustion_ending_id":"quiet_end",
+            "max_total_turns":2,
+            "score_dimensions":[{
+                "id":"trust",
+                "label":"Trust",
+                "description":"Evidence-backed trust.",
+                "min":-1.0,
+                "max":1.0,
+                "initial":0.0
+            }],
+            "nodes":[{
+                "id":"contact",
+                "scene_id":"station",
+                "character_id":"aoi",
+                "opening_narration":"The signal opens.",
+                "situation":"Aoi asks for a repeatable test.",
+                "player_goal":"Offer a test.",
+                "character_goal":"Protect uncertain facts.",
+                "min_turns":1,
+                "max_turns":1,
+                "score_rules":[{
+                    "dimension_id":"trust",
+                    "guidance":"Reward repeatable evidence.",
+                    "max_delta_per_turn":1.0
+                }],
+                "evidence_rules":[{
+                    "id":"plan",
+                    "description":"The player proposes a repeatable test."
+                }],
+                "transitions":[{
+                    "id":"verified",
+                    "priority":10,
+                    "target":{"kind":"ending","ending_id":"open_end"},
+                    "conditions":[
+                        {"kind":"score_at_least","dimension_id":"trust","value":1.0},
+                        {"kind":"evidence_observed","evidence_id":"plan"}
+                    ]
+                }],
+                "timeout_target":{"kind":"ending","ending_id":"quiet_end"}
+            }]
+        }"#,
+    )?;
+    let roleplay_listing = client
+        .call_tool(
+            CallToolRequestParams::new("list_project_json")
+                .with_arguments(arguments(json!({"catalog": "roleplays"}))),
+        )
+        .await?;
+    let roleplay_listing: JsonCatalogReport = structured(&roleplay_listing)?;
+    assert_eq!(roleplay_listing.document_count, 1);
+    let roleplay_preview = client
+        .call_tool(
+            CallToolRequestParams::new("preview_scene_roleplay").with_arguments(arguments(json!({
+                "path":"roleplays/mcp_preview.json",
+                "turns":[{
+                    "player_message":"Let another team repeat the measurement.",
+                    "npc_response":"Then we can keep the claim separate from identity.",
+                    "evaluation":{
+                        "score_deltas":[{
+                            "dimension_id":"trust",
+                            "delta":1.0,
+                            "reason":"Repeatable evidence."
+                        }],
+                        "evidence":[{
+                            "evidence_id":"plan",
+                            "player_quote":"repeat the measurement"
+                        }],
+                        "npc_emotion":"focused",
+                        "summary":"The player proposed verification."
+                    }
+                }]
+            }))),
+        )
+        .await?;
+    assert_eq!(roleplay_preview.is_error, Some(false));
+    let roleplay_preview: PreviewSceneRoleplayOutput = structured(&roleplay_preview)?;
+    assert_eq!(
+        roleplay_preview.schema,
+        MCP_SCENE_ROLEPLAY_PREVIEW_SCHEMA_V1
+    );
+    assert_eq!(
+        roleplay_preview.source_sha256,
+        roleplay_listing.documents[0].sha256
+    );
+    assert!(roleplay_preview.report.completed);
+    assert_eq!(
+        roleplay_preview.report.ending_id.as_deref(),
+        Some("open_end")
+    );
+    assert_eq!(roleplay_preview.report.coverage_percent, 100.0);
+    assert_eq!(roleplay_preview.report.final_session.scores["trust"], 1.0);
+
+    let wrong_roleplay_catalog = client
+        .call_tool(
+            CallToolRequestParams::new("preview_scene_roleplay")
+                .with_arguments(arguments(json!({"path": "characters/aoi.json"}))),
+        )
+        .await?;
+    assert_eq!(wrong_roleplay_catalog.is_error, Some(true));
+    let error: McpToolError = structured(&wrong_roleplay_catalog)?;
     assert_eq!(error.code, McpToolErrorCode::ProjectInvalid);
 
     let quality_listing = client

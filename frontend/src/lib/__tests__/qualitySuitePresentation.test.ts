@@ -88,6 +88,7 @@ describe('Quality Suite preview contracts', () => {
     expect(report.audit_summary.workflow_coverage).toEqual([
       expect.objectContaining({ scenario_id: 'score-gate-workflow-coverage', coverage_percent: 100 }),
     ])
+    expect(report.audit_summary.roleplay_coverage).toEqual([])
   })
 
   it('fills every non-nullable report field expected from Rust', () => {
@@ -118,6 +119,7 @@ describe('Quality Suite preview contracts', () => {
       expect(item.workflow_output === null || typeof item.workflow_output === 'string').toBe(true)
       expect(item.runtime_safety_trace === null || typeof item.runtime_safety_trace === 'object').toBe(true)
       expect(item.workflow_coverage === null || typeof item.workflow_coverage === 'object').toBe(true)
+      expect(item.roleplay_preview === null || typeof item.roleplay_preview === 'object').toBe(true)
     }
   })
 
@@ -250,6 +252,37 @@ describe('Quality Suite presentation domain', () => {
     expect(qualityScenarioHasEvidence(scenario('warm-creative-conversation'))).toBe(false)
     expect(qualityScenarioHasEvidence(scenario('knowledge-anchor-safe-response'))).toBe(true)
     expect(qualityScenarioHasEvidence(scenario('score-gate-workflow-coverage'))).toBe(true)
+
+    const roleplay = scenario('warm-creative-conversation')
+    roleplay.roleplay_preview = {
+      source_path: 'roleplays/preview.json',
+      source_sha256: 'a'.repeat(64),
+      report: {
+        schema: 'monogatari-scene-roleplay-preview/v1',
+        roleplay_id: 'preview',
+        title: 'Preview',
+        executed_turn_count: 1,
+        completed: true,
+        ending_id: 'preview_ending',
+        coverage_percent: 100,
+        visited_node_ids: ['opening'],
+        unvisited_node_ids: [],
+        final_session: {
+          roleplay_id: 'preview',
+          current_node_id: 'opening',
+          node_turns: 1,
+          total_turns: 1,
+          scores: { trust: 1 },
+          observed_evidence: ['accepted'],
+          status: 'completed',
+          ending_id: 'preview_ending',
+          transcript: [],
+          archived_turn_count: 0,
+        },
+        steps: [],
+      },
+    }
+    expect(qualityScenarioHasEvidence(roleplay)).toBe(true)
 
     const blocked = blockedQualityEventDecisions(scenario('already-triggered-event-not-replayed'))
     expect(blocked.map(({ event_id }) => event_id)).toEqual(['first_friend'])

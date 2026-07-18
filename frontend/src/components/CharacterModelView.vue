@@ -397,6 +397,7 @@ function resetCanvasProbe() {
 function clearActiveModel() {
   if (!activeModel || !scene) return
   mixer?.stopAllAction?.()
+  mixer?.uncacheRoot?.(activeModel)
   scene.remove(activeModel)
   disposeObject(activeModel)
   activeModel = null
@@ -445,12 +446,22 @@ onUnmounted(() => {
   disposed = true
   loadRequestSequence += 1
   resizeObserver?.disconnect()
+  resizeObserver = null
   if (animationId) cancelAnimationFrame(animationId)
+  animationId = null
   clearActiveModel()
+  controls?.dispose?.()
+  controls = null
   if (renderer) {
+    renderer.renderLists?.dispose?.()
     renderer.dispose()
+    renderer.forceContextLoss?.()
     renderer.domElement?.remove()
   }
+  renderer = null
+  scene?.clear?.()
+  scene = null
+  camera = null
   threeRuntime = null
   resetCanvasProbe()
 })

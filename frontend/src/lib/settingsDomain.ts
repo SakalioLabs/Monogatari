@@ -39,6 +39,7 @@ const SETTINGS_PATH_SEGMENT = /^[A-Za-z0-9_-]+$/
 const PREVIEW_PATHS: ReadonlyArray<Readonly<ProjectPathStatus>> = [
   { key: 'characters', label: 'Characters', relative_path: 'characters', absolute_path: '', exists: true, item_count: 1, required: true },
   { key: 'dialogue', label: 'Dialogue', relative_path: 'dialogue', absolute_path: '', exists: true, item_count: 1, required: true },
+  { key: 'roleplays', label: 'Scene Roleplays', relative_path: 'roleplays', absolute_path: '', exists: true, item_count: 1, required: true },
   { key: 'knowledge', label: 'Knowledge', relative_path: 'knowledge', absolute_path: '', exists: true, item_count: 1, required: true },
   { key: 'scenes', label: 'Scenes', relative_path: 'scenes', absolute_path: '', exists: true, item_count: 2, required: false },
   { key: 'assets', label: 'Assets', relative_path: 'assets', absolute_path: '', exists: true, item_count: 1, required: true },
@@ -281,14 +282,14 @@ export function createBrowserProjectManifest(options: {
       category_bytes: {},
       category_fingerprint_algorithm: 'sha256:path-size-file-sha256-v1',
       category_fingerprints: {},
-      exported_categories: ['characters', 'dialogue', 'knowledge', 'scenes', 'assets', 'events', 'endings', 'locales', 'quality_suites', 'workflows'],
+      exported_categories: ['characters', 'dialogue', 'roleplays', 'knowledge', 'scenes', 'assets', 'events', 'endings', 'locales', 'quality_suites', 'workflows'],
     },
     package: {
       file_count: 0,
       total_bytes: 0,
       fingerprint_algorithm: 'sha256:path-size-file-sha256-v1',
       content_sha256: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-      directories: ['assets', 'characters', 'dialogue', 'endings', 'events', 'knowledge', 'locales', 'quality_suites', 'scenes', 'workflows'],
+      directories: ['assets', 'characters', 'dialogue', 'endings', 'events', 'knowledge', 'locales', 'quality_suites', 'roleplays', 'scenes', 'workflows'],
       files: [],
     },
     archive: {

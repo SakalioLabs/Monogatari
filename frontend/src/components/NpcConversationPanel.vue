@@ -279,6 +279,15 @@ async function sendMessage() {
       const generated = await generateWebGpuChat(
         buildWebNpcChatMessages(character, props.locale, messages.value, activeKnowledge),
         {
+          maxNewTokens: 96,
+          maxContextCharacters: 6_000,
+          recoveryMaxContextCharacters: 3_000,
+          onReset() {
+            rawReply = ''
+            if (props.character?.id === character.id && requestId === generationSequence) {
+              streamingReply.value = ''
+            }
+          },
           onChunk(chunk) {
             rawReply += chunk
             if (props.character?.id === character.id && requestId === generationSequence) {

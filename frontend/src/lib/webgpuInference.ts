@@ -22,13 +22,19 @@ export interface WebGpuGenerationOptions {
   maxNewTokens?: number
   temperature?: number
   topP?: number
+  maxContextCharacters?: number
+  recoveryMaxContextCharacters?: number
   onChunk?: (chunk: string) => void
+  onReset?: () => void
 }
+
+export const WEBGPU_CONTEXT_CHARACTER_LIMIT = 6_000
+export const WEBGPU_RECOVERY_CONTEXT_CHARACTER_LIMIT = 3_000
 
 export const DEFAULT_WEBGPU_RUNTIME_CONFIG: WebGpuRuntimeConfig = {
   modelId: 'onnx-community/Qwen3.5-0.8B-Text-ONNX',
   dtype: 'q4',
-  maxNewTokens: 256,
+  maxNewTokens: 96,
   temperature: 0.7,
   topP: 0.9,
 }
@@ -48,6 +54,7 @@ let activeConfig = { ...DEFAULT_WEBGPU_RUNTIME_CONFIG }
 let loadedGeneratorKey = ''
 let verifiedGeneratorKey = ''
 let generatorPromise: Promise<any> | null = null
+let generationQueue: Promise<void> = Promise.resolve()
 
 export function detectWebGpuSupport(): WebGpuSupport {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') {
@@ -121,9 +128,18 @@ export async function initializeWebGpuRuntime(
   return normalized
 }
 
-export async function generateWebGpuChat(
+export function generateWebGpuChat(
   messages: WebGpuChatMessage[],
   options: WebGpuGenerationOptions = {},
+): Promise<string> {
+  const task = generationQueue.then(() => generateWebGpuChatNow(messages, options))
+  generationQueue = task.then(() => undefined, () => undefined)
+  return task
+}
+
+async function generateWebGpuChatNow(
+  messages: WebGpuChatMessage[],
+  options: WebGpuGenerationOptions,
 ): Promise<string> {
   if (messages.length === 0) throw new Error('WebGPU generation requires at least one chat message.')
 
@@ -131,36 +147,140 @@ export async function generateWebGpuChat(
   if (!support.available) throw new Error(webGpuSupportMessage(support.reason))
 
   const config = getWebGpuRuntimeConfig()
-  const generator = await generatorForConfig(config)
+  let generator = await generatorForConfig(config)
   const transformers = await loadTransformersRuntime()
   let streamedText = ''
-  const streamer = options.onChunk
-    ? new transformers.TextStreamer(generator.tokenizer, {
-        skip_prompt: true,
-        skip_special_tokens: true,
-        callback_function: (chunk: string) => {
-          if (!chunk) return
-          streamedText += chunk
-          options.onChunk?.(chunk)
-        },
-      })
-    : undefined
-
   const temperature = clamp(options.temperature ?? config.temperature, 0, 2)
-  const output = await generator(messages, {
-    max_new_tokens: Math.round(clamp(options.maxNewTokens ?? config.maxNewTokens, 1, 2048)),
-    temperature,
-    top_p: clamp(options.topP ?? config.topP, 0.01, 1),
-    do_sample: temperature > 0,
-    repetition_penalty: 1.08,
-    streamer,
-  })
+  const requestedTokens = Math.round(clamp(options.maxNewTokens ?? config.maxNewTokens, 1, 512))
+  const contextLimit = Math.round(clamp(
+    options.maxContextCharacters ?? WEBGPU_CONTEXT_CHARACTER_LIMIT,
+    1_024,
+    32_000,
+  ))
+  const runGeneration = async (
+    promptMessages: WebGpuChatMessage[],
+    maxNewTokens: number,
+  ): Promise<string> => {
+    const streamer = options.onChunk
+      ? new transformers.TextStreamer(generator.tokenizer, {
+          skip_prompt: true,
+          skip_special_tokens: true,
+          callback_function: (chunk: string) => {
+            if (!chunk) return
+            streamedText += chunk
+            options.onChunk?.(chunk)
+          },
+        })
+      : undefined
+    const output = await generator(promptMessages, {
+      max_new_tokens: maxNewTokens,
+      temperature,
+      top_p: clamp(options.topP ?? config.topP, 0.01, 1),
+      do_sample: temperature > 0,
+      repetition_penalty: 1.08,
+      streamer,
+    })
+    return extractGeneratedText(output) || streamedText
+  }
 
-  const text = extractGeneratedText(output) || streamedText
+  let text: string
+  try {
+    text = await runGeneration(compactWebGpuChatMessages(messages, contextLimit), requestedTokens)
+  } catch (error) {
+    if (!isWebGpuMemoryError(error)) throw error
+    streamedText = ''
+    options.onReset?.()
+    await disposeWebGpuGenerator()
+    const recoveryLimit = Math.round(clamp(
+      options.recoveryMaxContextCharacters ?? WEBGPU_RECOVERY_CONTEXT_CHARACTER_LIMIT,
+      1_024,
+      contextLimit,
+    ))
+    try {
+      generator = await generatorForConfig(config)
+      text = await runGeneration(
+        compactWebGpuChatMessages(messages, recoveryLimit),
+        Math.min(requestedTokens, 48),
+      )
+    } catch (recoveryError) {
+      if (!isWebGpuMemoryError(recoveryError)) throw recoveryError
+      throw new Error(
+        'WebGPU memory was exhausted after a reduced-context retry. Close other GPU-heavy tabs or select a smaller local model.',
+      )
+    }
+  }
+
   if (!text.trim()) throw new Error('The WebGPU model completed without generating text.')
   verifiedGeneratorKey = generatorKey(config)
   if (options.onChunk && !streamedText) options.onChunk(text)
   return text
+}
+
+async function disposeWebGpuGenerator(): Promise<void> {
+  const staleGenerator = generatorPromise
+  generatorPromise = null
+  loadedGeneratorKey = ''
+  verifiedGeneratorKey = ''
+  if (!staleGenerator) return
+  try {
+    const generator = await staleGenerator
+    if (typeof generator?.dispose === 'function') await generator.dispose()
+  } catch {
+    // A failed pipeline has no reusable resources and is safe to discard.
+  }
+}
+
+export function compactWebGpuChatMessages(
+  messages: WebGpuChatMessage[],
+  characterLimit = WEBGPU_CONTEXT_CHARACTER_LIMIT,
+): WebGpuChatMessage[] {
+  const limit = Math.round(clamp(characterLimit, 1_024, 32_000))
+  const normalized = messages
+    .filter((message) => ['system', 'user', 'assistant'].includes(message.role) && message.content.trim())
+    .map((message) => ({ ...message, content: message.content.trim() }))
+  if (normalized.length === 0) return []
+
+  const firstSystem = normalized.find((message) => message.role === 'system')
+  const conversation = normalized.filter((message) => message !== firstSystem)
+  const compacted: WebGpuChatMessage[] = []
+  let used = 0
+  if (firstSystem) {
+    const content = prefixCharacters(firstSystem.content, Math.floor(limit * 0.58))
+    compacted.push({ role: 'system', content })
+    used += [...content].length
+  }
+
+  const latest = conversation.at(-1)
+  if (!latest) return compacted
+  const latestContent = prefixCharacters(latest.content, Math.max(256, Math.floor(limit * 0.34)))
+  const latestMessage = { ...latest, content: latestContent }
+  used += [...latestContent].length
+
+  const history = conversation.slice(0, -1)
+  const selected: WebGpuChatMessage[] = []
+  for (let end = history.length; end > 0;) {
+    const start = Math.max(0, end - 2)
+    const pair = history.slice(start, end).map((message) => ({
+      ...message,
+      content: prefixCharacters(message.content, 1_000),
+    }))
+    const pairCharacters = pair.reduce((total, message) => total + [...message.content].length, 0)
+    if (used + pairCharacters > limit) break
+    selected.unshift(...pair)
+    used += pairCharacters
+    end = start
+  }
+  compacted.push(...selected, latestMessage)
+  return compacted
+}
+
+export function isWebGpuMemoryError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  const normalized = message.toLocaleLowerCase()
+  return normalized.includes('std::bad_alloc')
+    || normalized.includes('out of memory')
+    || normalized.includes('memory allocation')
+    || normalized.includes('failed to allocate')
 }
 
 export function webGpuSupportMessage(reason: WebGpuSupport['reason']): string {
@@ -263,4 +383,8 @@ function numberValue(value: unknown, fallback: number): number {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, Number.isFinite(value) ? value : min))
+}
+
+function prefixCharacters(value: string, limit: number): string {
+  return [...value].slice(0, limit).join('')
 }

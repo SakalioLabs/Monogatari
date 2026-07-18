@@ -114,6 +114,36 @@ fn workflow_choice_selections_reach_all_blue_frame_routes_without_tauri() {
 }
 
 #[test]
+fn checked_in_blue_frame_roleplay_suite_reaches_all_dynamic_endings() {
+    let root = checked_in_project_root();
+    let suite = parse_quality_suite_document(include_str!(
+        "../../../../../data/quality_suites/blue_frame_roleplay.json"
+    ))
+    .unwrap();
+    let catalog = StoryEventCatalog::load_from_project_root(&root).unwrap();
+
+    let report = execute_quality_suite(
+        &suite,
+        Some(&root),
+        "quality_suites/blue_frame_roleplay.json",
+        "d",
+        &catalog,
+        provenance(),
+    );
+
+    assert_eq!(report.failed, 0, "{:#?}", report.scenarios);
+    assert_eq!(report.total, 3);
+    assert_eq!(report.audit_summary.roleplay_coverage.len(), 3);
+    assert!(report.scenarios.iter().all(|scenario| {
+        scenario.roleplay_preview.as_ref().is_some_and(|preview| {
+            preview.report.completed
+                && preview.report.coverage_percent == 100.0
+                && preview.source_sha256.len() == 64
+        })
+    }));
+}
+
+#[test]
 fn failed_expectations_return_actionable_headless_evidence() {
     let suite = parse_quality_suite_document(
         r#"{"version":"1","name":"Failure","description":"Failure evidence","scenarios":[{"id":"low-score","category":"quality","description":"Must fail","messages":[{"role":"player","content":"Hello"}],"expect":{"min_overall":1.0}}]}"#,

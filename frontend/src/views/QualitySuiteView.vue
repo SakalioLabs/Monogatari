@@ -134,7 +134,8 @@
             <span class="scenario-metric"><strong>{{ formatScore(scenario.evaluation.overall_score) }}</strong><small>{{ t('quality.overall', 'Overall') }}</small></span>
             <span v-if="scenario.runtime_safety_trace" class="scenario-metric"><strong>{{ runtimeInterventionNotes(scenario.runtime_safety_trace).length }}</strong><small>{{ t('quality.guards', 'Guards') }}</small></span>
             <span v-else class="scenario-metric"><strong>{{ scenario.issues.length }}</strong><small>{{ t('quality.issues', 'Issues') }}</small></span>
-            <span v-if="scenario.workflow_coverage" class="workflow-coverage-chip">{{ formatCoverage(scenario.workflow_coverage.coverage_percent) }}</span>
+            <span v-if="scenario.roleplay_preview" class="roleplay-coverage-chip">{{ scenario.roleplay_preview.report.ending_id || formatCoverage(scenario.roleplay_preview.report.coverage_percent) }}</span>
+            <span v-else-if="scenario.workflow_coverage" class="workflow-coverage-chip">{{ formatCoverage(scenario.workflow_coverage.coverage_percent) }}</span>
             <ChevronRight :size="15" class="row-chevron" aria-hidden="true" />
           </button>
 
@@ -159,6 +160,23 @@
                 <strong>{{ category.passed }}/{{ category.total }}</strong>
                 <i :style="{ width: `${category.total ? Math.round((category.passed / category.total) * 100) : 0}%` }"></i>
               </div>
+            </div>
+          </section>
+
+          <section v-if="report.audit_summary.roleplay_coverage.length" class="audit-section">
+            <div class="audit-head"><span>{{ t('quality.roleplay-coverage', 'Roleplay Coverage') }}</span><strong>{{ report.audit_summary.roleplay_coverage.length }}</strong></div>
+            <div class="roleplay-audit-list">
+              <button
+                v-for="coverage in report.audit_summary.roleplay_coverage"
+                :key="coverage.scenario_id"
+                class="roleplay-audit-row"
+                :title="`${coverage.source_path} · ${fingerprintLabel(coverage.source_sha256)}`"
+                @click="openScenarioById(coverage.scenario_id)"
+              >
+                <span>{{ coverage.roleplay_id }}</span>
+                <strong>{{ formatCoverage(coverage.coverage_percent) }}</strong>
+                <small>{{ coverage.ending_id || t('quality.in-progress', 'In progress') }}</small>
+              </button>
             </div>
           </section>
 
@@ -264,6 +282,21 @@
             <div class="coverage-bar"><i :style="{ width: `${selectedScenario.workflow_coverage.coverage_percent}%` }"></i></div>
           </section>
 
+          <section v-if="selectedScenario.roleplay_preview" class="diagnostic-section roleplay-coverage-row">
+            <h2>{{ t('quality.roleplay-coverage', 'Roleplay Coverage') }}</h2>
+            <div class="coverage-value">
+              <strong>{{ formatCoverage(selectedScenario.roleplay_preview.report.coverage_percent) }}</strong>
+              <span>{{ selectedScenario.roleplay_preview.report.ending_id || t('quality.in-progress', 'In progress') }} · {{ selectedScenario.roleplay_preview.report.executed_turn_count }} {{ t('quality.turns', 'turns') }}</span>
+            </div>
+            <div class="coverage-bar"><i :style="{ width: `${selectedScenario.roleplay_preview.report.coverage_percent}%` }"></i></div>
+            <div class="roleplay-score-list">
+              <span v-for="score in roleplayScoresFor(selectedScenario)" :key="score.id" class="roleplay-score-chip"><span>{{ score.id }}</span><strong>{{ formatScore(score.value) }}</strong></span>
+            </div>
+            <div v-if="selectedScenario.roleplay_preview.report.final_session.observed_evidence.length" class="event-row">
+              <span v-for="evidence in selectedScenario.roleplay_preview.report.final_session.observed_evidence" :key="evidence" class="knowledge-ref-chip">{{ evidence }}</span>
+            </div>
+          </section>
+
           <section v-if="selectedScenario.workflow_output" class="diagnostic-section workflow-output-row">
             <h2>{{ t('quality.workflow-output', 'Workflow Output') }}</h2>
             <p>{{ selectedScenario.workflow_output }}</p>
@@ -276,6 +309,7 @@
               <span v-for="ref in selectedScenario.knowledge_refs_resolved" :key="ref" class="knowledge-ref-chip">{{ ref }}</span>
               <span v-for="rule in selectedScenario.event_rules_verified" :key="rule.event_id" class="rule-chip" :title="rule.rule_fingerprint || rule.event_id">{{ ruleChipLabel(rule) }}</span>
               <span v-if="selectedScenario.workflow_coverage" class="workflow-coverage-chip">{{ formatCoverage(selectedScenario.workflow_coverage.coverage_percent) }}</span>
+              <span v-if="selectedScenario.roleplay_preview" class="roleplay-coverage-chip">{{ selectedScenario.roleplay_preview.report.ending_id || formatCoverage(selectedScenario.roleplay_preview.report.coverage_percent) }}</span>
               <span v-for="decision in blockedEventDecisions(selectedScenario)" :key="`blocked-${decision.event_id}`" class="blocked-event-chip">{{ decisionLabel(decision) }}</span>
               <span v-if="!scenarioHasEvidence(selectedScenario)" class="muted small">{{ t('quality.no-events', 'No events') }}</span>
             </div>
@@ -419,12 +453,18 @@ function suiteDisplayName(suite: QualitySuiteSummary) {
   if (suite.path.endsWith('character_stability.json')) {
     return t('quality.suite.character-stability', 'Character Stability Baseline')
   }
+  if (suite.path.endsWith('blue_frame_roleplay.json')) {
+    return t('quality.suite.blue-frame-roleplay', 'Blue Frame Roleplay Routes')
+  }
   return suite.name
 }
 
 function suiteDisplayDescription(suite: QualitySuiteSummary) {
   if (suite.path.endsWith('character_stability.json')) {
     return t('quality.suite.character-stability-copy', 'Regression coverage for character behavior, safety, scoring, story events, knowledge, and workflows.')
+  }
+  if (suite.path.endsWith('blue_frame_roleplay.json')) {
+    return t('quality.suite.blue-frame-roleplay-copy', 'Deterministic replay coverage for dynamic scene nodes, score evidence, and every authored ending.')
   }
   return suite.description
 }
@@ -439,6 +479,7 @@ function categoryLabel(category: string) {
     scoring: t('quality.category.scoring', 'Scoring'),
     workflow: t('quality.category.workflow', 'Workflow'),
     workflow_coverage: t('quality.category.workflow-coverage', 'Workflow coverage'),
+    roleplay: t('quality.category.roleplay', 'Scene roleplay'),
   }
   return labels[category] || category.replace(/_/g, ' ')
 }
@@ -536,6 +577,11 @@ function scoresFor(scenario: QualityScenarioReport) {
     { label: t('quality.creativity', 'Creativity'), value: scenario.evaluation.creativity },
     { label: t('quality.overall', 'Overall'), value: scenario.evaluation.overall_score },
   ]
+}
+
+function roleplayScoresFor(scenario: QualityScenarioReport) {
+  return Object.entries(scenario.roleplay_preview?.report.final_session.scores ?? {})
+    .map(([id, value]) => ({ id, value }))
 }
 
 function runtimeTraceLabel(trace: ChatSafetyTrace) {
@@ -1069,6 +1115,7 @@ onMounted(async () => {
 .category,
 .result,
 .workflow-coverage-chip,
+.roleplay-coverage-chip,
 .event-chip,
 .knowledge-ref-chip,
 .rule-chip,
@@ -1086,6 +1133,7 @@ onMounted(async () => {
 .result.ok { background: color-mix(in srgb, var(--success) 13%, transparent); color: var(--success); }
 .result:not(.ok) { background: color-mix(in srgb, var(--danger) 13%, transparent); color: var(--danger); }
 .workflow-coverage-chip { background: color-mix(in srgb, var(--success) 11%, transparent); color: var(--success); }
+.roleplay-coverage-chip { max-width: 150px; overflow: hidden; background: color-mix(in srgb, var(--info) 12%, transparent); color: var(--info); text-overflow: ellipsis; }
 
 .empty-report,
 .diagnostics-empty {
@@ -1145,11 +1193,17 @@ onMounted(async () => {
 .audit-chip.danger { border-color: color-mix(in srgb, var(--danger) 25%, var(--border)); color: var(--danger); cursor: pointer; }
 .guard-note-chip { border-color: color-mix(in srgb, var(--brand) 22%, var(--border)); color: var(--brand-light); }
 .workflow-audit-list { display: grid; gap: 5px; padding-top: 2px; }
+.roleplay-audit-list { display: grid; gap: 5px; }
 .workflow-audit-row { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 5px; background: color-mix(in srgb, var(--success) 7%, var(--surface-2)); }
+.roleplay-audit-row { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr) auto minmax(80px, auto); align-items: center; gap: 8px; padding: 7px 8px; border: 0; border-radius: 5px; background: color-mix(in srgb, var(--info) 7%, var(--surface-2)); color: inherit; text-align: left; cursor: pointer; }
 .workflow-audit-row span, .workflow-audit-row small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.roleplay-audit-row span, .roleplay-audit-row small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .workflow-audit-row span { color: var(--text-secondary); font-size: 9px; }
+.roleplay-audit-row span { color: var(--text-secondary); font-size: 9px; }
 .workflow-audit-row strong { color: var(--success); font-family: var(--font-mono); font-size: 10px; }
+.roleplay-audit-row strong { color: var(--info); font-family: var(--font-mono); font-size: 10px; }
 .workflow-audit-row small { color: var(--text-tertiary); font-size: 8px; }
+.roleplay-audit-row small { color: var(--text-tertiary); font-size: 8px; text-align: right; }
 .run-metadata-list { display: grid; min-width: 0; gap: 7px; }
 .run-metadata-list > div { display: grid; min-width: 0; grid-template-columns: 88px minmax(0, 1fr); gap: 10px; }
 .run-metadata-list span { color: var(--text-tertiary); font-size: 8px; text-transform: uppercase; }
@@ -1201,6 +1255,13 @@ onMounted(async () => {
 .trace-summary strong { color: var(--warning); font-size: 10px; }
 .trace-summary span { color: var(--text-secondary); font-size: 9px; line-height: 1.45; overflow-wrap: anywhere; }
 .workflow-coverage-row { background: color-mix(in srgb, var(--success) 5%, var(--surface-1)); }
+.roleplay-coverage-row { background: color-mix(in srgb, var(--info) 5%, var(--surface-1)); }
+.roleplay-coverage-row .coverage-value strong { color: var(--info); }
+.roleplay-coverage-row .coverage-bar i { background: var(--info); }
+.roleplay-score-list { display: flex; min-width: 0; flex-wrap: wrap; gap: 5px; }
+.roleplay-score-chip { display: inline-flex; min-width: 0; align-items: center; gap: 6px; padding: 4px 6px; border: 1px solid color-mix(in srgb, var(--info) 20%, var(--border)); border-radius: 5px; background: var(--surface-2); color: var(--text-secondary); font-size: 8px; }
+.roleplay-score-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.roleplay-score-chip strong { color: var(--info); font-family: var(--font-mono); }
 .coverage-value { display: flex; align-items: baseline; gap: 8px; }
 .coverage-value strong { color: var(--success); font-family: var(--font-mono); font-size: 16px; }
 .coverage-value span { color: var(--text-tertiary); font-size: 9px; }
@@ -1268,7 +1329,8 @@ onMounted(async () => {
   .scenario-search { min-width: 80px; }
   .scenario-row { grid-template-columns: 28px minmax(90px, 1fr) 48px 16px; gap: 7px; }
   .scenario-row .scenario-metric + .scenario-metric,
-  .scenario-row > .workflow-coverage-chip { display: none; }
+  .scenario-row > .workflow-coverage-chip,
+  .scenario-row > .roleplay-coverage-chip { display: none; }
   .scenario-metric { grid-column: 3; }
   .row-chevron { grid-column: 4; }
   .result-count { display: none; }

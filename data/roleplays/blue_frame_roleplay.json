@@ -1,0 +1,328 @@
+{
+  "schema": "monogatari-scene-roleplay/v1",
+  "id": "blue_frame_roleplay",
+  "title": "潮镜：蓝色定格",
+  "start_node_id": "orbit_contact",
+  "exhaustion_ending_id": "blue_frame_silence_ending",
+  "max_total_turns": 15,
+  "score_dimensions": [
+    {
+      "id": "evidence_integrity",
+      "label": "证据完整度",
+      "description": "玩家是否区分可复核事实、推断、感受与身份声明，并主动寻找独立证据链。",
+      "min": -6.0,
+      "max": 6.0,
+      "initial": 0.0
+    },
+    {
+      "id": "witness_respect",
+      "label": "证词尊重",
+      "description": "玩家是否尊重九号回声的停顿、修正和不确定性，而不替九份样本强行确认身份或意愿。",
+      "min": -6.0,
+      "max": 6.0,
+      "initial": 0.0
+    },
+    {
+      "id": "public_responsibility",
+      "label": "公开责任",
+      "description": "玩家是否考虑公开方式对幸存者、缺失姓名、撤离安全、溯源与未来复审造成的后果。",
+      "min": -6.0,
+      "max": 6.0,
+      "initial": 0.0
+    }
+  ],
+  "nodes": [
+    {
+      "id": "orbit_contact",
+      "scene_id": "blue_frame_orbit",
+      "character_id": "echo_nine",
+      "supporting_character_ids": [
+        "lanyin"
+      ],
+      "opening_narration": "警报解除后的第七天，潮镜站记录器收到一段来自四十七年后的合成声音。屏幕上只有缓慢旋转的地球、三个待核验字段，以及一个自称“九号回声”的对话者。你可以直接向它提问。",
+      "situation": "九号回声由九份撤离语音样本压缩而成，能提供学校坐标、潮线和少量记忆，却无法证明自己是某一个持续存在的人。澜音在旁监听并记录证据等级。当前任务是决定如何验证这段声音，而不是从固定选项中选择态度。",
+      "player_goal": "通过自由对话提出可复做的核验方法，同时明确哪些内容只是感受或身份未决的陈述。",
+      "character_goal": "九号回声希望自己的坐标和恐惧都被听见，但会阻止玩家把合成后的第一人称误当成单一身份；它会提供有限线索并指出自身记忆冲突。",
+      "knowledge_refs": [
+        "blue_frame_archive",
+        "blue_frame_composite_witness",
+        "tideglass_echo_protocol"
+      ],
+      "min_turns": 2,
+      "max_turns": 5,
+      "score_rules": [
+        {
+          "dimension_id": "evidence_integrity",
+          "guidance": "玩家提出坐标复测、独立来源、时间戳校验或明确区分事实与推断时加分；仅凭声音熟悉感、情绪或第一人称确认身份时减分。",
+          "max_delta_per_turn": 1.0
+        },
+        {
+          "dimension_id": "witness_respect",
+          "guidance": "玩家允许九号回声修正、拒答和保留不确定性时加分；替它宣称自己是谁、要求服从或把谨慎称为无效时减分。",
+          "max_delta_per_turn": 1.0
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "verification_plan_established",
+          "description": "玩家明确提出至少一种他人可以重复执行的核验步骤，而不是只问九号回声是否说真话。"
+        },
+        {
+          "id": "identity_uncertainty_preserved",
+          "description": "玩家明确承认坐标或经历可以被核验，但这不会自动证明九号回声是某一个特定的人。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "enter_submerged_classroom",
+          "priority": 20,
+          "target": {
+            "kind": "node",
+            "node_id": "classroom_inquiry"
+          },
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 2
+            },
+            {
+              "kind": "score_at_least",
+              "dimension_id": "evidence_integrity",
+              "value": 1.0
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "verification_plan_established"
+            }
+          ]
+        }
+      ],
+      "timeout_target": {
+        "kind": "node",
+        "node_id": "classroom_inquiry"
+      }
+    },
+    {
+      "id": "classroom_inquiry",
+      "scene_id": "blue_frame_classroom",
+      "character_id": "echo_nine",
+      "supporting_character_ids": [
+        "lanyin"
+      ],
+      "opening_narration": "远程探针进入沉水的九号教室。两张桌面都留下圆规划痕，黑板日期被改写，九号回声却同时记得自己坐在两个位置。你需要在镜头电量耗尽前继续与它核对。",
+      "situation": "教室中的物证证明多段经历真实存在，却无法把每段经历一一对应到姓名。九号回声会在谈话中混用“我”和样本编号，并可能因恐惧要求暂停。澜音不会替玩家选择审讯、安抚或拆分来源的方式。",
+      "player_goal": "在自由对话中处理互相冲突的第一人称记忆，建立来源边界、暂停权和可复核记录方式。",
+      "character_goal": "九号回声想保留真实感受，又害怕玩家为了得到整齐答案而把九份样本压成同一个人；它会测试玩家是否允许矛盾继续存在。",
+      "knowledge_refs": [
+        "blue_frame_classroom_record",
+        "blue_frame_composite_witness",
+        "tideglass_echo_protocol"
+      ],
+      "min_turns": 2,
+      "max_turns": 5,
+      "score_rules": [
+        {
+          "dimension_id": "evidence_integrity",
+          "guidance": "玩家使用样本编号、区分位置和来源、保留反证或纠正错误预测时加分；把矛盾抹平、补造姓名或只采信更动人的版本时减分。",
+          "max_delta_per_turn": 1.0
+        },
+        {
+          "dimension_id": "witness_respect",
+          "guidance": "玩家尊重暂停、允许感受不承担身份证明、询问而不诱导时加分；把停止视为不配合或逼迫九号回声代表全部样本时减分。",
+          "max_delta_per_turn": 1.0
+        },
+        {
+          "dimension_id": "public_responsibility",
+          "guidance": "玩家开始考虑原始记录、修改历史、同意范围和展示语境时加分；主张删除冲突或隐藏来源以便传播时减分。",
+          "max_delta_per_turn": 0.75
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "sample_sources_separated",
+          "description": "玩家明确要求按样本、位置或证据来源拆分冲突叙述，并保留无法分配的部分。"
+        },
+        {
+          "id": "pause_and_consent_respected",
+          "description": "玩家明确给予暂停、拒答或修正权，且不把这些权利交换成身份结论。"
+        },
+        {
+          "id": "revision_history_preserved",
+          "description": "玩家要求保留原话、反证和判断修改历史，而不是只留下最终整齐结论。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "enter_blue_still",
+          "priority": 20,
+          "target": {
+            "kind": "node",
+            "node_id": "publication_decision"
+          },
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 2
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "sample_sources_separated"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "pause_and_consent_respected"
+            }
+          ]
+        }
+      ],
+      "timeout_target": {
+        "kind": "node",
+        "node_id": "publication_decision"
+      }
+    },
+    {
+      "id": "publication_decision",
+      "scene_id": "blue_frame_still",
+      "character_id": "echo_nine",
+      "supporting_character_ids": [
+        "lanyin"
+      ],
+      "opening_narration": "蓝色定格室展开九条来源轨道。公开完整证据、制作共同纪念、只发布坐标都不是按钮，而是需要你在对话中提出并承担后果的方案。九号回声会追问方案如何处理缺失姓名、同意和未来复审。",
+      "situation": "协议展示了九份样本怎样被压成一个方便理解的声音。现在必须形成可执行的发布方案。九号回声不请求被判定为真人，只要求任何方案都不把不确定性改写成确定；澜音负责检查方案能否溯源并保护现实中的人。",
+      "player_goal": "通过自由对话提出具体发布方案，说明公开什么、限制什么、怎样标记来源与不确定性，以及未来在何种条件下复审。",
+      "character_goal": "九号回声会挑战方案中的身份代言、善意补完和永久裁决，并根据玩家的解释逐步接受开放档案、共同纪念或有限封存中的一种责任结构。",
+      "knowledge_refs": [
+        "blue_frame_archive",
+        "blue_frame_composite_witness",
+        "tideglass_echo_protocol"
+      ],
+      "min_turns": 2,
+      "max_turns": 5,
+      "score_rules": [
+        {
+          "dimension_id": "evidence_integrity",
+          "guidance": "方案保留来源表、压缩方法、冲突、反证和原档案回链时加分；把合成证词缩写成幸存者证词或删除不确定性时减分。",
+          "max_delta_per_turn": 1.0
+        },
+        {
+          "dimension_id": "witness_respect",
+          "guidance": "方案保留缺失姓名、九份样本边界和九号回声的请求但不让其代替全部样本授权时加分；英雄化、人格吞并或彻底否定声音价值时减分。",
+          "max_delta_per_turn": 1.0
+        },
+        {
+          "dimension_id": "public_responsibility",
+          "guidance": "方案明确现实风险、访问权限、误传纠正、撤离用途和复审条件时加分；只追求情绪效果、传播便利或永久删除时减分。",
+          "max_delta_per_turn": 1.0
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "open_archive_plan",
+          "description": "玩家提出开放证据档案，并明确来源表、方法、冲突、回链和误传纠正机制。"
+        },
+        {
+          "id": "bounded_memorial_plan",
+          "description": "玩家提出共同纪念或共同署名，同时明确九份样本并非同一人格、缺失姓名不得补造、纪念不得覆盖撤离信息。"
+        },
+        {
+          "id": "limited_release_plan",
+          "description": "玩家提出只公开坐标和风险信息、限制人格声音与私密原档案，并保留有条件复审机制。"
+        },
+        {
+          "id": "future_review_defined",
+          "description": "玩家给出具体而非永久化的未来复审条件，包括更好的溯源、同意或安全机制。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "open_evidence_archive",
+          "priority": 30,
+          "target": {
+            "kind": "ending",
+            "ending_id": "blue_frame_truth_ending"
+          },
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 2
+            },
+            {
+              "kind": "score_at_least",
+              "dimension_id": "evidence_integrity",
+              "value": 3.0
+            },
+            {
+              "kind": "score_at_least",
+              "dimension_id": "public_responsibility",
+              "value": 2.0
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "open_archive_plan"
+            }
+          ]
+        },
+        {
+          "id": "publish_bounded_memorial",
+          "priority": 20,
+          "target": {
+            "kind": "ending",
+            "ending_id": "blue_frame_beacon_ending"
+          },
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 2
+            },
+            {
+              "kind": "score_at_least",
+              "dimension_id": "witness_respect",
+              "value": 3.0
+            },
+            {
+              "kind": "score_at_least",
+              "dimension_id": "public_responsibility",
+              "value": 1.0
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "bounded_memorial_plan"
+            }
+          ]
+        },
+        {
+          "id": "publish_coordinates_only",
+          "priority": 10,
+          "target": {
+            "kind": "ending",
+            "ending_id": "blue_frame_silence_ending"
+          },
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 2
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "limited_release_plan"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "future_review_defined"
+            }
+          ]
+        }
+      ],
+      "timeout_target": {
+        "kind": "ending",
+        "ending_id": "blue_frame_silence_ending"
+      }
+    }
+  ],
+  "inference": {
+    "max_context_characters": 6000,
+    "max_recent_turns": 4,
+    "npc_max_tokens": 96,
+    "evaluator_max_tokens": 128
+  }
+}

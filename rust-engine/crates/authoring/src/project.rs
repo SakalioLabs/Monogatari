@@ -122,6 +122,12 @@ const PROJECT_PATHS: &[PathDefinition] = &[
         fallback: "quality_suites",
         required: false,
     },
+    PathDefinition {
+        key: "roleplays",
+        label: "Scene Roleplays",
+        fallback: "roleplays",
+        required: false,
+    },
 ];
 
 /// Inspect project settings and return stable readiness diagnostics.
@@ -339,7 +345,7 @@ pub fn default_project_config() -> Value {
             "webgpu": {
                 "model_id": "onnx-community/Qwen3.5-0.8B-Text-ONNX",
                 "dtype": "q4",
-                "max_new_tokens": 256,
+                "max_new_tokens": 96,
                 "temperature": 0.7,
                 "top_p": 0.9
             }
@@ -353,7 +359,8 @@ pub fn default_project_config() -> Value {
             "events": "events",
             "endings": "endings",
             "saves": "saves",
-            "quality_suites": "quality_suites"
+            "quality_suites": "quality_suites",
+            "roleplays": "roleplays"
         }
     })
 }

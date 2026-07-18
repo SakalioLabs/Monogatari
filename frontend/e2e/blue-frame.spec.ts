@@ -26,6 +26,34 @@ test.beforeEach(async ({ page }) => {
 })
 
 for (const viewport of viewports) {
+  test(`Blue Frame ${viewport.name} starts the dynamic roleplay on the main stage`, async ({ page }, testInfo) => {
+    await page.setViewportSize(viewport.size)
+    const runtimeErrors = captureRuntimeErrors(page)
+
+    await page.goto('/game?previewRoleplay=blue_frame_roleplay&authoring=1&rendererProbe=1')
+    const roleplay = page.getByTestId('scene-roleplay')
+    await expect(roleplay).toBeVisible({ timeout: 15_000 })
+    await expect(roleplay).toHaveAttribute('data-roleplay-status', 'active')
+    await expect(roleplay).toContainText('潮镜：蓝色定格')
+    await expect(roleplay).toContainText('通过自由对话提出可复做的核验方法')
+    await expect(roleplay.locator('.narration-entry')).toContainText('你可以直接向它提问')
+    await expect(roleplay.locator('.score-item')).toHaveCount(3)
+    await expect(page.getByTestId('npc-trigger')).toHaveCount(0)
+
+    const composer = roleplay.locator('textarea')
+    await expect(composer).toBeVisible()
+    await expect(composer).toHaveAttribute('maxlength', '4000')
+    await composer.fill('先核验坐标和时间戳，再讨论你是谁。')
+    await expect(roleplay.locator('.send-button')).toBeEnabled()
+    await expectRoleplayLayoutInsideViewport(page)
+
+    await testInfo.attach(`blue-frame-roleplay-${viewport.name}`, {
+      body: await page.screenshot(),
+      contentType: 'image/png',
+    })
+    expect(runtimeErrors, runtimeErrors.join('\n')).toEqual([])
+  })
+
   test(`Blue Frame ${viewport.name} route renders all authored 3D scenes`, async ({ page }, testInfo) => {
     await page.setViewportSize(viewport.size)
     const runtimeErrors = captureRuntimeErrors(page)
@@ -260,5 +288,39 @@ async function expectLayoutInsideViewport(page: Page): Promise<void> {
     expect(entry.box!.right, `${entry.selector} escaped right: ${evidence}`).toBeLessThanOrEqual(layout.viewport.width + 1)
     expect(entry.box!.top, `${entry.selector} escaped top: ${evidence}`).toBeGreaterThanOrEqual(-1)
     expect(entry.box!.bottom, `${entry.selector} escaped bottom: ${evidence}`).toBeLessThanOrEqual(layout.viewport.height + 1)
+  }
+}
+
+async function expectRoleplayLayoutInsideViewport(page: Page): Promise<void> {
+  const layout = await page.evaluate(() => {
+    const viewport = { width: window.innerWidth, height: window.innerHeight }
+    const boxes = ['.game-topbar', '.model-area', '.roleplay-shell', '.roleplay-composer textarea'].map((selector) => {
+      const element = document.querySelector(selector)
+      if (!element) return { selector, box: null, scrollWidth: 0, clientWidth: 0 }
+      const box = element.getBoundingClientRect()
+      return {
+        selector,
+        box: { left: box.left, top: box.top, right: box.right, bottom: box.bottom },
+        scrollWidth: element.scrollWidth,
+        clientWidth: element.clientWidth,
+      }
+    })
+    return {
+      viewport,
+      boxes,
+      documentWidth: document.documentElement.scrollWidth,
+      documentHeight: document.documentElement.scrollHeight,
+    }
+  })
+  const evidence = JSON.stringify(layout)
+  expect(layout.documentWidth, evidence).toBe(layout.viewport.width)
+  expect(layout.documentHeight, evidence).toBe(layout.viewport.height)
+  for (const entry of layout.boxes) {
+    expect(entry.box, `${entry.selector} is missing: ${evidence}`).not.toBeNull()
+    expect(entry.box!.left, `${entry.selector} escaped left: ${evidence}`).toBeGreaterThanOrEqual(-1)
+    expect(entry.box!.right, `${entry.selector} escaped right: ${evidence}`).toBeLessThanOrEqual(layout.viewport.width + 1)
+    expect(entry.box!.top, `${entry.selector} escaped top: ${evidence}`).toBeGreaterThanOrEqual(-1)
+    expect(entry.box!.bottom, `${entry.selector} escaped bottom: ${evidence}`).toBeLessThanOrEqual(layout.viewport.height + 1)
+    expect(entry.scrollWidth, `${entry.selector} overflowed horizontally: ${evidence}`).toBeLessThanOrEqual(entry.clientWidth + 1)
   }
 }

@@ -197,7 +197,7 @@ fn validates_bounded_per_run_workflow_choice_selections() {
 #[test]
 fn reports_cross_catalog_quality_references() {
     let suite = parse_quality_suite_document(
-        r#"{"version":"1","name":"Refs","description":"Reference suite","scenarios":[{"id":"base","category":"story","description":"Base","character_id":"missing","workflow_path":"workflows/missing.json","expect":{"required_knowledge_refs":["missing_lore"],"expected_events":["missing_event"]}}]}"#,
+        r#"{"version":"1","name":"Refs","description":"Reference suite","scenarios":[{"id":"base","category":"story","description":"Base","character_id":"missing","workflow_path":"workflows/missing.json","roleplay":{"path":"roleplays/missing.json"},"expect":{"required_knowledge_refs":["missing_lore"],"expected_events":["missing_event"]}}]}"#,
     )
     .unwrap();
     let loaded = vec![LoadedQualitySuiteDocument {
@@ -213,7 +213,36 @@ fn reports_cross_catalog_quality_references() {
         &HashSet::new(),
         &HashSet::new(),
         &HashSet::new(),
+        &HashSet::new(),
     );
 
-    assert_eq!(issues.len(), 4);
+    assert_eq!(issues.len(), 5);
+    assert!(issues
+        .iter()
+        .any(|(code, _, _)| code == "quality_roleplay_missing"));
+}
+
+#[test]
+fn validates_typed_scene_roleplay_fixtures_and_expectations() {
+    let suite = parse_quality_suite_document(
+        r#"{"version":"1","name":"Roleplay","description":"Roleplay coverage","scenarios":[{"id":"route","category":"scene_roleplay","description":"Route","roleplay":{"path":"roleplays/route.json","turns":[]},"expect":{"expected_roleplay_ending":"ending","min_roleplay_coverage_percent":100,"required_roleplay_nodes":["start"],"min_roleplay_scores":{"trust":1.0}}}]}"#,
+    )
+    .unwrap();
+    assert_eq!(
+        suite.scenarios[0].roleplay.as_ref().unwrap().path,
+        "roleplays/route.json"
+    );
+
+    let missing_fixture = parse_quality_suite_document(
+        r#"{"version":"1","name":"Roleplay","description":"Roleplay coverage","scenarios":[{"id":"route","category":"scene_roleplay","description":"Route","expect":{"expected_roleplay_ending":"ending"}}]}"#,
+    )
+    .unwrap_err();
+    assert!(missing_fixture.contains("require a roleplay fixture"));
+
+    let invalid_bounds = parse_quality_suite_document(
+        r#"{"version":"1","name":"Roleplay","description":"Roleplay coverage","scenarios":[{"id":"route","category":"scene_roleplay","description":"Route","roleplay":{"path":"roleplays/route.json"},"expect":{"min_roleplay_coverage_percent":101,"min_roleplay_scores":{"trust":2.0},"max_roleplay_scores":{"trust":1.0}}}]}"#,
+    )
+    .unwrap_err();
+    assert!(invalid_bounds.contains("min_roleplay_coverage_percent"));
+    assert!(invalid_bounds.contains("exceeds its maximum"));
 }

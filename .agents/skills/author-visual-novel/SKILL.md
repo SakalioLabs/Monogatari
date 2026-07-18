@@ -1,6 +1,6 @@
 ---
 name: author-visual-novel
-description: Create, revise, validate, and package Monogatari visual novel projects from story briefs or existing project data. Use for visual novel, galgame, VN, character, dialogue, scene, event, ending, workflow, quality-suite, or automated story-authoring tasks, including requests to generate a complete playable project for people or agents.
+description: Create, revise, validate, and package Monogatari AI visual novel and scene-roleplay projects from story briefs or existing project data. Use for real-time NPC roleplay, dynamic scene nodes, scoring and ending routes, visual novels, galgames, characters, dialogue, scenes, events, workflows, quality suites, or automated story authoring for people and agents.
 ---
 
 # Author Visual Novels
@@ -20,13 +20,14 @@ Build project data that the real Monogatari runtime can load. Treat a project as
 1. Define a stable ID map and story bible before writing files.
 2. Create knowledge and character records.
 3. Add renderer assets and scenes, using project-relative portable paths.
-4. Add dialogue graphs and verify every node, speaker, choice, and terminal path.
-5. Add event unlock rules and endings only after their referenced content exists.
-6. Add workflows after scene, dialogue, character, and event IDs are stable.
-7. Add or update a Quality Suite that proves critical branches, character identity, knowledge boundaries, and prompt-safety behavior.
-8. Keep mirrored `data/` and `rust-engine/data/` roots byte-equivalent when editing the built-in project.
+4. Add endings before any dynamic route targets them.
+5. For interactive AI stories, create `roleplays/` as the primary story graph: define scene-bound nodes, player and NPC goals, score dimensions, evidence rules, inference budgets, deterministic transitions, timeouts, and ending targets.
+6. Add `dialogue/` only for intentionally scripted sequences, tutorials, or non-AI projects; verify every scripted node, speaker, choice, and terminal path.
+7. Add event unlock rules and workflows after their referenced character, scene, roleplay, dialogue, and ending IDs are stable.
+8. Add or update a Quality Suite that replays critical free-form turns and proves node coverage, score/evidence boundaries, every required ending, character identity, knowledge boundaries, and prompt-safety behavior.
+9. Keep mirrored `data/` and `rust-engine/data/` roots byte-equivalent when editing the built-in project.
 
-If the brief requires a runtime LLM NPC, do not treat authored Dialogue, an `llm_generate` Workflow node, or provider-free preview simulation as delivery evidence. Give the character an explicit personality and pinned Knowledge references, keep the required mainline playable without inference, and verify the real in-story NPC entry plus its desktop or WebGPU runtime path separately.
+When the brief requires real-time AI roleplay, do not replace it with fixed Dialogue or an optional chat panel. The main playable loop must accept free-form player input, generate every NPC response from the current node's scene, character, goals, bounded transcript, and pinned Knowledge, obtain a separate structured score/evidence evaluation, and let only the deterministic roleplay state machine select transitions and endings. A provider-free replay proves authored rules and route coverage; it does not prove live model generation. Verify the configured desktop or WebGPU generation path separately, and report evaluator fallback turns as degraded behavior rather than successful AI evidence.
 
 Synchronize and verify the built-in project after an accepted transaction:
 
@@ -51,7 +52,7 @@ For this repository, call one tool with `node scripts/call-monogatari-mcp.mjs --
 
 ## Use Standard MCP When Available
 
-The repository ships `monogatari-mcp`, documented in `docs/MCP_SERVER.md`. Call `inspect_project`, `validate_project`, and `validate_delivery` first, use `list_project_json` and `read_project_json` to obtain exact preconditions, then call `plan_transaction`. Call `apply_transaction` only when the server explicitly reports write mode and pass the unchanged transaction plus the reviewed plan's `precondition_fingerprint`. Call both validators again after application. For every changed Workflow, call `preview_workflow` with the intended run context, environment, choices, and deterministic random inputs; review its executed nodes, stop reason, coverage, unvisited nodes, and source SHA. Then list the `quality_suites` catalog and call `run_quality_suite` for every intended suite path. Treat read-only `document` acceptance as JSON safety evidence, `core_runtime` as real catalog/runtime acceptance, delivery validation as declared asset readiness, `monogatari-mcp-workflow-preview/v1` as provider-free graph evidence, and `monogatari-mcp-quality-suite-run/v1` as deterministic scenario evidence bound to the reported source SHA. A Quality failure is a successful tool response with `passed: false` and actionable scenario issues.
+The repository ships `monogatari-mcp`, documented in `docs/MCP_SERVER.md`. Call `inspect_project`, `validate_project`, and `validate_delivery` first, use `list_project_json` and `read_project_json` to obtain exact preconditions, then call `plan_transaction`. Call `apply_transaction` only when the server explicitly reports write mode and pass the unchanged transaction plus the reviewed plan's `precondition_fingerprint`. Call both validators again after application. For every changed roleplay, call `preview_scene_roleplay` with representative player messages, NPC responses, and structured evaluations; review source SHA, visited and unvisited nodes, final scores/evidence, selected ending, and trailing-turn errors. For every changed Workflow, call `preview_workflow` with the intended run context, environment, choices, and deterministic random inputs; review its executed nodes, stop reason, coverage, unvisited nodes, and source SHA. Then list the `quality_suites` catalog and call `run_quality_suite` for every intended suite path. Treat read-only `document` acceptance as JSON safety evidence, `core_runtime` as real catalog/runtime acceptance, delivery validation as declared asset readiness, `monogatari-mcp-scene-roleplay-preview/v1` as provider-free roleplay-rule evidence, `monogatari-mcp-workflow-preview/v1` as provider-free Workflow evidence, and `monogatari-mcp-quality-suite-run/v1` as deterministic scenario evidence bound to reported source hashes. A Quality failure is a successful tool response with `passed: false` and actionable scenario issues.
 
 Scene documents may declare `model_3d_path` for a project-relative `.glb` or `.gltf` environment, with `background_path` retained as an optional loading fallback. Dialogue nodes may declare `scene_id`; Playtest activates that scene when the node is entered. Create every referenced scene before the dialogue transaction so core-runtime validation can reject dangling scene transitions.
 
@@ -74,10 +75,10 @@ node scripts/verify-release.mjs
 
 For UI or renderer changes, also exercise the relevant route at desktop and mobile sizes. A JSON parse, successful build, or generated image alone does not prove a playable story flow.
 
-For runtime LLM NPCs, verify that the in-story panel opens on the intended character without leaving the current Dialogue, composer input cannot advance the story, and the configured runtime receives character identity, personality, bounded history, and pinned Knowledge. Report actual provider or hardware generation separately from mocked adapter and layout evidence.
+For runtime AI roleplay, verify that the main story stage starts the intended roleplay and node, accepts free-form input, streams an NPC response, evaluates the completed exchange independently, applies only validated and clamped score/evidence changes, and displays the resulting node or ending. Verify that generated text cannot directly choose a transition, mutate scores, or bypass minimum-turn and timeout rules. Report actual provider or hardware generation separately from deterministic replay, mocked adapters, and layout evidence.
 
-Browser authoring Playtest accepts `previewDialogue=<id>&previewNode=<node-id>&authoring=1` to open one existing Dialogue node directly. Use this for bounded visual sampling of key scenes and choices; it starts with the Dialogue's initial variables and does not replay earlier node effects, so Workflow Preview and Quality Suite execution remain the authoritative full-route and branch-coverage evidence.
+Browser authoring Playtest accepts `previewRoleplay=<id>&authoring=1` to open a dynamic roleplay on the main stage. It also accepts `previewDialogue=<id>&previewNode=<node-id>&authoring=1` for intentionally scripted Dialogue. Visual sampling does not replay or prove earlier route state, so Scene Roleplay Preview and Quality Suite execution remain the authoritative provider-free route and branch-coverage evidence.
 
 ## Report Evidence
 
-Summarize changed content IDs, reachable story paths, Quality Suite coverage, commands run, and any hardware-only or provider-only checks that remain unverified. Keep blockers explicit instead of silently substituting mock behavior.
+Summarize changed content IDs, reachable roleplay nodes and endings, score/evidence dimensions, Quality Suite coverage, commands run, evaluator fallbacks, and any hardware-only or provider-only checks that remain unverified. Keep blockers explicit instead of silently substituting fixed Dialogue, mock behavior, or deterministic replay for live generation.

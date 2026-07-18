@@ -40,6 +40,7 @@ export function createSourceInvariantVerifier({
   async function verifyFrontendSourceInvariants() {
     const issues = []
     const frontendPackageSource = await readFile(path.join(frontendDir, 'package.json'), 'utf8')
+    const viteConfigSource = await readFile(path.join(frontendDir, 'vite.config.ts'), 'utf8')
     const indexSource = await readFile(path.join(frontendDir, 'index.html'), 'utf8')
     const appSource = await readFile(path.join(frontendDir, 'src', 'App.vue'), 'utf8')
     const mainSource = await readFile(path.join(frontendDir, 'src', 'main.ts'), 'utf8')
@@ -253,10 +254,12 @@ export function createSourceInvariantVerifier({
       ['manifest.event_catalogs', 'cache project story event catalogs during service worker install'],
       ['manifest.scene_files', 'cache project scene catalogs during service worker install'],
       ['manifest.dialogue_files', 'cache project dialogue scripts during service worker install'],
+      ['manifest.roleplay_files', 'cache project scene roleplay definitions during service worker install'],
       ['manifest.ending_files', 'cache project ending catalogs during service worker install'],
       ['manifest.character_files', 'cache project character definitions during service worker install'],
       ['manifest.knowledge_files', 'cache project knowledge entries during service worker install'],
       ['path.startsWith("/events/")', 'serve project story events through an offline-aware strategy'],
+      ['path.startsWith("/roleplays/")', 'serve project scene roleplays through an offline-aware strategy'],
       ['path.startsWith("/characters/")', 'serve project character definitions through an offline-aware strategy'],
       ['path.startsWith("/knowledge/")', 'serve project knowledge entries through an offline-aware strategy'],
       ['monogatari-web-project-assets/v1', 'validate the project asset manifest schema before caching'],
@@ -281,6 +284,7 @@ export function createSourceInvariantVerifier({
       ["'data', 'events'", 'copy checked-in story event catalogs from data/events'],
       ["'data', 'scenes'", 'copy checked-in scene catalogs from data/scenes'],
       ["'data', 'dialogue'", 'copy checked-in dialogue scripts from data/dialogue'],
+      ["'data', 'roleplays'", 'copy checked-in scene roleplay definitions from data/roleplays'],
       ["'data', 'endings'", 'copy checked-in ending catalogs from data/endings'],
       ["'data', 'characters'", 'copy checked-in character definitions from data/characters'],
       ["'data', 'knowledge'", 'copy checked-in knowledge entries from data/knowledge'],
@@ -308,16 +312,28 @@ export function createSourceInvariantVerifier({
       ['cp(projectEventsDir, distProjectEventsDir', 'merge story event catalogs into the Web/PWA dist tree'],
       ['cp(projectScenesDir, distProjectScenesDir', 'merge scene catalogs into the Web/PWA dist tree'],
       ['cp(projectDialoguesDir, distProjectDialoguesDir', 'merge dialogue scripts into the Web/PWA dist tree'],
+      ['cp(projectRoleplaysDir, distProjectRoleplaysDir', 'merge scene roleplay definitions into the Web/PWA dist tree'],
       ['cp(projectEndingsDir, distProjectEndingsDir', 'merge ending catalogs into the Web/PWA dist tree'],
       ['cp(projectCharactersDir, distProjectCharactersDir', 'merge character definitions into the Web/PWA dist tree'],
       ['cp(projectKnowledgeDir, distProjectKnowledgeDir', 'merge knowledge entries into the Web/PWA dist tree'],
       ['cp(projectWebModelDir, distWebModelDir', 'copy optional WebGPU model artifacts into the Web/PWA package'],
       ['event_catalogs', 'inventory story event catalogs in the Web/PWA project manifest'],
+      ['roleplay_files', 'inventory scene roleplay definitions in the Web/PWA project manifest'],
       ['WebGPU inference contract', 'report the generated inference runtime in the Web/PWA preparation output'],
     ]
     for (const [needle, description] of webDistPackagingRequirements) {
       if (!prepareWebDistSource.includes(needle)) {
         issues.push(`frontend/scripts/prepare-web-dist.mjs must ${description}`)
+      }
+    }
+
+    const viteProjectDataRequirements = [
+      ["roleplays: path.join(projectDataDir, 'roleplays')", 'serve scene roleplay definitions from the checked-in project during development'],
+      ['roleplay_files: projectFiles(projectDataRoots.roleplays', 'inventory scene roleplay definitions in the development project manifest'],
+    ]
+    for (const [needle, description] of viteProjectDataRequirements) {
+      if (!viteConfigSource.includes(needle)) {
+        issues.push(`frontend/vite.config.ts must ${description}`)
       }
     }
 

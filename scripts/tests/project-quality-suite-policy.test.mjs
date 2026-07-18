@@ -34,13 +34,13 @@ test('checked-in Quality Suites return source-bound passing evidence', async () 
       sourceDataRootLabel: evidence.sourceDataRootLabel,
     },
     {
-      suiteCount: 3,
-      scenarioCount: 41,
+      suiteCount: 4,
+      scenarioCount: 44,
       defaultScenarioCount: 29,
       sourceDataRootLabel: 'data',
     },
   )
-  assert.deepEqual(messages, ['[release] Quality suites OK (3 suite file(s))'])
+  assert.deepEqual(messages, ['[release] Quality suites OK (4 suite file(s))'])
 })
 
 test('pure Quality Suite shape validation reports schema, bounds, conflicts, and rule drift', () => {

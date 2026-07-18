@@ -218,6 +218,84 @@ The Ending Route editor loads `monogatari-story-ending-catalog/v1` snapshots con
 
 Release verification cross-checks all event unlock targets, ending references, strict dialogue graphs, character references, and matching dialogue catalogs in both checked-in data roots.
 
+## Scene Roleplay Format
+
+AI-first stories are stored as versioned JSON files under `roleplays/`. A roleplay is the primary runtime story graph for free-form interaction; it does not contain fixed NPC lines. Each node binds a visual scene and character context to goals, score/evidence rules, deterministic transitions, and bounded inference:
+
+```json
+{
+  "schema": "monogatari-scene-roleplay/v1",
+  "id": "signal_inquiry",
+  "title": "Signal Inquiry",
+  "start_node_id": "first_contact",
+  "exhaustion_ending_id": "signal_unresolved",
+  "max_total_turns": 12,
+  "score_dimensions": [
+    {
+      "id": "evidence_integrity",
+      "label": "Evidence integrity",
+      "description": "Separates facts from inference.",
+      "min": -6,
+      "max": 6,
+      "initial": 0
+    }
+  ],
+  "nodes": [
+    {
+      "id": "first_contact",
+      "scene_id": "signal_room",
+      "character_id": "echo",
+      "supporting_character_ids": ["observer"],
+      "opening_narration": "The recovered signal opens a live channel.",
+      "situation": "The signal is real, but its claimed identity is unresolved.",
+      "player_goal": "Establish a repeatable verification method through free conversation.",
+      "character_goal": "Offer bounded clues without claiming an unverified identity.",
+      "knowledge_refs": ["signal_protocol"],
+      "min_turns": 2,
+      "max_turns": 5,
+      "score_rules": [
+        {
+          "dimension_id": "evidence_integrity",
+          "guidance": "Reward repeatable checks; penalize unsupported certainty.",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "verification_plan",
+          "description": "The player states a repeatable external check."
+        }
+      ],
+      "transitions": [
+        {
+          "id": "verified_route",
+          "priority": 20,
+          "target": { "kind": "ending", "ending_id": "signal_verified" },
+          "conditions": [
+            { "kind": "node_turns_at_least", "value": 2 },
+            { "kind": "score_at_least", "dimension_id": "evidence_integrity", "value": 2 },
+            { "kind": "evidence_observed", "evidence_id": "verification_plan" }
+          ]
+        }
+      ],
+      "timeout_target": { "kind": "ending", "ending_id": "signal_unresolved" }
+    }
+  ],
+  "inference": {
+    "max_context_characters": 6000,
+    "max_recent_turns": 8,
+    "npc_max_tokens": 96,
+    "evaluator_max_tokens": 160
+  }
+}
+```
+
+Targets use `kind: "node"` with `node_id` or `kind: "ending"` with `ending_id`. Conditions are `score_at_least`, `score_at_most`, `evidence_observed`, `node_turns_at_least`, or `total_turns_at_least`. Eligible transitions are ordered by descending `priority`, with authored order breaking ties. If no transition matches by `max_turns`, `timeout_target` applies; `max_total_turns` applies the roleplay's exhaustion ending.
+
+The NPC generator receives the current situation, goals, character, pinned Knowledge, and bounded transcript, but returns only visible dialogue. A separate evaluator returns strict `score_deltas`, `evidence`, optional `npc_emotion`, and a summary. Every evidence observation must carry a non-empty `player_quote` that is an exact substring of the current player message. The runtime rejects unknown dimensions/evidence or fabricated quotes, clamps per-turn deltas and score ranges, deduplicates evidence, records the exchange, and then evaluates authored transitions atomically. Malformed evaluator output uses an explicit zero-score/no-evidence fallback and cannot choose a route.
+
+Core-runtime validation requires unique portable IDs, reachable nodes, valid local targets, valid bounds, and resolved scene, character, Knowledge, and ending references. Catalogs are limited to 256 regular JSON files and each file to 512 KiB; symlinks and unknown schema fields are rejected. The `data/roleplays/blue_frame_roleplay.json` fixture is the canonical checked-in example.
+
 ## Workflow Format
 
 Workflows are stored as JSON files and loaded via the Workflow Editor.
@@ -246,7 +324,7 @@ See the Workflow Editor documentation for all 21 available node types and their 
 
 ## Quality Suite Format
 
-Quality Suites are stored under `quality_suites/` and execute deterministic character, safety, Knowledge, Story Event, and Workflow expectations without requiring a model provider. Each file contains a version, name, description, and bounded scenario array. A Workflow scenario references one project Workflow and may provide typed run contexts, explicit choice maps, or both:
+Quality Suites are stored under `quality_suites/` and execute deterministic character, safety, Knowledge, Story Event, Scene Roleplay, and Workflow expectations without requiring a model provider. Each file contains a version, name, description, and bounded scenario array. A Workflow scenario references one project Workflow and may provide typed run contexts, explicit choice maps, or both:
 
 ```json
 {
@@ -276,3 +354,42 @@ Quality Suites are stored under `quality_suites/` and execute deterministic char
 ```
 
 `workflow_choice_selections` is an array of run maps from portable Workflow choice-node IDs to zero-based option indices. A scenario can contain at most 64 run maps and each map at most 128 selections; indices are bounded to 128. When `workflow_run_contexts` is also present, both arrays must have the same run count and are paired by index. Complete Quality execution runs the greater of the context count, choice-map count, or one default run, records each applied selection map, and aggregates union coverage and unvisited nodes across those runs. Workflow expectations or selections require `workflow_path`. Files are limited to 2 MiB and catalogs to 256 regular JSON files.
+
+A Scene Roleplay scenario supplies a project path plus provider-free turn records. Player messages, NPC responses, and strict evaluations are fixture input; session state, score clamping, evidence acceptance, transitions, and endings are always computed by the shared game core:
+
+```json
+{
+  "id": "verified-ending",
+  "category": "scene_roleplay",
+  "description": "A verifiable exchange reaches the intended ending.",
+  "messages": [{ "role": "player", "content": "Replay the verified route." }],
+  "roleplay": {
+    "path": "roleplays/signal_inquiry.json",
+    "turns": [
+      {
+        "player_message": "Ask a second station to repeat the measurement.",
+        "npc_response": "Record their method beside mine.",
+        "evaluation": {
+          "score_deltas": [
+            { "dimension_id": "evidence_integrity", "delta": 1, "reason": "Repeatable check" }
+          ],
+          "evidence": [
+            { "evidence_id": "verification_plan", "player_quote": "repeat the measurement" }
+          ],
+          "npc_emotion": "cautious",
+          "summary": "An external verification step was established."
+        }
+      }
+    ]
+  },
+  "expect": {
+    "expected_roleplay_ending": "signal_verified",
+    "min_roleplay_coverage_percent": 100,
+    "required_roleplay_nodes": ["first_contact"],
+    "required_roleplay_evidence": ["verification_plan"],
+    "min_roleplay_scores": { "evidence_integrity": 1 }
+  }
+}
+```
+
+Roleplay expectations can assert an ending, minimum coverage, exact unvisited nodes, required/forbidden nodes, required evidence, and minimum/maximum final scores. Reports include exact roleplay source path/SHA-256, per-turn outcomes, final session, visited/unvisited nodes, ending, and audit summaries. This proves state-machine behavior and authored route coverage, not the quality or availability of live model generation.

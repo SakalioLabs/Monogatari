@@ -298,7 +298,7 @@ function appendServiceWorkerIssues(serviceWorker, version, issues) {
   if (!serviceWorker.includes('cacheProjectAssets()')) {
     issues.push('sw.js install flow must cache project assets from the generated manifest')
   }
-  for (const prefix of ['/scenes/', '/dialogue/', '/endings/']) {
+  for (const prefix of ['/scenes/', '/dialogue/', '/roleplays/', '/endings/']) {
     if (!serviceWorker.includes(prefix)) {
       issues.push(`sw.js must cache and route project content under ${prefix}`)
     }
@@ -382,6 +382,7 @@ async function verifyWebProjectAssets({ repositoryRoot, distDir, projectAssetMan
   for (const content of [
     { directory: 'scenes', manifestField: 'scene_files', prefix: '/scenes/' },
     { directory: 'dialogue', manifestField: 'dialogue_files', prefix: '/dialogue/' },
+    { directory: 'roleplays', manifestField: 'roleplay_files', prefix: '/roleplays/' },
     { directory: 'endings', manifestField: 'ending_files', prefix: '/endings/' },
     { directory: 'characters', manifestField: 'character_files', prefix: '/characters/' },
     { directory: 'knowledge', manifestField: 'knowledge_files', prefix: '/knowledge/' },

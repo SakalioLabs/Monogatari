@@ -14,6 +14,8 @@ const projectScenesDir = path.join(rootDir, 'data', 'scenes')
 const distProjectScenesDir = path.join(distDir, 'scenes')
 const projectDialoguesDir = path.join(rootDir, 'data', 'dialogue')
 const distProjectDialoguesDir = path.join(distDir, 'dialogue')
+const projectRoleplaysDir = path.join(rootDir, 'data', 'roleplays')
+const distProjectRoleplaysDir = path.join(distDir, 'roleplays')
 const projectEndingsDir = path.join(rootDir, 'data', 'endings')
 const distProjectEndingsDir = path.join(distDir, 'endings')
 const projectCharactersDir = path.join(rootDir, 'data', 'characters')
@@ -120,6 +122,7 @@ function staticHostingRedirects() {
     '/events/* /events/:splat 200',
     '/scenes/* /scenes/:splat 200',
     '/dialogue/* /dialogue/:splat 200',
+    '/roleplays/* /roleplays/:splat 200',
     '/endings/* /endings/:splat 200',
     '/characters/* /characters/:splat 200',
     '/knowledge/* /knowledge/:splat 200',
@@ -147,6 +150,7 @@ function azureStaticWebAppConfig() {
         '/events/*',
         '/scenes/*',
         '/dialogue/*',
+        '/roleplays/*',
         '/endings/*',
         '/characters/*',
         '/knowledge/*',
@@ -216,6 +220,9 @@ async function projectAssetManifest() {
   const dialogueFiles = (await walkFiles(projectDialoguesDir, []))
     .map((file) => `/dialogue/${path.relative(projectDialoguesDir, file).replaceAll(path.sep, '/')}`)
     .sort()
+  const roleplayFiles = (await walkFiles(projectRoleplaysDir, []))
+    .map((file) => `/roleplays/${path.relative(projectRoleplaysDir, file).replaceAll(path.sep, '/')}`)
+    .sort()
   const endingFiles = (await walkFiles(projectEndingsDir, []))
     .map((file) => `/endings/${path.relative(projectEndingsDir, file).replaceAll(path.sep, '/')}`)
     .sort()
@@ -233,6 +240,7 @@ async function projectAssetManifest() {
     event_catalogs: eventCatalogFiles,
     scene_files: sceneFiles,
     dialogue_files: dialogueFiles,
+    roleplay_files: roleplayFiles,
     ending_files: endingFiles,
     character_files: characterFiles,
     knowledge_files: knowledgeFiles,
@@ -248,7 +256,7 @@ async function webInferenceRuntime() {
     backend: 'webgpu',
     model_id: webgpu.model_id || webgpu.modelId || 'onnx-community/Qwen3.5-0.8B-Text-ONNX',
     dtype: webgpu.dtype || 'q4',
-    max_new_tokens: Number(webgpu.max_new_tokens || webgpu.maxNewTokens || 256),
+    max_new_tokens: Number(webgpu.max_new_tokens || webgpu.maxNewTokens || 96),
     temperature: Number(webgpu.temperature || 0.7),
     top_p: Number(webgpu.top_p || webgpu.topP || 0.9),
   }
@@ -272,6 +280,7 @@ await cp(projectAssetsDir, distProjectAssetsDir, { recursive: true, force: true 
 await cp(projectEventsDir, distProjectEventsDir, { recursive: true, force: true })
 await cp(projectScenesDir, distProjectScenesDir, { recursive: true, force: true })
 await cp(projectDialoguesDir, distProjectDialoguesDir, { recursive: true, force: true })
+await cp(projectRoleplaysDir, distProjectRoleplaysDir, { recursive: true, force: true })
 await cp(projectEndingsDir, distProjectEndingsDir, { recursive: true, force: true })
 await cp(projectCharactersDir, distProjectCharactersDir, { recursive: true, force: true })
 await cp(projectKnowledgeDir, distProjectKnowledgeDir, { recursive: true, force: true })

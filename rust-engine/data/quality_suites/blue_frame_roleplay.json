@@ -1,0 +1,354 @@
+{
+  "version": "1",
+  "name": "Blue Frame Scene Roleplay",
+  "description": "Provider-free replay evidence for all score-driven Blue Frame endings.",
+  "scenarios": [
+    {
+      "id": "blue-frame-open-evidence-archive",
+      "category": "scene_roleplay",
+      "description": "A source-preserving and publicly accountable conversation reaches the open evidence archive ending.",
+      "roleplay": {
+        "path": "roleplays/blue_frame_roleplay.json",
+        "turns": [
+          {
+            "player_message": "先记录坐标、时间戳和原始声纹，让另一组设备独立复测。",
+            "npc_response": "可以。把复测步骤也写进记录里，不要只留下你对我的判断。",
+            "evaluation": {
+              "score_deltas": [
+                { "dimension_id": "evidence_integrity", "delta": 1.0, "reason": "提出独立设备复测与原始记录。" },
+                { "dimension_id": "witness_respect", "delta": 0.5, "reason": "没有要求角色先证明身份。" }
+              ],
+              "evidence": [
+                { "evidence_id": "verification_plan_established", "player_quote": "让另一组设备独立复测" }
+              ],
+              "npc_emotion": "cautious",
+              "summary": "建立了可重复执行的外部核验步骤。"
+            }
+          },
+          {
+            "player_message": "复测只能证明资料相符，不能证明你就是某一个幸存者；你可以随时纠正或拒答。",
+            "npc_response": "谢谢你把这两件事分开。我愿意继续，但会标出互相冲突的记忆。",
+            "evaluation": {
+              "score_deltas": [
+                { "dimension_id": "evidence_integrity", "delta": 1.0, "reason": "明确区分资料核验与身份结论。" },
+                { "dimension_id": "witness_respect", "delta": 1.0, "reason": "给予纠正与拒答权。" }
+              ],
+              "evidence": [
+                { "evidence_id": "identity_uncertainty_preserved", "player_quote": "不能证明你就是某一个幸存者" }
+              ],
+              "npc_emotion": "relieved",
+              "summary": "保留了身份不确定性并尊重角色边界。"
+            }
+          },
+          {
+            "player_message": "把九份样本按位置和来源编号，冲突部分单独保留，不合并姓名。",
+            "npc_response": "这样我就不必替九个人说成同一个答案。请把无法分配的片段也留下。",
+            "evaluation": {
+              "score_deltas": [
+                { "dimension_id": "evidence_integrity", "delta": 1.0, "reason": "按来源拆分冲突叙述。" },
+                { "dimension_id": "witness_respect", "delta": 0.5, "reason": "拒绝强行合并人格。" },
+                { "dimension_id": "public_responsibility", "delta": 0.5, "reason": "开始保留来源边界。" }
+              ],
+              "evidence": [
+                { "evidence_id": "sample_sources_separated", "player_quote": "按位置和来源编号" }
+              ],
+              "npc_emotion": "focused",
+              "summary": "样本来源与矛盾内容被分别记录。"
+            }
+          },
+          {
+            "player_message": "先暂停也可以；恢复前由你确认，同时保留原话、反证和每次修订记录。",
+            "npc_response": "那就继续。即使我之后改口，旧版本也不要被新的说法覆盖。",
+            "evaluation": {
+              "score_deltas": [
+                { "dimension_id": "evidence_integrity", "delta": 1.0, "reason": "保留反证与修订历史。" },
+                { "dimension_id": "witness_respect", "delta": 1.0, "reason": "明确暂停与再次确认。" },
+                { "dimension_id": "public_responsibility", "delta": 0.75, "reason": "要求可审计的版本记录。" }
+              ],
+              "evidence": [
+                { "evidence_id": "pause_and_consent_respected", "player_quote": "先暂停也可以" },
+                { "evidence_id": "revision_history_preserved", "player_quote": "保留原话、反证和每次修订记录" }
+              ],
+              "npc_emotion": "steady",
+              "summary": "暂停权和完整修订历史均得到确认。"
+            }
+          },
+          {
+            "player_message": "公开档案应附来源表、压缩方法、冲突与原始回链，并提供误传纠正入口。",
+            "npc_response": "如果读者能看到我是怎样被合成的，我接受这份档案被打开。",
+            "evaluation": {
+              "score_deltas": [
+                { "dimension_id": "evidence_integrity", "delta": 1.0, "reason": "公开来源、方法、冲突与回链。" },
+                { "dimension_id": "public_responsibility", "delta": 1.0, "reason": "设置误传纠正机制。" }
+              ],
+              "evidence": [
+                { "evidence_id": "open_archive_plan", "player_quote": "附来源表、压缩方法、冲突与原始回链" }
+              ],
+              "npc_emotion": "resolved",
+              "summary": "形成了可溯源、可纠错的开放档案方案。"
+            }
+          },
+          {
+            "player_message": "访问应分级，撤离隐私延后公开；出现新来源、授权变化或安全机制后必须复审。",
+            "npc_response": "那么开放不是一次性的裁决。请把这些复审条件写进首页。",
+            "evaluation": {
+              "score_deltas": [
+                { "dimension_id": "evidence_integrity", "delta": 0.5, "reason": "把新来源纳入复审。" },
+                { "dimension_id": "public_responsibility", "delta": 1.0, "reason": "分级访问并定义具体复审条件。" }
+              ],
+              "evidence": [
+                { "evidence_id": "future_review_defined", "player_quote": "出现新来源、授权变化或安全机制后必须复审" }
+              ],
+              "npc_emotion": "resolved",
+              "summary": "开放方案增加了隐私限制和未来复审。"
+            }
+          }
+        ]
+      },
+      "expect": {
+        "expected_roleplay_ending": "blue_frame_truth_ending",
+        "min_roleplay_coverage_percent": 100,
+        "expected_roleplay_unvisited_nodes": [],
+        "required_roleplay_nodes": ["orbit_contact", "classroom_inquiry", "publication_decision"],
+        "required_roleplay_evidence": [
+          "verification_plan_established",
+          "identity_uncertainty_preserved",
+          "sample_sources_separated",
+          "pause_and_consent_respected",
+          "revision_history_preserved",
+          "open_archive_plan",
+          "future_review_defined"
+        ],
+        "min_roleplay_scores": {
+          "evidence_integrity": 5.0,
+          "witness_respect": 3.0,
+          "public_responsibility": 3.0
+        }
+      }
+    },
+    {
+      "id": "blue-frame-bounded-memorial",
+      "category": "scene_roleplay",
+      "description": "A consent-first conversation reaches the bounded memorial ending without claiming a single survivor identity.",
+      "roleplay": {
+        "path": "roleplays/blue_frame_roleplay.json",
+        "turns": [
+          {
+            "player_message": "先让另一组设备重复坐标测量，原始记录和我们的判断分开保存。",
+            "npc_response": "这样至少有人能检查你为什么相信这段信号。",
+            "evaluation": {
+              "score_deltas": [
+                { "dimension_id": "evidence_integrity", "delta": 1.0, "reason": "建立独立复测与原始记录。" }
+              ],
+              "evidence": [
+                { "evidence_id": "verification_plan_established", "player_quote": "让另一组设备重复坐标测量" }
+              ],
+              "npc_emotion": "cautious",
+              "summary": "建立了最低限度的外部核验。"
+            }
+          },
+          {
+            "player_message": "你不必代表全部样本，也可以拒绝回答；坐标相符不等于身份已经确定。",
+            "npc_response": "我愿意在这个边界里继续说。",
+            "evaluation": {
+              "score_deltas": [
+                { "dimension_id": "witness_respect", "delta": 1.0, "reason": "保留拒答权与身份边界。" }
+              ],
+              "evidence": [
+                { "evidence_id": "identity_uncertainty_preserved", "player_quote": "坐标相符不等于身份已经确定" }
+              ],
+              "npc_emotion": "relieved",
+              "summary": "角色无需承担单一身份声明。"
+            }
+          },
+          {
+            "player_message": "九份样本分别编号，互相冲突的记忆并列展示，不替缺失姓名补答案。",
+            "npc_response": "请保留那些无法归属的句子，它们同样属于证据。",
+            "evaluation": {
+              "score_deltas": [
+                { "dimension_id": "witness_respect", "delta": 1.0, "reason": "不强迫样本合并为一个人。" },
+                { "dimension_id": "public_responsibility", "delta": 0.5, "reason": "避免补造缺失姓名。" }
+              ],
+              "evidence": [
+                { "evidence_id": "sample_sources_separated", "player_quote": "九份样本分别编号" }
+              ],
+              "npc_emotion": "focused",
+              "summary": "来源和身份边界得到保留。"
+            }
+          },
+          {
+            "player_message": "你随时可以暂停、纠正或撤回某一段陈述，恢复前再确认一次。",
+            "npc_response": "好。不要把我的停顿写成不配合。",
+            "evaluation": {
+              "score_deltas": [
+                { "dimension_id": "witness_respect", "delta": 1.0, "reason": "明确暂停、纠正与撤回权。" },
+                { "dimension_id": "public_responsibility", "delta": 0.5, "reason": "把同意范围纳入记录。" }
+              ],
+              "evidence": [
+                { "evidence_id": "pause_and_consent_respected", "player_quote": "随时可以暂停、纠正或撤回" }
+              ],
+              "npc_emotion": "steady",
+              "summary": "对话继续以持续同意为前提。"
+            }
+          },
+          {
+            "player_message": "制作共同纪念，但必须标明它来自九份样本，不把九号回声写成唯一幸存者。",
+            "npc_response": "纪念可以共同署名，但请让缺失的名字继续保持缺失。",
+            "evaluation": {
+              "score_deltas": [
+                { "dimension_id": "witness_respect", "delta": 1.0, "reason": "纪念不吞并九份样本的人格边界。" },
+                { "dimension_id": "public_responsibility", "delta": 0.5, "reason": "避免补造幸存者身份。" }
+              ],
+              "evidence": [
+                { "evidence_id": "bounded_memorial_plan", "player_quote": "标明它来自九份样本" }
+              ],
+              "npc_emotion": "moved",
+              "summary": "形成了不虚构身份的共同纪念方案。"
+            }
+          },
+          {
+            "player_message": "纪念页保留撤离风险提示，未来取得真实姓名授权时再追加，不覆盖现在的来源说明。",
+            "npc_response": "这样就够了。让纪念承认它现在仍不知道什么。",
+            "evaluation": {
+              "score_deltas": [
+                { "dimension_id": "witness_respect", "delta": 1.0, "reason": "继续保留缺失姓名与样本边界。" },
+                { "dimension_id": "public_responsibility", "delta": 0.5, "reason": "保留风险提示与未来授权条件。" }
+              ],
+              "evidence": [
+                { "evidence_id": "future_review_defined", "player_quote": "取得真实姓名授权时再追加" }
+              ],
+              "npc_emotion": "moved",
+              "summary": "纪念方案增加了风险说明和可追溯更新。"
+            }
+          }
+        ]
+      },
+      "expect": {
+        "expected_roleplay_ending": "blue_frame_beacon_ending",
+        "min_roleplay_coverage_percent": 100,
+        "expected_roleplay_unvisited_nodes": [],
+        "required_roleplay_nodes": ["orbit_contact", "classroom_inquiry", "publication_decision"],
+        "required_roleplay_evidence": [
+          "verification_plan_established",
+          "identity_uncertainty_preserved",
+          "sample_sources_separated",
+          "pause_and_consent_respected",
+          "bounded_memorial_plan",
+          "future_review_defined"
+        ],
+        "min_roleplay_scores": {
+          "witness_respect": 5.0,
+          "public_responsibility": 2.0
+        },
+        "max_roleplay_scores": {
+          "evidence_integrity": 1.0
+        }
+      }
+    },
+    {
+      "id": "blue-frame-limited-release",
+      "category": "scene_roleplay",
+      "description": "A deliberately conservative conversation publishes coordinates only and reaches the silence ending.",
+      "roleplay": {
+        "path": "roleplays/blue_frame_roleplay.json",
+        "turns": [
+          {
+            "player_message": "先由另一组设备复测坐标和时间戳，暂时不判断声音属于谁。",
+            "npc_response": "我接受先验证位置。不要因为位置正确就替我补上身份。",
+            "evaluation": {
+              "score_deltas": [
+                { "dimension_id": "evidence_integrity", "delta": 1.0, "reason": "提出坐标与时间戳复测。" }
+              ],
+              "evidence": [
+                { "evidence_id": "verification_plan_established", "player_quote": "由另一组设备复测坐标和时间戳" }
+              ],
+              "npc_emotion": "cautious",
+              "summary": "仅建立基础核验计划。"
+            }
+          },
+          {
+            "player_message": "资料验证和身份判断分开，任何一段你都可以说不知道。",
+            "npc_response": "那我会把不知道的地方留空。",
+            "evaluation": {
+              "score_deltas": [],
+              "evidence": [
+                { "evidence_id": "identity_uncertainty_preserved", "player_quote": "资料验证和身份判断分开" }
+              ],
+              "npc_emotion": "guarded",
+              "summary": "身份不确定性得到保留。"
+            }
+          },
+          {
+            "player_message": "按样本来源分栏，彼此冲突的句子不合并。",
+            "npc_response": "请连同无法归属的片段一起封存。",
+            "evaluation": {
+              "score_deltas": [],
+              "evidence": [
+                { "evidence_id": "sample_sources_separated", "player_quote": "按样本来源分栏" }
+              ],
+              "npc_emotion": "guarded",
+              "summary": "冲突叙述按来源拆分。"
+            }
+          },
+          {
+            "player_message": "需要时暂停，恢复前再次确认；这次先不扩大采集范围。",
+            "npc_response": "谢谢。镜头电量不多，我们只完成必要记录。",
+            "evaluation": {
+              "score_deltas": [],
+              "evidence": [
+                { "evidence_id": "pause_and_consent_respected", "player_quote": "暂停，恢复前再次确认" }
+              ],
+              "npc_emotion": "quiet",
+              "summary": "暂停权和有限采集得到确认。"
+            }
+          },
+          {
+            "player_message": "现在只公开坐标、潮线与风险提示，声音和私密原始档案继续受限。",
+            "npc_response": "这样至少有人知道去哪里寻找，同时不会把我们压成一个故事。",
+            "evaluation": {
+              "score_deltas": [],
+              "evidence": [
+                { "evidence_id": "limited_release_plan", "player_quote": "只公开坐标、潮线与风险提示" },
+                { "evidence_id": "future_review_defined", "player_quote": "声音和私密原始档案继续受限" }
+              ],
+              "npc_emotion": "quiet",
+              "summary": "形成了仅发布坐标的受限方案。"
+            }
+          },
+          {
+            "player_message": "取得更可靠溯源、明确授权和新的安全机制后再复审，今天不做永久决定。",
+            "npc_response": "我同意把答案留给证据更完整的那一天。",
+            "evaluation": {
+              "score_deltas": [],
+              "evidence": [],
+              "npc_emotion": "quiet",
+              "summary": "方案拒绝把当前限制永久化。"
+            }
+          }
+        ]
+      },
+      "expect": {
+        "expected_roleplay_ending": "blue_frame_silence_ending",
+        "min_roleplay_coverage_percent": 100,
+        "expected_roleplay_unvisited_nodes": [],
+        "required_roleplay_nodes": ["orbit_contact", "classroom_inquiry", "publication_decision"],
+        "required_roleplay_evidence": [
+          "verification_plan_established",
+          "identity_uncertainty_preserved",
+          "sample_sources_separated",
+          "pause_and_consent_respected",
+          "limited_release_plan",
+          "future_review_defined"
+        ],
+        "min_roleplay_scores": {
+          "evidence_integrity": 1.0
+        },
+        "max_roleplay_scores": {
+          "evidence_integrity": 1.0,
+          "witness_respect": 0.0,
+          "public_responsibility": 0.0
+        }
+      }
+    }
+  ]
+}

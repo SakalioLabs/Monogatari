@@ -29,6 +29,7 @@ fn create_project(root: &Path) {
     for directory in [
         "characters",
         "dialogue",
+        "roleplays",
         "knowledge",
         "scenes",
         "assets/backgrounds",

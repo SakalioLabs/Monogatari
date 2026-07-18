@@ -10,6 +10,7 @@ use llm_authoring::json_catalog::{
 use llm_authoring::project::ProjectConfigState;
 use llm_authoring::project_package::{ProjectPackageExportResult, ProjectPackageInspection};
 use llm_authoring::quality_suite_execution::QualitySuiteReport;
+use llm_authoring::scene_roleplay_preview::{SceneRoleplayPreviewReport, SceneRoleplayTurnInput};
 use llm_authoring::workflow_execution_policy::WorkflowExecutionReport;
 use llm_authoring::workflow_preview::{WorkflowPreviewEnvironment, WorkflowPreviewOptions};
 use schemars::JsonSchema;
@@ -22,6 +23,7 @@ pub const MCP_PACKAGE_INSPECTION_SCHEMA_V1: &str = "monogatari-mcp-package-inspe
 pub const MCP_PACKAGE_PREVIEW_SCHEMA_V1: &str = "monogatari-mcp-package-preview/v1";
 pub const MCP_PACKAGE_VALIDATION_SCHEMA_V1: &str = "monogatari-mcp-package-validation/v1";
 pub const MCP_QUALITY_SUITE_RUN_SCHEMA_V1: &str = "monogatari-mcp-quality-suite-run/v1";
+pub const MCP_SCENE_ROLEPLAY_PREVIEW_SCHEMA_V1: &str = "monogatari-mcp-scene-roleplay-preview/v1";
 pub const MCP_WORKFLOW_PREVIEW_SCHEMA_V1: &str = "monogatari-mcp-workflow-preview/v1";
 pub const MCP_TOOL_ERROR_SCHEMA_V1: &str = "monogatari-mcp-tool-error/v1";
 
@@ -129,6 +131,22 @@ pub struct PreviewWorkflowOutput {
     pub source_path: String,
     pub source_sha256: String,
     pub report: WorkflowExecutionReport,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct PreviewSceneRoleplayRequest {
+    pub path: String,
+    #[serde(default)]
+    pub turns: Vec<SceneRoleplayTurnInput>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
+pub struct PreviewSceneRoleplayOutput {
+    pub schema: String,
+    pub source_path: String,
+    pub source_sha256: String,
+    pub report: SceneRoleplayPreviewReport,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]

@@ -71,10 +71,14 @@ describe('NPC conversation domain', () => {
       content: `消息 ${index}`,
     }))
     const messages = buildWebNpcChatMessages(character, 'zh-CN', history, knowledge)
+    const latest = history.at(-1)!
 
     expect(messages).toHaveLength(NPC_HISTORY_LIMIT + 1)
     expect(messages[1]).toEqual({ role: 'assistant', content: '消息 5' })
-    expect(messages.at(-1)).toEqual({ role: 'user', content: '消息 20' })
+    expect(messages.at(-1)).toEqual({
+      role: latest.role === 'player' ? 'user' : 'assistant',
+      content: latest.content,
+    })
   })
 
   it('removes private reasoning and rejects replies without visible character text', () => {

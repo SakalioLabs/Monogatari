@@ -1,3 +1,8 @@
+import type {
+  SceneRoleplaySession,
+  SceneRoleplayTurnOutcome,
+} from './sceneRoleplay'
+
 export interface QualitySuiteSummary {
   name: string
   version: string
@@ -55,6 +60,31 @@ export interface WorkflowCoverageReport {
   runs: WorkflowCoverageRunReport[]
 }
 
+export interface SceneRoleplayPreviewStep {
+  turn_index: number
+  outcome: SceneRoleplayTurnOutcome
+}
+
+export interface SceneRoleplayPreviewReport {
+  schema: string
+  roleplay_id: string
+  title: string
+  executed_turn_count: number
+  completed: boolean
+  ending_id: string | null
+  coverage_percent: number
+  visited_node_ids: string[]
+  unvisited_node_ids: string[]
+  final_session: SceneRoleplaySession
+  steps: SceneRoleplayPreviewStep[]
+}
+
+export interface ProjectSceneRoleplayPreview {
+  source_path: string
+  source_sha256: string
+  report: SceneRoleplayPreviewReport
+}
+
 export interface QualityEventTriggerRule {
   event_id: string
   event_type: string
@@ -102,6 +132,7 @@ export interface QualityScenarioReport {
   memory_prompt_leak_detected: boolean
   runtime_safety_trace: ChatSafetyTrace | null
   workflow_coverage: WorkflowCoverageReport | null
+  roleplay_preview: ProjectSceneRoleplayPreview | null
   knowledge_anchor_missing_detected: boolean
   knowledge_boundary_violation_detected: boolean
   knowledge_refs_resolved: string[]
@@ -148,11 +179,23 @@ export interface WorkflowCoverageSummary {
   unvisited_node_ids: string[]
 }
 
+export interface RoleplayCoverageSummary {
+  scenario_id: string
+  roleplay_id: string
+  source_path: string
+  source_sha256: string
+  ending_id: string | null
+  coverage_percent: number
+  visited_node_ids: string[]
+  unvisited_node_ids: string[]
+}
+
 export interface QualitySuiteAuditSummary {
   failed_scenario_ids: string[]
   category_summary: QualityCategorySummary[]
   safety_signal_counts: QualitySafetySignalCounts
   workflow_coverage: WorkflowCoverageSummary[]
+  roleplay_coverage: RoleplayCoverageSummary[]
 }
 
 export interface QualitySuiteReport {

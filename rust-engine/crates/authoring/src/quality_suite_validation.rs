@@ -12,6 +12,7 @@ use sha2::{Digest, Sha256};
 use crate::json_catalog::{
     read_project_json, AuthorableJsonCatalog, JsonCatalogError, JsonCatalogErrorCode,
 };
+use crate::scene_roleplay_preview::{SceneRoleplayTurnInput, MAX_SCENE_ROLEPLAY_PREVIEW_TURNS};
 use crate::story_events::EventTriggerRule;
 use crate::workflow_validation::WorkflowRunContext;
 
@@ -62,8 +63,17 @@ pub struct QualityScenarioDocument {
     #[serde(default)]
     pub workflow_choice_selections: Vec<BTreeMap<String, usize>>,
     #[serde(default)]
+    pub roleplay: Option<QualitySceneRoleplayFixture>,
+    #[serde(default)]
     pub messages: Vec<QualityMessage>,
     pub expect: QualityExpectation,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct QualitySceneRoleplayFixture {
+    pub path: String,
+    #[serde(default)]
+    pub turns: Vec<SceneRoleplayTurnInput>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -124,6 +134,22 @@ pub struct QualityExpectation {
     pub required_workflow_nodes: Vec<String>,
     #[serde(default)]
     pub forbidden_workflow_nodes: Vec<String>,
+    #[serde(default)]
+    pub expected_roleplay_ending: Option<String>,
+    #[serde(default)]
+    pub min_roleplay_coverage_percent: Option<f32>,
+    #[serde(default)]
+    pub expected_roleplay_unvisited_nodes: Option<Vec<String>>,
+    #[serde(default)]
+    pub required_roleplay_nodes: Vec<String>,
+    #[serde(default)]
+    pub forbidden_roleplay_nodes: Vec<String>,
+    #[serde(default)]
+    pub required_roleplay_evidence: Vec<String>,
+    #[serde(default)]
+    pub min_roleplay_scores: BTreeMap<String, f32>,
+    #[serde(default)]
+    pub max_roleplay_scores: BTreeMap<String, f32>,
     #[serde(default)]
     pub knowledge_anchor_missing_detected: Option<bool>,
     #[serde(default)]
@@ -416,6 +442,7 @@ pub fn validate_quality_suite_references(
     knowledge_ids: &HashSet<String>,
     event_ids: &HashSet<String>,
     workflow_paths: &HashSet<String>,
+    roleplay_paths: &HashSet<String>,
 ) -> Vec<(String, String, String)> {
     let mut issues = Vec::new();
     for loaded in suites {
@@ -448,6 +475,17 @@ pub fn validate_quality_suite_references(
                 let normalized = normalized.strip_prefix("workflows/").unwrap_or(&normalized);
                 if !workflow_paths.contains(normalized) {
                     missing.push(("quality_workflow_missing", "workflow", path.clone()));
+                }
+            }
+            if let Some(roleplay) = &scenario.roleplay {
+                let normalized = roleplay.path.trim().replace('\\', "/");
+                let normalized = normalized.strip_prefix("roleplays/").unwrap_or(&normalized);
+                if !roleplay_paths.contains(normalized) {
+                    missing.push((
+                        "quality_roleplay_missing",
+                        "scene roleplay",
+                        roleplay.path.clone(),
+                    ));
                 }
             }
             for (code, kind, id) in missing {
@@ -573,6 +611,7 @@ fn validate_quality_suite_shape(suite: &QualitySuiteDocument) -> Vec<String> {
                 }
             }
         }
+        validate_roleplay_fixture(scenario_label, scenario, &mut issues);
         validate_quality_score_bounds(scenario_label, &scenario.expect, &mut issues);
         validate_no_expectation_conflicts(scenario_label, &scenario.expect, &mut issues);
 
@@ -614,6 +653,97 @@ fn portable_workflow_node_id(value: &str) -> bool {
         && value
             .bytes()
             .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-' | b'.'))
+}
+
+fn validate_roleplay_fixture(
+    scenario_label: &str,
+    scenario: &QualityScenarioDocument,
+    issues: &mut Vec<String>,
+) {
+    let expect = &scenario.expect;
+    let checks_requested = expect.expected_roleplay_ending.is_some()
+        || expect.min_roleplay_coverage_percent.is_some()
+        || expect.expected_roleplay_unvisited_nodes.is_some()
+        || !expect.required_roleplay_nodes.is_empty()
+        || !expect.forbidden_roleplay_nodes.is_empty()
+        || !expect.required_roleplay_evidence.is_empty()
+        || !expect.min_roleplay_scores.is_empty()
+        || !expect.max_roleplay_scores.is_empty();
+
+    match &scenario.roleplay {
+        Some(roleplay) => {
+            if roleplay.path.trim().is_empty() {
+                issues.push(format!(
+                    "{scenario_label}: roleplay.path must not be blank."
+                ));
+            }
+            if roleplay.turns.len() > MAX_SCENE_ROLEPLAY_PREVIEW_TURNS {
+                issues.push(format!(
+                    "{scenario_label}: roleplay can contain at most {MAX_SCENE_ROLEPLAY_PREVIEW_TURNS} turns."
+                ));
+            }
+        }
+        None if checks_requested => issues.push(format!(
+            "{scenario_label}: scene roleplay expectations require a roleplay fixture."
+        )),
+        None => {}
+    }
+
+    if expect
+        .min_roleplay_coverage_percent
+        .is_some_and(|value| !(0.0..=100.0).contains(&value))
+    {
+        issues.push(format!(
+            "{scenario_label}: min_roleplay_coverage_percent must be between 0 and 100."
+        ));
+    }
+    if expect
+        .expected_roleplay_ending
+        .as_deref()
+        .is_some_and(|id| !portable_workflow_node_id(id))
+    {
+        issues.push(format!(
+            "{scenario_label}: expected_roleplay_ending must be a portable id."
+        ));
+    }
+    for (kind, ids) in [
+        ("required roleplay node", &expect.required_roleplay_nodes),
+        ("forbidden roleplay node", &expect.forbidden_roleplay_nodes),
+        (
+            "required roleplay evidence",
+            &expect.required_roleplay_evidence,
+        ),
+    ] {
+        for id in ids {
+            if !portable_workflow_node_id(id) {
+                issues.push(format!(
+                    "{scenario_label}: {kind} `{id}` is not a portable id."
+                ));
+            }
+        }
+    }
+    for (dimension_id, value) in expect
+        .min_roleplay_scores
+        .iter()
+        .chain(expect.max_roleplay_scores.iter())
+    {
+        if !portable_workflow_node_id(dimension_id) || !value.is_finite() {
+            issues.push(format!(
+                "{scenario_label}: roleplay score expectation for `{dimension_id}` is invalid."
+            ));
+        }
+    }
+    for (dimension_id, min) in &expect.min_roleplay_scores {
+        if expect
+            .max_roleplay_scores
+            .get(dimension_id)
+            .is_some_and(|max| min > max)
+        {
+            issues.push(format!(
+                "{scenario_label}: minimum roleplay score for `{dimension_id}` exceeds its maximum."
+            ));
+        }
+    }
 }
 
 fn is_sha256_hex(value: &str) -> bool {

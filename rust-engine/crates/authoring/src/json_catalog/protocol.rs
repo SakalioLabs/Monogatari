@@ -19,6 +19,7 @@ pub const AUTHORABLE_JSON_CATALOG_ROOTS: &[&str] = &[
     "knowledge",
     "locales",
     "quality_suites",
+    "roleplays",
     "scenes",
     "workflows",
 ];
@@ -36,12 +37,13 @@ pub enum AuthorableJsonCatalog {
     Knowledge,
     Locales,
     QualitySuites,
+    Roleplays,
     Scenes,
     Workflows,
 }
 
 impl AuthorableJsonCatalog {
-    pub const ALL: [Self; 10] = [
+    pub const ALL: [Self; 11] = [
         Self::Assets,
         Self::Characters,
         Self::Dialogue,
@@ -50,6 +52,7 @@ impl AuthorableJsonCatalog {
         Self::Knowledge,
         Self::Locales,
         Self::QualitySuites,
+        Self::Roleplays,
         Self::Scenes,
         Self::Workflows,
     ];
@@ -64,6 +67,7 @@ impl AuthorableJsonCatalog {
             Self::Knowledge => "knowledge",
             Self::Locales => "locales",
             Self::QualitySuites => "quality_suites",
+            Self::Roleplays => "roleplays",
             Self::Scenes => "scenes",
             Self::Workflows => "workflows",
         }

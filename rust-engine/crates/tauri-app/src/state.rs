@@ -10,7 +10,7 @@ use llm_ai::InferencePipeline;
 use llm_assets::{AssetManager, SaveManager};
 use llm_game::{
     characters::CharacterManager, dialogue::DialogueManager, knowledge::KnowledgeBase,
-    scenes::SceneManager,
+    scene_roleplay::SceneRoleplaySession, scenes::SceneManager,
 };
 use llm_scripting::ScriptEngine;
 
@@ -40,6 +40,8 @@ pub struct AppState {
     pub scene_history: Arc<RwLock<Vec<String>>>,
     /// Chat sessions keyed by character_id.
     pub chat_sessions: Arc<RwLock<HashMap<String, ChatSession>>>,
+    /// Score-driven scene roleplay sessions keyed by roleplay id.
+    pub scene_roleplay_sessions: Arc<RwLock<HashMap<String, SceneRoleplaySession>>>,
 }
 
 impl AppState {
@@ -64,6 +66,7 @@ impl AppState {
             active_scene_id: Arc::new(RwLock::new(None)),
             scene_history: Arc::new(RwLock::new(Vec::new())),
             chat_sessions: Arc::new(RwLock::new(HashMap::new())),
+            scene_roleplay_sessions: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -82,6 +85,7 @@ impl AppState {
     /// Clear mutable state that must never survive a project reload or switch.
     pub async fn reset_project_runtime_state(&self) {
         self.chat_sessions.write().await.clear();
+        self.scene_roleplay_sessions.write().await.clear();
         *self.active_scene_id.write().await = None;
         self.scene_history.write().await.clear();
         *self.scene_manager.write().await = SceneManager::new();

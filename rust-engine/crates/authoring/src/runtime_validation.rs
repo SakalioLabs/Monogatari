@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use llm_game::characters::CharacterManager;
 use llm_game::dialogue::DialogueManager;
 use llm_game::knowledge::KnowledgeBase;
+use llm_game::scene_roleplay::SceneRoleplayDefinition;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -17,6 +18,9 @@ use crate::knowledge_documents::{knowledge_base_from_documents, load_knowledge_d
 use crate::project::inspect_project_config;
 use crate::quality_suite_validation::{
     load_project_quality_suites, validate_quality_suite_references,
+};
+use crate::scene_roleplay_validation::{
+    load_project_scene_roleplays, validate_scene_roleplay_references,
 };
 use crate::story_content_validation::{
     load_scene_documents, load_story_ending_sources, scene_ids, validate_ending_references,
@@ -50,6 +54,7 @@ pub struct CoreRuntimeValidationReport {
     pub story_event_count: usize,
     pub workflow_count: usize,
     pub quality_suite_count: usize,
+    pub roleplay_count: usize,
     pub error_count: usize,
     pub issues: Vec<CoreRuntimeValidationIssue>,
 }
@@ -60,6 +65,7 @@ pub struct CoreRuntimeProject {
     pub dialogues: DialogueManager,
     pub knowledge: KnowledgeBase,
     pub story_events: StoryEventCatalog,
+    pub scene_roleplays: Vec<SceneRoleplayDefinition>,
 }
 
 /// Validate document safety, real core runtime loading, and core cross-catalog references.
@@ -127,6 +133,13 @@ pub async fn load_core_runtime_project(project_root: &Path) -> Result<CoreRuntim
         &story_content.scene_ids,
         &mut issues,
     );
+    let scene_roleplay_content = validate_scene_roleplays(
+        project_root,
+        &story_content,
+        &character_ids,
+        &knowledge_ids,
+        &mut issues,
+    );
     let story_events = validate_story_events(
         project_root,
         &character_ids,
@@ -147,6 +160,7 @@ pub async fn load_core_runtime_project(project_root: &Path) -> Result<CoreRuntim
         &knowledge_ids,
         &story_events,
         &workflow_content.paths,
+        &scene_roleplay_content.paths,
         &mut issues,
     );
 
@@ -177,6 +191,7 @@ pub async fn load_core_runtime_project(project_root: &Path) -> Result<CoreRuntim
         story_event_count: story_events.definitions().len(),
         workflow_count: workflow_content.count,
         quality_suite_count,
+        roleplay_count: scene_roleplay_content.definitions.len(),
         error_count: issues.len(),
         issues,
     };
@@ -186,6 +201,7 @@ pub async fn load_core_runtime_project(project_root: &Path) -> Result<CoreRuntim
         dialogues,
         knowledge,
         story_events,
+        scene_roleplays: scene_roleplay_content.definitions,
     })
 }
 
@@ -237,6 +253,7 @@ fn validate_quality_suites(
     knowledge_ids: &HashSet<String>,
     story_events: &StoryEventCatalog,
     workflow_paths: &HashSet<String>,
+    roleplay_paths: &HashSet<String>,
     issues: &mut Vec<CoreRuntimeValidationIssue>,
 ) -> usize {
     let suites = match load_project_quality_suites(project_root) {
@@ -261,6 +278,7 @@ fn validate_quality_suites(
         knowledge_ids,
         &event_ids,
         workflow_paths,
+        roleplay_paths,
     ) {
         issues.push(issue(code, Some(path), message));
     }
@@ -270,6 +288,57 @@ fn validate_quality_suites(
 struct ValidatedStoryContent {
     scene_ids: HashSet<String>,
     ending_ids: HashSet<String>,
+}
+
+struct ValidatedSceneRoleplayContent {
+    definitions: Vec<SceneRoleplayDefinition>,
+    paths: HashSet<String>,
+}
+
+fn validate_scene_roleplays(
+    project_root: &Path,
+    content: &ValidatedStoryContent,
+    character_ids: &HashSet<String>,
+    knowledge_ids: &HashSet<String>,
+    issues: &mut Vec<CoreRuntimeValidationIssue>,
+) -> ValidatedSceneRoleplayContent {
+    let loaded = match load_project_scene_roleplays(project_root) {
+        Ok(loaded) => loaded,
+        Err(error) => {
+            issues.push(issue("roleplay_catalog_invalid", Some("roleplays"), error));
+            return ValidatedSceneRoleplayContent {
+                definitions: Vec::new(),
+                paths: HashSet::new(),
+            };
+        }
+    };
+    for reference in validate_scene_roleplay_references(
+        &loaded,
+        &content.scene_ids,
+        character_ids,
+        knowledge_ids,
+        &content.ending_ids,
+    ) {
+        issues.push(issue(
+            reference.code,
+            Some(reference.path),
+            reference.message,
+        ));
+    }
+    let paths = loaded
+        .iter()
+        .map(|loaded| {
+            loaded
+                .source_path
+                .strip_prefix("roleplays/")
+                .unwrap_or(&loaded.source_path)
+                .to_string()
+        })
+        .collect();
+    ValidatedSceneRoleplayContent {
+        definitions: loaded.into_iter().map(|loaded| loaded.definition).collect(),
+        paths,
+    }
 }
 
 fn validate_story_content(

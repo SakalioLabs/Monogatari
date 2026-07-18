@@ -89,7 +89,7 @@ describe('Settings contracts and preview state', () => {
     const second = createPreviewProjectState(runtime)
 
     expect(first.paths.map(({ key }) => key)).toEqual([
-      'characters', 'dialogue', 'knowledge', 'scenes', 'assets', 'events', 'endings', 'saves', 'quality_suites',
+      'characters', 'dialogue', 'roleplays', 'knowledge', 'scenes', 'assets', 'events', 'endings', 'saves', 'quality_suites',
     ])
     expect(getSettingsConfigValue(first.config, ['ai', 'webgpu'])).toEqual({
       model_id: runtime.modelId,
@@ -235,10 +235,10 @@ describe('Settings secret boundaries and exports', () => {
       archive: { format: 'zip', manifest_path: 'monogatari-project.json', extension: '.monogatari' },
     })
     expect(manifest.content_summary.exported_categories).toEqual([
-      'characters', 'dialogue', 'knowledge', 'scenes', 'assets', 'events', 'endings', 'locales', 'quality_suites', 'workflows',
+      'characters', 'dialogue', 'roleplays', 'knowledge', 'scenes', 'assets', 'events', 'endings', 'locales', 'quality_suites', 'workflows',
     ])
     expect(manifest.package.directories).toEqual([
-      'assets', 'characters', 'dialogue', 'endings', 'events', 'knowledge', 'locales', 'quality_suites', 'scenes', 'workflows',
+      'assets', 'characters', 'dialogue', 'endings', 'events', 'knowledge', 'locales', 'quality_suites', 'roleplays', 'scenes', 'workflows',
     ])
   })
 

@@ -1,4 +1,4 @@
 interface:
-  display_name: "Author Visual Novels"
-  short_description: "Create and validate Monogatari visual novel projects"
-  default_prompt: "Use $author-visual-novel to create a complete, validated Monogatari visual novel project from my story brief."
+  display_name: "Author AI Visual Novels"
+  short_description: "Build and validate dynamic Monogatari roleplay projects"
+  default_prompt: "Use $author-visual-novel to create a complete Monogatari AI roleplay project with dynamic scene nodes, scoring, endings, and validation."

@@ -17,6 +17,8 @@ pub mod prompt_guard;
 pub mod quality_suite_execution;
 pub mod quality_suite_validation;
 pub mod runtime_validation;
+pub mod scene_roleplay_preview;
+pub mod scene_roleplay_validation;
 pub mod story_content_validation;
 pub mod story_events;
 pub mod workflow_documents;

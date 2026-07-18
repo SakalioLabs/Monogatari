@@ -15,12 +15,12 @@
       <button class="control-btn icon-control" :title="t('game.home', 'Home')" :aria-label="t('game.home', 'Home')" @click="$router.push('/')"><House :size="16" /></button>
       <div class="scene-meta">
         <span class="eyebrow">{{ t('game.story-mode', 'Playtest') }}</span>
-        <strong>{{ dialogueState?.speaker || currentCharacter?.name || activeScene?.name || t('game.demo-scene', 'Demo Scene') }}</strong>
+        <strong>{{ activeRoleplaySnapshot?.definition.title || dialogueState?.speaker || currentCharacter?.name || activeScene?.name || t('game.demo-scene', 'Demo Scene') }}</strong>
       </div>
       <div class="top-actions">
         <button class="control-btn library-trigger" :title="t('game.story-library', 'Story library')" :aria-label="t('game.story-library', 'Story library')" @click="openStoryLibrary"><LibraryBig :size="16" /></button>
         <button
-          v-if="currentCharacter && dialogueState?.is_active"
+          v-if="!activeRoleplaySnapshot && currentCharacter && dialogueState?.is_active"
           class="control-btn icon-control npc-trigger"
           data-testid="npc-trigger"
           :title="t('npc.open', 'Talk to {name}', { name: currentCharacter.name })"
@@ -35,7 +35,7 @@
       </div>
     </header>
 
-    <main class="stage">
+    <main class="stage" :class="{ 'roleplay-active': activeRoleplaySnapshot }">
       <section class="model-area">
         <Live2DCanvas
           v-if="currentLive2dPath"
@@ -67,8 +67,22 @@
         </div>
       </section>
 
-      <section class="dialogue-area">
-        <div v-if="dialogueState?.is_active" class="dialogue-box">
+      <section class="dialogue-area" :class="{ 'roleplay-dialogue-area': activeRoleplaySnapshot }">
+        <SceneRoleplayPanel
+          v-if="activeRoleplaySnapshot"
+          :snapshot="activeRoleplaySnapshot"
+          :desktop-runtime="desktopRuntime"
+          :characters="characters"
+          :endings="storyEndings"
+          :locale="locale"
+          :scene-name="activeScene?.name || null"
+          @update="updateActiveRoleplay"
+          @node-change="syncRoleplayNode"
+          @emotion="applyNpcEmotion"
+          @ending="completeRoleplayEnding"
+          @restart="restartActiveRoleplay"
+        />
+        <div v-else-if="dialogueState?.is_active" class="dialogue-box">
           <div class="speaker-name" v-if="dialogueState.speaker">
             <span>{{ dialogueState.speaker }}</span>
             <small>{{ dialogueState.emotion || currentExpression }}</small>
@@ -125,11 +139,27 @@
             <button class="close-btn" :title="t('common.close', 'Close')" :aria-label="t('common.close', 'Close')" @click="showStoryLibrary = false"><X :size="16" /></button>
           </div>
           <div class="library-tabs" role="tablist" :aria-label="t('game.story-content-type', 'Story content type')">
+            <button :class="{ active: libraryTab === 'roleplays' }" @click="libraryTab = 'roleplays'">{{ t('game.roleplays', 'Roleplays') }}</button>
             <button :class="{ active: libraryTab === 'scenes' }" @click="libraryTab = 'scenes'">{{ t('game.scenes', 'Scenes') }}</button>
             <button :class="{ active: libraryTab === 'dialogues' }" @click="libraryTab = 'dialogues'">{{ t('game.dialogues', 'Dialogues') }}</button>
             <button :class="{ active: libraryTab === 'endings' }" @click="libraryTab = 'endings'">{{ t('game.endings', 'Endings') }}</button>
           </div>
           <div class="story-content-list">
+            <button
+              v-for="roleplay in libraryTab === 'roleplays' ? storyRoleplays : []"
+              :key="roleplay.id"
+              class="story-content-row"
+              :class="{ active: activeRoleplaySnapshot?.definition.id === roleplay.id }"
+              :disabled="isLoading"
+              @click="startSceneRoleplay(roleplay)"
+            >
+              <span class="content-mark" aria-hidden="true"><MessageCircleMore :size="15" /></span>
+              <span class="content-copy">
+                <strong>{{ roleplay.title }}</strong>
+                <small>{{ t('game.node-count', '{count} nodes', { count: roleplay.nodes.length }) }}</small>
+              </span>
+              <span class="content-status">{{ t('game.play', 'Play') }}</span>
+            </button>
             <button
               v-for="scene in libraryTab === 'scenes' ? storyScenes : []"
               :key="scene.id"
@@ -288,6 +318,7 @@ import {
 import Live2DCanvas from '../components/Live2DCanvas.vue'
 import CharacterModelView from '../components/CharacterModelView.vue'
 import NpcConversationPanel from '../components/NpcConversationPanel.vue'
+import SceneRoleplayPanel from '../components/SceneRoleplayPanel.vue'
 import { hasTauriRuntime, invokeCommand } from '../lib/tauri'
 import { useI18n } from '../lib/i18n'
 import { resolveAssetUrl } from '../lib/assets'
@@ -314,6 +345,13 @@ import {
   type StoryCharacterInfo,
   type StorySceneInfo,
 } from '../lib/storyContent'
+import {
+  loadSceneRoleplays,
+  startBrowserSceneRoleplay,
+  type SceneRoleplayDefinition,
+  type SceneRoleplayNode,
+  type SceneRoleplaySnapshot,
+} from '../lib/sceneRoleplay'
 
 const { locale, t } = useI18n()
 const route = useRoute()
@@ -381,7 +419,9 @@ const failedRendererAssets = ref<Record<string, true>>({})
 const storyScenes = ref<StorySceneInfo[]>([])
 const storyDialogues = ref<StoryDialogueInfo[]>([])
 const storyEndings = ref<StoryEndingInfo[]>([])
-const libraryTab = ref<'scenes' | 'dialogues' | 'endings'>('scenes')
+const storyRoleplays = ref<SceneRoleplayDefinition[]>([])
+const activeRoleplaySnapshot = ref<SceneRoleplaySnapshot | null>(null)
+const libraryTab = ref<'roleplays' | 'scenes' | 'dialogues' | 'endings'>('roleplays')
 const storyAccess = ref<StoryContentAccessSnapshot>({
   schema: 'monogatari-story-content-access/v1',
   catalog_fingerprint: '',
@@ -414,6 +454,7 @@ const textPlayback = createStoryTextPlaybackController({
   readTextIntervalMs: () => settings.value.textSpeed,
   readAutoAdvanceDelayMs: () => settings.value.autoPlaySpeed,
   shouldAutoAdvance: () => settings.value.autoPlay
+    && !activeRoleplaySnapshot.value
     && !showNpcConversation.value
     && dialogueState.value?.choices.length === 0,
   onTextChange: (text) => { displayedText.value = text },
@@ -472,9 +513,11 @@ const currentModel3dPath = computed(() =>
 const currentSpritePath = computed(() =>
   currentRendererAsset.value.mode === 'sprite' ? currentRendererAsset.value.resolvedUrl : null
 )
-const activeLibraryItems = computed(() => libraryTab.value === 'scenes'
-  ? storyScenes.value.length
-  : libraryTab.value === 'dialogues' ? storyDialogues.value.length : storyEndings.value.length)
+const activeLibraryItems = computed(() => {
+  if (libraryTab.value === 'roleplays') return storyRoleplays.value.length
+  if (libraryTab.value === 'scenes') return storyScenes.value.length
+  return libraryTab.value === 'dialogues' ? storyDialogues.value.length : storyEndings.value.length
+})
 
 function formatTime(timestamp: string): string {
   try {
@@ -580,7 +623,8 @@ function unlockHint(access: StoryContentAccessEntry): string {
     : t('game.requires-events', 'Requires {events}', { events: access.unlock_event_ids.join(', ') })
 }
 
-function libraryTypeLabel(type: 'scenes' | 'dialogues' | 'endings'): string {
+function libraryTypeLabel(type: 'roleplays' | 'scenes' | 'dialogues' | 'endings'): string {
+  if (type === 'roleplays') return t('game.roleplays', 'roleplays')
   if (type === 'scenes') return t('game.scenes', 'scenes')
   if (type === 'dialogues') return t('game.dialogues', 'dialogues')
   return t('game.endings', 'endings')
@@ -589,12 +633,14 @@ function libraryTypeLabel(type: 'scenes' | 'dialogues' | 'endings'): string {
 async function loadStoryLibrary() {
   try {
     await reloadStoryEventCatalog()
-    const [scenes, dialogues, endings, access] = await Promise.all([
+    const [roleplays, scenes, dialogues, endings, access] = await Promise.all([
+      loadSceneRoleplays(),
       loadStoryScenes(),
       loadStoryDialogues(),
       loadStoryEndings(),
       loadStoryContentAccess(),
     ])
+    storyRoleplays.value = roleplays
     storyScenes.value = scenes
     storyDialogues.value = dialogues
     storyEndings.value = endings
@@ -615,6 +661,7 @@ async function enterScene(scene: StorySceneInfo) {
   isLoading.value = true
   errorMessage.value = null
   try {
+    activeRoleplaySnapshot.value = null
     activeScene.value = await invokeCommand<SceneInfo>('enter_story_scene', { sceneId: scene.id }, scene)
     localStorage.setItem(activeSceneStorageKey, JSON.stringify(activeScene.value))
     showStoryLibrary.value = false
@@ -626,10 +673,63 @@ async function enterScene(scene: StorySceneInfo) {
   }
 }
 
+async function startSceneRoleplay(definition: SceneRoleplayDefinition) {
+  isLoading.value = true
+  errorMessage.value = null
+  try {
+    const snapshot = desktopRuntime
+      ? await invokeCommand<SceneRoleplaySnapshot>('start_scene_roleplay', { roleplayId: definition.id })
+      : startBrowserSceneRoleplay(definition)
+    activeRoleplaySnapshot.value = snapshot
+    dialogueState.value = null
+    webActiveDialogue.value = null
+    webDialogueRuntime.value = null
+    displayedText.value = ''
+    textPlayback.cancel()
+    await syncRoleplayNode(snapshot.current_node)
+    showStoryLibrary.value = false
+  } catch (error) {
+    errorMessage.value = t('game.unable-start-dialogue', 'Unable to start dialogue: {error}', { error: String(error) })
+  } finally {
+    isLoading.value = false
+  }
+}
+
+function updateActiveRoleplay(snapshot: SceneRoleplaySnapshot) {
+  activeRoleplaySnapshot.value = snapshot
+}
+
+async function syncRoleplayNode(node: SceneRoleplayNode) {
+  const scene = storyScenes.value.find(candidate => candidate.id === node.scene_id)
+  if (!scene) {
+    errorMessage.value = `Scene roleplay references unavailable scene "${node.scene_id}".`
+    return
+  }
+  if (activeScene.value?.id !== scene.id) {
+    activeScene.value = await invokeCommand<SceneInfo>('enter_story_scene', { sceneId: scene.id }, scene)
+    localStorage.setItem(activeSceneStorageKey, JSON.stringify(activeScene.value))
+  }
+  currentCharacter.value = characters.value.find(character => character.id === node.character_id) || null
+  currentExpression.value = currentCharacter.value?.emotion || 'neutral'
+}
+
+function completeRoleplayEnding(endingId: string) {
+  const ending = storyEndings.value.find(candidate => candidate.id === endingId)
+  toastMessage.value = ending
+    ? t('game.ending-started', 'Ending: {title}', { title: ending.title })
+    : t('game.ending-started', 'Ending: {title}', { title: endingId })
+}
+
+async function restartActiveRoleplay() {
+  const definition = activeRoleplaySnapshot.value?.definition
+  if (definition) await startSceneRoleplay(definition)
+}
+
 async function startStoryDialogue(dialogue: StoryDialogueInfo, previewNodeId?: string | null) {
   isLoading.value = true
   errorMessage.value = null
   try {
+    activeRoleplaySnapshot.value = null
     if (hasTauriRuntime()) {
       dialogueState.value = await invokeCommand<DialogueState>('start_dialogue', { dialogueId: dialogue.id })
     } else {
@@ -653,6 +753,7 @@ async function startEnding(ending: StoryEndingInfo) {
   isLoading.value = true
   errorMessage.value = null
   try {
+    activeRoleplaySnapshot.value = null
     const fallbackScene = storyScenes.value.find((scene) => scene.id === ending.scene_id) || activeScene.value
     if (!fallbackScene) throw new Error(t('game.ending-scene-unavailable', 'Ending scene {id} is unavailable', { id: ending.scene_id }))
     const fallbackDialogue = storyDialogues.value.find((dialogue) => dialogue.id === ending.dialogue_id)
@@ -840,6 +941,7 @@ function handleKeydown(e: KeyboardEvent) {
     showPause.value = !showPause.value
     return
   }
+  if (activeRoleplaySnapshot.value) return
   // Quick save/load
   if (desktopRuntime && e.key === 's' && !e.ctrlKey && !e.metaKey) {
     e.preventDefault()
@@ -867,11 +969,19 @@ onMounted(async () => {
   await loadStoryLibrary()
   await syncDialogueScene(dialogueState.value)
   const previewSceneId = route.query.previewScene
+  const previewRoleplayId = route.query.previewRoleplay
   const previewDialogueId = route.query.previewDialogue
   const previewNodeId = route.query.previewNode
   const previewEndingId = route.query.previewEnding
   if (!desktopRuntime && route.query.authoring === '1') {
-    if (typeof previewSceneId === 'string') {
+    const roleplay = typeof previewRoleplayId === 'string'
+      ? storyRoleplays.value.find(item => item.id === previewRoleplayId)
+      : typeof previewDialogueId === 'string' && typeof previewNodeId !== 'string'
+        ? storyRoleplays.value.find(item => roleplayStem(item.id) === roleplayStem(previewDialogueId))
+        : undefined
+    if (roleplay) {
+      await startSceneRoleplay(roleplay)
+    } else if (typeof previewSceneId === 'string') {
       const scene = storyScenes.value.find((item) => item.id === previewSceneId)
       if (scene) await enterScene(scene)
     } else if (typeof previewDialogueId === 'string') {
@@ -900,6 +1010,10 @@ onMounted(async () => {
     }, 120000)
   }
 })
+
+function roleplayStem(id: string): string {
+  return id.replace(/_(?:roleplay|dialogue)$/, '')
+}
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
@@ -1046,6 +1160,23 @@ onUnmounted(() => {
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
   min-height: 0;
+}
+
+.stage.roleplay-active {
+  grid-template-columns: minmax(280px, 0.82fr) minmax(480px, 1.18fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.roleplay-active .model-area {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.roleplay-active .roleplay-dialogue-area {
+  grid-column: 2;
+  grid-row: 1;
+  min-height: 0;
+  padding: 16px;
 }
 
 .model-area {
@@ -1259,7 +1390,7 @@ onUnmounted(() => {
 
 .library-tabs {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   margin-bottom: 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -1544,6 +1675,12 @@ onUnmounted(() => {
 
   .top-actions .control-btn { flex: 0 0 auto; }
   .stage { min-height: 0; }
+  .stage.roleplay-active {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(150px, 32vh) minmax(0, 1fr);
+  }
+  .roleplay-active .model-area { grid-column: 1; grid-row: 1; padding: 8px; }
+  .roleplay-active .roleplay-dialogue-area { grid-column: 1; grid-row: 2; padding: 8px; }
 
   .dialogue-area {
     padding: 12px;
