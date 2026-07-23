@@ -12,7 +12,7 @@
     <aside v-if="showShell" class="app-sidebar" :class="{ 'mobile-open': mobileNavigationOpen }">
       <div class="sidebar-header">
         <router-link to="/" class="brand-lockup" :aria-label="t('app.title', 'Monogatari Engine')">
-          <span class="logo-mark">M</span>
+          <img class="logo-mark" :src="appIconUrl" alt="" aria-hidden="true">
           <span v-if="!sidebarCollapsed" class="logo-copy">
             <strong>Monogatari</strong>
             <small>{{ t('app.workspace', 'Creator workspace') }}</small>
@@ -190,6 +190,8 @@ import ProgressBar from './components/ProgressBar.vue'
 import { useI18n } from './lib/i18n'
 import { hasTauriRuntime } from './lib/tauri'
 import { loadPackagedWebGpuConfig } from './lib/webgpuInference'
+
+const appIconUrl = `${import.meta.env.BASE_URL}icons/app-icon.svg`
 
 type NavGroupId = 'overview' | 'create' | 'test' | 'manage'
 
@@ -369,16 +371,11 @@ onUnmounted(() => {
 }
 
 .logo-mark {
-  display: grid;
+  display: block;
   width: 34px;
   height: 34px;
   flex: 0 0 34px;
-  place-items: center;
-  border-radius: 7px;
-  background: var(--brand);
-  color: #071b18;
-  font-size: 16px;
-  font-weight: 850;
+  border-radius: 8px;
 }
 
 .logo-copy { display: grid; min-width: 0; line-height: 1.2; }

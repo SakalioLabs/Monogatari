@@ -1,4 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Monogatari">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Monogatari logo mark</title>
+  <desc id="desc">An open storybook forming an M, connected to a vermilion narrative node.</desc>
   <rect width="512" height="512" rx="112" fill="#17181C"/>
   <path d="M106 168c54-17 105-3 150 40 45-43 96-57 150-40v190c-55-15-105-1-150 43-45-44-95-58-150-43V168Z" fill="#F4F0E8"/>
   <path d="M256 208v193c-45-44-95-58-150-43V168c54-17 105-3 150 40Z" fill="#E7E0D4"/>

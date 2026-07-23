@@ -1,13 +1,13 @@
 {
   "name": "Monogatari Engine",
   "short_name": "Monogatari",
-  "description": "Low-code workbench for building LLM-driven visual novels and text adventures.",
+  "description": "AI-native visual novel authoring and deterministic scene-roleplay runtime.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#f7f7f5",
-  "theme_color": "#202124",
+  "background_color": "#f4f0e8",
+  "theme_color": "#17181c",
   "categories": ["productivity", "utilities"],
   "lang": "en",
   "icons": [

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 320" role="img" aria-labelledby="title desc">
+  <title id="title">Monogatari</title>
+  <desc id="desc">Monogatari AI narrative engine logo.</desc>
+  <rect width="1160" height="320" rx="40" fill="#F7F5F0"/>
+  <g transform="translate(40 32) scale(.5)">
+    <rect width="512" height="512" rx="112" fill="#17181C"/>
+    <path d="M106 168c54-17 105-3 150 40 45-43 96-57 150-40v190c-55-15-105-1-150 43-45-44-95-58-150-43V168Z" fill="#F4F0E8"/>
+    <path d="M256 208v193c-45-44-95-58-150-43V168c54-17 105-3 150 40Z" fill="#E7E0D4"/>
+    <path d="M256 208v193" fill="none" stroke="#17181C" stroke-width="12" stroke-linecap="round"/>
+    <path d="M256 148v43M256 148l-47 30M256 148l47 30" fill="none" stroke="#E4573D" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="256" cy="121" r="24" fill="#E4573D"/>
+  </g>
+  <text x="340" y="150" fill="#17181C" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="78" font-weight="750" letter-spacing="3">MONOGATARI</text>
+  <text x="344" y="211" fill="#5F6065" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="25" font-weight="600" letter-spacing="7">AI NARRATIVE ENGINE</text>
+  <path d="M344 242h666" stroke="#D7D1C7" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="1038" cy="242" r="10" fill="#E4573D"/>
+</svg>
