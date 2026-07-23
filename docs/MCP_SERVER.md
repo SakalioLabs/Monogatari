@@ -48,6 +48,9 @@ This is read-only. Add `--allow-write` to `args` only for a client that should b
 
 ## Tools
 
+The server exposes fourteen standard stdio tools. Every tool has a versioned
+input/output schema and explicit read/write annotations.
+
 | Tool | Mode | Contract |
 |---|---|---|
 | `inspect_project` | Read | Returns scrubbed settings readiness and a complete JSON catalog report |

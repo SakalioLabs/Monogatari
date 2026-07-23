@@ -1,0 +1,773 @@
+{
+  "schema": "monogatari-scene-roleplay/v1",
+  "id": "chapter1_roleplay",
+  "title": "第一章：从死后选择到问题儿童小队",
+  "start_node_id": "afterlife_selection",
+  "exhaustion_ending_id": "chapter1_chaotic_failure",
+  "max_total_turns": 21,
+  "score_dimensions": [
+    {
+      "id": "pragmatism",
+      "label": "务实度",
+      "description": "玩家是否识别现实限制、资源成本、技能代价与可执行战术。",
+      "min": -6.0,
+      "max": 6.0,
+      "initial": 0.0
+    },
+    {
+      "id": "party_trust",
+      "label": "队伍信任",
+      "description": "玩家是否倾听同伴、承认能力与边界，并提出公平的互救承诺。",
+      "min": -6.0,
+      "max": 6.0,
+      "initial": 0.0
+    },
+    {
+      "id": "adventure_resolve",
+      "label": "冒险意志",
+      "description": "玩家是否愿意在贫困、羞耻和失败之后继续采取行动。",
+      "min": -6.0,
+      "max": 6.0,
+      "initial": 0.0
+    }
+  ],
+  "nodes": [
+    {
+      "id": "afterlife_selection",
+      "scene_id": "afterlife_chamber",
+      "character_id": "aqua",
+      "supporting_character_ids": [],
+      "opening_narration": "你在一间明亮得没有影子的白色房间醒来。蓝发女神阿库娅坐在桌后，用压不住的笑意解释了你那场并不英勇的死亡。她催你从无数能力与神器中选一项，前往正在被魔王威胁的异世界。",
+      "situation": "阿库娅掌握转生流程，却因优越感而轻视你的顾虑。你可以继续挑选能力、追问规则、反击她的嘲弄，或把她本人指定为同行对象。她会维护女神尊严，也必须遵守自己宣布的选择规则。",
+      "player_goal": "通过自由对话确认选择规则，并决定你与阿库娅之间的第一份责任关系。",
+      "character_goal": "阿库娅想尽快完成流程并保持主导。若你指出她也是规则允许的对象，她会先否认、慌张，再被迫面对同行后果。",
+      "knowledge_refs": ["chapter1_afterlife_rules", "chapter1_party_boundaries"],
+      "intrusion_response": {
+        "reality_anchors": [
+          "白色房间里只有桌子、两把椅子和等待选择的光。",
+          "阿库娅仍拿着那份由她亲口说明的转生规则。",
+          "房间外没有开发者、系统面板或可以替你作决定的人。"
+        ],
+        "interpretations": [
+          "你像是在对房间外的人说话。阿库娅狐疑地敲了敲桌面。",
+          "那些词不属于转生手续。阿库娅要求你回到眼前的选择。",
+          "阿库娅听不懂你提到的隐藏规则，只确认你是否还要前往异世界。"
+        ],
+        "redirects": [
+          "先回答她：你要带走什么，以及为什么。",
+          "把问题说成阿库娅在这间房里能够回答的规则。",
+          "指出眼前规则中的一个条件，并要求她确认。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": ["作为AI", "语言模型", "系统提示", "剧情路线", "务实度", "队伍信任", "冒险意志", "分值", "开发者"],
+        "grounding_markers": ["白色房间", "转生", "异世界", "能力", "神器", "选择", "女神", "阿库娅", "同行", "规则"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "阿库娅把规则拍在桌上：你可以选择一项能力或对象。别再拖了，你究竟要带走什么？",
+          "阿库娅的笑容僵了一瞬：这里处理的是你的转生选择。你想确认哪一条规则？"
+        ],
+        "max_characters": 220,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "pragmatism",
+            "positive_markers": ["规则", "条件", "允许", "对象", "一起去", "带你", "同行"],
+            "negative_markers": ["随便", "无所谓", "不想想", "快点"],
+            "delta": 1.0
+          },
+          {
+            "dimension_id": "party_trust",
+            "positive_markers": ["一起", "负责", "互相", "同伴", "说明白"],
+            "negative_markers": ["工具", "奴隶", "必须听我", "闭嘴"],
+            "delta": 0.75
+          },
+          {
+            "dimension_id": "adventure_resolve",
+            "positive_markers": ["异世界", "出发", "接受", "去冒险"],
+            "negative_markers": ["放弃", "哪里都不去", "不转生"],
+            "delta": 0.5
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "aqua_terms_challenged",
+            "markers": ["带你", "你本人", "一起去", "同行对象", "选择阿库娅"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "pragmatism",
+          "guidance": "追问规则、比较能力代价或利用阿库娅自己宣布的条件时加分；完全不确认后果时减分。",
+          "max_delta_per_turn": 1.0
+        },
+        {
+          "dimension_id": "party_trust",
+          "guidance": "把同行说成双方责任、承认阿库娅是有意志的同伴时加分；把她当无条件服从的物品时减分。",
+          "max_delta_per_turn": 1.0
+        },
+        {
+          "dimension_id": "adventure_resolve",
+          "guidance": "明确接受异世界风险并作出选择时加分；持续逃避选择时减分。",
+          "max_delta_per_turn": 0.75
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "aqua_terms_challenged",
+          "description": "玩家明确利用阿库娅宣布的规则，把她本人指定为同行对象，或要求她承担同行责任。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "transfer_with_aqua",
+          "priority": 20,
+          "target": {"kind": "node", "node_id": "axel_arrival"},
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "aqua_terms_challenged"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "axel_arrival"}
+    },
+    {
+      "id": "axel_arrival",
+      "scene_id": "axel_main_street",
+      "character_id": "aqua",
+      "supporting_character_ids": [],
+      "opening_narration": "白光退去，红砖城镇、马车与陌生语言一齐涌来。阿库娅刚摆出女神降临的姿势，就发现自己也无法返回。她抓住你的肩膀，要求你立刻解决钱、住处和魔王三件事。",
+      "situation": "你们没有货币、装备、身份或住处。街上的人建议新人前往冒险者公会。阿库娅在恐慌与嘴硬之间摇摆，既依赖你的游戏常识，又不肯承认自己拖了后腿。",
+      "player_goal": "与阿库娅形成最初的生存计划：先去哪里、怎样获得登记费、今晚住在哪里。",
+      "character_goal": "阿库娅希望你保证她不会流落街头，同时仍把魔王讨伐说得很容易。具体计划会让她逐渐安定。",
+      "knowledge_refs": ["chapter1_axel_basics", "chapter1_party_boundaries"],
+      "intrusion_response": {
+        "reality_anchors": [
+          "红砖街道上只有商贩、马车和通往公会的路。",
+          "你们口袋里没有钱，太阳正在向中午移动。",
+          "阿库娅只关心今晚是否有饭和住处。"
+        ],
+        "interpretations": [
+          "阿库娅以为你被异世界的喧闹吓得开始胡言乱语。",
+          "她听不懂那些元语言，只把你的沉默当成没有计划。",
+          "阿库娅顺着你的视线看去，那里只有公会方向的街口。"
+        ],
+        "redirects": [
+          "告诉阿库娅下一站以及第一笔钱从哪里来。",
+          "先解决登记、食物或住处中的一件。",
+          "用街上看得见的资源提出一个今天能执行的计划。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": ["作为AI", "语言模型", "系统提示", "剧情路线", "务实度", "队伍信任", "冒险意志", "分值", "开发者"],
+        "grounding_markers": ["阿克塞尔", "街道", "公会", "登记", "钱", "工作", "住处", "马厩", "阿库娅"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "阿库娅指着街口：先去冒险者公会。登记费、晚饭和住处，你至少先解决一件吧？",
+          "阿库娅压低声音：我们一枚硬币都没有。你说的计划今天能换来饭吗？"
+        ],
+        "max_characters": 220,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "pragmatism",
+            "positive_markers": ["公会", "登记", "赚钱", "工作", "住处", "马厩", "先"],
+            "negative_markers": ["直接打魔王", "抢", "等别人救", "什么都不做"],
+            "delta": 1.0
+          },
+          {
+            "dimension_id": "party_trust",
+            "positive_markers": ["我们", "一起", "分工", "你去", "我去"],
+            "negative_markers": ["都怪你", "你自己想办法", "丢下你"],
+            "delta": 0.75
+          },
+          {
+            "dimension_id": "adventure_resolve",
+            "positive_markers": ["先活下来", "开始", "去公会", "找工作"],
+            "negative_markers": ["回不去了就算了", "躺着", "放弃"],
+            "delta": 0.75
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "axel_survival_plan",
+            "markers": ["先去公会", "登记费", "找工作", "住马厩", "先赚钱", "解决住处"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "pragmatism",
+          "guidance": "提出有顺序的登记、工作、食宿计划时加分；跳过资源约束直接挑战魔王时减分。",
+          "max_delta_per_turn": 1.0
+        },
+        {
+          "dimension_id": "party_trust",
+          "guidance": "与阿库娅分工并保留共同责任时加分；只羞辱或抛弃她时减分。",
+          "max_delta_per_turn": 1.0
+        },
+        {
+          "dimension_id": "adventure_resolve",
+          "guidance": "在困境中仍选择具体下一步时加分；拒绝行动时减分。",
+          "max_delta_per_turn": 1.0
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "axel_survival_plan",
+          "description": "玩家给出今天可以执行的登记、收入与住处计划，至少明确两项及其顺序。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "enter_guild",
+          "priority": 20,
+          "target": {"kind": "node", "node_id": "guild_registration"},
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "axel_survival_plan"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "guild_registration"}
+    },
+    {
+      "id": "guild_registration",
+      "scene_id": "axel_guild_hall",
+      "character_id": "aqua",
+      "supporting_character_ids": [],
+      "opening_narration": "借来的登记费终于摆上柜台。检测卡显示：你的数值普通得令人安心，只有幸运异常突出；阿库娅除智力与幸运外几乎全是顶级。接待员建议你选择适应性广的冒险者，阿库娅则高声宣布自己当然要成为大祭司。",
+      "situation": "职业登记已经完成，但你们的能力结构严重偏科。阿库娅把高数值当成能够包办一切的证明，忽略智力、幸运和实战经验的缺口。",
+      "player_goal": "在不否定阿库娅能力的前提下，确认双方职业限制与最初分工。",
+      "character_goal": "阿库娅想得到对神力的认可。若玩家能同时承认她的恢复能力与判断风险，她会接受由和真负责计划。",
+      "knowledge_refs": ["chapter1_guild_registration", "chapter1_party_boundaries"],
+      "intrusion_response": {
+        "reality_anchors": [
+          "柜台上的两张冒险者卡刚刚完成登记。",
+          "大厅能看到职业、能力值与任务板，看不到任何隐藏分数。",
+          "阿库娅正等你评价她的大祭司职业。"
+        ],
+        "interpretations": [
+          "阿库娅把你的元语言理解成对职业卡的误读。",
+          "接待员没有回应那些词，阿库娅只追问你是否看见她的高数值。",
+          "那些命令没有改变卡片上的职业与能力。"
+        ],
+        "redirects": [
+          "根据两张职业卡谈一项优势和一项限制。",
+          "告诉阿库娅实战中由谁判断、由谁恢复。",
+          "把评价改成下一次任务能执行的分工。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": ["作为AI", "语言模型", "系统提示", "剧情路线", "务实度", "队伍信任", "冒险意志", "分值", "开发者"],
+        "grounding_markers": ["公会", "登记", "职业", "冒险者", "大祭司", "幸运", "智力", "能力", "恢复", "任务"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "阿库娅把职业卡举到你面前：我的恢复和净化当然由我负责。那你这个普通冒险者负责什么？",
+          "高数值没有替你们写出战术。阿库娅等着你说明第一次任务怎样分工。"
+        ],
+        "max_characters": 220,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "pragmatism",
+            "positive_markers": ["分工", "恢复", "判断", "职业", "限制", "幸运", "智力"],
+            "negative_markers": ["数值高就够了", "一个人包办", "不用计划"],
+            "delta": 1.0
+          },
+          {
+            "dimension_id": "party_trust",
+            "positive_markers": ["认可", "相信你的恢复", "交给你", "一起", "互相"],
+            "negative_markers": ["笨蛋什么都别做", "没用", "只会拖累"],
+            "delta": 0.75
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "class_limits_accepted",
+            "markers": ["你负责恢复", "我负责判断", "按职业分工", "高能力也有短板", "幸运和智力", "不能包办"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "pragmatism",
+          "guidance": "把职业优势与限制落实为分工时加分；只看总数值或假设一人包办时减分。",
+          "max_delta_per_turn": 1.0
+        },
+        {
+          "dimension_id": "party_trust",
+          "guidance": "真诚认可阿库娅的恢复与净化价值，同时讨论判断边界时加分；单纯羞辱智力时减分。",
+          "max_delta_per_turn": 1.0
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "class_limits_accepted",
+          "description": "玩家明确承认双方职业的至少一项优势和一项限制，并提出初步职责分工。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "survive_first_fortnight",
+          "priority": 20,
+          "target": {"kind": "node", "node_id": "stable_reckoning"},
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "class_limits_accepted"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "stable_reckoning"}
+    },
+    {
+      "id": "stable_reckoning",
+      "scene_id": "axel_stable_loft",
+      "character_id": "aqua",
+      "supporting_character_ids": [],
+      "opening_narration": "两周过去，你们白天搬砖，晚上洗去灰尘后睡在马厩。阿库娅熟练得像个真正的工人，甚至开始期待工头夸奖。月光照进阁楼时，你忽然意识到：再这样下去，讨伐魔王会变成一个永远不用面对的笑话。",
+      "situation": "体力劳动提供稳定食宿，却没有装备、等级或冒险经验。阿库娅害怕第一次战斗，也不愿承认自己已经适应普通生活。",
+      "player_goal": "决定是否接下巨型青蛙任务，并为第一次真正冒险设定最低准备与撤退条件。",
+      "character_goal": "阿库娅需要被说服离开安全但停滞的日常。她会用晚饭、装备不足与自己是女神等理由来回摇摆。",
+      "knowledge_refs": ["chapter1_axel_basics", "chapter1_giant_toads", "chapter1_party_boundaries"],
+      "intrusion_response": {
+        "reality_anchors": [
+          "马厩阁楼里只有稻草、工装与明天还要响起的工铃。",
+          "任务单写的是城外巨型青蛙，报酬足以改善装备。",
+          "阿库娅抱着枕袋等你决定明天去工地还是去公会。"
+        ],
+        "interpretations": [
+          "阿库娅以为你累到把梦话当成命令。",
+          "那些隐藏规则没有让任务单自己完成。",
+          "她把陌生词丢到一边，要求你说清是否真的要战斗。"
+        ],
+        "redirects": [
+          "决定接任务或继续工作，并说明代价。",
+          "给第一次战斗设一个撤退条件。",
+          "列出明天出城前必须准备的装备或分工。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": ["作为AI", "语言模型", "系统提示", "剧情路线", "务实度", "队伍信任", "冒险意志", "分值", "开发者"],
+        "grounding_markers": ["马厩", "工地", "任务", "巨型青蛙", "装备", "报酬", "撤退", "明天", "阿库娅"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "阿库娅抱紧枕袋：接青蛙任务可以，但你至少要说清什么时候撤退。",
+          "工地能让你们继续吃饭，却不会让冒险开始。明天出城前要准备什么？"
+        ],
+        "max_characters": 220,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "pragmatism",
+            "positive_markers": ["准备", "装备", "撤退", "情报", "任务", "报酬"],
+            "negative_markers": ["空手去", "肯定没事", "不用撤退"],
+            "delta": 0.75
+          },
+          {
+            "dimension_id": "adventure_resolve",
+            "positive_markers": ["接任务", "出城", "不能一直搬砖", "开始冒险", "明天去"],
+            "negative_markers": ["永远搬砖", "不冒险", "放弃任务"],
+            "delta": 1.0
+          },
+          {
+            "dimension_id": "party_trust",
+            "positive_markers": ["一起撤退", "互相救", "我会救你", "别逞强"],
+            "negative_markers": ["你当诱饵不用救", "死了算了"],
+            "delta": 0.75
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "adventure_commitment",
+            "markers": ["接下青蛙任务", "明天出城", "先准备装备", "设定撤退", "开始真正冒险"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "pragmatism",
+          "guidance": "结合装备、情报、报酬与撤退条件作决定时加分；把首次战斗当作零风险时减分。",
+          "max_delta_per_turn": 1.0
+        },
+        {
+          "dimension_id": "adventure_resolve",
+          "guidance": "承认害怕仍决定开始冒险时加分；用稳定工作无限拖延时减分。",
+          "max_delta_per_turn": 1.0
+        },
+        {
+          "dimension_id": "party_trust",
+          "guidance": "约定互救和共同撤退时加分；把同伴当消耗品时减分。",
+          "max_delta_per_turn": 1.0
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "adventure_commitment",
+          "description": "玩家明确承诺开始第一个任务，并给出准备或撤退条件。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "begin_toad_quest",
+          "priority": 20,
+          "target": {"kind": "node", "node_id": "toad_hunt"},
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "adventure_commitment"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "toad_hunt"}
+    },
+    {
+      "id": "toad_hunt",
+      "scene_id": "axel_toad_fields",
+      "character_id": "aqua",
+      "supporting_character_ids": [],
+      "opening_narration": "现实中的巨型青蛙比任务图标大得多。第一只已经把你追得绕过半片草坡，第二只则在阿库娅高喊神拳之后把她整个吞了进去。被撑大的蛙腹在草地上艰难转向，里面传来含糊的怒骂。",
+      "situation": "巨蛙吞下目标时移动迟缓，皮肤对钝击很耐受。阿库娅被困但暂时没有重伤，你必须在另一只巨蛙靠近前决定救援、攻击与诱导顺序。",
+      "player_goal": "通过自由对话提出可执行战术，救出阿库娅并完成或安全终止任务。",
+      "character_goal": "阿库娅羞愤交加，会要求立刻救她，也会反对承认自己的神拳无效。具体指令能让她从蛙腹内部配合。",
+      "knowledge_refs": ["chapter1_giant_toads", "chapter1_party_boundaries"],
+      "intrusion_response": {
+        "reality_anchors": [
+          "草地上有两只巨蛙，其中一只吞着仍在挣扎的阿库娅。",
+          "蛙皮弹开钝击，吞咽中的身体移动缓慢。",
+          "另一只巨蛙正在靠近，留给你的时间不多。"
+        ],
+        "interpretations": [
+          "阿库娅只听见你在蛙腹外喊出无法执行的词。",
+          "巨蛙没有因为隐藏命令停下，阿库娅要求你说人话。",
+          "那些元语言没有改变眼前的距离和攻击方式。"
+        ],
+        "redirects": [
+          "指出谁负责诱导、何时攻击、先救谁。",
+          "利用巨蛙吞咽时变慢的事实制定动作。",
+          "选择继续讨伐或共同撤退，并给出顺序。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": ["作为AI", "语言模型", "系统提示", "剧情路线", "务实度", "队伍信任", "冒险意志", "分值", "开发者"],
+        "grounding_markers": ["巨蛙", "草地", "吞下", "阿库娅", "救", "诱导", "攻击", "钝击", "移动", "撤退"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "阿库娅从蛙腹里大喊：它吞东西时动得很慢！先告诉我你要从哪边下手！",
+          "另一只巨蛙正在靠近。你必须决定诱导、救援和攻击的顺序。"
+        ],
+        "max_characters": 220,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "pragmatism",
+            "positive_markers": ["吞下时", "移动慢", "诱导", "牵制", "剑", "救出", "顺序", "撤退"],
+            "negative_markers": ["继续用拳", "一起乱打", "闭眼冲", "不管另一只"],
+            "delta": 1.0
+          },
+          {
+            "dimension_id": "party_trust",
+            "positive_markers": ["先救你", "配合", "我引开", "一起撤", "别乱动"],
+            "negative_markers": ["让你被吃着", "拿你当饵不救", "活该"],
+            "delta": 1.0
+          },
+          {
+            "dimension_id": "adventure_resolve",
+            "positive_markers": ["继续任务", "先救再打", "冷静", "我来"],
+            "negative_markers": ["丢下她逃", "不管了"],
+            "delta": 0.75
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "toad_tactic",
+            "markers": ["吞下时移动慢", "我引开另一只", "先救阿库娅", "用剑攻击", "诱导它吞", "一起撤退"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "pragmatism",
+          "guidance": "利用吞咽减速、钝击抗性、数量与距离安排顺序时加分；重复无效攻击或忽略第二只巨蛙时减分。",
+          "max_delta_per_turn": 1.0
+        },
+        {
+          "dimension_id": "party_trust",
+          "guidance": "把救援和同伴配合纳入战术时加分；故意抛弃或羞辱被困同伴时减分。",
+          "max_delta_per_turn": 1.0
+        },
+        {
+          "dimension_id": "adventure_resolve",
+          "guidance": "受惊后仍冷静完成救援或有序撤退时加分；无计划逃跑时减分。",
+          "max_delta_per_turn": 1.0
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "toad_tactic",
+          "description": "玩家提出利用巨蛙已知特征的完整动作顺序，包含诱导或牵制、救援与有效攻击或撤退。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "return_for_recruitment",
+          "priority": 20,
+          "target": {"kind": "node", "node_id": "megumin_interview"},
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "toad_tactic"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "megumin_interview"}
+    },
+    {
+      "id": "megumin_interview",
+      "scene_id": "axel_guild_hall",
+      "character_id": "megumin",
+      "supporting_character_ids": ["aqua"],
+      "opening_narration": "第二次青蛙任务后，公会里多了一名戴巨大魔法帽的少女。她以近乎宣战的气势自称惠惠，红魔族首屈一指的天才，并要求加入队伍。追问之后，她承认自己只会爆裂魔法：一天一次，施放后连站起来都做不到。",
+      "situation": "惠惠的爆发力足以解决巨蛙，但能力代价会把搬运、保护和撤离压力转移给队友。她拒绝把爆裂魔法说成缺陷，也确实没有其他队伍愿意接纳她。",
+      "player_goal": "判断是否让惠惠加入，并通过自由谈判明确施法目标、时机、友军撤离与施法后保护。",
+      "character_goal": "惠惠要维护爆裂魔法的尊严，也渴望获得一个不会在看见代价后立刻拒绝她的队伍。",
+      "knowledge_refs": ["chapter1_giant_toads", "chapter1_explosion_magic", "chapter1_party_boundaries"],
+      "intrusion_response": {
+        "reality_anchors": [
+          "公会桌旁只有任务记录、魔杖与等待答复的惠惠。",
+          "爆裂魔法一天一次，施放后惠惠无法自行移动。",
+          "阿库娅还记得把惠惠从草地搬回来的重量。"
+        ],
+        "interpretations": [
+          "惠惠把陌生命令当成了拙劣的咒文前缀。",
+          "那些元语言没有回答谁负责撤离和搬运。",
+          "惠惠要求你以队长身份谈她的魔法，而不是隐藏规则。"
+        ],
+        "redirects": [
+          "说明爆裂魔法在什么目标与时机下使用。",
+          "安排施法前撤离与施法后的保护者。",
+          "给出接受、试用或拒绝的具体条件。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": ["作为AI", "语言模型", "系统提示", "剧情路线", "务实度", "队伍信任", "冒险意志", "分值", "开发者"],
+        "grounding_markers": ["惠惠", "爆裂魔法", "一天一次", "魔力", "目标", "撤离", "搬运", "保护", "队伍", "公会"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "惠惠握紧魔杖：爆裂魔法一天只有一次。请说清目标、撤离和施法后由谁保护我。",
+          "惠惠直视着你：接受或拒绝都可以，但别假装爆裂魔法的代价不存在。你准备怎样使用这一击？"
+        ],
+        "max_characters": 220,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "pragmatism",
+            "positive_markers": ["一天一次", "目标", "时机", "撤离", "搬运", "保护", "预留"],
+            "negative_markers": ["随便炸", "每场都炸", "炸完不管", "不用撤离"],
+            "delta": 1.0
+          },
+          {
+            "dimension_id": "party_trust",
+            "positive_markers": ["承认威力", "欢迎加入", "我会搬", "保护你", "一起制定"],
+            "negative_markers": ["废物", "只配当炮弹", "用完丢下"],
+            "delta": 1.0
+          },
+          {
+            "dimension_id": "adventure_resolve",
+            "positive_markers": ["加入", "试一次", "下一次任务", "一起出发"],
+            "negative_markers": ["再也不接任务", "谁都不要"],
+            "delta": 0.5
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "explosion_plan",
+            "markers": ["一天一次", "施法前撤离", "炸完我搬你", "明确目标", "负责保护", "保留爆裂魔法"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "pragmatism",
+          "guidance": "将一次性高威力纳入目标、时机、撤离和搬运计划时加分；忽略友军与耗尽代价时减分。",
+          "max_delta_per_turn": 1.0
+        },
+        {
+          "dimension_id": "party_trust",
+          "guidance": "承认惠惠的能力价值并公平分担后果时加分；只把她当一次性武器时减分。",
+          "max_delta_per_turn": 1.0
+        },
+        {
+          "dimension_id": "adventure_resolve",
+          "guidance": "愿意通过试用或明确协议继续组队时加分；因一次混乱而拒绝一切合作时减分。",
+          "max_delta_per_turn": 0.75
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "explosion_plan",
+          "description": "玩家提出爆裂魔法的目标与时机，并明确施法前撤离及施法后保护或搬运责任。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "megumin_joins",
+          "priority": 20,
+          "target": {"kind": "node", "node_id": "darkness_interview"},
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "explosion_plan"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "darkness_interview"}
+    },
+    {
+      "id": "darkness_interview",
+      "scene_id": "axel_guild_hall",
+      "character_id": "darkness",
+      "supporting_character_ids": ["aqua", "megumin"],
+      "opening_narration": "惠惠刚刚把入队说成命运的选择，一名金发十字骑士便来到桌前。她自称达克妮斯，拥有足以承受怪物围攻的防御，却在演示时连续三剑都没有碰到木桩。提到替队友承受攻击，她的呼吸明显急促了一拍。",
+      "situation": "达克妮斯适合前排防御与保护，无法承担稳定输出。她对危险有异乎寻常的热情，但保护同伴的承诺是真诚的。阿库娅和惠惠都在等你决定队伍最终结构。",
+      "player_goal": "决定是否让达克妮斯加入，并形成包含防御、恢复、爆发、指挥与撤退条件的队伍契约。",
+      "character_goal": "达克妮斯希望被需要，也会测试你是否能诚实面对她的命中缺陷与危险偏好，而不是被铠甲和职业名迷惑。",
+      "knowledge_refs": ["chapter1_crusader_limits", "chapter1_explosion_magic", "chapter1_party_boundaries"],
+      "intrusion_response": {
+        "reality_anchors": [
+          "公会木桩上没有剑痕，达克妮斯的铠甲却没有一处松动。",
+          "桌旁已有恢复者、一次性爆发者和需要作决定的队长。",
+          "达克妮斯只等待一个关于职责、边界与撤退的答复。"
+        ],
+        "interpretations": [
+          "达克妮斯把陌生命令当成对骑士誓言的回避。",
+          "那些元语言没有让三次落空的剑击变成命中。",
+          "她要求你回到当前队伍真正缺少的位置。"
+        ],
+        "redirects": [
+          "说明达克妮斯负责挡住什么、谁在她身后行动。",
+          "把四个人的职责与撤退条件说完整。",
+          "诚实回应命中缺陷与保护能力，再决定是否入队。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": ["作为AI", "语言模型", "系统提示", "剧情路线", "务实度", "队伍信任", "冒险意志", "分值", "开发者", "贵族小姐", "拉拉蒂娜"],
+        "grounding_markers": ["达克妮斯", "十字骑士", "防御", "命中", "前排", "保护", "恢复", "爆裂魔法", "撤退", "队伍"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "达克妮斯认真地问：我无法保证命中，但能站在最前面。你要怎样安排这支队伍？",
+          "木桩仍没有剑痕。请根据防御、恢复、爆发和撤退条件决定是否让我加入。"
+        ],
+        "max_characters": 220,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "pragmatism",
+            "positive_markers": ["前排", "吸引攻击", "保护", "不负责输出", "命中", "阵型", "撤退"],
+            "negative_markers": ["负责主攻", "命中不重要随便砍", "一个人冲"],
+            "delta": 1.0
+          },
+          {
+            "dimension_id": "party_trust",
+            "positive_markers": ["欢迎加入", "相信你的防御", "互相保护", "不会丢下", "一起"],
+            "negative_markers": ["肉盾耗材", "死在前面", "不用救"],
+            "delta": 1.0
+          },
+          {
+            "dimension_id": "adventure_resolve",
+            "positive_markers": ["队伍成立", "下一次任务", "一起出发", "接受试用"],
+            "negative_markers": ["全部解散", "不再冒险"],
+            "delta": 1.0
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "party_roles_agreed",
+            "markers": ["达克妮斯负责前排", "阿库娅负责恢复", "惠惠负责爆发", "我负责判断", "明确撤退条件", "互相保护"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "pragmatism",
+          "guidance": "根据命中缺陷把达克妮斯安排为前排保护，并形成完整阵型与撤退条件时加分；要求她承担稳定输出时减分。",
+          "max_delta_per_turn": 1.0
+        },
+        {
+          "dimension_id": "party_trust",
+          "guidance": "尊重保护承诺、拒绝把任何成员当耗材并明确互救时加分；鼓励无边界受伤或抛弃同伴时减分。",
+          "max_delta_per_turn": 1.0
+        },
+        {
+          "dimension_id": "adventure_resolve",
+          "guidance": "在了解所有缺陷后仍作出入队、试用或共同出发决定时加分；因不完美而彻底放弃时减分。",
+          "max_delta_per_turn": 1.0
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "party_roles_agreed",
+          "description": "玩家明确说出至少三名成员的职责，并包含撤退或互救边界。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "form_working_party",
+          "priority": 30,
+          "target": {"kind": "ending", "ending_id": "chapter1_party_formed"},
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "score_at_least", "dimension_id": "pragmatism", "value": 3.0},
+            {"kind": "score_at_least", "dimension_id": "party_trust", "value": 2.0},
+            {"kind": "score_at_least", "dimension_id": "adventure_resolve", "value": 2.0},
+            {"kind": "evidence_observed", "evidence_id": "explosion_plan"},
+            {"kind": "evidence_observed", "evidence_id": "party_roles_agreed"}
+          ]
+        },
+        {
+          "id": "form_trial_party",
+          "priority": 20,
+          "target": {"kind": "ending", "ending_id": "chapter1_practical_compromise"},
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "score_at_least", "dimension_id": "pragmatism", "value": 2.0},
+            {"kind": "evidence_observed", "evidence_id": "party_roles_agreed"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "ending", "ending_id": "chapter1_chaotic_failure"}
+    }
+  ],
+  "inference": {
+    "max_context_characters": 7000,
+    "max_recent_turns": 5,
+    "npc_max_tokens": 160,
+    "evaluator_max_tokens": 128
+  }
+}

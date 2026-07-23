@@ -1,5 +1,26 @@
 # Monogatari Module Verification
 
+## Independent Project Production Simulation
+
+The `projects/konosuba` Chapter 1 project is a real-content acceptance fixture,
+not part of the built-in sample catalogs. Its first verified milestone covers
+the afterlife selection through formation of the initial four-person party.
+
+- MCP `validate_project`: valid, 18 JSON documents, 3 characters, 7 Knowledge
+  entries, 5 scenes, 1 Scene Roleplay, 3 events, 3 endings, and 1 Quality Suite.
+- MCP `validate_delivery`: valid, 19/19 declared renderer assets exist, no
+  placeholder characters, and no delivery errors or warnings.
+- MCP `run_quality_suite`: 2/2 scenarios pass. The working-party route executes
+  14 turns, visits 7/7 nodes, records all 7 required evidence IDs, and reaches
+  `chapter1_party_formed`; the intrusion case records one guarded intervention
+  and leaves every score at zero.
+- Generated sprite validation: all six final character PNGs are RGBA, have four
+  transparent corners, and retain nonempty bounded subject coverage.
+- Rust `llm-game` Scene Roleplay tests: 13/13 pass.
+- Frontend targeted Scene Roleplay/inference tests: 12/12 pass, including
+  project-API selection and ORT allocation-failure containment.
+- Tauri Scene Roleplay command tests: 2/2 pass.
+
 ## Purpose
 
 The integrated release gate is broad, but broad verification is not the same as independently addressable module evidence. `scripts/module-test-matrix.json` is the machine-readable ownership and execution map. `scripts/verify-modules.mjs` validates that map, selects gates by module or group, executes each command without a shell, and can emit a JSON report for agents and CI.
@@ -20,7 +41,7 @@ Platform-specific gates declare their supported host IDs in the matrix. The Wind
 | Surface | Gate | Evidence type | Current boundary |
 |---|---|---|---|
 | Agent and test orchestration | `automation-contracts` | Node unit contracts | Matrix schema, ownership, selection, CLI parsing, target-platform command/path adaptation, deterministic repository walking and JSON parse/read evidence, bounded credential/UI text scan evidence, locale shape/key/value/public/embedded mirror evidence, structural frontend route/sidebar coverage, fail-closed release-channel/manifest evidence, multi-provider CSP/hosting policy validation, static Web distribution evidence including `roleplays/`, Web preview route/content response evidence, cross-root Story Event/Ending fingerprints, Dialogue graph/reference evidence, pure Workflow shape and catalog-aware file evidence, Renderer Asset path/binary/license evidence, Knowledge ID/alias/reference evidence, Quality Suite shape/default-baseline/Event-fingerprint evidence, real UTF-8 MCP stdio framing, fingerprinted project-asset import plans plus GLB/traversal/symlink/case/precondition rejection, independently injected Tauri package/mobile, installation, exact 115-command registration, dialog capabilities, 79-requirement conversation safety, headless Quality/Workflow/Scene Roleplay, build/toolchain, project runtime, project package, and Story Content policies |
-| Vue pure libraries, workflow/Story Playtest, Pinia, and shared components | `frontend-unit` | Vitest unit and Happy DOM component tests | Provider-neutral browser Scene Roleplay sessions, attack isolation, grounded output guards, rotating recovery, authored fallback score/evidence, deterministic transitions, prompt/evaluator parsing, and component-level ORT `std::bad_alloc` containment; WebGPU context compaction and memory-error recovery classification; Workflow catalog parity, authoring and preview; grapheme-safe Story playback; bounded compatibility NPC prompting; exact Quality roleplay/Workflow report contracts and export shaping; Settings, Character, Knowledge, Dialogue, Story Event, Ending, Scene, renderer, Store, and shared interaction/accessibility behavior |
+| Vue pure libraries, workflow/Story Playtest, Pinia, and shared components | `frontend-unit` | Vitest unit and Happy DOM component tests | Provider-neutral browser Scene Roleplay sessions, local authoring API selection without browser credentials, attack isolation, grounded output guards, rotating recovery, authored fallback score/evidence, deterministic transitions, prompt/evaluator parsing, and component-level ORT `std::bad_alloc` containment; WebGPU context compaction and memory-error recovery classification; Workflow catalog parity, authoring and preview; grapheme-safe Story playback; bounded compatibility NPC prompting; exact Quality roleplay/Workflow report contracts and export shaping; Settings, Character, Knowledge, Dialogue, Story Event, Ending, Scene, renderer, Store, and shared interaction/accessibility behavior |
 | Browser authoring and Playtest workflows | `frontend-e2e` | Playwright Chromium tests against an isolated in-process Vite server | Programmatic startup/cleanup; workspace, Workflow, Dialogue, Event, Ending, Scene, Scene Asset, Knowledge, Quality, and Settings authoring flows; Blue Frame 3D probes; main-stage dynamic Scene Roleplay node/goal/score/free-input layout without invoking a real model; and dedicated scripted Ending epilogues across desktop and 390px mobile layouts |
 | Vue/TypeScript/Web/PWA distribution | `frontend-contracts` | Type check, production builds, static contract verifiers | Root/subpath package and responsive shell contracts |
 | Rust core | `rust-core` | Unit and doc tests | Infrastructure crate |

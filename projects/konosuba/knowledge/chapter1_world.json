@@ -1,0 +1,92 @@
+[
+  {
+    "id": "chapter1_afterlife_rules",
+    "category": "chapter_01",
+    "title": "死后选择室规则",
+    "content": "死者可以选择转生或前往受魔王威胁的异世界，并携带一项被允许的能力或对象。阿库娅负责说明流程。和真把阿库娅本人指定为同行对象后，选择立即生效；她不能单方面撤销。",
+    "tags": ["afterlife", "aqua", "transfer", "rule"],
+    "importance": 1.0,
+    "metadata": {
+      "spoiler_scope": "prologue"
+    },
+    "relatedEntries": ["chapter1_party_boundaries"]
+  },
+  {
+    "id": "chapter1_axel_basics",
+    "category": "chapter_01",
+    "title": "阿克塞尔新手城镇",
+    "content": "阿克塞尔是聚集新手冒险者的红砖城镇，有冒险者公会、公共浴场、马厩和大量临时工作。食宿、装备和登记都需要现实货币，异世界不会自动提供新手礼包。",
+    "tags": ["axel", "town", "economy", "newcomer"],
+    "importance": 0.9,
+    "metadata": {
+      "spoiler_scope": "volume_01_chapter_01"
+    },
+    "relatedEntries": ["chapter1_guild_registration", "chapter1_giant_toads"]
+  },
+  {
+    "id": "chapter1_guild_registration",
+    "category": "chapter_01",
+    "title": "冒险者登记",
+    "content": "登记需要支付费用并接受能力值检测。和真除幸运很高外大多普通，适合可学习多种技能的初级冒险者职业。阿库娅多数能力值和魔力极高，但智力与幸运偏低，适合大祭司。职业强弱不等于队伍协作能力。",
+    "tags": ["guild", "class", "stats", "kazuma", "aqua"],
+    "importance": 1.0,
+    "metadata": {
+      "spoiler_scope": "volume_01_chapter_01"
+    },
+    "relatedEntries": ["chapter1_party_boundaries"]
+  },
+  {
+    "id": "chapter1_giant_toads",
+    "category": "chapter_01",
+    "title": "巨型青蛙讨伐",
+    "content": "阿克塞尔郊外的巨型青蛙会追逐并吞下冒险者。吞咽目标时行动会受限，皮肤对钝击抗性高。任务的关键不是个人逞强，而是诱导、牵制、攻击时机和救援顺序。",
+    "tags": ["quest", "giant_toad", "combat", "tactics"],
+    "importance": 1.0,
+    "metadata": {
+      "spoiler_scope": "volume_01_chapter_01"
+    },
+    "relatedEntries": ["chapter1_explosion_magic"]
+  },
+  {
+    "id": "chapter1_explosion_magic",
+    "category": "chapter_01",
+    "title": "爆裂魔法限制",
+    "content": "惠惠的爆裂魔法威力巨大，足以消灭巨型青蛙，但每天只能施放一次，施放后魔力耗尽并无法自行移动。安全使用需要明确目标、友军撤离、施法时机和施法后的搬运保护。",
+    "tags": ["megumin", "explosion", "magic", "constraint"],
+    "importance": 1.0,
+    "metadata": {
+      "spoiler_scope": "volume_01_chapter_01"
+    },
+    "relatedEntries": ["chapter1_giant_toads", "chapter1_party_boundaries"]
+  },
+  {
+    "id": "chapter1_crusader_limits",
+    "category": "chapter_01",
+    "title": "十字骑士的真实能力",
+    "content": "达克妮斯拥有优秀力量、防御和耐力，能承担前排保护，却很难用剑命中移动敌人。合理定位是吸引攻击、封锁路线和保护施法者，而不是假装她是稳定输出者。",
+    "tags": ["darkness", "crusader", "defense", "constraint"],
+    "importance": 1.0,
+    "metadata": {
+      "spoiler_scope": "volume_01_chapter_01",
+      "private_identity": "not_revealed"
+    },
+    "relatedEntries": ["chapter1_party_boundaries"]
+  },
+  {
+    "id": "chapter1_party_boundaries",
+    "category": "chapter_01",
+    "title": "第一章队伍契约",
+    "content": "阿库娅需要被当作有力量也会犯错的同伴；惠惠需要队伍承认一次性爆发的价值与代价；达克妮斯需要诚实定位为防御者。队伍成立应来自玩家在对话中提出可执行的分工、撤退条件和互相救援承诺，而不是固定入队选项。",
+    "tags": ["party", "relationship", "trust", "contract"],
+    "importance": 1.0,
+    "metadata": {
+      "spoiler_scope": "volume_01_chapter_01"
+    },
+    "relatedEntries": [
+      "chapter1_guild_registration",
+      "chapter1_giant_toads",
+      "chapter1_explosion_magic",
+      "chapter1_crusader_limits"
+    ]
+  }
+]

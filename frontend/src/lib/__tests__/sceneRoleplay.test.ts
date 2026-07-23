@@ -5,6 +5,7 @@ import {
   buildBrowserRoleplayNpcMessages,
   evaluateBrowserRoleplayFallback,
   parseBrowserRoleplayEvaluation,
+  reconcileBrowserRoleplayEvaluation,
   startBrowserSceneRoleplay,
   type SceneRoleplayDefinition,
   type RoleplayTurnEvaluation,
@@ -213,6 +214,44 @@ describe('browser scene roleplay runtime', () => {
     expect(attacked.response.outcome.input_safety.intrusion_detected).toBe(true)
     expect(attacked.session.scores.trust).toBe(0)
     expect(attacked.session.observed_evidence).toEqual([])
+  })
+
+  it('reconciles opposite model scores and missing evidence with authored signals', () => {
+    const fallbackDefinition = structuredClone(definition)
+    fallbackDefinition.nodes[0].fallback_evaluation = {
+      score_signals: [{
+        dimension_id: 'trust',
+        positive_markers: ['confirm the rule'],
+        negative_markers: ['ignore the rule'],
+        delta: 0.75,
+      }],
+      evidence_signals: [{
+        evidence_id: 'coordinates',
+        markers: ['confirm the rule'],
+      }],
+    }
+    const result = reconcileBrowserRoleplayEvaluation(
+      fallbackDefinition.nodes[0],
+      'Please confirm the rule before we continue.',
+      {
+        score_deltas: [{ dimension_id: 'trust', delta: -0.5, reason: 'model misread' }],
+        evidence: [],
+        npc_emotion: 'focused',
+        summary: 'A direct question.',
+      },
+    )
+
+    expect(result.changed).toBe(true)
+    expect(result.evaluation.score_deltas).toEqual([{
+      dimension_id: 'trust',
+      delta: 0.75,
+      reason: 'authored_fallback_signal',
+    }])
+    expect(result.evaluation.evidence).toEqual([{
+      evidence_id: 'coordinates',
+      player_quote: 'Please confirm the rule before we continue.',
+    }])
+    expect(result.evaluation.npc_emotion).toBe('focused')
   })
 
   it('parses strict JSON after removing private thinking or one code fence', () => {

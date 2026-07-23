@@ -1,0 +1,8 @@
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "chapter1_chaotic_failure",
+  "title": "第一章：毫无计划地出发",
+  "description": "所有人都加入了，却没人能说清下一只巨蛙由谁处理。冒险从混乱开始。",
+  "scene_id": "axel_guild_hall",
+  "dialogue_id": "chapter1_chaotic_failure_epilogue"
+}

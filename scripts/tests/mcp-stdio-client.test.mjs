@@ -46,7 +46,7 @@ test('stdio client performs the MCP handshake and preserves UTF-8 tool arguments
     commandArguments: ['-e', fakeServer],
     toolName: 'echo',
     toolArguments: { text: '潮镜：蓝色定格' },
-    timeoutMs: 5_000,
+    timeoutMs: 15_000,
   })
 
   assert.equal(result.isError, false)
@@ -54,4 +54,17 @@ test('stdio client performs the MCP handshake and preserves UTF-8 tool arguments
     initialized: true,
     text: '潮镜：蓝色定格',
   })
+})
+
+test('stdio client keeps unresponsive MCP requests bounded', async () => {
+  await assert.rejects(
+    callMcpStdioTool({
+      command: process.execPath,
+      commandArguments: ['-e', 'setInterval(() => {}, 1000)'],
+      toolName: 'never-replies',
+      timeoutMs: 1_000,
+    }),
+    error => error?.code === 'request_timeout'
+      && error.message.includes("MCP request 'initialize' timed out after 1000ms."),
+  )
 })

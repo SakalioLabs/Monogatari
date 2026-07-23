@@ -1,0 +1,27 @@
+{
+  "id": "chapter1_practical_compromise_epilogue",
+  "title": "试用期同盟",
+  "description": "第一章务实结局短章。",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "text": "你把入队改成三次任务的试用期。每个人都可以退出，任何人隐瞒技能代价都会终止合作。",
+      "next_node_id": "aqua",
+      "choices": []
+    },
+    "aqua": {
+      "speaker_id": "aqua",
+      "emotion": "teasing",
+      "text": "三次就三次。等你亲眼见识我的神力，自然会求我继续留下。",
+      "next_node_id": "final",
+      "choices": []
+    },
+    "final": {
+      "text": "信任尚未建立，但边界已经写清。对一支刚刚认识的队伍来说，这也许比豪言壮语更接近开始。",
+      "is_ending": true,
+      "ending_type": "chapter1_practical_compromise",
+      "choices": []
+    }
+  },
+  "variables": {}
+}

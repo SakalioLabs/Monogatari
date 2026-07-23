@@ -1,0 +1,8 @@
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "chapter1_practical_compromise",
+  "title": "第一章：试用期同盟",
+  "description": "你没有完全信任这支队伍，但用清楚的边界换来了一次共同出发。",
+  "scene_id": "axel_guild_hall",
+  "dialogue_id": "chapter1_practical_compromise_epilogue"
+}

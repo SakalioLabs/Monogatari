@@ -948,6 +948,74 @@ pub fn evaluate_roleplay_fallback(
     }
 }
 
+/// Keep model semantics unless they contradict explicit authored signals.
+///
+/// Fallback markers are a deterministic author contract for obvious inputs.
+/// They correct opposite/neutral model scores and restore exact observed
+/// evidence, while aligned model judgments and all unsignaled dimensions stay
+/// untouched.
+pub fn reconcile_roleplay_evaluation_with_fallback(
+    node: &SceneRoleplayNode,
+    player_message: &str,
+    mut candidate: RoleplayTurnEvaluation,
+) -> (RoleplayTurnEvaluation, bool) {
+    let fallback = evaluate_roleplay_fallback(node, player_message);
+    let mut changed = false;
+    let has_authored_positive = fallback.score_deltas.iter().any(|delta| delta.delta > 0.0);
+    let has_authored_negative = fallback.score_deltas.iter().any(|delta| delta.delta < 0.0);
+
+    for authored in fallback
+        .score_deltas
+        .iter()
+        .filter(|delta| delta.delta != 0.0)
+    {
+        if let Some(model) = candidate
+            .score_deltas
+            .iter_mut()
+            .find(|delta| delta.dimension_id == authored.dimension_id)
+        {
+            if model.delta == 0.0 || model.delta.signum() != authored.delta.signum() {
+                *model = authored.clone();
+                changed = true;
+            }
+        } else {
+            candidate.score_deltas.push(authored.clone());
+            changed = true;
+        }
+    }
+
+    if has_authored_positive != has_authored_negative {
+        for model in &mut candidate.score_deltas {
+            let authored_delta = fallback
+                .score_deltas
+                .iter()
+                .find(|delta| delta.dimension_id == model.dimension_id)
+                .map_or(0.0, |delta| delta.delta);
+            let contradicts_known_direction = authored_delta == 0.0
+                && ((has_authored_positive && model.delta < 0.0)
+                    || (has_authored_negative && model.delta > 0.0));
+            if contradicts_known_direction {
+                model.delta = 0.0;
+                model.reason = "authored_fallback_conflict".to_string();
+                changed = true;
+            }
+        }
+    }
+
+    for authored in fallback.evidence {
+        if !candidate
+            .evidence
+            .iter()
+            .any(|evidence| evidence.evidence_id == authored.evidence_id)
+        {
+            candidate.evidence.push(authored);
+            changed = true;
+        }
+    }
+
+    (candidate, changed)
+}
+
 fn apply_evaluation(
     session: &mut SceneRoleplaySession,
     definition: &SceneRoleplayDefinition,

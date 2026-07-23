@@ -1,0 +1,10 @@
+{
+  "id": "axel_stable_loft",
+  "name": "马厩阁楼",
+  "background_path": "assets/backgrounds/axel_stable_loft.png",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "clear",
+  "time_of_day": "night",
+  "tags": ["chapter_01", "axel", "poverty", "reflection"]
+}

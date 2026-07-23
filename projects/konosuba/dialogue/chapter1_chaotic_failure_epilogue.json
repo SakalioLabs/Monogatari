@@ -1,0 +1,20 @@
+{
+  "id": "chapter1_chaotic_failure_epilogue",
+  "title": "毫无计划地出发",
+  "description": "第一章混乱结局短章。",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "text": "惠惠宣布下一发爆裂魔法必须更响，达克妮斯要求站得更靠前，阿库娅则已经把任务报酬算进晚餐。没人记得讨论撤退。",
+      "next_node_id": "final",
+      "choices": []
+    },
+    "final": {
+      "text": "你们仍然一起走出公会。队伍成立了，计划没有。远处草原上，一只巨蛙缓慢地转过头。",
+      "is_ending": true,
+      "ending_type": "chapter1_chaotic_failure",
+      "choices": []
+    }
+  },
+  "variables": {}
+}

@@ -504,6 +504,52 @@ export function evaluateBrowserRoleplayFallback(
   }
 }
 
+export function reconcileBrowserRoleplayEvaluation(
+  node: SceneRoleplayNode,
+  playerMessage: string,
+  candidate: RoleplayTurnEvaluation,
+): { evaluation: RoleplayTurnEvaluation; changed: boolean } {
+  const evaluation = structuredClone(candidate)
+  const fallback = evaluateBrowserRoleplayFallback(node, playerMessage)
+  let changed = false
+  const hasAuthoredPositive = fallback.score_deltas.some(delta => delta.delta > 0)
+  const hasAuthoredNegative = fallback.score_deltas.some(delta => delta.delta < 0)
+
+  for (const authored of fallback.score_deltas.filter(delta => delta.delta !== 0)) {
+    const model = evaluation.score_deltas.find(delta => delta.dimension_id === authored.dimension_id)
+    if (!model) {
+      evaluation.score_deltas.push(authored)
+      changed = true
+    } else if (model.delta === 0 || Math.sign(model.delta) !== Math.sign(authored.delta)) {
+      Object.assign(model, authored)
+      changed = true
+    }
+  }
+
+  if (hasAuthoredPositive !== hasAuthoredNegative) {
+    for (const model of evaluation.score_deltas) {
+      const authoredDelta = fallback.score_deltas
+        .find(delta => delta.dimension_id === model.dimension_id)?.delta || 0
+      const contradictsKnownDirection = authoredDelta === 0
+        && ((hasAuthoredPositive && model.delta < 0) || (hasAuthoredNegative && model.delta > 0))
+      if (contradictsKnownDirection) {
+        model.delta = 0
+        model.reason = 'authored_fallback_conflict'
+        changed = true
+      }
+    }
+  }
+
+  for (const authored of fallback.evidence) {
+    if (!evaluation.evidence.some(evidence => evidence.evidence_id === authored.evidence_id)) {
+      evaluation.evidence.push(authored)
+      changed = true
+    }
+  }
+
+  return { evaluation, changed }
+}
+
 export function roleplayNode(
   definition: SceneRoleplayDefinition,
   nodeId: string,

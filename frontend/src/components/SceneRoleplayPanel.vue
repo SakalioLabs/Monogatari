@@ -103,6 +103,7 @@ import {
   containedBrowserRoleplayEvaluation,
   evaluateBrowserRoleplayFallback,
   parseBrowserRoleplayEvaluation,
+  reconcileBrowserRoleplayEvaluation,
   type RoleplayScoreDimension,
   type SceneRoleplayNode,
   type SceneRoleplaySnapshot,
@@ -116,6 +117,7 @@ import {
 } from '../lib/sceneRoleplaySafety'
 import type { StoryCharacterInfo, StoryEndingInfo } from '../lib/storyContent'
 import { invokeCommand } from '../lib/tauri'
+import { generateAuthoringApiChat, loadAuthoringApiRuntime } from '../lib/authoringInference'
 import { detectWebGpuSupport, generateWebGpuChat } from '../lib/webgpuInference'
 
 const props = defineProps<{
@@ -147,6 +149,7 @@ const lastEvaluationEvidenceCount = ref(0)
 const inputElement = ref<HTMLTextAreaElement>()
 const transcriptElement = ref<HTMLElement>()
 let knowledgeEntries: KnowledgeEntryDefinition[] = []
+let authoringApiAvailable = false
 let generationSequence = 0
 
 const currentNode = computed(() => props.snapshot.current_node)
@@ -207,11 +210,12 @@ watch(() => currentNode.value.id, () => {
 })
 
 onMounted(async () => {
-  try {
-    knowledgeEntries = (await loadKnowledgeAuthoringCatalog()).entries
-  } catch {
-    knowledgeEntries = []
-  }
+  const [knowledgeResult, authoringRuntime] = await Promise.all([
+    loadKnowledgeAuthoringCatalog().catch(() => ({ entries: [] })),
+    props.desktopRuntime ? Promise.resolve(null) : loadAuthoringApiRuntime(),
+  ])
+  knowledgeEntries = knowledgeResult.entries
+  authoringApiAvailable = Boolean(authoringRuntime)
   emit('nodeChange', currentNode.value)
   scrollToBottom()
   nextTick(() => inputElement.value?.focus())
@@ -246,12 +250,15 @@ async function sendTurn() {
         evaluation = containedBrowserRoleplayEvaluation(currentNode.value)
         evaluationSource = 'contained_intrusion'
       } else {
-        const support = detectWebGpuSupport()
-        if (!support.available) throw new Error('WebGPU is unavailable in this browser.')
+        const generateChat = authoringApiAvailable ? generateAuthoringApiChat : generateWebGpuChat
+        if (!authoringApiAvailable) {
+          const support = detectWebGpuSupport()
+          if (!support.available) throw new Error('WebGPU is unavailable in this browser.')
+        }
         let rawReply = ''
         let npcCandidate: string | null = null
         try {
-          const generated = await generateWebGpuChat(
+          const generated = await generateChat(
             buildBrowserRoleplayNpcMessages(
               props.snapshot.definition,
               props.snapshot.session,
@@ -294,9 +301,9 @@ async function sendTurn() {
             evaluation = evaluateBrowserRoleplayFallback(currentNode.value, playerMessage)
             evaluationSource = 'authored_fallback_npc_output'
           } else {
-            evaluationSource = 'browser_model'
+            evaluationSource = authoringApiAvailable ? 'authoring_api_model' : 'browser_model'
             try {
-              const evaluatorOutput = await generateWebGpuChat(
+              const evaluatorOutput = await generateChat(
                 buildBrowserRoleplayEvaluatorMessages(
                   props.snapshot.definition,
                   props.snapshot.session,
@@ -311,6 +318,17 @@ async function sendTurn() {
                 },
               )
               evaluation = parseBrowserRoleplayEvaluation(evaluatorOutput)
+              const reconciled = reconcileBrowserRoleplayEvaluation(
+                currentNode.value,
+                playerMessage,
+                evaluation,
+              )
+              evaluation = reconciled.evaluation
+              if (reconciled.changed) {
+                evaluationSource = authoringApiAvailable
+                  ? 'authoring_api_model_reconciled'
+                  : 'browser_model_reconciled'
+              }
             } catch {
               evaluationSource = 'authored_fallback_evaluator_error'
               evaluation = evaluateBrowserRoleplayFallback(currentNode.value, playerMessage)

@@ -280,15 +280,17 @@ export function createSourceInvariantVerifier({
       ['injectServiceWorkerBuildId()', 'inject a content-derived service worker cache identity after packaging'],
       ['distServiceWorkerPath', 'target the built service worker without mutating the source template'],
       ["'offline-i18n.js'", 'package the CSP-compatible offline localization script'],
-      ["'data', 'assets'", 'copy checked-in project assets from data/assets'],
-      ["'data', 'events'", 'copy checked-in story event catalogs from data/events'],
-      ["'data', 'scenes'", 'copy checked-in scene catalogs from data/scenes'],
-      ["'data', 'dialogue'", 'copy checked-in dialogue scripts from data/dialogue'],
-      ["'data', 'roleplays'", 'copy checked-in scene roleplay definitions from data/roleplays'],
-      ["'data', 'endings'", 'copy checked-in ending catalogs from data/endings'],
-      ["'data', 'characters'", 'copy checked-in character definitions from data/characters'],
-      ["'data', 'knowledge'", 'copy checked-in knowledge entries from data/knowledge'],
-      ["'data', 'models', 'webgpu'", 'support optional packaged WebGPU model artifacts'],
+      ["path.join(rootDir, 'data')", 'retain the checked-in data root as the default project'],
+      ['process.env.MONOGATARI_PROJECT_ROOT', 'allow an explicit independent project root'],
+      ["path.join(projectDataDir, 'assets')", 'derive project assets from the selected project root'],
+      ["path.join(projectDataDir, 'events')", 'derive story event catalogs from the selected project root'],
+      ["path.join(projectDataDir, 'scenes')", 'derive scene catalogs from the selected project root'],
+      ["path.join(projectDataDir, 'dialogue')", 'derive dialogue scripts from the selected project root'],
+      ["path.join(projectDataDir, 'roleplays')", 'derive scene roleplay definitions from the selected project root'],
+      ["path.join(projectDataDir, 'endings')", 'derive ending catalogs from the selected project root'],
+      ["path.join(projectDataDir, 'characters')", 'derive character definitions from the selected project root'],
+      ["path.join(projectDataDir, 'knowledge')", 'derive knowledge entries from the selected project root'],
+      ["path.join(projectDataDir, 'models', 'webgpu')", 'derive optional WebGPU model artifacts from the selected project root'],
       ['distProjectAssetsDir', 'target copied project assets into dist/assets'],
       ['projectAssetManifestPath', 'write a generated project asset manifest into dist'],
       ['inferenceRuntimePath', 'write a generated WebGPU inference contract into dist'],
@@ -328,6 +330,8 @@ export function createSourceInvariantVerifier({
     }
 
     const viteProjectDataRequirements = [
+      ["const defaultProjectDataDir = path.resolve(frontendDir, '..', 'data')", 'retain the checked-in data root as the development default'],
+      ['process.env.MONOGATARI_PROJECT_ROOT', 'allow an explicit independent development project root'],
       ["roleplays: path.join(projectDataDir, 'roleplays')", 'serve scene roleplay definitions from the checked-in project during development'],
       ['roleplay_files: projectFiles(projectDataRoots.roleplays', 'inventory scene roleplay definitions in the development project manifest'],
     ]
@@ -2121,7 +2125,7 @@ export function createSourceInvariantVerifier({
       [mcpServerSource, 'pub async fn export_project_package', 'expose reviewed fixed-root package output'],
       [mcpServerSource, 'pub async fn plan_transaction', 'expose side-effect-free transaction planning'],
       [mcpServerSource, 'pub async fn apply_transaction', 'expose validated transaction application'],
-      [readmeSource, 'thirteen standard stdio tools', 'keep the documented MCP tool count aligned with the schema-backed server'],
+      [readmeSource, 'fourteen standard stdio tools', 'keep the documented MCP tool count aligned with the schema-backed server'],
       [mcpServerSource, 'if !self.allow_write', 'keep writes disabled unless startup explicitly enables them'],
       [mcpProtocolSource, 'expected_precondition_fingerprint', 'require the caller to confirm the reviewed plan fingerprint'],
       [mcpProtocolSource, 'expected_content_sha256', 'require the caller to confirm the reviewed package fingerprint'],
@@ -2205,8 +2209,9 @@ export function createSourceInvariantVerifier({
     if (mcpServerSource.includes('project_root.join(".monogatari-mcp-project.lock")')) {
       issues.push('monogatari-mcp must keep coordination leases outside the authored project tree')
     }
-    if (readmeSource.includes('twelve standard stdio tools')) {
-      issues.push('MCP Agent authoring must not retain the obsolete twelve-tool README contract')
+    if (readmeSource.includes('twelve standard stdio tools')
+      || readmeSource.includes('thirteen standard stdio tools')) {
+      issues.push('MCP Agent authoring must not retain an obsolete MCP tool-count contract')
     }
     if (/pub\s+project_root\s*:/.test(mcpProtocolSource)) {
       issues.push('MCP tool requests must not be able to replace the startup-bound project root')

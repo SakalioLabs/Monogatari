@@ -1,0 +1,65 @@
+{
+  "schema": "monogatari-story-event-catalog/v1",
+  "events": [
+    {
+      "event_id": "chapter1_aqua_provisional_ally",
+      "event_type": "relationship_milestone",
+      "description": "阿库娅开始把玩家的计划当作可以依靠的现实支点。",
+      "character_ids": ["aqua"],
+      "repeatable": false,
+      "rule": {
+        "min_relationship": 0.3
+      },
+      "actions": [
+        {
+          "type": "set_flag",
+          "flag": "chapter1.aqua_provisional_ally",
+          "value": true
+        }
+      ],
+      "data": {
+        "chapter": "chapter_01"
+      }
+    },
+    {
+      "event_id": "chapter1_megumin_provisional_ally",
+      "event_type": "relationship_milestone",
+      "description": "惠惠相信这支队伍会认真承担爆裂魔法的代价。",
+      "character_ids": ["megumin"],
+      "repeatable": false,
+      "rule": {
+        "min_relationship": 0.3
+      },
+      "actions": [
+        {
+          "type": "set_flag",
+          "flag": "chapter1.megumin_provisional_ally",
+          "value": true
+        }
+      ],
+      "data": {
+        "chapter": "chapter_01"
+      }
+    },
+    {
+      "event_id": "chapter1_darkness_provisional_ally",
+      "event_type": "relationship_milestone",
+      "description": "达克妮斯接受前排保护者的明确职责与队伍边界。",
+      "character_ids": ["darkness"],
+      "repeatable": false,
+      "rule": {
+        "min_relationship": 0.3
+      },
+      "actions": [
+        {
+          "type": "set_flag",
+          "flag": "chapter1.darkness_provisional_ally",
+          "value": true
+        }
+      ],
+      "data": {
+        "chapter": "chapter_01"
+      }
+    }
+  ]
+}

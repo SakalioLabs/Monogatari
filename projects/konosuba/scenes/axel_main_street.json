@@ -1,0 +1,10 @@
+{
+  "id": "axel_main_street",
+  "name": "阿克塞尔主街",
+  "background_path": "assets/backgrounds/axel_main_street.png",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "clear",
+  "time_of_day": "late_morning",
+  "tags": ["chapter_01", "axel", "arrival"]
+}

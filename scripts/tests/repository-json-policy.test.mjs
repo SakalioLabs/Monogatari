@@ -25,8 +25,12 @@ test('checked-in repository JSON returns passing evidence', async () => {
   const evidence = await policy.verifyRepositoryJsonFiles()
 
   assert.deepEqual(evidence.issues, [])
-  assert.equal(evidence.jsonFileCount, 270)
-  assert.deepEqual(messages, ['[release] JSON parse OK (270 files)'])
+  assert(evidence.jsonFileCount >= 270)
+  assert.deepEqual(messages, [`[release] JSON parse OK (${evidence.jsonFileCount} files)`])
+
+  const files = await createRepositoryFileWalker()(repositoryRoot)
+  const projectPrefix = path.join(repositoryRoot, 'projects', 'konosuba') + path.sep
+  assert.equal(files.filter(file => file.startsWith(projectPrefix) && file.endsWith('.json')).length, 19)
 })
 
 test('Repository JSON evidence isolates parse and read failures', async () => {

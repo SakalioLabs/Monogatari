@@ -1,0 +1,10 @@
+{
+  "id": "axel_toad_fields",
+  "name": "阿克塞尔郊外草原",
+  "background_path": "assets/backgrounds/axel_toad_fields.png",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "clear",
+  "time_of_day": "afternoon",
+  "tags": ["chapter_01", "quest", "giant_toad", "combat"]
+}

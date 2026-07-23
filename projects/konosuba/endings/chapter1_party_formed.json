@@ -1,0 +1,8 @@
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "chapter1_party_formed",
+  "title": "第一章：问题儿童小队成立",
+  "description": "你承认每个人的限制，也为这些限制安排了位置。队伍不是合理，但已经可以运作。",
+  "scene_id": "axel_guild_hall",
+  "dialogue_id": "chapter1_party_formed_epilogue"
+}

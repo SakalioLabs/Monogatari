@@ -1,0 +1,10 @@
+{
+  "id": "afterlife_chamber",
+  "name": "死后选择室",
+  "background_path": "assets/backgrounds/afterlife_chamber.png",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "celestial_clear",
+  "time_of_day": "timeless",
+  "tags": ["chapter_01", "afterlife", "negotiation"]
+}

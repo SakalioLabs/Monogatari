@@ -212,9 +212,35 @@ Character, dialogue, and knowledge reload commands accept project content refere
 
 Web/PWA packaging copies project scenes, dialogues, endings, events, renderer assets, and an optional `data/models/webgpu` model directory into the static distribution, inventories project content in `project-assets.json`, and emits `inference-runtime.json` with the WebGPU model contract. The service worker pre-caches both manifests and project content; Transformers.js maintains its browser model cache. The browser Story Library uses the same access snapshot and delegates cursor, dialogue-local variable/flag, condition, bounded script, graph-error, relationship-effect, and node-driven Scene transition behavior to the pure Story Playtest state machine. `storyTextPlayback.ts` independently owns grapheme-safe typewriter progression, manual completion, autoplay policy, timer reentry, and disposal; `GameView.vue` adapts its callbacks into reactive presentation. Authoring URLs may add `previewNode` beside `previewDialogue` to start directly at one existing node with initial variables and no prior-node effects; unknown nodes fail through the same strict Story Playtest error. Workflow preview and Story Playtest share one side-effect-free local condition evaluator. Condition-hidden choices retain their authored indices; false nodes follow a required linear fallback with cycle detection; unsupported browser syntax stops rather than misrouting. Tauri evaluates the same authored state through the bounded shared Rhai engine, preflights choice relationship targets, commits only against the inspected source node, then applies bounded deltas through CharacterManager. Browser authoring stores complete scene, dialogue, and ending catalog drafts in local storage, and Playtest reads those same drafts without changing packaged source files.
 
+Vite development and Web/PWA packaging resolve the project data root from
+`MONOGATARI_PROJECT_ROOT` when present, relative to `frontend`; otherwise they
+use the checked-in `data` root. This process-only setting is intentionally not
+exposed through `import.meta.env`, so local project paths cannot leak into the
+browser bundle. Tauri and MCP continue to bind project roots through their own
+validated runtime boundaries.
+
+Local browser authoring also respects an independent project's API provider.
+The Vite server reads the selected API base and model from `settings.json`,
+normalizes a host-only OpenAI-compatible base to `/v1`, and exposes a
+same-origin authoring-only chat bridge. Its public runtime document contains no
+credential fields; an optional credential comes only from
+`MONOGATARI_API_KEY` and remains in the Node process. Static Web/PWA packages
+retain the credential-free WebGPU contract, while Tauri continues to use the
+Rust inference pipeline.
+
+Scene Roleplay evaluation has two layers. The model handles semantic scoring
+and evidence extraction, while authored fallback signals define deterministic
+meaning for explicit phrases and provider failure recovery. A clean model
+result is reconciled only when it reverses a matched authored direction,
+assigns the opposite direction to an otherwise one-sided matched input, or
+omits evidence whose marker is directly present. Runtime provenance reports
+`model_reconciled`, `browser_model_reconciled`, or
+`authoring_api_model_reconciled`; prompt intrusions still freeze all story
+state before reconciliation.
+
 Dialogue authoring separates transport from graph editing. `dialogueAuthoring.ts` owns desktop/browser catalog loading, optimistic persistence, normalization, and complete graph validation. `dialogueGraphEditing.ts` owns proxy-safe cloning, draft identity, node ordering, immutable node/edge/choice/relationship transformations, and portable case-folded ID checks. `DialogueEditorView.vue` is the reactive adapter for localization, transport calls, selection, and confirmation; it does not own graph mutation rules. The same saved graph then enters the pure Story Playtest runtime, and browser E2E coverage authors, renames, connects, persists, and plays a two-node route.
 
-The frontend Settings boundary is split into exact transport contracts, a pure settings domain, and the Vue transport/orchestration view. The domain owns generated browser project/sync state, immutable config shaping, guarded nested writes, runtime-secret and token scrubbing, and schema-backed browser manifests. `SettingsView.vue` owns reactive form state, localization, downloads, WebGPU lifecycle, and Tauri IPC only. Browser previews derive their model settings from the packaged WebGPU runtime instead of a second static configuration. Release invariants reject duplicated contracts or secret/config mutation logic in the view, while Vitest covers the domain and Playwright parses an actual downloaded manifest to prove runtime credentials are excluded.
+The frontend Settings boundary is split into exact transport contracts, a pure settings domain, and the Vue transport/orchestration view. The domain owns generated browser project/sync state, immutable config shaping, guarded nested writes, runtime-secret and token scrubbing, and schema-backed browser manifests. `SettingsView.vue` owns reactive form state, localization, downloads, WebGPU lifecycle, and Tauri IPC only. Packaged browser previews derive their model settings from the WebGPU runtime contract; local authoring previews may instead consume the credential-free Vite API bridge described above. Release invariants reject duplicated contracts or secret/config mutation logic in the view, while Vitest covers the domain and Playwright parses an actual downloaded manifest to prove runtime credentials are excluded.
 
 Character authoring uses a pure `characterAuthoring` domain between runtime records and the Vue workbench. It owns isolated form defaults, bounded personality and relationship values, portable case-folded ID collision checks, legacy knowledge-reference normalization, exact save payloads, canonical dirty-state snapshots, search, and expression-sprite defaults. The view owns localization, asset-preview failure state, browser draft or Tauri transport, and confirmation flows; create commands remain disabled until asynchronous character and knowledge catalogs settle so initialization cannot overwrite a new draft. Browser and desktop saves therefore consume the same normalized `StoryCharacterInfo`, while release invariants reject reintroducing untyped form indexes or payload builders into the component.
 

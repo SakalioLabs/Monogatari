@@ -1,0 +1,55 @@
+{
+  "engine": {
+    "title": "A Wonderful Roleplay",
+    "width": 1280,
+    "height": 720,
+    "targetFps": 60,
+    "fullscreen": false
+  },
+  "rendering": {
+    "vsync": true,
+    "defaultFont": "default",
+    "fontSize": 20,
+    "titleFontSize": 36
+  },
+  "dialogue": {
+    "typewriterSpeed": 24,
+    "autoAdvanceDelay": 0,
+    "defaultBackgroundAlpha": 210
+  },
+  "ai": {
+    "provider": "api",
+    "api": {
+      "baseUrl": "http://192.168.3.27:8317",
+      "apiKey": "",
+      "model": "grok-4.5",
+      "maxTokens": 256,
+      "temperature": 0.78
+    },
+    "onnx": {
+      "modelPath": "models/model.onnx",
+      "tokenizerPath": "models/tokenizer.json",
+      "useDirectML": true,
+      "maxSequenceLength": 2048
+    },
+    "webgpu": {
+      "modelId": "onnx-community/Qwen3.5-0.8B-Text-ONNX",
+      "dtype": "q4",
+      "maxNewTokens": 96,
+      "temperature": 0.7,
+      "topP": 0.9
+    }
+  },
+  "paths": {
+    "characters": "characters",
+    "knowledge": "knowledge",
+    "dialogue": "dialogue",
+    "scenes": "scenes",
+    "assets": "assets",
+    "events": "events",
+    "endings": "endings",
+    "saves": "saves",
+    "quality_suites": "quality_suites",
+    "roleplays": "roleplays"
+  }
+}

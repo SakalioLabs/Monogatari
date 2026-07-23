@@ -7,9 +7,10 @@ use llm_game::scene_roleplay::{
     analyze_roleplay_player_input, build_npc_prompt_messages, build_turn_evaluator_prompt,
     compose_generation_recovery_for_turn, compose_intrusion_response,
     contained_roleplay_evaluation, evaluate_roleplay_fallback,
-    guard_roleplay_npc_response_for_turn, parse_turn_evaluation_json, RoleplayPromptMessage,
-    RoleplayTurnEvaluation, SceneRoleplayDefinition, SceneRoleplayNode, SceneRoleplaySession,
-    SceneRoleplayTurnInput, SceneRoleplayTurnOutcome,
+    guard_roleplay_npc_response_for_turn, parse_turn_evaluation_json,
+    reconcile_roleplay_evaluation_with_fallback, RoleplayPromptMessage, RoleplayTurnEvaluation,
+    SceneRoleplayDefinition, SceneRoleplayNode, SceneRoleplaySession, SceneRoleplayTurnInput,
+    SceneRoleplayTurnOutcome,
 };
 use serde::{Deserialize, Serialize};
 use tauri::State;
@@ -172,7 +173,7 @@ pub async fn send_scene_roleplay_turn(
     );
     let npc_response = guarded_npc.response;
 
-    let (candidate_evaluation, mut evaluation_source) = if input_safety.intrusion_detected {
+    let (mut candidate_evaluation, mut evaluation_source) = if input_safety.intrusion_detected {
         (
             contained_roleplay_evaluation(&node, "story_state_not_changed"),
             "contained_intrusion".to_string(),
@@ -212,6 +213,17 @@ pub async fn send_scene_roleplay_turn(
             ),
         }
     };
+    if evaluation_source == "model" {
+        let (reconciled, changed) = reconcile_roleplay_evaluation_with_fallback(
+            &node,
+            &player_message,
+            candidate_evaluation,
+        );
+        candidate_evaluation = reconciled;
+        if changed {
+            evaluation_source = "model_reconciled".to_string();
+        }
+    }
 
     let mut staged_session = session.clone();
     let input = SceneRoleplayTurnInput {

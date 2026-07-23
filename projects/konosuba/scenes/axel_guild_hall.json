@@ -1,0 +1,10 @@
+{
+  "id": "axel_guild_hall",
+  "name": "阿克塞尔冒险者公会",
+  "background_path": "assets/backgrounds/axel_guild_hall.png",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": null,
+  "time_of_day": "day",
+  "tags": ["chapter_01", "axel", "guild", "recruitment"]
+}

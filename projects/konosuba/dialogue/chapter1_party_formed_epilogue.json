@@ -1,0 +1,41 @@
+{
+  "id": "chapter1_party_formed_epilogue",
+  "title": "问题儿童小队成立",
+  "description": "第一章高协作结局短章。",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "text": "公会的喧闹没有因为四个人达成协议而停下。纸上只写了最朴素的分工：达克妮斯守住前排，惠惠保留决定性一击，阿库娅负责恢复，而你负责让计划在出事以后仍能继续。",
+      "next_node_id": "aqua",
+      "choices": []
+    },
+    "aqua": {
+      "speaker_id": "aqua",
+      "emotion": "confident",
+      "text": "既然你终于承认女神是不可或缺的，那我就允许你负责作战会议。先说好，庆功宴不能省！",
+      "next_node_id": "megumin",
+      "choices": []
+    },
+    "megumin": {
+      "speaker_id": "megumin",
+      "emotion": "proud",
+      "text": "很好。下一次爆裂魔法结束后，撤离路线与搬运者都由队长保证。如此，我便能毫无保留地追求那一击。",
+      "next_node_id": "darkness",
+      "choices": []
+    },
+    "darkness": {
+      "speaker_id": "darkness",
+      "emotion": "resolved",
+      "text": "我会挡在最前面。若剑仍旧落空，就让敌人只能把攻击落在我身上。",
+      "next_node_id": "final",
+      "choices": []
+    },
+    "final": {
+      "text": "这不是最强的队伍。正因为每个人都有无法隐藏的缺口，你们第一次拥有了必须互相依靠的理由。",
+      "is_ending": true,
+      "ending_type": "chapter1_party_formed",
+      "choices": []
+    }
+  },
+  "variables": {}
+}

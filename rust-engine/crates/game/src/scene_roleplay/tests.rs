@@ -358,6 +358,63 @@ fn authored_fallback_scores_clean_signals_but_never_intrusions() {
 }
 
 #[test]
+fn authored_signals_reconcile_opposite_model_scores_and_missing_evidence() {
+    let mut definition = definition();
+    let node = &mut definition.nodes[0];
+    node.fallback_evaluation = Some(RoleplayFallbackEvaluation {
+        score_signals: vec![RoleplayFallbackScoreSignal {
+            dimension_id: "trust".to_string(),
+            positive_markers: vec!["confirm the rule".to_string()],
+            negative_markers: vec!["ignore the rule".to_string()],
+            delta: 0.75,
+        }],
+        evidence_signals: vec![RoleplayFallbackEvidenceSignal {
+            evidence_id: "asked_for_coordinates".to_string(),
+            markers: vec!["confirm the rule".to_string()],
+        }],
+    });
+    definition.validate().unwrap();
+
+    let candidate = RoleplayTurnEvaluation {
+        score_deltas: vec![
+            RoleplayScoreDelta {
+                dimension_id: "trust".to_string(),
+                delta: -0.5,
+                reason: "small model misread the request".to_string(),
+            },
+            RoleplayScoreDelta {
+                dimension_id: "evidence".to_string(),
+                delta: 0.25,
+                reason: "aligned unsignaled judgment".to_string(),
+            },
+        ],
+        evidence: vec![],
+        npc_emotion: Some("focused".to_string()),
+        summary: "The player asked a direct question.".to_string(),
+    };
+
+    let (reconciled, changed) = reconcile_roleplay_evaluation_with_fallback(
+        &definition.nodes[0],
+        "Please confirm the rule before we continue.",
+        candidate,
+    );
+
+    assert!(changed);
+    assert_eq!(reconciled.score_deltas[0].delta, 0.75);
+    assert_eq!(
+        reconciled.score_deltas[0].reason,
+        "authored_fallback_signal"
+    );
+    assert_eq!(reconciled.score_deltas[1].delta, 0.25);
+    assert_eq!(reconciled.evidence.len(), 1);
+    assert_eq!(
+        reconciled.evidence[0].player_quote,
+        "Please confirm the rule before we continue."
+    );
+    assert_eq!(reconciled.npc_emotion.as_deref(), Some("focused"));
+}
+
+#[test]
 fn prompt_context_is_bounded_and_keeps_the_latest_player_turn() {
     let definition = definition();
     let mut session = SceneRoleplaySession::start(&definition).unwrap();

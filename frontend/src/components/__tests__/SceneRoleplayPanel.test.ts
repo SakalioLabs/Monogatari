@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   detectWebGpuSupport: vi.fn(),
   generateWebGpuChat: vi.fn(),
+  generateAuthoringApiChat: vi.fn(),
+  loadAuthoringApiRuntime: vi.fn(),
   loadKnowledgeAuthoringCatalog: vi.fn(),
 }))
 
@@ -14,6 +16,11 @@ vi.mock('../../lib/webgpuInference', () => ({
 
 vi.mock('../../lib/knowledgeContent', () => ({
   loadKnowledgeAuthoringCatalog: mocks.loadKnowledgeAuthoringCatalog,
+}))
+
+vi.mock('../../lib/authoringInference', () => ({
+  generateAuthoringApiChat: mocks.generateAuthoringApiChat,
+  loadAuthoringApiRuntime: mocks.loadAuthoringApiRuntime,
 }))
 
 import SceneRoleplayPanel from '../SceneRoleplayPanel.vue'
@@ -91,6 +98,8 @@ describe('SceneRoleplayPanel', () => {
   beforeEach(() => {
     mocks.detectWebGpuSupport.mockReturnValue({ available: true, reason: 'available' })
     mocks.loadKnowledgeAuthoringCatalog.mockResolvedValue({ entries: [] })
+    mocks.loadAuthoringApiRuntime.mockResolvedValue(null)
+    mocks.generateAuthoringApiChat.mockReset()
     mocks.generateWebGpuChat.mockReset()
   })
 
@@ -126,5 +135,45 @@ describe('SceneRoleplayPanel', () => {
       .toBe('The receiver keeps the coordinates inside the signal.')
     expect(wrapper.text()).not.toContain('OrtRun')
     expect(wrapper.text()).not.toContain('std::bad_alloc')
+  })
+
+  it('uses the project authoring API for both NPC generation and evaluation', async () => {
+    mocks.loadAuthoringApiRuntime.mockResolvedValue({
+      schema: 'monogatari-authoring-inference-runtime/v1',
+      provider: 'api',
+      endpoint: '/authoring-api/chat/completions',
+      model: 'remote-roleplay-model',
+      max_new_tokens: 256,
+      temperature: 0.7,
+      top_p: 0.9,
+    })
+    mocks.generateAuthoringApiChat
+      .mockResolvedValueOnce('The receiver holds the coordinates inside the signal.')
+      .mockResolvedValueOnce(JSON.stringify({
+        score_deltas: { trust: 1 },
+        evidence: { verification: 'coordinates' },
+        npc_emotion: 'steady',
+        summary: 'The player requested an independent check.',
+      }))
+    const wrapper = mount(SceneRoleplayPanel, {
+      props: {
+        snapshot: startBrowserSceneRoleplay(definition),
+        desktopRuntime: false,
+        characters: [character],
+        endings: [],
+        locale: 'en',
+        sceneName: 'Station',
+      },
+    })
+    await flushPromises()
+
+    await wrapper.get('textarea').setValue('Use a second receiver to verify the coordinates.')
+    await wrapper.get('.send-button').trigger('click')
+    await flushPromises()
+
+    expect(mocks.generateAuthoringApiChat).toHaveBeenCalledTimes(2)
+    expect(mocks.generateWebGpuChat).not.toHaveBeenCalled()
+    expect(wrapper.get('[data-testid="scene-roleplay"]').attributes('data-evaluation-source'))
+      .toBe('authoring_api_model')
   })
 })
