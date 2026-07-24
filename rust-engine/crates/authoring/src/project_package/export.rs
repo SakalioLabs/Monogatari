@@ -27,6 +27,7 @@ pub const PROJECT_EXPORT_DIRECTORIES: &[(&str, &str)] = &[
     ("characters", "characters"),
     ("dialogue", "dialogue"),
     ("roleplays", "roleplays"),
+    ("campaigns", "campaigns"),
     ("knowledge", "knowledge"),
     ("scenes", "scenes"),
     ("assets", "assets"),

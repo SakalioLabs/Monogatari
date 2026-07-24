@@ -3,6 +3,7 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
+use llm_game::campaign::RoleplayCampaignDefinition;
 use llm_game::characters::CharacterManager;
 use llm_game::dialogue::DialogueManager;
 use llm_game::knowledge::KnowledgeBase;
@@ -10,6 +11,9 @@ use llm_game::scene_roleplay::SceneRoleplayDefinition;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use crate::campaign_validation::{
+    load_project_roleplay_campaigns, validate_roleplay_campaign_references,
+};
 use crate::dialogue_validation::{normalize_dialogue_script, validate_dialogue_script};
 use crate::json_catalog::{
     inspect_project_json_catalog, JsonAcceptanceLevel, JsonCatalogIssueSeverity,
@@ -55,6 +59,7 @@ pub struct CoreRuntimeValidationReport {
     pub workflow_count: usize,
     pub quality_suite_count: usize,
     pub roleplay_count: usize,
+    pub campaign_count: usize,
     pub error_count: usize,
     pub issues: Vec<CoreRuntimeValidationIssue>,
 }
@@ -66,6 +71,7 @@ pub struct CoreRuntimeProject {
     pub knowledge: KnowledgeBase,
     pub story_events: StoryEventCatalog,
     pub scene_roleplays: Vec<SceneRoleplayDefinition>,
+    pub roleplay_campaigns: Vec<RoleplayCampaignDefinition>,
 }
 
 /// Validate document safety, real core runtime loading, and core cross-catalog references.
@@ -140,6 +146,8 @@ pub async fn load_core_runtime_project(project_root: &Path) -> Result<CoreRuntim
         &knowledge_ids,
         &mut issues,
     );
+    let roleplay_campaigns =
+        validate_roleplay_campaigns(project_root, &scene_roleplay_content.loaded, &mut issues);
     let story_events = validate_story_events(
         project_root,
         &character_ids,
@@ -192,6 +200,7 @@ pub async fn load_core_runtime_project(project_root: &Path) -> Result<CoreRuntim
         workflow_count: workflow_content.count,
         quality_suite_count,
         roleplay_count: scene_roleplay_content.definitions.len(),
+        campaign_count: roleplay_campaigns.len(),
         error_count: issues.len(),
         issues,
     };
@@ -202,6 +211,7 @@ pub async fn load_core_runtime_project(project_root: &Path) -> Result<CoreRuntim
         knowledge,
         story_events,
         scene_roleplays: scene_roleplay_content.definitions,
+        roleplay_campaigns,
     })
 }
 
@@ -293,6 +303,29 @@ struct ValidatedStoryContent {
 struct ValidatedSceneRoleplayContent {
     definitions: Vec<SceneRoleplayDefinition>,
     paths: HashSet<String>,
+    loaded: Vec<crate::scene_roleplay_validation::LoadedSceneRoleplay>,
+}
+
+fn validate_roleplay_campaigns(
+    project_root: &Path,
+    roleplays: &[crate::scene_roleplay_validation::LoadedSceneRoleplay],
+    issues: &mut Vec<CoreRuntimeValidationIssue>,
+) -> Vec<RoleplayCampaignDefinition> {
+    let loaded = match load_project_roleplay_campaigns(project_root) {
+        Ok(loaded) => loaded,
+        Err(error) => {
+            issues.push(issue("campaign_catalog_invalid", Some("campaigns"), error));
+            return Vec::new();
+        }
+    };
+    for reference in validate_roleplay_campaign_references(&loaded, roleplays) {
+        issues.push(issue(
+            reference.code,
+            Some(reference.path),
+            reference.message,
+        ));
+    }
+    loaded.into_iter().map(|loaded| loaded.definition).collect()
 }
 
 fn validate_scene_roleplays(
@@ -309,6 +342,7 @@ fn validate_scene_roleplays(
             return ValidatedSceneRoleplayContent {
                 definitions: Vec::new(),
                 paths: HashSet::new(),
+                loaded: Vec::new(),
             };
         }
     };
@@ -335,9 +369,14 @@ fn validate_scene_roleplays(
                 .to_string()
         })
         .collect();
+    let definitions = loaded
+        .iter()
+        .map(|loaded| loaded.definition.clone())
+        .collect();
     ValidatedSceneRoleplayContent {
-        definitions: loaded.into_iter().map(|loaded| loaded.definition).collect(),
+        definitions,
         paths,
+        loaded,
     }
 }
 

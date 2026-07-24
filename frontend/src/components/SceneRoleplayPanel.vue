@@ -102,14 +102,19 @@
       <span>{{ t('roleplay.ending', 'Ending') }}</span>
       <strong>{{ activeEnding?.title || snapshot.session.ending_id }}</strong>
       <p v-if="activeEnding?.description">{{ activeEnding.description }}</p>
-      <button class="restart-button" @click="emit('restart')"><RotateCcw :size="16" />{{ t('roleplay.restart', 'Restart') }}</button>
+      <div class="ending-actions">
+        <button v-if="canContinue" class="continue-button" data-testid="roleplay-continue" @click="emit('continue')">
+          {{ t('roleplay.continue', 'Continue') }}<ArrowRight :size="16" />
+        </button>
+        <button class="restart-button" @click="emit('restart')"><RotateCcw :size="16" />{{ t('roleplay.restart', 'Restart') }}</button>
+      </div>
     </footer>
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { LoaderCircle, RotateCcw, Send } from '@lucide/vue'
+import { ArrowRight, LoaderCircle, RotateCcw, Send } from '@lucide/vue'
 
 import { useI18n } from '../lib/i18n'
 import { loadKnowledgeAuthoringCatalog, type KnowledgeEntryDefinition } from '../lib/knowledgeContent'
@@ -145,6 +150,7 @@ const props = defineProps<{
   endings: StoryEndingInfo[]
   locale: string
   sceneName: string | null
+  canContinue?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -152,6 +158,7 @@ const emit = defineEmits<{
   nodeChange: [node: SceneRoleplayNode]
   emotion: [emotion: string]
   ending: [endingId: string]
+  continue: []
   restart: []
 }>()
 
@@ -553,6 +560,8 @@ function scrollToBottom() {
 .roleplay-ending span { color: #9da39f; font-size: 10px; font-weight: 800; text-transform: uppercase; }
 .roleplay-ending strong { color: #f0d78e; font-size: 18px; }
 .roleplay-ending p { margin: 0; color: #c9ccc7; font-size: 12px; line-height: 1.55; }
+.ending-actions { display: flex; justify-content: center; gap: 8px; }
+.continue-button { display: inline-flex; align-items: center; gap: 7px; min-height: 34px; border: 1px solid #d8b969; background: #d8b969; color: #151716; font: inherit; font-weight: 800; cursor: pointer; }
 .restart-button { justify-self: start; display: inline-flex; gap: 7px; align-items: center; margin-top: 6px; border: 1px solid #6f8580; border-radius: 5px; background: transparent; color: #f4f3ed; cursor: pointer; padding: 7px 10px; }
 
 @keyframes spin { to { transform: rotate(360deg); } }

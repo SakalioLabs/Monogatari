@@ -1,0 +1,26 @@
+{
+  "schema": "monogatari-roleplay-campaign/v1",
+  "id": "blue_frame_campaign",
+  "title": "Tideglass: Blue Frame",
+  "start_entry_id": "blue_frame",
+  "entries": [
+    {
+      "id": "blue_frame",
+      "roleplay_id": "blue_frame_roleplay",
+      "routes": [
+        {
+          "ending_id": "blue_frame_truth_ending",
+          "target": { "kind": "complete" }
+        },
+        {
+          "ending_id": "blue_frame_beacon_ending",
+          "target": { "kind": "complete" }
+        },
+        {
+          "ending_id": "blue_frame_silence_ending",
+          "target": { "kind": "complete" }
+        }
+      ]
+    }
+  ]
+}

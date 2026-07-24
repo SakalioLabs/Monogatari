@@ -9,11 +9,15 @@ use tracing::{debug, info, warn};
 use uuid::Uuid;
 
 use llm_core::{EngineError, Result};
-use llm_game::{characters::CharacterMemory, dialogue::DialogueRuntimeState};
+use llm_game::{
+    campaign::RoleplayCampaignSession, characters::CharacterMemory, dialogue::DialogueRuntimeState,
+    scene_roleplay::SceneRoleplaySession,
+};
 
 pub const GAME_SAVE_SCHEMA_V1: &str = "monogatari-game-save/v1";
 pub const GAME_SAVE_SCHEMA_V2: &str = "monogatari-game-save/v2";
 pub const GAME_SAVE_SCHEMA_V3: &str = "monogatari-game-save/v3";
+pub const GAME_SAVE_SCHEMA_V4: &str = "monogatari-game-save/v4";
 pub const MAX_GAME_SAVE_BYTES: u64 = 32 * 1024 * 1024;
 
 fn default_game_save_schema() -> String {
@@ -69,6 +73,12 @@ pub struct GameSave {
     /// Versioned Tauri story progress payload for v3 snapshots.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub story_progress: Option<serde_json::Value>,
+    /// Active real-time roleplay sessions for v4 snapshots.
+    #[serde(default)]
+    pub scene_roleplay_sessions: HashMap<String, SceneRoleplaySession>,
+    /// Continuous roleplay campaign sessions for v4 snapshots.
+    #[serde(default)]
+    pub roleplay_campaign_sessions: HashMap<String, RoleplayCampaignSession>,
 }
 
 /// Saved state for a single character.
@@ -88,7 +98,7 @@ impl GameSave {
     pub fn validate_schema(&self) -> Result<()> {
         if matches!(
             self.schema.as_str(),
-            GAME_SAVE_SCHEMA_V1 | GAME_SAVE_SCHEMA_V2 | GAME_SAVE_SCHEMA_V3
+            GAME_SAVE_SCHEMA_V1 | GAME_SAVE_SCHEMA_V2 | GAME_SAVE_SCHEMA_V3 | GAME_SAVE_SCHEMA_V4
         ) {
             Ok(())
         } else {
@@ -252,7 +262,7 @@ impl SaveManager {
         }
 
         Ok(GameSave {
-            schema: GAME_SAVE_SCHEMA_V3.to_string(),
+            schema: GAME_SAVE_SCHEMA_V4.to_string(),
             engine_version: env!("CARGO_PKG_VERSION").to_string(),
             save_id,
             save_name: name.into(),
@@ -267,6 +277,8 @@ impl SaveManager {
             flags: HashMap::new(),
             chat_sessions: HashMap::new(),
             story_progress: None,
+            scene_roleplay_sessions: HashMap::new(),
+            roleplay_campaign_sessions: HashMap::new(),
         })
     }
 
@@ -385,7 +397,7 @@ mod tests {
 
     fn test_save(save_id: &str) -> GameSave {
         GameSave {
-            schema: GAME_SAVE_SCHEMA_V3.to_string(),
+            schema: GAME_SAVE_SCHEMA_V4.to_string(),
             engine_version: env!("CARGO_PKG_VERSION").to_string(),
             save_id: save_id.to_string(),
             save_name: "Test Save".to_string(),
@@ -400,11 +412,13 @@ mod tests {
             flags: HashMap::new(),
             chat_sessions: HashMap::new(),
             story_progress: None,
+            scene_roleplay_sessions: HashMap::new(),
+            roleplay_campaign_sessions: HashMap::new(),
         }
     }
 
     #[test]
-    fn new_and_stable_slot_saves_use_v3_schema() {
+    fn new_and_stable_slot_saves_use_v4_schema() {
         let generated = SaveManager::create_save("Manual", None, None, None);
         let quick = SaveManager::create_save_with_id(
             "quick_save_0",
@@ -415,8 +429,8 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(generated.schema, GAME_SAVE_SCHEMA_V3);
-        assert_eq!(quick.schema, GAME_SAVE_SCHEMA_V3);
+        assert_eq!(generated.schema, GAME_SAVE_SCHEMA_V4);
+        assert_eq!(quick.schema, GAME_SAVE_SCHEMA_V4);
         assert_eq!(quick.save_id, "quick_save_0");
         assert!(
             SaveManager::create_save_with_id("../settings", "Unsafe", None, None, None).is_err()

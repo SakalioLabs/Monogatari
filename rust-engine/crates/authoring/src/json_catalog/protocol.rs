@@ -12,6 +12,7 @@ pub const JSON_CATALOG_ERROR_SCHEMA_V1: &str = "monogatari-json-catalog-error/v1
 pub const MAX_AUTHORABLE_JSON_BYTES: u64 = 4 * 1024 * 1024;
 pub const AUTHORABLE_JSON_CATALOG_ROOTS: &[&str] = &[
     "assets",
+    "campaigns",
     "characters",
     "dialogue",
     "endings",
@@ -30,6 +31,7 @@ pub const AUTHORABLE_JSON_CATALOG_ROOTS: &[&str] = &[
 #[serde(rename_all = "snake_case")]
 pub enum AuthorableJsonCatalog {
     Assets,
+    Campaigns,
     Characters,
     Dialogue,
     Endings,
@@ -43,8 +45,9 @@ pub enum AuthorableJsonCatalog {
 }
 
 impl AuthorableJsonCatalog {
-    pub const ALL: [Self; 11] = [
+    pub const ALL: [Self; 12] = [
         Self::Assets,
+        Self::Campaigns,
         Self::Characters,
         Self::Dialogue,
         Self::Endings,
@@ -60,6 +63,7 @@ impl AuthorableJsonCatalog {
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Assets => "assets",
+            Self::Campaigns => "campaigns",
             Self::Characters => "characters",
             Self::Dialogue => "dialogue",
             Self::Endings => "endings",

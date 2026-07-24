@@ -9,8 +9,8 @@ use tokio::sync::{Mutex, RwLock};
 use llm_ai::InferencePipeline;
 use llm_assets::{AssetManager, SaveManager};
 use llm_game::{
-    characters::CharacterManager, dialogue::DialogueManager, knowledge::KnowledgeBase,
-    scene_roleplay::SceneRoleplaySession, scenes::SceneManager,
+    campaign::RoleplayCampaignSession, characters::CharacterManager, dialogue::DialogueManager,
+    knowledge::KnowledgeBase, scene_roleplay::SceneRoleplaySession, scenes::SceneManager,
 };
 use llm_scripting::ScriptEngine;
 
@@ -42,6 +42,8 @@ pub struct AppState {
     pub chat_sessions: Arc<RwLock<HashMap<String, ChatSession>>>,
     /// Score-driven scene roleplay sessions keyed by roleplay id.
     pub scene_roleplay_sessions: Arc<RwLock<HashMap<String, SceneRoleplaySession>>>,
+    /// Multi-roleplay campaign sessions keyed by campaign id.
+    pub roleplay_campaign_sessions: Arc<RwLock<HashMap<String, RoleplayCampaignSession>>>,
 }
 
 impl AppState {
@@ -67,6 +69,7 @@ impl AppState {
             scene_history: Arc::new(RwLock::new(Vec::new())),
             chat_sessions: Arc::new(RwLock::new(HashMap::new())),
             scene_roleplay_sessions: Arc::new(RwLock::new(HashMap::new())),
+            roleplay_campaign_sessions: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -86,6 +89,7 @@ impl AppState {
     pub async fn reset_project_runtime_state(&self) {
         self.chat_sessions.write().await.clear();
         self.scene_roleplay_sessions.write().await.clear();
+        self.roleplay_campaign_sessions.write().await.clear();
         *self.active_scene_id.write().await = None;
         self.scene_history.write().await.clear();
         *self.scene_manager.write().await = SceneManager::new();

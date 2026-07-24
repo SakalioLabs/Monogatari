@@ -19,6 +19,8 @@ const projectDialoguesDir = path.join(projectDataDir, 'dialogue')
 const distProjectDialoguesDir = path.join(distDir, 'dialogue')
 const projectRoleplaysDir = path.join(projectDataDir, 'roleplays')
 const distProjectRoleplaysDir = path.join(distDir, 'roleplays')
+const projectCampaignsDir = path.join(projectDataDir, 'campaigns')
+const distProjectCampaignsDir = path.join(distDir, 'campaigns')
 const projectEndingsDir = path.join(projectDataDir, 'endings')
 const distProjectEndingsDir = path.join(distDir, 'endings')
 const projectCharactersDir = path.join(projectDataDir, 'characters')
@@ -126,6 +128,7 @@ function staticHostingRedirects() {
     '/scenes/* /scenes/:splat 200',
     '/dialogue/* /dialogue/:splat 200',
     '/roleplays/* /roleplays/:splat 200',
+    '/campaigns/* /campaigns/:splat 200',
     '/endings/* /endings/:splat 200',
     '/characters/* /characters/:splat 200',
     '/knowledge/* /knowledge/:splat 200',
@@ -154,6 +157,7 @@ function azureStaticWebAppConfig() {
         '/scenes/*',
         '/dialogue/*',
         '/roleplays/*',
+        '/campaigns/*',
         '/endings/*',
         '/characters/*',
         '/knowledge/*',
@@ -226,6 +230,9 @@ async function projectAssetManifest() {
   const roleplayFiles = (await walkFiles(projectRoleplaysDir, []))
     .map((file) => `/roleplays/${path.relative(projectRoleplaysDir, file).replaceAll(path.sep, '/')}`)
     .sort()
+  const campaignFiles = (await walkFiles(projectCampaignsDir, []))
+    .map((file) => `/campaigns/${path.relative(projectCampaignsDir, file).replaceAll(path.sep, '/')}`)
+    .sort()
   const endingFiles = (await walkFiles(projectEndingsDir, []))
     .map((file) => `/endings/${path.relative(projectEndingsDir, file).replaceAll(path.sep, '/')}`)
     .sort()
@@ -244,6 +251,7 @@ async function projectAssetManifest() {
     scene_files: sceneFiles,
     dialogue_files: dialogueFiles,
     roleplay_files: roleplayFiles,
+    campaign_files: campaignFiles,
     ending_files: endingFiles,
     character_files: characterFiles,
     knowledge_files: knowledgeFiles,
@@ -284,6 +292,7 @@ await cp(projectEventsDir, distProjectEventsDir, { recursive: true, force: true 
 await cp(projectScenesDir, distProjectScenesDir, { recursive: true, force: true })
 await cp(projectDialoguesDir, distProjectDialoguesDir, { recursive: true, force: true })
 await cp(projectRoleplaysDir, distProjectRoleplaysDir, { recursive: true, force: true })
+await cp(projectCampaignsDir, distProjectCampaignsDir, { recursive: true, force: true })
 await cp(projectEndingsDir, distProjectEndingsDir, { recursive: true, force: true })
 await cp(projectCharactersDir, distProjectCharactersDir, { recursive: true, force: true })
 await cp(projectKnowledgeDir, distProjectKnowledgeDir, { recursive: true, force: true })

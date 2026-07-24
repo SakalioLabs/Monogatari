@@ -321,7 +321,7 @@ pub async fn send_scene_roleplay_turn(
     })
 }
 
-async fn load_initial_relationships(
+pub(crate) async fn load_initial_relationships(
     state: &AppState,
     definition: &SceneRoleplayDefinition,
 ) -> Result<BTreeMap<String, f32>, String> {
@@ -349,7 +349,9 @@ async fn load_initial_relationships(
     Ok(relationships)
 }
 
-async fn load_definitions(state: &AppState) -> Result<Vec<SceneRoleplayDefinition>, String> {
+pub(crate) async fn load_definitions(
+    state: &AppState,
+) -> Result<Vec<SceneRoleplayDefinition>, String> {
     let root = state.current_project_data_root().await;
     load_project_scene_roleplays(&root)
         .map(|loaded| loaded.into_iter().map(|loaded| loaded.definition).collect())
@@ -370,7 +372,7 @@ async fn load_definition(
         .ok_or_else(|| format!("Scene roleplay `{roleplay_id}` was not found."))
 }
 
-fn snapshot(
+pub(crate) fn snapshot(
     definition: SceneRoleplayDefinition,
     session: SceneRoleplaySession,
 ) -> Result<SceneRoleplaySnapshot, String> {

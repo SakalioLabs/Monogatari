@@ -1,0 +1,80 @@
+{
+  "schema": "monogatari-roleplay-campaign/v1",
+  "id": "konosuba_volume1",
+  "title": "为美好的世界献上祝福！第一卷",
+  "start_entry_id": "chapter1",
+  "entries": [
+    {
+      "id": "chapter1",
+      "roleplay_id": "chapter1_roleplay",
+      "routes": [
+        {
+          "ending_id": "chapter1_party_formed",
+          "target": { "kind": "entry", "entry_id": "chapter2" }
+        },
+        {
+          "ending_id": "chapter1_practical_compromise",
+          "target": { "kind": "entry", "entry_id": "chapter2" }
+        },
+        {
+          "ending_id": "chapter1_chaotic_failure",
+          "target": { "kind": "entry", "entry_id": "chapter2" }
+        }
+      ]
+    },
+    {
+      "id": "chapter2",
+      "roleplay_id": "chapter2_roleplay",
+      "routes": [
+        {
+          "ending_id": "chapter2_trust_in_practice",
+          "target": { "kind": "entry", "entry_id": "chapter3" }
+        },
+        {
+          "ending_id": "chapter2_working_truce",
+          "target": { "kind": "entry", "entry_id": "chapter3" }
+        },
+        {
+          "ending_id": "chapter2_fractured_boundaries",
+          "target": { "kind": "entry", "entry_id": "chapter3" }
+        }
+      ]
+    },
+    {
+      "id": "chapter3",
+      "roleplay_id": "chapter3_roleplay",
+      "routes": [
+        {
+          "ending_id": "chapter3_choice_not_prize",
+          "target": { "kind": "entry", "entry_id": "chapter4" }
+        },
+        {
+          "ending_id": "chapter3_fragile_truce",
+          "target": { "kind": "entry", "entry_id": "chapter4" }
+        },
+        {
+          "ending_id": "chapter3_broken_agency",
+          "target": { "kind": "entry", "entry_id": "chapter4" }
+        }
+      ]
+    },
+    {
+      "id": "chapter4",
+      "roleplay_id": "chapter4_roleplay",
+      "routes": [
+        {
+          "ending_id": "chapter4_axel_defended",
+          "target": { "kind": "complete" }
+        },
+        {
+          "ending_id": "chapter4_costly_victory",
+          "target": { "kind": "complete" }
+        },
+        {
+          "ending_id": "chapter4_gate_overrun",
+          "target": { "kind": "complete" }
+        }
+      ]
+    }
+  ]
+}

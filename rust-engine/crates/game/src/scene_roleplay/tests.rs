@@ -570,3 +570,42 @@ fn evaluator_json_is_strict_and_definition_rejects_unreachable_nodes() {
         .to_string()
         .contains("unreachable"));
 }
+
+#[test]
+fn persisted_session_must_match_replayed_transcript() {
+    let definition = definition();
+    let mut session = SceneRoleplaySession::start(&definition).unwrap();
+    session
+        .apply_turn(
+            &definition,
+            SceneRoleplayTurnInput {
+                player_message: "Please provide coordinates.".to_string(),
+                npc_response: "The coordinates are available.".to_string(),
+                evaluation: RoleplayTurnEvaluation {
+                    score_deltas: vec![RoleplayScoreDelta {
+                        dimension_id: "trust".to_string(),
+                        delta: 0.5,
+                        reason: "careful".to_string(),
+                    }],
+                    evidence: vec![RoleplayEvidenceObservation {
+                        evidence_id: "asked_for_coordinates".to_string(),
+                        player_quote: "coordinates".to_string(),
+                    }],
+                    relationship_delta: 0.0,
+                    relationship_reason: String::new(),
+                    npc_emotion: None,
+                    summary: "The player requested evidence.".to_string(),
+                },
+            },
+        )
+        .unwrap();
+    session.validate_snapshot(&definition).unwrap();
+
+    let mut forged = session.clone();
+    forged.scores.insert("trust".to_string(), 3.0);
+    assert!(forged.validate_snapshot(&definition).is_err());
+
+    let mut jumped = session;
+    jumped.current_node_id = "review".to_string();
+    assert!(jumped.validate_snapshot(&definition).is_err());
+}

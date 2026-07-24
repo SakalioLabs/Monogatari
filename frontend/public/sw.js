@@ -75,7 +75,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (path.startsWith("/events/") || path.startsWith("/scenes/") || path.startsWith("/dialogue/") || path.startsWith("/roleplays/") || path.startsWith("/endings/") || path.startsWith("/characters/") || path.startsWith("/knowledge/")) {
+  if (path.startsWith("/events/") || path.startsWith("/scenes/") || path.startsWith("/dialogue/") || path.startsWith("/roleplays/") || path.startsWith("/campaigns/") || path.startsWith("/endings/") || path.startsWith("/characters/") || path.startsWith("/knowledge/")) {
     event.respondWith(staleWhileRevalidate(request));
     return;
   }
@@ -99,11 +99,12 @@ async function cacheProjectAssets() {
       ...(Array.isArray(manifest.scene_files) ? manifest.scene_files : []),
       ...(Array.isArray(manifest.dialogue_files) ? manifest.dialogue_files : []),
       ...(Array.isArray(manifest.roleplay_files) ? manifest.roleplay_files : []),
+      ...(Array.isArray(manifest.campaign_files) ? manifest.campaign_files : []),
       ...(Array.isArray(manifest.ending_files) ? manifest.ending_files : []),
       ...(Array.isArray(manifest.character_files) ? manifest.character_files : []),
       ...(Array.isArray(manifest.knowledge_files) ? manifest.knowledge_files : [])
     ]
-      .filter((assetPath) => typeof assetPath === "string" && ["/assets/", "/events/", "/scenes/", "/dialogue/", "/roleplays/", "/endings/", "/characters/", "/knowledge/"].some((prefix) => assetPath.startsWith(prefix)))
+      .filter((assetPath) => typeof assetPath === "string" && ["/assets/", "/events/", "/scenes/", "/dialogue/", "/roleplays/", "/campaigns/", "/endings/", "/characters/", "/knowledge/"].some((prefix) => assetPath.startsWith(prefix)))
       .map(withBase);
     if (projectAssets.length === 0) return;
 

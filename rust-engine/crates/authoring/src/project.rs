@@ -128,6 +128,12 @@ const PROJECT_PATHS: &[PathDefinition] = &[
         fallback: "roleplays",
         required: false,
     },
+    PathDefinition {
+        key: "campaigns",
+        label: "Roleplay Campaigns",
+        fallback: "campaigns",
+        required: false,
+    },
 ];
 
 /// Inspect project settings and return stable readiness diagnostics.
@@ -360,7 +366,8 @@ pub fn default_project_config() -> Value {
             "endings": "endings",
             "saves": "saves",
             "quality_suites": "quality_suites",
-            "roleplays": "roleplays"
+            "roleplays": "roleplays",
+            "campaigns": "campaigns"
         }
     })
 }

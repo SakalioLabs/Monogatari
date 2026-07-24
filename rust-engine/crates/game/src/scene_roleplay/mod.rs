@@ -17,7 +17,7 @@ pub use security::{
 };
 
 pub const SCENE_ROLEPLAY_SCHEMA_V1: &str = "monogatari-scene-roleplay/v1";
-const MAX_STORED_TURNS: usize = 128;
+const MAX_STORED_TURNS: usize = 512;
 const MAX_PLAYER_MESSAGE_CHARS: usize = 4_000;
 const MAX_NPC_RESPONSE_CHARS: usize = 8_000;
 const MAX_AUDIT_TEXT_CHARS: usize = 1_000;
@@ -273,6 +273,8 @@ pub struct SceneRoleplaySession {
     pub total_turns: u32,
     pub scores: BTreeMap<String, f32>,
     #[serde(default)]
+    pub initial_relationships: BTreeMap<String, f32>,
+    #[serde(default)]
     pub relationships: BTreeMap<String, f32>,
     #[serde(default)]
     pub observed_evidence: Vec<String>,
@@ -464,7 +466,7 @@ impl SceneRoleplaySession {
             .iter()
             .map(|dimension| (dimension.id.clone(), dimension.initial))
             .collect();
-        let relationships = definition
+        let relationships: BTreeMap<String, f32> = definition
             .nodes
             .iter()
             .filter(|node| node.relationship_rule.is_some())
@@ -483,6 +485,7 @@ impl SceneRoleplaySession {
             node_turns: 0,
             total_turns: 0,
             scores,
+            initial_relationships: relationships.clone(),
             relationships,
             observed_evidence: Vec::new(),
             status: SceneRoleplayStatus::Active,
@@ -490,6 +493,62 @@ impl SceneRoleplaySession {
             transcript: Vec::new(),
             archived_turn_count: 0,
         })
+    }
+
+    /// Replays a persisted session against its authored definition so callers do not
+    /// have to trust claimed scores, evidence, cursor state, or ending ids.
+    pub fn validate_snapshot(
+        &self,
+        definition: &SceneRoleplayDefinition,
+    ) -> Result<(), SceneRoleplayError> {
+        definition.validate()?;
+        ensure_session(self, definition)?;
+        if self.archived_turn_count != 0 {
+            return Err(SceneRoleplayError::SessionMismatch(
+                "archived transcripts cannot be verified".to_string(),
+            ));
+        }
+        if self.transcript.len() > MAX_STORED_TURNS
+            || self.total_turns != self.transcript.len() as u32
+        {
+            return Err(SceneRoleplayError::SessionMismatch(
+                "turn counts do not match the transcript".to_string(),
+            ));
+        }
+
+        let mut replayed =
+            Self::start_with_relationships(definition, self.initial_relationships.clone())?;
+        for (index, record) in self.transcript.iter().enumerate() {
+            if record.turn != index as u32 + 1 || record.node_id != replayed.current_node_id {
+                return Err(SceneRoleplayError::SessionMismatch(
+                    "transcript order does not match the roleplay graph".to_string(),
+                ));
+            }
+            replayed.apply_turn(
+                definition,
+                SceneRoleplayTurnInput {
+                    player_message: record.player_message.clone(),
+                    npc_response: record.npc_response.clone(),
+                    evaluation: record.evaluation.clone(),
+                },
+            )?;
+        }
+
+        if replayed.current_node_id != self.current_node_id
+            || replayed.node_turns != self.node_turns
+            || replayed.total_turns != self.total_turns
+            || replayed.scores != self.scores
+            || replayed.initial_relationships != self.initial_relationships
+            || replayed.relationships != self.relationships
+            || replayed.observed_evidence != self.observed_evidence
+            || replayed.status != self.status
+            || replayed.ending_id != self.ending_id
+        {
+            return Err(SceneRoleplayError::SessionMismatch(
+                "session state does not match its replayed transcript".to_string(),
+            ));
+        }
+        Ok(())
     }
 
     pub fn apply_turn(

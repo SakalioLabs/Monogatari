@@ -2,6 +2,7 @@
 
 pub mod ai;
 pub mod analytics;
+pub mod campaign;
 pub mod character_manager;
 pub mod characters;
 pub mod chat;

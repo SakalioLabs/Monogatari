@@ -156,6 +156,7 @@ export interface SceneRoleplaySession {
   node_turns: number
   total_turns: number
   scores: Record<string, number>
+  initial_relationships?: Record<string, number>
   relationships?: Record<string, number>
   observed_evidence: string[]
   status: 'active' | 'completed'
@@ -234,6 +235,9 @@ export function startBrowserSceneRoleplay(
     node_turns: 0,
     total_turns: 0,
     scores: Object.fromEntries(definition.score_dimensions.map(dimension => [dimension.id, dimension.initial])),
+    initial_relationships: Object.fromEntries(definition.nodes
+      .filter(node => node.relationship_rule)
+      .map(node => [node.character_id, clamp(initialRelationships[node.character_id] || 0, -1, 1)])),
     relationships: Object.fromEntries(definition.nodes
       .filter(node => node.relationship_rule)
       .map(node => [node.character_id, clamp(initialRelationships[node.character_id] || 0, -1, 1)])),
@@ -733,6 +737,7 @@ function cloneSession(session: SceneRoleplaySession): SceneRoleplaySession {
   return {
     ...session,
     scores: { ...session.scores },
+    initial_relationships: { ...(session.initial_relationships || {}) },
     relationships: { ...(session.relationships || {}) },
     observed_evidence: [...session.observed_evidence],
     transcript: session.transcript.map(turn => ({

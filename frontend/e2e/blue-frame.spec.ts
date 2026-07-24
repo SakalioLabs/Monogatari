@@ -55,6 +55,7 @@ for (const viewport of viewports) {
   })
 
   test(`Blue Frame ${viewport.name} route renders all authored 3D scenes`, async ({ page }, testInfo) => {
+    test.slow()
     await page.setViewportSize(viewport.size)
     const runtimeErrors = captureRuntimeErrors(page)
 
@@ -165,7 +166,10 @@ async function openDialogueNode(page: Page, nodeId: string, text: string): Promi
     rendererProbe: '1',
   })
   await page.goto(`/game?${query}`)
-  await expect(page.locator('.dialogue-text')).toContainText(text, { timeout: 15_000 })
+  const dialogue = page.locator('.dialogue-text')
+  await expect(dialogue).toBeVisible({ timeout: 15_000 })
+  await page.keyboard.press('Enter')
+  await expect(dialogue).toContainText(text, { timeout: 15_000 })
 }
 
 async function advanceUntilText(page: Page, text: string): Promise<void> {

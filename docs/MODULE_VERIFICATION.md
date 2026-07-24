@@ -17,6 +17,26 @@ Chapter 4 extends it through the broken ceasefire, an undead lure and cleared
 Explosion window, observable boss-mechanic inference, injury-aware frontline
 rotation, coordinated purification, revival, and accountable reconstruction.
 
+The four chapters are now connected by `volume1_campaign`. Browser Playtest
+starts Chapter 1 as a free-input NPC scene, shows `Chapter 1 / 4`, and advances
+only after the active Roleplay reaches a routed ending. Relationship values
+carry into the next chapter while chapter-local scores and evidence remain in
+the completion record.
+
+- Campaign/game core: 47/47 library tests pass, including transcript replay,
+  forged score/cursor rejection, route-history replay, explicit completion,
+  cycle rejection, and relationship-only chapter handoff.
+- Frontend: 201/201 unit tests and the production Web/PWA build pass. The
+  generated project manifest inventories Campaign files and the service worker
+  caches them.
+- Browser Campaign Playtest: desktop `1440x900` and mobile `390x844` render
+  without horizontal overflow. A real free-input turn produces an in-character
+  Aqua response; unavailable external inference uses the authored in-scene
+  recovery label without exposing `OrtRun` or `std::bad_alloc`.
+- Save v4: assets tests 12/12 and focused Tauri save tests 7/7 pass. Active
+  Campaign/Roleplay sessions round-trip, while forged roleplay state is
+  rejected before existing runtime state changes.
+
 - MCP `validate_project`: valid, 63 JSON documents, 7 characters, 14 Knowledge
   entries, 15 scenes, 4 Scene Roleplays, 12 endings, and 4 Quality Suites.
 - MCP `validate_delivery`: valid, 44/44 declared renderer assets exist, with no

@@ -15,7 +15,10 @@
       <button class="control-btn icon-control" :title="t('game.home', 'Home')" :aria-label="t('game.home', 'Home')" @click="$router.push('/')"><House :size="16" /></button>
       <div class="scene-meta">
         <span class="eyebrow">{{ t('game.story-mode', 'Playtest') }}</span>
-        <strong>{{ activeRoleplaySnapshot?.definition.title || dialogueState?.speaker || currentCharacter?.name || activeScene?.name || t('game.demo-scene', 'Demo Scene') }}</strong>
+        <strong>{{ activeCampaignSnapshot?.definition.title || activeRoleplaySnapshot?.definition.title || dialogueState?.speaker || currentCharacter?.name || activeScene?.name || t('game.demo-scene', 'Demo Scene') }}</strong>
+        <small v-if="activeCampaignSnapshot?.session.current_entry_id">
+          {{ campaignProgressLabel }}
+        </small>
       </div>
       <div class="top-actions">
         <button class="control-btn library-trigger" :title="t('game.story-library', 'Story library')" :aria-label="t('game.story-library', 'Story library')" @click="openStoryLibrary"><LibraryBig :size="16" /></button>
@@ -76,10 +79,12 @@
           :endings="storyEndings"
           :locale="locale"
           :scene-name="activeScene?.name || null"
+          :can-continue="Boolean(activeCampaignSnapshot)"
           @update="updateActiveRoleplay"
           @node-change="syncRoleplayNode"
           @emotion="applyNpcEmotion"
           @ending="completeRoleplayEnding"
+          @continue="continueActiveCampaign"
           @restart="restartActiveRoleplay"
         />
         <div v-else-if="dialogueState?.is_active" class="dialogue-box">
@@ -139,12 +144,28 @@
             <button class="close-btn" :title="t('common.close', 'Close')" :aria-label="t('common.close', 'Close')" @click="showStoryLibrary = false"><X :size="16" /></button>
           </div>
           <div class="library-tabs" role="tablist" :aria-label="t('game.story-content-type', 'Story content type')">
+            <button :class="{ active: libraryTab === 'campaigns' }" @click="libraryTab = 'campaigns'">{{ t('game.campaigns', 'Campaigns') }}</button>
             <button :class="{ active: libraryTab === 'roleplays' }" @click="libraryTab = 'roleplays'">{{ t('game.roleplays', 'Roleplays') }}</button>
             <button :class="{ active: libraryTab === 'scenes' }" @click="libraryTab = 'scenes'">{{ t('game.scenes', 'Scenes') }}</button>
             <button :class="{ active: libraryTab === 'dialogues' }" @click="libraryTab = 'dialogues'">{{ t('game.dialogues', 'Dialogues') }}</button>
             <button :class="{ active: libraryTab === 'endings' }" @click="libraryTab = 'endings'">{{ t('game.endings', 'Endings') }}</button>
           </div>
           <div class="story-content-list">
+            <button
+              v-for="campaign in libraryTab === 'campaigns' ? storyCampaigns : []"
+              :key="campaign.id"
+              class="story-content-row"
+              :class="{ active: activeCampaignSnapshot?.definition.id === campaign.id }"
+              :disabled="isLoading"
+              @click="startRoleplayCampaign(campaign)"
+            >
+              <span class="content-mark" aria-hidden="true"><PanelsTopLeft :size="15" /></span>
+              <span class="content-copy">
+                <strong>{{ campaign.title }}</strong>
+                <small>{{ t('game.chapter-count', '{count} chapters', { count: campaign.entries.length }) }}</small>
+              </span>
+              <span class="content-status">{{ t('game.play', 'Play') }}</span>
+            </button>
             <button
               v-for="roleplay in libraryTab === 'roleplays' ? storyRoleplays : []"
               :key="roleplay.id"
@@ -352,6 +373,13 @@ import {
   type SceneRoleplayNode,
   type SceneRoleplaySnapshot,
 } from '../lib/sceneRoleplay'
+import {
+  advanceBrowserRoleplayCampaign,
+  loadRoleplayCampaigns,
+  startBrowserRoleplayCampaign,
+  type RoleplayCampaignDefinition,
+  type RoleplayCampaignRuntimeSnapshot,
+} from '../lib/roleplayCampaign'
 
 const { locale, t } = useI18n()
 const route = useRoute()
@@ -420,8 +448,10 @@ const storyScenes = ref<StorySceneInfo[]>([])
 const storyDialogues = ref<StoryDialogueInfo[]>([])
 const storyEndings = ref<StoryEndingInfo[]>([])
 const storyRoleplays = ref<SceneRoleplayDefinition[]>([])
+const storyCampaigns = ref<RoleplayCampaignDefinition[]>([])
 const activeRoleplaySnapshot = ref<SceneRoleplaySnapshot | null>(null)
-const libraryTab = ref<'roleplays' | 'scenes' | 'dialogues' | 'endings'>('roleplays')
+const activeCampaignSnapshot = ref<RoleplayCampaignRuntimeSnapshot | null>(null)
+const libraryTab = ref<'campaigns' | 'roleplays' | 'scenes' | 'dialogues' | 'endings'>('campaigns')
 const storyAccess = ref<StoryContentAccessSnapshot>({
   schema: 'monogatari-story-content-access/v1',
   catalog_fingerprint: '',
@@ -514,9 +544,19 @@ const currentSpritePath = computed(() =>
   currentRendererAsset.value.mode === 'sprite' ? currentRendererAsset.value.resolvedUrl : null
 )
 const activeLibraryItems = computed(() => {
+  if (libraryTab.value === 'campaigns') return storyCampaigns.value.length
   if (libraryTab.value === 'roleplays') return storyRoleplays.value.length
   if (libraryTab.value === 'scenes') return storyScenes.value.length
   return libraryTab.value === 'dialogues' ? storyDialogues.value.length : storyEndings.value.length
+})
+const campaignProgressLabel = computed(() => {
+  const campaign = activeCampaignSnapshot.value
+  if (!campaign?.session.current_entry_id) return ''
+  const index = campaign.definition.entries.findIndex(entry => entry.id === campaign.session.current_entry_id)
+  return t('game.campaign-progress', 'Chapter {current} / {total}', {
+    current: Math.max(1, index + 1),
+    total: campaign.definition.entries.length,
+  })
 })
 
 function formatTime(timestamp: string): string {
@@ -623,7 +663,8 @@ function unlockHint(access: StoryContentAccessEntry): string {
     : t('game.requires-events', 'Requires {events}', { events: access.unlock_event_ids.join(', ') })
 }
 
-function libraryTypeLabel(type: 'roleplays' | 'scenes' | 'dialogues' | 'endings'): string {
+function libraryTypeLabel(type: 'campaigns' | 'roleplays' | 'scenes' | 'dialogues' | 'endings'): string {
+  if (type === 'campaigns') return t('game.campaigns', 'campaigns')
   if (type === 'roleplays') return t('game.roleplays', 'roleplays')
   if (type === 'scenes') return t('game.scenes', 'scenes')
   if (type === 'dialogues') return t('game.dialogues', 'dialogues')
@@ -641,6 +682,7 @@ async function loadStoryLibrary() {
       loadStoryContentAccess(),
     ])
     storyRoleplays.value = roleplays
+    storyCampaigns.value = await loadRoleplayCampaigns(roleplays)
     storyScenes.value = scenes
     storyDialogues.value = dialogues
     storyEndings.value = endings
@@ -662,6 +704,7 @@ async function enterScene(scene: StorySceneInfo) {
   errorMessage.value = null
   try {
     activeRoleplaySnapshot.value = null
+    activeCampaignSnapshot.value = null
     activeScene.value = await invokeCommand<SceneInfo>('enter_story_scene', { sceneId: scene.id }, scene)
     localStorage.setItem(activeSceneStorageKey, JSON.stringify(activeScene.value))
     showStoryLibrary.value = false
@@ -677,6 +720,7 @@ async function startSceneRoleplay(definition: SceneRoleplayDefinition) {
   isLoading.value = true
   errorMessage.value = null
   try {
+    activeCampaignSnapshot.value = null
     const snapshot = desktopRuntime
       ? await invokeCommand<SceneRoleplaySnapshot>('start_scene_roleplay', { roleplayId: definition.id })
       : startBrowserSceneRoleplay(
@@ -701,6 +745,36 @@ async function startSceneRoleplay(definition: SceneRoleplayDefinition) {
   }
 }
 
+async function startRoleplayCampaign(definition: RoleplayCampaignDefinition) {
+  isLoading.value = true
+  errorMessage.value = null
+  try {
+    const snapshot = desktopRuntime
+      ? await invokeCommand<RoleplayCampaignRuntimeSnapshot>('start_roleplay_campaign', { campaignId: definition.id })
+      : startBrowserRoleplayCampaign(
+          definition,
+          storyRoleplays.value,
+          Object.fromEntries(characters.value.map(character => [
+            character.id,
+            character.relationships?.player || 0,
+          ])),
+        )
+    activeCampaignSnapshot.value = snapshot
+    activeRoleplaySnapshot.value = snapshot.active_roleplay
+    dialogueState.value = null
+    webActiveDialogue.value = null
+    webDialogueRuntime.value = null
+    displayedText.value = ''
+    textPlayback.cancel()
+    if (snapshot.active_roleplay) await syncRoleplayNode(snapshot.active_roleplay.current_node)
+    showStoryLibrary.value = false
+  } catch (error) {
+    errorMessage.value = t('game.unable-start-dialogue', 'Unable to start dialogue: {error}', { error: String(error) })
+  } finally {
+    isLoading.value = false
+  }
+}
+
 function updateActiveRoleplay(snapshot: SceneRoleplaySnapshot) {
   if (!desktopRuntime) {
     const relationships = snapshot.session.relationships || {}
@@ -716,6 +790,12 @@ function updateActiveRoleplay(snapshot: SceneRoleplaySnapshot) {
     })
   }
   activeRoleplaySnapshot.value = snapshot
+  if (activeCampaignSnapshot.value) {
+    activeCampaignSnapshot.value = {
+      ...activeCampaignSnapshot.value,
+      active_roleplay: snapshot,
+    }
+  }
 }
 
 async function syncRoleplayNode(node: SceneRoleplayNode) {
@@ -739,7 +819,39 @@ function completeRoleplayEnding(endingId: string) {
     : t('game.ending-started', 'Ending: {title}', { title: endingId })
 }
 
+async function continueActiveCampaign() {
+  const campaign = activeCampaignSnapshot.value
+  const completedRoleplay = activeRoleplaySnapshot.value?.session
+  if (!campaign || !completedRoleplay || completedRoleplay.status !== 'completed') return
+  isLoading.value = true
+  errorMessage.value = null
+  try {
+    const snapshot = desktopRuntime
+      ? await invokeCommand<RoleplayCampaignRuntimeSnapshot>('advance_roleplay_campaign', {
+          campaignId: campaign.definition.id,
+        })
+      : advanceBrowserRoleplayCampaign(campaign, storyRoleplays.value, completedRoleplay)
+    activeCampaignSnapshot.value = snapshot
+    activeRoleplaySnapshot.value = snapshot.active_roleplay
+    if (snapshot.active_roleplay) {
+      await syncRoleplayNode(snapshot.active_roleplay.current_node)
+    } else {
+      toastMessage.value = t('game.campaign-complete', 'Campaign complete: {title}', {
+        title: snapshot.definition.title,
+      })
+    }
+  } catch (error) {
+    errorMessage.value = String(error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
 async function restartActiveRoleplay() {
+  if (activeCampaignSnapshot.value) {
+    await startRoleplayCampaign(activeCampaignSnapshot.value.definition)
+    return
+  }
   const definition = activeRoleplaySnapshot.value?.definition
   if (definition) await startSceneRoleplay(definition)
 }
@@ -749,6 +861,7 @@ async function startStoryDialogue(dialogue: StoryDialogueInfo, previewNodeId?: s
   errorMessage.value = null
   try {
     activeRoleplaySnapshot.value = null
+    activeCampaignSnapshot.value = null
     if (hasTauriRuntime()) {
       dialogueState.value = await invokeCommand<DialogueState>('start_dialogue', { dialogueId: dialogue.id })
     } else {
@@ -988,17 +1101,23 @@ onMounted(async () => {
   await loadStoryLibrary()
   await syncDialogueScene(dialogueState.value)
   const previewSceneId = route.query.previewScene
+  const previewCampaignId = route.query.previewCampaign
   const previewRoleplayId = route.query.previewRoleplay
   const previewDialogueId = route.query.previewDialogue
   const previewNodeId = route.query.previewNode
   const previewEndingId = route.query.previewEnding
   if (!desktopRuntime && route.query.authoring === '1') {
+    const campaign = typeof previewCampaignId === 'string'
+      ? storyCampaigns.value.find(item => item.id === previewCampaignId)
+      : undefined
     const roleplay = typeof previewRoleplayId === 'string'
       ? storyRoleplays.value.find(item => item.id === previewRoleplayId)
       : typeof previewDialogueId === 'string' && typeof previewNodeId !== 'string'
         ? storyRoleplays.value.find(item => roleplayStem(item.id) === roleplayStem(previewDialogueId))
         : undefined
-    if (roleplay) {
+    if (campaign) {
+      await startRoleplayCampaign(campaign)
+    } else if (roleplay) {
       await startSceneRoleplay(roleplay)
     } else if (typeof previewSceneId === 'string') {
       const scene = storyScenes.value.find((item) => item.id === previewSceneId)
