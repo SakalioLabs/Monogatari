@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   detectWebGpuSupport: vi.fn(),
+  generateAuthoringApiChat: vi.fn(),
   generateWebGpuChat: vi.fn(),
   invokeCommand: vi.fn(),
+  loadAuthoringApiRuntime: vi.fn(),
   loadKnowledgeAuthoringCatalog: vi.fn(),
 }))
 
@@ -15,6 +17,11 @@ vi.mock('../../lib/tauri', () => ({
 vi.mock('../../lib/webgpuInference', () => ({
   detectWebGpuSupport: mocks.detectWebGpuSupport,
   generateWebGpuChat: mocks.generateWebGpuChat,
+}))
+
+vi.mock('../../lib/authoringInference', () => ({
+  generateAuthoringApiChat: mocks.generateAuthoringApiChat,
+  loadAuthoringApiRuntime: mocks.loadAuthoringApiRuntime,
 }))
 
 vi.mock('../../lib/knowledgeContent', () => ({
@@ -54,7 +61,9 @@ const knowledgeCatalog = {
 describe('NpcConversationPanel', () => {
   beforeEach(() => {
     mocks.detectWebGpuSupport.mockReturnValue({ available: true, reason: 'available' })
+    mocks.loadAuthoringApiRuntime.mockResolvedValue(null)
     mocks.loadKnowledgeAuthoringCatalog.mockResolvedValue(knowledgeCatalog)
+    mocks.generateAuthoringApiChat.mockReset()
     mocks.generateWebGpuChat.mockReset()
     mocks.invokeCommand.mockReset()
   })
@@ -122,6 +131,32 @@ describe('NpcConversationPanel', () => {
     await wrapper.get('[data-testid="npc-clear"]').trigger('click')
     await flushPromises()
     expect(mocks.invokeCommand).toHaveBeenCalledWith('clear_chat_history', { characterId: 'echo_nine' })
+  })
+
+  it('prefers the configured API runtime over the local browser model', async () => {
+    mocks.loadAuthoringApiRuntime.mockResolvedValue({
+      schema: 'monogatari-authoring-inference-runtime/v1',
+      provider: 'api',
+      endpoint: '/authoring-api/chat/completions',
+      model: 'story-model',
+      max_new_tokens: 96,
+      temperature: 0.7,
+      top_p: 0.9,
+    })
+    mocks.generateAuthoringApiChat.mockResolvedValue('The signal is still here.')
+    const wrapper = mount(NpcConversationPanel, {
+      props: { open: true, character, desktopRuntime: false, locale: 'en' },
+    })
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="npc-panel"]').attributes('data-npc-runtime')).toBe('api')
+    await wrapper.get('[data-testid="npc-input"]').setValue('Can you hear me?')
+    await wrapper.get('[data-testid="npc-send"]').trigger('click')
+    await flushPromises()
+
+    expect(mocks.generateAuthoringApiChat).toHaveBeenCalledOnce()
+    expect(mocks.generateWebGpuChat).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('The signal is still here.')
   })
 
   it('disables the composer when WebGPU is unavailable', async () => {

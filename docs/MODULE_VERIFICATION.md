@@ -6,6 +6,19 @@ The `projects/konosuba` Chapter 1 project is a real-content acceptance fixture,
 not part of the built-in sample catalogs. Its first verified milestone covers
 the afterlife selection through formation of the initial four-person party.
 
+Chapter 2 extends the same independent fixture through consent-bounded skill
+training, relationship repair, party coordination, and the cemetery encounter.
+
+- MCP `validate_project`: valid, 32 JSON documents, 5 characters, 8 Knowledge
+  entries, 8 scenes, 2 Scene Roleplays, 6 endings, and 2 Quality Suites.
+- MCP `validate_delivery`: valid, 29/29 declared renderer assets exist, with no
+  placeholder characters or delivery issues.
+- Chapter 2 MCP `run_quality_suite`: 2/2 scenarios pass. The high-trust route
+  executes 12 turns, visits 6/6 nodes, records all 6 required evidence IDs,
+  reaches `chapter2_trust_in_practice`, and ends with Chris `0.28`, Darkness
+  `0.18`, and Wiz `0.36`. The attack scenario guards one forged relationship,
+  score, evidence, and ending request and leaves all story state at zero.
+
 - MCP `validate_project`: valid, 18 JSON documents, 3 characters, 7 Knowledge
   entries, 5 scenes, 1 Scene Roleplay, 3 events, 3 endings, and 1 Quality Suite.
 - MCP `validate_delivery`: valid, 19/19 declared renderer assets exist, no

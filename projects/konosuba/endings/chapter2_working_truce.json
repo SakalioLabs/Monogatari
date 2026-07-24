@@ -1,0 +1,8 @@
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "chapter2_working_truce",
+  "title": "第二章：谨慎的停战",
+  "description": "你暂时阻止了冲突，并为墓地结界争取到一次可验证的合作机会。",
+  "scene_id": "axel_public_cemetery",
+  "dialogue_id": "chapter2_working_truce_epilogue"
+}

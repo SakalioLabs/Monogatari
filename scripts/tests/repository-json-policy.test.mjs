@@ -30,7 +30,7 @@ test('checked-in repository JSON returns passing evidence', async () => {
 
   const files = await createRepositoryFileWalker()(repositoryRoot)
   const projectPrefix = path.join(repositoryRoot, 'projects', 'konosuba') + path.sep
-  assert.equal(files.filter(file => file.startsWith(projectPrefix) && file.endsWith('.json')).length, 19)
+  assert.equal(files.filter(file => file.startsWith(projectPrefix) && file.endsWith('.json')).length, 33)
 })
 
 test('Repository JSON evidence isolates parse and read failures', async () => {

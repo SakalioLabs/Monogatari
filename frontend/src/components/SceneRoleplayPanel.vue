@@ -6,6 +6,7 @@
     :data-evaluation-source="lastEvaluationSource || undefined"
     :data-evaluation-deltas="lastEvaluationDeltaCount"
     :data-evaluation-evidence="lastEvaluationEvidenceCount"
+    :data-current-relationship="currentRelationship.toFixed(3)"
   >
     <header class="roleplay-head">
       <div class="node-copy">
@@ -27,6 +28,15 @@
         </div>
         <div class="score-track" aria-hidden="true">
           <span :style="{ width: `${scorePercent(dimension)}%` }"></span>
+        </div>
+      </div>
+      <div v-if="currentNode.relationship_rule" class="score-item relationship-item">
+        <div class="score-label">
+          <span>{{ currentCharacter?.name || currentNode.character_id }} · {{ t('roleplay.affinity', 'Affinity') }}</span>
+          <strong>{{ formatScore(currentRelationship) }}</strong>
+        </div>
+        <div class="score-track relationship-track" aria-hidden="true">
+          <span :style="{ width: `${relationshipPercent}%` }"></span>
         </div>
       </div>
     </div>
@@ -55,6 +65,14 @@
     </div>
 
     <footer v-if="snapshot.session.status === 'active'" class="roleplay-composer">
+      <div
+        v-if="lastEvaluationSource.startsWith('authored_fallback')"
+        class="roleplay-degraded"
+        data-testid="roleplay-degraded"
+        role="status"
+      >
+        {{ t('roleplay.evaluation-fallback', 'This turn used an authored recovery because live model generation was unavailable.') }}
+      </div>
       <div v-if="errorMessage" class="roleplay-error">{{ errorMessage }}</div>
       <div class="composer-row">
         <textarea
@@ -154,6 +172,8 @@ let generationSequence = 0
 
 const currentNode = computed(() => props.snapshot.current_node)
 const currentCharacter = computed(() => props.characters.find(character => character.id === currentNode.value.character_id) || null)
+const currentRelationship = computed(() => props.snapshot.session.relationships?.[currentNode.value.character_id] || 0)
+const relationshipPercent = computed(() => (currentRelationship.value + 1) * 50)
 const currentSceneName = computed(() => props.sceneName || currentNode.value.scene_id)
 const activeEnding = computed(() => props.endings.find(ending => ending.id === props.snapshot.session.ending_id) || null)
 const canSend = computed(() => Boolean(inputText.value.trim() && !isGenerating.value && currentCharacter.value))
@@ -435,7 +455,7 @@ function scrollToBottom() {
 
 .score-strip {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 12px;
   padding: 10px 18px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -448,6 +468,7 @@ function scrollToBottom() {
 .score-label strong { color: #f4f3ed; font-variant-numeric: tabular-nums; }
 .score-track { height: 3px; overflow: hidden; background: #414b4c; }
 .score-track span { display: block; height: 100%; background: #d8b969; transition: width 220ms ease; }
+.relationship-track span { background: #78b7a4; }
 
 .roleplay-transcript {
   min-height: 0;
@@ -455,6 +476,15 @@ function scrollToBottom() {
   overscroll-behavior: contain;
   padding: 16px 18px 24px;
   scrollbar-color: #414b4c transparent;
+}
+
+.roleplay-degraded {
+  padding: 7px 10px;
+  border-left: 2px solid #d8b969;
+  background: rgba(216, 185, 105, 0.1);
+  color: #d9d5c5;
+  font-size: 11px;
+  line-height: 1.4;
 }
 
 .narration-entry {

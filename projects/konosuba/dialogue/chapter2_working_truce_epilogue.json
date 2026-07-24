@@ -1,0 +1,20 @@
+{
+  "id": "chapter2_working_truce_epilogue",
+  "title": "谨慎的停战",
+  "description": "第二章中间结局短章。",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "text": "净化的光没有落下，维兹也没有继续靠近。你们约定在公会见证下修复结界，再决定彼此是否可信。",
+      "next_node_id": "final",
+      "choices": []
+    },
+    "final": {
+      "text": "停战不是信任，但它给了事实一次说话的机会。",
+      "is_ending": true,
+      "ending_type": "chapter2_working_truce",
+      "choices": []
+    }
+  },
+  "variables": {}
+}

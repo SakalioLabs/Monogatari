@@ -31,6 +31,7 @@ fn node() -> SceneRoleplayNode {
         min_turns: 1,
         max_turns: 2,
         score_rules: Vec::new(),
+        relationship_rule: None,
         evidence_rules: Vec::new(),
         transitions: Vec::new(),
         timeout_target: RoleplayTarget::Ending {

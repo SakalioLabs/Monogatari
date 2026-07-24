@@ -1,0 +1,24 @@
+{
+  "id": "chapter2_skills_and_undead",
+  "category": "story",
+  "title": "第二章技能、季节任务与墓地事实",
+  "content": "冒险者可通过观察示范并消耗技能点学习职业技能。窃取只能转移目标携带的一件物品，结果受幸运影响，训练仍需尊重目标边界。阿克塞尔每年会组织捕获飞行卷心菜的季节任务，完整捕获比破坏更有价值。公共墓地的结界长期缺乏维护，滞留灵魂因此需要被安抚；现场行为与灵魂反应比种族标签更能判断威胁。",
+  "tags": [
+    "chapter_02",
+    "skills",
+    "boundaries",
+    "cabbage",
+    "cemetery",
+    "undead"
+  ],
+  "importance": 1,
+  "metadata": {
+    "volume": "1",
+    "chapter": "2",
+    "adaptation": "interactive_summary"
+  },
+  "related_entries": [
+    "chapter1_axel_basics",
+    "chapter1_party_boundaries"
+  ]
+}

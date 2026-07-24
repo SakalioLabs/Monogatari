@@ -679,7 +679,13 @@ async function startSceneRoleplay(definition: SceneRoleplayDefinition) {
   try {
     const snapshot = desktopRuntime
       ? await invokeCommand<SceneRoleplaySnapshot>('start_scene_roleplay', { roleplayId: definition.id })
-      : startBrowserSceneRoleplay(definition)
+      : startBrowserSceneRoleplay(
+          definition,
+          Object.fromEntries(characters.value.map(character => [
+            character.id,
+            character.relationships?.player || 0,
+          ])),
+        )
     activeRoleplaySnapshot.value = snapshot
     dialogueState.value = null
     webActiveDialogue.value = null
@@ -696,6 +702,19 @@ async function startSceneRoleplay(definition: SceneRoleplayDefinition) {
 }
 
 function updateActiveRoleplay(snapshot: SceneRoleplaySnapshot) {
+  if (!desktopRuntime) {
+    const relationships = snapshot.session.relationships || {}
+    characters.value = characters.value.map((character) => {
+      if (!Object.hasOwn(relationships, character.id)) return character
+      return {
+        ...character,
+        relationships: {
+          ...(character.relationships || {}),
+          player: relationships[character.id],
+        },
+      }
+    })
+  }
   activeRoleplaySnapshot.value = snapshot
 }
 

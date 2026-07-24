@@ -1,0 +1,8 @@
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "chapter2_trust_in_practice",
+  "title": "第二章：把信任变成行动",
+  "description": "你用道歉修复边界，用分工保护队友，也用现场证据避免了一场错误净化。",
+  "scene_id": "axel_public_cemetery",
+  "dialogue_id": "chapter2_trust_in_practice_epilogue"
+}

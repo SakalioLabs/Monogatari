@@ -41,7 +41,7 @@ Script execution is treated as bounded authoring logic. Tauri script commands va
 
 ## Data Flow
 
-1. **Player starts a scene roleplay** whose node fixes the scene, main/supporting characters, situation, goals, Knowledge refs, score rules, evidence rules, output/grounding guards, fallback signals, turn bounds, and possible transitions.
+1. **Player starts a scene roleplay** whose node fixes the scene, main/supporting characters, situation, goals, Knowledge refs, score rules, evidence rules, an optional bounded active-NPC relationship rule, output/grounding guards, fallback signals, turn bounds, and possible transitions.
 2. **Runtime builds a bounded NPC prompt** from that node, the character profile, pinned Knowledge, recent transcript, and a closed list of required scene anchors.
 3. **Target runtime generates only visible NPC text** through WebGPU or a configured desktop provider; the complete buffered response must pass shared meta-leak, grounding, and length guards. Unsafe output or exhausted NPC inference becomes a rotating authored in-world recovery. Generated prose has no authority to mutate scores or choose a route.
 4. **A separate evaluator receives the completed clean exchange** and returns strict structured score deltas, evidence observations, emotion, and summary. Invalid JSON, evaluator inference failure, or recovered clean output uses node-authored deterministic fallback signals; detected attacks bypass both paths and always receive zero score/evidence.

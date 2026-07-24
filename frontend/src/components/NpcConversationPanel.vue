@@ -115,6 +115,10 @@ import {
   X,
 } from '@lucide/vue'
 import { resolveAssetUrl } from '../lib/assets'
+import {
+  generateAuthoringApiChat,
+  loadAuthoringApiRuntime,
+} from '../lib/authoringInference'
 import { useI18n } from '../lib/i18n'
 import { loadKnowledgeAuthoringCatalog, type KnowledgeEntryDefinition } from '../lib/knowledgeContent'
 import {
@@ -163,16 +167,21 @@ let activeKnowledge: KnowledgeEntryDefinition[] = []
 let loadSequence = 0
 let messageSequence = 0
 let generationSequence = 0
+const authoringApiAvailable = ref(false)
 
-const runtimeKind = computed(() => props.desktopRuntime ? 'tauri' : 'webgpu')
+const runtimeKind = computed(() => props.desktopRuntime
+  ? 'tauri'
+  : authoringApiAvailable.value ? 'api' : 'webgpu')
 const runtimeLabel = computed(() => props.desktopRuntime
   ? t('chat.desktop-runtime', 'Windows DirectML')
-  : t('chat.webgpu-runtime', 'WebGPU runtime'))
+  : authoringApiAvailable.value
+    ? t('settings.api-provider-short', 'Development API')
+    : t('chat.webgpu-runtime', 'WebGPU runtime'))
 const avatarUrl = computed(() => resolveAssetUrl(
   props.character?.portrait_path || props.character?.sprite_path || null,
 ))
 const runtimeIssue = computed(() => {
-  if (props.desktopRuntime) return null
+  if (props.desktopRuntime || authoringApiAvailable.value) return null
   const support = detectWebGpuSupport()
   if (support.available) return null
   if (support.reason === 'insecure-context') {
@@ -212,7 +221,12 @@ async function prepareConversation() {
       messages.value = normalizeNpcHistory(history)
       knowledgeEvidenceCount.value = uniqueKnowledgeRefs(character).length
     } else {
-      activeKnowledge = await browserKnowledgeEntries()
+      const [knowledge, apiRuntime] = await Promise.all([
+        browserKnowledgeEntries(),
+        loadAuthoringApiRuntime(),
+      ])
+      activeKnowledge = knowledge
+      authoringApiAvailable.value = Boolean(apiRuntime)
       if (requestId !== loadSequence) return
       messages.value = [...(browserSessions.get(character.id) || [])]
       knowledgeEvidenceCount.value = countResolvedNpcKnowledge(character, activeKnowledge)
@@ -276,7 +290,10 @@ async function sendMessage() {
       if (reply.storyChanged) emit('storyProgress')
     } else {
       let rawReply = ''
-      const generated = await generateWebGpuChat(
+      const generateChat = authoringApiAvailable.value
+        ? generateAuthoringApiChat
+        : generateWebGpuChat
+      const generated = await generateChat(
         buildWebNpcChatMessages(character, props.locale, messages.value, activeKnowledge),
         {
           maxNewTokens: 96,
@@ -379,6 +396,9 @@ function signedNumber(value: number): string {
 
 function withErrorDetail(summary: string, error: unknown): string {
   const detail = error instanceof Error ? error.message : String(error)
+  if (/OrtRun|bad_alloc|out of memory|memory was exhausted/i.test(detail)) {
+    return `${summary} ${t('npc.memory-error', 'The local model ran out of memory. Switch to the configured API runtime or use a smaller local model.')}`
+  }
   return detail && detail !== '[object Object]' ? `${summary} ${detail}` : summary
 }
 </script>

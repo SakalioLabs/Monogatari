@@ -22,6 +22,7 @@ interface AuthoringApiResponse {
 }
 
 let runtimePromise: Promise<AuthoringApiRuntime | null> | null = null
+const AUTHORING_API_TIMEOUT_MS = 45_000
 
 export async function loadAuthoringApiRuntime(): Promise<AuthoringApiRuntime | null> {
   if (runtimePromise) return runtimePromise
@@ -37,18 +38,31 @@ export async function generateAuthoringApiChat(
   if (!runtime) throw new Error('The authoring API runtime is unavailable.')
   if (!messages.length) throw new Error('API generation requires at least one chat message.')
 
-  const response = await fetch(runtime.endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: runtime.model,
-      messages,
-      max_tokens: positiveInteger(options.maxNewTokens, runtime.max_new_tokens, 2_048),
-      temperature: finiteNumber(options.temperature, runtime.temperature, 0, 2),
-      top_p: finiteNumber(options.topP, runtime.top_p, 0.01, 1),
-      stream: false,
-    }),
-  })
+  const controller = new AbortController()
+  const timeout = globalThis.setTimeout(() => controller.abort(), AUTHORING_API_TIMEOUT_MS)
+  let response: Response
+  try {
+    response = await fetch(runtime.endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: runtime.model,
+        messages,
+        max_tokens: positiveInteger(options.maxNewTokens, runtime.max_new_tokens, 2_048),
+        temperature: finiteNumber(options.temperature, runtime.temperature, 0, 2),
+        top_p: finiteNumber(options.topP, runtime.top_p, 0.01, 1),
+        stream: false,
+      }),
+    })
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error('The authoring API timed out before producing a reply.')
+    }
+    throw error
+  } finally {
+    globalThis.clearTimeout(timeout)
+  }
   const document = await response.json().catch(() => ({})) as AuthoringApiResponse
   if (!response.ok) {
     throw new Error(document.error?.message || `Authoring API returned HTTP ${response.status}.`)

@@ -42,3 +42,4 @@ tests/**/obj/
 
 # Temp build scripts
 _*.py
+tmp/

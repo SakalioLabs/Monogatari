@@ -1,0 +1,10 @@
+{
+  "id": "axel_public_cemetery",
+  "name": "阿克塞尔公共墓地",
+  "background_path": "assets/backgrounds/axel_public_cemetery.png",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "clear",
+  "time_of_day": "night",
+  "tags": ["chapter_02", "axel", "cemetery", "undead", "judgment"]
+}

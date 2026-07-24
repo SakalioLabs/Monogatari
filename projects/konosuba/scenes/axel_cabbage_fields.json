@@ -1,0 +1,10 @@
+{
+  "id": "axel_cabbage_fields",
+  "name": "阿克塞尔卷心菜田",
+  "background_path": "assets/backgrounds/axel_cabbage_fields.png",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "windy",
+  "time_of_day": "afternoon",
+  "tags": ["chapter_02", "axel", "cabbage", "party_combat"]
+}

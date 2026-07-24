@@ -46,6 +46,7 @@ fn definition() -> SceneRoleplayDefinition {
                 player_goal: "Offer a test.".to_string(),
                 character_goal: "Protect uncertain facts.".to_string(),
                 knowledge_refs: Vec::new(),
+                relationship_rule: None,
                 intrusion_response: None,
                 response_guard: None,
                 fallback_evaluation: None,
@@ -90,6 +91,7 @@ fn definition() -> SceneRoleplayDefinition {
                 player_goal: "Choose a bounded release.".to_string(),
                 character_goal: "Ask about consequences.".to_string(),
                 knowledge_refs: Vec::new(),
+                relationship_rule: None,
                 intrusion_response: None,
                 response_guard: None,
                 fallback_evaluation: None,
@@ -138,6 +140,8 @@ fn turn(delta: f32, evidence: bool) -> SceneRoleplayTurnInput {
                 })
                 .into_iter()
                 .collect(),
+            relationship_delta: 0.0,
+            relationship_reason: String::new(),
             npc_emotion: Some("focused".to_string()),
             summary: "The player proposed verification.".to_string(),
         },

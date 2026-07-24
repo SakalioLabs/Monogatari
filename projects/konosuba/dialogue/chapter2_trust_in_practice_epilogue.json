@@ -1,0 +1,27 @@
+{
+  "id": "chapter2_trust_in_practice_epilogue",
+  "title": "把信任变成行动",
+  "description": "第二章高信任结局短章。",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "text": "墓地重新安静下来。维兹确认结界缺口的位置，阿库娅仍保持戒备，却暂时放下了净化动作。",
+      "next_node_id": "wiz",
+      "choices": []
+    },
+    "wiz": {
+      "speaker_id": "wiz",
+      "emotion": "grateful",
+      "text": "谢谢你愿意先看清这里发生了什么。等结界修好，这些灵魂就不必再被困在夜里。",
+      "next_node_id": "final",
+      "choices": []
+    },
+    "final": {
+      "text": "这一天没有证明你们足够强，只证明力量终于开始服从判断、边界与承诺。",
+      "is_ending": true,
+      "ending_type": "chapter2_trust_in_practice",
+      "choices": []
+    }
+  },
+  "variables": {}
+}

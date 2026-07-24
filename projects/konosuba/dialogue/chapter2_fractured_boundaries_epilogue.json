@@ -1,0 +1,20 @@
+{
+  "id": "chapter2_fractured_boundaries_epilogue",
+  "title": "没有修好的边界",
+  "description": "第二章低信任结局短章。",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "text": "墓地的冲突暂时结束，队伍却没有人愿意把后背交给另一个人。技能、爆裂与净化都很强，没人知道下一次它们会先伤到谁。",
+      "next_node_id": "final",
+      "choices": []
+    },
+    "final": {
+      "text": "你们带着报酬和沉默回到城里。真正需要修复的，已经不只是结界。",
+      "is_ending": true,
+      "ending_type": "chapter2_fractured_boundaries",
+      "choices": []
+    }
+  },
+  "variables": {}
+}

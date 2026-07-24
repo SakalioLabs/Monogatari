@@ -1,0 +1,8 @@
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "chapter2_fractured_boundaries",
+  "title": "第二章：没有修好的边界",
+  "description": "技能与力量都被使用了，但你没有建立足以约束它们的信任。",
+  "scene_id": "axel_public_cemetery",
+  "dialogue_id": "chapter2_fractured_boundaries_epilogue"
+}

@@ -1,6 +1,6 @@
 //! Runtime orchestration for score-driven, free-form scene roleplay.
 
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 
 use llm_authoring::scene_roleplay_validation::load_project_scene_roleplays;
 use llm_game::scene_roleplay::{
@@ -54,7 +54,10 @@ pub async fn start_scene_roleplay(
     roleplay_id: String,
 ) -> Result<SceneRoleplaySnapshot, String> {
     let definition = load_definition(&state, &roleplay_id).await?;
-    let session = SceneRoleplaySession::start(&definition).map_err(|error| error.to_string())?;
+    let initial_relationships = load_initial_relationships(&state, &definition).await?;
+    let session =
+        SceneRoleplaySession::start_with_relationships(&definition, initial_relationships)
+            .map_err(|error| error.to_string())?;
     state
         .scene_roleplay_sessions
         .write()
@@ -267,6 +270,26 @@ pub async fn send_scene_roleplay_turn(
                 outcome.current_node_id
             )
         })?;
+    let relationship_delta = staged_session
+        .relationships
+        .get(&node.character_id)
+        .copied()
+        .unwrap_or_default()
+        - session
+            .relationships
+            .get(&node.character_id)
+            .copied()
+            .unwrap_or_default();
+    let relationship_target = if relationship_delta == 0.0 {
+        None
+    } else {
+        let characters = state.character_manager.read().await;
+        Some(
+            characters
+                .get_character(&node.character_id)
+                .ok_or_else(|| format!("Character `{}` is not loaded.", node.character_id))?,
+        )
+    };
     {
         let mut sessions = state.scene_roleplay_sessions.write().await;
         let current = sessions
@@ -277,6 +300,12 @@ pub async fn send_scene_roleplay_turn(
                 "Scene roleplay changed while this reply was being generated; retry the turn."
                     .to_string(),
             );
+        }
+        if let Some(character) = relationship_target {
+            character
+                .write()
+                .await
+                .update_relationship("player", relationship_delta);
         }
         sessions.insert(definition.id.clone(), staged_session.clone());
     }
@@ -290,6 +319,34 @@ pub async fn send_scene_roleplay_turn(
         outcome,
         current_node,
     })
+}
+
+async fn load_initial_relationships(
+    state: &AppState,
+    definition: &SceneRoleplayDefinition,
+) -> Result<BTreeMap<String, f32>, String> {
+    let relationship_ids = definition
+        .nodes
+        .iter()
+        .filter(|node| node.relationship_rule.is_some())
+        .map(|node| node.character_id.clone())
+        .collect::<HashSet<_>>();
+    let characters = state.character_manager.read().await;
+    let mut relationships = BTreeMap::new();
+    for character_id in relationship_ids {
+        let character = characters
+            .get_character(&character_id)
+            .ok_or_else(|| format!("Character `{character_id}` is not loaded."))?;
+        let relationship = character
+            .read()
+            .await
+            .relationships
+            .get("player")
+            .copied()
+            .unwrap_or_default();
+        relationships.insert(character_id, relationship);
+    }
+    Ok(relationships)
 }
 
 async fn load_definitions(state: &AppState) -> Result<Vec<SceneRoleplayDefinition>, String> {
@@ -423,6 +480,7 @@ mod tests {
                 guidance: "Respect.".to_string(),
                 max_delta_per_turn: 1.0,
             }],
+            relationship_rule: None,
             evidence_rules: vec![],
             transitions: vec![],
             timeout_target: llm_game::scene_roleplay::RoleplayTarget::Ending {

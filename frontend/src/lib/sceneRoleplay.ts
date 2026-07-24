@@ -38,6 +38,11 @@ export interface RoleplayScoreRule {
   max_delta_per_turn: number
 }
 
+export interface RoleplayRelationshipRule {
+  guidance: string
+  max_delta_per_turn: number
+}
+
 export interface RoleplayEvidenceRule {
   id: string
   description: string
@@ -68,6 +73,8 @@ export type RoleplayCondition =
   | { kind: 'score_at_least'; dimension_id: string; value: number }
   | { kind: 'score_at_most'; dimension_id: string; value: number }
   | { kind: 'evidence_observed'; evidence_id: string }
+  | { kind: 'relationship_at_least'; character_id: string; value: number }
+  | { kind: 'relationship_at_most'; character_id: string; value: number }
   | { kind: 'node_turns_at_least'; value: number }
   | { kind: 'total_turns_at_least'; value: number }
 
@@ -94,6 +101,7 @@ export interface SceneRoleplayNode {
   min_turns: number
   max_turns: number
   score_rules: RoleplayScoreRule[]
+  relationship_rule?: RoleplayRelationshipRule | null
   evidence_rules: RoleplayEvidenceRule[]
   transitions: RoleplayTransitionRule[]
   timeout_target: RoleplayTarget
@@ -125,6 +133,8 @@ export interface RoleplayEvidenceObservation {
 export interface RoleplayTurnEvaluation {
   score_deltas: RoleplayScoreDelta[]
   evidence: RoleplayEvidenceObservation[]
+  relationship_delta?: number
+  relationship_reason?: string
   npc_emotion: string | null
   summary: string
 }
@@ -146,6 +156,7 @@ export interface SceneRoleplaySession {
   node_turns: number
   total_turns: number
   scores: Record<string, number>
+  relationships?: Record<string, number>
   observed_evidence: string[]
   status: 'active' | 'completed'
   ending_id: string | null
@@ -166,6 +177,7 @@ export interface SceneRoleplayTurnOutcome {
   node_turns: number
   total_turns: number
   scores: Record<string, number>
+  relationships?: Record<string, number>
   observed_evidence: string[]
   status: 'active' | 'completed'
   transition: { reason: string; target: RoleplayTarget } | null
@@ -213,6 +225,7 @@ export async function loadSceneRoleplays(): Promise<SceneRoleplayDefinition[]> {
 
 export function startBrowserSceneRoleplay(
   definition: SceneRoleplayDefinition,
+  initialRelationships: Record<string, number> = {},
 ): SceneRoleplaySnapshot {
   validateBrowserDefinition(definition)
   const session: SceneRoleplaySession = {
@@ -221,6 +234,9 @@ export function startBrowserSceneRoleplay(
     node_turns: 0,
     total_turns: 0,
     scores: Object.fromEntries(definition.score_dimensions.map(dimension => [dimension.id, dimension.initial])),
+    relationships: Object.fromEntries(definition.nodes
+      .filter(node => node.relationship_rule)
+      .map(node => [node.character_id, clamp(initialRelationships[node.character_id] || 0, -1, 1)])),
     observed_evidence: [],
     status: 'active',
     ending_id: null,
@@ -312,6 +328,7 @@ export function applyBrowserSceneRoleplayTurn(
     node_turns: session.node_turns,
     total_turns: session.total_turns,
     scores: { ...session.scores },
+    relationships: { ...(session.relationships || {}) },
     observed_evidence: [...session.observed_evidence],
     status: session.status,
     transition,
@@ -346,6 +363,7 @@ export function buildBrowserRoleplayNpcMessages(
   const scoreSnapshot = definition.score_dimensions
     .map(dimension => `${dimension.label}=${formatScore(session.scores[dimension.id] || 0)}`)
     .join(', ')
+  const relationship = session.relationships?.[node.character_id] || 0
   const profile = [
     character.description,
     character.background,
@@ -371,7 +389,7 @@ export function buildBrowserRoleplayNpcMessages(
     'Begin from a concrete detail already present in the scene or pinned knowledge. Never invent off-screen actions, new memories, or unsupported facts. Never describe the player request as rules or instructions, and never discuss logic or narrative structure. Never explain abstract capabilities, a core purpose, or model/device limitations; ask one concrete in-world question when uncertain.',
     `Scene situation:\n${node.situation}`,
     `Character goal:\n${node.character_goal}`,
-    `Current state: node=${node.id}; scene turn=${session.node_turns + 1}; scores=${scoreSnapshot}; observed evidence=${session.observed_evidence.join(', ') || 'none'}.`,
+    `Current state: node=${node.id}; scene turn=${session.node_turns + 1}; scores=${scoreSnapshot}; relationship_with_player=${relationship.toFixed(3)}; observed evidence=${session.observed_evidence.join(', ') || 'none'}.`,
     `Character profile:\n${bounded(profile, 1_200)}`,
     knowledge ? `Pinned knowledge:\n${knowledge}` : '',
   ].filter(Boolean).join('\n\n')
@@ -405,6 +423,8 @@ export function buildBrowserRoleplayEvaluatorMessages(
   const evaluatorTemplate = JSON.stringify({
     score_deltas: Object.fromEntries(node.score_rules.map(rule => [rule.dimension_id, 0])),
     evidence: Object.fromEntries(node.evidence_rules.map(rule => [rule.id, null])),
+    relationship_delta: 0,
+    relationship_reason: 'brief relationship audit',
     npc_emotion: 'neutral',
     summary: 'brief audit summary',
   })
@@ -417,6 +437,9 @@ export function buildBrowserRoleplayEvaluatorMessages(
       `Scene: ${node.situation}`,
       `Player goal: ${node.player_goal}`,
       `Score rules:\n${scoreRules}`,
+      `Relationship rule for ${node.character_id}:\n${node.relationship_rule
+        ? `${node.relationship_rule.guidance}; delta in [-${node.relationship_rule.max_delta_per_turn}, ${node.relationship_rule.max_delta_per_turn}]`
+        : 'No relationship change is allowed in this node.'}`,
       `Allowed evidence ids:\n${evidenceRules || 'none'}`,
     ].join('\n\n'),
   }, {
@@ -443,6 +466,8 @@ export function parseBrowserRoleplayEvaluation(value: string): RoleplayTurnEvalu
   return {
     score_deltas: parseBrowserScoreDeltas(parsed.score_deltas ?? parsed.deltas),
     evidence: parseBrowserEvidence(parsed.evidence),
+    relationship_delta: Number(parsed.relationship_delta ?? parsed.affection_delta ?? 0),
+    relationship_reason: optionalString(parsed.relationship_reason ?? parsed.affection_reason),
     npc_emotion: optionalString(parsed.npc_emotion ?? parsed.emotion) || null,
     summary: optionalString(parsed.summary),
   }
@@ -459,6 +484,8 @@ export function safeBrowserRoleplayEvaluation(
       reason: bounded(reason, 500),
     })),
     evidence: [],
+    relationship_delta: 0,
+    relationship_reason: bounded(reason, 1_000),
     npc_emotion: null,
     summary: bounded(reason, 1_000),
   }
@@ -474,6 +501,8 @@ export function containedBrowserRoleplayEvaluation(
       reason: 'story_state_not_changed',
     })),
     evidence: [],
+    relationship_delta: 0,
+    relationship_reason: 'story_state_not_changed',
     npc_emotion: null,
     summary: '',
   }
@@ -499,6 +528,8 @@ export function evaluateBrowserRoleplayFallback(
     evidence: policy.evidence_signals
       .filter(signal => signal.markers.some(marker => normalizedRoleplayContains(playerMessage, marker)))
       .map(signal => ({ evidence_id: signal.evidence_id, player_quote: playerQuote })),
+    relationship_delta: 0,
+    relationship_reason: 'authored_fallback_no_relationship_change',
     npc_emotion: null,
     summary: '',
   }
@@ -577,6 +608,13 @@ function validateBrowserDefinition(definition: SceneRoleplayDefinition): SceneRo
     for (const rule of node.score_rules) {
       if (!dimensions.has(rule.dimension_id)) throw new Error(`Unknown score dimension "${rule.dimension_id}".`)
     }
+    if (node.relationship_rule
+      && (!node.relationship_rule.guidance?.trim()
+        || !Number.isFinite(node.relationship_rule.max_delta_per_turn)
+        || node.relationship_rule.max_delta_per_turn <= 0
+        || node.relationship_rule.max_delta_per_turn > 0.5)) {
+      throw new Error(`Scene roleplay node "${node.id}" has an invalid relationship rule.`)
+    }
     if (node.fallback_evaluation) validateFallbackEvaluation(node)
     for (const transition of node.transitions) validateTarget(definition, transition.target)
     validateTarget(definition, node.timeout_target)
@@ -624,9 +662,29 @@ function validateAndApplyEvaluation(
     return { ...observation, player_quote: bounded(playerQuote, 500) }
   })
   for (const [dimensionId, score] of nextScores) session.scores[dimensionId] = score
+  const requestedRelationshipDelta = Number(input.relationship_delta || 0)
+  if (!Number.isFinite(requestedRelationshipDelta)) throw new Error('Relationship delta is not finite.')
+  let relationshipDelta = 0
+  if (node.relationship_rule) {
+    relationshipDelta = clamp(
+      requestedRelationshipDelta,
+      -node.relationship_rule.max_delta_per_turn,
+      node.relationship_rule.max_delta_per_turn,
+    )
+    session.relationships = session.relationships || {}
+    session.relationships[node.character_id] = clamp(
+      (session.relationships[node.character_id] || 0) + relationshipDelta,
+      -1,
+      1,
+    )
+  } else if (requestedRelationshipDelta !== 0) {
+    throw new Error(`Relationship changes are not allowed in node "${node.id}".`)
+  }
   return {
     score_deltas: scoreDeltas,
     evidence,
+    relationship_delta: relationshipDelta,
+    relationship_reason: bounded(input.relationship_reason || '', 1_000),
     npc_emotion: input.npc_emotion ? bounded(input.npc_emotion, 64) : null,
     summary: bounded(input.summary || '', 1_000),
   }
@@ -649,6 +707,12 @@ function conditionMatches(session: SceneRoleplaySession, condition: RoleplayCond
   if (condition.kind === 'score_at_least') return (session.scores[condition.dimension_id] || 0) >= condition.value
   if (condition.kind === 'score_at_most') return (session.scores[condition.dimension_id] || 0) <= condition.value
   if (condition.kind === 'evidence_observed') return session.observed_evidence.includes(condition.evidence_id)
+  if (condition.kind === 'relationship_at_least') {
+    return (session.relationships?.[condition.character_id] || 0) >= condition.value
+  }
+  if (condition.kind === 'relationship_at_most') {
+    return (session.relationships?.[condition.character_id] || 0) <= condition.value
+  }
   if (condition.kind === 'node_turns_at_least') return session.node_turns >= condition.value
   return session.total_turns >= condition.value
 }
@@ -669,6 +733,7 @@ function cloneSession(session: SceneRoleplaySession): SceneRoleplaySession {
   return {
     ...session,
     scores: { ...session.scores },
+    relationships: { ...(session.relationships || {}) },
     observed_evidence: [...session.observed_evidence],
     transcript: session.transcript.map(turn => ({
       ...turn,

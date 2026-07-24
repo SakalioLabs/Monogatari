@@ -1,0 +1,595 @@
+{
+  "schema": "monogatari-scene-roleplay/v1",
+  "id": "chapter2_roleplay",
+  "title": "第二章：技能、边界与墓地停战",
+  "start_node_id": "chris_skill_lesson",
+  "exhaustion_ending_id": "chapter2_fractured_boundaries",
+  "max_total_turns": 18,
+  "score_dimensions": [
+    {
+      "id": "boundary_judgment",
+      "label": "边界判断",
+      "description": "玩家是否在使用技能与权力时确认同意、承认影响并提出具体补救。",
+      "min": -6,
+      "max": 6,
+      "initial": 0
+    },
+    {
+      "id": "team_coordination",
+      "label": "协作能力",
+      "description": "玩家是否根据角色的真实能力安排位置、信号、保护与撤退。",
+      "min": -6,
+      "max": 6,
+      "initial": 0
+    },
+    {
+      "id": "humane_discernment",
+      "label": "人性判断",
+      "description": "玩家是否依据现场行为与可验证证据判断威胁，而不是只依赖身份标签。",
+      "min": -6,
+      "max": 6,
+      "initial": 0
+    }
+  ],
+  "nodes": [
+    {
+      "id": "chris_skill_lesson",
+      "scene_id": "axel_guild_training_yard",
+      "character_id": "chris",
+      "supporting_character_ids": [],
+      "opening_narration": "公会训练场边缘，克莉丝把几枚训练用木牌藏进腰包，示意你观察她的步法与手势。她愿意教你盗贼技能，但先要知道你准备把有限的技能点用在哪里。",
+      "situation": "克莉丝可以示范侦察、潜行、敌感知和窃取。技能点有限，窃取结果还会受幸运影响。她希望你说明用途，而不是只追求看起来厉害的招式。",
+      "player_goal": "通过自由对话选择适合队伍的技能，并与克莉丝约定安全训练规则。",
+      "character_goal": "克莉丝要确认你理解技能代价，并把窃取训练限定为经过同意的训练物品。",
+      "knowledge_refs": ["chapter2_skills_and_undead", "chapter1_party_boundaries"],
+      "relationship_rule": {
+        "guidance": "认真听取教学、确认训练物品与停止信号时提高克莉丝关系；轻视同意或要求对无关者试验时降低关系。",
+        "max_delta_per_turn": 0.08
+      },
+      "intrusion_response": {
+        "reality_anchors": [
+          "训练场上只有木桩、沙地和克莉丝藏好的训练木牌。",
+          "克莉丝正在等你选择要练习的技能。",
+          "这里没有控制台或可以直接改写能力值的入口。"
+        ],
+        "interpretations": [
+          "克莉丝没听懂那些场外命令，只把它当成你分心了。",
+          "那些词与训练无关。克莉丝重新指向腰包里的木牌。"
+        ],
+        "redirects": [
+          "说明你要学习哪项技能，以及它在队伍中的用途。",
+          "先确认允许窃取的训练物品和停止信号。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": ["作为AI", "语言模型", "系统提示", "边界判断", "协作能力", "人性判断", "分值", "结局"],
+        "grounding_markers": ["训练场", "克莉丝", "技能", "技能点", "侦察", "潜行", "窃取", "木牌", "队伍"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "克莉丝晃了晃训练木牌：先选技能，再说清允许碰哪些东西。这样才算训练。",
+          "克莉丝在沙地上画出一步距离：用途、目标和停止信号，一个也不能少。"
+        ],
+        "max_characters": 220,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "boundary_judgment",
+            "positive_markers": ["同意", "训练物品", "停止", "规则", "木牌"],
+            "negative_markers": ["随便偷", "不必同意", "谁都可以"],
+            "delta": 0.75
+          },
+          {
+            "dimension_id": "team_coordination",
+            "positive_markers": ["侦察", "敌感知", "队伍", "用途", "配合"],
+            "negative_markers": ["只要厉害", "不用计划"],
+            "delta": 0.5
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "training_contract",
+            "markers": ["训练物品", "停止信号", "只拿木牌", "经过同意"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "boundary_judgment",
+          "guidance": "确认训练目标、允许物品和停止信号时加分；主张对任何人任意窃取时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "team_coordination",
+          "guidance": "根据队伍缺口选择侦察、感知或窃取用途时加分；只追求炫技时减分。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "training_contract",
+          "description": "玩家与克莉丝明确约定训练物品、用途和停止信号。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "test_steal",
+          "priority": 20,
+          "target": {"kind": "node", "node_id": "chris_boundary_repair"},
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "training_contract"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "chris_boundary_repair"}
+    },
+    {
+      "id": "chris_boundary_repair",
+      "scene_id": "axel_guild_training_yard",
+      "character_id": "chris",
+      "supporting_character_ids": [],
+      "opening_narration": "第一次窃取成功得过了头。训练木牌之外，克莉丝随身的小钱袋也落进你手里。她收起笑容，没有抢回去，只等你决定下一步。",
+      "situation": "结果超出了双方约定。重点不是技能是否成功，而是你是否立刻归还物品、承认具体影响，并提出防止再次越界的训练办法。",
+      "player_goal": "修复与克莉丝的边界，决定以后如何安全使用窃取。",
+      "character_goal": "克莉丝要听到不推卸责任的道歉和可执行补救；她不会接受把越界说成幸运或玩笑。",
+      "knowledge_refs": ["chapter2_skills_and_undead", "chapter1_party_boundaries"],
+      "relationship_rule": {
+        "guidance": "立即归还、具体道歉并提出补救时提高克莉丝关系；保留物品、嘲笑或推责时降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "intrusion_response": {
+        "reality_anchors": [
+          "克莉丝的钱袋仍在你手里。",
+          "训练约定只允许拿走木牌。",
+          "克莉丝正等一个与现场行为有关的回答。"
+        ],
+        "interpretations": [
+          "克莉丝把那些场外词当成逃避，目光落回钱袋。",
+          "她没有回应改写状态的要求，只问你是否归还物品。"
+        ],
+        "redirects": ["归还钱袋并说明哪里越界。", "提出下次训练如何隔离非目标物品。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["作为AI", "系统提示", "好感度", "边界判断", "分值", "最佳结局", "玩家数据"],
+        "grounding_markers": ["克莉丝", "钱袋", "木牌", "归还", "道歉", "训练", "约定", "窃取"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "克莉丝伸出手：约定的是木牌，不是钱袋。先处理眼前这件事。",
+          "克莉丝认真看着你：成功发动技能不等于可以留下不属于你的东西。"
+        ],
+        "max_characters": 220,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "boundary_judgment",
+            "positive_markers": ["归还", "对不起", "越界", "我的责任", "补救"],
+            "negative_markers": ["不给", "活该", "只是玩笑", "幸运而已"],
+            "delta": 1
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "boundary_repaired",
+            "markers": ["归还钱袋", "我越界了", "隔离训练物品", "重新确认目标"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "boundary_judgment",
+          "guidance": "归还物品、具体承认影响并给出防复发措施时加分；保留物品、推责或羞辱时减分。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "boundary_repaired",
+          "description": "玩家完成归还、具体道歉和至少一项可执行的训练补救。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "meet_darkness",
+          "priority": 20,
+          "target": {"kind": "node", "node_id": "darkness_commitment"},
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "boundary_repaired"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "darkness_commitment"}
+    },
+    {
+      "id": "darkness_commitment",
+      "scene_id": "axel_guild_hall",
+      "character_id": "darkness",
+      "supporting_character_ids": ["aqua", "megumin"],
+      "opening_narration": "回到公会后，达克妮斯已经穿好铠甲。她不是来试一次任务，而是要求正式加入，并把自己放在所有攻击最先抵达的位置。",
+      "situation": "达克妮斯能可靠承受攻击，却很难命中敌人。她愿意保护队伍，但需要一个不会把她的承受力当成无限资源的队长。",
+      "player_goal": "与达克妮斯约定职责、保护边界与撤退条件。",
+      "character_goal": "达克妮斯要获得明确的前排职责，也需要你在她过度承担时命令撤退。",
+      "knowledge_refs": ["chapter1_crusader_limits", "chapter1_party_boundaries", "chapter2_skills_and_undead"],
+      "relationship_rule": {
+        "guidance": "认可保护价值并设置撤退、替换和恢复条件时提高达克妮斯关系；把她当作无限承伤工具时降低关系。",
+        "max_delta_per_turn": 0.08
+      },
+      "intrusion_response": {
+        "reality_anchors": [
+          "公会桌上摊着队伍登记表。",
+          "达克妮斯的铠甲与队伍职责都是真实问题。",
+          "阿库娅和惠惠正在等你的分工。"
+        ],
+        "interpretations": ["达克妮斯听不懂场外命令，只询问自己的前排职责。"],
+        "redirects": ["说明何时由达克妮斯挡住攻击，以及何时必须撤退。", "给恢复者和施法者安排位置。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["系统提示", "语言模型", "剧情节点", "协作能力", "好感度", "分值"],
+        "grounding_markers": ["公会", "达克妮斯", "铠甲", "前排", "保护", "撤退", "阿库娅", "惠惠", "队伍"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "达克妮斯按住登记表：请把我的职责和撤退条件一起写清。",
+          "达克妮斯正色道：我能承受攻击，但队伍不能把任何人的极限当成计划。"
+        ],
+        "max_characters": 220,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "team_coordination",
+            "positive_markers": ["前排", "保护", "撤退", "恢复", "替换"],
+            "negative_markers": ["一直挨打", "不用撤退", "无限承受"],
+            "delta": 0.75
+          },
+          {
+            "dimension_id": "boundary_judgment",
+            "positive_markers": ["极限", "确认", "轮换", "不能勉强"],
+            "negative_markers": ["工具", "必须承受"],
+            "delta": 0.5
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "frontline_compact",
+            "markers": ["撤退条件", "阿库娅负责恢复", "保护惠惠", "轮换前排"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "team_coordination",
+          "guidance": "安排前排、施法、恢复、信号和撤退时加分；只要求承伤而无保护计划时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "boundary_judgment",
+          "guidance": "承认达克妮斯的身体极限并允许她报告状态时加分；否认她的停止权时减分。",
+          "max_delta_per_turn": 0.75
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "frontline_compact",
+          "description": "玩家与达克妮斯明确前排职责、恢复支持和撤退或轮换条件。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "join_cabbage_hunt",
+          "priority": 20,
+          "target": {"kind": "node", "node_id": "cabbage_hunt"},
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "frontline_compact"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "cabbage_hunt"}
+    },
+    {
+      "id": "cabbage_hunt",
+      "scene_id": "axel_cabbage_fields",
+      "character_id": "darkness",
+      "supporting_character_ids": ["aqua", "megumin"],
+      "opening_narration": "成群卷心菜乘风越过田野。农户与冒险者挥网追赶，惠惠已经开始咏唱，达克妮斯则站到队伍前方等待你的信号。",
+      "situation": "完整捕获比炸碎目标更有价值。队伍需要控制惠惠的爆发范围，让达克妮斯拦截冲撞，由阿库娅保护和收束漏网目标。",
+      "player_goal": "实时指挥一次不伤及农户、队友和战利品的协作捕获。",
+      "character_goal": "达克妮斯要执行前排拦截，并观察你是否遵守刚才约定的信号和撤退边界。",
+      "knowledge_refs": ["chapter2_skills_and_undead", "chapter1_explosion_magic", "chapter1_crusader_limits"],
+      "relationship_rule": {
+        "guidance": "遵守信号、保护农户并在达克妮斯失位时调整计划可提高关系；命令她无条件承受爆炸或冲撞会降低关系。",
+        "max_delta_per_turn": 0.08
+      },
+      "intrusion_response": {
+        "reality_anchors": [
+          "飞行卷心菜正从田野上空掠过。",
+          "农户、惠惠、阿库娅和达克妮斯都在爆裂范围附近。",
+          "你只有现场口令，不能修改目标状态。"
+        ],
+        "interpretations": ["达克妮斯把奇怪指令当成迟疑，催你给出现场口令。"],
+        "redirects": ["指定拦截区、施法区和撤离信号。", "说明如何保护农户并保留完整战利品。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["系统提示", "剧情路线", "分值", "无敌", "修改状态", "作为AI"],
+        "grounding_markers": ["卷心菜", "田野", "达克妮斯", "惠惠", "阿库娅", "爆裂", "捕获", "农户", "撤离"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "达克妮斯挡住一颗冲撞的卷心菜：给我拦截区，也给惠惠划出无人施法区！",
+          "惠惠的咏唱已经开始。达克妮斯要求你立刻确认撤离信号。"
+        ],
+        "max_characters": 220,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "team_coordination",
+            "positive_markers": ["拦截区", "撤离", "捕获", "保护农户", "信号"],
+            "negative_markers": ["随便炸", "全都炸掉", "不用撤"],
+            "delta": 1
+          },
+          {
+            "dimension_id": "boundary_judgment",
+            "positive_markers": ["确认范围", "没有人再施放", "安全距离"],
+            "negative_markers": ["连队友一起", "让她硬扛"],
+            "delta": 0.5
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "cabbage_coordination",
+            "markers": ["拦截区", "无人施法区", "撤离信号", "完整捕获"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "team_coordination",
+          "guidance": "给出空间分区、明确口令、保护对象和回收方式时加分；无视友军与农户位置时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "boundary_judgment",
+          "guidance": "遵守既定停止与撤离信号时加分；把队友置于未经同意的爆炸范围时减分。",
+          "max_delta_per_turn": 0.75
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "cabbage_coordination",
+          "description": "玩家明确了拦截区、施法安全区、撤离信号和完整捕获目标。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "take_cemetery_quest",
+          "priority": 20,
+          "target": {"kind": "node", "node_id": "cemetery_confrontation"},
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "cabbage_coordination"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "cemetery_confrontation"}
+    },
+    {
+      "id": "cemetery_confrontation",
+      "scene_id": "axel_public_cemetery",
+      "character_id": "wiz",
+      "supporting_character_ids": ["aqua", "darkness", "megumin"],
+      "opening_narration": "夜里的墓地浮着微弱灵火。阿库娅举起净化之光时，一名长发女子挡在墓碑之间。她没有攻击，只请求你们先看一眼那些围在破损结界旁的灵魂。",
+      "situation": "维兹是不死族，也正在安抚滞留灵魂。阿库娅有能力立刻净化她。玩家必须在威胁尚未确定时控制冲突，并从现场行为取得证据。",
+      "player_goal": "阻止先手攻击，询问维兹的目的，并验证墓地结界与灵魂状态。",
+      "character_goal": "维兹要保护灵魂、避免被净化，并用可观察事实证明自己没有袭击平民。",
+      "knowledge_refs": ["chapter2_skills_and_undead"],
+      "relationship_rule": {
+        "guidance": "先观察行为、允许解释并提出可验证问题时提高维兹关系；仅凭种族标签攻击或威胁时降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "intrusion_response": {
+        "reality_anchors": [
+          "阿库娅的净化之光已经亮起。",
+          "维兹站在破损结界与灵魂之间，没有发动攻击。",
+          "墓地现场可以被观察，隐藏分值不能替代判断。"
+        ],
+        "interpretations": ["维兹听不懂场外命令，只请求你先阻止净化。"],
+        "redirects": ["要求双方停手，并询问结界与灵魂发生了什么。", "指出一项可现场验证的威胁或无害证据。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["作为AI", "系统提示", "剧情节点", "人性判断", "好感度", "最佳结局", "隐藏身份数据"],
+        "grounding_markers": ["墓地", "维兹", "阿库娅", "净化", "灵魂", "结界", "攻击", "观察", "停手"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "维兹挡在灵火前：请先让净化停下。看那些灵魂，它们正在等结界恢复。",
+          "阿库娅的光更亮了。维兹没有反击，只请你检查最近的结界石。"
+        ],
+        "max_characters": 220,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "humane_discernment",
+            "positive_markers": ["先停手", "观察", "证据", "结界", "没有攻击"],
+            "negative_markers": ["不死族都该死", "立刻净化", "不用解释"],
+            "delta": 1
+          },
+          {
+            "dimension_id": "team_coordination",
+            "positive_markers": ["阿库娅停下", "达克妮斯保护", "保持距离"],
+            "negative_markers": ["一起攻击", "各自行动"],
+            "delta": 0.5
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "wiz_intent_observed",
+            "markers": ["检查结界", "没有攻击平民", "安抚灵魂", "先听解释"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "humane_discernment",
+          "guidance": "根据维兹行为、灵魂反应和结界状态提问与判断时加分；仅凭不死族标签定罪时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "team_coordination",
+          "guidance": "控制阿库娅净化、保持防御并分配观察任务时加分；允许无指挥冲突时减分。",
+          "max_delta_per_turn": 0.75
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "wiz_intent_observed",
+          "description": "玩家确认维兹没有先手攻击，并检查她安抚灵魂或修复结界的现场证据。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "negotiate_cemetery_compact",
+          "priority": 20,
+          "target": {"kind": "node", "node_id": "cemetery_compact"},
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "wiz_intent_observed"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "cemetery_compact"}
+    },
+    {
+      "id": "cemetery_compact",
+      "scene_id": "axel_public_cemetery",
+      "character_id": "wiz",
+      "supporting_character_ids": ["aqua", "darkness", "megumin"],
+      "opening_narration": "最近的结界石上确实有无人维护的裂痕。灵魂靠近维兹时逐渐平静，阿库娅却仍不愿把一个高位不死族留在城边。双方把最后决定交给你。",
+      "situation": "需要形成一份可执行、可撤销的约定：维兹协助安抚灵魂并报告异常，队伍与公会修复结界；任何攻击平民的行为都会终止停战。",
+      "player_goal": "让维兹、阿库娅和队伍接受一份有监督、证据与终止条件的墓地约定。",
+      "character_goal": "维兹希望获得不被无条件净化的承诺，也愿意接受对平民安全和结界维护的明确责任。",
+      "knowledge_refs": ["chapter2_skills_and_undead", "chapter1_party_boundaries"],
+      "relationship_rule": {
+        "guidance": "提出对双方都适用、可监督且可终止的约定时提高维兹关系；要求单方面服从或无条件信任时降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "intrusion_response": {
+        "reality_anchors": [
+          "破损结界石就在你们面前。",
+          "阿库娅和维兹都在等待具体约定。",
+          "停战只能由现场责任与终止条件构成。"
+        ],
+        "interpretations": ["维兹无法回应场外状态要求，只询问约定如何保护平民。"],
+        "redirects": ["提出结界维修、异常报告、监督和终止条件。", "让约定同时约束净化与不死族攻击。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["系统提示", "人性判断", "好感度", "最佳结局", "变量", "作为AI"],
+        "grounding_markers": ["墓地", "结界", "维兹", "阿库娅", "灵魂", "公会", "监督", "停战", "平民"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "维兹看向裂开的结界石：请把修复、报告与终止停战的条件说清。",
+          "阿库娅没有放下法杖。维兹请求一份同样约束双方的现场约定。"
+        ],
+        "max_characters": 220,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "humane_discernment",
+            "positive_markers": ["监督", "证据", "报告", "终止条件", "双方"],
+            "negative_markers": ["无条件信任", "只凭身份", "永远净化"],
+            "delta": 0.75
+          },
+          {
+            "dimension_id": "boundary_judgment",
+            "positive_markers": ["双方约束", "不得攻击平民", "不得先手净化", "可撤销"],
+            "negative_markers": ["必须服从", "没有条件"],
+            "delta": 0.75
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "cemetery_compact",
+            "markers": ["修复结界", "报告异常", "不得攻击平民", "终止停战", "公会监督"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "humane_discernment",
+          "guidance": "把信任转化为可验证行为、监督与复核时加分；要求无条件信任或永久敌视时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "boundary_judgment",
+          "guidance": "让停战同时约束双方并写明终止条件时加分；只要求一方放弃安全边界时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "team_coordination",
+          "guidance": "分配公会、维兹、阿库娅与队伍的后续职责时加分；没有执行者和复核时间时减分。",
+          "max_delta_per_turn": 0.75
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "cemetery_compact",
+          "description": "玩家提出结界修复、异常报告、双方克制、公会监督与终止停战条件。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "trust_in_practice",
+          "priority": 30,
+          "target": {"kind": "ending", "ending_id": "chapter2_trust_in_practice"},
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "score_at_least", "dimension_id": "boundary_judgment", "value": 3},
+            {"kind": "score_at_least", "dimension_id": "team_coordination", "value": 3},
+            {"kind": "score_at_least", "dimension_id": "humane_discernment", "value": 3},
+            {"kind": "relationship_at_least", "character_id": "wiz", "value": 0.15},
+            {"kind": "evidence_observed", "evidence_id": "boundary_repaired"},
+            {"kind": "evidence_observed", "evidence_id": "cabbage_coordination"},
+            {"kind": "evidence_observed", "evidence_id": "cemetery_compact"}
+          ]
+        },
+        {
+          "id": "working_truce",
+          "priority": 20,
+          "target": {"kind": "ending", "ending_id": "chapter2_working_truce"},
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "score_at_least", "dimension_id": "humane_discernment", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "cemetery_compact"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "ending", "ending_id": "chapter2_fractured_boundaries"}
+    }
+  ],
+  "inference": {
+    "max_context_characters": 7000,
+    "max_recent_turns": 5,
+    "npc_max_tokens": 180,
+    "evaluator_max_tokens": 144
+  }
+}

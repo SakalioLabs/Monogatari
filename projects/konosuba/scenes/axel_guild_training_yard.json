@@ -1,0 +1,10 @@
+{
+  "id": "axel_guild_training_yard",
+  "name": "阿克塞尔公会训练场",
+  "background_path": "assets/backgrounds/axel_guild_training_yard.png",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "clear",
+  "time_of_day": "day",
+  "tags": ["chapter_02", "axel", "training", "skills"]
+}

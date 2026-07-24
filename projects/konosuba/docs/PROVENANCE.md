@@ -11,8 +11,13 @@
 
 - Official anime character page:
   https://konosuba.com/3rd/character/
+- Official first-season character page used for Chris and Wiz appearance:
+  https://konosuba.com/1st/character/
 - Official reference thumbnails were used only to identify defining appearance.
 - Final game backgrounds and sprite sources were generated for this simulation.
+  Chapter 2 adds the Axel training yard, flying-cabbage fields, public cemetery,
+  two Chris expressions, and two Wiz expressions. Character sprites were
+  generated against flat chroma backgrounds and converted to transparent PNGs.
 
 ## Rights and distribution
 

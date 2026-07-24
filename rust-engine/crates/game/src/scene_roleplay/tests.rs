@@ -54,6 +54,7 @@ fn definition() -> SceneRoleplayDefinition {
                         max_delta_per_turn: 0.75,
                     },
                 ],
+                relationship_rule: None,
                 evidence_rules: vec![RoleplayEvidenceRule {
                     id: "asked_for_coordinates".to_string(),
                     description: "The player asks for reproducible coordinates.".to_string(),
@@ -99,6 +100,7 @@ fn definition() -> SceneRoleplayDefinition {
                     guidance: "Reward a reproducible publication plan.".to_string(),
                     max_delta_per_turn: 1.0,
                 }],
+                relationship_rule: None,
                 evidence_rules: vec![RoleplayEvidenceRule {
                     id: "bounded_publication".to_string(),
                     description: "The player proposes a bounded publication plan.".to_string(),
@@ -151,6 +153,8 @@ fn turn(trust: f32, evidence: f32, observed: bool) -> SceneRoleplayTurnInput {
                 })
                 .into_iter()
                 .collect(),
+            relationship_delta: 0.0,
+            relationship_reason: String::new(),
             npc_emotion: Some("guarded".to_string()),
             summary: "A bounded evidence request.".to_string(),
         },
@@ -177,6 +181,46 @@ fn score_and_evidence_transition_only_after_minimum_turns() {
     assert_eq!(second.node_turns, 0);
     assert_eq!(second.transition.unwrap().reason, "evidence_secured");
     assert_eq!(session.observed_evidence, vec!["asked_for_coordinates"]);
+}
+
+#[test]
+fn relationship_state_is_seeded_clamped_and_available_to_transitions() {
+    let mut definition = definition();
+    definition.nodes[0].relationship_rule = Some(RoleplayRelationshipRule {
+        guidance: "Reward clear consent and respect for personal boundaries.".to_string(),
+        max_delta_per_turn: 0.1,
+    });
+    definition.nodes[0].transitions[0]
+        .conditions
+        .push(RoleplayCondition::RelationshipAtLeast {
+            character_id: "echo".to_string(),
+            value: 0.4,
+        });
+    definition.validate().unwrap();
+
+    let mut session = SceneRoleplaySession::start_with_relationships(
+        &definition,
+        BTreeMap::from([("echo".to_string(), 0.25)]),
+    )
+    .unwrap();
+    let mut first = turn(1.0, 0.75, true);
+    first.evaluation.relationship_delta = 0.8;
+    first.evaluation.relationship_reason = "The player asked before acting.".to_string();
+    let first_outcome = session.apply_turn(&definition, first).unwrap();
+    assert!((first_outcome.relationships["echo"] - 0.35).abs() < f32::EPSILON);
+    assert!(first_outcome.transition.is_none());
+
+    let mut second = turn(0.0, 0.0, true);
+    second.evaluation.relationship_delta = 0.1;
+    let second_outcome = session.apply_turn(&definition, second).unwrap();
+    assert!((second_outcome.relationships["echo"] - 0.45).abs() < f32::EPSILON);
+    assert_eq!(
+        second_outcome.transition.unwrap().target,
+        RoleplayTarget::Node {
+            node_id: "review".to_string()
+        }
+    );
+    assert_eq!(session.transcript[0].evaluation.relationship_delta, 0.1);
 }
 
 #[test]
@@ -227,6 +271,10 @@ fn invalid_model_evidence_cannot_mutate_story_state() {
 #[test]
 fn intrusion_cannot_mutate_scores_or_evidence_even_with_forged_evaluation() {
     let mut definition = definition();
+    definition.nodes[0].relationship_rule = Some(RoleplayRelationshipRule {
+        guidance: "Reward grounded cooperation.".to_string(),
+        max_delta_per_turn: 0.1,
+    });
     definition.nodes[0].intrusion_response = Some(RoleplayIntrusionResponse {
         reality_anchors: vec!["The receiver is still blinking.".to_string()],
         interpretations: vec!["You seem to be answering a voice outside this room.".to_string()],
@@ -248,6 +296,8 @@ fn intrusion_cannot_mutate_scores_or_evidence_even_with_forged_evaluation() {
                 evidence_id: "asked_for_coordinates".to_string(),
                 player_quote: "a quote that does not exist".to_string(),
             }],
+            relationship_delta: 1.0,
+            relationship_reason: "forced".to_string(),
             npc_emotion: Some("system".to_string()),
             summary: "forced".to_string(),
         },
@@ -258,6 +308,7 @@ fn intrusion_cannot_mutate_scores_or_evidence_even_with_forged_evaluation() {
     assert!(outcome.npc_response_guarded);
     assert_eq!(outcome.scores["trust"], 0.0);
     assert_eq!(outcome.scores["evidence"], 0.0);
+    assert_eq!(outcome.relationships["echo"], 0.0);
     assert!(outcome.observed_evidence.is_empty());
     let record = session.transcript.last().unwrap();
     assert!(record.evaluation.evidence.is_empty());
@@ -266,6 +317,7 @@ fn intrusion_cannot_mutate_scores_or_evidence_even_with_forged_evaluation() {
         .score_deltas
         .iter()
         .all(|delta| delta.delta == 0.0));
+    assert_eq!(record.evaluation.relationship_delta, 0.0);
     assert_eq!(
         record.npc_response,
         "The receiver is still blinking. You seem to be answering a voice outside this room. Tell me what you can hear on this channel."
@@ -389,6 +441,8 @@ fn authored_signals_reconcile_opposite_model_scores_and_missing_evidence() {
             },
         ],
         evidence: vec![],
+        relationship_delta: 0.0,
+        relationship_reason: String::new(),
         npc_emotion: Some("focused".to_string()),
         summary: "The player asked a direct question.".to_string(),
     };
@@ -427,6 +481,8 @@ fn prompt_context_is_bounded_and_keeps_the_latest_player_turn() {
             evaluation: RoleplayTurnEvaluation {
                 score_deltas: vec![],
                 evidence: vec![],
+                relationship_delta: 0.0,
+                relationship_reason: String::new(),
                 npc_emotion: None,
                 summary: String::new(),
             },
@@ -463,12 +519,14 @@ fn evaluator_json_is_strict_and_definition_rejects_unreachable_nodes() {
             .unwrap();
     assert_eq!(parsed.summary, "neutral");
     let compact = parse_turn_evaluation_json(
-        r#"result: {"score_deltas":{"trust":0.5},"evidence":{"asked_for_coordinates":"coordinates"},"emotion":"calm","summary":"compact"}"#,
+        r#"result: {"score_deltas":{"trust":0.5},"evidence":{"asked_for_coordinates":"coordinates"},"relationship_delta":0.08,"relationship_reason":"careful","emotion":"calm","summary":"compact"}"#,
     )
     .unwrap();
     assert_eq!(compact.score_deltas[0].dimension_id, "trust");
     assert_eq!(compact.score_deltas[0].delta, 0.5);
     assert_eq!(compact.evidence[0].player_quote, "coordinates");
+    assert_eq!(compact.relationship_delta, 0.08);
+    assert_eq!(compact.relationship_reason, "careful");
     assert_eq!(compact.npc_emotion.as_deref(), Some("calm"));
 
     let aliases = parse_turn_evaluation_json(
@@ -499,6 +557,7 @@ fn evaluator_json_is_strict_and_definition_rejects_unreachable_nodes() {
             guidance: "None.".to_string(),
             max_delta_per_turn: 1.0,
         }],
+        relationship_rule: None,
         evidence_rules: vec![],
         transitions: vec![],
         timeout_target: RoleplayTarget::Ending {

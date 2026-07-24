@@ -127,6 +127,8 @@ describe('SceneRoleplayPanel', () => {
     expect(wrapper.find('.roleplay-error').exists()).toBe(false)
     expect(wrapper.get('[data-testid="scene-roleplay"]').attributes('data-evaluation-source'))
       .toBe('authored_fallback_npc_inference_error')
+    expect(wrapper.get('[data-testid="roleplay-degraded"]').text())
+      .toContain('authored recovery')
 
     const update = wrapper.emitted('update')?.at(-1)?.[0] as ReturnType<typeof startBrowserSceneRoleplay>
     expect(update.session.scores.trust).toBe(1)
