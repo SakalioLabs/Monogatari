@@ -1,0 +1,27 @@
+{
+  "id": "chapter4_costly_victory_epilogue",
+  "title": "代价沉重的胜利",
+  "description": "第四章高代价结局短章。",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "text": "白光吞没了贝尔迪亚，欢呼声却很快被伤员呼喊、积水和倒塌的货箱打断。",
+      "next_node_id": "aqua",
+      "choices": []
+    },
+    "aqua": {
+      "speaker_id": "aqua",
+      "emotion": "reviving",
+      "text": "先别算奖金。把还来得及救的人都搬过来，一个也不要漏。",
+      "next_node_id": "final",
+      "choices": []
+    },
+    "final": {
+      "text": "首领已经消失，真正的胜负却要等伤亡与损害清点之后才能回答。",
+      "is_ending": true,
+      "ending_type": "chapter4_costly_victory",
+      "choices": []
+    }
+  },
+  "variables": {}
+}

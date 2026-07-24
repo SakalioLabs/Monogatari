@@ -31,9 +31,9 @@ test('checked-in repository JSON returns passing evidence', async () => {
   const files = await createRepositoryFileWalker()(repositoryRoot)
   const projectPrefix = path.join(repositoryRoot, 'projects', 'konosuba') + path.sep
   const projectJsonFiles = files.filter(file => file.startsWith(projectPrefix) && file.endsWith('.json'))
-  assert.equal(projectJsonFiles.length, 50)
-  assert(projectJsonFiles.includes(path.join(projectPrefix, 'roleplays', 'chapter3_roleplay.json')))
-  assert(projectJsonFiles.includes(path.join(projectPrefix, 'quality_suites', 'chapter3_roleplay.json')))
+  assert.equal(projectJsonFiles.length, 64)
+  assert(projectJsonFiles.includes(path.join(projectPrefix, 'roleplays', 'chapter4_roleplay.json')))
+  assert(projectJsonFiles.includes(path.join(projectPrefix, 'quality_suites', 'chapter4_roleplay.json')))
 })
 
 test('Repository JSON evidence isolates parse and read failures', async () => {

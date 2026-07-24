@@ -1,0 +1,27 @@
+{
+  "id": "chapter4_axel_defended_epilogue",
+  "title": "守住阿克塞尔",
+  "description": "第四章完整救援结局短章。",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "text": "最后一名倒地的冒险者重新睁开眼睛。正门仍在滴水，爆裂留下的弹坑也还冒着烟，但清点表上已经没有无人照看的名字。",
+      "next_node_id": "party",
+      "choices": []
+    },
+    "party": {
+      "speaker_id": "darkness",
+      "emotion": "wounded",
+      "text": "先把伤员送回公会。庆祝可以等到城门、民居和每一个人都确认完毕之后。",
+      "next_node_id": "final",
+      "choices": []
+    },
+    "final": {
+      "text": "这不是一场没有代价的胜利，却是第一次由这支队伍共同控制代价的战斗。",
+      "is_ending": true,
+      "ending_type": "chapter4_axel_defended",
+      "choices": []
+    }
+  },
+  "variables": {}
+}

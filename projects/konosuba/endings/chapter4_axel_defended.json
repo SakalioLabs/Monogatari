@@ -1,0 +1,8 @@
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "chapter4_axel_defended",
+  "title": "第四章：守住阿克塞尔",
+  "description": "队伍疏散居民、聚拢不死军、保护施法者、验证流水弱点并完成可控净化；倒地冒险者得到及时复活，胜利代价被如实清点。",
+  "dialogue_id": "chapter4_axel_defended_epilogue",
+  "scene_id": "axel_gate_flooded_aftermath"
+}

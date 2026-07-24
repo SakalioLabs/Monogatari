@@ -1,0 +1,10 @@
+{
+  "id": "axel_gate_flooded_aftermath",
+  "name": "神圣洪水后的正门",
+  "background_path": "assets/backgrounds/axel_gate_flooded_aftermath.webp",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "clear",
+  "time_of_day": "afternoon",
+  "tags": ["chapter_04", "axel", "gate", "flooded_aftermath"]
+}

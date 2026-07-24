@@ -23,7 +23,9 @@
     "panicked": "assets/characters/aqua_crying.png",
     "crying": "assets/characters/aqua_crying.png",
     "slimed": "assets/characters/aqua_slimed.png",
-    "furious": "assets/characters/aqua_slimed.png"
+    "furious": "assets/characters/aqua_slimed.png",
+    "casting": "assets/characters/aqua_sacred_water.webp",
+    "reviving": "assets/characters/aqua_sacred_water.webp"
   },
   "knowledge_refs": [
     "chapter1_afterlife_rules",
@@ -33,7 +35,10 @@
     "chapter1_party_boundaries",
     "chapter3_beldia_and_explosion",
     "chapter3_lake_purification",
-    "chapter3_mitsurugi_and_agency"
+    "chapter3_mitsurugi_and_agency",
+    "chapter4_undead_assault",
+    "chapter4_beldia_battle",
+    "chapter4_revival_aftermath"
   ],
   "knowledge_entries": [
     {

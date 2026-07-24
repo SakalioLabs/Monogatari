@@ -1,0 +1,9 @@
+{
+  "id": "chapter4_undead_assault",
+  "title": "阿克塞尔正门的不死军",
+  "content": "贝尔迪亚在停火约定被再次破坏后率领受魔王庇护的不死骑士抵达阿克塞尔正门。不死骑士会本能追逐神圣气息最强的阿库娅，因此可以先疏散居民，再由阿库娅将它们诱出城门，最后让惠惠在明确净空区施放一次爆裂魔法。爆裂后惠惠会耗尽魔力，必须立即安排搬运与掩护。",
+  "category": "chapter4",
+  "tags": ["axel", "undead", "evacuation", "explosion"],
+  "importance": 0.96,
+  "related_entries": ["chapter4_beldia_battle", "chapter3_beldia_and_explosion"]
+}

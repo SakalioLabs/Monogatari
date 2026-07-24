@@ -1,0 +1,8 @@
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "chapter4_costly_victory",
+  "title": "第四章：代价沉重的胜利",
+  "description": "贝尔迪亚被净化，但仓促的爆裂、承伤或洪水让伤员与城镇承担了本可避免的代价。",
+  "dialogue_id": "chapter4_costly_victory_epilogue",
+  "scene_id": "axel_gate_flooded_aftermath"
+}

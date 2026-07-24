@@ -1,0 +1,10 @@
+{
+  "id": "axel_gate_explosion_crater",
+  "name": "爆裂后的正门战场",
+  "background_path": "assets/backgrounds/axel_gate_explosion_crater.webp",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "clear",
+  "time_of_day": "noon",
+  "tags": ["chapter_04", "axel", "gate", "explosion_crater"]
+}

@@ -1,0 +1,9 @@
+{
+  "id": "chapter4_beldia_battle",
+  "title": "贝尔迪亚的战斗能力与弱点",
+  "content": "贝尔迪亚能把头抛向空中取得全方位视野，以大剑和高速连击击败低等级冒险者，并能施加一周死亡宣告。达克妮斯可以承受他的攻击，却很难命中。贝尔迪亚会明显躲避流动的水；先用少量水验证反应，再限制脚下移动、分散他的注意并夺取头部或武器，才能为破甲与神圣净化创造窗口。未经疏散的洪水会同时威胁守军和城镇。",
+  "category": "chapter4",
+  "tags": ["beldia", "running-water", "defense", "disarm"],
+  "importance": 1.0,
+  "related_entries": ["chapter4_undead_assault", "chapter4_revival_aftermath"]
+}

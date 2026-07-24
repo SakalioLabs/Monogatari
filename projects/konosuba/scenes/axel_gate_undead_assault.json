@@ -1,0 +1,10 @@
+{
+  "id": "axel_gate_undead_assault",
+  "name": "阿克塞尔正门不死军来袭",
+  "background_path": "assets/backgrounds/axel_gate_undead_assault.webp",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "clear",
+  "time_of_day": "morning",
+  "tags": ["chapter_04", "axel", "gate", "undead_assault"]
+}

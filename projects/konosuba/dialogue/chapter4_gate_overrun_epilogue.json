@@ -1,0 +1,27 @@
+{
+  "id": "chapter4_gate_overrun_epilogue",
+  "title": "城门失守",
+  "description": "第四章守线失败结局短章。",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "text": "守线被迫后撤，不死骑士重新涌向门洞。队伍带着伤员撤入第二道街垒，战斗远未结束。",
+      "next_node_id": "megumin",
+      "choices": []
+    },
+    "megumin": {
+      "speaker_id": "megumin",
+      "emotion": "exhausted",
+      "text": "下一次必须先决定谁撤离、谁守线、谁负责把我带走。只靠更大的爆炸不够。",
+      "next_node_id": "final",
+      "choices": []
+    },
+    "final": {
+      "text": "阿克塞尔仍在抵抗，但正门已经不再属于任何人的安全区。",
+      "is_ending": true,
+      "ending_type": "chapter4_gate_overrun",
+      "choices": []
+    }
+  },
+  "variables": {}
+}

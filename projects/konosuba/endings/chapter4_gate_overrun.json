@@ -1,0 +1,8 @@
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "chapter4_gate_overrun",
+  "title": "第四章：城门失守",
+  "description": "队伍未能形成可执行的疏散、守线与净化窗口，只能带着伤员撤入城内，阿克塞尔正门落入不死军威胁之下。",
+  "dialogue_id": "chapter4_gate_overrun_epilogue",
+  "scene_id": "axel_gate_undead_assault"
+}

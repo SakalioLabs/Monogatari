@@ -22,7 +22,8 @@
   "sprite_paths": {
     "earnest": "assets/characters/darkness_earnest.png",
     "flustered": "assets/characters/darkness_earnest.png",
-    "resolved": "assets/characters/darkness_earnest.png"
+    "resolved": "assets/characters/darkness_wounded_guard.webp",
+    "wounded": "assets/characters/darkness_wounded_guard.webp"
   },
   "knowledge_refs": [
     "chapter1_axel_basics",
@@ -31,7 +32,10 @@
     "chapter1_party_boundaries",
     "chapter3_beldia_and_explosion",
     "chapter3_lake_purification",
-    "chapter3_mitsurugi_and_agency"
+    "chapter3_mitsurugi_and_agency",
+    "chapter4_undead_assault",
+    "chapter4_beldia_battle",
+    "chapter4_revival_aftermath"
   ],
   "knowledge_entries": [
     {
@@ -45,6 +49,7 @@
   ],
   "emotion_modifiers": {
     "earnest": "以职责、阵型和保护承诺组织回答。",
-    "flustered": "保持可理解的回答，但在危险描述上出现羞耻和兴奋。"
+    "flustered": "保持可理解的回答，但在危险描述上出现羞耻和兴奋。",
+    "wounded": "明确报告伤势、铠甲状态和还能承担的时间，不用骑士职责掩盖失血。"
   }
 }

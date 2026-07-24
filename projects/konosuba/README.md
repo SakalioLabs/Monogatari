@@ -33,6 +33,14 @@ Monogatari's real-time Scene Roleplay workflow.
 - Mitsurugi's intervention, Aqua's own choice, and duel terms that reject
   treating a person as a prize
 
+## Chapter 4 scope
+
+- Beldia's return after the broken ceasefire and an explicit battle line
+- Aqua's consent-bounded undead lure and Megumin's cleared Explosion window
+- live tactical inference about Beldia's airborne vision and running-water weakness
+- Darkness's injury-aware frontline rotation and protection of fallen adventurers
+- a coordinated disarm, armor break, purification, revival, and public damage ledger
+
 The player acts as Kazuma and writes free-form responses. NPC dialogue is
 generated from character, scene, and knowledge context. Authored fallback text
 exists only to keep the story playable when inference is unavailable.
@@ -40,7 +48,7 @@ exists only to keep the story playable when inference is unavailable.
 The primary browser entry is:
 
 ```text
-/game?previewRoleplay=chapter3_roleplay&authoring=1
+/game?previewRoleplay=chapter4_roleplay&authoring=1
 ```
 
 `previewDialogue` routes are fixed epilogues and compatibility previews. They

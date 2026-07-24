@@ -31,6 +31,12 @@ Can the party accept responsibility, establish revocable risk agreements, and
 respect Aqua's voice when outsiders reduce a complicated relationship to
 ownership or rescue?
 
+## Chapter 4 dramatic question
+
+Can the player turn a chaotic boss battle into a sequence of observable,
+reversible tactical decisions that protects civilians and fallen adventurers,
+rather than winning because a fixed script grants the party the correct move?
+
 ## Score model
 
 - `pragmatism`: plans, resource awareness, risk control, and workable tactics.
@@ -58,6 +64,13 @@ Chapter 3 introduces:
 - `adaptive_tactics`: gather information, stage contingencies, and change plans
   when conditions change.
 
+Chapter 4 introduces:
+
+- `field_coordination`: assign roles, signals, handoffs, and post-battle ownership.
+- `civilian_safety`: establish battle boundaries and account for blast and flood paths.
+- `tactical_inference`: test observed behavior before escalating to a decisive tactic.
+- `life_preservation`: rotate wounded defenders, protect the fallen, and organize revival.
+
 ## Relationship model
 
 Character relationships use the persistent `player` relationship:
@@ -84,6 +97,12 @@ best ending requires score, evidence, and relationship thresholds for Aqua and
 Mitsurugi; the Quality Suite also proves that a forged state request cannot
 change Aqua, Beldia, Megumin, or Mitsurugi from their exact initial values.
 
+Chapter 4 preserves the same rule while moving relationship-aware dialogue
+through Beldia, Aqua, Megumin, and Darkness. The best ending requires both
+Aqua and Darkness relationship thresholds in addition to all eight pieces of
+battle evidence. A relationship cannot substitute for a tested weakness,
+protected casualty, or completed revival ledger.
+
 ## Knowledge boundaries
 
 - Aqua knows the afterlife process, her own powers, and the rules she explains.
@@ -97,8 +116,8 @@ change Aqua, Beldia, Megumin, or Mitsurugi from their exact initial values.
 - Wiz knows the cemetery, its failed barrier, and her own actions. She does not
   know route scores or later-volume outcomes.
 - Beldia knows the repeated damage to the abandoned castle, the gate
-  confrontation, and the curse he placed. He does not know the party's private
-  score state or later events.
+  confrontation, the curse he placed, and the battle actions he can directly
+  observe. He does not know the party's private score state or later events.
 - Mitsurugi knows what he observes at the lakeside and his own heroic code. He
   does not know the party's private agreements and must update his judgment
   only from Aqua's stated choice and visible evidence.
@@ -126,3 +145,10 @@ change Aqua, Beldia, Megumin, or Mitsurugi from their exact initial values.
   agency remains only partly established.
 - `chapter3_broken_agency`: risk and ownership shortcuts leave the group unable
   to form a trustworthy agreement.
+- `chapter4_axel_defended`: all eight tactical and rescue agreements are
+  executed, Beldia is purified, and the party completes a public casualty and
+  repair ledger.
+- `chapter4_costly_victory`: Beldia is defeated and revival begins, but earlier
+  coordination or protection evidence remains incomplete.
+- `chapter4_gate_overrun`: the party exhausts the available turns without a
+  battle plan strong enough to secure the gate.

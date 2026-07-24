@@ -23,6 +23,10 @@
   first-season official character page informed Mitsurugi's defining
   appearance; Beldia's public anime design informed his armor silhouette. The
   final assets are newly generated rather than copied reference images.
+  Chapter 4 adds the undead assault at Axel's gate, the Explosion crater, the
+  flooded aftermath, Aqua casting sacred water, and a wounded Darkness guard
+  pose. The two character sources were generated against flat chroma
+  backgrounds and converted to transparent WebP assets.
 
 ## Rights and distribution
 

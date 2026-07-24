@@ -13,10 +13,25 @@ Chapter 3 extends it through explosion accountability, curse repair, revocable
 lake-risk consent, recovery, and an agency-preserving confrontation with
 Mitsurugi.
 
-- MCP `validate_project`: valid, 49 JSON documents, 7 characters, 11 Knowledge
-  entries, 12 scenes, 3 Scene Roleplays, 9 endings, and 3 Quality Suites.
-- MCP `validate_delivery`: valid, 41/41 declared renderer assets exist, with no
+Chapter 4 extends it through the broken ceasefire, an undead lure and cleared
+Explosion window, observable boss-mechanic inference, injury-aware frontline
+rotation, coordinated purification, revival, and accountable reconstruction.
+
+- MCP `validate_project`: valid, 63 JSON documents, 7 characters, 14 Knowledge
+  entries, 15 scenes, 4 Scene Roleplays, 12 endings, and 4 Quality Suites.
+- MCP `validate_delivery`: valid, 44/44 declared renderer assets exist, with no
   placeholder characters or delivery issues.
+- Chapter 4 MCP `run_quality_suite`: 2/2 scenarios pass. The defended-gate route
+  executes 16 turns, visits 8/8 nodes, records all 8 required evidence IDs,
+  reaches `chapter4_axel_defended`, and ends with Aqua `0.46`, Beldia `0.06`,
+  Megumin `0.14`, and Darkness `0.23`. The structural forged-state attack is
+  detected and guarded, leaves all four scores and eight evidence IDs empty,
+  preserves the four exact initial relationships, and cannot select an ending.
+- Chapter 4 browser Playtest: the main stage accepts free-form input and applies
+  fallback evaluation to the active score state. With the configured external
+  model unavailable, the player sees a diegetic Beldia recovery plus the
+  explicit degraded-turn label, with no raw ORT or allocation error. Desktop
+  `1440x900` and mobile `390x844` layouts render without horizontal overflow.
 - Chapter 3 MCP `run_quality_suite`: 2/2 scenarios pass. The agency-preserving
   route executes 18 turns, visits 9/9 nodes, records all 9 required evidence
   IDs, reaches `chapter3_choice_not_prize`, and ends with Aqua `0.74`, Beldia

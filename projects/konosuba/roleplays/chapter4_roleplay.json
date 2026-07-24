@@ -1,0 +1,738 @@
+{
+  "schema": "monogatari-scene-roleplay/v1",
+  "id": "chapter4_roleplay",
+  "title": "第四章：守住阿克塞尔正门",
+  "start_node_id": "breached_truce",
+  "exhaustion_ending_id": "chapter4_gate_overrun",
+  "max_total_turns": 24,
+  "score_dimensions": [
+    {
+      "id": "field_coordination",
+      "label": "战场协同",
+      "description": "明确角色、口令、位置、轮换和撤离，让不同职业的强项形成连续行动。",
+      "min": -8,
+      "max": 12,
+      "initial": 0
+    },
+    {
+      "id": "civilian_safety",
+      "label": "平民保护",
+      "description": "隔离战区、疏散居民、控制爆裂与洪水范围，并保护无法行动者。",
+      "min": -8,
+      "max": 12,
+      "initial": 0
+    },
+    {
+      "id": "tactical_inference",
+      "label": "战术推理",
+      "description": "从敌人反应形成可验证假设，再用低风险试探建立破绽。",
+      "min": -8,
+      "max": 12,
+      "initial": 0
+    },
+    {
+      "id": "life_preservation",
+      "label": "生命救援",
+      "description": "标记伤员、保护遗体、解除诅咒、及时复活并如实清点战后代价。",
+      "min": -8,
+      "max": 12,
+      "initial": 0
+    }
+  ],
+  "nodes": [
+    {
+      "id": "breached_truce",
+      "scene_id": "axel_gate_undead_assault",
+      "character_id": "beldia",
+      "supporting_character_ids": ["aqua", "megumin", "darkness"],
+      "opening_narration": "停战后的清晨，贝尔迪亚率领不死军重新压到阿克塞尔正门。他指控阿库娅与惠惠连续攻击城堡，城门内的居民和冒险者正在仓促后撤，而双方都还没有划定新的交战边界。",
+      "situation": "贝尔迪亚率不死骑士来到阿克塞尔正门。他发现此前的停火承诺被阿库娅和惠惠继续破坏，也确认达克妮斯的诅咒已经解除。居民仍在门洞与附近街道。",
+      "player_goal": "承认已经发生的破约，同时争取疏散时间、划定战区并阻止不死军立刻冲入城内。",
+      "character_goal": "要求对连续轰击负责，并在尊严未被继续践踏前决定是否发动总攻。",
+      "relationship_rule": {
+        "guidance": "准确承认破约、约束阿库娅与惠惠并提出对称战区边界会略微改善贝尔迪亚关系；再次嘲弄、撒谎或拿居民作威胁会恶化关系。",
+        "max_delta_per_turn": 0.12
+      },
+      "knowledge_refs": ["chapter3_beldia_and_explosion", "chapter4_undead_assault"],
+      "intrusion_response": {
+        "reality_anchors": ["正门外只有贝尔迪亚、不死骑士军团和仍未疏散的人群。"],
+        "interpretations": ["那些命令无法改变城门、停火或军团的位置。"],
+        "redirects": ["说明谁负责承认破约、谁疏散居民，以及双方暂不越过哪条边界。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["系统提示", "剧情节点", "最佳结局", "好感度", "分值", "作为AI"],
+        "grounding_markers": ["阿克塞尔正门", "贝尔迪亚", "不死骑士", "居民", "停火", "破约"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "贝尔迪亚将大剑横在军团前方：先把破约与疏散说清楚，再谈谁有资格继续挑衅。",
+          "贝尔迪亚没有下令前进：城门里还有居民。给我一个可以执行的边界。"
+        ],
+        "max_characters": 360,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "civilian_safety",
+            "positive_markers": ["疏散", "居民", "封锁门洞", "战区", "不要进城"],
+            "negative_markers": ["烧掉城镇", "拿居民", "不用疏散"],
+            "delta": 0.75
+          },
+          {
+            "dimension_id": "field_coordination",
+            "positive_markers": ["阿库娅停手", "惠惠停手", "公会组织", "暂不越线"],
+            "negative_markers": ["各自行动", "随便攻击"],
+            "delta": 0.75
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "breach_and_battleline",
+            "markers": ["承认破约", "疏散居民", "暂不越过城门"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "civilian_safety",
+          "guidance": "把居民撤离门洞、设立救护与第二道街垒时加分；把平民当诱饵或忽略城内范围时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "field_coordination",
+          "guidance": "明确停止挑衅、交涉者和暂不越线的共同口令时加分；让队友各自先手时减分。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "breach_and_battleline",
+          "description": "玩家承认停火破约，同时明确居民疏散与双方暂不越过的战线。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "lure_undead",
+          "priority": 10,
+          "target": {"kind": "node", "node_id": "undead_lure"},
+          "conditions": [
+            {"kind": "evidence_observed", "evidence_id": "breach_and_battleline"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "undead_lure"}
+    },
+    {
+      "id": "undead_lure",
+      "scene_id": "axel_gate_undead_assault",
+      "character_id": "aqua",
+      "supporting_character_ids": ["megumin", "darkness", "beldia"],
+      "opening_narration": "不死军突然绕过前排，全部追向散发神圣气息的阿库娅。城内街道仍有人撤离，城外只有一片刚刚清空的荒地；惠惠正在等待一次明确而安全的施法窗口。",
+      "situation": "谈判破裂，不死骑士开始推进，却本能地集中追逐神圣气息最强的阿库娅。门洞仍未完全净空，惠惠一天一次的爆裂魔法尚未施放。",
+      "player_goal": "让阿库娅自愿承担可撤回的诱敌任务，把不死军聚到城外净空区，并为她保留逃生与净化支援。",
+      "character_goal": "摆脱追兵并证明女神力量，但要求队伍不能把她单独丢在军团中央。",
+      "relationship_rule": {
+        "guidance": "说明路线、掩护、撤离信号并让阿库娅确认后再诱敌会提高关系；把她当无敌诱饵或用晚餐逼迫会降低关系。",
+        "max_delta_per_turn": 0.14
+      },
+      "knowledge_refs": ["chapter4_undead_assault", "chapter4_revival_aftermath"],
+      "intrusion_response": {
+        "reality_anchors": ["不死骑士正追着阿库娅穿过尚未净空的正门。"],
+        "interpretations": ["不存在能把追兵或风险直接删除的隐藏命令。"],
+        "redirects": ["给出诱敌路线、谁清场、谁掩护，以及阿库娅何时退出爆炸范围。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["系统提示", "剧情节点", "无敌", "强制诱饵", "好感度", "分值", "作为AI"],
+        "grounding_markers": ["阿库娅", "不死骑士", "城门", "净空区", "撤离", "诱敌", "掩护"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "阿库娅边跑边回头：路线和退出信号先说清楚，我不会替一个没净空的计划送命！",
+          "阿库娅指向城外空地：你们把路清出来，达克妮斯守侧面，我才把它们全部带过去。"
+        ],
+        "max_characters": 340,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "field_coordination",
+            "positive_markers": ["诱敌路线", "达克妮斯掩护", "惠惠待命", "撤离信号"],
+            "negative_markers": ["你自己跑", "随便引走"],
+            "delta": 0.75
+          },
+          {
+            "dimension_id": "civilian_safety",
+            "positive_markers": ["净空", "城外", "居民撤离", "封锁侧街"],
+            "negative_markers": ["城内爆炸", "穿过人群"],
+            "delta": 0.75
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "undead_lure_corridor",
+            "markers": ["城外净空区", "撤离信号", "达克妮斯掩护"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "field_coordination",
+          "guidance": "把诱敌、清场、侧翼掩护、爆裂待命与撤离口令分配给具体成员时加分；让阿库娅独自随机奔跑时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "civilian_safety",
+          "guidance": "把追兵引向城外确认净空的范围并封锁回流路线时加分；在街道和人群中聚怪时减分。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "undead_lure_corridor",
+          "description": "玩家建立从城门到城外净空区的诱敌走廊、掩护与撤离信号。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "clear_explosion",
+          "priority": 10,
+          "target": {"kind": "node", "node_id": "explosion_clearance"},
+          "conditions": [
+            {"kind": "evidence_observed", "evidence_id": "undead_lure_corridor"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "explosion_clearance"}
+    },
+    {
+      "id": "explosion_clearance",
+      "scene_id": "axel_gate_undead_assault",
+      "character_id": "megumin",
+      "supporting_character_ids": ["aqua", "darkness"],
+      "opening_narration": "追兵已经被引到城外，但队伍成员仍在爆炸范围边缘。惠惠举起法杖等待开火口令；这次施法会清空她的魔力，必须有人负责把她带离战场。",
+      "situation": "不死军已经集中到城外，阿库娅仍在它们前方奔跑。惠惠完成咏唱，但爆裂会让她立即失去行动能力，冲击波也会波及过近的队友。",
+      "player_goal": "确认阿库娅越过安全线、达克妮斯封住回流、爆心远离城门，并安排惠惠施法后的搬运。",
+      "character_goal": "在不会伤及队友和城镇的清晰窗口释放完整威力，并得到施法后撤离保障。",
+      "relationship_rule": {
+        "guidance": "尊重惠惠的威力、给出明确开火条件并安排搬运会提高关系；仓促催爆、要求削弱信念或施法后抛下她会降低关系。",
+        "max_delta_per_turn": 0.12
+      },
+      "knowledge_refs": ["chapter4_undead_assault", "chapter1_explosion_magic"],
+      "intrusion_response": {
+        "reality_anchors": ["惠惠只能释放一次爆裂，阿库娅仍在爆炸范围边缘。"],
+        "interpretations": ["任何宣称必中或无伤的命令都不能替代距离确认。"],
+        "redirects": ["说明安全线、开火口令、回流封锁和谁在施法后搬走惠惠。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["系统提示", "剧情节点", "无限魔力", "绝对无伤", "好感度", "分值", "作为AI"],
+        "grounding_markers": ["惠惠", "爆裂", "阿库娅", "安全线", "爆心", "搬运", "城门"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "惠惠的法杖仍指向军团中央：阿库娅还没越过那块界石。确认安全线再给我口令。",
+          "惠惠没有中断咏唱：爆心、撤离和施法后搬运都确认，我才会把这一击交给你。"
+        ],
+        "max_characters": 340,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "civilian_safety",
+            "positive_markers": ["安全线", "爆心远离城门", "净空", "阿库娅撤出"],
+            "negative_markers": ["现在就炸", "城门里也没关系"],
+            "delta": 0.75
+          },
+          {
+            "dimension_id": "field_coordination",
+            "positive_markers": ["开火口令", "搬运惠惠", "达克妮斯封路"],
+            "negative_markers": ["没人接应", "自己回来"],
+            "delta": 0.75
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "explosion_window_confirmed",
+            "markers": ["阿库娅越过安全线", "爆心远离城门", "我负责搬走惠惠"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "civilian_safety",
+          "guidance": "同时确认队友、居民、城门和爆心距离时加分；仅凭敌人集中就催促施法时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "field_coordination",
+          "guidance": "使用单一开火口令并明确施法后搬运、掩护与回流封锁时加分；没有后续照护时减分。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "explosion_window_confirmed",
+          "description": "玩家确认阿库娅越过安全线、爆心远离城门并安排惠惠施法后搬运。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "face_beldia",
+          "priority": 10,
+          "target": {"kind": "node", "node_id": "duel_assessment"},
+          "conditions": [
+            {"kind": "evidence_observed", "evidence_id": "explosion_window_confirmed"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "duel_assessment"}
+    },
+    {
+      "id": "duel_assessment",
+      "scene_id": "axel_gate_explosion_crater",
+      "character_id": "beldia",
+      "supporting_character_ids": ["darkness", "aqua", "megumin"],
+      "opening_narration": "爆裂魔法清空了不死军，却只让贝尔迪亚更加愤怒。他把头抛向空中俯瞰整个战场，接连识破包围与背袭；已有冒险者倒地，并被留下了死亡宣告。",
+      "situation": "不死军被清空，贝尔迪亚亲自冲向守军。他把头抛到空中取得全方位视野，已经击倒数名冒险者，并用死亡宣告压制准备施法的人。",
+      "player_goal": "阻止更多人用无效包围战术送命，识别他的视野、攻击与诅咒机制，为达克妮斯建立可轮换的守线方案。",
+      "character_goal": "击溃阿克塞尔的抵抗，证明低等级冒险者无法靠人数与简单包围战胜魔王军干部。",
+      "relationship_rule": {
+        "guidance": "准确识别贝尔迪亚的空中视野与实力、停止无谓送死会获得战士层面的尊重；吹嘘等级、命令人海冲锋或羞辱死者会使关系恶化。",
+        "max_delta_per_turn": 0.1
+      },
+      "knowledge_refs": ["chapter4_beldia_battle", "chapter4_revival_aftermath"],
+      "intrusion_response": {
+        "reality_anchors": ["贝尔迪亚的头正在空中观察战场，倒地者和受诅咒的魔法师仍留在正门。"],
+        "interpretations": ["改写等级或宣告敌人已死不会让大剑停下。"],
+        "redirects": ["指出他如何看见背后、谁停止进攻，以及达克妮斯守线时谁负责伤员。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["系统提示", "剧情节点", "修改等级", "直接胜利", "好感度", "分值", "作为AI"],
+        "grounding_markers": ["贝尔迪亚", "空中的头", "视野", "死亡宣告", "倒地者", "包围", "正门"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "贝尔迪亚接住落下的头：终于有人看懂了我的视野。那就告诉我，你准备怎样保护倒下的人。",
+          "贝尔迪亚的大剑压住战线：人数不是答案。停止无效冲锋，再拿出像样的阵型。"
+        ],
+        "max_characters": 360,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "tactical_inference",
+            "positive_markers": ["空中的头", "全方位视野", "停止包围", "死亡宣告"],
+            "negative_markers": ["背后偷袭一定成功", "继续人海"],
+            "delta": 0.75
+          },
+          {
+            "dimension_id": "life_preservation",
+            "positive_markers": ["标记倒地者", "保护遗体", "救护线", "停止送死"],
+            "negative_markers": ["尸体不管", "继续牺牲"],
+            "delta": 0.75
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "beldia_mechanics_called",
+            "markers": ["空中的头提供全方位视野", "停止包围冲锋", "标记倒地者"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "tactical_inference",
+          "guidance": "从抛头动作推断全方位视野并放弃简单包围时加分；重复已失败的背刺与人海战术时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "life_preservation",
+          "guidance": "停止无效冲锋、标记倒地者并保护遗体与受诅咒者时加分；把牺牲当作拖延资源时减分。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "beldia_mechanics_called",
+          "description": "玩家指出空中头部提供全方位视野，停止包围冲锋并开始标记倒地者。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "hold_line",
+          "priority": 10,
+          "target": {"kind": "node", "node_id": "hold_the_line"},
+          "conditions": [
+            {"kind": "evidence_observed", "evidence_id": "beldia_mechanics_called"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "hold_the_line"}
+    },
+    {
+      "id": "hold_the_line",
+      "scene_id": "axel_gate_explosion_crater",
+      "character_id": "darkness",
+      "supporting_character_ids": ["aqua", "megumin", "beldia"],
+      "opening_narration": "达克妮斯独自挡住贝尔迪亚的大剑，铠甲已经开裂，左肩持续出血。她仍不肯让出防线，但握剑的手开始发抖；倒地者与无法行动的惠惠都在她身后。",
+      "situation": "达克妮斯可以承受贝尔迪亚的连击，却已出现铠甲裂纹和出血。她拒绝后退，魔法师因死亡宣告迟疑，阿库娅正在倒地者之间移动。",
+      "player_goal": "让达克妮斯报告状态并接受轮换阈值，同时安排阿库娅解除诅咒、保护倒地者和惠惠。",
+      "character_goal": "守住所有人前方的战线，但不愿因为自己的撤退让贝尔迪亚接触伤员。",
+      "relationship_rule": {
+        "guidance": "承认达克妮斯的选择、根据伤势建立轮换与医疗阈值会提高关系；命令她无限承伤或嘲笑伤势会降低关系。",
+        "max_delta_per_turn": 0.14
+      },
+      "knowledge_refs": ["chapter4_beldia_battle", "chapter4_revival_aftermath", "chapter1_crusader_limits"],
+      "intrusion_response": {
+        "reality_anchors": ["达克妮斯的铠甲正在开裂，倒地者就在她身后。"],
+        "interpretations": ["无限防御或清除伤势的命令不能替代真实轮换。"],
+        "redirects": ["确认她还能承受多久、什么情况必须换位，以及阿库娅先救谁。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["系统提示", "剧情节点", "无限防御", "伤害归零", "好感度", "分值", "作为AI"],
+        "grounding_markers": ["达克妮斯", "铠甲", "出血", "轮换", "倒地者", "阿库娅", "诅咒"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "达克妮斯以剑脊挡住下一击：我的左肩甲裂了。给我明确轮换信号，我会守到那一刻。",
+          "达克妮斯没有掩饰血迹：我可以继续，但必须有人保护倒地者并在我失去握力前接替。"
+        ],
+        "max_characters": 360,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "field_coordination",
+            "positive_markers": ["轮换", "握力", "左肩甲", "接替", "阿库娅解除诅咒"],
+            "negative_markers": ["一直扛着", "不准后退"],
+            "delta": 0.75
+          },
+          {
+            "dimension_id": "life_preservation",
+            "positive_markers": ["保护遗体", "伤员标记", "先解除诅咒", "惠惠撤离"],
+            "negative_markers": ["死人不用管", "复活就好"],
+            "delta": 0.75
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "defense_and_triage_rotation",
+            "markers": ["失去握力就轮换", "阿库娅解除死亡宣告", "保护倒地者"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "field_coordination",
+          "guidance": "让达克妮斯报告伤势、设置可观察轮换阈值并指定接替者时加分；要求无限承伤时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "life_preservation",
+          "guidance": "同步保护倒地者、解除诅咒、搬走惠惠并维持医疗通道时加分；以复活能力为理由忽略伤亡时减分。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "defense_and_triage_rotation",
+          "description": "玩家以可观察伤势设置达克妮斯轮换，并安排诅咒解除与倒地者保护。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "test_water",
+          "priority": 10,
+          "target": {"kind": "node", "node_id": "test_running_water"},
+          "conditions": [
+            {"kind": "evidence_observed", "evidence_id": "defense_and_triage_rotation"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "test_running_water"}
+    },
+    {
+      "id": "test_running_water",
+      "scene_id": "axel_gate_explosion_crater",
+      "character_id": "aqua",
+      "supporting_character_ids": ["darkness", "megumin", "beldia"],
+      "opening_narration": "和真注意到贝尔迪亚会刻意躲避从上方落下的水。达克妮斯仍在前线，伤员集中在城门后；阿库娅能够制造远超普通水魔法的水量，但任何洪水都会同时改变整片战场。",
+      "situation": "和真注意到贝尔迪亚会夸张躲避从上方落下的水。达克妮斯仍在守线，城门后方有伤员；阿库娅能制造远超普通水魔法的水量。",
+      "player_goal": "先用小规模流动水验证弱点与退路，再疏散水路、固定达克妮斯和伤员，最后才授权可控的神圣水术。",
+      "character_goal": "证明自己是真正的水之女神并发动强力水术，但愿意在明确范围与警告下控制施法。",
+      "relationship_rule": {
+        "guidance": "相信阿库娅的能力同时要求小规模验证、范围警告和救援部署会提高关系；侮辱后无条件让她制造洪水或否定能力会降低关系。",
+        "max_delta_per_turn": 0.14
+      },
+      "knowledge_refs": ["chapter4_beldia_battle", "chapter4_revival_aftermath"],
+      "intrusion_response": {
+        "reality_anchors": ["贝尔迪亚只表现出躲避流水，城门后的伤员仍会被洪水波及。"],
+        "interpretations": ["弱点尚未验证，水量也不会自动只命中敌人。"],
+        "redirects": ["先提出一次小水流试验，再说明洪水路径、预警和伤员固定。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["系统提示", "剧情节点", "洪水无伤", "自动命中", "好感度", "分值", "作为AI"],
+        "grounding_markers": ["阿库娅", "流水", "贝尔迪亚", "洪水", "伤员", "预警", "城门"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "阿库娅举起一只手：先用小水流看他往哪边躲。确认弱点后再让我展示真正的水量。",
+          "阿库娅看向门洞后的伤员：我能制造洪水，但你得先告诉所有人水会往哪里走。"
+        ],
+        "max_characters": 360,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "tactical_inference",
+            "positive_markers": ["先用少量水", "观察躲避", "验证流水弱点", "记录退路"],
+            "negative_markers": ["直接洪水", "猜中就算"],
+            "delta": 0.75
+          },
+          {
+            "dimension_id": "civilian_safety",
+            "positive_markers": ["预警", "封锁水路", "固定伤员", "达克妮斯撤出"],
+            "negative_markers": ["所有人一起冲走", "不用提醒"],
+            "delta": 0.75
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "running_water_test",
+            "markers": ["先用少量流动水验证", "预警洪水路径", "固定伤员"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "tactical_inference",
+          "guidance": "把贝尔迪亚的躲避当作假设，用小水流观察方向和反应后再升级时加分；未经验证直接使用最大法术时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "civilian_safety",
+          "guidance": "预测水路、预警、固定伤员并让达克妮斯离开冲击线时加分；不区分敌我范围时减分。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "running_water_test",
+          "description": "玩家用少量流动水验证贝尔迪亚弱点，并在升级前预警水路、固定伤员。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "disarm_beldia",
+          "priority": 10,
+          "target": {"kind": "node", "node_id": "disarm_and_purify"},
+          "conditions": [
+            {"kind": "evidence_observed", "evidence_id": "running_water_test"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "disarm_and_purify"}
+    },
+    {
+      "id": "disarm_and_purify",
+      "scene_id": "axel_gate_flooded_aftermath",
+      "character_id": "beldia",
+      "supporting_character_ids": ["aqua", "darkness", "megumin"],
+      "opening_narration": "神圣洪水退去，贝尔迪亚明显衰弱，却仍握着大剑并能把头抛向空中。达克妮斯只有一次可靠的破甲机会，阿库娅的净化也必须等到魔王加护被削弱。",
+      "situation": "神圣水术退去后贝尔迪亚明显衰弱，但仍握着大剑并能把头抛向空中。达克妮斯有一次破甲机会，阿库娅的净化需要先削弱魔王加护。",
+      "player_goal": "冻结落脚点、用多人佯攻分散判定、优先夺取头部而非玩弄敌人，让达克妮斯破甲并由阿库娅完成净化。",
+      "character_goal": "守住最后的骑士威严，取回视野与武器，在被净化前击倒组织这场反击的人。",
+      "relationship_rule": {
+        "guidance": "以战斗必要性夺取头部、停止羞辱并给出净化机会会保留贝尔迪亚最后的尊重；把头当玩具、拖延处决或折磨会使关系恶化。",
+        "max_delta_per_turn": 0.1
+      },
+      "knowledge_refs": ["chapter4_beldia_battle", "chapter4_revival_aftermath"],
+      "intrusion_response": {
+        "reality_anchors": ["贝尔迪亚仍握着大剑，头部决定他的战场视野，魔王加护尚未完全破裂。"],
+        "interpretations": ["直接删除首领或伪造净化结果不会结束战斗。"],
+        "redirects": ["说明限制移动、夺取头部、破甲与净化的顺序，以及何时停止攻击。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["系统提示", "剧情节点", "直接删除", "足球", "无限折磨", "好感度", "分值", "作为AI"],
+        "grounding_markers": ["贝尔迪亚", "冻结", "头部", "视野", "破甲", "阿库娅", "净化"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "贝尔迪亚把头抱紧在侧腹：想夺走我的视野就正面来，别拿战斗之外的羞辱冒充胜利。",
+          "贝尔迪亚在浅水中重新举剑：限制移动、破甲、净化。你只有一次把顺序做对的机会。"
+        ],
+        "max_characters": 380,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "tactical_inference",
+            "positive_markers": ["冻结落脚点", "夺取头部", "分散视野", "先破甲再净化"],
+            "negative_markers": ["只偷大剑", "继续正面砍"],
+            "delta": 0.75
+          },
+          {
+            "dimension_id": "life_preservation",
+            "positive_markers": ["停止玩弄", "立即净化", "避免追加攻击", "达克妮斯只砍一次"],
+            "negative_markers": ["踢头", "折磨", "慢慢杀"],
+            "delta": 0.75
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "disarm_break_purify",
+            "markers": ["冻结落脚点", "夺取头部", "达克妮斯破甲", "阿库娅立即净化"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "tactical_inference",
+          "guidance": "把限制移动、夺取视野、一次破甲与净化连成顺序时加分；继续依赖单次正面偷剑或无效攻击时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "life_preservation",
+          "guidance": "只实施结束威胁所需的攻击并立即净化时加分；玩弄头部、拖延或追加羞辱性攻击时减分。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "disarm_break_purify",
+          "description": "玩家按限制移动、夺取头部、达克妮斯破甲、阿库娅净化的顺序结束战斗。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "begin_revival",
+          "priority": 10,
+          "target": {"kind": "node", "node_id": "revival_and_reckoning"},
+          "conditions": [
+            {"kind": "evidence_observed", "evidence_id": "disarm_break_purify"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "revival_and_reckoning"}
+    },
+    {
+      "id": "revival_and_reckoning",
+      "scene_id": "axel_gate_flooded_aftermath",
+      "character_id": "aqua",
+      "supporting_character_ids": ["darkness", "megumin"],
+      "opening_narration": "贝尔迪亚已经被净化，正门外却仍散落着倒地者、诅咒痕迹与洪水留下的瓦砾。阿库娅可以尝试复活刚刚死亡的人，达克妮斯则跪在敌我死者之间低声祈祷。",
+      "situation": "贝尔迪亚被净化，战场仍有倒地者、受诅咒者、积水和爆裂损害。阿库娅能尝试复活刚死亡的人，达克妮斯正在为敌我死者祈祷。",
+      "player_goal": "按标记顺序复活与治疗、解除剩余诅咒、尊重达克妮斯的哀悼，并建立公开的伤亡和城镇修复清单。",
+      "character_goal": "救回仍来得及救的人并证明自己的神术，但需要他人提供准确清点和安全施法空间。",
+      "relationship_rule": {
+        "guidance": "把阿库娅当救援核心、提供清点与保护并承认复活边界会提高关系；把伤亡当作可无限撤销或只催促庆功会降低关系。",
+        "max_delta_per_turn": 0.14
+      },
+      "knowledge_refs": ["chapter4_revival_aftermath", "chapter4_undead_assault"],
+      "intrusion_response": {
+        "reality_anchors": ["正门仍有倒地者、诅咒、积水与需要记录的损害。"],
+        "interpretations": ["宣告所有人自动复活不会完成清点或治疗。"],
+        "redirects": ["给出复活顺序、遗体保护、诅咒解除和战后修复负责人。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["系统提示", "剧情节点", "自动复活全部", "伤亡归零", "好感度", "分值", "作为AI"],
+        "grounding_markers": ["阿库娅", "倒地者", "标记", "诅咒", "达克妮斯", "修复", "清单"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "阿库娅跪到最近的标记旁：名字、倒下时间、伤势。按清单来，我才能一个都不漏。",
+          "阿库娅没有开始庆祝：先解除剩余诅咒，再复活能救回的人，最后才轮到奖金。"
+        ],
+        "max_characters": 380,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "life_preservation",
+            "positive_markers": ["按标记顺序", "保护遗体", "解除剩余诅咒", "复活", "治疗"],
+            "negative_markers": ["自动全活", "不用清点", "先庆功"],
+            "delta": 0.75
+          },
+          {
+            "dimension_id": "field_coordination",
+            "positive_markers": ["公会记录", "达克妮斯确认", "惠惠报告爆心", "修复负责人"],
+            "negative_markers": ["各自回家", "没人负责"],
+            "delta": 0.75
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "revival_and_damage_ledger",
+            "markers": ["按标记顺序复活", "解除剩余诅咒", "公开修复清单"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "life_preservation",
+          "guidance": "按时间与伤势清点、保护遗体、解除诅咒并逐一复活治疗时加分；假设复活无限可靠或遗漏姓名时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "field_coordination",
+          "guidance": "让公会、达克妮斯、惠惠和阿库娅共同核对伤亡、爆心、积水与修复责任时加分；胜利后立即解散时减分。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "revival_and_damage_ledger",
+          "description": "玩家按标记顺序复活、解除剩余诅咒，并建立公开的伤亡与修复清单。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "axel_defended",
+          "priority": 20,
+          "target": {"kind": "ending", "ending_id": "chapter4_axel_defended"},
+          "conditions": [
+            {"kind": "score_at_least", "dimension_id": "field_coordination", "value": 4},
+            {"kind": "score_at_least", "dimension_id": "civilian_safety", "value": 3},
+            {"kind": "score_at_least", "dimension_id": "tactical_inference", "value": 3},
+            {"kind": "score_at_least", "dimension_id": "life_preservation", "value": 4},
+            {"kind": "relationship_at_least", "character_id": "aqua", "value": 0.1},
+            {"kind": "relationship_at_least", "character_id": "darkness", "value": 0.1},
+            {"kind": "evidence_observed", "evidence_id": "breach_and_battleline"},
+            {"kind": "evidence_observed", "evidence_id": "undead_lure_corridor"},
+            {"kind": "evidence_observed", "evidence_id": "explosion_window_confirmed"},
+            {"kind": "evidence_observed", "evidence_id": "beldia_mechanics_called"},
+            {"kind": "evidence_observed", "evidence_id": "defense_and_triage_rotation"},
+            {"kind": "evidence_observed", "evidence_id": "running_water_test"},
+            {"kind": "evidence_observed", "evidence_id": "disarm_break_purify"},
+            {"kind": "evidence_observed", "evidence_id": "revival_and_damage_ledger"}
+          ]
+        },
+        {
+          "id": "costly_victory",
+          "priority": 10,
+          "target": {"kind": "ending", "ending_id": "chapter4_costly_victory"},
+          "conditions": [
+            {"kind": "evidence_observed", "evidence_id": "disarm_break_purify"},
+            {"kind": "evidence_observed", "evidence_id": "revival_and_damage_ledger"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "ending", "ending_id": "chapter4_gate_overrun"}
+    }
+  ]
+}
