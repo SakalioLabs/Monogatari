@@ -224,7 +224,8 @@ The Vite server reads the selected API base and model from `settings.json`,
 normalizes a host-only OpenAI-compatible base to `/v1`, and exposes a
 same-origin authoring-only chat bridge. Its public runtime document contains no
 credential fields; an optional credential comes only from
-`MONOGATARI_API_KEY` and remains in the Node process. Static Web/PWA packages
+`MONOGATARI_AI_API_KEY` (or the legacy `MONOGATARI_API_KEY` fallback) and
+remains in the Node process. Static Web/PWA packages
 retain the credential-free WebGPU contract, while Tauri continues to use the
 Rust inference pipeline.
 

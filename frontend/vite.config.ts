@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import { resolveAuthoringApiKey } from './src/lib/authoringRuntimeConfig'
 import { createReadStream, readFileSync, readdirSync, statSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from 'node:path'
@@ -156,7 +157,7 @@ function authoringApiRuntime() {
     if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password) return null
     const baseUrl = parsed.pathname === '/' ? `${configuredBaseUrl}/v1` : configuredBaseUrl
     return {
-      apiKey: String(process.env.MONOGATARI_API_KEY || '').trim(),
+      apiKey: resolveAuthoringApiKey(process.env),
       baseUrl,
       public: {
         schema: 'monogatari-authoring-inference-runtime/v1',
