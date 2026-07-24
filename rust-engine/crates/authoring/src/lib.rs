@@ -3,6 +3,7 @@
 #![forbid(unsafe_code)]
 
 pub mod agent_transaction;
+pub mod campaign_preview;
 pub mod campaign_validation;
 pub mod conversation_quality;
 pub mod delivery_validation;

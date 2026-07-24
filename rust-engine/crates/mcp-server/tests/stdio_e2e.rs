@@ -17,9 +17,10 @@ use llm_authoring::quality_suite_validation::MAX_QUALITY_SUITE_FILE_BYTES;
 use llm_authoring::runtime_validation::CoreRuntimeValidationReport;
 use monogatari_mcp::protocol::{
     ExportProjectPackageOutput, InspectProjectOutput, InspectProjectPackageOutput, McpToolError,
-    McpToolErrorCode, PreviewProjectPackageOutput, PreviewSceneRoleplayOutput,
-    PreviewWorkflowOutput, RunQualitySuiteOutput, ValidateProjectPackageOutput,
-    MCP_PACKAGE_EXPORT_SCHEMA_V1, MCP_PACKAGE_INSPECTION_SCHEMA_V1, MCP_PACKAGE_PREVIEW_SCHEMA_V1,
+    McpToolErrorCode, PreviewCampaignOutput, PreviewProjectPackageOutput,
+    PreviewSceneRoleplayOutput, PreviewWorkflowOutput, RunQualitySuiteOutput,
+    ValidateProjectPackageOutput, MCP_CAMPAIGN_PREVIEW_SCHEMA_V1, MCP_PACKAGE_EXPORT_SCHEMA_V1,
+    MCP_PACKAGE_INSPECTION_SCHEMA_V1, MCP_PACKAGE_PREVIEW_SCHEMA_V1,
     MCP_PACKAGE_VALIDATION_SCHEMA_V1, MCP_QUALITY_SUITE_RUN_SCHEMA_V1,
     MCP_SCENE_ROLEPLAY_PREVIEW_SCHEMA_V1, MCP_WORKFLOW_PREVIEW_SCHEMA_V1,
 };
@@ -117,7 +118,7 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
     let second_reader = connect(&project.root, false).await?;
     assert_no_project_lease_sidecar(&project);
     assert_competing_start_rejected(&project.root, true).await?;
-    assert_eq!(second_reader.list_all_tools().await?.len(), 14);
+    assert_eq!(second_reader.list_all_tools().await?.len(), 15);
     second_reader.cancel().await?;
 
     let tools = client.list_all_tools().await?;
@@ -136,6 +137,7 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
             "list_project_json",
             "plan_transaction",
             "preview_project_package",
+            "preview_roleplay_campaign",
             "preview_scene_roleplay",
             "preview_workflow",
             "read_project_json",
@@ -291,6 +293,23 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
             }]
         }"#,
     )?;
+    std::fs::write(
+        project.root.join("campaigns/mcp_preview.json"),
+        r#"{
+            "schema":"monogatari-roleplay-campaign/v1",
+            "id":"mcp_campaign",
+            "title":"MCP Campaign",
+            "start_entry_id":"chapter",
+            "entries":[{
+                "id":"chapter",
+                "roleplay_id":"mcp_roleplay",
+                "routes":[
+                    {"ending_id":"open_end","target":{"kind":"complete"}},
+                    {"ending_id":"quiet_end","target":{"kind":"complete"}}
+                ]
+            }]
+        }"#,
+    )?;
     let roleplay_listing = client
         .call_tool(
             CallToolRequestParams::new("list_project_json")
@@ -340,6 +359,65 @@ async fn real_stdio_handshake_lists_and_reads_schema_backed_tools() -> anyhow::R
     );
     assert_eq!(roleplay_preview.report.coverage_percent, 100.0);
     assert_eq!(roleplay_preview.report.final_session.scores["trust"], 1.0);
+
+    let campaign_listing = client
+        .call_tool(
+            CallToolRequestParams::new("list_project_json")
+                .with_arguments(arguments(json!({"catalog": "campaigns"}))),
+        )
+        .await?;
+    let campaign_listing: JsonCatalogReport = structured(&campaign_listing)?;
+    assert_eq!(campaign_listing.document_count, 1);
+    let campaign_preview = client
+        .call_tool(
+            CallToolRequestParams::new("preview_roleplay_campaign").with_arguments(arguments(
+                json!({
+                    "path":"campaigns/mcp_preview.json",
+                    "entries":[{
+                        "entry_id":"chapter",
+                        "turns":[{
+                            "player_message":"Let another team repeat the measurement.",
+                            "npc_response":"Then we can keep the claim separate from identity.",
+                            "evaluation":{
+                                "score_deltas":[{
+                                    "dimension_id":"trust",
+                                    "delta":1.0,
+                                    "reason":"Repeatable evidence."
+                                }],
+                                "evidence":[{
+                                    "evidence_id":"plan",
+                                    "player_quote":"repeat the measurement"
+                                }],
+                                "npc_emotion":"focused",
+                                "summary":"The player proposed verification."
+                            }
+                        }]
+                    }]
+                }),
+            )),
+        )
+        .await?;
+    assert_eq!(campaign_preview.is_error, Some(false));
+    let campaign_preview: PreviewCampaignOutput = structured(&campaign_preview)?;
+    assert_eq!(campaign_preview.schema, MCP_CAMPAIGN_PREVIEW_SCHEMA_V1);
+    assert_eq!(
+        campaign_preview.source_sha256,
+        campaign_listing.documents[0].sha256
+    );
+    assert!(campaign_preview.report.completed);
+    assert_eq!(campaign_preview.report.executed_entry_count, 1);
+    assert_eq!(
+        campaign_preview.report.traversed_routes,
+        ["chapter:open_end"]
+    );
+    assert_eq!(
+        campaign_preview.report.final_session.completed_entries[0].scores["trust"],
+        1.0
+    );
+    assert_eq!(
+        campaign_preview.report.steps[0].roleplay_source_sha256,
+        roleplay_listing.documents[0].sha256
+    );
 
     let attack_preview = client
         .call_tool(

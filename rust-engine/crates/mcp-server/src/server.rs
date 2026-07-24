@@ -7,6 +7,7 @@ use llm_authoring::agent_transaction::{
     apply_agent_project_transaction_with_validator, plan_agent_project_transaction,
     AgentProjectTransaction, AgentProjectTransactionPlan,
 };
+use llm_authoring::campaign_preview::execute_project_campaign_preview;
 use llm_authoring::delivery_validation::{validate_project_delivery, DeliveryValidationReport};
 use llm_authoring::json_catalog::{
     inspect_project_json_catalog, read_project_json, JsonCatalogDocument, JsonCatalogReport,
@@ -36,10 +37,11 @@ use crate::project_lease::ProjectLease;
 use crate::protocol::{
     ApplyTransactionOutput, ApplyTransactionRequest, ExportProjectPackageOutput,
     ExportProjectPackageRequest, InspectProjectOutput, InspectProjectPackageOutput,
-    InspectProjectPackageRequest, ListProjectJsonRequest, McpToolError,
-    PreviewProjectPackageOutput, PreviewSceneRoleplayOutput, PreviewSceneRoleplayRequest,
-    PreviewWorkflowOutput, PreviewWorkflowRequest, ReadProjectJsonRequest, RunQualitySuiteOutput,
-    RunQualitySuiteRequest, ValidateProjectPackageOutput, ValidateProjectPackageRequest,
+    InspectProjectPackageRequest, ListProjectJsonRequest, McpToolError, PreviewCampaignOutput,
+    PreviewCampaignRequest, PreviewProjectPackageOutput, PreviewSceneRoleplayOutput,
+    PreviewSceneRoleplayRequest, PreviewWorkflowOutput, PreviewWorkflowRequest,
+    ReadProjectJsonRequest, RunQualitySuiteOutput, RunQualitySuiteRequest,
+    ValidateProjectPackageOutput, ValidateProjectPackageRequest, MCP_CAMPAIGN_PREVIEW_SCHEMA_V1,
     MCP_INSPECTION_SCHEMA_V1, MCP_QUALITY_SUITE_RUN_SCHEMA_V1,
     MCP_SCENE_ROLEPLAY_PREVIEW_SCHEMA_V1, MCP_WORKFLOW_PREVIEW_SCHEMA_V1,
 };
@@ -365,6 +367,36 @@ impl MonogatariMcpServer {
         }))
     }
 
+    /// Replay a sequence of free-form roleplays through deterministic campaign routing.
+    #[tool(annotations(
+        title = "Preview Roleplay Campaign",
+        read_only_hint = true,
+        destructive_hint = false,
+        idempotent_hint = true,
+        open_world_hint = false
+    ))]
+    pub async fn preview_roleplay_campaign(
+        &self,
+        Parameters(request): Parameters<PreviewCampaignRequest>,
+    ) -> Result<Json<PreviewCampaignOutput>, Json<McpToolError>> {
+        let _guard = self.access.read().await;
+        let preview =
+            execute_project_campaign_preview(&self.project_root, &request.path, request.entries)
+                .map_err(|message| {
+                    McpToolError::project(
+                        message,
+                        Some(serde_json::json!({ "path": request.path })),
+                    )
+                })
+                .map_err(Json)?;
+        Ok(Json(PreviewCampaignOutput {
+            schema: MCP_CAMPAIGN_PREVIEW_SCHEMA_V1.to_string(),
+            source_path: preview.source_path,
+            source_sha256: preview.source_sha256,
+            report: preview.report,
+        }))
+    }
+
     /// Export one reviewed package into the startup-fixed output directory.
     #[tool(annotations(
         title = "Export project package",
@@ -504,7 +536,7 @@ impl ServerHandler for MonogatariMcpServer {
                 env!("CARGO_PKG_VERSION"),
             ))
             .with_instructions(format!(
-                "Author Monogatari real-time scene roleplays and compatibility visual novels inside the fixed project root. Inspect, list, and read before planning. Use validate_project for read-only headless acceptance, validate_delivery for declared asset readiness, preview_scene_roleplay for deterministic score and transition evidence, preview_workflow for provider-free graph evidence, and run_quality_suite for executable Quality evidence. Plan before apply. Preview a credential-free package manifest before exporting to the fixed package directory, then inspect and privately validate the written archive. Package validation proves ephemeral extraction plus shared runtime/delivery acceptance, not installation or rendered visual acceptance. {mode} {package_mode}"
+                "Author Monogatari real-time scene roleplays and compatibility visual novels inside the fixed project root. Inspect, list, and read before planning. Use validate_project for read-only headless acceptance, validate_delivery for declared asset readiness, preview_scene_roleplay for deterministic score and transition evidence, preview_roleplay_campaign for cross-chapter relationship and ending-route evidence, preview_workflow for provider-free graph evidence, and run_quality_suite for executable Quality evidence. Plan before apply. Preview a credential-free package manifest before exporting to the fixed package directory, then inspect and privately validate the written archive. Package validation proves ephemeral extraction plus shared runtime/delivery acceptance, not installation or rendered visual acceptance. {mode} {package_mode}"
             ))
     }
 }
@@ -538,7 +570,7 @@ mod tests {
     }
 
     #[test]
-    fn exposes_fourteen_schema_backed_tools_with_write_annotations() {
+    fn exposes_fifteen_schema_backed_tools_with_write_annotations() {
         let root = temp_project();
         let server = MonogatariMcpServer::new(root.clone(), false).unwrap();
         let tools = server.tool_router.list_all();
@@ -556,6 +588,7 @@ mod tests {
                 "list_project_json",
                 "plan_transaction",
                 "preview_project_package",
+                "preview_roleplay_campaign",
                 "preview_scene_roleplay",
                 "preview_workflow",
                 "read_project_json",
@@ -662,6 +695,26 @@ mod tests {
         assert!(roleplay_schema.contains("input_safety"));
         assert!(roleplay_schema.contains("intrusion_detected_count"));
         assert!(roleplay_schema.contains("guarded_response_count"));
+        let campaign = tools
+            .iter()
+            .find(|tool| tool.name == "preview_roleplay_campaign")
+            .unwrap();
+        assert_eq!(
+            campaign.annotations.as_ref().unwrap().read_only_hint,
+            Some(true)
+        );
+        let campaign_input_properties = campaign
+            .input_schema
+            .get("properties")
+            .and_then(serde_json::Value::as_object)
+            .unwrap();
+        assert!(campaign_input_properties.contains_key("path"));
+        assert!(campaign_input_properties.contains_key("entries"));
+        let campaign_schema =
+            serde_json::to_string(campaign.output_schema.as_ref().unwrap()).unwrap();
+        assert!(campaign_schema.contains("route_coverage_percent"));
+        assert!(campaign_schema.contains("roleplay_source_sha256"));
+        assert!(campaign_schema.contains("final_session"));
         let preview = tools
             .iter()
             .find(|tool| tool.name == "preview_project_package")

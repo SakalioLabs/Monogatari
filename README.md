@@ -41,7 +41,7 @@ This separation lets creators use generative characters without surrendering sto
 
 Start with the [English documentation](readme_en.md), [中文说明](readme_ch.md), or the [architecture guide](docs/ARCHITECTURE.md).
 
-Agent clients can use `monogatari-mcp`, which exposes fourteen standard stdio tools
+Agent clients can use `monogatari-mcp`, which exposes fifteen standard stdio tools
 for project inspection, validation, deterministic previews, Quality
 execution, reviewed transactions, and package exchange. See the
 [MCP server guide](docs/MCP_SERVER.md).

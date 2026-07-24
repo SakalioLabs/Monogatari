@@ -2136,7 +2136,7 @@ export function createSourceInvariantVerifier({
       [mcpServerSource, 'pub async fn export_project_package', 'expose reviewed fixed-root package output'],
       [mcpServerSource, 'pub async fn plan_transaction', 'expose side-effect-free transaction planning'],
       [mcpServerSource, 'pub async fn apply_transaction', 'expose validated transaction application'],
-      [readmeSource, 'fourteen standard stdio tools', 'keep the documented MCP tool count aligned with the schema-backed server'],
+      [readmeSource, 'fifteen standard stdio tools', 'keep the documented MCP tool count aligned with the schema-backed server'],
       [mcpServerSource, 'if !self.allow_write', 'keep writes disabled unless startup explicitly enables them'],
       [mcpProtocolSource, 'expected_precondition_fingerprint', 'require the caller to confirm the reviewed plan fingerprint'],
       [mcpProtocolSource, 'expected_content_sha256', 'require the caller to confirm the reviewed package fingerprint'],

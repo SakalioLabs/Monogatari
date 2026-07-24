@@ -48,7 +48,7 @@ This is read-only. Add `--allow-write` to `args` only for a client that should b
 
 ## Tools
 
-The server exposes fourteen standard stdio tools. Every tool has a versioned
+The server exposes fifteen standard stdio tools. Every tool has a versioned
 input/output schema and explicit read/write annotations.
 
 | Tool | Mode | Contract |
@@ -59,6 +59,7 @@ input/output schema and explicit read/write annotations.
 | `list_project_json` | Read | Lists exact byte SHA-256, semantic content fingerprint, size, kind, and portable path; accepts an optional catalog filter |
 | `read_project_json` | Read | Reads one exact-case JSON path beneath an authorable catalog |
 | `preview_scene_roleplay` | Read | Replays bounded player/NPC/evaluator turns through the provider-neutral roleplay state machine and returns source-bound nodes, scores, evidence, transitions, endings, attack categories, and guarded/unguarded containment counts |
+| `preview_roleplay_campaign` | Read | Replays ordered free-form roleplay chapters through deterministic Campaign routing, carries only bounded relationships forward, and returns source-bound chapter traces, sealed score/evidence summaries, traversed routes, and coverage |
 | `preview_workflow` | Read | Executes one project Workflow through the deterministic provider-free preview domain and returns versioned trace, stop, coverage, and exact source SHA evidence |
 | `run_quality_suite` | Read | Executes one exact `quality_suites/...json` path through the shared headless domain, including bounded Workflow choice maps and roleplay intrusion expectations, and returns versioned scenario/audit evidence bound to its byte SHA-256 |
 | `preview_project_package` | Read | Builds the complete credential-free package manifest and deterministic content fingerprint without writing; reports whether an output directory is configured |
@@ -79,7 +80,7 @@ The authorable JSON catalogs are `assets`, `characters`, `dialogue`, `endings`, 
 5. Call `plan_transaction` and review every resolved path, operation, resulting hash, byte count, and the plan fingerprint.
 6. Call `apply_transaction` with the unchanged transaction and reviewed `expected_precondition_fingerprint`.
 7. Call `validate_project` and `validate_delivery` again.
-8. List the `roleplays` catalog and call `preview_scene_roleplay` for every changed dynamic story. Supply representative free-form player messages, intended NPC replies, strict structured evaluations, and adversarial turns with deliberately invalid score/evidence proposals; review the exact source SHA, per-turn input safety, guard decision, containment totals, visited/unvisited nodes, final scores/evidence, and ending. Require every detected attack to be guarded and every unguarded-attack count to be zero. These fixture responses prove deterministic state and containment rules, not live generation.
+8. List the `roleplays` catalog and call `preview_scene_roleplay` for every changed dynamic story. Supply representative free-form player messages, intended NPC replies, strict structured evaluations, and adversarial turns with deliberately invalid score/evidence proposals; review the exact source SHA, per-turn input safety, guard decision, containment totals, visited/unvisited nodes, final scores/evidence, and ending. Require every detected attack to be guarded and every unguarded-attack count to be zero. For multi-chapter stories, call `preview_roleplay_campaign` with the intended chapter sequence and review every Campaign and Roleplay source SHA, relationship carry-over, sealed completion, route, and unvisited-route result. These fixture responses prove deterministic state and containment rules, not live generation.
 9. List the `workflows` catalog and call `preview_workflow` for every changed graph with the intended environment, run context, choices, step bound, seed, or injected random values. Review the source SHA, executed nodes, stop reason, coverage, and unvisited nodes; no model provider or persistent project state is used.
 10. List the `quality_suites` catalog and call `run_quality_suite` for every intended suite path. Use roleplay turn fixtures to prove required endings, score/evidence boundaries, exact intrusion/guard counts, zero unguarded attacks, and forbidden response markers; use `workflow_choice_selections` to cover deterministic Workflow choices. Accept the suite only when `passed` is `true`; `passed: false` is a successful protocol response whose report contains actionable failed-scenario evidence.
 11. Call `preview_project_package` and review the full manifest, file inventory, scrubbed settings, and `content_sha256`.

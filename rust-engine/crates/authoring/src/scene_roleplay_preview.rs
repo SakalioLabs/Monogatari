@@ -164,13 +164,20 @@ pub fn execute_scene_roleplay_preview_with_relationships(
     })
 }
 
-fn load_initial_player_relationships(
+pub(crate) fn load_initial_player_relationships(
     project_root: &Path,
     definition: &SceneRoleplayDefinition,
 ) -> Result<BTreeMap<String, f32>, String> {
-    let relationship_ids = definition
-        .nodes
-        .iter()
+    load_initial_player_relationships_for_definitions(project_root, std::iter::once(definition))
+}
+
+pub(crate) fn load_initial_player_relationships_for_definitions<'a>(
+    project_root: &Path,
+    definitions: impl IntoIterator<Item = &'a SceneRoleplayDefinition>,
+) -> Result<BTreeMap<String, f32>, String> {
+    let relationship_ids = definitions
+        .into_iter()
+        .flat_map(|definition| definition.nodes.iter())
         .filter(|node| node.relationship_rule.is_some())
         .map(|node| node.character_id.as_str())
         .collect::<BTreeSet<_>>();

@@ -3,6 +3,7 @@
 use llm_authoring::agent_transaction::{
     AgentProjectTransaction, AgentProjectTransactionResult, AgentTransactionError,
 };
+use llm_authoring::campaign_preview::{CampaignEntryPreviewInput, CampaignPreviewReport};
 use llm_authoring::delivery_validation::DeliveryValidationReport;
 use llm_authoring::json_catalog::{
     AuthorableJsonCatalog, JsonAcceptanceLevel, JsonCatalogError, JsonCatalogReport,
@@ -22,6 +23,7 @@ pub const MCP_PACKAGE_EXPORT_SCHEMA_V1: &str = "monogatari-mcp-package-export/v1
 pub const MCP_PACKAGE_INSPECTION_SCHEMA_V1: &str = "monogatari-mcp-package-inspection/v1";
 pub const MCP_PACKAGE_PREVIEW_SCHEMA_V1: &str = "monogatari-mcp-package-preview/v1";
 pub const MCP_PACKAGE_VALIDATION_SCHEMA_V1: &str = "monogatari-mcp-package-validation/v1";
+pub const MCP_CAMPAIGN_PREVIEW_SCHEMA_V1: &str = "monogatari-mcp-campaign-preview/v1";
 pub const MCP_QUALITY_SUITE_RUN_SCHEMA_V1: &str = "monogatari-mcp-quality-suite-run/v1";
 pub const MCP_SCENE_ROLEPLAY_PREVIEW_SCHEMA_V1: &str = "monogatari-mcp-scene-roleplay-preview/v1";
 pub const MCP_WORKFLOW_PREVIEW_SCHEMA_V1: &str = "monogatari-mcp-workflow-preview/v1";
@@ -147,6 +149,22 @@ pub struct PreviewSceneRoleplayOutput {
     pub source_path: String,
     pub source_sha256: String,
     pub report: SceneRoleplayPreviewReport,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct PreviewCampaignRequest {
+    pub path: String,
+    #[serde(default)]
+    pub entries: Vec<CampaignEntryPreviewInput>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
+pub struct PreviewCampaignOutput {
+    pub schema: String,
+    pub source_path: String,
+    pub source_sha256: String,
+    pub report: CampaignPreviewReport,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
