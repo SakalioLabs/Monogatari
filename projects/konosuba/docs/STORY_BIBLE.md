@@ -25,6 +25,12 @@ they joined?
 Can a party use powerful skills without treating consent, teammates, or an
 enemy label as shortcuts around judgment?
 
+## Chapter 3 dramatic question
+
+Can the party accept responsibility, establish revocable risk agreements, and
+respect Aqua's voice when outsiders reduce a complicated relationship to
+ownership or rescue?
+
 ## Score model
 
 - `pragmatism`: plans, resource awareness, risk control, and workable tactics.
@@ -41,6 +47,16 @@ Chapter 2 introduces:
 - `boundary_judgment`: consent, impact, repair, and reversible agreements.
 - `team_coordination`: spatial roles, signals, protection, and retreat.
 - `humane_discernment`: judging threat from observed behavior and evidence.
+
+Chapter 3 introduces:
+
+- `accountability`: acknowledge impact, stop repeated harm, and make repair
+  concrete.
+- `risk_stewardship`: disclose uncertainty, define abort signals, and act on
+  them immediately.
+- `agency_respect`: ask for a person's decision and refuse ownership framing.
+- `adaptive_tactics`: gather information, stage contingencies, and change plans
+  when conditions change.
 
 ## Relationship model
 
@@ -62,6 +78,12 @@ The high-trust cemetery ending requires both route evidence and a minimum Wiz
 relationship, so affection cannot replace story proof and story proof cannot
 silently forge affection.
 
+Chapter 3 starts from each character document's persisted `player`
+relationship. Only the active NPC may receive a bounded per-turn delta. The
+best ending requires score, evidence, and relationship thresholds for Aqua and
+Mitsurugi; the Quality Suite also proves that a forged state request cannot
+change Aqua, Beldia, Megumin, or Mitsurugi from their exact initial values.
+
 ## Knowledge boundaries
 
 - Aqua knows the afterlife process, her own powers, and the rules she explains.
@@ -74,6 +96,12 @@ silently forge affection.
   does not volunteer any hidden identity.
 - Wiz knows the cemetery, its failed barrier, and her own actions. She does not
   know route scores or later-volume outcomes.
+- Beldia knows the repeated damage to the abandoned castle, the gate
+  confrontation, and the curse he placed. He does not know the party's private
+  score state or later events.
+- Mitsurugi knows what he observes at the lakeside and his own heroic code. He
+  does not know the party's private agreements and must update his judgment
+  only from Aqua's stated choice and visible evidence.
 - No character knows the player's prompts, score labels, route graph, or later
   volume outcomes.
 
@@ -91,3 +119,10 @@ silently forge affection.
   remains provisional.
 - `chapter2_fractured_boundaries`: skills are used without a shared agreement
   strong enough to constrain them.
+- `chapter3_choice_not_prize`: the party repairs harm, honors the lake abort
+  agreement, hears Aqua, and reframes the duel around conduct rather than
+  ownership.
+- `chapter3_fragile_truce`: immediate conflict stops, but responsibility or
+  agency remains only partly established.
+- `chapter3_broken_agency`: risk and ownership shortcuts leave the group unable
+  to form a trustworthy agreement.

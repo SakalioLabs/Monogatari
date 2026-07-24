@@ -1,0 +1,10 @@
+{
+  "id": "axel_abandoned_castle_hill",
+  "name": "阿克塞尔北郊废城山丘",
+  "background_path": "assets/backgrounds/axel_abandoned_castle_hill.png",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "clear",
+  "time_of_day": "afternoon",
+  "tags": ["chapter_03", "axel", "castle", "explosion", "beldia"]
+}

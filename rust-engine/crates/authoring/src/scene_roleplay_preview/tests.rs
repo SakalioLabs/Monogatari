@@ -2,9 +2,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use llm_game::scene_roleplay::{
     RoleplayCondition, RoleplayEvidenceObservation, RoleplayEvidenceRule, RoleplayInferenceBudget,
-    RoleplayScoreDelta, RoleplayScoreDimension, RoleplayScoreRule, RoleplayTarget,
-    RoleplayTransitionRule, RoleplayTurnEvaluation, SceneRoleplayDefinition, SceneRoleplayNode,
-    SceneRoleplayTurnInput, SCENE_ROLEPLAY_SCHEMA_V1,
+    RoleplayRelationshipRule, RoleplayScoreDelta, RoleplayScoreDimension, RoleplayScoreRule,
+    RoleplayTarget, RoleplayTransitionRule, RoleplayTurnEvaluation, SceneRoleplayDefinition,
+    SceneRoleplayNode, SceneRoleplayTurnInput, SCENE_ROLEPLAY_SCHEMA_V1,
 };
 
 use super::*;
@@ -169,9 +169,20 @@ fn previews_turns_through_the_shared_state_machine() {
 fn project_preview_binds_output_to_exact_source_bytes() {
     let root = temp_root("source");
     std::fs::create_dir_all(root.join("roleplays")).unwrap();
+    std::fs::create_dir_all(root.join("characters")).unwrap();
+    let mut definition = definition();
+    definition.nodes[0].relationship_rule = Some(RoleplayRelationshipRule {
+        guidance: "Keep the guide relationship grounded.".to_string(),
+        max_delta_per_turn: 0.1,
+    });
     std::fs::write(
         root.join("roleplays/test.json"),
-        serde_json::to_vec_pretty(&definition()).unwrap(),
+        serde_json::to_vec_pretty(&definition).unwrap(),
+    )
+    .unwrap();
+    std::fs::write(
+        root.join("characters/guide.json"),
+        br#"{"id":"guide","name":"Guide","relationships":{"player":0.35}}"#,
     )
     .unwrap();
 
@@ -181,6 +192,7 @@ fn project_preview_binds_output_to_exact_source_bytes() {
     assert_eq!(preview.source_path, "roleplays/test.json");
     assert_eq!(preview.source_sha256.len(), 64);
     assert_eq!(preview.report.visited_node_ids, ["contact", "decision"]);
+    assert_eq!(preview.report.final_session.relationships["guide"], 0.35);
     std::fs::remove_dir_all(root).unwrap();
 }
 

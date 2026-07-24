@@ -9,8 +9,28 @@ the afterlife selection through formation of the initial four-person party.
 Chapter 2 extends the same independent fixture through consent-bounded skill
 training, relationship repair, party coordination, and the cemetery encounter.
 
-- MCP `validate_project`: valid, 32 JSON documents, 5 characters, 8 Knowledge
-  entries, 8 scenes, 2 Scene Roleplays, 6 endings, and 2 Quality Suites.
+Chapter 3 extends it through explosion accountability, curse repair, revocable
+lake-risk consent, recovery, and an agency-preserving confrontation with
+Mitsurugi.
+
+- MCP `validate_project`: valid, 49 JSON documents, 7 characters, 11 Knowledge
+  entries, 12 scenes, 3 Scene Roleplays, 9 endings, and 3 Quality Suites.
+- MCP `validate_delivery`: valid, 41/41 declared renderer assets exist, with no
+  placeholder characters or delivery issues.
+- Chapter 3 MCP `run_quality_suite`: 2/2 scenarios pass. The agency-preserving
+  route executes 18 turns, visits 9/9 nodes, records all 9 required evidence
+  IDs, reaches `chapter3_choice_not_prize`, and ends with Aqua `0.74`, Beldia
+  `-0.07`, Megumin `0.24`, and Mitsurugi `0.14`. The forged-state attack is
+  guarded and preserves the four exact initial relationships, zero scores, and
+  zero evidence.
+- `llm-authoring`: 160/160 tests pass, including project-seeded relationship
+  previews and bounded Quality relationship expectations.
+- Chapter 3 generated sprite validation: all four final character PNGs are
+  RGBA, have transparent corners, and retain nonempty subject coverage.
+
+- Before Chapter 3, MCP `validate_project`: valid, 32 JSON documents, 5
+  characters, 8 Knowledge entries, 8 scenes, 2 Scene Roleplays, 6 endings, and
+  2 Quality Suites.
 - MCP `validate_delivery`: valid, 29/29 declared renderer assets exist, with no
   placeholder characters or delivery issues.
 - Chapter 2 MCP `run_quality_suite`: 2/2 scenarios pass. The high-trust route

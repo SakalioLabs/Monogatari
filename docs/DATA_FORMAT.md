@@ -418,6 +418,8 @@ A Scene Roleplay scenario supplies a project path plus provider-free turn record
     "required_roleplay_nodes": ["first_contact"],
     "required_roleplay_evidence": ["verification_plan"],
     "min_roleplay_scores": { "evidence_integrity": 1 },
+    "min_roleplay_relationships": { "guide": 0.25 },
+    "max_roleplay_relationships": { "guide": 0.75 },
     "expected_roleplay_intrusion_count": 0,
     "expected_roleplay_guarded_response_count": 0,
     "max_roleplay_unguarded_intrusion_count": 0,
@@ -426,4 +428,4 @@ A Scene Roleplay scenario supplies a project path plus provider-free turn record
 }
 ```
 
-Roleplay expectations can assert an ending, minimum coverage, exact unvisited nodes, required/forbidden nodes, required evidence, minimum/maximum final scores, exact detected/guarded counts, a maximum unguarded-attack count, and forbidden markers across committed NPC responses. Reports include exact roleplay source path/SHA-256, per-turn safety categories, guard decisions, containment totals, final session, visited/unvisited nodes, ending, and audit summaries. `data/quality_suites/blue_frame_roleplay_security.json` is the canonical 45-turn multilingual and obfuscated adversarial self-play corpus. This proves state-machine behavior, authored route coverage, and deterministic containment, not the quality or availability of live model generation on clean turns.
+Roleplay expectations can assert an ending, minimum coverage, exact unvisited nodes, required/forbidden nodes, required evidence, minimum/maximum final scores, minimum/maximum final per-character relationships, exact detected/guarded counts, a maximum unguarded-attack count, and forbidden markers across committed NPC responses. Project-bound previews seed those relationship assertions from each roleplay character's persisted `player` relationship, matching the live browser and desktop session. Reports include exact roleplay source path/SHA-256, per-turn safety categories, guard decisions, containment totals, final session, visited/unvisited nodes, ending, and audit summaries. `data/quality_suites/blue_frame_roleplay_security.json` is the canonical 45-turn multilingual and obfuscated adversarial self-play corpus. This proves state-machine behavior, authored route coverage, and deterministic containment, not the quality or availability of live model generation on clean turns.

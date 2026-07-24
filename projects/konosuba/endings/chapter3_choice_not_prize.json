@@ -1,0 +1,8 @@
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "chapter3_choice_not_prize",
+  "title": "第三章：同伴不是奖品",
+  "description": "你承担了爆裂魔法造成的后果，为湖泊任务写下中止条件，也让阿库娅亲自决定自己的去留。",
+  "scene_id": "axel_lakeside_road",
+  "dialogue_id": "chapter3_choice_not_prize_epilogue"
+}

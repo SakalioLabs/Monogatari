@@ -1,0 +1,17 @@
+{
+  "id": "chapter3_mitsurugi_and_agency",
+  "category": "story",
+  "title": "第三章御剑响夜与角色自主权",
+  "content": "御剑响夜是由阿库娅送往异世界的日本人，职业为剑术大师，持有只认可他的魔剑格拉墨。他真诚敬重阿库娅，却会因片面现场印象替她定义受害与救援，并把决斗胜负误当成决定她归属的方式。阿库娅有权说明湖泊任务是否自愿、有权拒绝换队，也不是任何人的奖品。公开、非致命、条件对称的比试可以解决双方争执，但不能取代阿库娅自己的选择。",
+  "tags": ["chapter_03", "mitsurugi", "aqua", "agency", "duel"],
+  "importance": 1,
+  "metadata": {
+    "volume": "1",
+    "chapter": "3",
+    "adaptation": "interactive_summary"
+  },
+  "related_entries": [
+    "chapter1_afterlife_rules",
+    "chapter1_party_boundaries"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "chapter3_broken_agency",
+  "title": "第三章：被替别人决定的冒险",
+  "description": "爆裂、笼具和决斗都成了强者替别人作决定的借口，队伍虽然没有解散，却失去了共同承担风险的基础。",
+  "scene_id": "axel_lakeside_road",
+  "dialogue_id": "chapter3_broken_agency_epilogue"
+}

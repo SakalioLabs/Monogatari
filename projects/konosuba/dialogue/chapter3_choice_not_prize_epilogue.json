@@ -1,0 +1,27 @@
+{
+  "id": "chapter3_choice_not_prize_epilogue",
+  "title": "同伴不是奖品",
+  "description": "第三章高责任结局短章。",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "text": "返城道路重新安静下来。御剑收起决斗姿势，第一次先看向阿库娅，等待她自己回答。",
+      "next_node_id": "aqua",
+      "choices": []
+    },
+    "aqua": {
+      "speaker_id": "aqua",
+      "emotion": "confident",
+      "text": "我会留在自己选择的队伍里。下次接任务前，你们两个都得先听我把条件说完！",
+      "next_node_id": "final",
+      "choices": []
+    },
+    "final": {
+      "text": "你们没有因为赢下一次冲突而成为队伍，而是因为责任、停止权与选择终于对每个人都有效。",
+      "is_ending": true,
+      "ending_type": "chapter3_choice_not_prize",
+      "choices": []
+    }
+  },
+  "variables": {}
+}

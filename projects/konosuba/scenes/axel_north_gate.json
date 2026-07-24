@@ -1,0 +1,10 @@
+{
+  "id": "axel_north_gate",
+  "name": "阿克塞尔北门",
+  "background_path": "assets/backgrounds/axel_north_gate.png",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "clear",
+  "time_of_day": "morning",
+  "tags": ["chapter_03", "axel", "gate", "confrontation"]
+}

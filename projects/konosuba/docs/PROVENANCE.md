@@ -18,6 +18,11 @@
   Chapter 2 adds the Axel training yard, flying-cabbage fields, public cemetery,
   two Chris expressions, and two Wiz expressions. Character sprites were
   generated against flat chroma backgrounds and converted to transparent PNGs.
+  Chapter 3 adds the abandoned-castle hill, Axel north gate, contaminated lake,
+  lakeside road, two Beldia expressions, and two Mitsurugi expressions. The
+  first-season official character page informed Mitsurugi's defining
+  appearance; Beldia's public anime design informed his armor silhouette. The
+  final assets are newly generated rather than copied reference images.
 
 ## Rights and distribution
 

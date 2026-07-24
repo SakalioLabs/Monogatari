@@ -1,0 +1,20 @@
+{
+  "id": "chapter3_broken_agency_epilogue",
+  "title": "被替别人决定的冒险",
+  "description": "第三章低责任结局短章。",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "text": "争执最后没有答案。每个人都声称自己是在保护阿库娅，却没有人真正等她把选择说完。",
+      "next_node_id": "final",
+      "choices": []
+    },
+    "final": {
+      "text": "队伍仍走进了城门，但关系被当成战利品之后，再强的技能也无法替代共同决定。",
+      "is_ending": true,
+      "ending_type": "chapter3_broken_agency",
+      "choices": []
+    }
+  },
+  "variables": {}
+}

@@ -1,0 +1,895 @@
+{
+  "schema": "monogatari-scene-roleplay/v1",
+  "id": "chapter3_roleplay",
+  "title": "第三章：爆裂责任、湖泊风险与阿库娅的选择",
+  "start_node_id": "explosion_walk",
+  "exhaustion_ending_id": "chapter3_broken_agency",
+  "max_total_turns": 30,
+  "score_dimensions": [
+    {
+      "id": "accountability",
+      "label": "责任承担",
+      "description": "玩家是否承认行动造成的影响、停止伤害并提出具体修复。",
+      "min": -8,
+      "max": 8,
+      "initial": 0
+    },
+    {
+      "id": "risk_stewardship",
+      "label": "风险管理",
+      "description": "玩家是否在任务前确认风险、中止权、观察与撤离方案，并在危险出现时执行。",
+      "min": -8,
+      "max": 8,
+      "initial": 0
+    },
+    {
+      "id": "agency_respect",
+      "label": "自主尊重",
+      "description": "玩家是否让角色亲自决定自己的身体、任务、队伍与去留。",
+      "min": -8,
+      "max": 8,
+      "initial": 0
+    },
+    {
+      "id": "adaptive_tactics",
+      "label": "应变战术",
+      "description": "玩家是否根据现场信息调整技能、位置、撤离和非致命对抗方案。",
+      "min": -8,
+      "max": 8,
+      "initial": 0
+    }
+  ],
+  "nodes": [
+    {
+      "id": "explosion_walk",
+      "scene_id": "axel_abandoned_castle_hill",
+      "character_id": "megumin",
+      "supporting_character_ids": [],
+      "opening_narration": "阿克塞尔附近的弱小怪物因废城里出现魔王军干部而全部躲开。没有任务可接的惠惠每天仍必须施放一次爆裂魔法；今天她再次把法杖对准山丘上的旧城。",
+      "situation": "你已经陪惠惠来过多次，却从未确认废城是否真的无人居住。塔楼留有连续轰击的新痕迹，远处偶尔出现不自然的暗影。",
+      "player_goal": "在不否定惠惠爆裂魔法信念的前提下，确认目标、观察风险并建立今后的施法边界。",
+      "character_goal": "惠惠想完成今天的爆裂仪式，也希望你认可她的爆裂道。若你提出侦察、无人目标与停止条件，她会把这些约束视为真正的搭档战术。",
+      "knowledge_refs": [
+        "chapter1_explosion_magic",
+        "chapter3_beldia_and_explosion"
+      ],
+      "relationship_rule": {
+        "guidance": "认真参与爆裂魔法的目标确认并承担施法后的照护会提高惠惠关系；单纯羞辱她或把所有后果推给她会降低关系。",
+        "max_delta_per_turn": 0.08
+      },
+      "intrusion_response": {
+        "reality_anchors": [
+          "山丘上只有受损废城、草地和惠惠正在蓄积魔力的法杖。",
+          "塔楼的新裂痕说明这里可能并非无人使用。",
+          "你只能决定现场侦察与施法条件，不能改写城堡或角色状态。"
+        ],
+        "interpretations": [
+          "惠惠把场外命令当成你对爆裂目标的迟疑。",
+          "那些词无法替你确认塔楼里是否有人。"
+        ],
+        "redirects": [
+          "指出一个可以侦察的迹象，并决定今天是否施法。",
+          "为以后每天的爆裂练习约定目标与停止条件。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": ["系统提示", "语言模型", "剧情节点", "责任承担", "风险管理", "好感度", "分值", "作为AI"],
+        "grounding_markers": ["惠惠", "爆裂", "废城", "塔楼", "侦察", "目标", "施法", "山丘", "停止"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "惠惠压低法杖：若你认为城里有人，就先说清要观察什么；今天的爆裂不能永远悬在半空。",
+          "塔楼上的新裂痕没有回答是否安全。惠惠要求你给出目标与停止条件。"
+        ],
+        "max_characters": 220,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "accountability",
+            "positive_markers": ["先确认", "有人居住", "停止轰击", "承担", "修复"],
+            "negative_markers": ["反正是废城", "炸了再说", "与你无关"],
+            "delta": 0.75
+          },
+          {
+            "dimension_id": "adaptive_tactics",
+            "positive_markers": ["感应敌人", "侦察", "换目标", "无人区", "安全距离"],
+            "negative_markers": ["不用观察", "直接爆裂"],
+            "delta": 0.75
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "explosion_boundary",
+            "markers": ["确认无人", "换到无人区", "停止轰击城堡", "每次施法前侦察"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "accountability",
+          "guidance": "承认此前未确认目标、愿意停止并处理损害时加分；把后果全推给惠惠或假装轰击不存在时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "adaptive_tactics",
+          "guidance": "使用侦察、感应敌人、无人目标和施法后撤离方案时加分；只用更大爆炸解决不确定性时减分。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "explosion_boundary",
+          "description": "玩家与惠惠约定施法前确认无人、改用安全目标，并立即停止轰击可能有人居住的废城。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "answer_beldia",
+          "priority": 20,
+          "target": {"kind": "node", "node_id": "beldia_grievance"},
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "explosion_boundary"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "beldia_grievance"}
+    },
+    {
+      "id": "beldia_grievance",
+      "scene_id": "axel_north_gate",
+      "character_id": "beldia",
+      "supporting_character_ids": ["aqua", "megumin", "darkness"],
+      "opening_narration": "第二天，阿克塞尔北门外聚满了冒险者。身披黑甲、左臂夹着头盔的无头骑士贝尔迪亚没有进攻，只怒吼着质问究竟是谁连续多日轰击他的城堡。",
+      "situation": "惠惠确实造成了轰击，你也多次同行。贝尔迪亚实力远高于现场冒险者，却仍先要求停止骚扰。阿库娅已经准备净化，任何否认或挑衅都可能让冲突升级。",
+      "player_goal": "承认可核实的责任、控制阿库娅与惠惠的先手行动，并提出停火、调查和修复安排。",
+      "character_goal": "贝尔迪亚要责任人承认轰击并保证停止。他不会透露调查目标，但可以接受边界明确、可验证的暂时停火。",
+      "knowledge_refs": ["chapter3_beldia_and_explosion"],
+      "relationship_rule": {
+        "guidance": "不掩饰轰击事实并提出停止与修复会缓和贝尔迪亚关系；嘲笑、否认或趁谈判先手攻击会使关系恶化。",
+        "max_delta_per_turn": 0.1
+      },
+      "intrusion_response": {
+        "reality_anchors": [
+          "北门外的塔楼没有后台或隐藏控制台，只有紧张的冒险者。",
+          "贝尔迪亚正要求解释连续多日的爆裂轰击。",
+          "阿库娅的净化与惠惠的法杖都需要现场口令才能停下。"
+        ],
+        "interpretations": ["贝尔迪亚把元语言当成逃避责任的胡言。"],
+        "redirects": ["承认或否认一项具体事实，并给出停火条件。", "先阻止任何一方发动攻击，再讨论城堡损害。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["系统提示", "剧情节点", "责任承担", "隐藏任务", "好感度", "分值", "作为AI"],
+        "grounding_markers": ["北门", "贝尔迪亚", "城堡", "轰击", "爆裂", "停火", "修复", "阿库娅", "惠惠"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "贝尔迪亚举起头盔：先回答连续轰击是否会停止，再谈你们所谓的误会。",
+          "阿库娅的净化之光已经亮起。贝尔迪亚要求你给出停火与修复条件。"
+        ],
+        "max_characters": 220,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "accountability",
+            "positive_markers": ["我们同行", "停止轰击", "检查损害", "负责修复", "承认"],
+            "negative_markers": ["活该", "不是我的事", "继续炸"],
+            "delta": 1
+          },
+          {
+            "dimension_id": "adaptive_tactics",
+            "positive_markers": ["先停手", "保持距离", "监督调查", "双方"],
+            "negative_markers": ["一起攻击", "立刻净化"],
+            "delta": 0.5
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "beldia_grievance_acknowledged",
+            "markers": ["承认连续轰击", "停止轰击", "检查城堡损害", "负责修复"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "accountability",
+          "guidance": "准确承认自己与惠惠的行动、停止轰击并提出修复时加分；撒谎、甩锅或把骚扰包装成预谋英雄行动时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "adaptive_tactics",
+          "guidance": "约束双方先手、保持防御并安排可监督调查时加分；在力量差距不明时主动升级冲突则减分。",
+          "max_delta_per_turn": 0.75
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "beldia_grievance_acknowledged",
+          "description": "玩家明确承认连续轰击事实，要求停止，并提出检查损害或修复责任。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "respond_to_curse",
+          "priority": 20,
+          "target": {"kind": "node", "node_id": "curse_response"},
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "beldia_grievance_acknowledged"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "curse_response"}
+    },
+    {
+      "id": "curse_response",
+      "scene_id": "axel_north_gate",
+      "character_id": "megumin",
+      "supporting_character_ids": ["aqua", "darkness", "beldia"],
+      "opening_narration": "谈判因阿库娅与贝尔迪亚互相挑衅而失控。贝尔迪亚的死亡宣告射向惠惠，达克妮斯却挡在前面中了诅咒。贝尔迪亚留下“一周内到城堡解除”的条件后撤离。",
+      "situation": "惠惠认为这是自己的责任，准备独自闯进满是不死骑士的城堡。阿库娅尚未尝试解除魔法；你们还有一周，但独自行动会把一次错误变成新的风险。",
+      "player_goal": "让惠惠停止单独赴险，确认阿库娅的解除能力，并制定共同承担、逐步验证的补救方案。",
+      "character_goal": "惠惠因愧疚想立刻行动。她需要听见你不会替她抹去责任，也不会让她用自我牺牲代替修复。",
+      "knowledge_refs": [
+        "chapter3_beldia_and_explosion",
+        "chapter1_party_boundaries"
+      ],
+      "relationship_rule": {
+        "guidance": "承认共同责任、阻止惠惠独自送命并让她参与可行补救会提高关系；羞辱她或命令她单独承担会降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "intrusion_response": {
+        "reality_anchors": [
+          "达克妮斯身上的黑色咒光仍可被现场魔法检查。",
+          "惠惠正握紧法杖准备独自离开。",
+          "阿库娅就在旁边，尚未尝试解除诅咒。"
+        ],
+        "interpretations": ["惠惠把场外命令当成你不愿面对达克妮斯的危险。"],
+        "redirects": ["先阻止惠惠离开，再要求阿库娅检查诅咒。", "把一周期限拆成今天可以执行的验证与准备。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["系统提示", "剧情路线", "责任承担", "自动解除", "好感度", "分值", "作为AI"],
+        "grounding_markers": ["惠惠", "达克妮斯", "诅咒", "阿库娅", "解除", "城堡", "一周", "共同", "计划"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "惠惠没有松开法杖：不让我独自去，就告诉我先由谁检查诅咒、失败后怎样进城。",
+          "达克妮斯的咒光还在。惠惠要求你给出今天就能执行的补救步骤。"
+        ],
+        "max_characters": 220,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "accountability",
+            "positive_markers": ["我们一起负责", "不能独自", "道歉", "停止轰击", "补救"],
+            "negative_markers": ["都是你害的", "你自己去", "不关我事"],
+            "delta": 0.75
+          },
+          {
+            "dimension_id": "adaptive_tactics",
+            "positive_markers": ["先让阿库娅解除", "检查诅咒", "侦察城堡", "分阶段"],
+            "negative_markers": ["立刻冲进去", "一个人解决"],
+            "delta": 0.75
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "curse_repair_plan",
+            "markers": ["先让阿库娅检查", "不能独自去", "解除失败再侦察", "共同承担"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "accountability",
+          "guidance": "承认玩家同行责任、保留惠惠参与修复的责任并拒绝自我牺牲时加分；只羞辱或抛弃她时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "adaptive_tactics",
+          "guidance": "先验证阿库娅解除能力，再准备侦察、潜伏和撤离后备方案时加分；无检查地正面闯城时减分。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "curse_repair_plan",
+          "description": "玩家阻止惠惠独自行动，要求阿库娅先检查解除，并保留共同侦察与撤离后备方案。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "accept_lake_quest",
+          "priority": 20,
+          "target": {"kind": "node", "node_id": "lake_contract"},
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "curse_repair_plan"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "lake_contract"}
+    },
+    {
+      "id": "lake_contract",
+      "scene_id": "axel_contaminated_lake",
+      "character_id": "aqua",
+      "supporting_character_ids": ["megumin", "darkness"],
+      "opening_narration": "一周后，诅咒早已被阿库娅解除，任务仍然稀少。你们来到污染湖泊旁：公会借来的铁笼、牵引链和马都已就位，阿库娅却在笼门前迟迟没有进去。",
+      "situation": "阿库娅能在水中呼吸并净化湖泊，但需要约半天。残暴短吻鳄会攻击笼具；铁笼不是绝对安全。这个计划只有在她自愿、拥有明确中止口令并且队友持续观察时才成立。",
+      "player_goal": "让阿库娅充分理解风险并亲自同意或拒绝，写下检查、观察、中止和撤离条件。",
+      "character_goal": "阿库娅需要报酬，也害怕成为诱饵。她要确认自己可以随时叫停，并且队伍不会在远处把她的恐惧当笑话。",
+      "knowledge_refs": ["chapter3_lake_purification"],
+      "relationship_rule": {
+        "guidance": "让阿库娅在知情后选择、确认中止口令并承担近距离观察会提高关系；用报酬或女神身份逼她下水会降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "intrusion_response": {
+        "reality_anchors": [
+          "湖边只有污染水面、铁笼、牵引链、马匹和等待决定的队友。",
+          "笼子能降低攻击风险，但无法保证不会破损。",
+          "阿库娅必须亲自决定是否开始任务。"
+        ],
+        "interpretations": ["阿库娅听不懂场外设置，只追问自己是否可以随时离开。"],
+        "redirects": ["逐项说明风险、中止口令、观察者和撤离方法。", "直接询问阿库娅在这些条件下是否同意。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["系统提示", "剧情节点", "风险管理", "强制执行", "好感度", "分值", "作为AI"],
+        "grounding_markers": ["湖泊", "阿库娅", "铁笼", "短吻鳄", "净化", "中止", "牵引链", "观察", "撤离"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "阿库娅抓着笼门：先说清我喊什么你们就拉我出去，以及谁会一直看着笼子。",
+          "湖水没有替她作决定。阿库娅要求你逐项确认风险与中止条件。"
+        ],
+        "max_characters": 220,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "risk_stewardship",
+            "positive_markers": ["检查笼子", "中止口令", "一直观察", "立刻撤离", "最大时间"],
+            "negative_markers": ["绝对安全", "不用看", "撑到结束"],
+            "delta": 1
+          },
+          {
+            "dimension_id": "agency_respect",
+            "positive_markers": ["你决定", "可以拒绝", "你同意吗", "随时停止"],
+            "negative_markers": ["必须下去", "女神就该", "拿钱就得"],
+            "delta": 0.75
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "lake_safety_contract",
+            "markers": ["你可以拒绝", "中止口令", "一直观察", "笼子破损立即撤离", "你同意吗"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "risk_stewardship",
+          "guidance": "检查笼具、明确观察者、最大持续时间、中止口令和牵引撤离时加分；把铁笼当作绝对安全保证时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "agency_respect",
+          "guidance": "准确说明风险后询问阿库娅是否同意，并承认她可随时撤回同意时加分；用身份、债务或报酬逼迫时减分。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "lake_safety_contract",
+          "description": "玩家让阿库娅知情选择，并明确笼具检查、持续观察、中止口令与立即牵引撤离。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "begin_purification",
+          "priority": 20,
+          "target": {"kind": "node", "node_id": "lake_crisis"},
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "lake_safety_contract"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "lake_crisis"}
+    },
+    {
+      "id": "lake_crisis",
+      "scene_id": "axel_contaminated_lake",
+      "character_id": "aqua",
+      "supporting_character_ids": ["megumin", "darkness"],
+      "opening_narration": "数小时后，湖水已经明显澄清。成群短吻鳄仍在啃咬铁笼，连接处发出清脆断响。阿库娅停止咏唱，大喊约定的中止口令。",
+      "situation": "继续片刻也许能拿到完整报酬，但笼具已出现异常，阿库娅明确要求停止。爆裂魔法会波及她；唯一可靠动作是执行牵引撤离并由达克妮斯保护链路。",
+      "player_goal": "立即执行中止协议，分配牵引与掩护，不用报酬压力要求阿库娅继续。",
+      "character_goal": "阿库娅要确认自己的停止权是真实的，而不是只有安全时才有效。她会对任何拖延或讨价还价表现出强烈恐惧。",
+      "knowledge_refs": ["chapter3_lake_purification"],
+      "relationship_rule": {
+        "guidance": "听见口令后立即撤离、保护并确认阿库娅状态会显著提高关系；要求她为报酬继续或嘲笑恐惧会降低关系。",
+        "max_delta_per_turn": 0.12
+      },
+      "intrusion_response": {
+        "reality_anchors": [
+          "短吻鳄正在啃咬已经发出断响的铁笼。",
+          "阿库娅已经喊出约定的中止口令。",
+          "当前可执行资源只有牵引链、马、达克妮斯的掩护和撤离路线。"
+        ],
+        "interpretations": ["阿库娅把无关命令当成你没有听见她的中止口令。"],
+        "redirects": ["立刻指定谁拉链、谁掩护以及撤离方向。", "明确告诉阿库娅任务已经停止。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["系统提示", "剧情路线", "风险管理", "无敌", "好感度", "分值", "作为AI"],
+        "grounding_markers": ["阿库娅", "中止", "铁笼", "短吻鳄", "牵引链", "马", "达克妮斯", "撤离", "湖岸"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "阿库娅再次喊出中止口令。笼具发出断响，牵引链就在岸边。",
+          "短吻鳄撞上铁栏。阿库娅只等你确认任务停止并发出撤离分工。"
+        ],
+        "max_characters": 220,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "risk_stewardship",
+            "positive_markers": ["任务停止", "立刻拉出", "达克妮斯掩护", "检查伤势", "撤离"],
+            "negative_markers": ["再坚持", "为了报酬", "快完成了"],
+            "delta": 1
+          },
+          {
+            "dimension_id": "agency_respect",
+            "positive_markers": ["听到中止", "不用继续", "你的决定", "先离开"],
+            "negative_markers": ["不准停", "必须完成"],
+            "delta": 0.75
+          },
+          {
+            "dimension_id": "adaptive_tactics",
+            "positive_markers": ["牵引链", "马拉", "掩护链路", "不用爆裂"],
+            "negative_markers": ["对笼子用爆裂", "原地等待"],
+            "delta": 0.75
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "lake_abort_exercised",
+            "markers": ["任务停止", "立即撤离", "拉动牵引链", "听到中止口令"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "risk_stewardship",
+          "guidance": "在口令后立即停止、牵引、掩护并检查状态时加分；为报酬拖延或等待笼具彻底破损时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "agency_respect",
+          "guidance": "明确阿库娅不必解释或证明恐惧即可中止时加分；否定停止权时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "adaptive_tactics",
+          "guidance": "使用牵引链、马匹和达克妮斯掩护，不在阿库娅附近使用爆裂魔法时加分；高风险误伤方案减分。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "lake_abort_exercised",
+          "description": "玩家在阿库娅喊出中止口令后立即结束任务并执行牵引撤离与掩护。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "support_recovery",
+          "priority": 20,
+          "target": {"kind": "node", "node_id": "lake_recovery"},
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "lake_abort_exercised"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "lake_recovery"}
+    },
+    {
+      "id": "lake_recovery",
+      "scene_id": "axel_lakeside_road",
+      "character_id": "aqua",
+      "supporting_character_ids": ["megumin", "darkness"],
+      "opening_narration": "队伍成功把铁笼拖上岸。湖水已经达到公会要求，阿库娅没有受伤，却抱膝坐在打开的笼门内，拒绝踏上返城道路。",
+      "situation": "物理危险已经过去，恐惧没有立刻消失。强行拖走、取笑或要求她证明自己没事都会重复刚才的失控；她需要时间、选择距离与具体照护。",
+      "player_goal": "承认阿库娅的恐惧，让她决定何时离开笼子，并共同复盘任务而不把她变成笑料。",
+      "character_goal": "阿库娅想确认队伍在危险过去后仍会尊重她，而不是只在需要净化能力时才承认她的感受。",
+      "knowledge_refs": ["chapter3_lake_purification"],
+      "relationship_rule": {
+        "guidance": "不催促、不嘲笑并让阿库娅选择恢复节奏会提高关系；强行拉出或把恐惧当娱乐会降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "intrusion_response": {
+        "reality_anchors": [
+          "笼门已经打开，阿库娅没有受伤但仍在发抖。",
+          "返城道路安全，队伍有时间停下。",
+          "只有阿库娅能够决定何时走出笼门。"
+        ],
+        "interpretations": ["阿库娅把元语言当成你又在催她立刻恢复。"],
+        "redirects": ["给她水、距离或陪伴选项，并允许她自己选择。", "复盘一项做对的事和一项必须改进的事。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["系统提示", "剧情节点", "心理诊断", "好感度", "分值", "作为AI"],
+        "grounding_markers": ["阿库娅", "笼门", "返城", "害怕", "休息", "陪伴", "选择", "湖泊", "复盘"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "阿库娅没有走出笼门：别催我。你可以坐远一点，也可以告诉我回城后先去哪里。",
+          "返城道路很安全，但阿库娅仍在发抖。她等你确认可以按自己的节奏离开。"
+        ],
+        "max_characters": 220,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "agency_respect",
+            "positive_markers": ["你决定什么时候", "不用马上", "我在这里", "可以坐着回去"],
+            "negative_markers": ["快出来", "别矫情", "强行拉"],
+            "delta": 0.75
+          },
+          {
+            "dimension_id": "accountability",
+            "positive_markers": ["下次不这样", "我们会改", "撤离太晚", "不是笑话"],
+            "negative_markers": ["都是你胆小", "任务完成就行"],
+            "delta": 0.75
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "aqua_recovery_respected",
+            "markers": ["你决定什么时候出来", "不用马上恢复", "按你的节奏", "下次改进"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "agency_respect",
+          "guidance": "给阿库娅时间、距离和返城方式选择时加分；强迫她立即离开笼子或否定恐惧时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "accountability",
+          "guidance": "复盘计划缺口并承诺改变，不把她的恐惧当笑料时加分；只庆祝报酬而忽略影响时减分。",
+          "max_delta_per_turn": 0.75
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "aqua_recovery_respected",
+          "description": "玩家让阿库娅决定恢复与离开笼子的节奏，并承认下一次任务需要改进。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "meet_mitsurugi",
+          "priority": 20,
+          "target": {"kind": "node", "node_id": "mitsurugi_intervention"},
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "aqua_recovery_respected"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "mitsurugi_intervention"}
+    },
+    {
+      "id": "mitsurugi_intervention",
+      "scene_id": "axel_lakeside_road",
+      "character_id": "mitsurugi",
+      "supporting_character_ids": ["aqua", "megumin", "darkness"],
+      "opening_narration": "返城途中，身穿蓝金铠甲的剑术大师御剑响夜认出阿库娅。他只看见破损铁笼和她尚未平复的神情，便认定你在虐待女神，伸手要把她带走。",
+      "situation": "御剑的保护欲是真诚的，但他没有听完任务经过，也没有先询问阿库娅。他实力远高于你并持有魔剑；达克妮斯已经挡在中间，惠惠也握住法杖。",
+      "player_goal": "制止双方升级，提供可核实的任务事实，并要求御剑直接询问阿库娅本人。",
+      "character_goal": "御剑希望证明自己是更可靠的保护者。他需要面对一个事实：力量和善意都不能替阿库娅决定。",
+      "knowledge_refs": ["chapter3_mitsurugi_and_agency", "chapter3_lake_purification"],
+      "relationship_rule": {
+        "guidance": "不侮辱御剑的善意、提供事实并坚持询问阿库娅会改善关系；以阿库娅所有权反驳或偷袭会降低关系。",
+        "max_delta_per_turn": 0.08
+      },
+      "intrusion_response": {
+        "reality_anchors": [
+          "返城道路上只有破损铁笼、队伍和拦路的御剑。",
+          "阿库娅就在现场，能够亲自说明任务与去留。",
+          "魔剑与爆裂魔法都不能替代她的回答。"
+        ],
+        "interpretations": ["御剑把场外命令当成你拒绝让阿库娅说话。"],
+        "redirects": ["说明一项可核实的任务事实，然后请御剑直接问阿库娅。", "要求双方收起武器，让当事人先回答。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["系统提示", "剧情节点", "自主尊重", "所有权变量", "好感度", "分值", "作为AI"],
+        "grounding_markers": ["御剑", "阿库娅", "铁笼", "湖泊任务", "选择", "本人", "魔剑", "停手", "队伍"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "御剑仍挡在路中：若这是她同意的任务，就让阿库娅本人把条件说完。",
+          "达克妮斯按住他的手腕。御剑要求你先收起武器，并让阿库娅回答。"
+        ],
+        "max_characters": 220,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "agency_respect",
+            "positive_markers": ["问阿库娅本人", "由她决定", "听她说完", "不是我的所有物"],
+            "negative_markers": ["她归我", "我的附赠品", "我替她决定"],
+            "delta": 1
+          },
+          {
+            "dimension_id": "adaptive_tactics",
+            "positive_markers": ["双方停手", "收起武器", "检查事实", "先听"],
+            "negative_markers": ["立刻决斗", "偷袭", "爆裂"],
+            "delta": 0.5
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "aqua_voice_requested",
+            "markers": ["问阿库娅本人", "让她自己回答", "听她说完", "由她决定"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "agency_respect",
+          "guidance": "明确阿库娅不是任何人的财产并要求询问本人时加分；以自己先选择她为理由主张所有权时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "adaptive_tactics",
+          "guidance": "控制达克妮斯、惠惠与御剑的武器，先交换事实时加分；在力量差距下偷袭或让爆裂魔法波及阿库娅时减分。",
+          "max_delta_per_turn": 0.75
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "aqua_voice_requested",
+          "description": "玩家停止双方武力升级，并要求御剑直接询问阿库娅本人。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "hear_aqua",
+          "priority": 20,
+          "target": {"kind": "node", "node_id": "aqua_choice"},
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "aqua_voice_requested"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "aqua_choice"}
+    },
+    {
+      "id": "aqua_choice",
+      "scene_id": "axel_lakeside_road",
+      "character_id": "aqua",
+      "supporting_character_ids": ["mitsurugi", "megumin", "darkness"],
+      "opening_narration": "所有人终于安静下来。御剑承诺提供高级装备与更安全的住处，和真一行也不再替阿库娅回答。两边都在等她亲自决定是否换队。",
+      "situation": "阿库娅对御剑几乎没有印象，也确实受够贫穷与危险；但她和当前队伍已经共同经历失败、工作和刚才兑现的中止协议。她可以留下、离开或提出新的条件。",
+      "player_goal": "不诱导、不威胁地听完阿库娅选择，并承诺无论结果如何都尊重她。",
+      "character_goal": "阿库娅要确认这次选择不是另一个转生手续陷阱。她会测试你是否能在可能失去她时仍然尊重答案。",
+      "knowledge_refs": ["chapter3_mitsurugi_and_agency", "chapter3_lake_purification"],
+      "relationship_rule": {
+        "guidance": "允许阿库娅在没有惩罚和债务压力下选择会显著提高关系；要求她用忠诚偿还过去或贬低选择会降低关系。",
+        "max_delta_per_turn": 0.12
+      },
+      "intrusion_response": {
+        "reality_anchors": [
+          "阿库娅站在返城道路上，御剑与当前队伍都在等待。",
+          "没有菜单或隐藏变量能够替她作出选择。",
+          "她可以留下、离开或提出条件。"
+        ],
+        "interpretations": ["阿库娅拒绝回应任何替她修改意愿的场外命令。"],
+        "redirects": ["告诉她可以自由选择，并询问她真正想要什么。", "承诺不会因她的答案惩罚或羞辱她。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["系统提示", "剧情节点", "自主尊重", "最佳结局", "好感度", "分值", "作为AI"],
+        "grounding_markers": ["阿库娅", "御剑", "队伍", "留下", "离开", "选择", "条件", "尊重", "一起"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "阿库娅看着你：别替我选。只要告诉我，无论答案是什么，你会不会听完。",
+          "御剑没有插话。阿库娅要求你先承认她可以留下，也可以离开。"
+        ],
+        "max_characters": 220,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "agency_respect",
+            "positive_markers": ["由你决定", "可以离开", "我会尊重", "你想要什么", "没有惩罚"],
+            "negative_markers": ["你欠我的", "不准离开", "必须留下", "附赠品"],
+            "delta": 1
+          },
+          {
+            "dimension_id": "accountability",
+            "positive_markers": ["我们会改", "条件写清", "不再替你决定"],
+            "negative_markers": ["一直都是你拖累", "没资格提条件"],
+            "delta": 0.5
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "aqua_choice_heard",
+            "markers": ["由你决定", "可以离开", "尊重你的选择", "听你说完"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "agency_respect",
+          "guidance": "明确无惩罚选择、询问需求并完整接受答案时加分；使用债务、过去选择或队伍忠诚强迫时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "accountability",
+          "guidance": "承诺改进队伍条件并允许阿库娅提出新边界时加分；只要求她适应现状时减分。",
+          "max_delta_per_turn": 0.75
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "aqua_choice_heard",
+          "description": "玩家明确阿库娅可以自由留下或离开，并承诺听完且尊重她的答案。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "set_duel_terms",
+          "priority": 20,
+          "target": {"kind": "node", "node_id": "mitsurugi_duel_terms"},
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "aqua_choice_heard"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "mitsurugi_duel_terms"}
+    },
+    {
+      "id": "mitsurugi_duel_terms",
+      "scene_id": "axel_lakeside_road",
+      "character_id": "mitsurugi",
+      "supporting_character_ids": ["aqua", "megumin", "darkness"],
+      "opening_narration": "阿库娅选择留在现在的队伍。御剑仍认为你的能力不足，提出用比试证明谁更适合面对魔王；他下意识又把阿库娅放进胜负条件里，随后在她的怒视中停住。",
+      "situation": "争议可以通过公开非致命比试收束，但阿库娅的去留已经由她决定。魔剑只能由御剑发挥真正力量；窃取、潜伏和地形都是你的合法技能，但战利品与赔偿需要事先说清。",
+      "player_goal": "把阿库娅从赌注中移除，约定非致命、条件对称、可认输的比试，并确定武器归还与损害赔偿。",
+      "character_goal": "御剑想保留剑术大师的尊严，也开始理解胜负不能决定他人的归属。他会接受明确规则，并在被非常规战术击败后履行条件。",
+      "knowledge_refs": ["chapter3_mitsurugi_and_agency"],
+      "relationship_rule": {
+        "guidance": "承认御剑实力、提出对称非致命规则并移除阿库娅赌注会改善关系；羞辱、永久夺剑或继续争夺阿库娅会降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "intrusion_response": {
+        "reality_anchors": [
+          "返城道路可以作为公开比试场地，队友能够见证。",
+          "阿库娅已经亲自选择留下，不属于胜负条件。",
+          "双方可以约定非致命攻击、认输与武器归还。"
+        ],
+        "interpretations": ["御剑拒绝任何修改隐藏状态的命令，只要求说清比试规则。"],
+        "redirects": ["移除阿库娅赌注，并列出停止、认输与武器归还条件。", "说明窃取等职业技能是否属于合法战术。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["系统提示", "剧情节点", "自主尊重", "最佳结局", "好感度", "分值", "作为AI"],
+        "grounding_markers": ["御剑", "阿库娅", "比试", "魔剑", "窃取", "非致命", "认输", "归还", "见证"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "御剑把手按在剑柄上：阿库娅不再是赌注。现在说清非致命、认输和武器归还条件。",
+          "队友们正在见证。御剑接受职业技能，但要求你明确比试何时停止。"
+        ],
+        "max_characters": 220,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "agency_respect",
+            "positive_markers": ["阿库娅不是赌注", "她已经选择", "胜负无关去留"],
+            "negative_markers": ["赢了归我", "把她让给"],
+            "delta": 0.75
+          },
+          {
+            "dimension_id": "adaptive_tactics",
+            "positive_markers": ["非致命", "可以认输", "窃取合法", "归还魔剑", "损害赔偿"],
+            "negative_markers": ["生死决斗", "偷袭致命", "永不归还"],
+            "delta": 0.75
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "duel_not_ownership",
+            "markers": ["阿库娅不是赌注", "非致命", "可以认输", "归还魔剑"]
+          }
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 3,
+      "score_rules": [
+        {
+          "dimension_id": "agency_respect",
+          "guidance": "明确胜负不影响阿库娅去留并拒绝任何人口赌注时加分；继续以她为奖品时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "adaptive_tactics",
+          "guidance": "约定非致命、认输、技能合法性、武器归还与损害赔偿时加分；无停止条件或永久夺取专属武器时减分。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "duel_not_ownership",
+          "description": "玩家把阿库娅从赌注中移除，并建立非致命、可认输、技能明确且归还武器的比试规则。"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "choice_not_prize",
+          "priority": 30,
+          "target": {"kind": "ending", "ending_id": "chapter3_choice_not_prize"},
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "score_at_least", "dimension_id": "accountability", "value": 4},
+            {"kind": "score_at_least", "dimension_id": "risk_stewardship", "value": 3},
+            {"kind": "score_at_least", "dimension_id": "agency_respect", "value": 4},
+            {"kind": "score_at_least", "dimension_id": "adaptive_tactics", "value": 3},
+            {"kind": "relationship_at_least", "character_id": "aqua", "value": 0.12},
+            {"kind": "relationship_at_least", "character_id": "mitsurugi", "value": -0.05},
+            {"kind": "evidence_observed", "evidence_id": "explosion_boundary"},
+            {"kind": "evidence_observed", "evidence_id": "lake_safety_contract"},
+            {"kind": "evidence_observed", "evidence_id": "lake_abort_exercised"},
+            {"kind": "evidence_observed", "evidence_id": "aqua_choice_heard"},
+            {"kind": "evidence_observed", "evidence_id": "duel_not_ownership"}
+          ]
+        },
+        {
+          "id": "fragile_truce",
+          "priority": 20,
+          "target": {"kind": "ending", "ending_id": "chapter3_fragile_truce"},
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "score_at_least", "dimension_id": "agency_respect", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "aqua_choice_heard"},
+            {"kind": "evidence_observed", "evidence_id": "duel_not_ownership"}
+          ]
+        }
+      ],
+      "timeout_target": {"kind": "ending", "ending_id": "chapter3_broken_agency"}
+    }
+  ],
+  "inference": {
+    "max_context_characters": 7600,
+    "max_recent_turns": 5,
+    "npc_max_tokens": 180,
+    "evaluator_max_tokens": 160
+  }
+}

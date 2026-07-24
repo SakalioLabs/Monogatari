@@ -1,0 +1,17 @@
+{
+  "id": "chapter3_lake_purification",
+  "category": "story",
+  "title": "第三章湖泊净化与中止条件",
+  "content": "阿克塞尔的一处水源因水质恶化出现残暴短吻鳄。阿库娅能接触湖水持续净化，预计需要半天；她在水中可以呼吸，但仍会恐惧、疲劳并受到笼具破损风险。钢铁运输笼、牵引链和马匹只能降低攻击风险，不能消除风险。任务开始前应确认阿库娅自愿、撤离口令、笼具检查、观察位置和最大持续时间；任务中任何人都可以报告危险，阿库娅要求停止时必须立即撤离。",
+  "tags": ["chapter_03", "aqua", "lake", "purification", "risk", "consent"],
+  "importance": 1,
+  "metadata": {
+    "volume": "1",
+    "chapter": "3",
+    "adaptation": "interactive_summary"
+  },
+  "related_entries": [
+    "chapter1_party_boundaries",
+    "chapter1_axel_basics"
+  ]
+}

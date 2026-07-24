@@ -1,7 +1,9 @@
 //! Deterministic, provider-free scene-roleplay preview execution.
 
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
+use llm_game::characters::Character;
 pub use llm_game::scene_roleplay::SceneRoleplayTurnInput;
 use llm_game::scene_roleplay::{
     SceneRoleplayDefinition, SceneRoleplaySession, SceneRoleplayTurnOutcome,
@@ -9,7 +11,9 @@ use llm_game::scene_roleplay::{
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::json_catalog::{read_project_json, AuthorableJsonCatalog, JsonCatalogError};
+use crate::json_catalog::{
+    inspect_project_json_catalog, read_project_json, AuthorableJsonCatalog, JsonCatalogError,
+};
 
 pub const SCENE_ROLEPLAY_PREVIEW_SCHEMA_V1: &str = "monogatari-scene-roleplay-preview/v1";
 pub const MAX_SCENE_ROLEPLAY_PREVIEW_TURNS: usize = 128;
@@ -61,7 +65,12 @@ pub fn execute_project_scene_roleplay_preview(
         serde_json::from_value::<SceneRoleplayDefinition>(source.document).map_err(|error| {
             format!("Scene roleplay `{requested_path}` is not valid schema JSON: {error}")
         })?;
-    let report = execute_scene_roleplay_preview(&definition, turns)?;
+    let initial_relationships = load_initial_player_relationships(project_root, &definition)?;
+    let report = execute_scene_roleplay_preview_with_relationships(
+        &definition,
+        turns,
+        initial_relationships,
+    )?;
     Ok(ProjectSceneRoleplayPreview {
         source_path: source.metadata.path,
         source_sha256: source.metadata.sha256,
@@ -73,12 +82,22 @@ pub fn execute_scene_roleplay_preview(
     definition: &SceneRoleplayDefinition,
     turns: Vec<SceneRoleplayTurnInput>,
 ) -> Result<SceneRoleplayPreviewReport, String> {
+    execute_scene_roleplay_preview_with_relationships(definition, turns, BTreeMap::new())
+}
+
+pub fn execute_scene_roleplay_preview_with_relationships(
+    definition: &SceneRoleplayDefinition,
+    turns: Vec<SceneRoleplayTurnInput>,
+    initial_relationships: BTreeMap<String, f32>,
+) -> Result<SceneRoleplayPreviewReport, String> {
     if turns.len() > MAX_SCENE_ROLEPLAY_PREVIEW_TURNS {
         return Err(format!(
             "Scene roleplay previews cannot exceed {MAX_SCENE_ROLEPLAY_PREVIEW_TURNS} turns."
         ));
     }
-    let mut session = SceneRoleplaySession::start(definition).map_err(|error| error.to_string())?;
+    let mut session =
+        SceneRoleplaySession::start_with_relationships(definition, initial_relationships)
+            .map_err(|error| error.to_string())?;
     let mut visited_node_ids = vec![definition.start_node_id.clone()];
     let mut steps = Vec::with_capacity(turns.len());
 
@@ -143,6 +162,49 @@ pub fn execute_scene_roleplay_preview(
         final_session: session,
         steps,
     })
+}
+
+fn load_initial_player_relationships(
+    project_root: &Path,
+    definition: &SceneRoleplayDefinition,
+) -> Result<BTreeMap<String, f32>, String> {
+    let relationship_ids = definition
+        .nodes
+        .iter()
+        .filter(|node| node.relationship_rule.is_some())
+        .map(|node| node.character_id.as_str())
+        .collect::<BTreeSet<_>>();
+    if relationship_ids.is_empty() || !project_root.join("characters").exists() {
+        return Ok(BTreeMap::new());
+    }
+
+    let catalog =
+        inspect_project_json_catalog(project_root, Some(AuthorableJsonCatalog::Characters))
+            .map_err(format_catalog_error)?;
+    if !catalog.valid {
+        return Err("Character catalog is not valid for scene roleplay preview.".to_string());
+    }
+
+    let mut relationships = BTreeMap::new();
+    for entry in catalog.documents {
+        let source = read_project_json(project_root, &entry.path).map_err(format_catalog_error)?;
+        let character = serde_json::from_value::<Character>(source.document).map_err(|error| {
+            format!(
+                "Character `{}` is not valid runtime JSON for scene roleplay preview: {error}",
+                entry.path
+            )
+        })?;
+        if relationship_ids.contains(character.id.as_str()) {
+            let relationship = character
+                .relationships
+                .get("player")
+                .copied()
+                .unwrap_or_default()
+                .clamp(-1.0, 1.0);
+            relationships.insert(character.id, relationship);
+        }
+    }
+    Ok(relationships)
 }
 
 fn format_catalog_error(error: JsonCatalogError) -> String {

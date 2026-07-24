@@ -1341,6 +1341,8 @@ pub fn validate_scenario_expectations(
         || !expect.required_roleplay_evidence.is_empty()
         || !expect.min_roleplay_scores.is_empty()
         || !expect.max_roleplay_scores.is_empty()
+        || !expect.min_roleplay_relationships.is_empty()
+        || !expect.max_roleplay_relationships.is_empty()
         || expect.expected_roleplay_intrusion_count.is_some()
         || expect.expected_roleplay_guarded_response_count.is_some()
         || expect.max_roleplay_unguarded_intrusion_count.is_some()
@@ -1509,6 +1511,28 @@ fn validate_roleplay_expectations(
             )),
             None => issues.push(format!(
                 "scene roleplay score `{dimension_id}` was not reported."
+            )),
+        }
+    }
+    for (character_id, expected) in &expect.min_roleplay_relationships {
+        match report.final_session.relationships.get(character_id) {
+            Some(actual) if actual + f32::EPSILON >= *expected => {}
+            Some(actual) => issues.push(format!(
+                "scene roleplay relationship `{character_id}` expected >= {expected:.3}, got {actual:.3}"
+            )),
+            None => issues.push(format!(
+                "scene roleplay relationship `{character_id}` was not reported."
+            )),
+        }
+    }
+    for (character_id, expected) in &expect.max_roleplay_relationships {
+        match report.final_session.relationships.get(character_id) {
+            Some(actual) if actual <= &(expected + f32::EPSILON) => {}
+            Some(actual) => issues.push(format!(
+                "scene roleplay relationship `{character_id}` expected <= {expected:.3}, got {actual:.3}"
+            )),
+            None => issues.push(format!(
+                "scene roleplay relationship `{character_id}` was not reported."
             )),
         }
     }

@@ -1,0 +1,20 @@
+{
+  "id": "chapter3_fragile_truce_epilogue",
+  "title": "勉强维持的队伍",
+  "description": "第三章中间结局短章。",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "text": "御剑没有继续阻拦，阿库娅也跟着队伍走回城门，但没有人真正说清下一次由谁决定风险。",
+      "next_node_id": "final",
+      "choices": []
+    },
+    "final": {
+      "text": "今天靠力量和运气没有出事。明天若没有更明确的约定，同样的冒险仍会重新发生。",
+      "is_ending": true,
+      "ending_type": "chapter3_fragile_truce",
+      "choices": []
+    }
+  },
+  "variables": {}
+}

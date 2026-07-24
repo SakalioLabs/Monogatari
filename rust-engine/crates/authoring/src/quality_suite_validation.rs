@@ -151,6 +151,10 @@ pub struct QualityExpectation {
     #[serde(default)]
     pub max_roleplay_scores: BTreeMap<String, f32>,
     #[serde(default)]
+    pub min_roleplay_relationships: BTreeMap<String, f32>,
+    #[serde(default)]
+    pub max_roleplay_relationships: BTreeMap<String, f32>,
+    #[serde(default)]
     pub expected_roleplay_intrusion_count: Option<usize>,
     #[serde(default)]
     pub expected_roleplay_guarded_response_count: Option<usize>,
@@ -677,6 +681,8 @@ fn validate_roleplay_fixture(
         || !expect.required_roleplay_evidence.is_empty()
         || !expect.min_roleplay_scores.is_empty()
         || !expect.max_roleplay_scores.is_empty()
+        || !expect.min_roleplay_relationships.is_empty()
+        || !expect.max_roleplay_relationships.is_empty()
         || expect.expected_roleplay_intrusion_count.is_some()
         || expect.expected_roleplay_guarded_response_count.is_some()
         || expect.max_roleplay_unguarded_intrusion_count.is_some()
@@ -753,6 +759,31 @@ fn validate_roleplay_fixture(
         {
             issues.push(format!(
                 "{scenario_label}: minimum roleplay score for `{dimension_id}` exceeds its maximum."
+            ));
+        }
+    }
+    for (character_id, value) in expect
+        .min_roleplay_relationships
+        .iter()
+        .chain(expect.max_roleplay_relationships.iter())
+    {
+        if !portable_workflow_node_id(character_id)
+            || !value.is_finite()
+            || !(-1.0..=1.0).contains(value)
+        {
+            issues.push(format!(
+                "{scenario_label}: roleplay relationship expectation for `{character_id}` is invalid."
+            ));
+        }
+    }
+    for (character_id, min) in &expect.min_roleplay_relationships {
+        if expect
+            .max_roleplay_relationships
+            .get(character_id)
+            .is_some_and(|max| min > max)
+        {
+            issues.push(format!(
+                "{scenario_label}: minimum roleplay relationship for `{character_id}` exceeds its maximum."
             ));
         }
     }

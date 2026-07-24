@@ -1,0 +1,8 @@
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "chapter3_fragile_truce",
+  "title": "第三章：勉强维持的队伍",
+  "description": "危机被处理，决斗也停止了，但责任、风险和选择仍有一部分只靠临场运气维持。",
+  "scene_id": "axel_lakeside_road",
+  "dialogue_id": "chapter3_fragile_truce_epilogue"
+}

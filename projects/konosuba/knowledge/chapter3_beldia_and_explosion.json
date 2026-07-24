@@ -1,0 +1,17 @@
+{
+  "id": "chapter3_beldia_and_explosion",
+  "category": "story",
+  "title": "第三章废城轰击与无头骑士",
+  "content": "阿克塞尔北郊废城现由魔王军干部贝尔迪亚占据，附近弱小怪物因此避开，普通任务锐减。惠惠需要每天施放一次爆裂魔法，并连续多日把废城当成目标。贝尔迪亚是保留骑士礼节的无头骑士，能召唤不死骑士并施加一周后生效的死亡诅咒。阿库娅的大祭司解除魔法能够解除这种诅咒。停止轰击、确认损害与提出约束，比把偶然骚扰包装成英雄计划更可能控制冲突。",
+  "tags": ["chapter_03", "beldia", "explosion", "curse", "accountability"],
+  "importance": 1,
+  "metadata": {
+    "volume": "1",
+    "chapter": "3",
+    "adaptation": "interactive_summary"
+  },
+  "related_entries": [
+    "chapter1_explosion_magic",
+    "chapter1_party_boundaries"
+  ]
+}

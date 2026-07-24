@@ -24,6 +24,15 @@ Monogatari's real-time Scene Roleplay workflow.
 - a spatially coordinated flying-cabbage hunt
 - a behavior-first confrontation and supervised compact with Wiz
 
+## Chapter 3 scope
+
+- a relationship-aware boundary for Megumin's repeated castle explosions
+- Beldia's grievance, Darkness's curse, and a staged repair plan
+- Aqua's revocable consent and abort signal during lake purification
+- recovery after the lake crisis without dismissing Aqua's distress
+- Mitsurugi's intervention, Aqua's own choice, and duel terms that reject
+  treating a person as a prize
+
 The player acts as Kazuma and writes free-form responses. NPC dialogue is
 generated from character, scene, and knowledge context. Authored fallback text
 exists only to keep the story playable when inference is unavailable.
@@ -31,7 +40,7 @@ exists only to keep the story playable when inference is unavailable.
 The primary browser entry is:
 
 ```text
-/game?previewRoleplay=chapter2_roleplay&authoring=1
+/game?previewRoleplay=chapter3_roleplay&authoring=1
 ```
 
 `previewDialogue` routes are fixed epilogues and compatibility previews. They

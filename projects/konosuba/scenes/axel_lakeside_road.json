@@ -1,0 +1,10 @@
+{
+  "id": "axel_lakeside_road",
+  "name": "湖泊返城道路",
+  "background_path": "assets/backgrounds/axel_lakeside_road.png",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "clear",
+  "time_of_day": "late_afternoon",
+  "tags": ["chapter_03", "axel", "road", "mitsurugi", "duel"]
+}

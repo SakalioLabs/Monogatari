@@ -225,12 +225,16 @@ fn reports_cross_catalog_quality_references() {
 #[test]
 fn validates_typed_scene_roleplay_fixtures_and_expectations() {
     let suite = parse_quality_suite_document(
-        r#"{"version":"1","name":"Roleplay","description":"Roleplay coverage","scenarios":[{"id":"route","category":"scene_roleplay","description":"Route","roleplay":{"path":"roleplays/route.json","turns":[]},"expect":{"expected_roleplay_ending":"ending","min_roleplay_coverage_percent":100,"required_roleplay_nodes":["start"],"min_roleplay_scores":{"trust":1.0}}}]}"#,
+        r#"{"version":"1","name":"Roleplay","description":"Roleplay coverage","scenarios":[{"id":"route","category":"scene_roleplay","description":"Route","roleplay":{"path":"roleplays/route.json","turns":[]},"expect":{"expected_roleplay_ending":"ending","min_roleplay_coverage_percent":100,"required_roleplay_nodes":["start"],"min_roleplay_scores":{"trust":1.0},"min_roleplay_relationships":{"guide":0.25},"max_roleplay_relationships":{"guide":0.75}}}]}"#,
     )
     .unwrap();
     assert_eq!(
         suite.scenarios[0].roleplay.as_ref().unwrap().path,
         "roleplays/route.json"
+    );
+    assert_eq!(
+        suite.scenarios[0].expect.min_roleplay_relationships["guide"],
+        0.25
     );
 
     let missing_fixture = parse_quality_suite_document(
@@ -240,9 +244,10 @@ fn validates_typed_scene_roleplay_fixtures_and_expectations() {
     assert!(missing_fixture.contains("require a roleplay fixture"));
 
     let invalid_bounds = parse_quality_suite_document(
-        r#"{"version":"1","name":"Roleplay","description":"Roleplay coverage","scenarios":[{"id":"route","category":"scene_roleplay","description":"Route","roleplay":{"path":"roleplays/route.json"},"expect":{"min_roleplay_coverage_percent":101,"min_roleplay_scores":{"trust":2.0},"max_roleplay_scores":{"trust":1.0}}}]}"#,
+        r#"{"version":"1","name":"Roleplay","description":"Roleplay coverage","scenarios":[{"id":"route","category":"scene_roleplay","description":"Route","roleplay":{"path":"roleplays/route.json"},"expect":{"min_roleplay_coverage_percent":101,"min_roleplay_scores":{"trust":2.0},"max_roleplay_scores":{"trust":1.0},"min_roleplay_relationships":{"guide":0.5},"max_roleplay_relationships":{"guide":-0.5,"invalid":2.0}}}]}"#,
     )
     .unwrap_err();
     assert!(invalid_bounds.contains("min_roleplay_coverage_percent"));
     assert!(invalid_bounds.contains("exceeds its maximum"));
+    assert!(invalid_bounds.contains("roleplay relationship expectation"));
 }

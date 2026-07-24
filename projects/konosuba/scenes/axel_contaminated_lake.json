@@ -1,0 +1,10 @@
+{
+  "id": "axel_contaminated_lake",
+  "name": "阿克塞尔污染湖泊",
+  "background_path": "assets/backgrounds/axel_contaminated_lake.png",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "overcast",
+  "time_of_day": "day",
+  "tags": ["chapter_03", "axel", "lake", "purification", "risk"]
+}
