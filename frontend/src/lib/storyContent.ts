@@ -104,8 +104,11 @@ interface WebProjectManifest {
   schema: string
   scene_files?: string[]
   dialogue_files?: string[]
+  roleplay_files?: string[]
+  campaign_files?: string[]
   ending_files?: string[]
   character_files?: string[]
+  knowledge_files?: string[]
 }
 
 export interface SceneDefinition {
@@ -139,6 +142,8 @@ const BROWSER_ENDING_DRAFT_KEY = 'monogatari:story-ending-catalog:v1'
 const BROWSER_SCENE_DRAFT_KEY = 'monogatari:scene-authoring-catalog:v1'
 const BROWSER_DIALOGUE_DRAFT_KEY = 'monogatari:dialogue-authoring-catalog:v1'
 const BROWSER_CHARACTER_DRAFT_KEY = 'monogatari:character-authoring-catalog:v1'
+const BROWSER_PROJECT_DRAFT_SCHEMA = 'monogatari-browser-project-drafts/v1'
+let activeBrowserProjectScope: string | null = null
 
 function baseUrl(): URL {
   const base = import.meta.env.BASE_URL || '/'
@@ -156,6 +161,7 @@ async function webProjectManifest(): Promise<WebProjectManifest> {
   if (manifest.schema !== 'monogatari-web-project-assets/v1') {
     throw new Error(`Unsupported project content manifest: ${String(manifest.schema)}`)
   }
+  activeBrowserProjectScope = browserProjectScope(manifest)
   return manifest
 }
 
@@ -171,14 +177,14 @@ async function fetchDocuments<T>(paths: string[] | undefined): Promise<T[]> {
 export async function loadStoryScenes(): Promise<StorySceneInfo[]> {
   if (hasTauriRuntime()) return invokeCommand<StorySceneInfo[]>('list_story_scenes')
   const access = await loadStoryContentAccess()
-  const browserDrafts = loadBrowserSceneDrafts()
-  if (browserDrafts !== null) {
-    return browserDrafts
-      .map((scene) => storySceneInfo(scene, 'browser_draft', access))
-      .sort((left, right) => left.id.localeCompare(right.id))
-  }
   try {
     const manifest = await webProjectManifest()
+    const browserDrafts = loadBrowserSceneDrafts()
+    if (browserDrafts !== null) {
+      return browserDrafts
+        .map((scene) => storySceneInfo(scene, 'browser_draft', access))
+        .sort((left, right) => left.id.localeCompare(right.id))
+    }
     const documents = await fetchDocuments<SceneDocument>(manifest.scene_files)
     return documents.map((scene) => {
       const backgroundPath = scene.background_path ?? scene.backgroundPath ?? null
@@ -206,10 +212,10 @@ export async function loadStoryCharacters(): Promise<StoryCharacterInfo[]> {
   if (hasTauriRuntime()) {
     return normalizeStoryCharacters(await invokeCommand<StoryCharacterInfo[]>('get_characters'))
   }
-  const browserDrafts = loadBrowserCharacterDrafts()
-  if (browserDrafts !== null) return normalizeStoryCharacters(browserDrafts)
   try {
     const manifest = await webProjectManifest()
+    const browserDrafts = loadBrowserCharacterDrafts()
+    if (browserDrafts !== null) return normalizeStoryCharacters(browserDrafts)
     const documents = await fetchDocuments<StoryCharacterInfo | StoryCharacterInfo[]>(manifest.character_files)
     return normalizeStoryCharacters(documents.flatMap(document => Array.isArray(document) ? document : [document]))
   } catch {
@@ -234,25 +240,12 @@ function normalizeStoryCharacters(documents: StoryCharacterInfo[]): StoryCharact
 }
 
 export function loadBrowserCharacterDrafts(): StoryCharacterInfo[] | null {
-  if (typeof window === 'undefined') return null
-  const raw = window.localStorage.getItem(BROWSER_CHARACTER_DRAFT_KEY)
-  if (raw === null) return null
-  try {
-    const value = JSON.parse(raw) as unknown
-    if (!Array.isArray(value)) return null
-    const characters = value.filter(isStoryCharacterInfo)
-    return characters.length === value.length ? normalizeStoryCharacters(characters) : null
-  } catch {
-    return null
-  }
+  const characters = loadScopedBrowserDrafts(BROWSER_CHARACTER_DRAFT_KEY, isStoryCharacterInfo)
+  return characters === null ? null : normalizeStoryCharacters(characters)
 }
 
 export function saveBrowserCharacterDrafts(characters: StoryCharacterInfo[]): void {
-  if (typeof window === 'undefined') return
-  window.localStorage.setItem(
-    BROWSER_CHARACTER_DRAFT_KEY,
-    JSON.stringify(normalizeStoryCharacters(characters)),
-  )
+  saveScopedBrowserDrafts(BROWSER_CHARACTER_DRAFT_KEY, normalizeStoryCharacters(characters))
 }
 
 export function resetBrowserCharacterDrafts(): void {
@@ -270,34 +263,23 @@ function isStoryCharacterInfo(value: unknown): value is StoryCharacterInfo {
 }
 
 export function loadBrowserSceneDrafts(): SceneDefinition[] | null {
-  if (typeof window === 'undefined') return null
-  const raw = window.localStorage.getItem(BROWSER_SCENE_DRAFT_KEY)
-  if (raw === null) return null
-  try {
-    const value = JSON.parse(raw) as unknown
-    if (!Array.isArray(value)) return null
-    const scenes = value.filter(isSceneDefinition)
-    return scenes.length === value.length ? scenes : null
-  } catch {
-    return null
-  }
+  return loadScopedBrowserDrafts(BROWSER_SCENE_DRAFT_KEY, isSceneDefinition)
 }
 
 export function saveBrowserSceneDrafts(scenes: SceneDefinition[]): void {
-  if (typeof window === 'undefined') return
-  window.localStorage.setItem(BROWSER_SCENE_DRAFT_KEY, JSON.stringify(scenes))
+  saveScopedBrowserDrafts(BROWSER_SCENE_DRAFT_KEY, scenes)
 }
 
 export async function loadStoryDialogues(): Promise<StoryDialogueInfo[]> {
   if (hasTauriRuntime()) return invokeCommand<StoryDialogueInfo[]>('list_dialogues')
   const access = await loadStoryContentAccess()
-  const browserDrafts = loadBrowserDialogueDrafts()
-  if (browserDrafts !== null) {
-    return browserDrafts.map((dialogue) => storyDialogueInfo(dialogue, access))
-      .sort((left, right) => left.id.localeCompare(right.id))
-  }
   try {
     const manifest = await webProjectManifest()
+    const browserDrafts = loadBrowserDialogueDrafts()
+    if (browserDrafts !== null) {
+      return browserDrafts.map((dialogue) => storyDialogueInfo(dialogue, access))
+        .sort((left, right) => left.id.localeCompare(right.id))
+    }
     const documents = await fetchDocuments<DialogueDocument>(manifest.dialogue_files)
     return documents.map((dialogue) => storyDialogueInfo({
       id: dialogue.id,
@@ -316,35 +298,24 @@ export async function loadStoryDialogues(): Promise<StoryDialogueInfo[]> {
 }
 
 export function loadBrowserDialogueDrafts(): DialogueDefinition[] | null {
-  if (typeof window === 'undefined') return null
-  const raw = window.localStorage.getItem(BROWSER_DIALOGUE_DRAFT_KEY)
-  if (raw === null) return null
-  try {
-    const value = JSON.parse(raw) as unknown
-    if (!Array.isArray(value)) return null
-    const dialogues = value.filter(isDialogueDefinition)
-    return dialogues.length === value.length ? dialogues : null
-  } catch {
-    return null
-  }
+  return loadScopedBrowserDrafts(BROWSER_DIALOGUE_DRAFT_KEY, isDialogueDefinition)
 }
 
 export function saveBrowserDialogueDrafts(dialogues: DialogueDefinition[]): void {
-  if (typeof window === 'undefined') return
-  window.localStorage.setItem(BROWSER_DIALOGUE_DRAFT_KEY, JSON.stringify(dialogues))
+  saveScopedBrowserDrafts(BROWSER_DIALOGUE_DRAFT_KEY, dialogues)
 }
 
 export async function loadStoryEndings(): Promise<StoryEndingInfo[]> {
   if (hasTauriRuntime()) return invokeCommand<StoryEndingInfo[]>('list_story_endings')
   const access = await loadStoryContentAccess()
-  const browserDrafts = loadBrowserStoryEndingDrafts()
-  if (browserDrafts !== null) {
-    return browserDrafts
-      .map((ending) => ({ ...ending, access: contentAccess(access, 'ending', ending.id) }))
-      .sort((left, right) => left.id.localeCompare(right.id))
-  }
   try {
     const manifest = await webProjectManifest()
+    const browserDrafts = loadBrowserStoryEndingDrafts()
+    if (browserDrafts !== null) {
+      return browserDrafts
+        .map((ending) => ({ ...ending, access: contentAccess(access, 'ending', ending.id) }))
+        .sort((left, right) => left.id.localeCompare(right.id))
+    }
     const documents = await fetchDocuments<StoryEndingDefinition>(manifest.ending_files)
     return documents
       .filter((ending) => ending.schema === 'monogatari-story-ending/v1')
@@ -359,22 +330,62 @@ export async function loadStoryEndings(): Promise<StoryEndingInfo[]> {
 }
 
 export function loadBrowserStoryEndingDrafts(): StoryEndingDefinition[] | null {
-  if (typeof window === 'undefined') return null
-  const raw = window.localStorage.getItem(BROWSER_ENDING_DRAFT_KEY)
+  return loadScopedBrowserDrafts(BROWSER_ENDING_DRAFT_KEY, isStoryEndingDefinition)
+}
+
+export function saveBrowserStoryEndingDrafts(endings: StoryEndingDefinition[]): void {
+  saveScopedBrowserDrafts(BROWSER_ENDING_DRAFT_KEY, endings)
+}
+
+function loadScopedBrowserDrafts<T>(
+  storageKey: string,
+  isEntry: (value: unknown) => value is T,
+): T[] | null {
+  if (typeof window === 'undefined' || !activeBrowserProjectScope) return null
+  const raw = window.localStorage.getItem(storageKey)
   if (raw === null) return null
   try {
-    const value = JSON.parse(raw) as unknown
-    if (!Array.isArray(value)) return null
-    const endings = value.filter(isStoryEndingDefinition)
-    return endings.length === value.length ? endings : null
+    const value = JSON.parse(raw) as Record<string, unknown>
+    if (value.schema !== BROWSER_PROJECT_DRAFT_SCHEMA
+      || value.project_scope !== activeBrowserProjectScope
+      || !Array.isArray(value.entries)) {
+      return null
+    }
+    const entries = value.entries.filter(isEntry)
+    return entries.length === value.entries.length ? entries : null
   } catch {
     return null
   }
 }
 
-export function saveBrowserStoryEndingDrafts(endings: StoryEndingDefinition[]): void {
+function saveScopedBrowserDrafts<T>(storageKey: string, entries: T[]): void {
   if (typeof window === 'undefined') return
-  window.localStorage.setItem(BROWSER_ENDING_DRAFT_KEY, JSON.stringify(endings))
+  if (!activeBrowserProjectScope) {
+    throw new Error('Browser project content must be loaded before saving authoring drafts.')
+  }
+  window.localStorage.setItem(storageKey, JSON.stringify({
+    schema: BROWSER_PROJECT_DRAFT_SCHEMA,
+    project_scope: activeBrowserProjectScope,
+    entries,
+  }))
+}
+
+function browserProjectScope(manifest: WebProjectManifest): string {
+  const fields = [
+    manifest.character_files,
+    manifest.scene_files,
+    manifest.dialogue_files,
+    manifest.roleplay_files,
+    manifest.campaign_files,
+    manifest.ending_files,
+    manifest.knowledge_files,
+  ].map((paths) => [...(paths || [])].sort())
+  const source = JSON.stringify(fields)
+  let hash = 0x811c9dc5
+  for (let index = 0; index < source.length; index += 1) {
+    hash = Math.imul(hash ^ source.charCodeAt(index), 0x01000193)
+  }
+  return `catalog-${(hash >>> 0).toString(16).padStart(8, '0')}`
 }
 
 function isStoryEndingDefinition(value: unknown): value is StoryEndingDefinition {

@@ -1,0 +1,9 @@
+{
+  "id": "volume2_party_exchange",
+  "title": "一天的临时换队",
+  "content": "达斯特因误以为和真一直依靠三名上级职业同伴轻松获利，提出交换队伍一天。达斯特原本的队伍由十字骑士泰勒、法师琳恩和弓手奇斯组成，职责清楚且习惯互相支援；和真的队伍职业等级很高，但每个人都有必须事先确认的能力限制。换队协议只在当天有效，任何成员都可以要求停止，报酬、指挥权、技能边界和撤退信号应在出发前说清楚。",
+  "category": "volume2",
+  "tags": ["party_exchange", "consent", "coordination", "axel_guild"],
+  "importance": 0.94,
+  "related_entries": ["chapter1_party_boundaries", "chapter1_axel_basics"]
+}

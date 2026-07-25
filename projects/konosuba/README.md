@@ -51,11 +51,19 @@ is unavailable.
 The primary browser entry is:
 
 ```text
-/game?previewRoleplay=chapter4_roleplay&authoring=1
+/game?previewCampaign=volume1_campaign&authoring=1
 ```
 
 `previewDialogue` routes are fixed epilogues and compatibility previews. They
 are not the live NPC game loop.
+
+## Volume 2 production
+
+Volume 2 Chapter 1 is now indexed as the next production unit. The checked-in
+foundation adds Eris and Dust, the winter-spirit field, and bounded Knowledge
+for the Winter General and one-day party exchange. `VOLUME2_PLAN.md` fixes the
+seven intended live nodes and stable IDs before the remaining cast, scenes,
+Roleplay, Campaign, and Quality Suite are authored.
 
 ## Runtime
 

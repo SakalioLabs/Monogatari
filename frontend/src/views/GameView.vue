@@ -1132,13 +1132,19 @@ onMounted(async () => {
       if (scene) await enterScene(scene)
     } else if (typeof previewDialogueId === 'string') {
       const dialogue = storyDialogues.value.find((item) => item.id === previewDialogueId)
-      if (dialogue) await startStoryDialogue(
-        dialogue,
-        typeof previewNodeId === 'string' ? previewNodeId : undefined,
-      )
+      if (dialogue) {
+        await startStoryDialogue(
+          dialogue,
+          typeof previewNodeId === 'string' ? previewNodeId : undefined,
+        )
+      } else {
+        await startPrimaryDynamicStory()
+      }
     } else if (typeof previewEndingId === 'string') {
       const ending = storyEndings.value.find((item) => item.id === previewEndingId)
       if (ending) await startEnding(ending)
+    } else {
+      await startPrimaryDynamicStory()
     }
   }
   window.addEventListener('keydown', handleKeydown)
@@ -1156,6 +1162,16 @@ onMounted(async () => {
     }, 120000)
   }
 })
+
+async function startPrimaryDynamicStory() {
+  const campaign = storyCampaigns.value[0]
+  if (campaign) {
+    await startRoleplayCampaign(campaign)
+    return
+  }
+  const roleplay = storyRoleplays.value[0]
+  if (roleplay) await startSceneRoleplay(roleplay)
+}
 
 function roleplayStem(id: string): string {
   return id.replace(/_(?:roleplay|dialogue)$/, '')

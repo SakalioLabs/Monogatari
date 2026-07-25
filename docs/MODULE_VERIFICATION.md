@@ -21,6 +21,13 @@ The Volume 1 finale extends it through a public ledger, voluntary flood
 liability, bounded debt repayment, consensual mission terms, and a registered
 decision to continue toward the Demon King.
 
+Volume 2 Chapter 1 foundation indexing adds Eris, Dust, the winter-spirit
+field, and the Winter General and one-day party-exchange Knowledge boundaries.
+The current project validates as 80 runtime documents, 10 characters, 17
+Knowledge entries, 17 scenes, and 62/62 renderer assets. The seven-node live
+Roleplay remains intentionally pending and is not represented as a completed
+playable chapter.
+
 The four chapters and dynamic finale are connected by `volume1_campaign`.
 Browser Playtest starts Chapter 1 as a free-input NPC scene, shows
 `Chapter 1 / 5`, and advances
@@ -48,6 +55,17 @@ the completion record.
   WebGPU, or an ORT allocation path. The first turn committed three bounded
   score deltas and one quoted evidence item. Provider credentials remained
   process-only and do not appear in project data, reports, or committed files.
+- Live provider NPC Playtest (2026-07-25): direct
+  `previewRoleplay=chapter1_roleplay` loaded `grok-4.5 API`; a free-form
+  responsibility-boundary message produced a new Aqua reply, then independent
+  evaluation committed practicality `+1.0`, party trust `+1.0`, and adventure
+  resolve `+0.5`. The turn advanced from 0 to 1 without WebGPU or authored
+  recovery.
+- Browser authoring drafts are now bound to a deterministic project-content
+  scope derived from Character, Scene, Dialogue, Roleplay, Campaign, Ending,
+  and Knowledge catalogs. Legacy and foreign-project drafts cannot replace the
+  active project's playtest catalogs; a focused Vitest regression and complete
+  TypeScript check pass.
 - Live multi-NPC Playtest (2026-07-25): Chapter 4 opened directly through
   `previewRoleplay`, exposed Beldia, Aqua, Megumin, and Darkness as selectable
   participants, switched the stage sprite from Beldia to Aqua, and committed a

@@ -1,0 +1,10 @@
+{
+  "id": "axel_winter_spirit_field",
+  "name": "阿克塞尔外的雪精原野",
+  "background_path": "assets/backgrounds/axel_winter_spirit_field.png",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "localized_snow",
+  "time_of_day": "winter_day",
+  "tags": ["volume2", "snow_spirits", "winter_general", "death"]
+}
