@@ -121,36 +121,21 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { ArrowRight, LoaderCircle, RotateCcw, Send } from '@lucide/vue'
 
+import { executeBrowserRoleplayTurn } from '../lib/browserRoleplayTurn'
 import { useI18n } from '../lib/i18n'
 import { loadKnowledgeAuthoringCatalog, type KnowledgeEntryDefinition } from '../lib/knowledgeContent'
-import { sanitizeWebNpcReply } from '../lib/npcConversation'
 import {
-  applyBrowserSceneRoleplayTurn,
-  buildBrowserRoleplayEvaluatorMessages,
-  buildBrowserRoleplayNpcMessages,
-  containedBrowserRoleplayEvaluation,
-  evaluateBrowserRoleplayFallback,
-  parseBrowserRoleplayEvaluation,
-  reconcileBrowserRoleplayEvaluation,
   type RoleplayScoreDimension,
   type SceneRoleplayNode,
   type SceneRoleplaySnapshot,
   type SceneRoleplayTurnResponse,
 } from '../lib/sceneRoleplay'
-import {
-  analyzeRoleplayPlayerInput,
-  composeRoleplayGenerationRecovery,
-  composeRoleplayIntrusionResponse,
-  guardRoleplayNpcResponse,
-} from '../lib/sceneRoleplaySafety'
 import type { StoryCharacterInfo, StoryEndingInfo } from '../lib/storyContent'
 import { invokeCommand } from '../lib/tauri'
 import {
-  generateAuthoringApiChat,
   loadAuthoringApiRuntime,
   type AuthoringApiRuntime,
 } from '../lib/authoringInference'
-import { detectWebGpuSupport, generateWebGpuChat } from '../lib/webgpuInference'
 
 const props = defineProps<{
   snapshot: SceneRoleplaySnapshot
@@ -285,125 +270,19 @@ async function sendTurn() {
         message: playerMessage,
       })
     } else {
-      const inputSafety = analyzeRoleplayPlayerInput(playerMessage)
-      let npcResponse: string
-      let evaluation
-      let evaluationSource: string
-      if (inputSafety.intrusion_detected) {
-        npcResponse = composeRoleplayIntrusionResponse(currentNode.value, playerMessage)
-        evaluation = containedBrowserRoleplayEvaluation(currentNode.value)
-        evaluationSource = 'contained_intrusion'
-      } else {
-        const apiRuntime = authoringApiRuntime.value || await loadAuthoringApiRuntime()
-        authoringApiRuntime.value = apiRuntime
-        const generateChat = apiRuntime ? generateAuthoringApiChat : generateWebGpuChat
-        if (!apiRuntime) {
-          const support = detectWebGpuSupport()
-          if (!support.available) throw new Error('WebGPU is unavailable in this browser.')
-        }
-        let rawReply = ''
-        let npcCandidate: string | null = null
-        try {
-          const generated = await generateChat(
-            buildBrowserRoleplayNpcMessages(
-              props.snapshot.definition,
-              props.snapshot.session,
-              character,
-              props.locale,
-              knowledgeEntries,
-              playerMessage,
-            ),
-            {
-              maxNewTokens: props.snapshot.definition.inference.npc_max_tokens,
-              maxContextCharacters: props.snapshot.definition.inference.max_context_characters,
-              recoveryMaxContextCharacters: Math.min(3_000, props.snapshot.definition.inference.max_context_characters),
-              onReset() {
-                rawReply = ''
-              },
-              onChunk(chunk) {
-                rawReply += chunk
-              },
-            },
-          )
-          npcCandidate = sanitizeWebNpcReply(rawReply || generated)
-        } catch {
-          rawReply = ''
-        }
-        if (npcCandidate === null) {
-          npcResponse = composeRoleplayGenerationRecovery(
-            currentNode.value,
-            playerMessage,
-            props.snapshot.session.node_turns + 1,
-          )
-          evaluation = evaluateBrowserRoleplayFallback(currentNode.value, playerMessage)
-          evaluationSource = 'authored_fallback_npc_inference_error'
-        } else {
-          const guardedNpc = guardRoleplayNpcResponse(currentNode.value, inputSafety, npcCandidate, {
-            player_message: playerMessage,
-            node_turn: props.snapshot.session.node_turns + 1,
-          })
-          npcResponse = guardedNpc.response
-          if (guardedNpc.state_contained) {
-            evaluation = evaluateBrowserRoleplayFallback(currentNode.value, playerMessage)
-            evaluationSource = 'authored_fallback_npc_output'
-          } else {
-            evaluationSource = apiRuntime ? 'authoring_api_model' : 'browser_model'
-            try {
-              const evaluatorOutput = await generateChat(
-                buildBrowserRoleplayEvaluatorMessages(
-                  props.snapshot.definition,
-                  props.snapshot.session,
-                  playerMessage,
-                  npcResponse,
-                ),
-                {
-                  maxNewTokens: props.snapshot.definition.inference.evaluator_max_tokens,
-                  temperature: 0,
-                  maxContextCharacters: props.snapshot.definition.inference.max_context_characters,
-                  recoveryMaxContextCharacters: Math.min(3_000, props.snapshot.definition.inference.max_context_characters),
-                },
-              )
-              evaluation = parseBrowserRoleplayEvaluation(evaluatorOutput)
-              const reconciled = reconcileBrowserRoleplayEvaluation(
-                currentNode.value,
-                playerMessage,
-                evaluation,
-              )
-              evaluation = reconciled.evaluation
-              if (reconciled.changed) {
-                evaluationSource = apiRuntime
-                  ? 'authoring_api_model_reconciled'
-                  : 'browser_model_reconciled'
-              }
-            } catch {
-              evaluationSource = 'authored_fallback_evaluator_error'
-              evaluation = evaluateBrowserRoleplayFallback(currentNode.value, playerMessage)
-            }
-          }
-        }
-      }
-
-      let applied
-      try {
-        applied = applyBrowserSceneRoleplayTurn(
-          props.snapshot.definition,
-          props.snapshot.session,
-          { player_message: playerMessage, npc_response: npcResponse, evaluation },
-        )
-      } catch (error) {
-        evaluationSource = inputSafety.intrusion_detected
-          ? 'contained_intrusion'
-          : 'authored_fallback_invalid_evaluation'
-        evaluation = inputSafety.intrusion_detected
-          ? containedBrowserRoleplayEvaluation(currentNode.value)
-          : evaluateBrowserRoleplayFallback(currentNode.value, playerMessage)
-        applied = applyBrowserSceneRoleplayTurn(
-          props.snapshot.definition,
-          props.snapshot.session,
-          { player_message: playerMessage, npc_response: npcResponse, evaluation },
-        )
-      }
-      response = { ...applied.response, evaluation, evaluation_source: evaluationSource }
+      const executed = await executeBrowserRoleplayTurn({
+        snapshot: props.snapshot,
+        character,
+        locale: props.locale,
+        knowledgeEntries,
+        playerMessage,
+        apiRuntime: authoringApiRuntime.value,
+        onNpcProgress(content) {
+          if (requestId === generationSequence) streamingReply.value = content
+        },
+      })
+      authoringApiRuntime.value = executed.apiRuntime
+      response = executed.response
     }
 
     if (requestId !== generationSequence) return
