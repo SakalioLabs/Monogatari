@@ -1,0 +1,22 @@
+{
+  "id": "volume2_exchange_understood_epilogue",
+  "title": "真正的职责",
+  "description": "第二卷第一章高协作结局短章。",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "text": "公会的桌上摊着两份任务记录。一份写着冬将军前的认错与复活，另一份写着山路上的潜伏、侦察和射界。职业等级没有改变，所有人看待彼此的方式却已经不同。",
+      "next_node_id": "final",
+      "choices": []
+    },
+    "final": {
+      "speaker_id": "taylor",
+      "emotion": "respectful",
+      "text": "下一次出发前，我们先说清每个人真正能做什么。最低阶职业也可能是让全队活着回来的那个人。",
+      "is_ending": true,
+      "ending_type": "volume2_exchange_understood",
+      "choices": []
+    }
+  },
+  "variables": {}
+}

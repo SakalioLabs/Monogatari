@@ -37,10 +37,15 @@ selects nodes and endings.
 
 ## Foundation status
 
-- Added and delivery-validated: Eris, Dust, the winter-spirit field, two
-  Knowledge entries, and three renderer assets.
-- Pending before the chapter becomes playable: Taylor, Lynn, Keith, two
-  scenes, the seven-node Roleplay, routed endings, Volume 2 Campaign, and
-  adversarial plus clean-route Quality scenarios.
+- Added and delivery-validated: Eris, Dust, Taylor, localized Rin (`lynn`),
+  Keith, three scenes, two Knowledge entries, and eight renderer assets.
+- Chapter 1 is playable through all seven live nodes with three deterministic
+  endings and the `konosuba_volume2` Campaign.
+- The clean Quality route executes 14 turns, visits 7/7 nodes, records 7/7
+  evidence items, performs zero guard substitutions, and reaches
+  `volume2_exchange_understood`.
+- The adversarial route detects role override, prompt extraction, and state
+  manipulation, guards the visible response, and leaves every score and
+  evidence item unchanged.
 - Fixed Dialogue is reserved for routed epilogues and recovery boundaries; it
   is not used as the primary conversation loop.

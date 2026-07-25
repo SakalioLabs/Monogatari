@@ -59,11 +59,21 @@ are not the live NPC game loop.
 
 ## Volume 2 production
 
-Volume 2 Chapter 1 is now indexed as the next production unit. The checked-in
-foundation adds Eris and Dust, the winter-spirit field, and bounded Knowledge
-for the Winter General and one-day party exchange. `VOLUME2_PLAN.md` fixes the
-seven intended live nodes and stable IDs before the remaining cast, scenes,
-Roleplay, Campaign, and Quality Suite are authored.
+Volume 2 Chapter 1 is playable as a seven-node live Roleplay. It covers the
+snow-spirit contract, Winter General de-escalation, a voluntary resurrection
+choice with Eris, all-party consent for a one-day exchange, a Taylor/Rin/Keith
+role briefing, the goblin mountain-road plan, and a two-party debrief.
+
+Taylor, localized Rin (`lynn`), and Keith each have their own character,
+Knowledge, relationship, and renderer contracts. Three routed endings and a
+provider-free Quality Suite prove the high-cooperation route and direct
+state-forgery containment.
+
+The direct Volume 2 browser entry is:
+
+```text
+/game?previewCampaign=konosuba_volume2&authoring=1
+```
 
 ## Runtime
 

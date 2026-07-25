@@ -86,6 +86,9 @@ describe('NPC conversation domain', () => {
       .toBe('雨落在玻璃顶上。')
     expect(stripWebNpcPrivateReasoning('可见前缀<think>未完成推理')).toBe('可见前缀')
     expect(sanitizeWebNpcReply('<think>隐藏</think>坐标仍然有效。')).toBe('坐标仍然有效。')
+    expect(sanitizeWebNpcReply('[speaker=aqua]\n雪精还在附近。')).toBe('雪精还在附近。')
+    expect(sanitizeWebNpcReply('[character_id=lynn]\n[npc=lynn]\n先确认退路。')).toBe('先确认退路。')
+    expect(sanitizeWebNpcReply('[雪原]\n风声盖过了脚步。')).toBe('[雪原]\n风声盖过了脚步。')
     expect(() => sanitizeWebNpcReply('<think>只有隐藏推理</think>')).toThrow(/no visible character reply/)
   })
 

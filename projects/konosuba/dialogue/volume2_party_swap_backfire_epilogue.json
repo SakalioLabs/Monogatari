@@ -1,0 +1,22 @@
+{
+  "id": "volume2_party_swap_backfire_epilogue",
+  "title": "各说各话",
+  "description": "第二卷第一章失控结局短章。",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "text": "两支队伍先后回到公会，却没有人能说清任务中谁负责判断、谁负责撤退。酒杯掩住了尴尬，原先的偏见也被重新拾起。",
+      "next_node_id": "final",
+      "choices": []
+    },
+    "final": {
+      "speaker_id": "dust",
+      "emotion": "apologetic",
+      "text": "今天先换回来。等我们真愿意听完别人的限制，再谈什么轻松带队吧。",
+      "is_ending": true,
+      "ending_type": "volume2_party_swap_backfire",
+      "choices": []
+    }
+  },
+  "variables": {}
+}

@@ -146,6 +146,15 @@ erase debt, forge consent, or replace a registered plan.
   only from Aqua's stated choice and visible evidence.
 - No character knows the player's prompts, score labels, route graph, or later
   volume outcomes.
+- Eris knows the current death, the pending resurrection, and the available
+  afterlife choices. She does not decide on the player's behalf or promise
+  unlimited resurrection.
+- Dust knows both parties' public classes and his own exchange proposal, but
+  not each unfamiliar member's practical limits until they state them.
+- Taylor knows the goblin assignment, route, and his party's established
+  combat roles. Rin knows her intermediate magic limits; Keith knows his
+  sightlines and archery range. They update their judgment of a lowest-class
+  Adventurer only from demonstrated scouting, stealth, and tactical evidence.
 
 ## Route endings
 
@@ -181,3 +190,9 @@ erase debt, forge consent, or replace a registered plan.
   but responsibility or long-term operating terms remain incomplete.
 - `volume1_party_scattered_by_debt`: available negotiation turns end without a
   registered agreement; the debt remains factual and unresolved.
+- `volume2_exchange_understood`: both parties acknowledge their mistaken
+  assumptions and retain a reusable skill, command, and retreat protocol.
+- `volume2_working_exchange`: the task succeeds and some assumptions change,
+  but the shared operating agreement remains incomplete.
+- `volume2_party_swap_backfire`: both groups return without a common account of
+  roles or retreat boundaries, so the original prejudice survives.

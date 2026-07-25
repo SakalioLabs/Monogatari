@@ -1,0 +1,8 @@
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "volume2_party_swap_backfire",
+  "title": "交换之后：各说各话",
+  "description": "双方都把失败归咎于陌生队友，没有建立可验证的职责与撤退边界。交换结束了，误解却原封不动。",
+  "scene_id": "axel_guild_hall",
+  "dialogue_id": "volume2_party_swap_backfire_epilogue"
+}

@@ -1,0 +1,10 @@
+{
+  "id": "axel_goblin_mountain_road",
+  "name": "阿克塞尔外的哥布林山路",
+  "background_path": "assets/backgrounds/axel_goblin_mountain_road.png",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "cold_clear",
+  "time_of_day": "winter_afternoon",
+  "tags": ["volume2", "goblin", "mountain_road", "party_exchange"]
+}

@@ -1267,7 +1267,7 @@
     "roleplay.ending": "エンディング",
     "roleplay.restart": "やり直す",
     "roleplay.continue": "次の章へ",
-    "roleplay.evaluation-fallback": "ライブモデルを利用できなかったため、このターンはシーン内の復旧応答を使用しました。",
+    "roleplay.evaluation-fallback": "ライブ推論の一部を利用できなかったため、このターンはシーン制約に基づく決定的フォールバックを使用しました。",
     "characters.eyebrow": "プロジェクトキャスト",
     "characters.loaded-count": "プロジェクトデータから{count}人を読み込みました。",
     "characters.loading": "キャラクターを読み込み中...",

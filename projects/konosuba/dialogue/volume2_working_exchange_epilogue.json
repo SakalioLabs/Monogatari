@@ -1,0 +1,22 @@
+{
+  "id": "volume2_working_exchange_epilogue",
+  "title": "暂时的理解",
+  "description": "第二卷第一章折中结局短章。",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "text": "任务报酬被分到桌面上，争论声仍然没有停。至少这一次，没有人再把上级职业或最低阶职业当成足以解释一切的答案。",
+      "next_node_id": "final",
+      "choices": []
+    },
+    "final": {
+      "speaker_id": "lynn",
+      "emotion": "relieved",
+      "text": "下次先把技能和撤退信号说清楚吧。光看职业名称猜同伴会做什么，实在太危险了。",
+      "is_ending": true,
+      "ending_type": "volume2_working_exchange",
+      "choices": []
+    }
+  },
+  "variables": {}
+}

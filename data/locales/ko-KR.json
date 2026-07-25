@@ -1267,7 +1267,7 @@
     "roleplay.ending": "엔딩",
     "roleplay.restart": "다시 시작",
     "roleplay.continue": "다음 챕터",
-    "roleplay.evaluation-fallback": "라이브 모델을 사용할 수 없어 이번 턴은 장면 내 복구 응답을 사용했습니다.",
+  "roleplay.evaluation-fallback": "실시간 추론 일부를 사용할 수 없어 이번 턴은 장면 제약에 따른 결정적 폴백을 사용했습니다.",
     "characters.eyebrow": "프로젝트 캐스트",
     "characters.loaded-count": "프로젝트 데이터에서 캐릭터 {count}명을 불러왔습니다.",
     "characters.loading": "캐릭터를 불러오는 중...",

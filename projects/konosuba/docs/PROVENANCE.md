@@ -12,6 +12,11 @@
   three-hundred-million reward, the three-hundred-forty-million flood damage,
   and the party's decision to continue. All runtime dialogue, score rules,
   evidence wording, agreements, and endings are newly authored.
+- Volume 2 Chapter 1 derives only scene facts and capability boundaries from
+  `《为美好的世界献上祝福》轻小说 epub\正文\2.epub`,
+  `OEBPS/Text/chapter1-1.xhtml`: the snow-spirit task, Winter General,
+  voluntary resurrection, one-day party exchange, and goblin mountain road.
+  No source dialogue is used as runtime NPC output.
 
 ## Public visual reference
 
@@ -39,6 +44,13 @@
   newly generated against flat chroma backgrounds, converted to transparent
   WebP, visually inspected on a neutral matte, and imported through the
   fingerprint-bound project asset importer.
+- Volume 2 Chapter 1 adds Taylor, localized Rin, Keith, Eris's afterlife hall,
+  and the goblin mountain road. Public KonoSuba character reference pages for
+  Taylor, Rin, and Keith informed defining hair, clothing, class, and equipment
+  only. All five final sources are newly generated; character sources were
+  converted from flat chroma backgrounds to transparent PNGs, visually
+  inspected on a neutral matte, and imported through the fingerprint-bound
+  project asset importer.
 
 ## Rights and distribution
 

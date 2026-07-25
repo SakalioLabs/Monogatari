@@ -147,7 +147,9 @@ export function stripWebNpcPrivateReasoning(value: string): string {
 }
 
 export function sanitizeWebNpcReply(value: string): string {
-  const visible = stripWebNpcPrivateReasoning(value).trim()
+  const visible = stripWebNpcPrivateReasoning(value)
+    .replace(/^(?:\s*\[(?:speaker|character|npc)(?:_id)?\s*=\s*[a-z0-9_-]+\]\s*)+/i, '')
+    .trim()
   if (!visible) throw new Error('The model returned no visible character reply.')
   return boundedText(visible, NPC_REPLY_CHARACTER_LIMIT)
 }

@@ -97,7 +97,7 @@
         data-testid="roleplay-degraded"
         role="status"
       >
-        {{ t('roleplay.evaluation-fallback', 'This turn used an authored recovery because live model generation was unavailable.') }}
+        {{ t('roleplay.evaluation-fallback', 'Part of live inference was unavailable, so this turn used the scene\'s deterministic fallback.') }}
       </div>
       <div v-if="errorMessage" class="roleplay-error">{{ errorMessage }}</div>
       <div class="composer-row">

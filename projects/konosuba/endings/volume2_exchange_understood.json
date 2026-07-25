@@ -1,0 +1,8 @@
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "volume2_exchange_understood",
+  "title": "交换之后：真正的职责",
+  "description": "两支临时队伍都平安归来。你们不再用职业等级判断价值，而是能说清每个人在危险中实际承担的职责。",
+  "scene_id": "axel_guild_hall",
+  "dialogue_id": "volume2_exchange_understood_epilogue"
+}

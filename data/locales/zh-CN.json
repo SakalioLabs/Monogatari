@@ -1267,7 +1267,7 @@
     "roleplay.ending": "结局",
     "roleplay.restart": "重新开始",
     "roleplay.continue": "继续下一章",
-    "roleplay.evaluation-fallback": "实时模型暂不可用，本回合使用了场景内降级回复。",
+  "roleplay.evaluation-fallback": "部分实时推断未通过，本回合使用了场景约束的确定性回退。",
     "characters.eyebrow": "项目角色",
     "characters.loaded-count": "已从项目数据加载 {count} 个角色。",
     "characters.loading": "正在加载角色...",

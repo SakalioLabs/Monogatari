@@ -1,0 +1,26 @@
+{
+  "schema": "monogatari-roleplay-campaign/v1",
+  "id": "konosuba_volume2",
+  "title": "为美好的世界献上祝福！第二卷",
+  "start_entry_id": "chapter1",
+  "entries": [
+    {
+      "id": "chapter1",
+      "roleplay_id": "volume2_chapter1_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume2_exchange_understood",
+          "target": {"kind": "complete"}
+        },
+        {
+          "ending_id": "volume2_working_exchange",
+          "target": {"kind": "complete"}
+        },
+        {
+          "ending_id": "volume2_party_swap_backfire",
+          "target": {"kind": "complete"}
+        }
+      ]
+    }
+  ]
+}

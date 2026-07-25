@@ -1,0 +1,10 @@
+{
+  "id": "eris_afterlife_hall",
+  "name": "艾莉丝的死后大厅",
+  "background_path": "assets/backgrounds/eris_afterlife_hall.png",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "still_light",
+  "time_of_day": "timeless",
+  "tags": ["volume2", "afterlife", "eris", "resurrection"]
+}

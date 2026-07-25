@@ -1,0 +1,8 @@
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "volume2_working_exchange",
+  "title": "交换之后：暂时的理解",
+  "description": "临时组队勉强完成了任务。偏见还没有完全消失，但至少每个人都承认下一次出发前必须先交换真实情报。",
+  "scene_id": "axel_guild_hall",
+  "dialogue_id": "volume2_working_exchange_epilogue"
+}

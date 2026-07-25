@@ -21,12 +21,25 @@ The Volume 1 finale extends it through a public ledger, voluntary flood
 liability, bounded debt repayment, consensual mission terms, and a registered
 decision to continue toward the Demon King.
 
-Volume 2 Chapter 1 foundation indexing adds Eris, Dust, the winter-spirit
-field, and the Winter General and one-day party-exchange Knowledge boundaries.
-The current project validates as 80 runtime documents, 10 characters, 17
-Knowledge entries, 17 scenes, and 62/62 renderer assets. The seven-node live
-Roleplay remains intentionally pending and is not represented as a completed
-playable chapter.
+Volume 2 Chapter 1 is now a complete seven-node live Roleplay spanning the
+snow-spirit contract, Winter General de-escalation, voluntary resurrection,
+one-day exchange consent, temporary-party briefing, goblin mountain-road
+tactics, and a two-party debrief. Taylor, localized Rin, and Keith each use
+independent character, Knowledge, relationship, and renderer context.
+
+The current project validates as 94 runtime documents, 13 characters, 17
+Knowledge entries, 19 scenes, 6 Scene Roleplays, 18 endings, 6 Quality Suites,
+and 77/77 renderer assets.
+
+- Volume 2 live provider Playtest (2026-07-25): the Campaign surface loaded
+  `grok-4.5 API` and a free-form snow-spirit briefing produced a new
+  in-character Aqua reply. Independent evaluation reported
+  `authoring_api_model`, committed risk judgment `+1.0` and shared
+  responsibility `+1.0`, and exposed neither private reasoning nor structural
+  speaker metadata. Desktop `1440x1000` and mobile `390x844` rendered without
+  horizontal overflow or console errors. Taylor, Rin, and Keith sprites are
+  `1024x1536` RGBA with transparent corners; both generated scene backgrounds
+  resolve at `1536x1024`.
 
 The four chapters and dynamic finale are connected by `volume1_campaign`.
 Browser Playtest starts Chapter 1 as a free-input NPC scene, shows
@@ -39,7 +52,7 @@ the completion record.
   forged score/cursor rejection, route-history replay, explicit completion,
   cycle rejection, relationship-only chapter handoff, selectable scene
   participants, per-speaker relationships, and rejected outsider speakers.
-- Frontend: 210/210 unit tests and the production Web/PWA build pass. The
+- Frontend: 213/213 unit tests and the production Web/PWA build pass. The
   generated project manifest inventories Campaign files and the service worker
   caches them.
 - Browser Campaign Playtest: desktop `1440x900` and mobile `390x844` render
@@ -82,6 +95,17 @@ the completion record.
   Campaign, and executable Quality Suite atomically. The committed candidate
   reaches `core_runtime`, then the direct Roleplay preview, Campaign preview,
   and Quality run independently reach `agent_verified` with trust `1.0`.
+- Volume 2 Chapter 1 MCP `run_quality_suite`: 2/2 scenarios pass. The clean
+  route executes 14 turns, visits 7/7 live nodes, records all 7 evidence IDs,
+  performs zero normal-response guard substitutions, reaches
+  `volume2_exchange_understood`, and ends at risk `5.75`, responsibility
+  `7.0`, coordination `6.5`, and return commitment `3.0`. The attack case
+  detects role override, prompt extraction, and state manipulation, guards the
+  response once, records zero unguarded intrusions, and preserves all scores
+  and evidence at zero.
+- Volume 2 Campaign preview: its one complete production entry seals all seven
+  evidence IDs and four score summaries, traverses the high-cooperation route,
+  and completes with the expected project-seeded relationships.
 
 - MCP `validate_project`: valid, 75 runtime documents, 8 characters, 15
   Knowledge entries, 16 scenes, 5 Scene Roleplays, 15 endings, and 5 Quality
