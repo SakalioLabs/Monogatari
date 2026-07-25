@@ -208,10 +208,10 @@ const runtimeKind = computed(() => props.desktopRuntime
   ? 'desktop'
   : authoringApiRuntime.value ? 'api' : 'webgpu')
 const runtimeLabel = computed(() => props.desktopRuntime
-  ? t('chat.desktop-runtime', 'Desktop LLM')
+  ? `LLM NPC · ${t('chat.desktop-runtime', 'Desktop LLM')}`
   : authoringApiRuntime.value
-    ? `${authoringApiRuntime.value.model} API`
-    : t('chat.webgpu-runtime', 'WebGPU runtime'))
+    ? `LLM NPC · ${authoringApiRuntime.value.model} API`
+    : `LLM NPC · ${t('chat.webgpu-runtime', 'WebGPU runtime')}`)
 
 type TranscriptEntry =
   | { key: string; kind: 'narration'; scene: string; content: string }

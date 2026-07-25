@@ -87,6 +87,7 @@ const releases = computed(() => [
 ])
 
 function checkVersion() {
+  if (new URLSearchParams(window.location.search).get('authoring') === '1') return
   if (localStorage.getItem('monogatari-version-seen') !== currentVersion) show.value = true
 }
 
