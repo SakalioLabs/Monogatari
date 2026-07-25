@@ -234,10 +234,7 @@ fn supporting_speaker_owns_the_turn_prompt_and_relationship_delta() {
     definition.validate().unwrap();
     let mut session = SceneRoleplaySession::start_with_relationships(
         &definition,
-        BTreeMap::from([
-            ("keeper".to_string(), 0.2),
-            ("echo".to_string(), 0.4),
-        ]),
+        BTreeMap::from([("keeper".to_string(), 0.2), ("echo".to_string(), 0.4)]),
     )
     .unwrap();
     session

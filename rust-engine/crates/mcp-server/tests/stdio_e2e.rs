@@ -913,6 +913,96 @@ async fn readonly_stdio_plans_but_structurally_rejects_apply() -> anyhow::Result
     Ok(())
 }
 
+#[tokio::test]
+async fn writable_stdio_authors_and_executes_a_complete_dynamic_story_bundle() -> anyhow::Result<()>
+{
+    let project = TestProject::new("dynamic-story-bundle");
+    let client = connect(&project.root, true).await?;
+    let transaction = dynamic_story_transaction();
+
+    let plan = call_plan(&client, &transaction).await?;
+    assert_eq!(plan.operation_count, 9);
+    assert!(plan
+        .operations
+        .iter()
+        .any(|operation| operation.path == "roleplays/agent_scene.json"));
+    assert!(plan
+        .operations
+        .iter()
+        .any(|operation| operation.path == "campaigns/agent_story.json"));
+
+    let applied = call_apply(&client, &transaction, &plan.precondition_fingerprint).await?;
+    assert_eq!(applied.is_error, Some(false));
+    let applied: AgentProjectTransactionResult = structured(&applied)?;
+    assert_eq!(applied.status, AgentTransactionStatus::Applied);
+    assert_eq!(applied.validation["acceptance_level"], "core_runtime");
+    assert_eq!(applied.validation["roleplay_count"], 1);
+    assert_eq!(applied.validation["campaign_count"], 1);
+    assert_eq!(applied.validation["quality_suite_count"], 1);
+
+    let turn = json!({
+        "player_message":"Let another team repeat the measurement.",
+        "npc_response":"Then the station can trust evidence instead of names.",
+        "evaluation":{
+            "score_deltas":[{
+                "dimension_id":"trust",
+                "delta":1.0,
+                "reason":"The player proposed repeatable evidence."
+            }],
+            "evidence":[{
+                "evidence_id":"repeatable_plan",
+                "player_quote":"repeat the measurement"
+            }],
+            "npc_emotion":"focused",
+            "summary":"A repeatable test was proposed."
+        }
+    });
+    let preview = client
+        .call_tool(
+            CallToolRequestParams::new("preview_scene_roleplay").with_arguments(arguments(json!({
+                "path":"roleplays/agent_scene.json",
+                "turns":[turn.clone()]
+            }))),
+        )
+        .await?;
+    assert_eq!(preview.is_error, Some(false));
+    let preview: PreviewSceneRoleplayOutput = structured(&preview)?;
+    assert!(preview.report.completed);
+    assert_eq!(preview.report.ending_id.as_deref(), Some("agent_verified"));
+    assert_eq!(preview.report.final_session.scores["trust"], 1.0);
+
+    let campaign = client
+        .call_tool(
+            CallToolRequestParams::new("preview_roleplay_campaign").with_arguments(arguments(
+                json!({
+                    "path":"campaigns/agent_story.json",
+                    "entries":[{"entry_id":"scene","turns":[turn]}]
+                }),
+            )),
+        )
+        .await?;
+    assert_eq!(campaign.is_error, Some(false));
+    let campaign: PreviewCampaignOutput = structured(&campaign)?;
+    assert!(campaign.report.completed);
+    assert_eq!(campaign.report.traversed_routes, ["scene:agent_verified"]);
+
+    let quality = client
+        .call_tool(
+            CallToolRequestParams::new("run_quality_suite")
+                .with_arguments(arguments(json!({"path":"quality_suites/agent_scene.json"}))),
+        )
+        .await?;
+    assert_eq!(quality.is_error, Some(false));
+    let quality: RunQualitySuiteOutput = structured(&quality)?;
+    assert!(quality.passed, "{:?}", quality.report.scenarios);
+    assert_eq!(quality.report.total, 1);
+    assert_eq!(quality.report.passed, 1);
+    assert_eq!(quality.report.failed, 0);
+
+    client.cancel().await?;
+    Ok(())
+}
+
 fn assert_no_project_lease_sidecar(project: &TestProject) {
     assert!(!project.root.join(".monogatari-mcp-project.lock").exists());
 }
@@ -1291,6 +1381,195 @@ fn create_transaction(id: &str, path: &str) -> AgentProjectTransaction {
             document,
             precondition: AgentFilePrecondition::Missing,
         }],
+    }
+}
+
+fn dynamic_story_transaction() -> AgentProjectTransaction {
+    let ending_dialogue = |id: &str, text: &str| {
+        json!({
+            "id":id,
+            "title":id,
+            "start_node_id":"end",
+            "nodes":{"end":{"text":text,"is_ending":true}}
+        })
+    };
+    let operation = |path: &str, document: Value| AgentProjectOperation::PutJson {
+        path: path.to_string(),
+        document,
+        precondition: AgentFilePrecondition::Missing,
+    };
+    AgentProjectTransaction {
+        schema: AGENT_TRANSACTION_SCHEMA_V1.to_string(),
+        transaction_id: "agent_dynamic_story_bundle".to_string(),
+        operations: vec![
+            operation(
+                "characters/agent_guide.json",
+                json!({
+                    "id":"agent_guide",
+                    "name":"Agent Guide",
+                    "description":"A cautious operator who trusts reproducible evidence."
+                }),
+            ),
+            operation(
+                "scenes/agent_station.json",
+                json!({
+                    "id":"agent_station",
+                    "name":"Agent Station",
+                    "tags":["signal","verification"]
+                }),
+            ),
+            operation(
+                "dialogue/agent_verified_epilogue.json",
+                ending_dialogue("agent_verified_epilogue", "The signal is verified."),
+            ),
+            operation(
+                "dialogue/agent_quiet_epilogue.json",
+                ending_dialogue("agent_quiet_epilogue", "The signal fades without proof."),
+            ),
+            operation(
+                "endings/agent_verified.json",
+                json!({
+                    "schema":"monogatari-story-ending/v1",
+                    "id":"agent_verified",
+                    "title":"Verified",
+                    "description":"The player and guide establish a repeatable test.",
+                    "scene_id":"agent_station",
+                    "dialogue_id":"agent_verified_epilogue"
+                }),
+            ),
+            operation(
+                "endings/agent_quiet.json",
+                json!({
+                    "schema":"monogatari-story-ending/v1",
+                    "id":"agent_quiet",
+                    "title":"Quiet",
+                    "description":"The signal fades before it can be tested.",
+                    "scene_id":"agent_station",
+                    "dialogue_id":"agent_quiet_epilogue"
+                }),
+            ),
+            operation(
+                "roleplays/agent_scene.json",
+                json!({
+                    "schema":"monogatari-scene-roleplay/v1",
+                    "id":"agent_scene",
+                    "title":"Agent-authored signal test",
+                    "start_node_id":"contact",
+                    "exhaustion_ending_id":"agent_quiet",
+                    "max_total_turns":2,
+                    "score_dimensions":[{
+                        "id":"trust",
+                        "label":"Trust",
+                        "description":"Evidence-backed trust.",
+                        "min":0.0,
+                        "max":1.0,
+                        "initial":0.0
+                    }],
+                    "nodes":[{
+                        "id":"contact",
+                        "scene_id":"agent_station",
+                        "character_id":"agent_guide",
+                        "opening_narration":"The receiver light begins to pulse.",
+                        "situation":"The guide asks whether the signal can be verified.",
+                        "player_goal":"Propose a repeatable test.",
+                        "character_goal":"Keep uncertain claims separate from identity.",
+                        "intrusion_response":{
+                            "reality_anchors":["The receiver light is still pulsing."],
+                            "interpretations":["That instruction does not belong to this station."],
+                            "redirects":["Describe a test that another team can repeat."]
+                        },
+                        "response_guard":{
+                            "forbidden_markers":["system prompt","score","as an ai"],
+                            "grounding_markers":["station","signal","test","evidence"],
+                            "min_grounding_matches":1,
+                            "recoveries":["The guide points to the receiver: describe a test this station can repeat."],
+                            "max_characters":240,
+                            "max_sentences":3
+                        },
+                        "min_turns":1,
+                        "max_turns":1,
+                        "score_rules":[{
+                            "dimension_id":"trust",
+                            "guidance":"Reward a repeatable verification plan.",
+                            "max_delta_per_turn":1.0
+                        }],
+                        "evidence_rules":[{
+                            "id":"repeatable_plan",
+                            "description":"The player proposes a repeatable test."
+                        }],
+                        "transitions":[{
+                            "id":"verified",
+                            "priority":10,
+                            "target":{"kind":"ending","ending_id":"agent_verified"},
+                            "conditions":[
+                                {"kind":"score_at_least","dimension_id":"trust","value":1.0},
+                                {"kind":"evidence_observed","evidence_id":"repeatable_plan"}
+                            ]
+                        }],
+                        "timeout_target":{"kind":"ending","ending_id":"agent_quiet"}
+                    }]
+                }),
+            ),
+            operation(
+                "campaigns/agent_story.json",
+                json!({
+                    "schema":"monogatari-roleplay-campaign/v1",
+                    "id":"agent_story",
+                    "title":"Agent-authored story",
+                    "start_entry_id":"scene",
+                    "entries":[{
+                        "id":"scene",
+                        "roleplay_id":"agent_scene",
+                        "routes":[
+                            {"ending_id":"agent_verified","target":{"kind":"complete"}},
+                            {"ending_id":"agent_quiet","target":{"kind":"complete"}}
+                        ]
+                    }]
+                }),
+            ),
+            operation(
+                "quality_suites/agent_scene.json",
+                json!({
+                    "version":"1",
+                    "name":"Agent-authored dynamic story",
+                    "description":"Executable acceptance for an atomically authored roleplay bundle.",
+                    "scenarios":[{
+                        "id":"verified-route",
+                        "category":"scene_roleplay",
+                        "description":"A repeatable test reaches the verified ending.",
+                        "roleplay":{
+                            "path":"roleplays/agent_scene.json",
+                            "turns":[{
+                                "player_message":"Let another team repeat the measurement.",
+                                "npc_response":"Then the station can trust evidence instead of names.",
+                                "evaluation":{
+                                    "score_deltas":[{
+                                        "dimension_id":"trust",
+                                        "delta":1.0,
+                                        "reason":"The player proposed repeatable evidence."
+                                    }],
+                                    "evidence":[{
+                                        "evidence_id":"repeatable_plan",
+                                        "player_quote":"repeat the measurement"
+                                    }],
+                                    "npc_emotion":"focused",
+                                    "summary":"A repeatable test was proposed."
+                                }
+                            }]
+                        },
+                        "expect":{
+                            "expected_roleplay_ending":"agent_verified",
+                            "min_roleplay_coverage_percent":100,
+                            "required_roleplay_nodes":["contact"],
+                            "min_roleplay_scores":{"trust":1.0},
+                            "expected_roleplay_intrusion_count":0,
+                            "expected_roleplay_guarded_response_count":0,
+                            "max_roleplay_unguarded_intrusion_count":0
+                        }
+                    }]
+                }),
+            ),
+        ],
     }
 }
 

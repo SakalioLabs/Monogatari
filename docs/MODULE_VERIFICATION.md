@@ -59,6 +59,11 @@ the completion record.
 - Save v4: assets tests 12/12 and focused Tauri save tests 7/7 pass. Active
   Campaign/Roleplay sessions round-trip, while forged roleplay state is
   rejected before existing runtime state changes.
+- Agent dynamic-story stdio: one reviewed nine-document MCP transaction creates
+  a Character, Scene, two Ending Dialogues, two Endings, a Scene Roleplay,
+  Campaign, and executable Quality Suite atomically. The committed candidate
+  reaches `core_runtime`, then the direct Roleplay preview, Campaign preview,
+  and Quality run independently reach `agent_verified` with trust `1.0`.
 
 - MCP `validate_project`: valid, 75 runtime documents, 8 characters, 15
   Knowledge entries, 16 scenes, 5 Scene Roleplays, 15 endings, and 5 Quality

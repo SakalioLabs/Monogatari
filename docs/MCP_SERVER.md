@@ -69,7 +69,7 @@ input/output schema and explicit read/write annotations.
 | `apply_transaction` | Write | Requires `--allow-write` plus the exact reviewed `precondition_fingerprint`; stages, validates, commits, or rolls back |
 | `export_project_package` | Write | Requires `--allow-write`, the startup-fixed external output directory, one portable `.monogatari` file name, and the exact current preview fingerprint; defaults to refusing existing files |
 
-The authorable JSON catalogs are `assets`, `characters`, `dialogue`, `endings`, `events`, `knowledge`, `locales`, `quality_suites`, `roleplays`, `scenes`, and `workflows`. `settings.json`, saves, analytics, generated audio, binary assets, and arbitrary root files are outside the transaction protocol.
+The authorable JSON catalogs are `assets`, `campaigns`, `characters`, `dialogue`, `endings`, `events`, `knowledge`, `locales`, `quality_suites`, `roleplays`, `scenes`, and `workflows`. `settings.json`, saves, analytics, generated audio, binary assets, and arbitrary root files are outside the transaction protocol.
 
 ## Agent Flow
 
