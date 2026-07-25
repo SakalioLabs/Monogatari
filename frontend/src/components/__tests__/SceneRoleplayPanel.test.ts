@@ -175,6 +175,57 @@ describe('SceneRoleplayPanel', () => {
 
     expect(mocks.generateAuthoringApiChat).toHaveBeenCalledTimes(2)
     expect(mocks.generateWebGpuChat).not.toHaveBeenCalled()
+    expect(wrapper.get('[data-testid="roleplay-runtime"]').text())
+      .toBe('remote-roleplay-model API')
+    expect(wrapper.get('[data-testid="roleplay-runtime"]').attributes('data-runtime-kind'))
+      .toBe('api')
+    expect(wrapper.get('[data-testid="scene-roleplay"]').attributes('data-evaluation-source'))
+      .toBe('authoring_api_model')
+  })
+
+  it('switches to a recovered project API before the next clean turn', async () => {
+    mocks.loadAuthoringApiRuntime
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        schema: 'monogatari-authoring-inference-runtime/v1',
+        provider: 'api',
+        endpoint: '/authoring-api/chat/completions',
+        model: 'recovered-roleplay-model',
+        max_new_tokens: 256,
+        temperature: 0.7,
+        top_p: 0.9,
+      })
+    mocks.generateAuthoringApiChat
+      .mockResolvedValueOnce('The receiver holds the coordinates inside the signal.')
+      .mockResolvedValueOnce(JSON.stringify({
+        score_deltas: { trust: 1 },
+        evidence: { verification: 'coordinates' },
+        npc_emotion: 'steady',
+        summary: 'The project API recovered before the turn.',
+      }))
+    const wrapper = mount(SceneRoleplayPanel, {
+      props: {
+        snapshot: startBrowserSceneRoleplay(definition),
+        desktopRuntime: false,
+        characters: [character],
+        endings: [],
+        locale: 'en',
+        sceneName: 'Station',
+      },
+    })
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="roleplay-runtime"]').attributes('data-runtime-kind'))
+      .toBe('webgpu')
+    await wrapper.get('textarea').setValue('Use a second receiver to verify the coordinates.')
+    await wrapper.get('.send-button').trigger('click')
+    await flushPromises()
+
+    expect(mocks.loadAuthoringApiRuntime).toHaveBeenCalledTimes(2)
+    expect(mocks.generateAuthoringApiChat).toHaveBeenCalledTimes(2)
+    expect(mocks.generateWebGpuChat).not.toHaveBeenCalled()
+    expect(wrapper.get('[data-testid="roleplay-runtime"]').text())
+      .toBe('recovered-roleplay-model API')
     expect(wrapper.get('[data-testid="scene-roleplay"]').attributes('data-evaluation-source'))
       .toBe('authoring_api_model')
   })

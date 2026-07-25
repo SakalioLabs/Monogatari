@@ -36,6 +36,17 @@ node scripts/verify-release.mjs
 
 The module inventory and exact commands are documented in [MODULE_VERIFICATION.md](MODULE_VERIFICATION.md). Commercial packaging requirements remain in [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
 
+For the independent KonoSuba production simulation, start Vite with the project root and provider credential in the process environment:
+
+```powershell
+cd frontend
+$env:MONOGATARI_PROJECT_ROOT = '../projects/konosuba'
+$env:MONOGATARI_AI_API_KEY = '<session-only provider credential>'
+npm run dev -- --host 127.0.0.1
+```
+
+Open `http://127.0.0.1:5173/game?previewCampaign=volume1_campaign&authoring=1`. The first-viewport roleplay header must report the configured API model. A URL containing `previewDialogue=blue_frame_dialogue` is the built-in sample, not the KonoSuba production simulation. Do not write the provider credential into `settings.json`, shell profiles, logs, test fixtures, or source control.
+
 ## Agent Development Flow
 
 Use the repository Skill at `.agents/skills/author-visual-novel/SKILL.md` for dependency-ordered visual-novel authoring. The standard MCP server is documented in [MCP_SERVER.md](MCP_SERVER.md).

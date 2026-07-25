@@ -15,6 +15,11 @@
         <small>{{ currentNode.player_goal }}</small>
       </div>
       <div class="turn-count">
+        <span
+          class="runtime-source"
+          :data-runtime-kind="runtimeKind"
+          data-testid="roleplay-runtime"
+        >{{ runtimeLabel }}</span>
         <span>{{ t('roleplay.turn', 'Turn') }}</span>
         <strong>{{ snapshot.session.node_turns }} / {{ currentNode.max_turns }}</strong>
       </div>
@@ -140,7 +145,11 @@ import {
 } from '../lib/sceneRoleplaySafety'
 import type { StoryCharacterInfo, StoryEndingInfo } from '../lib/storyContent'
 import { invokeCommand } from '../lib/tauri'
-import { generateAuthoringApiChat, loadAuthoringApiRuntime } from '../lib/authoringInference'
+import {
+  generateAuthoringApiChat,
+  loadAuthoringApiRuntime,
+  type AuthoringApiRuntime,
+} from '../lib/authoringInference'
 import { detectWebGpuSupport, generateWebGpuChat } from '../lib/webgpuInference'
 
 const props = defineProps<{
@@ -174,7 +183,7 @@ const lastEvaluationEvidenceCount = ref(0)
 const inputElement = ref<HTMLTextAreaElement>()
 const transcriptElement = ref<HTMLElement>()
 let knowledgeEntries: KnowledgeEntryDefinition[] = []
-let authoringApiAvailable = false
+const authoringApiRuntime = ref<AuthoringApiRuntime | null>(null)
 let generationSequence = 0
 
 const currentNode = computed(() => props.snapshot.current_node)
@@ -184,6 +193,14 @@ const relationshipPercent = computed(() => (currentRelationship.value + 1) * 50)
 const currentSceneName = computed(() => props.sceneName || currentNode.value.scene_id)
 const activeEnding = computed(() => props.endings.find(ending => ending.id === props.snapshot.session.ending_id) || null)
 const canSend = computed(() => Boolean(inputText.value.trim() && !isGenerating.value && currentCharacter.value))
+const runtimeKind = computed(() => props.desktopRuntime
+  ? 'desktop'
+  : authoringApiRuntime.value ? 'api' : 'webgpu')
+const runtimeLabel = computed(() => props.desktopRuntime
+  ? t('chat.desktop-runtime', 'Desktop LLM')
+  : authoringApiRuntime.value
+    ? `${authoringApiRuntime.value.model} API`
+    : t('chat.webgpu-runtime', 'WebGPU runtime'))
 
 type TranscriptEntry =
   | { key: string; kind: 'narration'; scene: string; content: string }
@@ -242,7 +259,7 @@ onMounted(async () => {
     props.desktopRuntime ? Promise.resolve(null) : loadAuthoringApiRuntime(),
   ])
   knowledgeEntries = knowledgeResult.entries
-  authoringApiAvailable = Boolean(authoringRuntime)
+  authoringApiRuntime.value = authoringRuntime
   emit('nodeChange', currentNode.value)
   scrollToBottom()
   nextTick(() => inputElement.value?.focus())
@@ -277,8 +294,10 @@ async function sendTurn() {
         evaluation = containedBrowserRoleplayEvaluation(currentNode.value)
         evaluationSource = 'contained_intrusion'
       } else {
-        const generateChat = authoringApiAvailable ? generateAuthoringApiChat : generateWebGpuChat
-        if (!authoringApiAvailable) {
+        const apiRuntime = authoringApiRuntime.value || await loadAuthoringApiRuntime()
+        authoringApiRuntime.value = apiRuntime
+        const generateChat = apiRuntime ? generateAuthoringApiChat : generateWebGpuChat
+        if (!apiRuntime) {
           const support = detectWebGpuSupport()
           if (!support.available) throw new Error('WebGPU is unavailable in this browser.')
         }
@@ -328,7 +347,7 @@ async function sendTurn() {
             evaluation = evaluateBrowserRoleplayFallback(currentNode.value, playerMessage)
             evaluationSource = 'authored_fallback_npc_output'
           } else {
-            evaluationSource = authoringApiAvailable ? 'authoring_api_model' : 'browser_model'
+            evaluationSource = apiRuntime ? 'authoring_api_model' : 'browser_model'
             try {
               const evaluatorOutput = await generateChat(
                 buildBrowserRoleplayEvaluatorMessages(
@@ -352,7 +371,7 @@ async function sendTurn() {
               )
               evaluation = reconciled.evaluation
               if (reconciled.changed) {
-                evaluationSource = authoringApiAvailable
+                evaluationSource = apiRuntime
                   ? 'authoring_api_model_reconciled'
                   : 'browser_model_reconciled'
               }
@@ -459,6 +478,15 @@ function scrollToBottom() {
 .node-kicker { color: #d8b969; font-size: 10px; font-weight: 800; text-transform: uppercase; }
 .turn-count { display: grid; gap: 2px; color: #9da39f; font-size: 10px; text-align: right; }
 .turn-count strong { color: #f0d78e; font-size: 14px; }
+.runtime-source {
+  max-width: 180px;
+  overflow: hidden;
+  color: #f0d78e;
+  font-size: 11px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .score-strip {
   display: grid;

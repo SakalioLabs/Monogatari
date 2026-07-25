@@ -45,4 +45,25 @@ describe('authoring API inference', () => {
     const request = fetchMock.mock.calls[1][1]
     expect(JSON.stringify(request)).not.toMatch(/api[_-]?key|authorization|bearer/i)
   })
+
+  it('retries runtime discovery after a transient unavailable response', async () => {
+    vi.resetModules()
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response('', { status: 503 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        schema: 'monogatari-authoring-inference-runtime/v1',
+        provider: 'api',
+        endpoint: '/authoring-api/chat/completions',
+        model: 'recovered-roleplay-model',
+      }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const { loadAuthoringApiRuntime } = await import('../authoringInference')
+
+    await expect(loadAuthoringApiRuntime()).resolves.toBeNull()
+    await expect(loadAuthoringApiRuntime()).resolves.toMatchObject({
+      provider: 'api',
+      model: 'recovered-roleplay-model',
+    })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
 })

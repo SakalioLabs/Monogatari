@@ -31,13 +31,22 @@ the completion record.
 - Campaign/game core: 47/47 library tests pass, including transcript replay,
   forged score/cursor rejection, route-history replay, explicit completion,
   cycle rejection, and relationship-only chapter handoff.
-- Frontend: 201/201 unit tests and the production Web/PWA build pass. The
+- Frontend: 203/203 unit tests and the production Web/PWA build pass. The
   generated project manifest inventories Campaign files and the service worker
   caches them.
 - Browser Campaign Playtest: desktop `1440x900` and mobile `390x844` render
   without horizontal overflow. A real free-input turn produces an in-character
   Aqua response; unavailable external inference uses the authored in-scene
   recovery label without exposing `OrtRun` or `std::bad_alloc`.
+- Live provider Campaign Playtest (2026-07-25): the independent project root
+  advertised `grok-4.5 API` on the play surface and the same-origin
+  credential-free browser bridge completed two clean Aqua turns against the
+  configured OpenAI-compatible provider. NPC generation and independent
+  evaluation reported `authoring_api_model` and
+  `authoring_api_model_reconciled`; neither turn used authored recovery,
+  WebGPU, or an ORT allocation path. The first turn committed three bounded
+  score deltas and one quoted evidence item. Provider credentials remained
+  process-only and do not appear in project data, reports, or committed files.
 - Save v4: assets tests 12/12 and focused Tauri save tests 7/7 pass. Active
   Campaign/Roleplay sessions round-trip, while forged roleplay state is
   rejected before existing runtime state changes.

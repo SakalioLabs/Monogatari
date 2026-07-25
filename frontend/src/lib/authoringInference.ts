@@ -1,6 +1,6 @@
 import type { WebGpuChatMessage, WebGpuGenerationOptions } from './webgpuInference'
 
-interface AuthoringApiRuntime {
+export interface AuthoringApiRuntime {
   schema: 'monogatari-authoring-inference-runtime/v1'
   provider: 'api'
   endpoint: string
@@ -27,7 +27,9 @@ const AUTHORING_API_TIMEOUT_MS = 45_000
 export async function loadAuthoringApiRuntime(): Promise<AuthoringApiRuntime | null> {
   if (runtimePromise) return runtimePromise
   runtimePromise = fetchAuthoringApiRuntime()
-  return runtimePromise
+  const runtime = await runtimePromise
+  if (!runtime) runtimePromise = null
+  return runtime
 }
 
 export async function generateAuthoringApiChat(
