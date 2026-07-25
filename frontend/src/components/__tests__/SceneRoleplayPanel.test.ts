@@ -94,6 +94,18 @@ const character: StoryCharacterInfo = {
   knowledge_refs: [],
 }
 
+const keeper: StoryCharacterInfo = {
+  id: 'keeper',
+  name: 'Keeper',
+  description: 'The station archive keeper.',
+  background: 'Keeps only independently verifiable records.',
+  emotion: 'focused',
+  personality: { speech_style: 'precise' },
+  portrait_path: null,
+  sprite_path: null,
+  knowledge_refs: [],
+}
+
 describe('SceneRoleplayPanel', () => {
   beforeEach(() => {
     mocks.detectWebGpuSupport.mockReturnValue({ available: true, reason: 'available' })
@@ -181,6 +193,64 @@ describe('SceneRoleplayPanel', () => {
       .toBe('api')
     expect(wrapper.get('[data-testid="scene-roleplay"]').attributes('data-evaluation-source'))
       .toBe('authoring_api_model')
+  })
+
+  it('lets the player address every NPC present in the scene', async () => {
+    const ensembleDefinition = structuredClone(definition)
+    ensembleDefinition.nodes[0].supporting_character_ids = ['keeper']
+    ensembleDefinition.nodes[0].relationship_rule = {
+      guidance: 'Reward grounded cooperation.',
+      max_delta_per_turn: 0.1,
+    }
+    mocks.loadAuthoringApiRuntime.mockResolvedValue({
+      schema: 'monogatari-authoring-inference-runtime/v1',
+      provider: 'api',
+      endpoint: '/authoring-api/chat/completions',
+      model: 'ensemble-model',
+      max_new_tokens: 256,
+      temperature: 0.7,
+      top_p: 0.9,
+    })
+    mocks.generateAuthoringApiChat
+      .mockResolvedValueOnce('The receiver keeps the coordinates inside the signal.')
+      .mockResolvedValueOnce(JSON.stringify({
+        score_deltas: { trust: 0 },
+        evidence: {},
+        relationship_delta: 0.1,
+        relationship_reason: 'The player addressed the keeper directly.',
+        npc_emotion: 'focused',
+        summary: 'The keeper answered.',
+      }))
+    const wrapper = mount(SceneRoleplayPanel, {
+      props: {
+        snapshot: startBrowserSceneRoleplay(ensembleDefinition, { echo: 0.2, keeper: 0.4 }),
+        desktopRuntime: false,
+        characters: [character, keeper],
+        endings: [],
+        locale: 'en',
+        sceneName: 'Station',
+      },
+    })
+    await flushPromises()
+
+    const participants = wrapper.findAll('.participant-button')
+    expect(participants.map(button => button.text())).toEqual(['Echo', 'Keeper'])
+    await participants[1].trigger('click')
+    expect(wrapper.text()).toContain('Keeper')
+    expect(wrapper.emitted('speakerChange')?.at(-1)).toEqual(['keeper'])
+    await wrapper.get('textarea').setValue('Keeper, preserve only the repeatable record.')
+    await wrapper.get('.send-button').trigger('click')
+    await flushPromises()
+
+    const npcPrompt = mocks.generateAuthoringApiChat.mock.calls[0][0]
+      .map((message: { content: string }) => message.content)
+      .join('\n')
+    expect(npcPrompt).toContain('active_speaker=keeper')
+    expect(npcPrompt).toContain('The station archive keeper.')
+    const update = wrapper.emitted('update')?.at(-1)?.[0] as ReturnType<typeof startBrowserSceneRoleplay>
+    expect(update.session.transcript[0].speaker_id).toBe('keeper')
+    expect(update.session.relationships?.keeper).toBeCloseTo(0.5)
+    expect(update.session.relationships?.echo).toBeCloseTo(0.2)
   })
 
   it('switches to a recovered project API before the next clean turn', async () => {

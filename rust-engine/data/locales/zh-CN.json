@@ -1257,6 +1257,7 @@
     "game.saved-id": "已保存 {id}",
     "game.auto-save-name": "自动存档 {time}",
     "roleplay.turn": "回合",
+    "roleplay.participants": "场景角色",
     "roleplay.scores": "剧情分值",
     "roleplay.affinity": "好感",
     "roleplay.you": "你",

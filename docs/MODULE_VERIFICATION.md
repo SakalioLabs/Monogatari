@@ -28,10 +28,11 @@ only after the active Roleplay reaches a routed ending. Relationship values
 carry into the next chapter while chapter-local scores and evidence remain in
 the completion record.
 
-- Campaign/game core: 47/47 library tests pass, including transcript replay,
+- Campaign/game core: 49/49 library tests pass, including transcript replay,
   forged score/cursor rejection, route-history replay, explicit completion,
-  cycle rejection, and relationship-only chapter handoff.
-- Frontend: 206/206 unit tests and the production Web/PWA build pass. The
+  cycle rejection, relationship-only chapter handoff, selectable scene
+  participants, per-speaker relationships, and rejected outsider speakers.
+- Frontend: 210/210 unit tests and the production Web/PWA build pass. The
   generated project manifest inventories Campaign files and the service worker
   caches them.
 - Browser Campaign Playtest: desktop `1440x900` and mobile `390x844` render
@@ -47,6 +48,14 @@ the completion record.
   WebGPU, or an ORT allocation path. The first turn committed three bounded
   score deltas and one quoted evidence item. Provider credentials remained
   process-only and do not appear in project data, reports, or committed files.
+- Live multi-NPC Playtest (2026-07-25): Chapter 4 opened directly through
+  `previewRoleplay`, exposed Beldia, Aqua, Megumin, and Darkness as selectable
+  participants, switched the stage sprite from Beldia to Aqua, and committed a
+  free-form Aqua turn through two successful `grok-4.5` calls: visible NPC
+  generation followed by independent structured evaluation. The committed
+  source was `authoring_api_model`, the transcript speaker was Aqua, and no
+  authored recovery or raw provider/ORT error appeared. Desktop `1440x900` and
+  mobile `390x844` had zero horizontal overflow.
 - Save v4: assets tests 12/12 and focused Tauri save tests 7/7 pass. Active
   Campaign/Roleplay sessions round-trip, while forged roleplay state is
   rejected before existing runtime state changes.
@@ -85,7 +94,7 @@ the completion record.
   `-0.07`, Megumin `0.24`, and Mitsurugi `0.14`. The forged-state attack is
   guarded and preserves the four exact initial relationships, zero scores, and
   zero evidence.
-- `llm-authoring`: 160/160 tests pass, including project-seeded relationship
+- `llm-authoring`: 165/165 tests pass, including project-seeded relationship
   previews and bounded Quality relationship expectations.
 - Chapter 3 generated sprite validation: all four final character PNGs are
   RGBA, have transparent corners, and retain nonempty subject coverage.
@@ -111,10 +120,12 @@ the completion record.
   and leaves every score at zero.
 - Generated sprite validation: all six final character PNGs are RGBA, have four
   transparent corners, and retain nonempty bounded subject coverage.
-- Rust `llm-game` Scene Roleplay tests: 13/13 pass.
-- Frontend targeted Scene Roleplay/inference tests: 12/12 pass, including
-  project-API selection and ORT allocation-failure containment.
-- Tauri Scene Roleplay command tests: 2/2 pass.
+- Rust `llm-game` Scene Roleplay tests: 17/17 pass.
+- Frontend targeted Scene Roleplay/inference tests: 18/18 pass, including
+  project-API selection, Rust-compatible omitted inference defaults, selectable
+  supporting NPCs, independent speaker relationships, and ORT
+  allocation-failure containment.
+- Tauri Scene Roleplay command tests: 3/3 pass.
 
 ## Purpose
 

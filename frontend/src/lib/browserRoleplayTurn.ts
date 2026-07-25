@@ -156,6 +156,7 @@ export async function executeBrowserRoleplayTurn(
               snapshot.session,
               playerMessage,
               npcResponse,
+              character.id,
             ),
             {
               maxNewTokens: snapshot.definition.inference.evaluator_max_tokens,
@@ -195,7 +196,12 @@ export async function executeBrowserRoleplayTurn(
     applied = applyBrowserSceneRoleplayTurn(
       snapshot.definition,
       snapshot.session,
-      { player_message: playerMessage, npc_response: npcResponse, evaluation },
+      {
+        player_message: playerMessage,
+        speaker_id: character.id,
+        npc_response: npcResponse,
+        evaluation,
+      },
     )
   } catch {
     evaluationSource = inputSafety.intrusion_detected
@@ -207,7 +213,12 @@ export async function executeBrowserRoleplayTurn(
     applied = applyBrowserSceneRoleplayTurn(
       snapshot.definition,
       snapshot.session,
-      { player_message: playerMessage, npc_response: npcResponse, evaluation },
+      {
+        player_message: playerMessage,
+        speaker_id: character.id,
+        npc_response: npcResponse,
+        evaluation,
+      },
     )
   }
 

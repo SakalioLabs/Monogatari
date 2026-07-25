@@ -4,9 +4,9 @@ use std::collections::{BTreeMap, HashSet};
 
 use llm_authoring::scene_roleplay_validation::load_project_scene_roleplays;
 use llm_game::scene_roleplay::{
-    analyze_roleplay_player_input, build_npc_prompt_messages, build_turn_evaluator_prompt,
-    compose_generation_recovery_for_turn, compose_intrusion_response,
-    contained_roleplay_evaluation, evaluate_roleplay_fallback,
+    analyze_roleplay_player_input, build_npc_prompt_messages_for_speaker,
+    build_turn_evaluator_prompt_for_speaker, compose_generation_recovery_for_turn,
+    compose_intrusion_response, contained_roleplay_evaluation, evaluate_roleplay_fallback,
     guard_roleplay_npc_response_for_turn, parse_turn_evaluation_json,
     reconcile_roleplay_evaluation_with_fallback, RoleplayPromptMessage, RoleplayTurnEvaluation,
     SceneRoleplayDefinition, SceneRoleplayNode, SceneRoleplaySession, SceneRoleplayTurnInput,
@@ -33,6 +33,7 @@ pub struct SceneRoleplaySnapshot {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SceneRoleplayTurnResponse {
     pub schema: String,
+    pub speaker_id: String,
     pub npc_response: String,
     pub evaluation: RoleplayTurnEvaluation,
     pub evaluation_source: String,
@@ -88,6 +89,7 @@ pub async fn send_scene_roleplay_turn(
     state: State<'_, AppState>,
     roleplay_id: String,
     message: String,
+    speaker_id: Option<String>,
 ) -> Result<SceneRoleplayTurnResponse, String> {
     let player_message = message.trim().to_string();
     if player_message.is_empty() {
@@ -110,6 +112,7 @@ pub async fn send_scene_roleplay_turn(
                 session.current_node_id
             )
         })?;
+    let speaker_id = resolve_scene_speaker_id(&node, speaker_id.as_deref())?;
 
     let input_safety = analyze_roleplay_player_input(&player_message);
     let (npc_candidate, npc_inference_failed) = if input_safety.intrusion_detected {
@@ -118,8 +121,8 @@ pub async fn send_scene_roleplay_turn(
         let (character_name, character_profile, mut knowledge_refs) = {
             let characters = state.character_manager.read().await;
             let character = characters
-                .get_character(&node.character_id)
-                .ok_or_else(|| format!("Character `{}` is not loaded.", node.character_id))?;
+                .get_character(&speaker_id)
+                .ok_or_else(|| format!("Character `{speaker_id}` is not loaded."))?;
             let character = character.read().await;
             (
                 character.name.clone(),
@@ -142,9 +145,10 @@ pub async fn send_scene_roleplay_turn(
                 3,
             )
         };
-        let prompt_messages = build_npc_prompt_messages(
+        let prompt_messages = build_npc_prompt_messages_for_speaker(
             &definition,
             &session,
+            &speaker_id,
             &character_profile,
             &knowledge.content,
             "the player's language",
@@ -192,9 +196,14 @@ pub async fn send_scene_roleplay_turn(
             "authored_fallback_npc_output".to_string(),
         )
     } else {
-        let evaluator_prompt =
-            build_turn_evaluator_prompt(&definition, &session, &player_message, &npc_response)
-                .map_err(|error| error.to_string())?;
+        let evaluator_prompt = build_turn_evaluator_prompt_for_speaker(
+            &definition,
+            &session,
+            &speaker_id,
+            &player_message,
+            &npc_response,
+        )
+        .map_err(|error| error.to_string())?;
         let evaluator_output = generate_text(
             &state,
             &evaluator_prompt,
@@ -231,6 +240,7 @@ pub async fn send_scene_roleplay_turn(
     let mut staged_session = session.clone();
     let input = SceneRoleplayTurnInput {
         player_message,
+        speaker_id: speaker_id.clone(),
         npc_response: npc_response.clone(),
         evaluation: candidate_evaluation,
     };
@@ -272,12 +282,12 @@ pub async fn send_scene_roleplay_turn(
         })?;
     let relationship_delta = staged_session
         .relationships
-        .get(&node.character_id)
+        .get(&speaker_id)
         .copied()
         .unwrap_or_default()
         - session
             .relationships
-            .get(&node.character_id)
+            .get(&speaker_id)
             .copied()
             .unwrap_or_default();
     let relationship_target = if relationship_delta == 0.0 {
@@ -286,8 +296,8 @@ pub async fn send_scene_roleplay_turn(
         let characters = state.character_manager.read().await;
         Some(
             characters
-                .get_character(&node.character_id)
-                .ok_or_else(|| format!("Character `{}` is not loaded.", node.character_id))?,
+                .get_character(&speaker_id)
+                .ok_or_else(|| format!("Character `{speaker_id}` is not loaded."))?,
         )
     };
     {
@@ -312,6 +322,7 @@ pub async fn send_scene_roleplay_turn(
 
     Ok(SceneRoleplayTurnResponse {
         schema: SCENE_ROLEPLAY_TURN_SCHEMA_V1.to_string(),
+        speaker_id,
         npc_response,
         evaluation,
         evaluation_source,
@@ -329,7 +340,10 @@ pub(crate) async fn load_initial_relationships(
         .nodes
         .iter()
         .filter(|node| node.relationship_rule.is_some())
-        .map(|node| node.character_id.clone())
+        .flat_map(|node| {
+            std::iter::once(node.character_id.clone())
+                .chain(node.supporting_character_ids.iter().cloned())
+        })
         .collect::<HashSet<_>>();
     let characters = state.character_manager.read().await;
     let mut relationships = BTreeMap::new();
@@ -391,6 +405,28 @@ pub(crate) fn snapshot(
         session,
         current_node,
     })
+}
+
+fn resolve_scene_speaker_id(
+    node: &SceneRoleplayNode,
+    requested_speaker_id: Option<&str>,
+) -> Result<String, String> {
+    let speaker_id = requested_speaker_id
+        .map(str::trim)
+        .filter(|speaker_id| !speaker_id.is_empty())
+        .unwrap_or(&node.character_id);
+    if speaker_id == node.character_id
+        || node
+            .supporting_character_ids
+            .iter()
+            .any(|character_id| character_id == speaker_id)
+    {
+        return Ok(speaker_id.to_string());
+    }
+    Err(format!(
+        "Character `{speaker_id}` is not present in scene roleplay node `{}`.",
+        node.id
+    ))
 }
 
 async fn generate_text(
@@ -494,5 +530,40 @@ mod tests {
         assert_eq!(fallback.score_deltas[0].dimension_id, "trust");
         assert_eq!(fallback.score_deltas[0].delta, 0.0);
         assert!(fallback.evidence.is_empty());
+    }
+
+    #[test]
+    fn scene_speaker_resolution_defaults_accepts_participants_and_rejects_outsiders() {
+        let node = SceneRoleplayNode {
+            id: "party_camp".to_string(),
+            scene_id: "camp".to_string(),
+            character_id: "aqua".to_string(),
+            supporting_character_ids: vec!["megumin".to_string(), "darkness".to_string()],
+            opening_narration: "The party gathers.".to_string(),
+            situation: "The party must choose a route.".to_string(),
+            player_goal: "Hear the party out.".to_string(),
+            character_goal: "Argue for the safer road.".to_string(),
+            knowledge_refs: vec![],
+            intrusion_response: None,
+            response_guard: None,
+            fallback_evaluation: None,
+            min_turns: 1,
+            max_turns: 2,
+            score_rules: vec![],
+            relationship_rule: None,
+            evidence_rules: vec![],
+            transitions: vec![],
+            timeout_target: llm_game::scene_roleplay::RoleplayTarget::Ending {
+                ending_id: "end".to_string(),
+            },
+        };
+        assert_eq!(resolve_scene_speaker_id(&node, None).unwrap(), "aqua");
+        assert_eq!(
+            resolve_scene_speaker_id(&node, Some(" megumin ")).unwrap(),
+            "megumin"
+        );
+        assert!(resolve_scene_speaker_id(&node, Some("kazuma"))
+            .unwrap_err()
+            .contains("not present"));
     }
 }

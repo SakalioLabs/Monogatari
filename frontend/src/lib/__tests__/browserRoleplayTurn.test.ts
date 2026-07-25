@@ -127,6 +127,42 @@ function request(playerMessage: string) {
 }
 
 describe('executeBrowserRoleplayTurn', () => {
+  it('uses Rust-compatible inference defaults when a project omits the budget', async () => {
+    const defaultedDefinition = structuredClone(definition) as Partial<SceneRoleplayDefinition>
+    delete defaultedDefinition.inference
+    const snapshot = startBrowserSceneRoleplay(defaultedDefinition as SceneRoleplayDefinition)
+    const runtime = dependencies(vi.fn()
+      .mockResolvedValueOnce('The receiver keeps the coordinates inside the signal.')
+      .mockResolvedValueOnce(JSON.stringify({
+        score_deltas: { trust: 0 },
+        evidence: {},
+        npc_emotion: 'steady',
+        summary: 'The exchange stayed grounded.',
+      })))
+
+    const result = await executeBrowserRoleplayTurn({
+      snapshot,
+      character,
+      locale: 'en',
+      knowledgeEntries: [],
+      playerMessage: 'Keep the receiver and signal observable.',
+      apiRuntime,
+    }, runtime)
+
+    expect(runtime.generateApiChat).toHaveBeenCalledTimes(2)
+    expect(runtime.generateApiChat).toHaveBeenNthCalledWith(
+      1,
+      expect.any(Array),
+      expect.objectContaining({ maxNewTokens: 96, maxContextCharacters: 6_000 }),
+    )
+    expect(runtime.generateApiChat).toHaveBeenNthCalledWith(
+      2,
+      expect.any(Array),
+      expect.objectContaining({ maxNewTokens: 128, maxContextCharacters: 6_000 }),
+    )
+    expect(result.response.evaluation_source).toBe('authoring_api_model')
+  })
+
   it('runs NPC generation and independent evaluation before deterministic commit', async () => {
     const progress = vi.fn()
     const generateApiChat = vi.fn()

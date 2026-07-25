@@ -126,6 +126,7 @@ fn definition() -> SceneRoleplayDefinition {
 fn turn(delta: f32, evidence: bool) -> SceneRoleplayTurnInput {
     SceneRoleplayTurnInput {
         player_message: "Let another team repeat the measurement.".to_string(),
+        speaker_id: String::new(),
         npc_response: "Then the claim can remain separate from the witness.".to_string(),
         evaluation: RoleplayTurnEvaluation {
             score_deltas: vec![RoleplayScoreDelta {

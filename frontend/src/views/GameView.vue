@@ -82,6 +82,7 @@
           :can-continue="Boolean(activeCampaignSnapshot)"
           @update="updateActiveRoleplay"
           @node-change="syncRoleplayNode"
+          @speaker-change="syncRoleplaySpeaker"
           @emotion="applyNpcEmotion"
           @ending="completeRoleplayEnding"
           @continue="continueActiveCampaign"
@@ -810,6 +811,13 @@ async function syncRoleplayNode(node: SceneRoleplayNode) {
   }
   currentCharacter.value = characters.value.find(character => character.id === node.character_id) || null
   currentExpression.value = currentCharacter.value?.emotion || 'neutral'
+}
+
+function syncRoleplaySpeaker(speakerId: string) {
+  const speaker = characters.value.find(character => character.id === speakerId)
+  if (!speaker) return
+  currentCharacter.value = speaker
+  currentExpression.value = speaker.emotion || 'neutral'
 }
 
 function completeRoleplayEnding(endingId: string) {

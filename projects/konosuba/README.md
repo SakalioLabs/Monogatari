@@ -41,9 +41,12 @@ Monogatari's real-time Scene Roleplay workflow.
 - Darkness's injury-aware frontline rotation and protection of fallen adventurers
 - a coordinated disarm, armor break, purification, revival, and public damage ledger
 
-The player acts as Kazuma and writes free-form responses. NPC dialogue is
-generated from character, scene, and knowledge context. Authored fallback text
-exists only to keep the story playable when inference is unavailable.
+The player acts as Kazuma and writes free-form responses. Every primary or
+supporting character present in the current node is a selectable live NPC.
+Dialogue is generated from that NPC's own character, scene, Knowledge, and
+relationship context, while scores and authored evidence determine the route.
+Authored fallback text exists only to keep the story playable when inference
+is unavailable.
 
 The primary browser entry is:
 

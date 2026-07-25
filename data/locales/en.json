@@ -1257,6 +1257,7 @@
     "game.saved-id": "Saved {id}",
     "game.auto-save-name": "Auto-save {time}",
     "roleplay.turn": "Turn",
+    "roleplay.participants": "Scene characters",
     "roleplay.scores": "Story scores",
     "roleplay.affinity": "Affinity",
     "roleplay.you": "You",

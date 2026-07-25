@@ -100,6 +100,7 @@ fn completed_roleplay(
             definition,
             SceneRoleplayTurnInput {
                 player_message: "We have a clear agreement.".to_string(),
+                speaker_id: String::new(),
                 npc_response: "Then we can proceed.".to_string(),
                 evaluation: RoleplayTurnEvaluation {
                     score_deltas: vec![RoleplayScoreDelta {

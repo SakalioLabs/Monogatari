@@ -1257,6 +1257,7 @@
     "game.saved-id": "{id} 저장 완료",
     "game.auto-save-name": "자동 저장 {time}",
     "roleplay.turn": "턴",
+    "roleplay.participants": "장면 등장인물",
     "roleplay.scores": "스토리 점수",
     "roleplay.affinity": "친밀도",
     "roleplay.you": "나",

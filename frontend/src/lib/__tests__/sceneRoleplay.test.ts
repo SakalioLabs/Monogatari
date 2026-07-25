@@ -65,6 +65,30 @@ function evaluation(delta: number, evidence = false): RoleplayTurnEvaluation {
 }
 
 describe('browser scene roleplay runtime', () => {
+  it('normalizes omitted and partial inference budgets like the Rust runtime', () => {
+    const omitted = structuredClone(definition) as Partial<SceneRoleplayDefinition>
+    delete omitted.inference
+    const started = startBrowserSceneRoleplay(omitted as SceneRoleplayDefinition)
+    expect(started.definition.inference).toEqual({
+      max_context_characters: 6_000,
+      max_recent_turns: 6,
+      npc_max_tokens: 96,
+      evaluator_max_tokens: 128,
+    })
+
+    const partial = structuredClone(definition) as unknown as {
+      inference: Partial<SceneRoleplayDefinition['inference']>
+    }
+    partial.inference = { npc_max_tokens: 64 }
+    const partialStarted = startBrowserSceneRoleplay(partial as SceneRoleplayDefinition)
+    expect(partialStarted.definition.inference.npc_max_tokens).toBe(64)
+    expect(partialStarted.definition.inference.max_recent_turns).toBe(6)
+
+    const invalid = structuredClone(definition)
+    invalid.inference.max_recent_turns = 0
+    expect(() => startBrowserSceneRoleplay(invalid)).toThrow(/max_recent_turns/)
+  })
+
   it('clamps scores and waits for authored minimum turns before ending', () => {
     const started = startBrowserSceneRoleplay(definition)
     const first = applyBrowserSceneRoleplayTurn(definition, started.session, {
@@ -118,6 +142,50 @@ describe('browser scene roleplay runtime', () => {
     })
     expect(second.session.relationships?.echo).toBeCloseTo(0.45)
     expect(second.session.ending_id).toBe('truth')
+  })
+
+  it('keeps supporting NPC prompts, transcript ownership, and relationships independent', () => {
+    const ensembleDefinition = structuredClone(definition)
+    ensembleDefinition.nodes[0].supporting_character_ids = ['keeper']
+    ensembleDefinition.nodes[0].relationship_rule = {
+      guidance: 'Reward grounded cooperation.',
+      max_delta_per_turn: 0.1,
+    }
+    const started = startBrowserSceneRoleplay(ensembleDefinition, { echo: 0.2, keeper: 0.4 })
+    const messages = buildBrowserRoleplayNpcMessages(ensembleDefinition, started.session, {
+      id: 'keeper',
+      name: 'Keeper',
+      description: 'The archive keeper.',
+      emotion: 'focused',
+      portrait_path: null,
+      sprite_path: null,
+      knowledge_refs: [],
+    }, 'en', [], 'How should the record be handled?')
+    expect(messages[0].content).toContain('active_speaker=keeper')
+    expect(messages[0].content).toContain('relationship_with_player=0.400')
+    expect(messages[0].content).toContain('Do not impersonate the primary character')
+    expect(messages[0].content).not.toContain('Be heard without false certainty.')
+
+    const supportingEvaluation = evaluation(0)
+    supportingEvaluation.relationship_delta = 0.1
+    const turn = applyBrowserSceneRoleplayTurn(ensembleDefinition, started.session, {
+      player_message: 'Keep the record bounded.',
+      speaker_id: 'keeper',
+      npc_response: 'I will preserve only what can be verified.',
+      evaluation: supportingEvaluation,
+    })
+    expect(turn.response.speaker_id).toBe('keeper')
+    expect(turn.session.transcript[0].speaker_id).toBe('keeper')
+    expect(turn.session.relationships?.keeper).toBeCloseTo(0.5)
+    expect(turn.session.relationships?.echo).toBeCloseTo(0.2)
+
+    expect(() => applyBrowserSceneRoleplayTurn(ensembleDefinition, started.session, {
+      player_message: 'Answer.',
+      speaker_id: 'outsider',
+      npc_response: 'No.',
+      evaluation: evaluation(0),
+    })).toThrow(/not present/)
+    expect(started.session.total_turns).toBe(0)
   })
 
   it('rejects unknown model evidence without mutating the source session', () => {

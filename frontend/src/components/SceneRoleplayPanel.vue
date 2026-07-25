@@ -1,6 +1,7 @@
 <template>
   <section
     class="roleplay-shell"
+    :class="{ 'has-participants': participantIds.length > 1 }"
     data-testid="scene-roleplay"
     :data-roleplay-status="snapshot.session.status"
     :data-evaluation-source="lastEvaluationSource || undefined"
@@ -24,6 +25,26 @@
         <strong>{{ snapshot.session.node_turns }} / {{ currentNode.max_turns }}</strong>
       </div>
     </header>
+
+    <div
+      v-if="participantIds.length > 1"
+      class="roleplay-participants"
+      :aria-label="t('roleplay.participants', 'Scene characters')"
+      role="group"
+    >
+      <button
+        v-for="characterId in participantIds"
+        :key="characterId"
+        class="participant-button"
+        :class="{ active: characterId === selectedSpeakerId }"
+        :aria-pressed="characterId === selectedSpeakerId"
+        :disabled="isGenerating"
+        data-testid="roleplay-participant"
+        @click="selectSpeaker(characterId)"
+      >
+        {{ characters.find(character => character.id === characterId)?.name || characterId }}
+      </button>
+    </div>
 
     <div class="score-strip" :aria-label="t('roleplay.scores', 'Story scores')">
       <div v-for="dimension in snapshot.definition.score_dimensions" :key="dimension.id" class="score-item">
@@ -129,6 +150,7 @@ import {
   type SceneRoleplayNode,
   type SceneRoleplaySnapshot,
   type SceneRoleplayTurnResponse,
+  sceneRoleplayParticipantIds,
 } from '../lib/sceneRoleplay'
 import type { StoryCharacterInfo, StoryEndingInfo } from '../lib/storyContent'
 import { invokeCommand } from '../lib/tauri'
@@ -150,6 +172,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   update: [snapshot: SceneRoleplaySnapshot]
   nodeChange: [node: SceneRoleplayNode]
+  speakerChange: [speakerId: string]
   emotion: [emotion: string]
   ending: [endingId: string]
   continue: []
@@ -172,8 +195,11 @@ const authoringApiRuntime = ref<AuthoringApiRuntime | null>(null)
 let generationSequence = 0
 
 const currentNode = computed(() => props.snapshot.current_node)
-const currentCharacter = computed(() => props.characters.find(character => character.id === currentNode.value.character_id) || null)
-const currentRelationship = computed(() => props.snapshot.session.relationships?.[currentNode.value.character_id] || 0)
+const selectedSpeakerId = ref(currentNode.value.character_id)
+const participantIds = computed(() => sceneRoleplayParticipantIds(currentNode.value))
+const currentCharacter = computed(() =>
+  props.characters.find(character => character.id === selectedSpeakerId.value) || null)
+const currentRelationship = computed(() => props.snapshot.session.relationships?.[selectedSpeakerId.value] || 0)
 const relationshipPercent = computed(() => (currentRelationship.value + 1) * 50)
 const currentSceneName = computed(() => props.sceneName || currentNode.value.scene_id)
 const activeEnding = computed(() => props.endings.find(ending => ending.id === props.snapshot.session.ending_id) || null)
@@ -212,7 +238,8 @@ const transcriptEntries = computed<TranscriptEntry[]>(() => {
       speaker: t('roleplay.you', 'You'),
       content: turn.player_message,
     })
-    const speaker = props.characters.find(character => character.id === node?.character_id)?.name || node?.character_id || ''
+    const speakerId = turn.speaker_id || node?.character_id || ''
+    const speaker = props.characters.find(character => character.id === speakerId)?.name || speakerId
     entries.push({
       key: `character-${turn.turn}`,
       kind: 'message',
@@ -234,6 +261,8 @@ const transcriptEntries = computed<TranscriptEntry[]>(() => {
 
 watch(() => props.snapshot.session.total_turns, scrollToBottom)
 watch(() => currentNode.value.id, () => {
+  selectedSpeakerId.value = currentNode.value.character_id
+  emit('speakerChange', selectedSpeakerId.value)
   emit('nodeChange', currentNode.value)
   scrollToBottom()
 })
@@ -268,6 +297,7 @@ async function sendTurn() {
       response = await invokeCommand<SceneRoleplayTurnResponse>('send_scene_roleplay_turn', {
         roleplayId: props.snapshot.definition.id,
         message: playerMessage,
+        speakerId: selectedSpeakerId.value,
       })
     } else {
       const executed = await executeBrowserRoleplayTurn({
@@ -311,6 +341,12 @@ async function sendTurn() {
   }
 }
 
+function selectSpeaker(speakerId: string) {
+  if (!participantIds.value.includes(speakerId) || isGenerating.value) return
+  selectedSpeakerId.value = speakerId
+  emit('speakerChange', speakerId)
+}
+
 function scorePercent(dimension: RoleplayScoreDimension): number {
   const value = props.snapshot.session.scores[dimension.id] || 0
   return Math.max(0, Math.min(100, (value - dimension.min) / (dimension.max - dimension.min) * 100))
@@ -341,6 +377,9 @@ function scrollToBottom() {
   backdrop-filter: blur(18px);
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.38);
 }
+.roleplay-shell.has-participants {
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+}
 
 .roleplay-head {
   display: grid;
@@ -366,6 +405,35 @@ function scrollToBottom() {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.roleplay-participants {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 8px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  scrollbar-width: thin;
+}
+
+.participant-button {
+  flex: 0 0 auto;
+  min-width: 84px;
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid #4c5958;
+  border-radius: 5px;
+  background: #222829;
+  color: #c9ccc7;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.participant-button.active {
+  border-color: #d8b969;
+  background: #3a3424;
+  color: #f0d78e;
+}
+.participant-button:disabled { cursor: wait; opacity: 0.65; }
 
 .score-strip {
   display: grid;
@@ -476,6 +544,7 @@ function scrollToBottom() {
 @media (max-width: 720px) {
   .roleplay-head { padding: 12px; }
   .node-copy small { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  .roleplay-participants { padding: 7px 12px; }
   .score-strip { gap: 8px; padding: 9px 12px; }
   .score-label { display: grid; gap: 1px; }
   .roleplay-transcript { padding: 12px; }

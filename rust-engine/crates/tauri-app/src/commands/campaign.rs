@@ -386,6 +386,7 @@ mod tests {
                     &definition,
                     SceneRoleplayTurnInput {
                         player_message: player_message.to_string(),
+                        speaker_id: String::new(),
                         npc_response: "The current scene remains the only authority.".to_string(),
                         evaluation: evaluate_roleplay_fallback(node, player_message),
                     },

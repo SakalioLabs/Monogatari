@@ -1257,6 +1257,7 @@
     "game.saved-id": "{id} を保存しました",
     "game.auto-save-name": "自動保存 {time}",
     "roleplay.turn": "ターン",
+    "roleplay.participants": "シーンの登場人物",
     "roleplay.scores": "物語スコア",
     "roleplay.affinity": "親密度",
     "roleplay.you": "あなた",
