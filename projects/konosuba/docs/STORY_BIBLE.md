@@ -37,6 +37,12 @@ Can the player turn a chaotic boss battle into a sequence of observable,
 reversible tactical decisions that protects civilians and fallen adventurers,
 rather than winning because a fixed script grants the party the correct move?
 
+## Volume 1 finale dramatic question
+
+Can the party turn an absurd public debt into a voluntary operating agreement
+without erasing the damage, scapegoating Aqua, cancelling Megumin's identity,
+or letting Darkness choose danger for everyone?
+
 ## Score model
 
 - `pragmatism`: plans, resource awareness, risk control, and workable tactics.
@@ -71,6 +77,13 @@ Chapter 4 introduces:
 - `tactical_inference`: test observed behavior before escalating to a decisive tactic.
 - `life_preservation`: rotate wounded defenders, protect the fallen, and organize revival.
 
+The Volume 1 finale introduces:
+
+- `factual_accountability`: preserve reward, loss, net-debt, and causal facts.
+- `shared_liability`: obtain personal consent while recognizing team decisions.
+- `resource_stewardship`: bind income, essential spending, repair, and review.
+- `party_commitment`: define vetoes, duties, retreat signals, and shared direction.
+
 ## Relationship model
 
 Character relationships use the persistent `player` relationship:
@@ -103,10 +116,20 @@ Aqua and Darkness relationship thresholds in addition to all eight pieces of
 battle evidence. A relationship cannot substitute for a tested weakness,
 protected casualty, or completed revival ledger.
 
+The finale receives Campaign-carried relationships from Chapter 4 and adds Luna
+at her project-defined initial value. Only the active speaker changes on each
+turn. The best ending requires bounded relationships with Luna, Aqua, Megumin,
+and Darkness plus all five settlement evidence records; prior affection cannot
+erase debt, forge consent, or replace a registered plan.
+
 ## Knowledge boundaries
 
 - Aqua knows the afterlife process, her own powers, and the rules she explains.
-- Luna knows Axel, guild procedure, and visible adventurer records.
+- Luna knows Axel, guild procedure, and visible adventurer records. In the
+  finale, she knows the registered three-hundred-million reward,
+  three-hundred-forty-million damage total, and forty-million net debt. She
+  does not know or decide the party's private allocation until each member
+  confirms it at the counter.
 - Megumin knows Crimson Demon culture and Explosion Magic, but not future party
   events.
 - Darkness knows crusader training and her own motives. Her noble identity is
@@ -152,3 +175,9 @@ protected casualty, or completed revival ledger.
   coordination or protection evidence remains incomplete.
 - `chapter4_gate_overrun`: the party exhausts the available turns without a
   battle plan strong enough to secure the gate.
+- `volume1_debt_shared_adventure`: all five settlement records and score gates
+  establish a voluntary debt, repair, mission, and retreat agreement.
+- `volume1_working_debt_plan`: the minimum ledger and repayment records exist,
+  but responsibility or long-term operating terms remain incomplete.
+- `volume1_party_scattered_by_debt`: available negotiation turns end without a
+  registered agreement; the debt remains factual and unresolved.

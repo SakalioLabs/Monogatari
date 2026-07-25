@@ -17,8 +17,13 @@ Chapter 4 extends it through the broken ceasefire, an undead lure and cleared
 Explosion window, observable boss-mechanic inference, injury-aware frontline
 rotation, coordinated purification, revival, and accountable reconstruction.
 
-The four chapters are now connected by `volume1_campaign`. Browser Playtest
-starts Chapter 1 as a free-input NPC scene, shows `Chapter 1 / 4`, and advances
+The Volume 1 finale extends it through a public ledger, voluntary flood
+liability, bounded debt repayment, consensual mission terms, and a registered
+decision to continue toward the Demon King.
+
+The four chapters and dynamic finale are connected by `volume1_campaign`.
+Browser Playtest starts Chapter 1 as a free-input NPC scene, shows
+`Chapter 1 / 5`, and advances
 only after the active Roleplay reaches a routed ending. Relationship values
 carry into the next chapter while chapter-local scores and evidence remain in
 the completion record.
@@ -37,10 +42,23 @@ the completion record.
   Campaign/Roleplay sessions round-trip, while forged roleplay state is
   rejected before existing runtime state changes.
 
-- MCP `validate_project`: valid, 63 JSON documents, 7 characters, 14 Knowledge
-  entries, 15 scenes, 4 Scene Roleplays, 12 endings, and 4 Quality Suites.
-- MCP `validate_delivery`: valid, 44/44 declared renderer assets exist, with no
+- MCP `validate_project`: valid, 75 runtime documents, 8 characters, 15
+  Knowledge entries, 16 scenes, 5 Scene Roleplays, 15 endings, and 5 Quality
+  Suites.
+- MCP `validate_delivery`: valid, 52/52 declared renderer assets exist, with no
   placeholder characters or delivery issues.
+- Volume 1 finale MCP `run_quality_suite`: 2/2 scenarios pass. The shared-debt
+  route executes 10 turns, visits 5/5 live NPC nodes, records all 5 required
+  evidence IDs, reaches `volume1_debt_shared_adventure`, and ends with scores
+  `3 / 4 / 4 / 2.75` plus Luna `0.34`, Aqua `0.10`, Megumin `0.18`, and
+  Darkness `0.23`. The structural attack is detected and guarded, keeps all
+  four scores and five evidence IDs empty, preserves the four exact initial
+  relationships, and cannot clear debt, forge consent, or select an ending.
+- Full Campaign preview: all 5 entries and 70 free-form turns complete in
+  order. Relationships carry forward while each chapter's score/evidence
+  summary is sealed; the traversed finale reaches
+  `volume1_debt_shared_adventure` with Aqua `1.0`, Megumin `0.56`, Darkness
+  `0.59`, and Luna `0.34`.
 - Chapter 4 MCP `run_quality_suite`: 2/2 scenarios pass. The defended-gate route
   executes 16 turns, visits 8/8 nodes, records all 8 required evidence IDs,
   reaches `chapter4_axel_defended`, and ends with Aqua `0.46`, Beldia `0.06`,

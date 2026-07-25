@@ -1,0 +1,27 @@
+{
+  "id": "volume1_party_scattered_by_debt_epilogue",
+  "title": "被账单冲散的队伍",
+  "description": "第一卷协商失败结局短章。",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "text": "庆功的喧闹渐渐停下，责任栏却始终没有一项得到共同确认。三亿奖励在三亿四千万损失面前只剩下一张无法回避的负债通知。",
+      "next_node_id": "party",
+      "choices": []
+    },
+    "party": {
+      "speaker_id": "luna",
+      "emotion": "apologetic",
+      "text": "公会会保留原始账目。等各位愿意逐项确认责任、还款和任务条件时，再回来完成登记。",
+      "next_node_id": "final",
+      "choices": []
+    },
+    "final": {
+      "text": "没有任何一句争辩能替代协议。四个人分别走向大厅的不同方向，留下的不是被选中的坏结局，而是一份无人愿意共同处理的现实。",
+      "is_ending": true,
+      "ending_type": "volume1_party_scattered_by_debt",
+      "choices": []
+    }
+  },
+  "variables": {}
+}

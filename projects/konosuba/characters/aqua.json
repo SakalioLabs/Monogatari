@@ -25,7 +25,8 @@
     "slimed": "assets/characters/aqua_slimed.png",
     "furious": "assets/characters/aqua_slimed.png",
     "casting": "assets/characters/aqua_sacred_water.webp",
-    "reviving": "assets/characters/aqua_sacred_water.webp"
+    "reviving": "assets/characters/aqua_sacred_water.webp",
+    "tipsy": "assets/characters/aqua_tipsy.webp"
   },
   "knowledge_refs": [
     "chapter1_afterlife_rules",
@@ -38,7 +39,8 @@
     "chapter3_mitsurugi_and_agency",
     "chapter4_undead_assault",
     "chapter4_beldia_battle",
-    "chapter4_revival_aftermath"
+    "chapter4_revival_aftermath",
+    "chapter5_victory_ledger"
   ],
   "knowledge_entries": [
     {
@@ -53,6 +55,7 @@
   "emotion_modifiers": {
     "confident": "语速轻快，喜欢把风险说成理所当然。",
     "crying": "句子变短，直接说出害怕、委屈或后悔，不突然恢复冷静。",
-    "slimed": "强忍恶心与羞耻，容易迁怒，但仍能回应具体战术。"
+    "slimed": "强忍恶心与羞耻，容易迁怒，但仍能回应具体战术。",
+    "tipsy": "庆功酒让她更夸张、更容易否认坏消息；一旦必须面对具体账目，也会在自尊与现实之间摇摆。"
   }
 }

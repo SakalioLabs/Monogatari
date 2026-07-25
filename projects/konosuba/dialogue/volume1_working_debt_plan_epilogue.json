@@ -1,0 +1,27 @@
+{
+  "id": "volume1_working_debt_plan_epilogue",
+  "title": "勉强可行的还款计划",
+  "description": "第一卷折中债务结局短章。",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "text": "露娜登记了四千万净负债、第一周任务收入和修复复核日。责任栏里仍有几处空白，但至少没有人再假装账单不存在。",
+      "next_node_id": "party",
+      "choices": []
+    },
+    "party": {
+      "speaker_id": "megumin",
+      "emotion": "evasive",
+      "text": "我只确认这一周，而且爆裂魔法的安全范围必须写在任务单上。下一周的事，等复核后再谈。",
+      "next_node_id": "final",
+      "choices": []
+    },
+    "final": {
+      "text": "队伍带着一份尚不牢固的协议离开柜台。它足以换来下一份委托，却还不足以保证下一次争执不会把所有人重新推回原点。",
+      "is_ending": true,
+      "ending_type": "volume1_working_debt_plan",
+      "choices": []
+    }
+  },
+  "variables": {}
+}

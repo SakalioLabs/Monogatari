@@ -1,0 +1,16 @@
+{
+  "id": "axel_guild_victory_ledger",
+  "name": "阿克塞尔公会胜利结算日",
+  "background_path": "assets/backgrounds/axel_guild_victory_ledger.webp",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": null,
+  "time_of_day": "day",
+  "tags": [
+    "volume_01_finale",
+    "axel",
+    "guild",
+    "victory",
+    "debt"
+  ]
+}

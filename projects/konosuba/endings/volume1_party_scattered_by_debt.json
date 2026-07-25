@@ -1,0 +1,8 @@
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "volume1_party_scattered_by_debt",
+  "title": "第一卷：被账单冲散的队伍",
+  "description": "争执耗尽了公会能提供的协调时间。奖励被损失吞没，责任、预算和未来任务都没有形成共同记录，四个人只能带着尚未解决的债务离开柜台。",
+  "dialogue_id": "volume1_party_scattered_by_debt_epilogue",
+  "scene_id": "axel_guild_victory_ledger"
+}

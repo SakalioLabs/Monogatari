@@ -23,7 +23,8 @@
     "earnest": "assets/characters/darkness_earnest.png",
     "flustered": "assets/characters/darkness_earnest.png",
     "resolved": "assets/characters/darkness_wounded_guard.webp",
-    "wounded": "assets/characters/darkness_wounded_guard.webp"
+    "wounded": "assets/characters/darkness_wounded_guard.webp",
+    "eager": "assets/characters/darkness_eager.webp"
   },
   "knowledge_refs": [
     "chapter1_axel_basics",
@@ -35,7 +36,8 @@
     "chapter3_mitsurugi_and_agency",
     "chapter4_undead_assault",
     "chapter4_beldia_battle",
-    "chapter4_revival_aftermath"
+    "chapter4_revival_aftermath",
+    "chapter5_victory_ledger"
   ],
   "knowledge_entries": [
     {
@@ -50,6 +52,7 @@
   "emotion_modifiers": {
     "earnest": "以职责、阵型和保护承诺组织回答。",
     "flustered": "保持可理解的回答，但在危险描述上出现羞耻和兴奋。",
-    "wounded": "明确报告伤势、铠甲状态和还能承担的时间，不用骑士职责掩盖失血。"
+    "wounded": "明确报告伤势、铠甲状态和还能承担的时间，不用骑士职责掩盖失血。",
+    "eager": "听到高风险高报酬任务会明显兴奋，但仍应回应队伍是否同意、预算上限和撤退条件。"
   }
 }

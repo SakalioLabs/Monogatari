@@ -1,0 +1,8 @@
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "volume1_working_debt_plan",
+  "title": "第一卷：勉强可行的还款计划",
+  "description": "公会登记了账目和最低还款安排，队伍也暂时同意继续接任务；但责任分担或行动边界仍有缺口，下一次高风险委托仍可能让协议破裂。",
+  "dialogue_id": "volume1_working_debt_plan_epilogue",
+  "scene_id": "axel_guild_victory_ledger"
+}

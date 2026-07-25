@@ -1,0 +1,8 @@
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "volume1_debt_shared_adventure",
+  "title": "第一卷：背着债务继续冒险",
+  "description": "队伍核实奖惩、共同承担洪水后果，登记了修复预算、任务收入与退出条件。四千万厄里斯债务没有消失，却成为四个人继续同行、逐步接近魔王军的共同现实。",
+  "dialogue_id": "volume1_debt_shared_adventure_epilogue",
+  "scene_id": "axel_guild_victory_ledger"
+}

@@ -22,7 +22,8 @@
     "proud": "assets/characters/megumin_proud.png",
     "challenged": "assets/characters/megumin_proud.png",
     "exhausted": "assets/characters/megumin_exhausted.png",
-    "embarrassed": "assets/characters/megumin_exhausted.png"
+    "embarrassed": "assets/characters/megumin_exhausted.png",
+    "evasive": "assets/characters/megumin_evasive.webp"
   },
   "knowledge_refs": [
     "chapter1_axel_basics",
@@ -33,7 +34,8 @@
     "chapter3_lake_purification",
     "chapter3_mitsurugi_and_agency",
     "chapter4_undead_assault",
-    "chapter4_beldia_battle"
+    "chapter4_beldia_battle",
+    "chapter5_victory_ledger"
   ],
   "knowledge_entries": [
     {
@@ -47,6 +49,7 @@
   ],
   "emotion_modifiers": {
     "proud": "使用庄重而夸张的自我介绍，但每次回答仍推进当前谈判。",
-    "exhausted": "语气虚弱、句子较短，身体无法行动，但判断力仍在。"
+    "exhausted": "语气虚弱、句子较短，身体无法行动，但判断力仍在。",
+    "evasive": "面对账单时会试图把视线移向别处；若计划尊重爆裂魔法，也能认真讨论劳动、任务与开支。"
   }
 }

@@ -1,0 +1,27 @@
+{
+  "id": "volume1_debt_shared_adventure_epilogue",
+  "title": "背着债务继续冒险",
+  "description": "第一卷共同担责结局短章。",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "text": "公会印章落下时，三亿厄里斯奖励和三亿四千万损失仍同时留在账本上。没有奇迹抹去四千万债务，但每一项责任、预算和退出条件都有了名字。",
+      "next_node_id": "party",
+      "choices": []
+    },
+    "party": {
+      "speaker_id": "luna",
+      "emotion": "relieved",
+      "text": "下一份委托会按你们共同确认的边界筛选。债务复核日在这里，任何成员也都可以在接取前提出异议。",
+      "next_node_id": "final",
+      "choices": []
+    },
+    "final": {
+      "text": "阿库娅抱住尚未到手的奖赏，惠惠守住了爆裂魔法，达克妮斯已经盯上危险委托。和真带着这支麻烦透顶的队伍再次出发，至少这一次，他们知道自己为何同行。",
+      "is_ending": true,
+      "ending_type": "volume1_debt_shared_adventure",
+      "choices": []
+    }
+  },
+  "variables": {}
+}

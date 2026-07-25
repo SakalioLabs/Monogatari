@@ -10,15 +10,24 @@
       "routes": [
         {
           "ending_id": "chapter1_party_formed",
-          "target": { "kind": "entry", "entry_id": "chapter2" }
+          "target": {
+            "kind": "entry",
+            "entry_id": "chapter2"
+          }
         },
         {
           "ending_id": "chapter1_practical_compromise",
-          "target": { "kind": "entry", "entry_id": "chapter2" }
+          "target": {
+            "kind": "entry",
+            "entry_id": "chapter2"
+          }
         },
         {
           "ending_id": "chapter1_chaotic_failure",
-          "target": { "kind": "entry", "entry_id": "chapter2" }
+          "target": {
+            "kind": "entry",
+            "entry_id": "chapter2"
+          }
         }
       ]
     },
@@ -28,15 +37,24 @@
       "routes": [
         {
           "ending_id": "chapter2_trust_in_practice",
-          "target": { "kind": "entry", "entry_id": "chapter3" }
+          "target": {
+            "kind": "entry",
+            "entry_id": "chapter3"
+          }
         },
         {
           "ending_id": "chapter2_working_truce",
-          "target": { "kind": "entry", "entry_id": "chapter3" }
+          "target": {
+            "kind": "entry",
+            "entry_id": "chapter3"
+          }
         },
         {
           "ending_id": "chapter2_fractured_boundaries",
-          "target": { "kind": "entry", "entry_id": "chapter3" }
+          "target": {
+            "kind": "entry",
+            "entry_id": "chapter3"
+          }
         }
       ]
     },
@@ -46,15 +64,24 @@
       "routes": [
         {
           "ending_id": "chapter3_choice_not_prize",
-          "target": { "kind": "entry", "entry_id": "chapter4" }
+          "target": {
+            "kind": "entry",
+            "entry_id": "chapter4"
+          }
         },
         {
           "ending_id": "chapter3_fragile_truce",
-          "target": { "kind": "entry", "entry_id": "chapter4" }
+          "target": {
+            "kind": "entry",
+            "entry_id": "chapter4"
+          }
         },
         {
           "ending_id": "chapter3_broken_agency",
-          "target": { "kind": "entry", "entry_id": "chapter4" }
+          "target": {
+            "kind": "entry",
+            "entry_id": "chapter4"
+          }
         }
       ]
     },
@@ -64,15 +91,47 @@
       "routes": [
         {
           "ending_id": "chapter4_axel_defended",
-          "target": { "kind": "complete" }
+          "target": {
+            "kind": "entry",
+            "entry_id": "finale"
+          }
         },
         {
           "ending_id": "chapter4_costly_victory",
-          "target": { "kind": "complete" }
+          "target": {
+            "kind": "entry",
+            "entry_id": "finale"
+          }
         },
         {
           "ending_id": "chapter4_gate_overrun",
-          "target": { "kind": "complete" }
+          "target": {
+            "kind": "complete"
+          }
+        }
+      ]
+    },
+    {
+      "id": "finale",
+      "roleplay_id": "volume1_finale_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume1_debt_shared_adventure",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume1_working_debt_plan",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume1_party_scattered_by_debt",
+          "target": {
+            "kind": "complete"
+          }
         }
       ]
     }
