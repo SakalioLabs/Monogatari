@@ -1,0 +1,8 @@
+{
+  "description": "回合耗尽时，指控程序仍未形成可执行的和平同行边界。逃跑、攻击、伪造记录或拒绝核对让骑士与冒险者在公会内形成对峙。",
+  "dialogue_id": "volume2_guild_standoff_epilogue",
+  "id": "volume2_guild_standoff",
+  "scene_id": "axel_guild_arrest",
+  "schema": "monogatari-story-ending/v1",
+  "title": "寂静大厅的对峙"
+}

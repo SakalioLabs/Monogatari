@@ -1,0 +1,22 @@
+{
+  "description": "第二卷尾声实时角色扮演结局短章。",
+  "id": "volume2_custody_without_record_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "worried",
+      "ending_type": "volume2_custody_without_record",
+      "is_ending": true,
+      "speaker_id": "luna",
+      "text": "露娜握着不完整的封存记录，只确认已经写下的身份、证人与同行事实；她拒绝替任何一方补写没有当场确认的内容。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "和真选择和平同行，避免了公会冲突，但私人边界、贡献或程序记录仍有缺口。嫌疑没有在现场变成定罪，缺失部分也不能被事后猜测补齐。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "未写完的同行记录",
+  "variables": {}
+}

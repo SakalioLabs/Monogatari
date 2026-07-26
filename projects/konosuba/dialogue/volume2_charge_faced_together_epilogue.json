@@ -1,0 +1,22 @@
+{
+  "description": "第二卷尾声实时角色扮演结局短章。",
+  "id": "volume2_charge_faced_together_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "casual_bashful",
+      "ending_type": "volume2_charge_faced_together",
+      "is_ending": true,
+      "speaker_id": "darkness",
+      "text": "达克妮斯站在骑士与公会人群之间，却没有阻拦合法同行。她承诺会守住记录，等你回来后再亲口说完今天没有公开的事。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "达克妮斯的边界、全队贡献和塞娜的程序都被清楚记录。和真没有逃跑或攻击，也没有把和平同行说成认罪；队伍留在完整证言之后。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "欢呼之后，共同面对",
+  "variables": {}
+}

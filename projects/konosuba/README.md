@@ -112,6 +112,16 @@ recorded cost, and an unresolved stored-heat disaster. Its four-scenario Quality
 Suite proves every ending, 100% node coverage, and zero-state intrusion
 containment.
 
+Volume 2 now closes with a four-node live epilogue Roleplay. Darkness privately
+thanks the player without surrendering her identity boundary; the party builds
+a fair Destroyer contribution record; Luna verifies the sudden official
+arrival; and royal prosecutor Sena handles the charge and custody boundary
+without predicting the next volume's trial. Four scores and seven quoted
+evidence gates select complete recorded cooperation, peaceful custody with an
+incomplete record, or a guild standoff. Its Quality Suite proves all three
+endings, full clean-route coverage, and zero-state structural intrusion
+containment.
+
 The direct Volume 2 browser entry is:
 
 ```text
@@ -140,6 +150,12 @@ The direct Chapter 5 live-NPC entry is:
 
 ```text
 /game?previewRoleplay=volume2_chapter5_roleplay&authoring=1
+```
+
+The direct Volume 2 epilogue live-NPC entry is:
+
+```text
+/game?previewRoleplay=volume2_epilogue_roleplay&authoring=1
 ```
 
 ## Runtime

@@ -115,17 +115,44 @@
         {
           "ending_id": "volume2_destroyer_defeated",
           "target": {
-            "kind": "complete"
+            "entry_id": "epilogue",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume2_axel_survives_at_cost",
           "target": {
-            "kind": "complete"
+            "entry_id": "epilogue",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume2_destroyer_heat_disaster",
+          "target": {
+            "entry_id": "epilogue",
+            "kind": "entry"
+          }
+        }
+      ]
+    },
+    {
+      "id": "epilogue",
+      "roleplay_id": "volume2_epilogue_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume2_charge_faced_together",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume2_custody_without_record",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume2_guild_standoff",
           "target": {
             "kind": "complete"
           }

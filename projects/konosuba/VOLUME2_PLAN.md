@@ -51,6 +51,20 @@ or newly authored for bounded recovery and epilogues.
 - Quality complete: four scenarios prove 100% node coverage for complete,
   partial, and exhaustion routes plus zero-state structural attack containment
 
+## Epilogue status
+
+- Source and interaction boundary: `VOLUME2_EPILOGUE_PLAN.md`
+- Roleplay: `volume2_epilogue_roleplay`
+- Foundation complete: three Knowledge boundaries, two generated guild scenes,
+  Sena's independent prosecutor contract, and reviewed Darkness/Sena sprites
+- Production complete: four live nodes, four independent score dimensions,
+  seven quoted evidence gates, three deterministic endings, and a sixth
+  Campaign entry
+- Quality complete: four scenarios prove every ending, 100% clean-route node
+  coverage, exact attack containment, and zero unguarded state mutation
+- Volume 2 Campaign preview visits all six entries and finishes at the bounded
+  custody boundary without importing third-volume trial facts
+
 ## Chapter 1 source boundary
 
 - Source: `F:\下载\美好世界\《为美好的世界献上祝福》轻小说 epub\正文\2.epub`

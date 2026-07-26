@@ -1,0 +1,8 @@
+{
+  "description": "和真选择和平同行，避免了公会冲突，但私人边界、贡献或程序记录仍有缺口。嫌疑没有在现场变成定罪，缺失部分也不能被事后猜测补齐。",
+  "dialogue_id": "volume2_custody_without_record_epilogue",
+  "id": "volume2_custody_without_record",
+  "scene_id": "axel_guild_arrest",
+  "schema": "monogatari-story-ending/v1",
+  "title": "未写完的同行记录"
+}

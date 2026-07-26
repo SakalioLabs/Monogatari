@@ -1,0 +1,22 @@
+{
+  "description": "第二卷尾声实时角色扮演结局短章。",
+  "id": "volume2_guild_standoff_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "stern",
+      "ending_type": "volume2_guild_standoff",
+      "is_ending": true,
+      "speaker_id": "sena",
+      "text": "塞娜命令骑士维持距离并封住出口，没有宣告审判结果。现场只留下尚未解决的嫌疑、破裂的程序和需要承担的对峙后果。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "回合耗尽时，指控程序仍未形成可执行的和平同行边界。逃跑、攻击、伪造记录或拒绝核对让骑士与冒险者在公会内形成对峙。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "寂静大厅的对峙",
+  "variables": {}
+}
