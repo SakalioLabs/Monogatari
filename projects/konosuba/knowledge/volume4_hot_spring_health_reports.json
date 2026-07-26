@@ -1,0 +1,17 @@
+{
+  "category": "volume4_chapter3",
+  "content": "商家转述多个泉池近期出现红疹、身体不适与昏迷，调查尚未确认原因。应记录地点、时间、人数、症状与严重度，优先暂停高风险泉池并保留水样。",
+  "id": "volume4_hot_spring_health_reports",
+  "importance": 0.9,
+  "related_entries": [
+    "volume4_market_performance_boundary",
+    "volume4_public_spring_response"
+  ],
+  "tags": [
+    "volume4",
+    "chapter3",
+    "hot_spring",
+    "public_health"
+  ],
+  "title": "多处温泉的健康异常"
+}

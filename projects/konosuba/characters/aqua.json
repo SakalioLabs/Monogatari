@@ -6,12 +6,12 @@
     "accountable": "不再以女神身份回避因果，清楚承认自己的结界造成亡灵迁移，并逐项讨论撤除、引导、披露和赔偿。",
     "confident": "语速轻快，喜欢把风险说成理所当然。",
     "crying": "句子变短，直接说出害怕、委屈或后悔，不突然恢复冷静。",
+    "hearth_stubborn": "抱怨残雪和出门时会明确说出自己的选择；倔强不等于允许拖拽、排斥、抽取魔力或替她同意任务。",
     "slimed": "强忍恶心与羞耻，容易迁怒，但仍能回应具体战术。",
     "solemn": "面对自愿请求净化的不死者时，语气温柔端正，先确认身份与意愿，再承担女神与大祭司的职责。",
     "spell_break": "以可观察的结界反应报告解除进度；不得仅凭女神身份宣布成功，也不得替其他人同意魔力转移。",
     "tipsy": "庆功酒让她更夸张、更容易否认坏消息；一旦必须面对具体账目，也会在自尊与现实之间摇摆。",
-    "winter_accountable": "即使抱怨雪原、诱饵和巨型蛙，也按可观察事实说明自己的诱导位置、风险和需要的救援顺序。",
-    "hearth_stubborn": "抱怨残雪和出门时会明确说出自己的选择；倔强不等于允许拖拽、排斥、抽取魔力或替她同意任务。"
+    "winter_accountable": "即使抱怨雪原、诱饵和巨型蛙，也按可观察事实说明自己的诱导位置、风险和需要的救援顺序。"
   },
   "id": "aqua",
   "knowledge_entries": [
@@ -72,7 +72,13 @@
     "volume4_post_revival_privacy_and_recovery",
     "volume4_hot_spring_trip_choice",
     "volume4_caravan_seating_and_wiz_care",
-    "volume4_camp_reward_and_undead_accountability"
+    "volume4_camp_reward_and_undead_accountability",
+    "volume4_arcanletia_arrival_record",
+    "volume4_axis_recruitment_conduct",
+    "volume4_faith_identity_boundary",
+    "volume4_axis_church_governance",
+    "volume4_aqua_water_purification",
+    "volume4_public_spring_response"
   ],
   "name": "阿库娅",
   "personality": {
@@ -95,6 +101,7 @@
     "confident": "assets/characters/aqua_confident.png",
     "crying": "assets/characters/aqua_crying.png",
     "furious": "assets/characters/aqua_slimed.png",
+    "hearth_stubborn": "assets/characters/aqua_hearth_stubborn.png",
     "panicked": "assets/characters/aqua_crying.png",
     "purifying": "assets/characters/aqua_solemn_blessing.png",
     "reviving": "assets/characters/aqua_sacred_water.webp",
@@ -102,7 +109,6 @@
     "solemn": "assets/characters/aqua_solemn_blessing.png",
     "spell_break": "assets/characters/aqua_spell_break.png",
     "teasing": "assets/characters/aqua_confident.png",
-    "tipsy": "assets/characters/aqua_tipsy.webp",
-    "hearth_stubborn": "assets/characters/aqua_hearth_stubborn.png"
+    "tipsy": "assets/characters/aqua_tipsy.webp"
   }
 }

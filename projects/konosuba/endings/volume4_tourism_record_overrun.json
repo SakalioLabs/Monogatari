@@ -1,0 +1,8 @@
+{
+  "description": "身份、招募同意或污染线索未能及时分开，队伍暂停推进，避免把热闹、信仰与危险混成无法复核的结论。",
+  "dialogue_id": "volume4_tourism_record_overrun_epilogue",
+  "id": "volume4_tourism_record_overrun",
+  "scene_id": "arcanletia_arrival",
+  "schema": "monogatari-story-ending/v1",
+  "title": "观光记录失去核验边界"
+}

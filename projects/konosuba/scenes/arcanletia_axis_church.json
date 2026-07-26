@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/arcanletia_axis_church.webp",
+  "bgm_path": null,
+  "id": "arcanletia_axis_church",
+  "model_3d_path": null,
+  "name": "阿尔坎雷提亚阿克西斯教堂",
+  "tags": [
+    "volume4",
+    "chapter3",
+    "church",
+    "confession",
+    "governance"
+  ],
+  "time_of_day": "afternoon",
+  "weather": "clear"
+}

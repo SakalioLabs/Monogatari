@@ -49,6 +49,7 @@ fn roleplay() -> LoadedSceneRoleplay {
                 situation: "A decision is required.".to_string(),
                 player_goal: "Reach an agreement.".to_string(),
                 character_goal: "Protect the party.".to_string(),
+                participant_goals: Default::default(),
                 knowledge_refs: Vec::new(),
                 intrusion_response: None,
                 response_guard: None,

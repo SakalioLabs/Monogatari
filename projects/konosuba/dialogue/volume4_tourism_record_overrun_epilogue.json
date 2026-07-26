@@ -1,0 +1,24 @@
+{
+  "description": "第四卷第三章实时角色扮演结局短章。",
+  "id": "volume4_tourism_record_overrun_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "earnest",
+      "ending_type": "volume4_tourism_record_overrun",
+      "is_ending": true,
+      "scene_id": "arcanletia_arrival",
+      "speaker_id": "darkness",
+      "text": "身份、招募同意或污染线索未能及时分开，队伍暂停推进，避免把热闹、信仰与危险混成无法复核的结论。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "arcanletia_arrival",
+      "text": "身份、招募同意或污染线索未能及时分开，队伍暂停推进，避免把热闹、信仰与危险混成无法复核的结论。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "观光记录失去核验边界",
+  "variables": {}
+}

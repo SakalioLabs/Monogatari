@@ -1,0 +1,18 @@
+{
+  "category": "volume4_chapter3",
+  "content": "玩家在旅店温泉听见汉斯称多个泉池的破坏正在推进，并计划用长期水质恶化削弱教团。可记录原话、地点、时间和他未入水的动作；其真实身份、污染物与完成范围仍需独立验证。",
+  "id": "volume4_hans_sabotage_report",
+  "importance": 0.9,
+  "related_entries": [
+    "volume4_hot_spring_health_reports",
+    "volume4_wolbach_warning_limits"
+  ],
+  "tags": [
+    "volume4",
+    "chapter3",
+    "hans",
+    "sabotage",
+    "evidence"
+  ],
+  "title": "汉斯关于温泉破坏的现场陈述"
+}

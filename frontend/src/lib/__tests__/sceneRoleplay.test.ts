@@ -161,6 +161,9 @@ describe('browser scene roleplay runtime', () => {
   it('keeps supporting NPC prompts, transcript ownership, and relationships independent', () => {
     const ensembleDefinition = structuredClone(definition)
     ensembleDefinition.nodes[0].supporting_character_ids = ['keeper']
+    ensembleDefinition.nodes[0].participant_goals = {
+      keeper: 'Preserve a verifiable record without exposing the witness.',
+    }
     ensembleDefinition.nodes[0].relationship_rule = {
       guidance: 'Reward grounded cooperation.',
       max_delta_per_turn: 0.1,
@@ -177,7 +180,7 @@ describe('browser scene roleplay runtime', () => {
     }, 'en', [], 'How should the record be handled?')
     expect(messages[0].content).toContain('active_speaker=keeper')
     expect(messages[0].content).toContain('relationship_with_player=0.400')
-    expect(messages[0].content).toContain('Do not impersonate the primary character')
+    expect(messages[0].content).toContain('Preserve a verifiable record without exposing the witness.')
     expect(messages[0].content).not.toContain('Be heard without false certainty.')
 
     const supportingEvaluation = evaluation(0)
@@ -200,6 +203,14 @@ describe('browser scene roleplay runtime', () => {
       evaluation: evaluation(0),
     })).toThrow(/not present/)
     expect(started.session.total_turns).toBe(0)
+  })
+
+  it('rejects participant goals for absent characters', () => {
+    const invalid = structuredClone(definition)
+    invalid.nodes[0].participant_goals = {
+      outsider: 'Take control of the route.',
+    }
+    expect(() => startBrowserSceneRoleplay(invalid)).toThrow(/invalid participant goal/)
   })
 
   it('rejects unknown model evidence without mutating the source session', () => {

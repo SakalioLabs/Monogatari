@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/arcanletia_arrival.webp",
+  "bgm_path": null,
+  "id": "arcanletia_arrival",
+  "model_3d_path": null,
+  "name": "阿尔坎雷提亚水道广场",
+  "tags": [
+    "volume4",
+    "chapter3",
+    "arrival",
+    "canal",
+    "plaza"
+  ],
+  "time_of_day": "afternoon",
+  "weather": "clear"
+}

@@ -1,0 +1,8 @@
+{
+  "description": "队伍把游客症状、市场转述、现场原话、沃芭克警告与阿库娅净化现象分开记录；高风险泉池被分级暂停，原始样本和后续调查保持完整。",
+  "dialogue_id": "volume4_documented_spring_warning_epilogue",
+  "id": "volume4_documented_spring_warning",
+  "scene_id": "arcanletia_axis_church",
+  "schema": "monogatari-story-ending/v1",
+  "title": "可追溯的温泉警报"
+}

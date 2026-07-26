@@ -12,6 +12,7 @@ fn node() -> SceneRoleplayNode {
         situation: "A voice crosses an uncertain channel.".to_string(),
         player_goal: "Verify the signal.".to_string(),
         character_goal: "Keep the signal grounded in observable facts.".to_string(),
+        participant_goals: Default::default(),
         knowledge_refs: Vec::new(),
         intrusion_response: Some(RoleplayIntrusionResponse {
             reality_anchors: vec!["The receiver light is still blinking.".to_string()],

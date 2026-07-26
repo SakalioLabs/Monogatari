@@ -21,7 +21,7 @@ Build project data that the real Monogatari runtime can load. Treat a project as
 2. Create knowledge and character records.
 3. Add renderer assets and scenes, using project-relative portable paths.
 4. Add endings before any dynamic route targets them.
-5. For interactive AI stories, create `roleplays/` as the primary story graph: define scene-bound nodes, player and NPC goals, score dimensions, evidence rules, inference budgets, deterministic transitions, timeouts, ending targets, scene-specific `intrusion_response`, grounded `response_guard` recoveries, and conservative `fallback_evaluation` signals.
+5. For interactive AI stories, create `roleplays/` as the primary story graph: define scene-bound nodes, player and NPC goals, optional per-NPC `participant_goals` for every selectable supporting character with a distinct current motive, score dimensions, evidence rules, inference budgets, deterministic transitions, timeouts, ending targets, scene-specific `intrusion_response`, grounded `response_guard` recoveries, and conservative `fallback_evaluation` signals.
 6. Add `dialogue/` only for intentionally scripted sequences, tutorials, or non-AI projects; verify every scripted node, speaker, choice, and terminal path.
 7. Add event unlock rules and workflows after their referenced character, scene, roleplay, dialogue, and ending IDs are stable.
 8. Add or update a Quality Suite that replays critical free-form turns and adversarial controls. Prove node coverage, score/evidence boundaries, every required ending, character identity, knowledge boundaries, exact intrusion/guard counts, zero unguarded intrusions, and forbidden response-marker absence.

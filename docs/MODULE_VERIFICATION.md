@@ -42,6 +42,28 @@ three endings, and the fourth Campaign entry. The project validates as 140
 runtime documents, 17 characters, 25 Knowledge entries, 29 scenes, 9 Scene
 Roleplays, 27 endings, 9 Quality Suites, and 106/106 declared renderer assets.
 
+- Volume 4 Chapter 3 deterministic acceptance (2026-07-27): all 618 non-empty
+  source paragraphs were reviewed into six free-form Scene Roleplay nodes.
+  Aqua, Wiz, Megumin, Darkness, Hans, and Wolbach are selectable live
+  participants with independent node-local `participant_goals`; a supporting
+  NPC no longer has to fall back to a generic scene motive. Eleven canonical
+  Knowledge records, four fingerprint-imported backgrounds, two transparent
+  character states, four score dimensions, and twelve quoted evidence gates
+  cover arrival accountability, guest care, market performance, health
+  reports, recruitment consent, faith-neutral conduct, church governance,
+  sabotage evidence, and reversible public warning. MCP core-runtime validation
+  accepts 323 catalog documents and delivery validation resolves 159/159
+  declared renderer references with no placeholders. Quality passes 4/4
+  scenarios, visits 6/6 nodes, reaches all three endings, records 12/12
+  evidence gates and exact `6/6/6/6` complete scores, and guards one structural
+  attack with zero forged state. The three-entry Volume 4 Campaign completes
+  with relationship carry-over. A live `grok-4.5 API` browser run generated
+  distinct Aqua and Wiz replies from their own node-local motives, independently
+  scored both turns from `1.0` through `1.5`, and advanced to the canal market
+  without fallback. Desktop and `390x844` layouts render the generated assets,
+  participant controls, transcript, score state, and free-form input without
+  page-level horizontal overflow.
+
 - Volume 4 Chapter 2 deterministic acceptance (2026-07-27): all 666 non-empty
   source paragraphs were reviewed into six free-form Scene Roleplay nodes.
   Megumin, Vanir, Aqua, Darkness, and Wiz generate scene- and identity-bound

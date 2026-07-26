@@ -7,22 +7,22 @@
         {
           "ending_id": "volume4_return_with_recovery_and_party_terms",
           "target": {
-            "kind": "entry",
-            "entry_id": "chapter2"
+            "entry_id": "chapter2",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume4_return_with_unresolved_body_boundary",
           "target": {
-            "kind": "entry",
-            "entry_id": "chapter2"
+            "entry_id": "chapter2",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume4_revival_decision_overrun",
           "target": {
-            "kind": "entry",
-            "entry_id": "chapter2"
+            "entry_id": "chapter2",
+            "kind": "entry"
           }
         }
       ]
@@ -34,17 +34,44 @@
         {
           "ending_id": "volume4_transparent_caravan_arrival",
           "target": {
-            "kind": "complete"
+            "entry_id": "chapter3",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume4_arrival_with_unresolved_accountability",
           "target": {
-            "kind": "complete"
+            "entry_id": "chapter3",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume4_caravan_incident_overrun",
+          "target": {
+            "entry_id": "chapter3",
+            "kind": "entry"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter3",
+      "roleplay_id": "volume4_chapter3_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume4_documented_spring_warning",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume4_warning_with_unresolved_authority",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume4_tourism_record_overrun",
           "target": {
             "kind": "complete"
           }

@@ -1,0 +1,24 @@
+{
+  "description": "第四卷第三章实时角色扮演结局短章。",
+  "id": "volume4_documented_spring_warning_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "cautious",
+      "ending_type": "volume4_documented_spring_warning",
+      "is_ending": true,
+      "scene_id": "arcanletia_axis_church",
+      "speaker_id": "wiz",
+      "text": "队伍把游客症状、市场转述、现场原话、沃芭克警告与阿库娅净化现象分开记录；高风险泉池被分级暂停，原始样本和后续调查保持完整。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "arcanletia_axis_church",
+      "text": "队伍把游客症状、市场转述、现场原话、沃芭克警告与阿库娅净化现象分开记录；高风险泉池被分级暂停，原始样本和后续调查保持完整。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "可追溯的温泉警报",
+  "variables": {}
+}

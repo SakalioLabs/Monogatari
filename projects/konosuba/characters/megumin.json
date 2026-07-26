@@ -64,7 +64,12 @@
     "volume4_forcefire_and_mana_failure",
     "volume4_post_revival_privacy_and_recovery",
     "volume4_hot_spring_trip_choice",
-    "volume4_cave_and_explosion_safety"
+    "volume4_cave_and_explosion_safety",
+    "volume4_arcanletia_arrival_record",
+    "volume4_market_performance_boundary",
+    "volume4_axis_recruitment_conduct",
+    "volume4_axis_church_governance",
+    "volume4_public_spring_response"
   ],
   "name": "惠惠",
   "personality": {

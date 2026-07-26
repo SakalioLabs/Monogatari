@@ -1,0 +1,8 @@
+{
+  "description": "队伍保护了访客并发出温泉安全警报，但教团治理权限和部分证据来源仍需返堂人员与独立调查复核。",
+  "dialogue_id": "volume4_warning_with_unresolved_authority_epilogue",
+  "id": "volume4_warning_with_unresolved_authority",
+  "scene_id": "arcanletia_axis_church",
+  "schema": "monogatari-story-ending/v1",
+  "title": "警报已发出，治理授权仍待复核"
+}

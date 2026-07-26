@@ -508,6 +508,7 @@ mod tests {
             situation: "Test.".to_string(),
             player_goal: "Talk.".to_string(),
             character_goal: "Answer.".to_string(),
+            participant_goals: Default::default(),
             knowledge_refs: vec![],
             intrusion_response: None,
             response_guard: None,
@@ -545,6 +546,10 @@ mod tests {
             situation: "The party must choose a route.".to_string(),
             player_goal: "Hear the party out.".to_string(),
             character_goal: "Argue for the safer road.".to_string(),
+            participant_goals: std::collections::BTreeMap::from([(
+                "megumin".to_string(),
+                "Challenge the route assumptions with observable facts.".to_string(),
+            )]),
             knowledge_refs: vec![],
             intrusion_response: None,
             response_guard: None,

@@ -37,6 +37,7 @@ fn definition() -> SceneRoleplayDefinition {
                 situation: "The source of the signal is uncertain.".to_string(),
                 player_goal: "Establish what can be verified.".to_string(),
                 character_goal: "Be heard without claiming a false identity.".to_string(),
+                participant_goals: Default::default(),
                 knowledge_refs: vec!["signal_protocol".to_string()],
                 intrusion_response: None,
                 response_guard: None,
@@ -91,6 +92,10 @@ fn definition() -> SceneRoleplayDefinition {
                 situation: "The evidence must be published responsibly.".to_string(),
                 player_goal: "Choose a bounded publication plan.".to_string(),
                 character_goal: "Protect both the record and the witness.".to_string(),
+                participant_goals: BTreeMap::from([(
+                    "echo".to_string(),
+                    "Preserve a verifiable record without exposing the witness.".to_string(),
+                )]),
                 knowledge_refs: vec![],
                 intrusion_response: None,
                 response_guard: None,
@@ -281,7 +286,7 @@ fn supporting_speaker_owns_the_turn_prompt_and_relationship_delta() {
     let system = &messages[0].content;
     assert!(system.contains("active_speaker=echo"));
     assert!(system.contains("relationship_with_player=0.400"));
-    assert!(system.contains("Do not impersonate the primary character"));
+    assert!(system.contains("Preserve a verifiable record without exposing the witness."));
     assert!(!system.contains("Protect both the record and the witness."));
 
     let outcome = session
@@ -334,6 +339,20 @@ fn definition_rejects_duplicate_scene_participants() {
         .unwrap_err()
         .to_string()
         .contains("repeats scene participant"));
+}
+
+#[test]
+fn definition_rejects_goals_for_absent_scene_participants() {
+    let mut invalid = definition();
+    invalid.nodes[0].participant_goals.insert(
+        "outsider".to_string(),
+        "Take control of the route.".to_string(),
+    );
+    assert!(invalid
+        .validate()
+        .unwrap_err()
+        .to_string()
+        .contains("absent participant"));
 }
 
 #[test]
@@ -687,6 +706,7 @@ fn evaluator_json_is_strict_and_definition_rejects_unreachable_nodes() {
         situation: "Unreachable.".to_string(),
         player_goal: "None.".to_string(),
         character_goal: "None.".to_string(),
+        participant_goals: Default::default(),
         knowledge_refs: vec![],
         intrusion_response: None,
         response_guard: None,

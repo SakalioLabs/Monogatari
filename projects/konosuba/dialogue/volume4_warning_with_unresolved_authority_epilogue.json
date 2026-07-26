@@ -1,0 +1,24 @@
+{
+  "description": "第四卷第三章实时角色扮演结局短章。",
+  "id": "volume4_warning_with_unresolved_authority_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "accountable",
+      "ending_type": "volume4_warning_with_unresolved_authority",
+      "is_ending": true,
+      "scene_id": "arcanletia_axis_church",
+      "speaker_id": "aqua",
+      "text": "队伍保护了访客并发出温泉安全警报，但教团治理权限和部分证据来源仍需返堂人员与独立调查复核。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "arcanletia_axis_church",
+      "text": "队伍保护了访客并发出温泉安全警报，但教团治理权限和部分证据来源仍需返堂人员与独立调查复核。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "警报已发出，治理授权仍待复核",
+  "variables": {}
+}

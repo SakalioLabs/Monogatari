@@ -41,7 +41,10 @@
     "volume4_caravan_seating_and_wiz_care",
     "volume4_caravan_incident_response",
     "volume4_cave_and_explosion_safety",
-    "volume4_camp_reward_and_undead_accountability"
+    "volume4_camp_reward_and_undead_accountability",
+    "volume4_wiz_guest_care",
+    "volume4_hot_spring_health_reports",
+    "volume4_public_spring_response"
   ],
   "name": "维兹",
   "personality": {

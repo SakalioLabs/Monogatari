@@ -65,6 +65,8 @@ pub struct SceneRoleplayNode {
     pub situation: String,
     pub player_goal: String,
     pub character_goal: String,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub participant_goals: BTreeMap<String, String>,
     #[serde(default)]
     pub knowledge_refs: Vec<String>,
     #[serde(default)]
@@ -745,11 +747,17 @@ pub fn build_npc_prompt_messages_for_speaker(
             )
         })
         .unwrap_or_default();
-    let active_character_goal = if speaker_id == node.character_id {
-        node.character_goal.as_str()
-    } else {
-        "Respond from your own character profile and the observable scene. Do not impersonate the primary character, inherit their private goal, or select a story route."
-    };
+    let active_character_goal = node
+        .participant_goals
+        .get(&speaker_id)
+        .map(String::as_str)
+        .unwrap_or_else(|| {
+            if speaker_id == node.character_id {
+                node.character_goal.as_str()
+            } else {
+                "Respond from your own character profile and the observable scene. Do not impersonate the primary character, inherit their private goal, or select a story route."
+            }
+        });
     let system = format!(
         "You are roleplaying the character in a real-time interactive story.\n\
          Current story state: node={}, active_speaker={}, turn={}, scores=[{}], relationship_with_player={:.3}, observed_evidence=[{}]\n\n\
@@ -1534,6 +1542,22 @@ fn validate_node(
     bounded_text(&node.situation, "situation", 4_000)?;
     bounded_text(&node.player_goal, "player goal", 2_000)?;
     bounded_text(&node.character_goal, "character goal", 2_000)?;
+    if node.participant_goals.len() > participant_ids.len() {
+        return invalid_definition(format!(
+            "node `{}` contains more participant goals than scene participants",
+            node.id
+        ));
+    }
+    for (character_id, goal) in &node.participant_goals {
+        bounded_id(character_id, "participant goal character id")?;
+        if !participant_ids.contains(character_id.as_str()) {
+            return invalid_definition(format!(
+                "node `{}` defines a goal for absent participant `{character_id}`",
+                node.id
+            ));
+        }
+        bounded_text(goal, "participant goal", 2_000)?;
+    }
     if let Some(response) = &node.intrusion_response {
         validate_intrusion_response(node, response)?;
     }

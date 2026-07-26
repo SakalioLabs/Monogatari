@@ -1,0 +1,19 @@
+{
+  "category": "volume4_chapter3",
+  "content": "证据包应区分游客症状、商贩转述、现场原话、沃芭克警告、阿库娅净化现象与水样检测。按严重度暂停泉池，通知旅店与教堂，保护原始样本并避免在未知毒性下追击或接触。",
+  "id": "volume4_public_spring_response",
+  "importance": 0.9,
+  "related_entries": [
+    "volume4_hot_spring_health_reports",
+    "volume4_hans_sabotage_report",
+    "volume4_aqua_water_purification"
+  ],
+  "tags": [
+    "volume4",
+    "chapter3",
+    "public_safety",
+    "evidence",
+    "response"
+  ],
+  "title": "温泉异常的分级公共响应"
+}

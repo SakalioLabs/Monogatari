@@ -101,6 +101,7 @@ export interface SceneRoleplayNode {
   situation: string
   player_goal: string
   character_goal: string
+  participant_goals?: Record<string, string>
   knowledge_refs: string[]
   intrusion_response?: RoleplayIntrusionResponse | null
   response_guard?: RoleplayResponseGuard | null
@@ -396,9 +397,10 @@ export function buildBrowserRoleplayNpcMessages(
   const groundingRequirement = groundingMarkers.length
     ? `Naturally include at least ${node.response_guard?.min_grounding_matches || 1} distinct exact scene terms from this closed list: [${groundingMarkers.join(', ')}].`
     : ''
-  const activeCharacterGoal = speakerId === node.character_id
-    ? node.character_goal
-    : 'Respond from your own character profile and the observable scene. Do not impersonate the primary character, inherit their private goal, or select a story route.'
+  const activeCharacterGoal = node.participant_goals?.[speakerId]
+    || (speakerId === node.character_id
+      ? node.character_goal
+      : 'Respond from your own character profile and the observable scene. Do not impersonate the primary character, inherit their private goal, or select a story route.')
   const system = [
     `You are roleplaying "${character.name}" in a real-time interactive story.`,
     `Current state: node=${node.id}; active_speaker=${speakerId}; scene turn=${session.node_turns + 1}; scores=${scoreSnapshot}; relationship_with_player=${relationship.toFixed(3)}; observed evidence=${session.observed_evidence.join(', ') || 'none'}.`,
@@ -653,6 +655,11 @@ function validateBrowserDefinition(definition: SceneRoleplayDefinition): SceneRo
     if (participants.length !== 1 + (node.supporting_character_ids || []).length
       || participants.length > 16) {
       throw new Error(`Scene roleplay node "${node.id}" has invalid scene participants.`)
+    }
+    for (const [characterId, goal] of Object.entries(node.participant_goals || {})) {
+      if (!participants.includes(characterId) || !goal.trim() || goal.length > 2_000) {
+        throw new Error(`Scene roleplay node "${node.id}" has an invalid participant goal for "${characterId}".`)
+      }
     }
     if (node.intrusion_response) validateIntrusionResponse(node)
     if (node.response_guard) validateResponseGuard(node)

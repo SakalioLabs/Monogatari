@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/arcanletia_canal_market.webp",
+  "bgm_path": null,
+  "id": "arcanletia_canal_market",
+  "model_3d_path": null,
+  "name": "阿尔坎雷提亚运河市场",
+  "tags": [
+    "volume4",
+    "chapter3",
+    "market",
+    "canal",
+    "souvenir"
+  ],
+  "time_of_day": "late_afternoon",
+  "weather": "clear"
+}

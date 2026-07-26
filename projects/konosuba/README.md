@@ -191,6 +191,21 @@ unresolved body boundary, or an overrun revival decision. The main loop is
 free-form LLM NPC interaction; its three Dialogue files are ending epilogues
 only.
 
+Volume 4 Chapter 2 continues as a six-node live caravan Roleplay. Travel and
+trade choices, fair seating, consent-based Wiz care, testable monster ecology,
+reversible tactics, explosion clearance, reward disclosure, and undead safety
+remain separately reviewable. Four scores and twelve evidence gates select a
+transparent arrival, unresolved accountability, or an overrun incident record.
+
+Volume 4 Chapter 3 continues as a six-node live Arcanletia Roleplay. Arrival
+responsibility, market performance, hot-spring health reports, recruitment
+consent, faith-neutral visitor protection, church governance, Hans and
+Wolbach's sabotage conversation, and a source-labeled public warning are all
+free-input interactions. Every selectable primary or supporting NPC has a
+node-local motive through `participant_goals`; four scores and twelve evidence
+gates select a documented warning, unresolved authority, or an overrun tourism
+record. Fixed Dialogue remains limited to three ending epilogues.
+
 The direct Volume 2 browser entry is:
 
 ```text
@@ -273,6 +288,12 @@ The direct Volume 4 Chapter 2 live-NPC entry is:
 
 ```text
 /game?previewRoleplay=volume4_chapter2_roleplay&authoring=1
+```
+
+The direct Volume 4 Chapter 3 live-NPC entry is:
+
+```text
+/game?previewRoleplay=volume4_chapter3_roleplay&authoring=1
 ```
 
 The direct Volume 4 Campaign entry is:
