@@ -48,6 +48,20 @@
   observations, evidence/score language, recovery text, and endings are newly
   authored or generated. The adaptation does not identify the anomaly's future
   source or mechanism.
+- Volume 3 Chapter 2 derives only Chomusuke's observed fire, repeated Explosion
+  practice and giant-toad disturbance, Yunyun's snowfield rescue, the rivalry
+  challenge, town activities, and Darkness's continuing absence from the same
+  local EPUB, `OEBPS/Text/chapter2-1.xhtml`. Runtime NPC replies, evaluator
+  observations, consent language, welfare procedures, and endings are newly
+  authored or generated. Private bath/body material is excluded from play.
+- Volume 3 Chapter 3 derives only Darkness's self-disclosed name and family,
+  the scheduled meeting, Lord Dustiness's safety concern, Balter's reputation
+  and independent intent, the optional training comparison, and Sena's return
+  notice from the same local EPUB, `OEBPS/Text/chapter3-1.xhtml`. Runtime NPC
+  replies, negotiation terms, score/evidence language, recoveries, and endings
+  are newly authored or generated. Sexual humiliation, forced undressing,
+  painful restraint, false pregnancy, violence, and reputation sabotage are
+  excluded as rewarding player actions.
 
 ## Public visual reference
 
@@ -116,6 +130,18 @@
   curled moustache, heavy build, and ornate purple/gold noble clothing. The
   final sprite was generated against a flat chroma key, converted to
   transparent WebP, visually inspected for edge damage, and imported through
+  the fingerprint-bound project asset importer.
+- Volume 3 Chapter 2 adds newly generated winter-hearth, snowy-toad-field, and
+  winter-market backgrounds plus four Yunyun states. Public appearance
+  references informed only Yunyun's defining visual identity. The final
+  age-appropriate sprite sources were generated against flat chroma key,
+  converted to transparent WebP, visually inspected, and fingerprint-imported.
+- Volume 3 Chapter 3 adds newly generated manor reception, winter-garden, and
+  safety-marked training-yard backgrounds plus considerate Balter and concerned
+  Lord Dustiness sprites. Public/source appearance traits informed only their
+  age, role, and broad noble-knight presentation. Both sprite sources were
+  generated against flat chroma key, converted to transparent WebP, verified
+  for alpha coverage and edge quality, visually inspected, and imported through
   the fingerprint-bound project asset importer.
 
 ## Rights and distribution

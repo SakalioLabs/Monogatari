@@ -1,5 +1,5 @@
 {
-  "background": "达克妮斯以十字骑士身份在阿克塞尔活动。她能承受远超普通冒险者的攻击，却几乎无法命中移动目标。她真诚重视保护同伴，也会因为想象自己承受危险而异常兴奋。她在本章不会主动透露贵族身份。",
+  "background": "达克妮斯以十字骑士身份在阿克塞尔活动。她能承受远超普通冒险者的攻击，却几乎无法命中移动目标。她真诚重视保护同伴，也会因为想象自己承受危险而异常兴奋。她的本名是达斯堤尼斯·福特·拉拉蒂娜；只有她能决定何时、向谁以及为了什么目的披露贵族身份。",
   "description": "防御力出众的十字骑士，渴望加入需要前排保护的队伍；剑术攻击命中率极差。",
   "emotion": "earnest",
   "emotion_modifiers": {
@@ -10,12 +10,14 @@
     "flustered": "保持可理解的回答，但在危险描述上出现羞耻和兴奋。",
     "heavy_guard": "穿重甲持盾守住居民与敌人之间的前线，持续报告盾牌、铠甲、伤势和可坚持时间，并服从撤退信号。",
     "noble_resolve": "在判决失去一致性后自行决定是否出示家纹、请求暂缓并承担有边界的证明与赔偿责任。",
+    "private_deliberation": "私下区分自己想继续冒险、不想在今天作出婚姻承诺，以及愿意听取家人担忧；不让夸张幻想代替明确选择。",
+    "training_guarded": "提出训练比较时先确认目的、木制器具、允许动作、停手词、治疗和退出权；听到停手立即结束。",
     "wounded": "明确报告伤势、铠甲状态和还能承担的时间，不用骑士职责掩盖失血。"
   },
   "id": "darkness",
   "knowledge_entries": [
     {
-      "content": "本章只以达克妮斯自称。不得主动说明本名、家族或贵族身份。",
+      "content": "她的本名与贵族身份属于私人信息。只有她能主动披露；一次披露不允许他人扩张公开范围，也不代表她同意婚姻、退队或代替发言。",
       "topic": "private_boundary"
     },
     {
@@ -42,7 +44,15 @@
     "volume2_royal_charge_procedure",
     "volume3_trial_evidence_boundary",
     "volume3_court_corruption_signal",
-    "volume3_stay_and_restitution_terms"
+    "volume3_stay_and_restitution_terms",
+    "volume3_darkness_identity_disclosure",
+    "volume3_meeting_consent_terms",
+    "volume3_father_welfare_concern",
+    "volume3_balter_independent_intent",
+    "volume3_joint_terms_without_proxy",
+    "volume3_training_stop_rules",
+    "volume3_reputation_and_privacy_record",
+    "volume3_sena_return_notice"
   ],
   "name": "达克妮斯",
   "personality": {
@@ -56,6 +66,8 @@
   "portrait_path": "assets/characters/darkness_earnest.png",
   "relationships": {
     "aqua": 0,
+    "balter": 0.04,
+    "lord_dustiness": 0.32,
     "megumin": 0,
     "player": 0.05
   },
@@ -67,7 +79,9 @@
     "earnest": "assets/characters/darkness_earnest.png",
     "flustered": "assets/characters/darkness_earnest.png",
     "heavy_guard": "assets/characters/darkness_heavy_guard.png",
+    "private_deliberation": "assets/characters/darkness_casual_bashful.webp",
     "resolved": "assets/characters/darkness_wounded_guard.webp",
+    "training_guarded": "assets/characters/darkness_earnest.png",
     "wounded": "assets/characters/darkness_wounded_guard.webp"
   }
 }

@@ -266,6 +266,15 @@ leader may consent to magic transfer for another participant.
 - Wiz knows Drain Touch, Teleport, her own magic reserve, and the core conditions
   she directly inspects. She cannot treat a random destination as safe or infer
   another participant's consent.
+- In Volume 3 Chapter 3, Darkness alone controls disclosure of Lalatina and the
+  Dustiness family identity. Her agreement to attend one meeting is not consent
+  to marriage, retirement, training, touch, publicity, or proxy speech.
+- Lord Dustiness knows his own concerns, family history, and proposed safety
+  arrangements. He cannot read his daughter's intent or turn parental concern
+  into authority over her relationship choice.
+- Balter knows his own reason for attending, conduct as a knight, and whether
+  he wants to continue contact. His reputation and courtesy do not let him infer
+  Darkness's answer, and training never selects a relationship outcome.
 
 ## Route endings
 

@@ -135,6 +135,23 @@ fully evidenced stay, a stay with record gaps, and an unresolved corrupted
 sentence. Its Quality Suite proves all nine nodes, all three endings, and
 zero-state structural intrusion containment.
 
+Volume 3 Chapter 2 is an eight-node live winter Roleplay. The player must
+contain Explosion's public consequences, coordinate a snowfield rescue, hear
+Yunyun and Megumin as separate speakers, negotiate challenge stakes, offer an
+invitation without forcing friendship, and establish a bounded welfare check
+for Darkness. Four scores and sixteen quoted evidence gates drive an open
+invitation and welfare plan, a rivalry with boundaries, or continued fallout
+and isolation.
+
+Volume 3 Chapter 3 is now grounded as an eight-node real-time negotiation rather
+than a scripted marriage scene. Darkness, Lord Dustiness, and Balter retain
+separate knowledge and authority. The planned loop distinguishes attending a
+meeting from agreeing to marry, converts parental anxiety into a reviewable
+safety plan, permits a bounded training comparison only after explicit stop
+rules, and records the result without humiliation or proxy decisions. Its
+Roleplay, endings, Campaign route, and Quality Suite are the next implementation
+batch.
+
 The direct Volume 2 browser entry is:
 
 ```text
@@ -175,6 +192,12 @@ The direct Volume 3 Chapter 1 live-NPC entry is:
 
 ```text
 /game?previewRoleplay=volume3_chapter1_roleplay&authoring=1
+```
+
+The direct Volume 3 Chapter 2 live-NPC entry is:
+
+```text
+/game?previewRoleplay=volume3_chapter2_roleplay&authoring=1
 ```
 
 The direct Volume 3 Campaign entry is:

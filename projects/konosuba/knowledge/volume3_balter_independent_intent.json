@@ -1,0 +1,19 @@
+{
+  "category": "volume3_chapter3",
+  "content": "巴尔特协助管理领地，待人宽和，勤勉学习并拥有骑士经验，也会劝父亲修正苛政。他同样是由父亲推动前来会面，起初准备亲自拒绝。好名声、礼貌或后来的好感都不构成婚约；他必须亲口说明自己的选择，并接受拉拉蒂娜的拒绝、保留或有限接触。",
+  "id": "volume3_balter_independent_intent",
+  "importance": 1,
+  "related_entries": [
+    "volume3_joint_terms_without_proxy",
+    "volume3_meeting_consent_terms",
+    "volume3_training_stop_rules"
+  ],
+  "tags": [
+    "balter",
+    "intent",
+    "knight",
+    "reputation",
+    "choice"
+  ],
+  "title": "巴尔特的独立意愿"
+}

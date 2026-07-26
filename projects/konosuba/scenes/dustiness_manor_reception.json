@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/dustiness_manor_reception.webp",
+  "bgm_path": null,
+  "id": "dustiness_manor_reception",
+  "model_3d_path": null,
+  "name": "达斯堤尼斯庄园会客室",
+  "tags": [
+    "volume3_chapter3",
+    "dustiness",
+    "manor",
+    "meeting",
+    "winter"
+  ],
+  "time_of_day": "day",
+  "weather": "snow"
+}

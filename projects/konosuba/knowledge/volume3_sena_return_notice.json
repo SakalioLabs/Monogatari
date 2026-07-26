@@ -1,0 +1,19 @@
+{
+  "category": "volume3_chapter3",
+  "content": "回到阿克塞尔宅邸后，惠惠报告检察官塞娜正在前来，并声称这次一定要逮捕和真。这只是下一阶段的到访与执法意向通知，不等于新的指控已经成立，也不能反向改变当日庄园会面的选择或证据。",
+  "id": "volume3_sena_return_notice",
+  "importance": 0.9,
+  "related_entries": [
+    "volume3_reputation_and_privacy_record",
+    "volume3_trial_evidence_boundary",
+    "volume3_truth_bell_limits"
+  ],
+  "tags": [
+    "sena",
+    "notice",
+    "custody",
+    "procedure",
+    "chapter_hook"
+  ],
+  "title": "塞娜再次到访的通知"
+}
