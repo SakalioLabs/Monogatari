@@ -32,9 +32,12 @@ four independent route scores, eight quoted evidence gates, three endings,
 and a second Campaign entry. Fixed Dialogue remains limited to endings and
 compatibility previews.
 
-The current project validates as 108 runtime documents, 14 characters, 19
+The current project validates as 112 runtime documents, 15 characters, 22
 Knowledge entries, 22 scenes, 7 Scene Roleplays, 21 endings, 7 Quality Suites,
-and 84/84 renderer assets.
+and 90/90 renderer assets. Volume 2 Chapter 3 currently has a validated
+production foundation rather than a playable route: its source model, stable
+IDs, three Knowledge boundaries, and Anna's two expression sprites are ready
+for the next scene/node batch.
 
 - Volume 2 Chapter 2 live provider Playtest (2026-07-26): direct Roleplay
   preview loaded `grok-4.5 API`; a free-form expedition-boundary message

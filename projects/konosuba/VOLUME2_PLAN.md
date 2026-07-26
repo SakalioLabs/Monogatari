@@ -14,6 +14,15 @@ or newly authored for bounded recovery and epilogues.
   one adversarial turn is guarded with zero score or evidence mutation
 - Campaign: every Chapter 1 ending advances to Chapter 2
 
+## Chapter 3 status
+
+- Source and dramatic model: `VOLUME2_CHAPTER3_PLAN.md`
+- Planned Roleplay: `volume2_chapter3_roleplay`
+- Foundation complete: three Knowledge boundaries, Anna's independent
+  character contract, and two reviewed transparent expression sprites
+- Production next: four scenes, Aqua/Megumin state art, eight live nodes,
+  Campaign linkage, endings, and Quality replay
+
 ## Chapter 1 source boundary
 
 - Source: `F:\下载\美好世界\《为美好的世界献上祝福》轻小说 epub\正文\2.epub`

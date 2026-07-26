@@ -1,0 +1,9 @@
+{
+  "id": "volume2_ghost_displacement",
+  "category": "volume2",
+  "title": "墓地结界与恶灵迁移",
+  "content": "阿克塞尔空屋反复出现恶灵，不是因为每次除灵都失败，而是公共墓地被设置了范围过大的神圣结界。新出现的灵体无法停留，只能迁入镇上的空屋和郊外豪宅。逐屋净化只能处理症状；完整修复需要撤除或缩小错误结界、恢复定期引导亡灵的职责、向公会和房屋中介披露原因、拒绝由自己造成问题所得的临时报酬，并区分无害的安娜与迁入的恶灵。",
+  "tags": ["cemetery", "barrier", "ghosts", "displacement", "root_cause", "repair"],
+  "importance": 1.0,
+  "related_entries": ["volume2_anna_mansion", "volume2_wiz_disclosure"]
+}

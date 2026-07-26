@@ -22,6 +22,11 @@
   the same local EPUB, `OEBPS/Text/chapter2-1.xhtml`. All playable NPC replies,
   evaluator guidance, score/evidence language, recovery lines, and endings are
   newly authored or generated at runtime.
+- Volume 2 Chapter 3 derives only the magic-shop disclosure, consensual skill
+  demonstration, recurring vacant-house spirits, mansion incidents, cemetery
+  barrier cause, disclosure and repair terms, and Anna's grave from the same
+  local EPUB, `OEBPS/Text/chapter3-1.xhtml`. Runtime dialogue and route
+  evaluation remain newly authored or generated.
 
 ## Public visual reference
 
@@ -61,6 +66,12 @@
   used `https://konosuba.fandom.com/wiki/Keele` only to identify Keele's
   defining human-era and lich-era features. All final assets are newly
   generated and imported through the fingerprint-bound project asset importer.
+- Public Anna appearance research used
+  `https://konosuba.fandom.com/wiki/Anna_Filante_Estroid` to identify only her
+  short blonde hair and childlike ghost identity. The mischievous and lonely
+  full-body sources are newly generated, converted from flat chroma key to
+  transparent PNG, visually inspected on a neutral matte, and imported through
+  the fingerprint-bound project asset importer.
 
 ## Rights and distribution
 

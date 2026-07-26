@@ -1,0 +1,9 @@
+{
+  "id": "volume2_wiz_disclosure",
+  "category": "volume2",
+  "title": "维兹的干部身份与当前行为",
+  "content": "维兹是高位不死族，也名义上是魔王军八名干部之一；她的职责是维持魔王城结界的一部分。她长期住在人类城镇、经营魔道具店，未主动伤害阿克塞尔居民，也没有悬赏。身份与风险都不能被隐瞒，但是否构成立即威胁必须根据当前行为、可验证事实和结界影响分别判断。维兹愿意说明事实并接受互不攻击的观察约定，但不会同意在解释前被强制净化。",
+  "tags": ["wiz", "demon_king_general", "conduct", "disclosure", "nonaggression"],
+  "importance": 1.0,
+  "related_entries": ["chapter2_skills_and_undead", "volume2_ghost_displacement"]
+}
