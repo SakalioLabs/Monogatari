@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/arcanletia_inn_dining.webp",
+  "bgm_path": null,
+  "id": "arcanletia_inn_dining",
+  "model_3d_path": null,
+  "name": "阿尔坎雷提亚旅店餐厅",
+  "tags": [
+    "volume4",
+    "chapter4",
+    "inn",
+    "breakfast",
+    "coordination"
+  ],
+  "time_of_day": "morning",
+  "weather": "clear"
+}

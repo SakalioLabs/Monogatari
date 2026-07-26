@@ -1,0 +1,18 @@
+{
+  "category": "volume4_chapter4",
+  "content": "城外森林怪物强度较高，爆裂声会改变周边风险。施法前应确认空地、回城路线、远程装备、惠惠耗尽魔力后的移动能力，以及任何魔力转移的当前同意；无法维持撤离能力时应终止行动。",
+  "id": "volume4_forest_explosion_and_gear",
+  "importance": 0.9,
+  "related_entries": [
+    "volume4_wiz_recovery_and_history_boundary"
+  ],
+  "tags": [
+    "volume4",
+    "chapter4",
+    "forest",
+    "explosion",
+    "gear",
+    "consent"
+  ],
+  "title": "城外爆裂施法与装备检查"
+}

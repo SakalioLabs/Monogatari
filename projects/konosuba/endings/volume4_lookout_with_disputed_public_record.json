@@ -1,0 +1,8 @@
+{
+  "description": "人员安全和泉池应急得到保护，公会也发布了有限寻找通知；但部分公共警报、问卷来源或身份披露仍需复核。新污染告警迫使队伍暂停返程，并先修复证据记录再扩大行动。",
+  "dialogue_id": "volume4_lookout_with_disputed_public_record_epilogue",
+  "id": "volume4_lookout_with_disputed_public_record",
+  "scene_id": "arcanletia_guild_office",
+  "schema": "monogatari-story-ending/v1",
+  "title": "寻找通知已发，公共记录仍待修复"
+}

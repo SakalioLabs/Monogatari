@@ -25,6 +25,7 @@ use tokenizers::Tokenizer;
 
 pub const ONNX_RUNTIME_UNAVAILABLE_MESSAGE: &str =
     "DirectML inference is available only in Windows builds.";
+const MINIMUM_ONNX_MODEL_BYTES: u64 = 64;
 
 /// Configuration for the Windows ONNX inference engine.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -104,6 +105,20 @@ impl ONNXEngine {
                     "Tokenizer file not found: {}",
                     self.config.tokenizer_path.display()
                 ),
+            ));
+        }
+        let model_size = std::fs::metadata(&self.config.model_path)
+            .map_err(|error| {
+                llm_core::EngineError::inference(
+                    "DirectML",
+                    format!("Failed to inspect ONNX model: {error}"),
+                )
+            })?
+            .len();
+        if model_size < MINIMUM_ONNX_MODEL_BYTES {
+            return Err(llm_core::EngineError::inference(
+                "DirectML",
+                format!("ONNX model is too small to contain a valid graph ({model_size} bytes)."),
             ));
         }
         if self.config.device_id < 0 {
@@ -606,6 +621,7 @@ mod tests {
 
         assert!(matches!(&error, llm_core::EngineError::Inference(_)));
         assert!(error.to_string().contains("[DirectML]"));
+        assert!(error.to_string().contains("too small"));
         assert!(!engine.is_ready());
         std::fs::remove_dir_all(dir).unwrap();
     }

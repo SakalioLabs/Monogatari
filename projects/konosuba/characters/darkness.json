@@ -75,7 +75,11 @@
     "volume4_market_performance_boundary",
     "volume4_axis_recruitment_conduct",
     "volume4_faith_identity_boundary",
-    "volume4_public_spring_response"
+    "volume4_public_spring_response",
+    "volume4_public_warning_and_crowd_protection",
+    "volume4_spring_questionnaire_evidence",
+    "volume4_guild_lookout_authority",
+    "volume4_fresh_contamination_alert"
   ],
   "name": "达克妮斯",
   "personality": {

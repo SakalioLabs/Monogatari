@@ -356,6 +356,44 @@ fn definition_rejects_goals_for_absent_scene_participants() {
 }
 
 #[test]
+fn definition_rejects_a_broader_transition_that_shadows_a_specific_route() {
+    let mut definition = definition();
+    definition.nodes[1].transitions = vec![
+        RoleplayTransitionRule {
+            id: "broad_route".to_string(),
+            priority: 20,
+            target: RoleplayTarget::Ending {
+                ending_id: "partial".to_string(),
+            },
+            conditions: vec![RoleplayCondition::EvidenceObserved {
+                evidence_id: "bounded_publication".to_string(),
+            }],
+        },
+        RoleplayTransitionRule {
+            id: "specific_route".to_string(),
+            priority: 10,
+            target: RoleplayTarget::Ending {
+                ending_id: "complete".to_string(),
+            },
+            conditions: vec![
+                RoleplayCondition::EvidenceObserved {
+                    evidence_id: "bounded_publication".to_string(),
+                },
+                RoleplayCondition::NodeTurnsAtLeast { value: 2 },
+            ],
+        },
+    ];
+
+    let error = definition.validate().unwrap_err().to_string();
+    assert!(error
+        .contains("transition `broad_route` shadows more specific transition `specific_route`"));
+
+    definition.nodes[1].transitions[0].priority = 10;
+    definition.nodes[1].transitions[1].priority = 20;
+    definition.validate().unwrap();
+}
+
+#[test]
 fn node_emotion_is_optional_and_bounded() {
     let mut valid = definition();
     valid.nodes[0].emotion = Some("possessed_resisting".to_string());

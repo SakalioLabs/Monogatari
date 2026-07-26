@@ -44,7 +44,11 @@
     "volume4_camp_reward_and_undead_accountability",
     "volume4_wiz_guest_care",
     "volume4_hot_spring_health_reports",
-    "volume4_public_spring_response"
+    "volume4_public_spring_response",
+    "volume4_wiz_recovery_and_history_boundary",
+    "volume4_hans_town_sighting",
+    "volume4_beginner_bane_lich_interaction",
+    "volume4_fresh_contamination_alert"
   ],
   "name": "维兹",
   "personality": {

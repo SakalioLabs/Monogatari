@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/arcanletia_public_square.webp",
+  "bgm_path": null,
+  "id": "arcanletia_public_square",
+  "model_3d_path": null,
+  "name": "阿尔坎雷提亚中央广场",
+  "tags": [
+    "volume4",
+    "chapter4",
+    "square",
+    "warning",
+    "questionnaire"
+  ],
+  "time_of_day": "afternoon",
+  "weather": "clear"
+}

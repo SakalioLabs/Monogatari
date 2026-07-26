@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/arcanletia_guild_office.webp",
+  "bgm_path": null,
+  "id": "arcanletia_guild_office",
+  "model_3d_path": null,
+  "name": "阿尔坎雷提亚冒险者公会",
+  "tags": [
+    "volume4",
+    "chapter4",
+    "guild",
+    "evidence",
+    "lookout"
+  ],
+  "time_of_day": "afternoon",
+  "weather": "clear"
+}

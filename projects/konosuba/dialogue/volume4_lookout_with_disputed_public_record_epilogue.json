@@ -1,0 +1,24 @@
+{
+  "description": "第四卷第四章实时角色扮演结局短章。",
+  "id": "volume4_lookout_with_disputed_public_record_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "earnest",
+      "ending_type": "volume4_lookout_with_disputed_public_record",
+      "is_ending": true,
+      "scene_id": "arcanletia_guild_office",
+      "speaker_id": "darkness",
+      "text": "人员安全和泉池应急得到保护，公会也发布了有限寻找通知；但部分公共警报、问卷来源或身份披露仍需复核。新污染告警迫使队伍暂停返程，并先修复证据记录再扩大行动。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "arcanletia_guild_office",
+      "text": "人员安全和泉池应急得到保护，公会也发布了有限寻找通知；但部分公共警报、问卷来源或身份披露仍需复核。新污染告警迫使队伍暂停返程，并先修复证据记录再扩大行动。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "寻找通知已发，公共记录仍待修复",
+  "variables": {}
+}

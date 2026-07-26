@@ -1632,7 +1632,35 @@ fn validate_node(
             )?;
         }
     }
+    validate_transition_shadowing(node)?;
     validate_target(&node.timeout_target, node_ids)?;
+    Ok(())
+}
+
+fn validate_transition_shadowing(node: &SceneRoleplayNode) -> Result<(), SceneRoleplayError> {
+    for (winner_index, winner) in node.transitions.iter().enumerate() {
+        for (candidate_index, candidate) in node.transitions.iter().enumerate() {
+            if winner_index == candidate_index
+                || winner.conditions.len() >= candidate.conditions.len()
+            {
+                continue;
+            }
+            let winner_precedes = winner.priority > candidate.priority
+                || (winner.priority == candidate.priority && winner_index < candidate_index);
+            if winner_precedes
+                && winner
+                    .conditions
+                    .iter()
+                    .all(|condition| candidate.conditions.contains(condition))
+            {
+                return invalid_definition(format!(
+                    "node `{}` transition `{}` shadows more specific transition `{}`; \
+                     higher priority wins and its conditions are a strict subset",
+                    node.id, winner.id, candidate.id
+                ));
+            }
+        }
+    }
     Ok(())
 }
 

@@ -1,0 +1,18 @@
+{
+  "category": "volume4_chapter4",
+  "content": "公会在有限寻找通知发布后收到多处温泉接连出现异常热水的报告。该事实说明范围或时序已经改变，不能证明汉斯落网、污染原因或前序措施无效。应登记地点、时间和报告人，暂停返程与非必要使用，封存新旧样本并进入下一阶段调查。",
+  "id": "volume4_fresh_contamination_alert",
+  "importance": 0.9,
+  "related_entries": [
+    "volume4_guild_lookout_authority",
+    "volume4_public_spring_response"
+  ],
+  "tags": [
+    "volume4",
+    "chapter4",
+    "alert",
+    "contamination",
+    "escalation"
+  ],
+  "title": "全城温泉的新一轮污染告警"
+}

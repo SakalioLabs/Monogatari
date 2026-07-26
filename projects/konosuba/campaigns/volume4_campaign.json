@@ -61,17 +61,44 @@
         {
           "ending_id": "volume4_documented_spring_warning",
           "target": {
-            "kind": "complete"
+            "entry_id": "chapter4",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume4_warning_with_unresolved_authority",
           "target": {
-            "kind": "complete"
+            "entry_id": "chapter4",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume4_tourism_record_overrun",
+          "target": {
+            "entry_id": "chapter4",
+            "kind": "entry"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter4",
+      "roleplay_id": "volume4_chapter4_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume4_bounded_hans_lookout_and_fresh_alert",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume4_lookout_with_disputed_public_record",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume4_investigation_handoff_overrun",
           "target": {
             "kind": "complete"
           }

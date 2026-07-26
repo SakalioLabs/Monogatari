@@ -1,0 +1,17 @@
+{
+  "category": "volume4_chapter4",
+  "content": "普通物理攻击通常不能伤害巫妖；维兹可通过接触吸取魔力或生命力并引发异常状态。是否承受接触由维兹决定，其他人应保留致盲与撤离支援；目标失去行动后停止攻击并确认队伍状态。",
+  "id": "volume4_beginner_bane_lich_interaction",
+  "importance": 0.9,
+  "related_entries": [
+    "volume4_forest_explosion_and_gear"
+  ],
+  "tags": [
+    "volume4",
+    "chapter4",
+    "beginner_bane",
+    "wiz",
+    "minimum_force"
+  ],
+  "title": "初学者杀手与巫妖能力"
+}

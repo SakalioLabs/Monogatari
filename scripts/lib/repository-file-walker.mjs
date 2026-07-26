@@ -3,6 +3,7 @@ import path from 'node:path'
 
 export const defaultRepositoryScanExcludedDirectories = Object.freeze([
   '.git',
+  '.tmp',
   'node_modules',
   'target',
   'dist',

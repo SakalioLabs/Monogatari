@@ -1,0 +1,24 @@
+{
+  "description": "第四卷第四章实时角色扮演结局短章。",
+  "id": "volume4_investigation_handoff_overrun_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "cautious",
+      "ending_type": "volume4_investigation_handoff_overrun",
+      "is_ending": true,
+      "scene_id": "arcanletia_public_square",
+      "speaker_id": "wiz",
+      "text": "观察、问卷、公共警报或公会权限未能及时形成可复核链条。全城污染告警到达时，队伍只能暂停返程、保护人员与样本，并把未解决项目完整移交下一阶段。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "arcanletia_public_square",
+      "text": "观察、问卷、公共警报或公会权限未能及时形成可复核链条。全城污染告警到达时，队伍只能暂停返程、保护人员与样本，并把未解决项目完整移交下一阶段。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "调查交接超时",
+  "variables": {}
+}

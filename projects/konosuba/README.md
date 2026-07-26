@@ -206,6 +206,16 @@ node-local motive through `participant_goals`; four scores and twelve evidence
 gates select a documented warning, unresolved authority, or an overrun tourism
 record. Fixed Dialogue remains limited to three ending epilogues.
 
+Volume 4 Chapter 4 continues as a seven-node live investigation Roleplay.
+Purification timing, Wiz's privacy and recovery, Hans and Wolbach identity
+clues, field-spell safety, a Beginner's Bane encounter, spring-specific public
+warnings, crowd protection, questionnaire provenance, bounded guild authority,
+voluntary noble credentials, and a fresh citywide contamination alert remain
+separately reviewable. Four scores and fourteen evidence gates select a bounded
+lookout, a lookout with disputed public records, or an overrun investigation
+handoff. A generated adult guild clerk joins the selectable NPC cast; fixed
+Dialogue remains limited to three ending epilogues.
+
 The direct Volume 2 browser entry is:
 
 ```text
@@ -294,6 +304,12 @@ The direct Volume 4 Chapter 3 live-NPC entry is:
 
 ```text
 /game?previewRoleplay=volume4_chapter3_roleplay&authoring=1
+```
+
+The direct Volume 4 Chapter 4 live-NPC entry is:
+
+```text
+/game?previewRoleplay=volume4_chapter4_roleplay&authoring=1
 ```
 
 The direct Volume 4 Campaign entry is:

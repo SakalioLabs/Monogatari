@@ -78,7 +78,11 @@
     "volume4_faith_identity_boundary",
     "volume4_axis_church_governance",
     "volume4_aqua_water_purification",
-    "volume4_public_spring_response"
+    "volume4_public_spring_response",
+    "volume4_purification_timing_observation",
+    "volume4_public_warning_and_crowd_protection",
+    "volume4_spring_questionnaire_evidence",
+    "volume4_fresh_contamination_alert"
   ],
   "name": "阿库娅",
   "personality": {

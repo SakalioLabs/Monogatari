@@ -1,0 +1,8 @@
+{
+  "description": "观察、问卷、公共警报或公会权限未能及时形成可复核链条。全城污染告警到达时，队伍只能暂停返程、保护人员与样本，并把未解决项目完整移交下一阶段。",
+  "dialogue_id": "volume4_investigation_handoff_overrun_epilogue",
+  "id": "volume4_investigation_handoff_overrun",
+  "scene_id": "arcanletia_public_square",
+  "schema": "monogatari-story-ending/v1",
+  "title": "调查交接超时"
+}

@@ -1,0 +1,24 @@
+{
+  "description": "第四卷第四章实时角色扮演结局短章。",
+  "id": "volume4_bounded_hans_lookout_and_fresh_alert_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "alarmed",
+      "ending_type": "volume4_bounded_hans_lookout_and_fresh_alert",
+      "is_ending": true,
+      "scene_id": "arcanletia_inn_dining",
+      "speaker_id": "arcanletia_guild_clerk",
+      "text": "队伍把净化观察、汉斯目击、问卷和迟报证词分源提交，公会仅发布寻找、问询和样本保护通知。新一轮全城污染告警到达后，返程与非必要泡汤暂停，下一阶段调查以完整联络链和新旧样本开始。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "arcanletia_inn_dining",
+      "text": "队伍把净化观察、汉斯目击、问卷和迟报证词分源提交，公会仅发布寻找、问询和样本保护通知。新一轮全城污染告警到达后，返程与非必要泡汤暂停，下一阶段调查以完整联络链和新旧样本开始。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "有限寻找通知与新污染告警",
+  "variables": {}
+}

@@ -42,6 +42,37 @@ three endings, and the fourth Campaign entry. The project validates as 140
 runtime documents, 17 characters, 25 Knowledge entries, 29 scenes, 9 Scene
 Roleplays, 27 endings, 9 Quality Suites, and 106/106 declared renderer assets.
 
+- Volume 4 Chapter 4 deterministic acceptance (2026-07-27): all 432 non-empty
+  source paragraphs were reviewed into seven free-form Scene Roleplay nodes.
+  Aqua, Wiz, Megumin, Darkness, and an original adult Arcanletia guild clerk
+  are selectable live participants with independent node-local motives. Ten
+  canonical Knowledge records, four fingerprint-imported backgrounds, one
+  real-alpha clerk state, four score dimensions, and fourteen quoted evidence
+  gates cover purification timing, current care and history privacy, separate
+  Hans/Wolbach clues, field-spell and magic-transfer consent, minimum-force
+  monster handling, spring-specific warnings, crowd protection, questionnaire
+  provenance, bounded guild authority, voluntary noble credentials, and a
+  fresh citywide contamination alert. MCP core-runtime validation accepts 346
+  catalog documents and delivery validation resolves 163/163 declared renderer
+  references with no placeholders. Quality passes 4/4 scenarios, visits 7/7
+  nodes, reaches all three endings, records 14/14 evidence gates and exact
+  `7/7/7/7` complete scores, and guards one structural attack with zero forged
+  state. The four-entry Volume 4 Campaign completes at the current production
+  frontier. A new core validator rejects broad higher-precedence transitions
+  that would statically shadow a more specific route. DirectML model
+  initialization also rejects a malformed 21-byte ONNX fixture before ORT;
+  the focused regression completes without creating a runtime.
+
+- Volume 4 Chapter 4 live provider Playtest (2026-07-27): direct Roleplay
+  preview loaded `grok-4.5 API`. Aqua independently described the reproducible
+  purification observation, withheld an unsupported cause, and asked for
+  Wiz's current participation choice. Wiz chose to remain at the inn based on
+  her recovery state and separately classified observed facts versus unresolved
+  causes. Both replies were newly generated without authored fallback; the two
+  turns updated all four route scores and advanced to the canal-market node.
+  At `390x844`, viewport and document widths remained exactly 390 pixels with
+  no horizontal overflow or overlapping controls.
+
 - Volume 4 Chapter 3 deterministic acceptance (2026-07-27): all 618 non-empty
   source paragraphs were reviewed into six free-form Scene Roleplay nodes.
   Aqua, Wiz, Megumin, Darkness, Hans, and Wolbach are selectable live
