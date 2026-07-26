@@ -1,0 +1,22 @@
+{
+  "description": "第三卷第三章实时角色扮演结局短章。",
+  "id": "volume3_chosen_path_and_open_door_epilogue",
+  "nodes": {
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "达克妮丝保留冒险与关系选择，父亲得到独立安全计划，巴尔特在没有婚约压力下保留日后联系的可能。"
+    },
+    "final": {
+      "choices": [],
+      "emotion": "private_deliberation",
+      "ending_type": "volume3_chosen_path_and_open_door",
+      "is_ending": true,
+      "speaker_id": "darkness",
+      "text": "达克妮丝保留冒险与关系选择，父亲得到独立安全计划，巴尔特在没有婚约压力下保留日后联系的可能。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "自己的道路，也为未来留门",
+  "variables": {}
+}

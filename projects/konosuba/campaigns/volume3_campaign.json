@@ -34,17 +34,44 @@
         {
           "ending_id": "volume3_open_invitation_and_welfare_plan",
           "target": {
-            "kind": "complete"
+            "kind": "entry",
+            "entry_id": "chapter3"
           }
         },
         {
           "ending_id": "volume3_rivalry_with_boundaries",
           "target": {
-            "kind": "complete"
+            "kind": "entry",
+            "entry_id": "chapter3"
           }
         },
         {
           "ending_id": "volume3_frog_fallout_and_isolation",
+          "target": {
+            "kind": "entry",
+            "entry_id": "chapter3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter3",
+      "roleplay_id": "volume3_chapter3_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume3_chosen_path_and_open_door",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume3_respectful_refusal_and_family_trust",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume3_public_sabotage_and_broken_trust",
           "target": {
             "kind": "complete"
           }

@@ -1,0 +1,22 @@
+{
+  "description": "第三卷第三章实时角色扮演结局短章。",
+  "id": "volume3_respectful_refusal_and_family_trust_epilogue",
+  "nodes": {
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "会面没有形成关系承诺，但双方分别记录拒绝，隐私与家人的安全复核计划得以保留。"
+    },
+    "final": {
+      "choices": [],
+      "emotion": "reassured",
+      "ending_type": "volume3_respectful_refusal_and_family_trust",
+      "is_ending": true,
+      "speaker_id": "lord_dustiness",
+      "text": "会面没有形成关系承诺，但双方分别记录拒绝，隐私与家人的安全复核计划得以保留。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "体面拒绝，家庭仍可对话",
+  "variables": {}
+}

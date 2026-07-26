@@ -1,0 +1,8 @@
+{
+  "description": "代理决定、羞辱或失控冲突让会面与队伍信任受损；塞娜到访时，众人仍没有一份可信的共同记录。",
+  "dialogue_id": "volume3_public_sabotage_and_broken_trust_epilogue",
+  "id": "volume3_public_sabotage_and_broken_trust",
+  "scene_id": "axel_mansion_winter_parlor",
+  "schema": "monogatari-story-ending/v1",
+  "title": "丑闻替代了选择"
+}

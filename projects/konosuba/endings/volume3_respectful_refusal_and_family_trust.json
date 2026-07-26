@@ -1,0 +1,8 @@
+{
+  "description": "会面没有形成关系承诺，但双方分别记录拒绝，隐私与家人的安全复核计划得以保留。",
+  "dialogue_id": "volume3_respectful_refusal_and_family_trust_epilogue",
+  "id": "volume3_respectful_refusal_and_family_trust",
+  "scene_id": "axel_mansion_winter_parlor",
+  "schema": "monogatari-story-ending/v1",
+  "title": "体面拒绝，家庭仍可对话"
+}

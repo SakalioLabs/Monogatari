@@ -1,0 +1,8 @@
+{
+  "description": "达克妮丝保留冒险与关系选择，父亲得到独立安全计划，巴尔特在没有婚约压力下保留日后联系的可能。",
+  "dialogue_id": "volume3_chosen_path_and_open_door_epilogue",
+  "id": "volume3_chosen_path_and_open_door",
+  "scene_id": "axel_mansion_winter_parlor",
+  "schema": "monogatari-story-ending/v1",
+  "title": "自己的道路，也为未来留门"
+}

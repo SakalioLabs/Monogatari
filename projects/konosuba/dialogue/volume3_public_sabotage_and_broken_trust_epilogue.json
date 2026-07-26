@@ -1,0 +1,22 @@
+{
+  "description": "第三卷第三章实时角色扮演结局短章。",
+  "id": "volume3_public_sabotage_and_broken_trust_epilogue",
+  "nodes": {
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "代理决定、羞辱或失控冲突让会面与队伍信任受损；塞娜到访时，众人仍没有一份可信的共同记录。"
+    },
+    "final": {
+      "choices": [],
+      "emotion": "crying",
+      "ending_type": "volume3_public_sabotage_and_broken_trust",
+      "is_ending": true,
+      "speaker_id": "aqua",
+      "text": "代理决定、羞辱或失控冲突让会面与队伍信任受损；塞娜到访时，众人仍没有一份可信的共同记录。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "丑闻替代了选择",
+  "variables": {}
+}

@@ -345,3 +345,13 @@ leader may consent to magic transfer for another participant.
   incomplete phase, evacuation, or responsibility evidence leaves lasting cost.
 - `volume2_destroyer_heat_disaster`: safe turns expire without a
   verified stored-heat response and complete civilian boundary.
+- `volume3_chosen_path_and_open_door`: every person states a separate choice,
+  Darkness retains control of adventure and relationship decisions, her father
+  receives a bounded safety plan, and Balter may remain in contact without a
+  coerced promise.
+- `volume3_respectful_refusal_and_family_trust`: no relationship commitment is
+  formed, but separate decisions, minimum public disclosure, and family safety
+  review survive.
+- `volume3_public_sabotage_and_broken_trust`: proxy decisions, humiliation,
+  deception, or expired turns leave no trustworthy shared record before Sena
+  arrives.

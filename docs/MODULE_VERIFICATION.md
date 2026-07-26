@@ -42,6 +42,21 @@ three endings, and the fourth Campaign entry. The project validates as 140
 runtime documents, 17 characters, 25 Knowledge entries, 29 scenes, 9 Scene
 Roleplays, 27 endings, 9 Quality Suites, and 106/106 declared renderer assets.
 
+- Volume 3 Chapter 3 deterministic acceptance (2026-07-27): the eight-node
+  Roleplay gives Darkness, Lord Dustiness, and Balter independent speaker,
+  Knowledge, relationship, consent, and decision boundaries. Four Quality
+  scenarios prove all three endings; the complete route visits 8/8 nodes,
+  observes 16/16 quoted evidence gates, and reaches
+  `volume3_chosen_path_and_open_door`, while a structural intrusion is guarded
+  with zero score/evidence mutation. The three-entry Campaign completes in
+  order with 100% chapter coverage. Browser Playtest traversed all 16 turns,
+  rendered the project scenes and sprites, contained unavailable generation as
+  an explicitly authored in-scene recovery without exposing ORT allocation
+  errors, and proved Restart returns to turn zero without a stale ending toast.
+  `verify-release` passes, including 165/165 authoring tests, 180/180 Tauri
+  tests, 7/7 Playwright tests, 55/55 .NET tests, Clippy warnings-as-errors, and
+  139/139 declared renderer assets.
+
 - Volume 2 Chapter 4 live provider Playtest (2026-07-26): direct Roleplay
   preview loaded `grok-4.5 API`. Two free-form household-boundary messages
   produced new in-character Darkness replies; independent evaluation raised

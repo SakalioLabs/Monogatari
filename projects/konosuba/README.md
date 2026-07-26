@@ -143,14 +143,15 @@ for Darkness. Four scores and sixteen quoted evidence gates drive an open
 invitation and welfare plan, a rivalry with boundaries, or continued fallout
 and isolation.
 
-Volume 3 Chapter 3 is now grounded as an eight-node real-time negotiation rather
-than a scripted marriage scene. Darkness, Lord Dustiness, and Balter retain
-separate knowledge and authority. The planned loop distinguishes attending a
-meeting from agreeing to marry, converts parental anxiety into a reviewable
-safety plan, permits a bounded training comparison only after explicit stop
-rules, and records the result without humiliation or proxy decisions. Its
-Roleplay, endings, Campaign route, and Quality Suite are the next implementation
-batch.
+Volume 3 Chapter 3 is an eight-node real-time negotiation rather than a
+scripted marriage scene. Darkness, Lord Dustiness, and Balter retain separate
+knowledge and authority. The loop distinguishes attending a meeting from
+agreeing to marry, converts parental anxiety into a reviewable safety plan,
+permits a bounded training comparison only after explicit stop rules, and
+records the result without humiliation or proxy decisions. Four scores and
+sixteen quoted evidence gates select a chosen path with an open door, a
+respectful refusal with family trust, or public sabotage and broken trust. Its
+Quality Suite proves all three endings and structural intrusion containment.
 
 The direct Volume 2 browser entry is:
 
@@ -198,6 +199,12 @@ The direct Volume 3 Chapter 2 live-NPC entry is:
 
 ```text
 /game?previewRoleplay=volume3_chapter2_roleplay&authoring=1
+```
+
+The direct Volume 3 Chapter 3 live-NPC entry is:
+
+```text
+/game?previewRoleplay=volume3_chapter3_roleplay&authoring=1
 ```
 
 The direct Volume 3 Campaign entry is:

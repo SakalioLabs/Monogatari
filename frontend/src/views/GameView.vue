@@ -856,6 +856,8 @@ async function continueActiveCampaign() {
 }
 
 async function restartActiveRoleplay() {
+  toastMessage.value = null
+  errorMessage.value = null
   if (activeCampaignSnapshot.value) {
     await startRoleplayCampaign(activeCampaignSnapshot.value.definition)
     return

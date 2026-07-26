@@ -1,6 +1,7 @@
 # Volume 3 Chapter 3: Let the Noble Daughter Choose
 
-Status: source reviewed; dynamic Roleplay contract established; provider-backed
+Status: live Roleplay, three endings, Quality Suite, Campaign continuation,
+browser Playtest, and complete release verification passed; provider-backed
 generation evidence awaits runtime credential injection.
 
 ## Product Contract
