@@ -1,0 +1,22 @@
+{
+  "description": "第三卷终章实时角色扮演结局短章。",
+  "id": "volume3_reward_settled_with_unresolved_shop_risk_epilogue",
+  "nodes": {
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "公会奖励与战后账本已经结清，但巴尼尔的现状、预言或合作边界仍有未决项目，维兹没有作出长期承诺。"
+    },
+    "final": {
+      "choices": [],
+      "emotion": "cautious",
+      "ending_type": "volume3_reward_settled_with_unresolved_shop_risk",
+      "is_ending": true,
+      "speaker_id": "wiz",
+      "text": "公会奖励与战后账本已经结清，但巴尼尔的现状、预言或合作边界仍有未决项目，维兹没有作出长期承诺。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "奖励结清，商店风险未决",
+  "variables": {}
+}

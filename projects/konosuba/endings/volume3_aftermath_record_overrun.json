@@ -1,0 +1,8 @@
+{
+  "description": "公开更正、伤势、账本或未来主张没有在限定回合内形成可靠记录；任何预言与合作都不能据此生效。",
+  "dialogue_id": "volume3_aftermath_record_overrun_epilogue",
+  "id": "volume3_aftermath_record_overrun",
+  "scene_id": "axel_guild_victory_ledger",
+  "schema": "monogatari-story-ending/v1",
+  "title": "善后记录失去边界"
+}

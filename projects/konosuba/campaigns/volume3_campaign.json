@@ -88,17 +88,44 @@
         {
           "ending_id": "volume3_witnessed_response_at_dungeon_gate",
           "target": {
-            "kind": "complete"
+            "kind": "entry",
+            "entry_id": "chapter5"
           }
         },
         {
           "ending_id": "volume3_containment_without_separation",
           "target": {
-            "kind": "complete"
+            "kind": "entry",
+            "entry_id": "chapter5"
           }
         },
         {
           "ending_id": "volume3_possession_breach_and_unverified_blast",
+          "target": {
+            "kind": "entry",
+            "entry_id": "chapter5"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter5",
+      "roleplay_id": "volume3_chapter5_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume3_public_record_and_open_shop_terms",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume3_reward_settled_with_unresolved_shop_risk",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume3_aftermath_record_overrun",
           "target": {
             "kind": "complete"
           }

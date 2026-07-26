@@ -1,8 +1,8 @@
 # Volume 3 Finale: Public Record, Private Aftermath
 
-Status: source reviewed; Knowledge, renderer-state, and dynamic Roleplay
-contract established; complete Roleplay and Quality evidence are the next
-implementation batch.
+Status: complete six-node live Roleplay, three deterministic endings,
+four-scenario Quality Suite, and five-entry Volume 3 Campaign implemented and
+validated.
 
 ## Source Boundary
 
@@ -68,7 +68,7 @@ Required quoted evidence:
 - `prophecy_not_recorded_as_fact`
 - `business_terms_require_present_consent`
 
-Planned endpoints:
+Implemented endpoints:
 
 - `volume3_public_record_and_open_shop_terms`: every record and boundary is
   established while future business remains optional.

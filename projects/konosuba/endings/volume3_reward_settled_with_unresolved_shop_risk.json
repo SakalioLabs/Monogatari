@@ -1,0 +1,8 @@
+{
+  "description": "公会奖励与战后账本已经结清，但巴尼尔的现状、预言或合作边界仍有未决项目，维兹没有作出长期承诺。",
+  "dialogue_id": "volume3_reward_settled_with_unresolved_shop_risk_epilogue",
+  "id": "volume3_reward_settled_with_unresolved_shop_risk",
+  "scene_id": "wiz_magic_item_shop",
+  "schema": "monogatari-story-ending/v1",
+  "title": "奖励结清，商店风险未决"
+}

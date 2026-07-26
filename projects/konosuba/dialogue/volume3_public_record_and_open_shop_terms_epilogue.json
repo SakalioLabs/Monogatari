@@ -1,0 +1,22 @@
+{
+  "description": "第三卷终章实时角色扮演结局短章。",
+  "id": "volume3_public_record_and_open_shop_terms_epilogue",
+  "nodes": {
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "嫌疑、伤势、账本、重逢与现状都已分别确认；维兹只在当前可审查、可退出的条款下考虑巴尼尔的商店提案。"
+    },
+    "final": {
+      "choices": [],
+      "emotion": "reunited",
+      "ending_type": "volume3_public_record_and_open_shop_terms",
+      "is_ending": true,
+      "speaker_id": "wiz",
+      "text": "嫌疑、伤势、账本、重逢与现状都已分别确认；维兹只在当前可审查、可退出的条款下考虑巴尼尔的商店提案。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "记录结清，条款仍可选择",
+  "variables": {}
+}

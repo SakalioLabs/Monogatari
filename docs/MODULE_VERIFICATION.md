@@ -42,7 +42,7 @@ three endings, and the fourth Campaign entry. The project validates as 140
 runtime documents, 17 characters, 25 Knowledge entries, 29 scenes, 9 Scene
 Roleplays, 27 endings, 9 Quality Suites, and 106/106 declared renderer assets.
 
-- Volume 3 Chapter 5 foundation validation (2026-07-27): all 178 finale source
+- Volume 3 Chapter 5 deterministic acceptance (2026-07-27): all 178 finale source
   paragraphs are reviewed from the post-Vanir guild summons through the
   optional prophecy-linked business proposal. Six Knowledge records separate
   the newly available blast result, Darkness's recovery, exoneration and reward
@@ -50,7 +50,18 @@ Roleplays, 27 endings, 9 Quality Suites, and 106/106 declared renderer assets.
   Wiz/Vanir friendship, and future-claim consent boundaries. Reused guild and
   shop scenes match the source settings. The new reunited-Wiz PNG is a
   fingerprint-imported 1024x1536 RGBA asset with four transparent corners and
-  30.8% visible-subject coverage.
+  30.8% visible-subject coverage. The six-node live Roleplay gives Sena,
+  Darkness, Wiz, and Vanir independent Character, Knowledge, relationship,
+  record, privacy, and future-claim boundaries. Four Quality scenarios prove
+  all three endings; the complete route visits 6/6 nodes, observes 14/14
+  quoted evidence gates, and reaches exact scores `6/6/6/6`. The five-entry
+  Campaign completes in order with relationship carry-over and every chapter
+  visited; one structural attack is guarded with zero score/evidence mutation.
+  Browser Playtest traversed all 12 turns, reached the bounded unresolved-shop
+  ending under degraded inference, rendered Sena, Darkness, reunited Wiz, and
+  second-life Vanir distinctly, and remained coherent at 390x844. Restart
+  returns to turn zero and now clears the prior turn's degraded-inference UI
+  state without exposing the underlying ORT allocation error.
 
 - Volume 3 Chapter 4 deterministic acceptance (2026-07-27): all 688 source
   paragraphs are reviewed through the observed final blast, whose outcome is

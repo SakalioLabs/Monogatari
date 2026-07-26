@@ -149,6 +149,15 @@ describe('SceneRoleplayPanel', () => {
       .toBe('The receiver keeps the coordinates inside the signal.')
     expect(wrapper.text()).not.toContain('OrtRun')
     expect(wrapper.text()).not.toContain('std::bad_alloc')
+
+    await wrapper.setProps({ snapshot: update })
+    await flushPromises()
+    await wrapper.setProps({ snapshot: startBrowserSceneRoleplay(definition) })
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="roleplay-degraded"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="scene-roleplay"]').attributes('data-evaluation-source'))
+      .toBeUndefined()
   })
 
   it('uses the project authoring API for both NPC generation and evaluation', async () => {

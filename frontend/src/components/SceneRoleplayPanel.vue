@@ -259,7 +259,13 @@ const transcriptEntries = computed<TranscriptEntry[]>(() => {
   return entries
 })
 
-watch(() => props.snapshot.session.total_turns, scrollToBottom)
+watch(() => props.snapshot.session.total_turns, (totalTurns, previousTotalTurns) => {
+  scrollToBottom()
+  if (totalTurns === 0 && previousTotalTurns > 0) resetTransientTurnState()
+})
+watch(() => props.snapshot.definition.id, (definitionId, previousDefinitionId) => {
+  if (definitionId !== previousDefinitionId) resetTransientTurnState()
+})
 watch(() => currentNode.value.id, () => {
   selectedSpeakerId.value = currentNode.value.character_id
   emit('speakerChange', selectedSpeakerId.value)
@@ -339,6 +345,19 @@ async function sendTurn() {
       nextTick(() => inputElement.value?.focus())
     }
   }
+}
+
+function resetTransientTurnState() {
+  generationSequence += 1
+  inputText.value = ''
+  pendingPlayer.value = ''
+  streamingReply.value = ''
+  errorMessage.value = null
+  isGenerating.value = false
+  lastEvaluationSource.value = ''
+  lastEvaluationDeltaCount.value = 0
+  lastEvaluationEvidenceCount.value = 0
+  nextTick(() => inputElement.value?.focus())
 }
 
 function selectSpeaker(speakerId: string) {

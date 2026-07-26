@@ -1,0 +1,8 @@
+{
+  "description": "嫌疑、伤势、账本、重逢与现状都已分别确认；维兹只在当前可审查、可退出的条款下考虑巴尼尔的商店提案。",
+  "dialogue_id": "volume3_public_record_and_open_shop_terms_epilogue",
+  "id": "volume3_public_record_and_open_shop_terms",
+  "scene_id": "wiz_magic_item_shop",
+  "schema": "monogatari-story-ending/v1",
+  "title": "记录结清，条款仍可选择"
+}

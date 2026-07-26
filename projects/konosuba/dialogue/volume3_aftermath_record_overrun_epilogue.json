@@ -1,0 +1,22 @@
+{
+  "description": "第三卷终章实时角色扮演结局短章。",
+  "id": "volume3_aftermath_record_overrun_epilogue",
+  "nodes": {
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "公开更正、伤势、账本或未来主张没有在限定回合内形成可靠记录；任何预言与合作都不能据此生效。"
+    },
+    "final": {
+      "choices": [],
+      "emotion": "ceremonial",
+      "ending_type": "volume3_aftermath_record_overrun",
+      "is_ending": true,
+      "speaker_id": "sena",
+      "text": "公开更正、伤势、账本或未来主张没有在限定回合内形成可靠记录；任何预言与合作都不能据此生效。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "善后记录失去边界",
+  "variables": {}
+}
