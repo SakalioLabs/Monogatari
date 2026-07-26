@@ -1,0 +1,22 @@
+{
+  "description": "第三卷第二章实时角色扮演结局短章。",
+  "id": "volume3_frog_fallout_and_isolation_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "crying",
+      "ending_type": "volume3_frog_fallout_and_isolation",
+      "is_ending": true,
+      "speaker_id": "aqua",
+      "text": "阿库娅望着没有动静的房门，终于停止用猜测填补空白。雪原责任、悠悠的邀请和达克妮斯的查找计划都必须重新开始。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "回合耗尽时，公共补救、挑战同意、开放邀请或失联照护没有形成可靠记录。点仔身份仍未知，达克妮斯仍未归来，悠悠独自离开集市。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "蛙灾余波，未说出口的邀请",
+  "variables": {}
+}

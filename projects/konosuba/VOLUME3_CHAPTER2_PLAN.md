@@ -1,6 +1,7 @@
 # Volume 3 Chapter 2: A Friend for the Crimson Demon Girl
 
-Status: foundation complete; live Roleplay implementation pending.
+Status: live Roleplay implemented, browser-played, and release-verified;
+provider-backed generation evidence awaits runtime credential injection.
 
 ## Product Contract
 

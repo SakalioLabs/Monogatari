@@ -1,0 +1,8 @@
+{
+  "description": "魔法后果、挑战同意、开放邀请和私人边界都形成了可执行记录。悠悠可以按自己的节奏同行，队伍也开始有边界地寻找仍未归来的达克妮斯。",
+  "dialogue_id": "volume3_open_invitation_and_welfare_plan_epilogue",
+  "id": "volume3_open_invitation_and_welfare_plan",
+  "scene_id": "axel_mansion_winter_hearth",
+  "schema": "monogatari-story-ending/v1",
+  "title": "保留拒绝，也保留下一次邀请"
+}

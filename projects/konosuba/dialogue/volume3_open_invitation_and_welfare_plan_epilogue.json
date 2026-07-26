@@ -1,0 +1,22 @@
+{
+  "description": "第三卷第二章实时角色扮演结局短章。",
+  "id": "volume3_open_invitation_and_welfare_plan_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "bright",
+      "ending_type": "volume3_open_invitation_and_welfare_plan",
+      "is_ending": true,
+      "speaker_id": "yunyun",
+      "text": "悠悠在门边停了一会儿，轻声确认下次集合时间。她没有被迫承认关系；壁炉旁的联络清单也只记录达克妮斯最后确认时间与下一步查找。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "魔法后果、挑战同意、开放邀请和私人边界都形成了可执行记录。悠悠可以按自己的节奏同行，队伍也开始有边界地寻找仍未归来的达克妮斯。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "保留拒绝，也保留下一次邀请",
+  "variables": {}
+}

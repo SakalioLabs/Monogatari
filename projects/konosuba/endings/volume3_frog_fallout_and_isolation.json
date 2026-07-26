@@ -1,0 +1,8 @@
+{
+  "description": "回合耗尽时，公共补救、挑战同意、开放邀请或失联照护没有形成可靠记录。点仔身份仍未知，达克妮斯仍未归来，悠悠独自离开集市。",
+  "dialogue_id": "volume3_frog_fallout_and_isolation_epilogue",
+  "id": "volume3_frog_fallout_and_isolation",
+  "scene_id": "axel_mansion_winter_hearth",
+  "schema": "monogatari-story-ending/v1",
+  "title": "蛙灾余波，未说出口的邀请"
+}

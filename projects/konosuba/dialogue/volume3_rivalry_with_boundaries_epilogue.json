@@ -1,0 +1,22 @@
+{
+  "description": "第三卷第二章实时角色扮演结局短章。",
+  "id": "volume3_rivalry_with_boundaries_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "reserved",
+      "ending_type": "volume3_rivalry_with_boundaries",
+      "is_ending": true,
+      "speaker_id": "yunyun",
+      "text": "悠悠保留劲敌称谓，也保留下一次是否同行的决定。宅邸里没人再用私人传闻取胜，但雪原与集市留下的责任仍要逐项补齐。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "关键挑战、拒绝和失联照护边界已经保住，但魔法责任或早期体察仍有缺口。悠悠继续称惠惠为劲敌，队伍获得修补关系与公共后果的机会。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "仍是劲敌，规则已经不同",
+  "variables": {}
+}
