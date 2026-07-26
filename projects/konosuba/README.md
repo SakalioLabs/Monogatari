@@ -269,6 +269,12 @@ The direct Volume 4 Chapter 1 live-NPC entry is:
 /game?previewRoleplay=volume4_chapter1_roleplay&authoring=1
 ```
 
+The direct Volume 4 Chapter 2 live-NPC entry is:
+
+```text
+/game?previewRoleplay=volume4_chapter2_roleplay&authoring=1
+```
+
 The direct Volume 4 Campaign entry is:
 
 ```text

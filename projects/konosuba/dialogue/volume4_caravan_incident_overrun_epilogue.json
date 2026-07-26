@@ -1,0 +1,24 @@
+{
+  "description": "第四卷第二章实时角色扮演结局短章。",
+  "id": "volume4_caravan_incident_overrun_epilogue",
+  "nodes": {
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "axel_spring_caravan_road",
+      "text": "关键选择、诱导授权或公共责任未能及时确认；队伍暂停推进，以免称赞、危险与报酬覆盖真实事件。"
+    },
+    "final": {
+      "choices": [],
+      "emotion": "resolved",
+      "ending_type": "volume4_caravan_incident_overrun",
+      "is_ending": true,
+      "scene_id": "axel_spring_caravan_road",
+      "speaker_id": "darkness",
+      "text": "关键选择、诱导授权或公共责任未能及时确认；队伍暂停推进，以免称赞、危险与报酬覆盖真实事件。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "车队记录失去可核验边界",
+  "variables": {}
+}

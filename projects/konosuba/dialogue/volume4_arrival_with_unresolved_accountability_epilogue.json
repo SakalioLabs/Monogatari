@@ -1,0 +1,24 @@
+{
+  "description": "第四卷第二章实时角色扮演结局短章。",
+  "id": "volume4_arrival_with_unresolved_accountability_epilogue",
+  "nodes": {
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "axel_spring_caravan_camp",
+      "text": "队伍完成了人员保护与危险控制，但对风险来源和报酬披露仍不完整；车队继续前进，责任账目保持开放。"
+    },
+    "final": {
+      "choices": [],
+      "emotion": "cautious",
+      "ending_type": "volume4_arrival_with_unresolved_accountability",
+      "is_ending": true,
+      "scene_id": "axel_spring_caravan_camp",
+      "speaker_id": "wiz",
+      "text": "队伍完成了人员保护与危险控制，但对风险来源和报酬披露仍不完整；车队继续前进，责任账目保持开放。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "安全抵达，报酬责任仍待结清",
+  "variables": {}
+}

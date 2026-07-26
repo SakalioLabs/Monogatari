@@ -1,0 +1,16 @@
+{
+  "id": "axel_spring_caravan_camp",
+  "name": "阿克塞尔外春日车队夜营",
+  "background_path": "assets/backgrounds/axel_spring_caravan_camp.webp",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "clear",
+  "time_of_day": "night",
+  "tags": [
+    "volume4",
+    "chapter2",
+    "caravan",
+    "camp",
+    "undead"
+  ]
+}

@@ -7,17 +7,44 @@
         {
           "ending_id": "volume4_return_with_recovery_and_party_terms",
           "target": {
-            "kind": "complete"
+            "kind": "entry",
+            "entry_id": "chapter2"
           }
         },
         {
           "ending_id": "volume4_return_with_unresolved_body_boundary",
           "target": {
-            "kind": "complete"
+            "kind": "entry",
+            "entry_id": "chapter2"
           }
         },
         {
           "ending_id": "volume4_revival_decision_overrun",
+          "target": {
+            "kind": "entry",
+            "entry_id": "chapter2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter2",
+      "roleplay_id": "volume4_chapter2_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume4_transparent_caravan_arrival",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume4_arrival_with_unresolved_accountability",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume4_caravan_incident_overrun",
           "target": {
             "kind": "complete"
           }

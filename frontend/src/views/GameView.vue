@@ -15,7 +15,7 @@
       <button class="control-btn icon-control" :title="t('game.home', 'Home')" :aria-label="t('game.home', 'Home')" @click="$router.push('/')"><House :size="16" /></button>
       <div class="scene-meta">
         <span class="eyebrow">{{ t('game.story-mode', 'Playtest') }}</span>
-        <strong>{{ activeCampaignSnapshot?.definition.title || activeRoleplaySnapshot?.definition.title || dialogueState?.speaker || currentCharacter?.name || activeScene?.name || t('game.demo-scene', 'Demo Scene') }}</strong>
+        <strong>{{ activeCampaignSnapshot?.definition.title || activeRoleplaySnapshot?.definition.title || currentCharacter?.name || dialogueState?.speaker || activeScene?.name || t('game.demo-scene', 'Demo Scene') }}</strong>
         <small v-if="activeCampaignSnapshot?.session.current_entry_id">
           {{ campaignProgressLabel }}
         </small>
@@ -90,7 +90,7 @@
         />
         <div v-else-if="dialogueState?.is_active" class="dialogue-box">
           <div class="speaker-name" v-if="dialogueState.speaker">
-            <span>{{ dialogueState.speaker }}</span>
+            <span>{{ currentCharacter?.name || dialogueState.speaker }}</span>
             <small>{{ dialogueState.emotion || currentExpression }}</small>
           </div>
 

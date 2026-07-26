@@ -1,0 +1,8 @@
+{
+  "description": "旅行、交易与战术都保留当前选择；队伍保护了车队，公开风险来源与实际贡献，并带着清楚记录继续前往温泉之都。",
+  "dialogue_id": "volume4_transparent_caravan_arrival_epilogue",
+  "id": "volume4_transparent_caravan_arrival",
+  "scene_id": "axel_spring_caravan_camp",
+  "schema": "monogatari-story-ending/v1",
+  "title": "透明责任下的安全抵达"
+}

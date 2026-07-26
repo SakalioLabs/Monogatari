@@ -42,6 +42,26 @@ three endings, and the fourth Campaign entry. The project validates as 140
 runtime documents, 17 characters, 25 Knowledge entries, 29 scenes, 9 Scene
 Roleplays, 27 endings, 9 Quality Suites, and 106/106 declared renderer assets.
 
+- Volume 4 Chapter 2 deterministic acceptance (2026-07-27): all 666 non-empty
+  source paragraphs were reviewed into six free-form Scene Roleplay nodes.
+  Megumin, Vanir, Aqua, Darkness, and Wiz generate scene- and identity-bound
+  replies while an independent evaluator proposes bounded score/evidence
+  changes and only the state machine advances the story. Eight canonical
+  Knowledge records, two fingerprint-imported backgrounds, four score
+  dimensions, and twelve quoted evidence gates cover travel choice, invention
+  terms, inventory risk, caravan care, Jumping Hawk response, explosion
+  clearance, reward disclosure, and undead safety. MCP core-runtime validation
+  accepts 298 catalog documents and delivery validation resolves 151/151
+  renderer assets. Quality passes 4/4 scenarios, visits 6/6 nodes, reaches all
+  three endings, records 12/12 evidence gates and exact `6/6/6/6` complete
+  scores, and guards one structural attack with zero forged state. The
+  two-entry Volume 4 Campaign completes with relationship carry-over. A live
+  `grok-4.5 API` browser run generated distinct Megumin and Aqua replies,
+  independently scored both turns, and advanced to Vanir without fallback.
+  Desktop road/camp stages and the `390x844` live Roleplay render without
+  horizontal overflow; scripted epilogues now show catalog names instead of
+  stable speaker IDs.
+
 - Volume 4 Chapter 1 deterministic acceptance (2026-07-27): the 19-paragraph
   prologue and all 470 chapter paragraphs were reviewed into nine free-form
   Scene Roleplay nodes. Aqua, Sena, Megumin, Darkness, and Eris generate

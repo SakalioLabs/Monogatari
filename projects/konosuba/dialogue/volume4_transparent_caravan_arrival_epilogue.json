@@ -1,0 +1,24 @@
+{
+  "description": "第四卷第二章实时角色扮演结局短章。",
+  "id": "volume4_transparent_caravan_arrival_epilogue",
+  "nodes": {
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "axel_spring_caravan_camp",
+      "text": "旅行、交易与战术都保留当前选择；队伍保护了车队，公开风险来源与实际贡献，并带着清楚记录继续前往温泉之都。"
+    },
+    "final": {
+      "choices": [],
+      "emotion": "accountable",
+      "ending_type": "volume4_transparent_caravan_arrival",
+      "is_ending": true,
+      "scene_id": "axel_spring_caravan_camp",
+      "speaker_id": "aqua",
+      "text": "旅行、交易与战术都保留当前选择；队伍保护了车队，公开风险来源与实际贡献，并带着清楚记录继续前往温泉之都。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "透明责任下的安全抵达",
+  "variables": {}
+}

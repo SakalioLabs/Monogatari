@@ -1,0 +1,8 @@
+{
+  "description": "关键选择、诱导授权或公共责任未能及时确认；队伍暂停推进，以免称赞、危险与报酬覆盖真实事件。",
+  "dialogue_id": "volume4_caravan_incident_overrun_epilogue",
+  "id": "volume4_caravan_incident_overrun",
+  "scene_id": "axel_spring_caravan_road",
+  "schema": "monogatari-story-ending/v1",
+  "title": "车队记录失去可核验边界"
+}

@@ -1,0 +1,18 @@
+{
+  "category": "volume4_chapter2",
+  "content": "优先保护车夫与旅客，核验目标后采用遮挡、改道、沼泽等可逆控制。诱导者必须明确同意且可撤回，禁止束缚、拖行或以耐久为理由放弃救援。",
+  "id": "volume4_caravan_incident_response",
+  "importance": 0.9,
+  "related_entries": [
+    "volume4_jumping_hawk_behavior",
+    "volume4_cave_and_explosion_safety"
+  ],
+  "tags": [
+    "volume4",
+    "chapter2",
+    "caravan",
+    "tactics",
+    "consent"
+  ],
+  "title": "车队危机的可逆应对"
+}

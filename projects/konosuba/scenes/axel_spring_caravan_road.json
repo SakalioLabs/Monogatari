@@ -1,0 +1,16 @@
+{
+  "id": "axel_spring_caravan_road",
+  "name": "阿克塞尔外春日车队道路",
+  "background_path": "assets/backgrounds/axel_spring_caravan_road.webp",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "clear",
+  "time_of_day": "late_morning",
+  "tags": [
+    "volume4",
+    "chapter2",
+    "caravan",
+    "road",
+    "cave"
+  ]
+}

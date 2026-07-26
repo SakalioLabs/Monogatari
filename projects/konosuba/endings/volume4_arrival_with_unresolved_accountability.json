@@ -1,0 +1,8 @@
+{
+  "description": "队伍完成了人员保护与危险控制，但对风险来源和报酬披露仍不完整；车队继续前进，责任账目保持开放。",
+  "dialogue_id": "volume4_arrival_with_unresolved_accountability_epilogue",
+  "id": "volume4_arrival_with_unresolved_accountability",
+  "scene_id": "axel_spring_caravan_camp",
+  "schema": "monogatari-story-ending/v1",
+  "title": "安全抵达，报酬责任仍待结清"
+}

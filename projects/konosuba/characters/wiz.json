@@ -36,7 +36,12 @@
     "volume3_blast_outcome_and_recovery",
     "volume3_vanir_second_life_status",
     "volume3_wiz_vanir_reunion",
-    "volume3_prophecy_business_boundary"
+    "volume3_prophecy_business_boundary",
+    "volume4_shop_inventory_risk_and_privacy",
+    "volume4_caravan_seating_and_wiz_care",
+    "volume4_caravan_incident_response",
+    "volume4_cave_and_explosion_safety",
+    "volume4_camp_reward_and_undead_accountability"
   ],
   "name": "维兹",
   "personality": {

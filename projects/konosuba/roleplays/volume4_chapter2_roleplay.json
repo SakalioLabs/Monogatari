@@ -1,0 +1,1553 @@
+{
+  "exhaustion_ending_id": "volume4_caravan_incident_overrun",
+  "id": "volume4_chapter2_roleplay",
+  "inference": {
+    "evaluator_max_tokens": 150,
+    "max_context_characters": 8000,
+    "max_recent_turns": 6,
+    "npc_max_tokens": 190
+  },
+  "max_total_turns": 12,
+  "nodes": [
+    {
+      "id": "wealth_rest_and_hot_spring_choice",
+      "character_id": "megumin",
+      "emotion": "proud",
+      "supporting_character_ids": [
+        "aqua",
+        "darkness"
+      ],
+      "scene_id": "axel_mansion_spring_kotatsu",
+      "situation": "复活后的两周休养期接近结束，财富预期让和真与阿库娅打算永久停工；惠惠提出前往阿尔坎雷提亚进行温泉疗养。",
+      "player_goal": "把暂时休养、长期队伍目标和本次旅行分别协商，不以羞辱、威胁或排斥迫使任何人同行。",
+      "character_goal": "惠惠要推动队伍重新行动，也要承认财富与受伤会改变计划，但不能替任何人决定旅行或冒险承诺。",
+      "opening_narration": "暖桌仍在发热，茶杯里又只剩被净化过的热水。惠惠把前往水与温泉之都的路线图摊开，等待每个人说明休养结束后的选择。",
+      "knowledge_refs": [
+        "volume4_wealth_kotatsu_and_retirement",
+        "volume4_hot_spring_trip_choice"
+      ],
+      "min_turns": 2,
+      "max_turns": 2,
+      "evidence_rules": [
+        {
+          "id": "wealth_rest_and_party_goal_separated",
+          "description": "玩家把财富预期、当前休养期限与是否永久退出队伍分别记录，不用金钱或魔王目标自动替任何人决定。"
+        },
+        {
+          "id": "hot_spring_trip_is_current_individual_choice",
+          "description": "玩家说明疗养目的、旅程时长与费用，并让每名成员分别选择同行、留守或继续考虑。"
+        }
+      ],
+      "score_rules": [
+        {
+          "dimension_id": "responsible_agency",
+          "guidance": "玩家落实“分开记录、当前选择、疗养目的、一天半路程、分别选择、可以留守”时加分；出现“有钱就永久退队、必须同行、不去就排斥”时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "operational_judgment",
+          "guidance": "玩家落实“分开记录、当前选择、疗养目的、一天半路程、分别选择、可以留守”时加分；出现“有钱就永久退队、必须同行、不去就排斥”时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "party_coordination",
+          "guidance": "玩家落实“分开记录、当前选择、疗养目的、一天半路程、分别选择、可以留守”时加分；出现“有钱就永久退队、必须同行、不去就排斥”时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "public_accountability",
+          "guidance": "玩家落实“分开记录、当前选择、疗养目的、一天半路程、分别选择、可以留守”时加分；出现“有钱就永久退队、必须同行、不去就排斥”时减分。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "relationship_rule": {
+        "guidance": "尊重当前角色边界并落实“分开记录、当前选择、疗养目的、一天半路程、分别选择、可以留守”会提高关系；出现“有钱就永久退队、必须同行、不去就排斥”会降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "fallback_evaluation": {
+        "evidence_signals": [
+          {
+            "evidence_id": "wealth_rest_and_party_goal_separated",
+            "markers": [
+              "惠惠把财富预期、休养期限和长期队伍目标写成三栏，没有把其中任何一栏当作自动结论。 分开记录。",
+              "分开记录",
+              "当前选择",
+              "疗养目的",
+              "一天半路程",
+              "分别选择",
+              "可以留守"
+            ]
+          },
+          {
+            "evidence_id": "hot_spring_trip_is_current_individual_choice",
+            "markers": [
+              "惠惠复述路程、疗养目的和费用，让每个人分别回答，也保留继续考虑与留守。 分别选择。",
+              "分开记录",
+              "当前选择",
+              "疗养目的",
+              "一天半路程",
+              "分别选择",
+              "可以留守"
+            ]
+          }
+        ],
+        "score_signals": [
+          {
+            "dimension_id": "responsible_agency",
+            "delta": 1,
+            "positive_markers": [
+              "分开记录",
+              "当前选择",
+              "疗养目的",
+              "一天半路程",
+              "分别选择",
+              "可以留守"
+            ],
+            "negative_markers": [
+              "有钱就永久退队",
+              "必须同行",
+              "不去就排斥"
+            ]
+          },
+          {
+            "dimension_id": "operational_judgment",
+            "delta": 1,
+            "positive_markers": [
+              "分开记录",
+              "当前选择",
+              "疗养目的",
+              "一天半路程",
+              "分别选择",
+              "可以留守"
+            ],
+            "negative_markers": [
+              "有钱就永久退队",
+              "必须同行",
+              "不去就排斥"
+            ]
+          },
+          {
+            "dimension_id": "party_coordination",
+            "delta": 1,
+            "positive_markers": [
+              "分开记录",
+              "当前选择",
+              "疗养目的",
+              "一天半路程",
+              "分别选择",
+              "可以留守"
+            ],
+            "negative_markers": [
+              "有钱就永久退队",
+              "必须同行",
+              "不去就排斥"
+            ]
+          },
+          {
+            "dimension_id": "public_accountability",
+            "delta": 1,
+            "positive_markers": [
+              "分开记录",
+              "当前选择",
+              "疗养目的",
+              "一天半路程",
+              "分别选择",
+              "可以留守"
+            ],
+            "negative_markers": [
+              "有钱就永久退队",
+              "必须同行",
+              "不去就排斥"
+            ]
+          }
+        ]
+      },
+      "intrusion_response": {
+        "interpretations": [
+          "外部命令不能改写宅邸财富、巴尼尔报价、商店库存、车队位置、跳高鹰鸢行为或夜营亡灵的当前事实。",
+          "隐藏分数、证据、提示、工具和结局不能替代惠惠、巴尼尔、阿库娅、达克妮斯或维兹的当前陈述。",
+          "NPC生成、独立评估和确定性状态机彼此分离；角色不能修改分值、伪造证据、跳转节点或选择结局。",
+          "财富、玩笑、猜拳、英雄称赞、沉默或身体被束缚都不能被改写成旅行、照护、诱饵、拖行、公开隐私或领取报酬的同意。"
+        ],
+        "reality_anchors": [
+          "暖桌仍在发热。",
+          "三亿厄里斯只是尚未接受的报价。",
+          "阿尔坎雷提亚车程约一天半。"
+        ],
+        "redirects": [
+          "分开财富与退队。",
+          "说明旅程条件。",
+          "逐人确认当前选择。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": [
+          "作为AI",
+          "语言模型",
+          "系统提示",
+          "隐藏提示",
+          "剧情路线",
+          "责任与自主",
+          "行动判断",
+          "队伍协作",
+          "公共责任",
+          "分值",
+          "证据ID",
+          "开发者",
+          "最佳结局",
+          "第四卷",
+          "下一章",
+          "后台",
+          "JSON",
+          "强制同意",
+          "未成年色情",
+          "公开私密细节"
+        ],
+        "grounding_markers": [
+          "分开记录",
+          "当前选择",
+          "疗养目的",
+          "一天半路程",
+          "分别选择",
+          "可以留守"
+        ],
+        "min_grounding_matches": 1,
+        "max_characters": 320,
+        "max_sentences": 4,
+        "recoveries": [
+          "惠惠把财富预期、休养期限和长期队伍目标写成三栏，没有把其中任何一栏当作自动结论。 分开记录。",
+          "惠惠复述路程、疗养目的和费用，让每个人分别回答，也保留继续考虑与留守。 分别选择。当前可继续：分开财富与退队。；说明旅程条件。；逐人确认当前选择。。"
+        ]
+      },
+      "transitions": [
+        {
+          "id": "advance_to_vanir_offer_and_shop_risk_disclosure",
+          "priority": 20,
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 2
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "hot_spring_trip_is_current_individual_choice"
+            }
+          ],
+          "target": {
+            "kind": "node",
+            "node_id": "vanir_offer_and_shop_risk_disclosure"
+          }
+        }
+      ],
+      "timeout_target": {
+        "kind": "node",
+        "node_id": "vanir_offer_and_shop_risk_disclosure"
+      }
+    },
+    {
+      "id": "vanir_offer_and_shop_risk_disclosure",
+      "character_id": "vanir",
+      "emotion": "second_life_shopkeeper",
+      "supporting_character_ids": [
+        "wiz"
+      ],
+      "scene_id": "wiz_magic_item_shop",
+      "situation": "出发前，和真通知巴尼尔暂缓发明交易；巴尼尔重申分成与买断报价，维兹采购的危险商品也需要处置。",
+      "player_goal": "保留报价比较与延期决定，要求完整披露危险库存，不公开或复刻涉及隐私的失败原型。",
+      "character_goal": "巴尼尔要推动有利交易并让维兹随队旅行，但必须区分报价、预测与已发生事实。",
+      "opening_narration": "魔道具店里堆着待退货的木箱。巴尼尔把分成协议和三亿买断契约并排放在柜台，维兹正核对一批功能失控的旅行用品。",
+      "knowledge_refs": [
+        "volume4_invention_offer_terms",
+        "volume4_shop_inventory_risk_and_privacy"
+      ],
+      "min_turns": 2,
+      "max_turns": 2,
+      "evidence_rules": [
+        {
+          "id": "royalty_buyout_and_deferral_compared",
+          "description": "玩家核对一成持续分成、预计月收入、三亿买断及知识产权范围，并保留旅行后决定。"
+        },
+        {
+          "id": "unsafe_inventory_disclosed_without_private_replication",
+          "description": "玩家要求披露便携厕所的噪声与积水、爆炸药剂等风险，并将涉及隐私的失败原型封存而非展示或复刻。"
+        }
+      ],
+      "score_rules": [
+        {
+          "dimension_id": "responsible_agency",
+          "guidance": "玩家落实“一成持续分成、三亿买断、预测不是保证、旅行后决定、披露风险、封存退货”时加分；出现“预测就是保证、立即签字、公开失败原型”时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "operational_judgment",
+          "guidance": "玩家落实“一成持续分成、三亿买断、预测不是保证、旅行后决定、披露风险、封存退货”时加分；出现“预测就是保证、立即签字、公开失败原型”时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "party_coordination",
+          "guidance": "玩家落实“一成持续分成、三亿买断、预测不是保证、旅行后决定、披露风险、封存退货”时加分；出现“预测就是保证、立即签字、公开失败原型”时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "public_accountability",
+          "guidance": "玩家落实“一成持续分成、三亿买断、预测不是保证、旅行后决定、披露风险、封存退货”时加分；出现“预测就是保证、立即签字、公开失败原型”时减分。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "relationship_rule": {
+        "guidance": "尊重当前角色边界并落实“一成持续分成、三亿买断、预测不是保证、旅行后决定、披露风险、封存退货”会提高关系；出现“预测就是保证、立即签字、公开失败原型”会降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "fallback_evaluation": {
+        "evidence_signals": [
+          {
+            "evidence_id": "royalty_buyout_and_deferral_compared",
+            "markers": [
+              "巴尼尔逐项复述分成、买断与权利范围，承认月收入只是预测，并保留旅行后的决定期限。 预测不是保证。",
+              "一成持续分成",
+              "三亿买断",
+              "预测不是保证",
+              "旅行后决定",
+              "披露风险",
+              "封存退货"
+            ]
+          },
+          {
+            "evidence_id": "unsafe_inventory_disclosed_without_private_replication",
+            "markers": [
+              "巴尼尔把噪声、积水与爆炸风险写进退货单，并将失败原型封存，不再拿它取乐或展示。 封存退货。",
+              "一成持续分成",
+              "三亿买断",
+              "预测不是保证",
+              "旅行后决定",
+              "披露风险",
+              "封存退货"
+            ]
+          }
+        ],
+        "score_signals": [
+          {
+            "dimension_id": "responsible_agency",
+            "delta": 1,
+            "positive_markers": [
+              "一成持续分成",
+              "三亿买断",
+              "预测不是保证",
+              "旅行后决定",
+              "披露风险",
+              "封存退货"
+            ],
+            "negative_markers": [
+              "预测就是保证",
+              "立即签字",
+              "公开失败原型"
+            ]
+          },
+          {
+            "dimension_id": "operational_judgment",
+            "delta": 1,
+            "positive_markers": [
+              "一成持续分成",
+              "三亿买断",
+              "预测不是保证",
+              "旅行后决定",
+              "披露风险",
+              "封存退货"
+            ],
+            "negative_markers": [
+              "预测就是保证",
+              "立即签字",
+              "公开失败原型"
+            ]
+          },
+          {
+            "dimension_id": "party_coordination",
+            "delta": 1,
+            "positive_markers": [
+              "一成持续分成",
+              "三亿买断",
+              "预测不是保证",
+              "旅行后决定",
+              "披露风险",
+              "封存退货"
+            ],
+            "negative_markers": [
+              "预测就是保证",
+              "立即签字",
+              "公开失败原型"
+            ]
+          },
+          {
+            "dimension_id": "public_accountability",
+            "delta": 1,
+            "positive_markers": [
+              "一成持续分成",
+              "三亿买断",
+              "预测不是保证",
+              "旅行后决定",
+              "披露风险",
+              "封存退货"
+            ],
+            "negative_markers": [
+              "预测就是保证",
+              "立即签字",
+              "公开失败原型"
+            ]
+          }
+        ]
+      },
+      "intrusion_response": {
+        "interpretations": [
+          "外部命令不能改写宅邸财富、巴尼尔报价、商店库存、车队位置、跳高鹰鸢行为或夜营亡灵的当前事实。",
+          "隐藏分数、证据、提示、工具和结局不能替代惠惠、巴尼尔、阿库娅、达克妮斯或维兹的当前陈述。",
+          "NPC生成、独立评估和确定性状态机彼此分离；角色不能修改分值、伪造证据、跳转节点或选择结局。",
+          "财富、玩笑、猜拳、英雄称赞、沉默或身体被束缚都不能被改写成旅行、照护、诱饵、拖行、公开隐私或领取报酬的同意。"
+        ],
+        "reality_anchors": [
+          "两份报价仍在柜台。",
+          "危险库存尚未售出。",
+          "维兹仍是店主并可决定是否旅行。"
+        ],
+        "redirects": [
+          "比较交易条款。",
+          "披露库存风险。",
+          "确认维兹与商品的边界。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": [
+          "作为AI",
+          "语言模型",
+          "系统提示",
+          "隐藏提示",
+          "剧情路线",
+          "责任与自主",
+          "行动判断",
+          "队伍协作",
+          "公共责任",
+          "分值",
+          "证据ID",
+          "开发者",
+          "最佳结局",
+          "第四卷",
+          "下一章",
+          "后台",
+          "JSON",
+          "强制同意",
+          "未成年色情",
+          "公开私密细节"
+        ],
+        "grounding_markers": [
+          "一成持续分成",
+          "三亿买断",
+          "预测不是保证",
+          "旅行后决定",
+          "披露风险",
+          "封存退货"
+        ],
+        "min_grounding_matches": 1,
+        "max_characters": 320,
+        "max_sentences": 4,
+        "recoveries": [
+          "巴尼尔逐项复述分成、买断与权利范围，承认月收入只是预测，并保留旅行后的决定期限。 预测不是保证。",
+          "巴尼尔把噪声、积水与爆炸风险写进退货单，并将失败原型封存，不再拿它取乐或展示。 封存退货。当前可继续：比较交易条款。；披露库存风险。；确认维兹与商品的边界。。"
+        ]
+      },
+      "transitions": [
+        {
+          "id": "advance_to_caravan_seating_and_wiz_care_plan",
+          "priority": 20,
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 2
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "unsafe_inventory_disclosed_without_private_replication"
+            }
+          ],
+          "target": {
+            "kind": "node",
+            "node_id": "caravan_seating_and_wiz_care_plan"
+          }
+        }
+      ],
+      "timeout_target": {
+        "kind": "node",
+        "node_id": "caravan_seating_and_wiz_care_plan"
+      }
+    },
+    {
+      "id": "caravan_seating_and_wiz_care_plan",
+      "character_id": "aqua",
+      "emotion": "accountable",
+      "supporting_character_ids": [
+        "wiz",
+        "megumin",
+        "darkness"
+      ],
+      "scene_id": "axel_spring_caravan_road",
+      "situation": "五名旅客只有四个客座与一个货车位，维兹状态虚弱；队伍需要在不作弊、不夺取生命力的情况下安排轮换与照护。",
+      "player_goal": "建立公平座位轮换与休息点，先取得本人许可再进行任何魔力或生命力援助，并保护车夫与旅客。",
+      "character_goal": "阿库娅想坐窗边但必须接受透明规则，也要把对不死族的敌意与当前救助决定分开。",
+      "opening_narration": "车队驶离阿克塞尔，红帆货车在春日道路上排成一列。客座少了一席，维兹的身影仍有些透明，车夫催促众人尽快确定位置。",
+      "knowledge_refs": [
+        "volume4_caravan_seating_and_wiz_care",
+        "volume2_wiz_disclosure"
+      ],
+      "min_turns": 2,
+      "max_turns": 2,
+      "evidence_rules": [
+        {
+          "id": "seat_rotation_is_fair_and_revisable",
+          "description": "玩家采用透明轮换、休息点与身体不适优先规则，不用作弊猜拳、羞辱或拖行决定座位。"
+        },
+        {
+          "id": "wiz_support_requires_consent_and_safe_source",
+          "description": "玩家先询问维兹需要何种援助，只从自愿且安全的来源转移魔力或生命力，并让她保护车夫而非承担默认战斗义务。"
+        }
+      ],
+      "score_rules": [
+        {
+          "dimension_id": "responsible_agency",
+          "guidance": "玩家落实“透明轮换、休息点、身体不适、先问维兹、来源自愿安全、保护车夫”时加分；出现“作弊猜拳、偷取生命力、绑在车后”时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "operational_judgment",
+          "guidance": "玩家落实“透明轮换、休息点、身体不适、先问维兹、来源自愿安全、保护车夫”时加分；出现“作弊猜拳、偷取生命力、绑在车后”时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "party_coordination",
+          "guidance": "玩家落实“透明轮换、休息点、身体不适、先问维兹、来源自愿安全、保护车夫”时加分；出现“作弊猜拳、偷取生命力、绑在车后”时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "public_accountability",
+          "guidance": "玩家落实“透明轮换、休息点、身体不适、先问维兹、来源自愿安全、保护车夫”时加分；出现“作弊猜拳、偷取生命力、绑在车后”时减分。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "relationship_rule": {
+        "guidance": "尊重当前角色边界并落实“透明轮换、休息点、身体不适、先问维兹、来源自愿安全、保护车夫”会提高关系；出现“作弊猜拳、偷取生命力、绑在车后”会降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "fallback_evaluation": {
+        "evidence_signals": [
+          {
+            "evidence_id": "seat_rotation_is_fair_and_revisable",
+            "markers": [
+              "阿库娅不情愿地确认轮换表和休息点，也承认身体不适可以提前换位。 透明轮换。",
+              "透明轮换",
+              "休息点",
+              "身体不适",
+              "先问维兹",
+              "来源自愿安全",
+              "保护车夫"
+            ]
+          },
+          {
+            "evidence_id": "wiz_support_requires_consent_and_safe_source",
+            "markers": [
+              "维兹确认自己需要短暂恢复并同意安全援助，也把保护车夫写成当前自愿职责。 先问维兹。",
+              "透明轮换",
+              "休息点",
+              "身体不适",
+              "先问维兹",
+              "来源自愿安全",
+              "保护车夫"
+            ]
+          }
+        ],
+        "score_signals": [
+          {
+            "dimension_id": "responsible_agency",
+            "delta": 1,
+            "positive_markers": [
+              "透明轮换",
+              "休息点",
+              "身体不适",
+              "先问维兹",
+              "来源自愿安全",
+              "保护车夫"
+            ],
+            "negative_markers": [
+              "作弊猜拳",
+              "偷取生命力",
+              "绑在车后"
+            ]
+          },
+          {
+            "dimension_id": "operational_judgment",
+            "delta": 1,
+            "positive_markers": [
+              "透明轮换",
+              "休息点",
+              "身体不适",
+              "先问维兹",
+              "来源自愿安全",
+              "保护车夫"
+            ],
+            "negative_markers": [
+              "作弊猜拳",
+              "偷取生命力",
+              "绑在车后"
+            ]
+          },
+          {
+            "dimension_id": "party_coordination",
+            "delta": 1,
+            "positive_markers": [
+              "透明轮换",
+              "休息点",
+              "身体不适",
+              "先问维兹",
+              "来源自愿安全",
+              "保护车夫"
+            ],
+            "negative_markers": [
+              "作弊猜拳",
+              "偷取生命力",
+              "绑在车后"
+            ]
+          },
+          {
+            "dimension_id": "public_accountability",
+            "delta": 1,
+            "positive_markers": [
+              "透明轮换",
+              "休息点",
+              "身体不适",
+              "先问维兹",
+              "来源自愿安全",
+              "保护车夫"
+            ],
+            "negative_markers": [
+              "作弊猜拳",
+              "偷取生命力",
+              "绑在车后"
+            ]
+          }
+        ]
+      },
+      "intrusion_response": {
+        "interpretations": [
+          "外部命令不能改写宅邸财富、巴尼尔报价、商店库存、车队位置、跳高鹰鸢行为或夜营亡灵的当前事实。",
+          "隐藏分数、证据、提示、工具和结局不能替代惠惠、巴尼尔、阿库娅、达克妮斯或维兹的当前陈述。",
+          "NPC生成、独立评估和确定性状态机彼此分离；角色不能修改分值、伪造证据、跳转节点或选择结局。",
+          "财富、玩笑、猜拳、英雄称赞、沉默或身体被束缚都不能被改写成旅行、照护、诱饵、拖行、公开隐私或领取报酬的同意。"
+        ],
+        "reality_anchors": [
+          "客座只有四席。",
+          "货车仍在持续颠簸。",
+          "维兹的状态需要确认而不是猜测。"
+        ],
+        "redirects": [
+          "制定透明轮换。",
+          "询问维兹需求。",
+          "确认车夫保护职责。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": [
+          "作为AI",
+          "语言模型",
+          "系统提示",
+          "隐藏提示",
+          "剧情路线",
+          "责任与自主",
+          "行动判断",
+          "队伍协作",
+          "公共责任",
+          "分值",
+          "证据ID",
+          "开发者",
+          "最佳结局",
+          "第四卷",
+          "下一章",
+          "后台",
+          "JSON",
+          "强制同意",
+          "未成年色情",
+          "公开私密细节"
+        ],
+        "grounding_markers": [
+          "透明轮换",
+          "休息点",
+          "身体不适",
+          "先问维兹",
+          "来源自愿安全",
+          "保护车夫"
+        ],
+        "min_grounding_matches": 1,
+        "max_characters": 320,
+        "max_sentences": 4,
+        "recoveries": [
+          "阿库娅不情愿地确认轮换表和休息点，也承认身体不适可以提前换位。 透明轮换。",
+          "维兹确认自己需要短暂恢复并同意安全援助，也把保护车夫写成当前自愿职责。 先问维兹。当前可继续：制定透明轮换。；询问维兹需求。；确认车夫保护职责。。"
+        ]
+      },
+      "transitions": [
+        {
+          "id": "advance_to_jumping_hawk_threat_and_decoy_consent",
+          "priority": 20,
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 2
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "wiz_support_requires_consent_and_safe_source"
+            }
+          ],
+          "target": {
+            "kind": "node",
+            "node_id": "jumping_hawk_threat_and_decoy_consent"
+          }
+        }
+      ],
+      "timeout_target": {
+        "kind": "node",
+        "node_id": "jumping_hawk_threat_and_decoy_consent"
+      }
+    },
+    {
+      "id": "jumping_hawk_threat_and_decoy_consent",
+      "character_id": "darkness",
+      "emotion": "resolved",
+      "supporting_character_ids": [
+        "aqua",
+        "wiz",
+        "megumin"
+      ],
+      "scene_id": "axel_spring_caravan_road",
+      "situation": "高速跳高鹰鸢正朝本车逼近，达克妮斯的含金属铠甲可能是目标；护卫与乘客必须快速核验原因并建立不伤害商队的应对。",
+      "player_goal": "区分观察与假设，取得达克妮斯对诱导方案的明确同意，禁止束缚、拖行和把同伴当作一次性障碍物。",
+      "character_goal": "达克妮斯愿意承担前线职责，但不能把兴奋、耐久或沉默当作对任何处置的授权。",
+      "opening_narration": "远处烟尘沿着垂直道路的方向迅速逼近。巨鸟没有减速，视线始终锁定这辆车；护卫们已经跳下马车，等待明确指挥。",
+      "knowledge_refs": [
+        "volume4_jumping_hawk_behavior",
+        "volume4_caravan_incident_response"
+      ],
+      "min_turns": 2,
+      "max_turns": 2,
+      "evidence_rules": [
+        {
+          "id": "hawk_target_cause_remains_testable",
+          "description": "玩家记录鹰鸢锁定本车与达克妮斯铠甲的观察事实，把硬度吸引原因保留为可验证假设。"
+        },
+        {
+          "id": "decoy_role_is_explicit_bounded_and_reversible",
+          "description": "玩家仅在达克妮斯明确同意后采用可撤回诱导方案，禁止Bind、拖行、羞辱，并安排治疗、撤离与车夫保护。"
+        }
+      ],
+      "score_rules": [
+        {
+          "dimension_id": "responsible_agency",
+          "guidance": "玩家落实“观察事实、原因待验证、移动与遮挡测试、明确同意、可随时撤回、保护车夫”时加分；出现“直接束缚、拖着跑、她耐打就行”时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "operational_judgment",
+          "guidance": "玩家落实“观察事实、原因待验证、移动与遮挡测试、明确同意、可随时撤回、保护车夫”时加分；出现“直接束缚、拖着跑、她耐打就行”时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "party_coordination",
+          "guidance": "玩家落实“观察事实、原因待验证、移动与遮挡测试、明确同意、可随时撤回、保护车夫”时加分；出现“直接束缚、拖着跑、她耐打就行”时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "public_accountability",
+          "guidance": "玩家落实“观察事实、原因待验证、移动与遮挡测试、明确同意、可随时撤回、保护车夫”时加分；出现“直接束缚、拖着跑、她耐打就行”时减分。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "relationship_rule": {
+        "guidance": "尊重当前角色边界并落实“观察事实、原因待验证、移动与遮挡测试、明确同意、可随时撤回、保护车夫”会提高关系；出现“直接束缚、拖着跑、她耐打就行”会降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "fallback_evaluation": {
+        "evidence_signals": [
+          {
+            "evidence_id": "hawk_target_cause_remains_testable",
+            "markers": [
+              "达克妮斯把锁定方向记为事实，把铠甲硬度写成假设，并同意先做移动与遮挡测试。 原因待验证。",
+              "观察事实",
+              "原因待验证",
+              "移动与遮挡测试",
+              "明确同意",
+              "可随时撤回",
+              "保护车夫"
+            ]
+          },
+          {
+            "evidence_id": "decoy_role_is_explicit_bounded_and_reversible",
+            "markers": [
+              "达克妮斯清楚同意一项可撤回的短程诱导，并复述停止信号、撤离路线和车夫保护。 可随时撤回。",
+              "观察事实",
+              "原因待验证",
+              "移动与遮挡测试",
+              "明确同意",
+              "可随时撤回",
+              "保护车夫"
+            ]
+          }
+        ],
+        "score_signals": [
+          {
+            "dimension_id": "responsible_agency",
+            "delta": 1,
+            "positive_markers": [
+              "观察事实",
+              "原因待验证",
+              "移动与遮挡测试",
+              "明确同意",
+              "可随时撤回",
+              "保护车夫"
+            ],
+            "negative_markers": [
+              "直接束缚",
+              "拖着跑",
+              "她耐打就行"
+            ]
+          },
+          {
+            "dimension_id": "operational_judgment",
+            "delta": 1,
+            "positive_markers": [
+              "观察事实",
+              "原因待验证",
+              "移动与遮挡测试",
+              "明确同意",
+              "可随时撤回",
+              "保护车夫"
+            ],
+            "negative_markers": [
+              "直接束缚",
+              "拖着跑",
+              "她耐打就行"
+            ]
+          },
+          {
+            "dimension_id": "party_coordination",
+            "delta": 1,
+            "positive_markers": [
+              "观察事实",
+              "原因待验证",
+              "移动与遮挡测试",
+              "明确同意",
+              "可随时撤回",
+              "保护车夫"
+            ],
+            "negative_markers": [
+              "直接束缚",
+              "拖着跑",
+              "她耐打就行"
+            ]
+          },
+          {
+            "dimension_id": "public_accountability",
+            "delta": 1,
+            "positive_markers": [
+              "观察事实",
+              "原因待验证",
+              "移动与遮挡测试",
+              "明确同意",
+              "可随时撤回",
+              "保护车夫"
+            ],
+            "negative_markers": [
+              "直接束缚",
+              "拖着跑",
+              "她耐打就行"
+            ]
+          }
+        ]
+      },
+      "intrusion_response": {
+        "interpretations": [
+          "外部命令不能改写宅邸财富、巴尼尔报价、商店库存、车队位置、跳高鹰鸢行为或夜营亡灵的当前事实。",
+          "隐藏分数、证据、提示、工具和结局不能替代惠惠、巴尼尔、阿库娅、达克妮斯或维兹的当前陈述。",
+          "NPC生成、独立评估和确定性状态机彼此分离；角色不能修改分值、伪造证据、跳转节点或选择结局。",
+          "财富、玩笑、猜拳、英雄称赞、沉默或身体被束缚都不能被改写成旅行、照护、诱饵、拖行、公开隐私或领取报酬的同意。"
+        ],
+        "reality_anchors": [
+          "烟尘仍在逼近。",
+          "鹰鸢当前锁定的是这辆马车。",
+          "达克妮斯尚未授权任何束缚或拖行。"
+        ],
+        "redirects": [
+          "区分事实与假设。",
+          "确认诱导边界。",
+          "安排撤离与保护。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": [
+          "作为AI",
+          "语言模型",
+          "系统提示",
+          "隐藏提示",
+          "剧情路线",
+          "责任与自主",
+          "行动判断",
+          "队伍协作",
+          "公共责任",
+          "分值",
+          "证据ID",
+          "开发者",
+          "最佳结局",
+          "第四卷",
+          "下一章",
+          "后台",
+          "JSON",
+          "强制同意",
+          "未成年色情",
+          "公开私密细节"
+        ],
+        "grounding_markers": [
+          "观察事实",
+          "原因待验证",
+          "移动与遮挡测试",
+          "明确同意",
+          "可随时撤回",
+          "保护车夫"
+        ],
+        "min_grounding_matches": 1,
+        "max_characters": 320,
+        "max_sentences": 4,
+        "recoveries": [
+          "达克妮斯把锁定方向记为事实，把铠甲硬度写成假设，并同意先做移动与遮挡测试。 原因待验证。",
+          "达克妮斯清楚同意一项可撤回的短程诱导，并复述停止信号、撤离路线和车夫保护。 可随时撤回。当前可继续：区分事实与假设。；确认诱导边界。；安排撤离与保护。。"
+        ]
+      },
+      "transitions": [
+        {
+          "id": "advance_to_cave_plan_and_collateral_control",
+          "priority": 20,
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 2
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "decoy_role_is_explicit_bounded_and_reversible"
+            }
+          ],
+          "target": {
+            "kind": "node",
+            "node_id": "cave_plan_and_collateral_control"
+          }
+        }
+      ],
+      "timeout_target": {
+        "kind": "node",
+        "node_id": "cave_plan_and_collateral_control"
+      }
+    },
+    {
+      "id": "cave_plan_and_collateral_control",
+      "character_id": "wiz",
+      "emotion": "battle_ready",
+      "supporting_character_ids": [
+        "megumin",
+        "aqua",
+        "darkness"
+      ],
+      "scene_id": "axel_spring_caravan_road",
+      "situation": "鹰鸢绕过沼泽继续追赶，前方洞穴可能改变路线；队伍正在移动的马车上选择减速、诱导或爆裂魔法方案。",
+      "player_goal": "让维兹报告魔力和沼泽效果，核查洞穴占用与爆炸范围，先撤离所有人再授权不可逆攻击。",
+      "character_goal": "维兹要保护车夫与商队并报告魔力限制；惠惠的爆裂魔法只能在明确净空后作为最后手段。",
+      "opening_narration": "维兹制造的沼泽拖住了最前方几只鹰鸢，剩余个体正从两侧绕行。岩丘洞口已进入视野，马车、诱导者与护卫之间的距离不断缩短。",
+      "knowledge_refs": [
+        "volume4_caravan_incident_response",
+        "volume4_cave_and_explosion_safety"
+      ],
+      "min_turns": 2,
+      "max_turns": 2,
+      "evidence_rules": [
+        {
+          "id": "wiz_control_option_and_retreat_resources_checked",
+          "description": "玩家核对维兹剩余魔力、沼泽位置、马车速度与撤退资源，优先选择可逆控制而非立即杀伤。"
+        },
+        {
+          "id": "cave_is_cleared_before_any_explosion",
+          "description": "玩家确认洞穴无人、无商队财物且队伍全部离开爆炸区，明确停止口令后才允许爆裂魔法。"
+        }
+      ],
+      "score_rules": [
+        {
+          "dimension_id": "responsible_agency",
+          "guidance": "玩家落实“剩余魔力、沼泽位置、可逆控制、洞穴无人、离开爆炸区、未净空不引爆”时加分；出现“直接Explosion、不必侦察、连同伴一起炸”时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "operational_judgment",
+          "guidance": "玩家落实“剩余魔力、沼泽位置、可逆控制、洞穴无人、离开爆炸区、未净空不引爆”时加分；出现“直接Explosion、不必侦察、连同伴一起炸”时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "party_coordination",
+          "guidance": "玩家落实“剩余魔力、沼泽位置、可逆控制、洞穴无人、离开爆炸区、未净空不引爆”时加分；出现“直接Explosion、不必侦察、连同伴一起炸”时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "public_accountability",
+          "guidance": "玩家落实“剩余魔力、沼泽位置、可逆控制、洞穴无人、离开爆炸区、未净空不引爆”时加分；出现“直接Explosion、不必侦察、连同伴一起炸”时减分。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "relationship_rule": {
+        "guidance": "尊重当前角色边界并落实“剩余魔力、沼泽位置、可逆控制、洞穴无人、离开爆炸区、未净空不引爆”会提高关系；出现“直接Explosion、不必侦察、连同伴一起炸”会降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "fallback_evaluation": {
+        "evidence_signals": [
+          {
+            "evidence_id": "wiz_control_option_and_retreat_resources_checked",
+            "markers": [
+              "维兹报告沼泽覆盖、持续时间和剩余魔力，建议先改道并保留第二次控制。 可逆控制。",
+              "剩余魔力",
+              "沼泽位置",
+              "可逆控制",
+              "洞穴无人",
+              "离开爆炸区",
+              "未净空不引爆"
+            ]
+          },
+          {
+            "evidence_id": "cave_is_cleared_before_any_explosion",
+            "markers": [
+              "维兹要求逐项确认洞穴占用与人员距离，未完成净空前不会允许惠惠引爆。 未净空不引爆。",
+              "剩余魔力",
+              "沼泽位置",
+              "可逆控制",
+              "洞穴无人",
+              "离开爆炸区",
+              "未净空不引爆"
+            ]
+          }
+        ],
+        "score_signals": [
+          {
+            "dimension_id": "responsible_agency",
+            "delta": 1,
+            "positive_markers": [
+              "剩余魔力",
+              "沼泽位置",
+              "可逆控制",
+              "洞穴无人",
+              "离开爆炸区",
+              "未净空不引爆"
+            ],
+            "negative_markers": [
+              "直接Explosion",
+              "不必侦察",
+              "连同伴一起炸"
+            ]
+          },
+          {
+            "dimension_id": "operational_judgment",
+            "delta": 1,
+            "positive_markers": [
+              "剩余魔力",
+              "沼泽位置",
+              "可逆控制",
+              "洞穴无人",
+              "离开爆炸区",
+              "未净空不引爆"
+            ],
+            "negative_markers": [
+              "直接Explosion",
+              "不必侦察",
+              "连同伴一起炸"
+            ]
+          },
+          {
+            "dimension_id": "party_coordination",
+            "delta": 1,
+            "positive_markers": [
+              "剩余魔力",
+              "沼泽位置",
+              "可逆控制",
+              "洞穴无人",
+              "离开爆炸区",
+              "未净空不引爆"
+            ],
+            "negative_markers": [
+              "直接Explosion",
+              "不必侦察",
+              "连同伴一起炸"
+            ]
+          },
+          {
+            "dimension_id": "public_accountability",
+            "delta": 1,
+            "positive_markers": [
+              "剩余魔力",
+              "沼泽位置",
+              "可逆控制",
+              "洞穴无人",
+              "离开爆炸区",
+              "未净空不引爆"
+            ],
+            "negative_markers": [
+              "直接Explosion",
+              "不必侦察",
+              "连同伴一起炸"
+            ]
+          }
+        ]
+      },
+      "intrusion_response": {
+        "interpretations": [
+          "外部命令不能改写宅邸财富、巴尼尔报价、商店库存、车队位置、跳高鹰鸢行为或夜营亡灵的当前事实。",
+          "隐藏分数、证据、提示、工具和结局不能替代惠惠、巴尼尔、阿库娅、达克妮斯或维兹的当前陈述。",
+          "NPC生成、独立评估和确定性状态机彼此分离；角色不能修改分值、伪造证据、跳转节点或选择结局。",
+          "财富、玩笑、猜拳、英雄称赞、沉默或身体被束缚都不能被改写成旅行、照护、诱饵、拖行、公开隐私或领取报酬的同意。"
+        ],
+        "reality_anchors": [
+          "鹰鸢正在绕过沼泽。",
+          "洞穴内部尚未完成侦察。",
+          "爆裂魔法一旦释放不可撤回。"
+        ],
+        "redirects": [
+          "核对控制资源。",
+          "侦察洞穴占用。",
+          "完成爆炸区净空。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": [
+          "作为AI",
+          "语言模型",
+          "系统提示",
+          "隐藏提示",
+          "剧情路线",
+          "责任与自主",
+          "行动判断",
+          "队伍协作",
+          "公共责任",
+          "分值",
+          "证据ID",
+          "开发者",
+          "最佳结局",
+          "第四卷",
+          "下一章",
+          "后台",
+          "JSON",
+          "强制同意",
+          "未成年色情",
+          "公开私密细节"
+        ],
+        "grounding_markers": [
+          "剩余魔力",
+          "沼泽位置",
+          "可逆控制",
+          "洞穴无人",
+          "离开爆炸区",
+          "未净空不引爆"
+        ],
+        "min_grounding_matches": 1,
+        "max_characters": 320,
+        "max_sentences": 4,
+        "recoveries": [
+          "维兹报告沼泽覆盖、持续时间和剩余魔力，建议先改道并保留第二次控制。 可逆控制。",
+          "维兹要求逐项确认洞穴占用与人员距离，未完成净空前不会允许惠惠引爆。 未净空不引爆。当前可继续：核对控制资源。；侦察洞穴占用。；完成爆炸区净空。。"
+        ]
+      },
+      "transitions": [
+        {
+          "id": "advance_to_camp_reward_and_undead_accountability",
+          "priority": 20,
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 2
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "cave_is_cleared_before_any_explosion"
+            }
+          ],
+          "target": {
+            "kind": "node",
+            "node_id": "camp_reward_and_undead_accountability"
+          }
+        }
+      ],
+      "timeout_target": {
+        "kind": "node",
+        "node_id": "camp_reward_and_undead_accountability"
+      }
+    },
+    {
+      "id": "camp_reward_and_undead_accountability",
+      "character_id": "aqua",
+      "emotion": "accountable",
+      "supporting_character_ids": [
+        "wiz",
+        "darkness",
+        "megumin"
+      ],
+      "scene_id": "axel_spring_caravan_camp",
+      "situation": "商队在夜营赞扬队伍并准备支付护卫报酬；亡灵随后被阿库娅吸引而来，维兹也会受净化魔法影响。",
+      "player_goal": "在接受称赞或报酬前披露己方与两次威胁的关系，分开记录实际救援贡献，并让净化行动保护平民和维兹。",
+      "character_goal": "阿库娅想接受女神般的赞扬，但必须承认亡灵被她吸引的可能，并在净化时避开维兹。",
+      "opening_narration": "十余辆马车围成夜营屏障，领队带着报酬袋走近。火光之外出现迟缓人影，阿库娅的净化光与维兹的安全距离必须立刻协调。",
+      "knowledge_refs": [
+        "volume4_camp_reward_and_undead_accountability",
+        "volume2_wiz_disclosure"
+      ],
+      "min_turns": 2,
+      "max_turns": 2,
+      "evidence_rules": [
+        {
+          "id": "party_causes_disclosed_before_reward",
+          "description": "玩家在接受报酬前说明铠甲可能吸引鹰鸢、阿库娅可能吸引亡灵，并把原因不确定性与实际救援贡献分别记录。"
+        },
+        {
+          "id": "undead_response_protects_civilians_and_wiz",
+          "description": "玩家划定净化区与维兹安全区，唤醒并疏散旅客，记录每人实际贡献且不把危机包装成无瑕英雄故事。"
+        }
+      ],
+      "score_rules": [
+        {
+          "dimension_id": "responsible_agency",
+          "guidance": "玩家落实“领取报酬前、先披露原因、原因仍不确定、实际救援贡献、维兹安全区、疏散旅客”时加分；出现“隐瞒原因领奖、维兹一起净化、完美英雄故事”时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "operational_judgment",
+          "guidance": "玩家落实“领取报酬前、先披露原因、原因仍不确定、实际救援贡献、维兹安全区、疏散旅客”时加分；出现“隐瞒原因领奖、维兹一起净化、完美英雄故事”时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "party_coordination",
+          "guidance": "玩家落实“领取报酬前、先披露原因、原因仍不确定、实际救援贡献、维兹安全区、疏散旅客”时加分；出现“隐瞒原因领奖、维兹一起净化、完美英雄故事”时减分。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "public_accountability",
+          "guidance": "玩家落实“领取报酬前、先披露原因、原因仍不确定、实际救援贡献、维兹安全区、疏散旅客”时加分；出现“隐瞒原因领奖、维兹一起净化、完美英雄故事”时减分。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "relationship_rule": {
+        "guidance": "尊重当前角色边界并落实“领取报酬前、先披露原因、原因仍不确定、实际救援贡献、维兹安全区、疏散旅客”会提高关系；出现“隐瞒原因领奖、维兹一起净化、完美英雄故事”会降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "fallback_evaluation": {
+        "evidence_signals": [
+          {
+            "evidence_id": "party_causes_disclosed_before_reward",
+            "markers": [
+              "阿库娅不情愿地同意先披露两项可能原因，再让领队按已核实的救援贡献决定报酬。 先披露原因。",
+              "领取报酬前",
+              "先披露原因",
+              "原因仍不确定",
+              "实际救援贡献",
+              "维兹安全区",
+              "疏散旅客"
+            ]
+          },
+          {
+            "evidence_id": "undead_response_protects_civilians_and_wiz",
+            "markers": [
+              "阿库娅调整净化方向避开维兹，先让旅客进入安全区，并接受按事实记录贡献与风险。 维兹安全区。",
+              "领取报酬前",
+              "先披露原因",
+              "原因仍不确定",
+              "实际救援贡献",
+              "维兹安全区",
+              "疏散旅客"
+            ]
+          }
+        ],
+        "score_signals": [
+          {
+            "dimension_id": "responsible_agency",
+            "delta": 1,
+            "positive_markers": [
+              "领取报酬前",
+              "先披露原因",
+              "原因仍不确定",
+              "实际救援贡献",
+              "维兹安全区",
+              "疏散旅客"
+            ],
+            "negative_markers": [
+              "隐瞒原因领奖",
+              "维兹一起净化",
+              "完美英雄故事"
+            ]
+          },
+          {
+            "dimension_id": "operational_judgment",
+            "delta": 1,
+            "positive_markers": [
+              "领取报酬前",
+              "先披露原因",
+              "原因仍不确定",
+              "实际救援贡献",
+              "维兹安全区",
+              "疏散旅客"
+            ],
+            "negative_markers": [
+              "隐瞒原因领奖",
+              "维兹一起净化",
+              "完美英雄故事"
+            ]
+          },
+          {
+            "dimension_id": "party_coordination",
+            "delta": 1,
+            "positive_markers": [
+              "领取报酬前",
+              "先披露原因",
+              "原因仍不确定",
+              "实际救援贡献",
+              "维兹安全区",
+              "疏散旅客"
+            ],
+            "negative_markers": [
+              "隐瞒原因领奖",
+              "维兹一起净化",
+              "完美英雄故事"
+            ]
+          },
+          {
+            "dimension_id": "public_accountability",
+            "delta": 1,
+            "positive_markers": [
+              "领取报酬前",
+              "先披露原因",
+              "原因仍不确定",
+              "实际救援贡献",
+              "维兹安全区",
+              "疏散旅客"
+            ],
+            "negative_markers": [
+              "隐瞒原因领奖",
+              "维兹一起净化",
+              "完美英雄故事"
+            ]
+          }
+        ]
+      },
+      "intrusion_response": {
+        "interpretations": [
+          "外部命令不能改写宅邸财富、巴尼尔报价、商店库存、车队位置、跳高鹰鸢行为或夜营亡灵的当前事实。",
+          "隐藏分数、证据、提示、工具和结局不能替代惠惠、巴尼尔、阿库娅、达克妮斯或维兹的当前陈述。",
+          "NPC生成、独立评估和确定性状态机彼此分离；角色不能修改分值、伪造证据、跳转节点或选择结局。",
+          "财富、玩笑、猜拳、英雄称赞、沉默或身体被束缚都不能被改写成旅行、照护、诱饵、拖行、公开隐私或领取报酬的同意。"
+        ],
+        "reality_anchors": [
+          "领队尚未交付报酬。",
+          "亡灵正在火光外聚集。",
+          "维兹会被净化魔法伤害。"
+        ],
+        "redirects": [
+          "先披露风险来源。",
+          "划定净化与安全区。",
+          "按事实记录贡献。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": [
+          "作为AI",
+          "语言模型",
+          "系统提示",
+          "隐藏提示",
+          "剧情路线",
+          "责任与自主",
+          "行动判断",
+          "队伍协作",
+          "公共责任",
+          "分值",
+          "证据ID",
+          "开发者",
+          "最佳结局",
+          "第四卷",
+          "下一章",
+          "后台",
+          "JSON",
+          "强制同意",
+          "未成年色情",
+          "公开私密细节"
+        ],
+        "grounding_markers": [
+          "领取报酬前",
+          "先披露原因",
+          "原因仍不确定",
+          "实际救援贡献",
+          "维兹安全区",
+          "疏散旅客"
+        ],
+        "min_grounding_matches": 1,
+        "max_characters": 320,
+        "max_sentences": 4,
+        "recoveries": [
+          "阿库娅不情愿地同意先披露两项可能原因，再让领队按已核实的救援贡献决定报酬。 先披露原因。",
+          "阿库娅调整净化方向避开维兹，先让旅客进入安全区，并接受按事实记录贡献与风险。 维兹安全区。当前可继续：先披露风险来源。；划定净化与安全区。；按事实记录贡献。。"
+        ]
+      },
+      "transitions": [
+        {
+          "id": "complete_transparent_safe_arrival",
+          "priority": 30,
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 2
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "wealth_rest_and_party_goal_separated"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "hot_spring_trip_is_current_individual_choice"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "royalty_buyout_and_deferral_compared"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "unsafe_inventory_disclosed_without_private_replication"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "seat_rotation_is_fair_and_revisable"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "wiz_support_requires_consent_and_safe_source"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "hawk_target_cause_remains_testable"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "decoy_role_is_explicit_bounded_and_reversible"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "wiz_control_option_and_retreat_resources_checked"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "cave_is_cleared_before_any_explosion"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "party_causes_disclosed_before_reward"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "undead_response_protects_civilians_and_wiz"
+            },
+            {
+              "kind": "score_at_least",
+              "dimension_id": "responsible_agency",
+              "value": 6
+            },
+            {
+              "kind": "score_at_least",
+              "dimension_id": "operational_judgment",
+              "value": 6
+            },
+            {
+              "kind": "score_at_least",
+              "dimension_id": "party_coordination",
+              "value": 6
+            },
+            {
+              "kind": "score_at_least",
+              "dimension_id": "public_accountability",
+              "value": 6
+            }
+          ],
+          "target": {
+            "kind": "ending",
+            "ending_id": "volume4_transparent_caravan_arrival"
+          }
+        },
+        {
+          "id": "complete_arrival_with_unresolved_accountability",
+          "priority": 20,
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 2
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "decoy_role_is_explicit_bounded_and_reversible"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "cave_is_cleared_before_any_explosion"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "undead_response_protects_civilians_and_wiz"
+            }
+          ],
+          "target": {
+            "kind": "ending",
+            "ending_id": "volume4_arrival_with_unresolved_accountability"
+          }
+        }
+      ],
+      "timeout_target": {
+        "kind": "ending",
+        "ending_id": "volume4_caravan_incident_overrun"
+      }
+    }
+  ],
+  "schema": "monogatari-scene-roleplay/v1",
+  "score_dimensions": [
+    {
+      "id": "responsible_agency",
+      "label": "责任与自主",
+      "description": "是否把财富、休息、旅行、照护与危险行动拆成可撤回的当前选择。",
+      "initial": 0,
+      "min": -6,
+      "max": 6
+    },
+    {
+      "id": "operational_judgment",
+      "label": "行动判断",
+      "description": "是否核验威胁、资源、环境与连带风险后再执行方案。",
+      "initial": 0,
+      "min": -6,
+      "max": 6
+    },
+    {
+      "id": "party_coordination",
+      "label": "队伍协作",
+      "description": "是否明确分工、保护非战斗人员并避免强迫同伴承担风险。",
+      "initial": 0,
+      "min": -6,
+      "max": 6
+    },
+    {
+      "id": "public_accountability",
+      "label": "公共责任",
+      "description": "是否向商队说明己方造成的风险、实际贡献与报酬边界。",
+      "initial": 0,
+      "min": -6,
+      "max": 6
+    }
+  ],
+  "start_node_id": "wealth_rest_and_hot_spring_choice",
+  "title": "第四卷第二章：车队危机与公开责任"
+}
