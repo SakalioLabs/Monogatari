@@ -42,6 +42,21 @@ three endings, and the fourth Campaign entry. The project validates as 140
 runtime documents, 17 characters, 25 Knowledge entries, 29 scenes, 9 Scene
 Roleplays, 27 endings, 9 Quality Suites, and 106/106 declared renderer assets.
 
+- Volume 4 Chapter 1 deterministic acceptance (2026-07-27): the 19-paragraph
+  prologue and all 470 chapter paragraphs were reviewed into nine free-form
+  Scene Roleplay nodes. Aqua, Sena, Megumin, Darkness, and Eris generate
+  scene-bound replies while a separate evaluator proposes bounded changes and
+  only the deterministic state machine selects routes. Eight Knowledge
+  records, three generated backgrounds, one transparent Aqua state, four score
+  dimensions, and eighteen quoted evidence gates cover the mansion choice,
+  Running Lizard ecology, equipment and naming, field contingencies, Force
+  Fire deviation, mana failure, death, revival choice, privacy, and recovery.
+  MCP core-runtime validation accepts 280 documents and delivery validation
+  resolves 151/151 renderer assets. Quality execution passes 4/4 scenarios,
+  visits 9/9 nodes, reaches all three endings, records 18/18 evidence gates and
+  exact `9/9/9/9` complete-route scores, and contains one structural attack
+  with zero forged state.
+
 - Volume 3 Chapter 5 deterministic acceptance (2026-07-27): all 178 finale source
   paragraphs are reviewed from the post-Vanir guild summons through the
   optional prophecy-linked business proposal. Six Knowledge records separate

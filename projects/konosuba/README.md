@@ -180,6 +180,17 @@ unresolved shop risk, or an overrun aftermath record. Its four-scenario
 Quality Suite proves all three endings, full six-node coverage, and zero-state
 structural intrusion containment.
 
+Volume 4 Chapter 1 opens the new Campaign as a nine-node real-time mission,
+death, and revival Roleplay. The prologue's wealthy mansion rest becomes a
+live Aqua negotiation rather than fixed narration; Sena's ecology and level
+briefing, armor fit, weapon naming, mission participation, field planning,
+Force Fire deviation, mana failure, injury, Eris's revival options, and
+post-revival recovery all remain independently reviewable. Four scores and
+eighteen quoted evidence gates select a fully bounded return, a return with an
+unresolved body boundary, or an overrun revival decision. The main loop is
+free-form LLM NPC interaction; its three Dialogue files are ending epilogues
+only.
+
 The direct Volume 2 browser entry is:
 
 ```text
@@ -250,6 +261,18 @@ The direct Volume 3 Campaign entry is:
 
 ```text
 /game?previewCampaign=konosuba_volume3&authoring=1
+```
+
+The direct Volume 4 Chapter 1 live-NPC entry is:
+
+```text
+/game?previewRoleplay=volume4_chapter1_roleplay&authoring=1
+```
+
+The direct Volume 4 Campaign entry is:
+
+```text
+/game?previewCampaign=konosuba_volume4&authoring=1
 ```
 
 ## Runtime

@@ -90,7 +90,7 @@ export async function executeBrowserRoleplayTurn(
     evaluationSource = 'contained_intrusion'
   } else {
     apiRuntime ||= await dependencies.loadApiRuntime()
-    const generateChat = apiRuntime
+    let generateChat = apiRuntime
       ? dependencies.generateApiChat
       : dependencies.generateWebGpuChat
     if (!apiRuntime) {
@@ -99,35 +99,47 @@ export async function executeBrowserRoleplayTurn(
     }
 
     let rawReply = ''
+    const npcMessages = buildBrowserRoleplayNpcMessages(
+      snapshot.definition,
+      snapshot.session,
+      character,
+      locale,
+      knowledgeEntries,
+      playerMessage,
+    )
+    const npcOptions: WebGpuGenerationOptions = {
+      maxNewTokens: snapshot.definition.inference.npc_max_tokens,
+      maxContextCharacters: snapshot.definition.inference.max_context_characters,
+      recoveryMaxContextCharacters: Math.min(
+        3_000,
+        snapshot.definition.inference.max_context_characters,
+      ),
+      onReset() {
+        rawReply = ''
+      },
+      onChunk(chunk) {
+        rawReply += chunk
+      },
+    }
     let npcCandidate: string | null = null
     try {
-      const generated = await generateChat(
-        buildBrowserRoleplayNpcMessages(
-          snapshot.definition,
-          snapshot.session,
-          character,
-          locale,
-          knowledgeEntries,
-          playerMessage,
-        ),
-        {
-          maxNewTokens: snapshot.definition.inference.npc_max_tokens,
-          maxContextCharacters: snapshot.definition.inference.max_context_characters,
-          recoveryMaxContextCharacters: Math.min(
-            3_000,
-            snapshot.definition.inference.max_context_characters,
-          ),
-          onReset() {
-            rawReply = ''
-          },
-          onChunk(chunk) {
-            rawReply += chunk
-          },
-        },
-      )
+      const generated = await generateChat(npcMessages, npcOptions)
       npcCandidate = sanitizeWebNpcReply(rawReply || generated)
     } catch {
       rawReply = ''
+      if (apiRuntime) {
+        apiRuntime = null
+        const support = dependencies.detectWebGpuSupport()
+        if (support.available) {
+          generateChat = dependencies.generateWebGpuChat
+          try {
+            const generated = await generateChat(npcMessages, npcOptions)
+            npcCandidate = sanitizeWebNpcReply(rawReply || generated)
+          } catch {
+            rawReply = ''
+          }
+        }
+      }
     }
 
     if (npcCandidate === null) {

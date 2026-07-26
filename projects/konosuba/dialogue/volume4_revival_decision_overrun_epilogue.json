@@ -1,0 +1,22 @@
+{
+  "description": "第四卷第一章实时角色扮演结局短章。",
+  "id": "volume4_revival_decision_overrun_epilogue",
+  "nodes": {
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "任务现场与死后选择没有在限定回合内形成可核验记录；现世请求不能替和真选择，也不能建立任何身体处置许可。"
+    },
+    "final": {
+      "choices": [],
+      "emotion": "concerned",
+      "ending_type": "volume4_revival_decision_overrun",
+      "is_ending": true,
+      "speaker_id": "eris",
+      "text": "任务现场与死后选择没有在限定回合内形成可核验记录；现世请求不能替和真选择，也不能建立任何身体处置许可。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "复活决定未形成可靠记录",
+  "variables": {}
+}

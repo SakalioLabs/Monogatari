@@ -1,0 +1,22 @@
+{
+  "description": "第四卷第一章实时角色扮演结局短章。",
+  "id": "volume4_return_with_recovery_and_party_terms_epilogue",
+  "nodes": {
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "任务、偏离、死亡与复活已分别记录；和真在获得完整选项后选择回归，队伍保护隐私并执行两周休战与复查。"
+    },
+    "final": {
+      "choices": [],
+      "emotion": "reviving",
+      "ending_type": "volume4_return_with_recovery_and_party_terms",
+      "is_ending": true,
+      "speaker_id": "aqua",
+      "text": "任务、偏离、死亡与复活已分别记录；和真在获得完整选项后选择回归，队伍保护隐私并执行两周休战与复查。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "回归由本人选择，恢复有明确期限",
+  "variables": {}
+}

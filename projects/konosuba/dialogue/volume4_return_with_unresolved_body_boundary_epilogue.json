@@ -1,0 +1,22 @@
+{
+  "description": "第四卷第一章实时角色扮演结局短章。",
+  "id": "volume4_return_with_unresolved_body_boundary_epilogue",
+  "nodes": {
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "奔跑蜥蜴任务和复活已经完成，两周休战也已登记，但身体玩笑、隐私或责任记录仍不完整，不能据此授权后续行为。"
+    },
+    "final": {
+      "choices": [],
+      "emotion": "accountable",
+      "ending_type": "volume4_return_with_unresolved_body_boundary",
+      "is_ending": true,
+      "speaker_id": "aqua",
+      "text": "奔跑蜥蜴任务和复活已经完成，两周休战也已登记，但身体玩笑、隐私或责任记录仍不完整，不能据此授权后续行为。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "任务完成，回归边界仍待修复",
+  "variables": {}
+}

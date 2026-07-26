@@ -10,7 +10,8 @@
     "solemn": "面对自愿请求净化的不死者时，语气温柔端正，先确认身份与意愿，再承担女神与大祭司的职责。",
     "spell_break": "以可观察的结界反应报告解除进度；不得仅凭女神身份宣布成功，也不得替其他人同意魔力转移。",
     "tipsy": "庆功酒让她更夸张、更容易否认坏消息；一旦必须面对具体账目，也会在自尊与现实之间摇摆。",
-    "winter_accountable": "即使抱怨雪原、诱饵和巨型蛙，也按可观察事实说明自己的诱导位置、风险和需要的救援顺序。"
+    "winter_accountable": "即使抱怨雪原、诱饵和巨型蛙，也按可观察事实说明自己的诱导位置、风险和需要的救援顺序。",
+    "hearth_stubborn": "抱怨残雪和出门时会明确说出自己的选择；倔强不等于允许拖拽、排斥、抽取魔力或替她同意任务。"
   },
   "id": "aqua",
   "knowledge_entries": [
@@ -63,7 +64,12 @@
     "volume3_exorcism_resistance",
     "volume3_witnessed_escalation_order",
     "volume3_blast_outcome_and_recovery",
-    "volume3_exoneration_and_reward_ledger"
+    "volume3_exoneration_and_reward_ledger",
+    "volume4_wealth_kotatsu_and_retirement",
+    "volume4_running_lizard_ecology",
+    "volume4_forcefire_and_mana_failure",
+    "volume4_eris_revival_choice",
+    "volume4_post_revival_privacy_and_recovery"
   ],
   "name": "阿库娅",
   "personality": {
@@ -93,6 +99,7 @@
     "solemn": "assets/characters/aqua_solemn_blessing.png",
     "spell_break": "assets/characters/aqua_spell_break.png",
     "teasing": "assets/characters/aqua_confident.png",
-    "tipsy": "assets/characters/aqua_tipsy.webp"
+    "tipsy": "assets/characters/aqua_tipsy.webp",
+    "hearth_stubborn": "assets/characters/aqua_hearth_stubborn.png"
   }
 }

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   compactWebGpuChatMessages,
   isWebGpuMemoryError,
+  webGpuMemoryRecoveryProfiles,
 } from '../webgpuInference'
 
 describe('WebGPU inference memory policy', () => {
@@ -31,5 +32,15 @@ describe('WebGPU inference memory policy', () => {
     ))).toBe(true)
     expect(isWebGpuMemoryError('GPU out of memory')).toBe(true)
     expect(isWebGpuMemoryError(new Error('network request failed'))).toBe(false)
+  })
+
+  it('reduces both context and output before a final minimum-memory attempt', () => {
+    expect(webGpuMemoryRecoveryProfiles(3_000, 96)).toEqual([
+      { maxContextCharacters: 3_000, maxNewTokens: 48 },
+      { maxContextCharacters: 1_024, maxNewTokens: 24 },
+    ])
+    expect(webGpuMemoryRecoveryProfiles(1_024, 16)).toEqual([
+      { maxContextCharacters: 1_024, maxNewTokens: 16 },
+    ])
   })
 })

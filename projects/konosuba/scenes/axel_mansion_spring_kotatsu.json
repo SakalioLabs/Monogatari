@@ -1,0 +1,17 @@
+{
+  "background_path": "assets/backgrounds/axel_mansion_spring_kotatsu.png",
+  "bgm_path": null,
+  "id": "axel_mansion_spring_kotatsu",
+  "model_3d_path": null,
+  "name": "早春宅邸暖桌厅",
+  "tags": [
+    "volume4_chapter1",
+    "axel",
+    "mansion",
+    "spring",
+    "kotatsu",
+    "hearth"
+  ],
+  "time_of_day": "day",
+  "weather": "melting_snow"
+}

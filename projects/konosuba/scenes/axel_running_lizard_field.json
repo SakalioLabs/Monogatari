@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/axel_running_lizard_field.png",
+  "bgm_path": null,
+  "id": "axel_running_lizard_field",
+  "model_3d_path": null,
+  "name": "阿克塞尔奔跑蜥蜴平原",
+  "tags": [
+    "volume4_chapter1",
+    "axel",
+    "spring",
+    "running_lizard",
+    "battlefield"
+  ],
+  "time_of_day": "day",
+  "weather": "clear_cold"
+}

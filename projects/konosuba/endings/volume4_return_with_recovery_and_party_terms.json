@@ -1,0 +1,8 @@
+{
+  "description": "任务、偏离、死亡与复活已分别记录；和真在获得完整选项后选择回归，队伍保护隐私并执行两周休战与复查。",
+  "dialogue_id": "volume4_return_with_recovery_and_party_terms_epilogue",
+  "id": "volume4_return_with_recovery_and_party_terms",
+  "scene_id": "axel_running_lizard_field",
+  "schema": "monogatari-story-ending/v1",
+  "title": "回归由本人选择，恢复有明确期限"
+}

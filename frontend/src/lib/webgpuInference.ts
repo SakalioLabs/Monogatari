@@ -28,6 +28,11 @@ export interface WebGpuGenerationOptions {
   onReset?: () => void
 }
 
+export interface WebGpuMemoryRecoveryProfile {
+  maxContextCharacters: number
+  maxNewTokens: number
+}
+
 export const WEBGPU_CONTEXT_CHARACTER_LIMIT = 6_000
 export const WEBGPU_RECOVERY_CONTEXT_CHARACTER_LIMIT = 3_000
 
@@ -188,32 +193,58 @@ async function generateWebGpuChatNow(
     text = await runGeneration(compactWebGpuChatMessages(messages, contextLimit), requestedTokens)
   } catch (error) {
     if (!isWebGpuMemoryError(error)) throw error
-    streamedText = ''
-    options.onReset?.()
-    await disposeWebGpuGenerator()
     const recoveryLimit = Math.round(clamp(
       options.recoveryMaxContextCharacters ?? WEBGPU_RECOVERY_CONTEXT_CHARACTER_LIMIT,
       1_024,
       contextLimit,
     ))
-    try {
+    let recoveredText: string | null = null
+    for (const profile of webGpuMemoryRecoveryProfiles(recoveryLimit, requestedTokens)) {
+      streamedText = ''
+      options.onReset?.()
+      await disposeWebGpuGenerator()
       generator = await generatorForConfig(config)
-      text = await runGeneration(
-        compactWebGpuChatMessages(messages, recoveryLimit),
-        Math.min(requestedTokens, 48),
-      )
-    } catch (recoveryError) {
-      if (!isWebGpuMemoryError(recoveryError)) throw recoveryError
+      try {
+        recoveredText = await runGeneration(
+          compactWebGpuChatMessages(messages, profile.maxContextCharacters),
+          profile.maxNewTokens,
+        )
+        break
+      } catch (recoveryError) {
+        if (!isWebGpuMemoryError(recoveryError)) throw recoveryError
+      }
+    }
+    if (recoveredText === null) {
+      await disposeWebGpuGenerator()
       throw new Error(
-        'WebGPU memory was exhausted after a reduced-context retry. Close other GPU-heavy tabs or select a smaller local model.',
+        'WebGPU memory was exhausted after reduced-context retries. Close other GPU-heavy tabs or select a smaller local model.',
       )
     }
+    text = recoveredText
   }
 
   if (!text.trim()) throw new Error('The WebGPU model completed without generating text.')
   verifiedGeneratorKey = generatorKey(config)
   if (options.onChunk && !streamedText) options.onChunk(text)
   return text
+}
+
+export function webGpuMemoryRecoveryProfiles(
+  recoveryContextCharacters: number,
+  requestedTokens: number,
+): WebGpuMemoryRecoveryProfile[] {
+  const first = {
+    maxContextCharacters: Math.round(clamp(recoveryContextCharacters, 1_024, 32_000)),
+    maxNewTokens: Math.round(clamp(requestedTokens, 1, 48)),
+  }
+  const minimum = {
+    maxContextCharacters: 1_024,
+    maxNewTokens: Math.round(clamp(requestedTokens, 1, 24)),
+  }
+  return first.maxContextCharacters === minimum.maxContextCharacters
+    && first.maxNewTokens === minimum.maxNewTokens
+    ? [first]
+    : [first, minimum]
 }
 
 async function disposeWebGpuGenerator(): Promise<void> {

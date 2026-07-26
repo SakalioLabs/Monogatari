@@ -36,7 +36,9 @@
     "volume3_witnessed_escalation_order",
     "volume3_blast_outcome_and_recovery",
     "volume3_exoneration_and_reward_ledger",
-    "volume3_public_identity_aftercare"
+    "volume3_public_identity_aftercare",
+    "volume4_running_lizard_ecology",
+    "volume4_level_and_equipment_limits"
   ],
   "name": "塞娜",
   "personality": {

@@ -1,0 +1,8 @@
+{
+  "description": "奔跑蜥蜴任务和复活已经完成，两周休战也已登记，但身体玩笑、隐私或责任记录仍不完整，不能据此授权后续行为。",
+  "dialogue_id": "volume4_return_with_unresolved_body_boundary_epilogue",
+  "id": "volume4_return_with_unresolved_body_boundary",
+  "scene_id": "axel_running_lizard_field",
+  "schema": "monogatari-story-ending/v1",
+  "title": "任务完成，回归边界仍待修复"
+}

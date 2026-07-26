@@ -1,0 +1,32 @@
+{
+  "entries": [
+    {
+      "id": "chapter1",
+      "roleplay_id": "volume4_chapter1_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume4_return_with_recovery_and_party_terms",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume4_return_with_unresolved_body_boundary",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume4_revival_decision_overrun",
+          "target": {
+            "kind": "complete"
+          }
+        }
+      ]
+    }
+  ],
+  "id": "konosuba_volume4",
+  "schema": "monogatari-roleplay-campaign/v1",
+  "start_entry_id": "chapter1",
+  "title": "为美好的世界献上祝福！第四卷"
+}

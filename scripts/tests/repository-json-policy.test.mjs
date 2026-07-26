@@ -31,10 +31,11 @@ test('checked-in repository JSON returns passing evidence', async () => {
   const files = await createRepositoryFileWalker()(repositoryRoot)
   const projectPrefix = path.join(repositoryRoot, 'projects', 'konosuba') + path.sep
   const projectJsonFiles = files.filter(file => file.startsWith(projectPrefix) && file.endsWith('.json'))
-  assert.equal(projectJsonFiles.length, 261)
+  assert.equal(projectJsonFiles.length, 281)
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'campaigns', 'volume1_campaign.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'campaigns', 'volume2_campaign.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'campaigns', 'volume3_campaign.json')))
+  assert(projectJsonFiles.includes(path.join(projectPrefix, 'campaigns', 'volume4_campaign.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'roleplays', 'chapter4_roleplay.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'roleplays', 'volume2_chapter1_roleplay.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'roleplays', 'volume2_chapter2_roleplay.json')))
@@ -47,6 +48,7 @@ test('checked-in repository JSON returns passing evidence', async () => {
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'roleplays', 'volume3_chapter3_roleplay.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'roleplays', 'volume3_chapter4_roleplay.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'roleplays', 'volume3_chapter5_roleplay.json')))
+  assert(projectJsonFiles.includes(path.join(projectPrefix, 'roleplays', 'volume4_chapter1_roleplay.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'quality_suites', 'chapter4_roleplay.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'quality_suites', 'volume2_chapter1_roleplay.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'quality_suites', 'volume2_chapter2_roleplay.json')))
@@ -59,6 +61,7 @@ test('checked-in repository JSON returns passing evidence', async () => {
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'quality_suites', 'volume3_chapter3_roleplay.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'quality_suites', 'volume3_chapter4_roleplay.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'quality_suites', 'volume3_chapter5_roleplay.json')))
+  assert(projectJsonFiles.includes(path.join(projectPrefix, 'quality_suites', 'volume4_chapter1_roleplay.json')))
   assert(
     projectJsonFiles.includes(
       path.join(projectPrefix, 'endings', 'volume3_public_record_and_open_shop_terms.json'),
@@ -122,6 +125,12 @@ test('checked-in repository JSON returns passing evidence', async () => {
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'knowledge', 'volume3_vanir_second_life_status.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'knowledge', 'volume3_wiz_vanir_reunion.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'knowledge', 'volume3_prophecy_business_boundary.json')))
+  assert(projectJsonFiles.includes(path.join(projectPrefix, 'knowledge', 'volume4_running_lizard_ecology.json')))
+  assert(projectJsonFiles.includes(path.join(projectPrefix, 'knowledge', 'volume4_eris_revival_choice.json')))
+  assert(projectJsonFiles.includes(path.join(projectPrefix, 'scenes', 'axel_mansion_spring_kotatsu.json')))
+  assert(projectJsonFiles.includes(path.join(projectPrefix, 'scenes', 'axel_blacksmith_spring.json')))
+  assert(projectJsonFiles.includes(path.join(projectPrefix, 'scenes', 'axel_running_lizard_field.json')))
+  assert(projectJsonFiles.includes(path.join(projectPrefix, 'endings', 'volume4_return_with_recovery_and_party_terms.json')))
 })
 
 test('Repository JSON evidence isolates parse and read failures', async () => {

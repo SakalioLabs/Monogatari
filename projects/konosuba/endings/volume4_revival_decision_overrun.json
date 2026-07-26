@@ -1,0 +1,8 @@
+{
+  "description": "任务现场与死后选择没有在限定回合内形成可核验记录；现世请求不能替和真选择，也不能建立任何身体处置许可。",
+  "dialogue_id": "volume4_revival_decision_overrun_epilogue",
+  "id": "volume4_revival_decision_overrun",
+  "scene_id": "eris_afterlife_hall",
+  "schema": "monogatari-story-ending/v1",
+  "title": "复活决定未形成可靠记录"
+}
