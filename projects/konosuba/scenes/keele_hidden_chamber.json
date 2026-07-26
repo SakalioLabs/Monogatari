@@ -1,0 +1,10 @@
+{
+  "id": "keele_hidden_chamber",
+  "name": "基尔地下城最深处的密室",
+  "background_path": "assets/backgrounds/keele_hidden_chamber.png",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "underground",
+  "time_of_day": "lamp_lit",
+  "tags": ["volume2", "keele", "hidden_chamber", "purification"]
+}

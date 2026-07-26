@@ -1,0 +1,8 @@
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "volume2_dungeon_retreat_disarray",
+  "title": "迷宫深处：失序撤离",
+  "description": "没有建立静默协议、风险分工或可靠的净化确认。你们只能在亡灵与黑暗中仓促撤离，基尔的请求仍留在密室。",
+  "scene_id": "keele_dungeon_entrance",
+  "dialogue_id": "volume2_dungeon_retreat_disarray_epilogue"
+}

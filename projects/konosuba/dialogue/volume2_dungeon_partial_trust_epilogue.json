@@ -1,0 +1,22 @@
+{
+  "id": "volume2_dungeon_partial_trust_epilogue",
+  "title": "勉强成立的搭档",
+  "description": "第二卷第二章中间结局短章。",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "text": "雪山脚的冷风重新吹到脸上。基尔的密室已经归于寂静，但你们在回程中仍为谁制造了麻烦争论不休。",
+      "next_node_id": "final",
+      "choices": []
+    },
+    "final": {
+      "speaker_id": "aqua",
+      "emotion": "panicked",
+      "text": "至少我们都回来了！下一次先把手势和撤退说清楚，再讨论到底是谁更离不开谁。",
+      "is_ending": true,
+      "ending_type": "volume2_dungeon_partial_trust",
+      "choices": []
+    }
+  },
+  "variables": {}
+}

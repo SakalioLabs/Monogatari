@@ -1,0 +1,10 @@
+{
+  "id": "keele_dungeon_entrance",
+  "name": "基尔地下城入口与避难小屋",
+  "background_path": "assets/backgrounds/keele_dungeon_entrance.png",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "snow_clear",
+  "time_of_day": "winter_afternoon",
+  "tags": ["volume2", "dungeon", "entrance", "refuge"]
+}

@@ -159,6 +159,36 @@ describe('NpcConversationPanel', () => {
     expect(wrapper.text()).toContain('The signal is still here.')
   })
 
+  it('rechecks the API runtime before falling back to WebGPU', async () => {
+    const apiRuntime = {
+      schema: 'monogatari-authoring-inference-runtime/v1' as const,
+      provider: 'api' as const,
+      endpoint: '/authoring-api/chat/completions',
+      model: 'story-model',
+      max_new_tokens: 96,
+      temperature: 0.7,
+      top_p: 0.9,
+    }
+    mocks.loadAuthoringApiRuntime
+      .mockResolvedValueOnce(null)
+      .mockResolvedValue(apiRuntime)
+    mocks.generateAuthoringApiChat.mockResolvedValue('The remote signal recovered.')
+    const wrapper = mount(NpcConversationPanel, {
+      props: { open: true, character, desktopRuntime: false, locale: 'en' },
+    })
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="npc-panel"]').attributes('data-npc-runtime')).toBe('webgpu')
+    await wrapper.get('[data-testid="npc-input"]').setValue('Try the signal again.')
+    await wrapper.get('[data-testid="npc-send"]').trigger('click')
+    await flushPromises()
+
+    expect(mocks.loadAuthoringApiRuntime).toHaveBeenCalledTimes(2)
+    expect(mocks.generateAuthoringApiChat).toHaveBeenCalledOnce()
+    expect(mocks.generateWebGpuChat).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('The remote signal recovered.')
+  })
+
   it('disables the composer when WebGPU is unavailable', async () => {
     mocks.detectWebGpuSupport.mockReturnValue({ available: false, reason: 'webgpu-unavailable' })
     const wrapper = mount(NpcConversationPanel, {

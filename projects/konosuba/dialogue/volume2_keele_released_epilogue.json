@@ -1,0 +1,22 @@
+{
+  "id": "volume2_keele_released_epilogue",
+  "title": "被听见的请求",
+  "description": "第二卷第二章高信任结局短章。",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "text": "柔和的净化光从小床、旧桌和那朵干花上掠过。光芒散去后，密室仍然安静，却不再像一个无人醒来的漫长等待。",
+      "next_node_id": "final",
+      "choices": []
+    },
+    "final": {
+      "speaker_id": "aqua",
+      "emotion": "solemn",
+      "text": "回去以后，别只说是我把亡灵全引来了。也要记得，是我们一起听完了他的请求。",
+      "is_ending": true,
+      "ending_type": "volume2_keele_released",
+      "choices": []
+    }
+  },
+  "variables": {}
+}

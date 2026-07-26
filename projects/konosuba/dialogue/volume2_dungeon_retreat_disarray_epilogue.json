@@ -1,0 +1,22 @@
+{
+  "id": "volume2_dungeon_retreat_disarray_epilogue",
+  "title": "失序撤离",
+  "description": "第二卷第二章失序结局短章。",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "text": "避难小屋的门被撞开时，惠惠和达克妮斯只看见两个满身尘土、互相指责的队友。没有地图，没有财物，也没有人能够说清最深处的声音是谁。",
+      "next_node_id": "final",
+      "choices": []
+    },
+    "final": {
+      "speaker_id": "darkness",
+      "emotion": "concerned",
+      "text": "先停止争吵。等你们能说清里面发生了什么，我们再决定是否组织一次真正的探索。",
+      "is_ending": true,
+      "ending_type": "volume2_dungeon_retreat_disarray",
+      "choices": []
+    }
+  },
+  "variables": {}
+}

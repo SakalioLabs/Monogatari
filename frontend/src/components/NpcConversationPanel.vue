@@ -290,6 +290,9 @@ async function sendMessage() {
       if (reply.storyChanged) emit('storyProgress')
     } else {
       let rawReply = ''
+      if (!authoringApiAvailable.value) {
+        authoringApiAvailable.value = Boolean(await loadAuthoringApiRuntime())
+      }
       const generateChat = authoringApiAvailable.value
         ? generateAuthoringApiChat
         : generateWebGpuChat

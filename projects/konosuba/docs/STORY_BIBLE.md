@@ -43,6 +43,12 @@ Can the party turn an absurd public debt into a voluntary operating agreement
 without erasing the damage, scapegoating Aqua, cancelling Megumin's identity,
 or letting Darkness choose danger for everyone?
 
+## Volume 2 Chapter 2 dramatic question
+
+Can the player explore by revising plans from evidence, treat Aqua's sacred
+power as both capability and responsibility, and hear an undead person's
+explicit request before a deterministic ending permits purification?
+
 ## Score model
 
 - `pragmatism`: plans, resource awareness, risk control, and workable tactics.
@@ -83,6 +89,13 @@ The Volume 1 finale introduces:
 - `shared_liability`: obtain personal consent while recognizing team decisions.
 - `resource_stewardship`: bind income, essential spending, repair, and review.
 - `party_commitment`: define vetoes, duties, retreat signals, and shared direction.
+
+Volume 2 Chapter 2 introduces:
+
+- `exploration_discipline`: scope, signals, verification, routes, and retreat.
+- `adaptive_trust`: revise plans around real capabilities and shared mistakes.
+- `sacred_responsibility`: constrain purification by position, effect, and fact.
+- `consent_and_mercy`: hear the person, state uncertainty, and require consent.
 
 ## Relationship model
 

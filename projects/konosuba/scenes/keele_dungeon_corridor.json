@@ -1,0 +1,10 @@
+{
+  "id": "keele_dungeon_corridor",
+  "name": "基尔地下城无光回廊",
+  "background_path": "assets/backgrounds/keele_dungeon_corridor.png",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "underground",
+  "time_of_day": "timeless_dark",
+  "tags": ["volume2", "dungeon", "night_vision", "undead", "mimic"]
+}

@@ -1,0 +1,8 @@
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "volume2_dungeon_partial_trust",
+  "title": "迷宫深处：勉强成立的搭档",
+  "description": "基尔获得安息，但探索协议、风险归因或净化确认仍有缺口。你和阿库娅平安回到地面，却还没有形成可复用的搭档方法。",
+  "scene_id": "keele_dungeon_entrance",
+  "dialogue_id": "volume2_dungeon_partial_trust_epilogue"
+}

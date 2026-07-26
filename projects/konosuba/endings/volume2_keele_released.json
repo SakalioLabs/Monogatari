@@ -1,0 +1,8 @@
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "volume2_keele_released",
+  "title": "迷宫深处：被听见的请求",
+  "description": "你和阿库娅在听清基尔的身份、故事与明确意愿后完成净化。探索没有把不死者只当作敌人，也没有把阿库娅只当作麻烦。",
+  "scene_id": "keele_hidden_chamber",
+  "dialogue_id": "volume2_keele_released_epilogue"
+}

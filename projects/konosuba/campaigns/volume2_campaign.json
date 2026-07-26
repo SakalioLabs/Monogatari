@@ -10,14 +10,32 @@
       "routes": [
         {
           "ending_id": "volume2_exchange_understood",
-          "target": {"kind": "complete"}
+          "target": {"kind": "entry", "entry_id": "chapter2"}
         },
         {
           "ending_id": "volume2_working_exchange",
-          "target": {"kind": "complete"}
+          "target": {"kind": "entry", "entry_id": "chapter2"}
         },
         {
           "ending_id": "volume2_party_swap_backfire",
+          "target": {"kind": "entry", "entry_id": "chapter2"}
+        }
+      ]
+    },
+    {
+      "id": "chapter2",
+      "roleplay_id": "volume2_chapter2_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume2_keele_released",
+          "target": {"kind": "complete"}
+        },
+        {
+          "ending_id": "volume2_dungeon_partial_trust",
+          "target": {"kind": "complete"}
+        },
+        {
+          "ending_id": "volume2_dungeon_retreat_disarray",
           "target": {"kind": "complete"}
         }
       ]

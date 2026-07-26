@@ -69,10 +69,26 @@ Knowledge, relationship, and renderer contracts. Three routed endings and a
 provider-free Quality Suite prove the high-cooperation route and direct
 state-forgery containment.
 
+Volume 2 Chapter 2 continues the Campaign as an eight-node live dungeon
+Roleplay. Aqua and Keele generate their replies from the active scene,
+character contracts, pinned Knowledge, bounded transcript, and current
+relationships. A separate evaluator proposes score and quoted evidence
+changes; only the deterministic Roleplay state machine advances the dungeon
+and selects `volume2_keele_released`, `volume2_dungeon_partial_trust`, or
+`volume2_dungeon_retreat_disarray`. Its Quality Suite proves all eight nodes
+and evidence gates in 16 clean turns plus zero-state prompt-intrusion
+containment.
+
 The direct Volume 2 browser entry is:
 
 ```text
 /game?previewCampaign=konosuba_volume2&authoring=1
+```
+
+The direct Chapter 2 live-NPC entry is:
+
+```text
+/game?previewRoleplay=volume2_chapter2_roleplay&authoring=1
 ```
 
 ## Runtime

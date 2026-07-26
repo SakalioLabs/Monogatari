@@ -27,9 +27,22 @@ one-day exchange consent, temporary-party briefing, goblin mountain-road
 tactics, and a two-party debrief. Taylor, localized Rin, and Keith each use
 independent character, Knowledge, relationship, and renderer context.
 
-The current project validates as 94 runtime documents, 13 characters, 17
-Knowledge entries, 19 scenes, 6 Scene Roleplays, 18 endings, 6 Quality Suites,
-and 77/77 renderer assets.
+Volume 2 Chapter 2 adds eight live dungeon nodes, Aqua/Keele speaker context,
+four independent route scores, eight quoted evidence gates, three endings,
+and a second Campaign entry. Fixed Dialogue remains limited to endings and
+compatibility previews.
+
+The current project validates as 108 runtime documents, 14 characters, 19
+Knowledge entries, 22 scenes, 7 Scene Roleplays, 21 endings, 7 Quality Suites,
+and 84/84 renderer assets.
+
+- Volume 2 Chapter 2 live provider Playtest (2026-07-26): direct Roleplay
+  preview loaded `grok-4.5 API`; a free-form expedition-boundary message
+  produced a new in-character Aqua reply. Independent evaluation reported
+  `authoring_api_model` with no deterministic fallback. The provider-free
+  Quality Suite passes 2/2 scenarios: 16 clean turns visit 8/8 nodes and
+  observe 8/8 evidence gates before `volume2_keele_released`; one direct
+  prompt/state forgery is guarded with zero score/evidence mutation.
 
 - Volume 2 live provider Playtest (2026-07-25): the Campaign surface loaded
   `grok-4.5 API` and a free-form snow-spirit briefing produced a new

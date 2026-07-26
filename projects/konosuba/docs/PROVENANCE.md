@@ -17,6 +17,11 @@
   `OEBPS/Text/chapter1-1.xhtml`: the snow-spirit task, Winter General,
   voluntary resurrection, one-day party exchange, and goblin mountain road.
   No source dialogue is used as runtime NPC output.
+- Volume 2 Chapter 2 derives only dungeon geography, capability constraints,
+  Keele's history, his explicit purification request, and Aqua's response from
+  the same local EPUB, `OEBPS/Text/chapter2-1.xhtml`. All playable NPC replies,
+  evaluator guidance, score/evidence language, recovery lines, and endings are
+  newly authored or generated at runtime.
 
 ## Public visual reference
 
@@ -51,6 +56,11 @@
   converted from flat chroma backgrounds to transparent PNGs, visually
   inspected on a neutral matte, and imported through the fingerprint-bound
   project asset importer.
+- Volume 2 Chapter 2 adds the dungeon entrance, unlit night-vision corridor,
+  hidden chamber, courteous Keele, and solemn Aqua. Public appearance research
+  used `https://konosuba.fandom.com/wiki/Keele` only to identify Keele's
+  defining human-era and lich-era features. All final assets are newly
+  generated and imported through the fingerprint-bound project asset importer.
 
 ## Rights and distribution
 

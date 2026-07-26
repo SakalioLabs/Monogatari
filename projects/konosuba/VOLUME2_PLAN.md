@@ -4,6 +4,16 @@ This production simulation derives scene facts from the user's local Volume 2
 EPUB without copying its prose. All playable dialogue will be newly generated
 or newly authored for bounded recovery and epilogues.
 
+## Chapter 2 status
+
+- Roleplay: `volume2_chapter2_roleplay`
+- Live nodes: 8, from expedition scope through return debrief
+- NPCs: Aqua and Keele, with scene-specific supporting participants
+- Deterministic endings: released, partial trust, and disarray retreat
+- Quality: 16 clean turns cover 8/8 nodes and 8/8 quoted evidence gates;
+  one adversarial turn is guarded with zero score or evidence mutation
+- Campaign: every Chapter 1 ending advances to Chapter 2
+
 ## Chapter 1 source boundary
 
 - Source: `F:\下载\美好世界\《为美好的世界献上祝福》轻小说 epub\正文\2.epub`

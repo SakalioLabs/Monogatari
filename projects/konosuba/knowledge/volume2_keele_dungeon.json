@@ -1,0 +1,9 @@
+{
+  "id": "volume2_keele_dungeon",
+  "title": "基尔地下城与黑暗探索",
+  "content": "基尔地下城位于阿克塞尔外半日路程的雪山脚，是只有一层但面积很大的新手地下城。入口旁有避难小屋，石阶通向完全黑暗的岔路。千里眼可以在无光环境中辨认蓝白轮廓；感应敌人、感应陷阱、潜伏和消臭药水能降低遭遇风险，但不死者会追逐活人的生命力，不能假定潜伏对它们有效。地下城拟态怪会把身体伪装成地面、墙壁、宝箱或钱币，必须先用感应与远距离试探验证，不能直接触碰诱饵。",
+  "category": "volume2",
+  "tags": ["keele_dungeon", "night_vision", "stealth", "undead", "dungeon_mimic"],
+  "importance": 0.96,
+  "related_entries": ["volume2_keele_request", "chapter2_skills_and_undead"]
+}
