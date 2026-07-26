@@ -89,6 +89,20 @@ describe('browser scene roleplay runtime', () => {
     expect(() => startBrowserSceneRoleplay(invalid)).toThrow(/max_recent_turns/)
   })
 
+  it('accepts a bounded node presentation emotion and rejects invalid values', () => {
+    const presented = structuredClone(definition)
+    presented.nodes[0].emotion = 'possessed_resisting'
+    expect(startBrowserSceneRoleplay(presented).current_node.emotion).toBe('possessed_resisting')
+
+    const blank = structuredClone(definition)
+    blank.nodes[0].emotion = '   '
+    expect(() => startBrowserSceneRoleplay(blank)).toThrow(/invalid emotion/)
+
+    const oversized = structuredClone(definition)
+    oversized.nodes[0].emotion = 'x'.repeat(65)
+    expect(() => startBrowserSceneRoleplay(oversized)).toThrow(/invalid emotion/)
+  })
+
   it('clamps scores and waits for authored minimum turns before ending', () => {
     const started = startBrowserSceneRoleplay(definition)
     const first = applyBrowserSceneRoleplayTurn(definition, started.session, {

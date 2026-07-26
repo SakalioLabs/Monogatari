@@ -1,0 +1,8 @@
+{
+  "description": "宿主声音、身体控制或最后手段授权未能可靠区分；入口发生爆炸，而记录无法证明谁被分离、净化或保护。",
+  "dialogue_id": "volume3_possession_breach_and_unverified_blast_epilogue",
+  "id": "volume3_possession_breach_and_unverified_blast",
+  "scene_id": "keele_dungeon_entrance",
+  "schema": "monogatari-story-ending/v1",
+  "title": "控制失守，爆炸记录未核验"
+}

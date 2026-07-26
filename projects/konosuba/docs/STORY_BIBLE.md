@@ -369,3 +369,11 @@ leader may consent to magic transfer for another participant.
 - `volume3_public_sabotage_and_broken_trust`: proxy decisions, humiliation,
   deception, or expired turns leave no trustworthy shared record before Sena
   arrives.
+- `volume3_witnessed_response_at_dungeon_gate`: all sixteen evidence gates
+  preserve separate host and mask voices, establish a reversible response
+  order, and record the final blast without inventing its result.
+- `volume3_containment_without_separation`: the site remains bounded and
+  Darkness is still heard, but the evidence does not establish a complete
+  separation sequence.
+- `volume3_possession_breach_and_unverified_blast`: control, authorization, or
+  witness boundaries expire before a reliable response can be established.

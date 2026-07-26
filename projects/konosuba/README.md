@@ -158,10 +158,14 @@ Sena's investigation separates observed self-destructing dolls from presumed
 party guilt; Aqua must disclose the lingering purification circle without
 claiming false causation; Vanir's mask, clay body, motive, and claimed
 nonlethality remain independently testable; and possessed Darkness retains a
-separate voice and changing control state. The planned final response layers
+separate voice and changing control state. The final response layers
 distance, restraint, exorcism, seal handling, host-authorized mask removal, and
 a witnessed last-resort order. The chapter stops at the observed blast and
-does not import its result from the next source chapter.
+does not import its result from the next source chapter. Four scores and
+sixteen quoted evidence gates select a witnessed response, unresolved
+containment, or an unverified possession breach. Its four-scenario Quality
+Suite proves all three endings, full eight-node coverage, and zero-state
+structural intrusion containment.
 
 The direct Volume 2 browser entry is:
 
@@ -215,6 +219,12 @@ The direct Volume 3 Chapter 3 live-NPC entry is:
 
 ```text
 /game?previewRoleplay=volume3_chapter3_roleplay&authoring=1
+```
+
+The direct Volume 3 Chapter 4 live-NPC entry is:
+
+```text
+/game?previewRoleplay=volume3_chapter4_roleplay&authoring=1
 ```
 
 The direct Volume 3 Campaign entry is:

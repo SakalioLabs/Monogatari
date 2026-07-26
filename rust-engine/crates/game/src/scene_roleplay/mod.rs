@@ -59,6 +59,8 @@ pub struct SceneRoleplayNode {
     pub character_id: String,
     #[serde(default)]
     pub supporting_character_ids: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub emotion: Option<String>,
     pub opening_narration: String,
     pub situation: String,
     pub player_goal: String,
@@ -1524,6 +1526,9 @@ fn validate_node(
                 node.id
             ));
         }
+    }
+    if let Some(emotion) = &node.emotion {
+        bounded_text(emotion, "node emotion", 64)?;
     }
     bounded_text(&node.opening_narration, "opening narration", 2_000)?;
     bounded_text(&node.situation, "situation", 4_000)?;

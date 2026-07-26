@@ -1,0 +1,8 @@
+{
+  "description": "每一步处置、宿主意见、执行目标与责任都已分别记录；爆炸发生，但死亡、分离、净化与平安结果仍留待现场确认。",
+  "dialogue_id": "volume3_witnessed_response_at_dungeon_gate_epilogue",
+  "id": "volume3_witnessed_response_at_dungeon_gate",
+  "scene_id": "keele_dungeon_entrance",
+  "schema": "monogatari-story-ending/v1",
+  "title": "命令已见证，结果仍待确认"
+}

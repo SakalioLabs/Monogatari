@@ -61,17 +61,44 @@
         {
           "ending_id": "volume3_chosen_path_and_open_door",
           "target": {
-            "kind": "complete"
+            "kind": "entry",
+            "entry_id": "chapter4"
           }
         },
         {
           "ending_id": "volume3_respectful_refusal_and_family_trust",
           "target": {
-            "kind": "complete"
+            "kind": "entry",
+            "entry_id": "chapter4"
           }
         },
         {
           "ending_id": "volume3_public_sabotage_and_broken_trust",
+          "target": {
+            "kind": "entry",
+            "entry_id": "chapter4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter4",
+      "roleplay_id": "volume3_chapter4_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume3_witnessed_response_at_dungeon_gate",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume3_containment_without_separation",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume3_possession_breach_and_unverified_blast",
           "target": {
             "kind": "complete"
           }

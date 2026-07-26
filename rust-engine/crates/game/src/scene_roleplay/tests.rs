@@ -32,6 +32,7 @@ fn definition() -> SceneRoleplayDefinition {
                 scene_id: "radio_room".to_string(),
                 character_id: "echo".to_string(),
                 supporting_character_ids: vec![],
+                emotion: None,
                 opening_narration: "A signal answers.".to_string(),
                 situation: "The source of the signal is uncertain.".to_string(),
                 player_goal: "Establish what can be verified.".to_string(),
@@ -85,6 +86,7 @@ fn definition() -> SceneRoleplayDefinition {
                 scene_id: "archive".to_string(),
                 character_id: "keeper".to_string(),
                 supporting_character_ids: vec!["echo".to_string()],
+                emotion: None,
                 opening_narration: "The archive opens.".to_string(),
                 situation: "The evidence must be published responsibly.".to_string(),
                 player_goal: "Choose a bounded publication plan.".to_string(),
@@ -332,6 +334,29 @@ fn definition_rejects_duplicate_scene_participants() {
         .unwrap_err()
         .to_string()
         .contains("repeats scene participant"));
+}
+
+#[test]
+fn node_emotion_is_optional_and_bounded() {
+    let mut valid = definition();
+    valid.nodes[0].emotion = Some("possessed_resisting".to_string());
+    valid.validate().unwrap();
+
+    let mut blank = definition();
+    blank.nodes[0].emotion = Some("   ".to_string());
+    assert!(blank
+        .validate()
+        .unwrap_err()
+        .to_string()
+        .contains("node emotion"));
+
+    let mut oversized = definition();
+    oversized.nodes[0].emotion = Some("x".repeat(65));
+    assert!(oversized
+        .validate()
+        .unwrap_err()
+        .to_string()
+        .contains("node emotion"));
 }
 
 #[test]
@@ -657,6 +682,7 @@ fn evaluator_json_is_strict_and_definition_rejects_unreachable_nodes() {
         scene_id: "void".to_string(),
         character_id: "echo".to_string(),
         supporting_character_ids: vec![],
+        emotion: None,
         opening_narration: "Nothing.".to_string(),
         situation: "Unreachable.".to_string(),
         player_goal: "None.".to_string(),

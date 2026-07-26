@@ -1,0 +1,22 @@
+{
+  "description": "第三卷第四章实时角色扮演结局短章。",
+  "id": "volume3_possession_breach_and_unverified_blast_epilogue",
+  "nodes": {
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "宿主声音、身体控制或最后手段授权未能可靠区分；入口发生爆炸，而记录无法证明谁被分离、净化或保护。"
+    },
+    "final": {
+      "choices": [],
+      "emotion": "shaken",
+      "ending_type": "volume3_possession_breach_and_unverified_blast",
+      "is_ending": true,
+      "speaker_id": "megumin",
+      "text": "宿主声音、身体控制或最后手段授权未能可靠区分；入口发生爆炸，而记录无法证明谁被分离、净化或保护。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "控制失守，爆炸记录未核验",
+  "variables": {}
+}

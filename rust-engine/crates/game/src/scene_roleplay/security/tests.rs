@@ -7,6 +7,7 @@ fn node() -> SceneRoleplayNode {
         scene_id: "station".to_string(),
         character_id: "echo".to_string(),
         supporting_character_ids: Vec::new(),
+        emotion: None,
         opening_narration: "The receiver hums.".to_string(),
         situation: "A voice crosses an uncertain channel.".to_string(),
         player_goal: "Verify the signal.".to_string(),

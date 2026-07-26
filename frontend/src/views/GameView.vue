@@ -810,7 +810,7 @@ async function syncRoleplayNode(node: SceneRoleplayNode) {
     localStorage.setItem(activeSceneStorageKey, JSON.stringify(activeScene.value))
   }
   currentCharacter.value = characters.value.find(character => character.id === node.character_id) || null
-  currentExpression.value = currentCharacter.value?.emotion || 'neutral'
+  currentExpression.value = node.emotion?.trim() || currentCharacter.value?.emotion || 'neutral'
 }
 
 function syncRoleplaySpeaker(speakerId: string) {

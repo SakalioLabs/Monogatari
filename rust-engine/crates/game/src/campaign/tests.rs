@@ -61,6 +61,7 @@ fn roleplay(id: &str, ending_id: &str) -> SceneRoleplayDefinition {
             scene_id: "room".to_string(),
             character_id: "aqua".to_string(),
             supporting_character_ids: Vec::new(),
+            emotion: None,
             opening_narration: "The scene begins.".to_string(),
             situation: "A decision is required.".to_string(),
             player_goal: "Reach an agreement.".to_string(),

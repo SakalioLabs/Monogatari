@@ -1,8 +1,8 @@
 # Volume 3 Chapter 4: Separate the Mask Without Erasing the Host
 
-Status: source reviewed; Character, Knowledge, renderer-state, and dynamic
-Roleplay contract established; complete Roleplay and Quality evidence are the
-next implementation batch.
+Status: complete; source, Character, Knowledge, renderer states, eight-node
+Roleplay, three endings, four-scenario Quality evidence, browser Playtest, and
+the fourth Volume 3 Campaign entry are implemented.
 
 ## Source Boundary
 
@@ -57,6 +57,7 @@ Required quoted evidence:
 - `circle_disclosed_without_false_causation`
 - `entry_and_surface_roles_agreed`
 - `retreat_signal_agreed`
+- `entry_damage_boundary_agreed`
 - `vanir_identity_and_body_stated`
 - `doll_production_admitted`
 - `stop_and_exit_terms_requested`
@@ -66,7 +67,6 @@ Required quoted evidence:
 - `host_authorization_checked`
 - `exorcism_resistance_observed`
 - `layered_separation_sequence`
-- `last_resort_target_and_risk_repeated`
 - `responsibility_and_witness_recorded`
 
 Endpoints:
@@ -106,3 +106,15 @@ Endpoints:
 - Browser Playtest: Vanir and possessed Darkness render distinctly; free input,
   speaker selection, score updates, degraded model recovery, restart, desktop,
   and mobile layouts remain coherent.
+
+## Verification Result
+
+- Provider-free Quality execution passes 4/4 scenarios and reaches every
+  endpoint.
+- The complete route visits 8/8 nodes, observes 16/16 evidence gates, and
+  finishes at exact scores `8/6/8/8`.
+- The four-entry Volume 3 Campaign completes in order with every entry visited.
+- Browser Playtest renders Vanir in the hidden chamber and the distinct
+  possessed-Darkness state in the dual-voice node. Model unavailability is
+  exposed only as an authored in-scene recovery, never as an ORT allocation
+  error.

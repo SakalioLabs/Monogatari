@@ -1,0 +1,8 @@
+{
+  "description": "人偶与入口暂时受到限制，达克妮斯仍能被听见，但分离顺序或授权记录不完整，队伍没有宣告未经观察的结果。",
+  "dialogue_id": "volume3_containment_without_separation_epilogue",
+  "id": "volume3_containment_without_separation",
+  "scene_id": "keele_dungeon_entrance",
+  "schema": "monogatari-story-ending/v1",
+  "title": "现场受控，面具仍未分离"
+}

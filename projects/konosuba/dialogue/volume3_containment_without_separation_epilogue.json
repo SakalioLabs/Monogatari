@@ -1,0 +1,22 @@
+{
+  "description": "第三卷第四章实时角色扮演结局短章。",
+  "id": "volume3_containment_without_separation_epilogue",
+  "nodes": {
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "人偶与入口暂时受到限制，达克妮斯仍能被听见，但分离顺序或授权记录不完整，队伍没有宣告未经观察的结果。"
+    },
+    "final": {
+      "choices": [],
+      "emotion": "concerned",
+      "ending_type": "volume3_containment_without_separation",
+      "is_ending": true,
+      "speaker_id": "aqua",
+      "text": "人偶与入口暂时受到限制，达克妮斯仍能被听见，但分离顺序或授权记录不完整，队伍没有宣告未经观察的结果。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "现场受控，面具仍未分离",
+  "variables": {}
+}

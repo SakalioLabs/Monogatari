@@ -96,6 +96,7 @@ export interface SceneRoleplayNode {
   scene_id: string
   character_id: string
   supporting_character_ids: string[]
+  emotion?: string | null
   opening_narration: string
   situation: string
   player_goal: string
@@ -644,6 +645,9 @@ function validateBrowserDefinition(definition: SceneRoleplayDefinition): SceneRo
   for (const node of definition.nodes) {
     if (!node.scene_id || !node.character_id || node.min_turns < 1 || node.max_turns < node.min_turns) {
       throw new Error(`Scene roleplay node "${node.id}" is invalid.`)
+    }
+    if (node.emotion != null && (!node.emotion.trim() || node.emotion.length > 64)) {
+      throw new Error(`Scene roleplay node "${node.id}" has an invalid emotion.`)
     }
     const participants = sceneRoleplayParticipantIds(node)
     if (participants.length !== 1 + (node.supporting_character_ids || []).length
