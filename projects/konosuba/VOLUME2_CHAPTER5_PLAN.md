@@ -46,7 +46,7 @@ outcomes are newly authored or generated.
 Scores are route inputs, not permission to invent facts. Every phase-changing
 condition also requires its named evidence record.
 
-## Planned endings
+## Route endings
 
 - `volume2_destroyer_defeated`: all command, evacuation, hazard, consent, and
   final heat-release evidence is complete.

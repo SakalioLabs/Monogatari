@@ -1,0 +1,8 @@
+{
+  "description": "你们没有让自信代替核验。结界、腿部、核心和余热依次被确认，居民与伤员完成清点，每次魔力转移都由参与者亲自同意。毁灭者停止，阿克塞尔仍在。",
+  "dialogue_id": "volume2_destroyer_defeated_epilogue",
+  "id": "volume2_destroyer_defeated",
+  "scene_id": "axel_destroyer_battlefield",
+  "schema": "monogatari-story-ending/v1",
+  "title": "终焰之后：阿克塞尔仍在"
+}

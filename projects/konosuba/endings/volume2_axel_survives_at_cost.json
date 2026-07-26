@@ -1,0 +1,8 @@
+{
+  "description": "毁灭者的余热最终被释放，城镇避开了毁灭，但不完整的阶段记录、撤离或责任边界留下了本可避免的伤害。胜利需要连同代价一起登记。",
+  "dialogue_id": "volume2_axel_survives_at_cost_epilogue",
+  "id": "volume2_axel_survives_at_cost",
+  "scene_id": "axel_destroyer_battlefield",
+  "schema": "monogatari-story-ending/v1",
+  "title": "带着代价活下来"
+}

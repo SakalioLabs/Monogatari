@@ -39,14 +39,17 @@ or newly authored for bounded recovery and epilogues.
 ## Chapter 5 status
 
 - Source and dynamic contract: `VOLUME2_CHAPTER5_PLAN.md`
-- Planned Roleplay: `volume2_chapter5_roleplay`
+- Roleplay: `volume2_chapter5_roleplay`
 - Foundation complete: four phase- and consent-bound Knowledge records, four
   generated scenes, and one reviewed battle expression for each of Aqua,
   Darkness, Megumin, and Wiz
 - Core-runtime and delivery validation pass with all 110/110 declared renderer
   assets present
-- Production target: ten live nodes, four independent score dimensions, explicit
-  phase evidence, three deterministic endings, and a fifth Campaign entry
+- Production complete: ten live nodes, four independent score dimensions, ten
+  explicit phase/evidence gates, three deterministic endings, and a fifth
+  Campaign entry
+- Quality complete: four scenarios prove 100% node coverage for complete,
+  partial, and exhaustion routes plus zero-state structural attack containment
 
 ## Chapter 1 source boundary
 

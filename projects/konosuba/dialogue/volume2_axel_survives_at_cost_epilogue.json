@@ -1,0 +1,22 @@
+{
+  "description": "第二卷第五章实时角色扮演结局短章。",
+  "id": "volume2_axel_survives_at_cost_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "wounded",
+      "ending_type": "volume2_axel_survives_at_cost",
+      "is_ending": true,
+      "speaker_id": "darkness",
+      "text": "达克妮斯在医疗线旁要求把失联、伤势和错误判断全部写进公会报告，拒绝让“赢了”覆盖仍需修复的损失。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "毁灭者的余热最终被释放，城镇避开了毁灭，但不完整的阶段记录、撤离或责任边界留下了本可避免的伤害。胜利需要连同代价一起登记。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "带着代价活下来",
+  "variables": {}
+}

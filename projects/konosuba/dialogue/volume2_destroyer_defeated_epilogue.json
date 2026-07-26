@@ -1,0 +1,22 @@
+{
+  "description": "第二卷第五章实时角色扮演结局短章。",
+  "id": "volume2_destroyer_defeated_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "proud",
+      "ending_type": "volume2_destroyer_defeated",
+      "is_ending": true,
+      "speaker_id": "megumin",
+      "text": "惠惠扶着法杖望向冷却的残骸，强调最后的爆裂只是最终一环；真正保住城镇的是每个阶段都有人确认、有人负责。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "你们没有让自信代替核验。结界、腿部、核心和余热依次被确认，居民与伤员完成清点，每次魔力转移都由参与者亲自同意。毁灭者停止，阿克塞尔仍在。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "终焰之后：阿克塞尔仍在",
+  "variables": {}
+}

@@ -88,17 +88,44 @@
         {
           "ending_id": "volume2_dream_compact_repaired",
           "target": {
-            "kind": "complete"
+            "entry_id": "chapter5",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume2_private_truce",
           "target": {
-            "kind": "complete"
+            "entry_id": "chapter5",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume2_mansion_trust_broken",
+          "target": {
+            "entry_id": "chapter5",
+            "kind": "entry"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter5",
+      "roleplay_id": "volume2_chapter5_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume2_destroyer_defeated",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume2_axel_survives_at_cost",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume2_destroyer_heat_disaster",
           "target": {
             "kind": "complete"
           }

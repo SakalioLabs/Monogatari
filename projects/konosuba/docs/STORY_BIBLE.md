@@ -329,10 +329,10 @@ leader may consent to magic transfer for another participant.
 - `volume2_mansion_trust_broken`: assumed dream consent, ignored
   privacy markers, leaked customer details, forced purification, or concealed
   safety failures exhaust the available route.
-- Planned `volume2_destroyer_defeated`: verified phase changes, complete civilian
+- `volume2_destroyer_defeated`: verified phase changes, complete civilian
   protection, explicit magic-transfer consent, and separately confirmed heat
   release stop the fortress.
-- Planned `volume2_axel_survives_at_cost`: the immediate threat ends while
+- `volume2_axel_survives_at_cost`: the immediate threat ends while
   incomplete phase, evacuation, or responsibility evidence leaves lasting cost.
-- Planned `volume2_destroyer_heat_disaster`: safe turns expire without a
+- `volume2_destroyer_heat_disaster`: safe turns expire without a
   verified stored-heat response and complete civilian boundary.

@@ -1,0 +1,22 @@
+{
+  "description": "第二卷第五章实时角色扮演结局短章。",
+  "id": "volume2_destroyer_heat_disaster_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "alarmed",
+      "ending_type": "volume2_destroyer_heat_disaster",
+      "is_ending": true,
+      "speaker_id": "wiz",
+      "text": "维兹盯着仍在上升的温度，要求全员撤离核心室。没有证据支持继续冒险，失败状态被明确记录而不是被一句成功宣告掩盖。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "可用回合耗尽时，核心、余热、撤离或魔力协议仍有关键状态未经确认。移除核心没有带走机体储热，警报继续压过所有人的声音。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "核心之外的热灾",
+  "variables": {}
+}

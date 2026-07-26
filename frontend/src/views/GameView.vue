@@ -1836,6 +1836,11 @@ onUnmounted(() => {
   }
 
   .top-actions .control-btn { flex: 0 0 auto; }
+  .scene-meta strong {
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
   .stage { min-height: 0; }
   .stage.roleplay-active {
     grid-template-columns: minmax(0, 1fr);

@@ -1,0 +1,8 @@
+{
+  "description": "可用回合耗尽时，核心、余热、撤离或魔力协议仍有关键状态未经确认。移除核心没有带走机体储热，警报继续压过所有人的声音。",
+  "dialogue_id": "volume2_destroyer_heat_disaster_epilogue",
+  "id": "volume2_destroyer_heat_disaster",
+  "scene_id": "destroyer_core_chamber",
+  "schema": "monogatari-story-ending/v1",
+  "title": "核心之外的热灾"
+}
