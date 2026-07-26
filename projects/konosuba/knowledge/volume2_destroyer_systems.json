@@ -1,0 +1,19 @@
+{
+  "category": "volume2_chapter5",
+  "content": "机动要塞毁灭者是自动行进的八足城塞。接近阶段可观察到魔法结界、传感器、炮塔与防卫魔像；结界未被确认解除前，攻击腿部不能被宣称有效。阿库娅可以尝试解除结界，惠惠与维兹可在结界解除后分别攻击两侧腿组，但必须以同一行动窗口完成。腿部全毁只代表移动能力停止，不代表核心、余热或自毁风险消失。角色与模型只能报告当前已确认状态，不得用推测替代结界解除、腿部失效、核心移除或热量释放的证据。",
+  "id": "volume2_destroyer_systems",
+  "importance": 1,
+  "related_entries": [
+    "volume2_destroyer_command",
+    "volume2_coronatite_core",
+    "volume2_magic_transfer"
+  ],
+  "tags": [
+    "destroyer",
+    "barrier",
+    "legs",
+    "golems",
+    "phase_state"
+  ],
+  "title": "机动要塞毁灭者的可验证系统状态"
+}

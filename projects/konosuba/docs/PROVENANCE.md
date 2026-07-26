@@ -34,6 +34,12 @@
   `OEBPS/Text/chapter4-1.xhtml`. The project adaptation makes every service
   participant explicitly adult, excludes intimate source prose and nudity, and
   authors new consent, privacy, reality-check, safety, and route language.
+- Volume 2 Chapter 5 derives only the Destroyer warning, emergency defense,
+  barrier and leg actions, boarding, researcher notebook, coronatite core,
+  stored-heat crisis, magic transfer, teleport uncertainty, and final Explosion
+  setup from the same local EPUB, `OEBPS/Text/chapter5-1.xhtml`. Runtime NPC
+  replies, command/evidence language, consent protocol, recovery text, and
+  endings are newly authored or generated.
 
 ## Public visual reference
 
@@ -91,6 +97,11 @@
   as fully dressed adults. Four newly generated sprite sources were converted
   from flat chroma key to transparent PNG, visually inspected, and
   fingerprint-imported.
+- Volume 2 Chapter 5 adds newly generated guild command, city-edge battlefield,
+  upper-deck, and core-chamber backgrounds. New Aqua, Darkness, Megumin, and
+  Wiz battle-state sprites were generated from defining project appearance,
+  converted to transparent PNG where needed, visually inspected, and imported
+  through the fingerprint-bound project asset importer.
 
 ## Rights and distribution
 

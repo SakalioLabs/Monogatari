@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/destroyer_core_chamber.png",
+  "bgm_path": null,
+  "id": "destroyer_core_chamber",
+  "model_3d_path": null,
+  "name": "毁灭者冠状石核心室",
+  "tags": [
+    "volume2_chapter5",
+    "destroyer",
+    "core",
+    "coronatite",
+    "stored_heat"
+  ],
+  "time_of_day": "interior",
+  "weather": "overheated"
+}

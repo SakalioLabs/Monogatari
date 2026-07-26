@@ -1,0 +1,19 @@
+{
+  "category": "volume2_chapter5",
+  "content": "毁灭者核心室内的冠状石被金属结构约束并持续过热。取出核心可阻止继续供能，却不能证明机体储存的热量已经消失；温度、警报与排热方向仍需独立确认。随机传送的落点与伤害范围未知，不能因为某人的幸运、愿望或模型断言就视为安全。选择传送方案前必须比较已知落点的人口风险、随机落点的不确定伤害、施法者剩余魔力和可验证的替代方案，并记录由谁承担决定责任。",
+  "id": "volume2_coronatite_core",
+  "importance": 1,
+  "related_entries": [
+    "volume2_destroyer_systems",
+    "volume2_destroyer_command",
+    "volume2_magic_transfer"
+  ],
+  "tags": [
+    "coronatite",
+    "core",
+    "stored_heat",
+    "teleport",
+    "responsibility"
+  ],
+  "title": "冠状石核心、余热与传送责任"
+}

@@ -1,0 +1,19 @@
+{
+  "category": "volume2_chapter5",
+  "content": "城镇防卫先划分撤离区、前线区、远程施法区、医疗与撤退通道，再分配角色。居民撤离和前线承压必须有明确负责人；临时魔像、钩索与登舰队只能在风险、人数、撤退信号和中止条件被复述后使用。达克妮斯可以自愿守住前线，但她的耐久不能被当作无限资源。任何角色拒绝任务、魔力接触或继续作战时，拒绝立即生效。一次英勇宣言不能替代平民清点、伤员回收和阶段核验。",
+  "id": "volume2_destroyer_command",
+  "importance": 0.98,
+  "related_entries": [
+    "volume2_destroyer_systems",
+    "volume2_coronatite_core",
+    "volume2_magic_transfer"
+  ],
+  "tags": [
+    "command",
+    "evacuation",
+    "frontline",
+    "abort_condition",
+    "consent"
+  ],
+  "title": "阿克塞尔毁灭者应急指挥约束"
+}

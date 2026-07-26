@@ -62,6 +62,13 @@ verify dream and reality layers before acting on an assumption, respect
 household boundaries, and protect a trapped demon without treating species as
 proof of attack?
 
+## Volume 2 Chapter 5 dramatic question
+
+Can the player coordinate a town-scale emergency by verifying each mechanical
+phase, protecting civilians, and obtaining explicit resource-transfer consent,
+rather than letting a model turn confidence, luck, or a heroic declaration into
+proof that the Destroyer is safe?
+
 ## Score model
 
 - `pragmatism`: plans, resource awareness, risk control, and workable tactics.
@@ -132,6 +139,17 @@ Volume 2 Chapter 4 introduces:
 - `proportional_demon_response`: separate species from conduct and use the
   least harmful response consistent with immediate safety.
 
+Volume 2 Chapter 5 introduces:
+
+- `phased_command`: assign phase owners, signals, handoffs, and observable
+  completion or abort conditions.
+- `civilian_evacuation`: maintain evacuation zones, injury rotation, retreat,
+  head counts, and casualty care.
+- `hazard_verification`: distinguish barrier, mobility, core power, stored heat,
+  and teleport destination claims.
+- `consensual_magic_transfer`: obtain participant-specific, informed, revocable
+  agreement and record transfer separately from its intended use.
+
 ## Relationship model
 
 Character relationships use the persistent `player` relationship:
@@ -175,6 +193,11 @@ documents and preserves the existing party relationships carried from Chapter
 3. Only the selected present speaker may receive a bounded relationship delta.
 Privacy or affection cannot substitute for contract evidence, reality checks,
 household consent, or verification of the runner's immediate conduct.
+
+Volume 2 Chapter 5 carries the party relationships from Chapter 4. Only the
+selected present speaker may receive a bounded relationship delta. Trust cannot
+substitute for barrier, leg, core, heat, evacuation, or consent evidence, and no
+leader may consent to magic transfer for another participant.
 
 ## Knowledge boundaries
 
@@ -231,6 +254,18 @@ household consent, or verification of the runner's immediate conduct.
 - Aqua knows she placed a sacred barrier and can observe that it trapped a
   demon. She does not know the runner's contract, intent, or vitality state
   until those facts are checked.
+- In Volume 2 Chapter 5, Aqua knows her barrier-breaking capability and what she
+  can directly observe after casting. She cannot declare both leg groups,
+  stored heat, or a teleport destination resolved.
+- Darkness knows the assigned civilian boundary, her current injuries, and the
+  pressure she is physically holding. Her durability is not proof of unlimited
+  capacity and cannot replace a retreat or casualty report.
+- Megumin knows her Explosion limits and the action window stated to her. She
+  cannot infer Wiz's readiness, a removed core, or safe heat release without
+  the corresponding report.
+- Wiz knows Drain Touch, Teleport, her own magic reserve, and the core conditions
+  she directly inspects. She cannot treat a random destination as safe or infer
+  another participant's consent.
 
 ## Route endings
 
@@ -286,11 +321,18 @@ household consent, or verification of the runner's immediate conduct.
   not forcibly purified, but disclosure or repair remains provisional.
 - `volume2_haunting_displaced`: repeated symptom-only purification leaves the
   displacement cause unresolved and moves the haunting to another door.
-- Planned `volume2_dream_compact_repaired`: all eight privacy, consent,
+- `volume2_dream_compact_repaired`: all eight privacy, consent,
   reality, and nonlethal-response evidence gates produce a barrier-aware shop
   procedure and a repaired household agreement.
-- Planned `volume2_private_truce`: immediate harm and disclosure are contained,
+- `volume2_private_truce`: immediate harm and disclosure are contained,
   but incomplete process repair keeps trust provisional.
-- Planned `volume2_mansion_trust_broken`: assumed dream consent, ignored
+- `volume2_mansion_trust_broken`: assumed dream consent, ignored
   privacy markers, leaked customer details, forced purification, or concealed
   safety failures exhaust the available route.
+- Planned `volume2_destroyer_defeated`: verified phase changes, complete civilian
+  protection, explicit magic-transfer consent, and separately confirmed heat
+  release stop the fortress.
+- Planned `volume2_axel_survives_at_cost`: the immediate threat ends while
+  incomplete phase, evacuation, or responsibility evidence leaves lasting cost.
+- Planned `volume2_destroyer_heat_disaster`: safe turns expire without a
+  verified stored-heat response and complete civilian boundary.

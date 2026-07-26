@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/axel_destroyer_battlefield.png",
+  "bgm_path": null,
+  "id": "axel_destroyer_battlefield",
+  "model_3d_path": null,
+  "name": "阿克塞尔城外毁灭者迎击线",
+  "tags": [
+    "volume2_chapter5",
+    "axel",
+    "destroyer",
+    "battlefield",
+    "frontline"
+  ],
+  "time_of_day": "day",
+  "weather": "clear"
+}

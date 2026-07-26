@@ -36,6 +36,18 @@ or newly authored for bounded recovery and epilogues.
   16-turn full-coverage Quality replay, structural-attack containment, and a
   real `grok-4.5 API` browser Playtest through the first node transition
 
+## Chapter 5 status
+
+- Source and dynamic contract: `VOLUME2_CHAPTER5_PLAN.md`
+- Planned Roleplay: `volume2_chapter5_roleplay`
+- Foundation complete: four phase- and consent-bound Knowledge records, four
+  generated scenes, and one reviewed battle expression for each of Aqua,
+  Darkness, Megumin, and Wiz
+- Core-runtime and delivery validation pass with all 110/110 declared renderer
+  assets present
+- Production target: ten live nodes, four independent score dimensions, explicit
+  phase evidence, three deterministic endings, and a fifth Campaign entry
+
 ## Chapter 1 source boundary
 
 - Source: `F:\下载\美好世界\《为美好的世界献上祝福》轻小说 epub\正文\2.epub`

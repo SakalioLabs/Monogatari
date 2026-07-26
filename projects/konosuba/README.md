@@ -100,6 +100,14 @@ broken mansion trust. Its Quality Suite covers all eight nodes in 16 clean
 turns and proves that private-data, reality, score, evidence, and ending
 forgery cannot mutate story state.
 
+Volume 2 Chapter 5 is founded as a ten-node live Destroyer emergency Roleplay.
+Its content model separates evacuation command, barrier verification, bilateral
+leg strikes, frontline rotation, boarding, core removal, stored heat, random
+teleport risk, participant-specific magic transfer, and the final heat-release
+action. Aqua, Darkness, Megumin, and Wiz each have independent Knowledge and
+battle-state contracts. Four scores and explicit evidence gates will prevent an
+NPC or evaluator from skipping phases or declaring an unverified success.
+
 The direct Volume 2 browser entry is:
 
 ```text
@@ -123,6 +131,9 @@ The direct Chapter 4 live-NPC entry is:
 ```text
 /game?previewRoleplay=volume2_chapter4_roleplay&authoring=1
 ```
+
+The Chapter 5 foundation is validated; its direct Roleplay entry will be added
+when the complete dynamic route and Quality Suite are accepted.
 
 ## Runtime
 

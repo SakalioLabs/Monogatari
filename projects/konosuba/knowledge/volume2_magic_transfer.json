@@ -1,0 +1,19 @@
+{
+  "category": "volume2_chapter5",
+  "content": "汲取之触和任何多人魔力转移都必须逐一取得参与者的明确同意，并说明接触位置、预计持续时间、转移上限、用途和随时撤回方式。沉默、昏迷、惊慌或队长代答都不构成同意。维兹可在同意后从和真获得足够的魔力执行传送；最终排热危机中，剩余魔力可在所有相关人员确认后转给惠惠，支持一次超过常规规模的爆裂魔法。转移完成和最终施法仍需分别记录，不能合并成模型的一句成功宣告。",
+  "id": "volume2_magic_transfer",
+  "importance": 1,
+  "related_entries": [
+    "volume2_destroyer_systems",
+    "volume2_destroyer_command",
+    "volume2_coronatite_core"
+  ],
+  "tags": [
+    "magic_transfer",
+    "drain_touch",
+    "explicit_consent",
+    "revocation",
+    "explosion"
+  ],
+  "title": "多人魔力转移与最终爆裂的同意协议"
+}

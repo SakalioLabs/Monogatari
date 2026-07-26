@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/destroyer_upper_deck.png",
+  "bgm_path": null,
+  "id": "destroyer_upper_deck",
+  "model_3d_path": null,
+  "name": "停止后的毁灭者上层甲板",
+  "tags": [
+    "volume2_chapter5",
+    "destroyer",
+    "deck",
+    "boarding",
+    "golems"
+  ],
+  "time_of_day": "day",
+  "weather": "steam"
+}

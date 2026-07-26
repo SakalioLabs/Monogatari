@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/axel_destroyer_command.png",
+  "bgm_path": null,
+  "id": "axel_destroyer_command",
+  "model_3d_path": null,
+  "name": "阿克塞尔公会毁灭者应急指挥厅",
+  "tags": [
+    "volume2_chapter5",
+    "axel",
+    "guild",
+    "command",
+    "evacuation"
+  ],
+  "time_of_day": "day",
+  "weather": null
+}
