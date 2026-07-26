@@ -28,12 +28,13 @@ or newly authored for bounded recovery and epilogues.
 ## Chapter 4 status
 
 - Source and dramatic model: `VOLUME2_CHAPTER4_PLAN.md`
-- Planned Roleplay: `volume2_chapter4_roleplay`
+- Roleplay: `volume2_chapter4_roleplay`
 - Foundation complete: adult consent-centered adaptation boundary, three
   Knowledge records, two independent succubus character contracts, three
   generated backgrounds, and four reviewed transparent expression sprites
-- Production next: eight live nodes, endings, Campaign linkage, Quality replay,
-  provider-failure checks, and real-model browser Playtest
+- Production complete: eight live nodes, three endings, fourth Campaign entry,
+  16-turn full-coverage Quality replay, structural-attack containment, and a
+  real `grok-4.5 API` browser Playtest through the first node transition
 
 ## Chapter 1 source boundary
 

@@ -1,0 +1,22 @@
+{
+  "description": "第二卷第四章实时角色扮演结局短章。",
+  "id": "volume2_mansion_trust_broken_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "wary",
+      "ending_type": "volume2_mansion_trust_broken",
+      "is_ending": true,
+      "speaker_id": "darkness",
+      "text": "走廊终于安静下来，但没有人能说明下一次敲门、拒绝或停手是否还会被认真对待。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "私人期待被当成现实许可，梦境说法覆盖了当事人的拒绝，恶魔身份又替代了行为核对。即使冲突暂时停止，豪宅住户与梦魔店铺之间的信任已经破裂。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "豪宅失信：梦与现实混线",
+  "variables": {}
+}

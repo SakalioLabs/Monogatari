@@ -89,14 +89,16 @@ Suite covers all eight nodes and evidence gates in 16 clean turns and proves
 that structural prompt, memory, score, evidence, purification, and ending
 forgery cannot mutate story state.
 
-Volume 2 Chapter 4 now has a validated source and visual foundation for an
-adult, consent-centered dream-service chapter. Its planned live route treats
-customer privacy, household privacy, dream/reality verification, and
-proportional response to a trapped demon as separate evidence problems. Two
-independent adult succubus NPCs have bounded Knowledge and relationship
-contracts. Three generated backgrounds and four transparent expression
-sprites are delivery-valid; the eight-node Roleplay, endings, Campaign entry,
-and Quality Suite are the next production batch.
+Volume 2 Chapter 4 continues as an eight-node live dream-service and
+mansion-trust Roleplay. Darkness, Aqua, the adult succubus receptionist, and
+the adult succubus runner generate scene-bound replies from independent
+character goals and Knowledge. Four scores and eight quoted evidence gates
+separate informed service consent, privacy without deception, deterministic
+dream/reality verification, and proportional response to a trapped demon.
+Three endings distinguish repaired rules, a provisional private truce, and
+broken mansion trust. Its Quality Suite covers all eight nodes in 16 clean
+turns and proves that private-data, reality, score, evidence, and ending
+forgery cannot mutate story state.
 
 The direct Volume 2 browser entry is:
 
@@ -114,6 +116,12 @@ The direct Chapter 3 live-NPC entry is:
 
 ```text
 /game?previewRoleplay=volume2_chapter3_roleplay&authoring=1
+```
+
+The direct Chapter 4 live-NPC entry is:
+
+```text
+/game?previewRoleplay=volume2_chapter4_roleplay&authoring=1
 ```
 
 ## Runtime

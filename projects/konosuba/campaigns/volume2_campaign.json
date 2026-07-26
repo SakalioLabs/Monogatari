@@ -1,8 +1,4 @@
 {
-  "schema": "monogatari-roleplay-campaign/v1",
-  "id": "konosuba_volume2",
-  "title": "为美好的世界献上祝福！第二卷",
-  "start_entry_id": "chapter1",
   "entries": [
     {
       "id": "chapter1",
@@ -10,15 +6,24 @@
       "routes": [
         {
           "ending_id": "volume2_exchange_understood",
-          "target": {"kind": "entry", "entry_id": "chapter2"}
+          "target": {
+            "entry_id": "chapter2",
+            "kind": "entry"
+          }
         },
         {
           "ending_id": "volume2_working_exchange",
-          "target": {"kind": "entry", "entry_id": "chapter2"}
+          "target": {
+            "entry_id": "chapter2",
+            "kind": "entry"
+          }
         },
         {
           "ending_id": "volume2_party_swap_backfire",
-          "target": {"kind": "entry", "entry_id": "chapter2"}
+          "target": {
+            "entry_id": "chapter2",
+            "kind": "entry"
+          }
         }
       ]
     },
@@ -28,15 +33,24 @@
       "routes": [
         {
           "ending_id": "volume2_keele_released",
-          "target": {"kind": "entry", "entry_id": "chapter3"}
+          "target": {
+            "entry_id": "chapter3",
+            "kind": "entry"
+          }
         },
         {
           "ending_id": "volume2_dungeon_partial_trust",
-          "target": {"kind": "entry", "entry_id": "chapter3"}
+          "target": {
+            "entry_id": "chapter3",
+            "kind": "entry"
+          }
         },
         {
           "ending_id": "volume2_dungeon_retreat_disarray",
-          "target": {"kind": "entry", "entry_id": "chapter3"}
+          "target": {
+            "entry_id": "chapter3",
+            "kind": "entry"
+          }
         }
       ]
     },
@@ -46,17 +60,54 @@
       "routes": [
         {
           "ending_id": "volume2_anna_home_restored",
-          "target": {"kind": "complete"}
+          "target": {
+            "entry_id": "chapter4",
+            "kind": "entry"
+          }
         },
         {
           "ending_id": "volume2_mansion_temporary_truce",
-          "target": {"kind": "complete"}
+          "target": {
+            "entry_id": "chapter4",
+            "kind": "entry"
+          }
         },
         {
           "ending_id": "volume2_haunting_displaced",
-          "target": {"kind": "complete"}
+          "target": {
+            "entry_id": "chapter4",
+            "kind": "entry"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter4",
+      "roleplay_id": "volume2_chapter4_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume2_dream_compact_repaired",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume2_private_truce",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume2_mansion_trust_broken",
+          "target": {
+            "kind": "complete"
+          }
         }
       ]
     }
-  ]
+  ],
+  "id": "konosuba_volume2",
+  "schema": "monogatari-roleplay-campaign/v1",
+  "start_entry_id": "chapter1",
+  "title": "为美好的世界献上祝福！第二卷"
 }

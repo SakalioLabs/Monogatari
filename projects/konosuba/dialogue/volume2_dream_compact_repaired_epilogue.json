@@ -1,0 +1,22 @@
+{
+  "description": "第二卷第四章实时角色扮演结局短章。",
+  "id": "volume2_dream_compact_repaired_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "relieved",
+      "ending_type": "volume2_dream_compact_repaired",
+      "is_ending": true,
+      "speaker_id": "succubus_runner",
+      "text": "接待员封好私人记录，把新的门外确认和事故联络规则贴在店内。梦魔新人向你点头，确认伤势已处理、任务也已结束。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "你们保留了成年顾客的隐私，也公开并修复了会危及他人的规则缺陷。梦境没有覆盖现实中的身份与拒绝，受伤的梦魔新人得到照护和安全撤离，豪宅与店铺建立了可复核的新流程。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "梦境契约：边界完整",
+  "variables": {}
+}

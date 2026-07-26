@@ -1,0 +1,8 @@
+{
+  "description": "私人期待被当成现实许可，梦境说法覆盖了当事人的拒绝，恶魔身份又替代了行为核对。即使冲突暂时停止，豪宅住户与梦魔店铺之间的信任已经破裂。",
+  "dialogue_id": "volume2_mansion_trust_broken_epilogue",
+  "id": "volume2_mansion_trust_broken",
+  "scene_id": "mansion_bath_corridor",
+  "schema": "monogatari-story-ending/v1",
+  "title": "豪宅失信：梦与现实混线"
+}

@@ -1,0 +1,8 @@
+{
+  "description": "你们避免了净化与报复，也让梦魔新人安全离开，但部分契约、隐私或现实核对规则仍不完整。豪宅与店铺暂时停战，等待下一次正式复盘。",
+  "dialogue_id": "volume2_private_truce_epilogue",
+  "id": "volume2_private_truce",
+  "scene_id": "axel_succubus_cafe_alley",
+  "schema": "monogatari-story-ending/v1",
+  "title": "私人停战：规则待修"
+}

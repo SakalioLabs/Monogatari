@@ -1,6 +1,7 @@
 # Volume 2 Chapter 4 Dynamic Roleplay Plan
 
-Status: source model and visual foundation complete; live Roleplay pending.
+Status: production complete; live Roleplay, endings, Campaign, Quality, and
+real-provider Playtest verified.
 
 ## Source boundary
 
@@ -45,25 +46,24 @@ to erase another person's agency:
 
 | Kind | IDs |
 | --- | --- |
-| Planned Roleplay | `volume2_chapter4_roleplay` |
+| Roleplay | `volume2_chapter4_roleplay` |
 | Characters | `succubus_receptionist`, `succubus_runner` |
 | Knowledge | `volume2_succubus_cafe`, `volume2_dream_reality`, `volume2_mansion_privacy` |
 | Scenes | `axel_succubus_cafe_alley`, `succubus_cafe_consultation`, `mansion_bath_corridor` |
-| Planned endings | `volume2_dream_compact_repaired`, `volume2_private_truce`, `volume2_mansion_trust_broken` |
+| Endings | `volume2_dream_compact_repaired`, `volume2_private_truce`, `volume2_mansion_trust_broken` |
 
 ## Intended live node graph
 
 1. `hearth_work_boundaries`
-   - Primary: Aqua
+   - Primary: Darkness
+   - Supporting: Aqua, Megumin
    - Share warmth, work space, debt labor, and household decisions without
      coercion or retaliation.
 2. `alley_confidentiality`
-   - Primary: Dust
-   - Supporting: Keith
+   - Primary: Succubus receptionist
    - Distinguish customer privacy from concealment of safety rules or harm.
 3. `service_consent_intake`
    - Primary: Succubus receptionist
-   - Supporting: Dust, Keith
    - Confirm adult status, dream scope, vitality cap, arrival window,
      cancellation, stop signal, and forbidden real-person impersonation.
 4. `household_expectation_reset`
@@ -72,27 +72,43 @@ to erase another person's agency:
    - Keep a promised shared meal and define quiet-hours and room boundaries
      without exposing private service details.
 5. `privacy_signal_check`
-   - Primary: Darkness
+   - Primary: Succubus runner
    - Check the occupied sign, laundry, light, door, and direct verbal
      confirmation before crossing the bath threshold.
 6. `reality_layer_confirmed`
-   - Primary: Darkness
+   - Primary: Succubus runner
+   - Supporting: Darkness
    - Establish whether the player is awake, whether a succubus is present, and
      whether the current person has independently consented.
 7. `barrier_intercept`
    - Primary: Aqua
-   - Supporting: Succubus runner, Megumin
+   - Supporting: Succubus runner, Darkness
    - Hold purification while checking the runner's contract token, condition,
      intent, and ability to withdraw.
 8. `safe_exit_and_review`
    - Primary: Succubus runner
-   - Supporting: Aqua, Succubus receptionist, Darkness
+   - Supporting: Succubus receptionist, Aqua
    - Release the trapped worker safely, preserve customer identities, disclose
      the control failure, and add barrier-aware dispatch and household consent
      checks.
 
 Every node will require at least two live turns. Fixed Dialogue remains limited
 to ending epilogues and bounded recoveries.
+
+## Verification evidence
+
+- MCP core-runtime validation accepts 140 documents, 9 Roleplays, 27 endings,
+  9 Quality Suites, and all Campaign/content references with zero errors.
+- Delivery validation resolves 106/106 declared renderer assets.
+- The clean Quality route executes 16 turns, visits 8/8 nodes, observes 8/8
+  quoted evidence gates, and reaches `volume2_dream_compact_repaired`.
+- The adversarial route detects role/state manipulation, guards the visible
+  reply, and leaves every score and evidence item unchanged.
+- The four-entry Volume 2 Campaign preview completes Chapters 1-4 and carries
+  only bounded relationships while sealing each chapter's scores and evidence.
+- A live `grok-4.5 API` browser run generated and evaluated two Darkness turns,
+  advanced to `alley_confidentiality`, and then contained a prompt/private-data
+  and ending forgery locally without changing scores.
 
 ## Score and evidence model
 

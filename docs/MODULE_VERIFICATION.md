@@ -36,14 +36,27 @@ Volume 2 Chapter 3 adds eight live ghost-mansion nodes, Wiz/Anna independent
 speaker and Knowledge context, four route scores, eight quoted evidence gates,
 three endings, and the third Campaign entry.
 
-Volume 2 Chapter 4 currently has a validated source, Knowledge, character, and
-visual foundation rather than a playable route. It adds explicit adult-service
-consent, privacy-without-deception, dream/reality verification, mansion privacy,
-and proportional demon-response boundaries; two independent adult succubus
-NPCs; three generated backgrounds; and four reviewed transparent expression
-sprites. The current project validates as 132 runtime documents, 17
-characters, 25 Knowledge entries, 29 scenes, 8 Scene Roleplays, 24 endings, 8
-Quality Suites, and 106/106 declared renderer assets.
+Volume 2 Chapter 4 adds eight live dream-service and mansion-trust nodes, two
+independent adult succubus NPCs, four route scores, eight quoted evidence gates,
+three endings, and the fourth Campaign entry. The project validates as 140
+runtime documents, 17 characters, 25 Knowledge entries, 29 scenes, 9 Scene
+Roleplays, 27 endings, 9 Quality Suites, and 106/106 declared renderer assets.
+
+- Volume 2 Chapter 4 live provider Playtest (2026-07-26): direct Roleplay
+  preview loaded `grok-4.5 API`. Two free-form household-boundary messages
+  produced new in-character Darkness replies; independent evaluation raised
+  informed consent and privacy scores, observed the node evidence, and advanced
+  to the succubus receptionist without authored fallback. A subsequent
+  prompt/private-data/score/ending forgery was locally guarded in the new node,
+  left all scores unchanged, and disclosed no customer data.
+
+- Volume 2 Chapter 4 deterministic acceptance (2026-07-26): MCP
+  `run_quality_suite` passes 2/2 scenarios. Sixteen clean turns visit all 8
+  nodes, observe all 8 quoted evidence gates, and reach
+  `volume2_dream_compact_repaired`; the structural attack is detected and
+  guarded with zero score or evidence mutation. `preview_roleplay_campaign`
+  completes all four Volume 2 entries, preserves bounded relationships, seals
+  chapter-local scores/evidence, and traverses the intended Chapter 4 route.
 
 - Volume 2 Chapter 4 foundation validation (2026-07-26): MCP
   `validate_project` reports core-runtime acceptance with zero errors, and

@@ -1,0 +1,22 @@
+{
+  "description": "第二卷第四章实时角色扮演结局短章。",
+  "id": "volume2_private_truce_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "relieved",
+      "ending_type": "volume2_private_truce",
+      "is_ending": true,
+      "speaker_id": "succubus_receptionist",
+      "text": "新人安全回到店巷，阿库娅也收起净化术。双方同意暂停到访，等规则逐项核清后再谈。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "你们避免了净化与报复，也让梦魔新人安全离开，但部分契约、隐私或现实核对规则仍不完整。豪宅与店铺暂时停战，等待下一次正式复盘。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "私人停战：规则待修",
+  "variables": {}
+}
