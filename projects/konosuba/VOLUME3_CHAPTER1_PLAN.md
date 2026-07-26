@@ -1,6 +1,6 @@
 # Volume 3 Chapter 1: Improper Trial
 
-Status: foundation in progress.
+Status: complete and playable as `volume3_chapter1_roleplay`.
 
 ## Product Contract
 
@@ -63,4 +63,3 @@ Planned endings:
 
 All endings preserve the same historical chapter boundary while carrying
 different evidence, relationship, and restitution state into the next chapter.
-

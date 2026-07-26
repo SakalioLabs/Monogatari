@@ -1,0 +1,8 @@
+{
+  "description": "达克妮斯争取到暂缓，商店也留下寄售记录，但早期证据、异常复核或释放条件存在缺口。队伍获得时间，却仍要修补责任链。",
+  "dialogue_id": "volume3_stay_without_restitution_epilogue",
+  "id": "volume3_stay_without_restitution",
+  "scene_id": "wiz_magic_item_shop",
+  "schema": "monogatari-story-ending/v1",
+  "title": "争取到的时间，未补齐的账"
+}

@@ -1,0 +1,22 @@
+{
+  "description": "第三卷第一章实时角色扮演结局短章。",
+  "id": "volume3_stay_without_restitution_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "worried",
+      "ending_type": "volume3_stay_without_restitution",
+      "is_ending": true,
+      "speaker_id": "wiz",
+      "text": "维兹把不完整的账页单独夹起，只承诺执行已经共同确认的部分。剩余缺口不能由善意代填，必须回到证据和条件中逐项补全。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "达克妮斯争取到暂缓，商店也留下寄售记录，但早期证据、异常复核或释放条件存在缺口。队伍获得时间，却仍要修补责任链。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "争取到的时间，未补齐的账",
+  "variables": {}
+}

@@ -1,0 +1,22 @@
+{
+  "description": "第三卷第一章实时角色扮演结局短章。",
+  "id": "volume3_corrupted_sentence_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "stern",
+      "ending_type": "volume3_corrupted_sentence",
+      "is_ending": true,
+      "speaker_id": "sena",
+      "text": "塞娜命书记员封存现有案卷。她没有替缺失证据补写结论，法庭也没有获得一条可以安全推进的释放与赔偿记录。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "回合耗尽时，证据边界、异常复核或自愿暂缓未形成可执行记录。腐化判决仍悬而未解，故事停在必须重新争取程序的时刻。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "失去一致性的判决",
+  "variables": {}
+}

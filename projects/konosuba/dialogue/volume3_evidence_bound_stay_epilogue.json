@@ -1,0 +1,22 @@
+{
+  "description": "第三卷第一章实时角色扮演结局短章。",
+  "id": "volume3_evidence_bound_stay_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "gentle",
+      "ending_type": "volume3_evidence_bound_stay",
+      "is_ending": true,
+      "speaker_id": "wiz",
+      "text": "维兹合上寄售账本，确认第一批商品只在双方同意的范围内上架。法庭尚未洗清一切，但证据、选择和赔偿都没有再被混成一句判决。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "text": "指控、铃声、关联和异常都被限定在可证明范围内。达克妮斯自愿争取暂缓，释放条件与寄售赔偿账本形成了可复核记录。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "证据仍在，暂缓生效",
+  "variables": {}
+}

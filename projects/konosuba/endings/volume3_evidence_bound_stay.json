@@ -1,0 +1,8 @@
+{
+  "description": "指控、铃声、关联和异常都被限定在可证明范围内。达克妮斯自愿争取暂缓，释放条件与寄售赔偿账本形成了可复核记录。",
+  "dialogue_id": "volume3_evidence_bound_stay_epilogue",
+  "id": "volume3_evidence_bound_stay",
+  "scene_id": "wiz_magic_item_shop",
+  "schema": "monogatari-story-ending/v1",
+  "title": "证据仍在，暂缓生效"
+}

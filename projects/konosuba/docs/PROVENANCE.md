@@ -40,6 +40,14 @@
   setup from the same local EPUB, `OEBPS/Text/chapter5-1.xhtml`. Runtime NPC
   replies, command/evidence language, consent protocol, recovery text, and
   endings are newly authored or generated.
+- Volume 3 Chapter 1 derives only the coronatite charge, lawful custody and
+  failed rescue attempts, truth-bell interrogation, Wiz association, trial
+  evidence, Aqua's unknown-source anomaly report, Darkness's voluntary stay,
+  release conditions, and the Wiz-shop restitution plan from the user's local
+  Volume 3 EPUB, `OEBPS/Text/chapter1-1.xhtml`. Runtime NPC replies, evaluator
+  observations, evidence/score language, recovery text, and endings are newly
+  authored or generated. The adaptation does not identify the anomaly's future
+  source or mechanism.
 
 ## Public visual reference
 
@@ -102,6 +110,13 @@
   Wiz battle-state sprites were generated from defining project appearance,
   converted to transparent PNG where needed, visually inspected, and imported
   through the fingerprint-bound project asset importer.
+- Volume 3 Chapter 1 adds newly generated police-cell, truth-bell
+  interrogation-room, and courtroom backgrounds plus an Alderp sprite. Public
+  anime appearance references informed only Alderp's bald crown, side hair,
+  curled moustache, heavy build, and ornate purple/gold noble clothing. The
+  final sprite was generated against a flat chroma key, converted to
+  transparent WebP, visually inspected for edge damage, and imported through
+  the fingerprint-bound project asset importer.
 
 ## Rights and distribution
 

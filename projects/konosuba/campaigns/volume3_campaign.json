@@ -1,0 +1,32 @@
+{
+  "entries": [
+    {
+      "id": "chapter1",
+      "roleplay_id": "volume3_chapter1_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume3_evidence_bound_stay",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume3_stay_without_restitution",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume3_corrupted_sentence",
+          "target": {
+            "kind": "complete"
+          }
+        }
+      ]
+    }
+  ],
+  "id": "konosuba_volume3",
+  "schema": "monogatari-roleplay-campaign/v1",
+  "start_entry_id": "chapter1",
+  "title": "为美好的世界献上祝福！第三卷"
+}

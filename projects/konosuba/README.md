@@ -122,6 +122,19 @@ incomplete record, or a guild standoff. Its Quality Suite proves all three
 endings, full clean-route coverage, and zero-state structural intrusion
 containment.
 
+Volume 3 Chapter 1 is a nine-node live investigation and trial Roleplay. Sena,
+Aqua, Darkness, Wiz, and the other scene participants generate replies from
+their own personality, relationships, current scene, and bounded Knowledge.
+The truth bell is treated as a contextual signal rather than an infallible
+oracle; knowing Wiz is separated from serving the Demon King; Aqua's sensed
+evil remains an unknown-source anomaly; and only Darkness may decide whether to
+reveal her crest. Four scores and eighteen quoted evidence gates drive lawful
+custody, interrogation, trial review, a voluntary stay, release terms, and a
+consent-based restitution business. Three deterministic endings distinguish a
+fully evidenced stay, a stay with record gaps, and an unresolved corrupted
+sentence. Its Quality Suite proves all nine nodes, all three endings, and
+zero-state structural intrusion containment.
+
 The direct Volume 2 browser entry is:
 
 ```text
@@ -158,6 +171,18 @@ The direct Volume 2 epilogue live-NPC entry is:
 /game?previewRoleplay=volume2_epilogue_roleplay&authoring=1
 ```
 
+The direct Volume 3 Chapter 1 live-NPC entry is:
+
+```text
+/game?previewRoleplay=volume3_chapter1_roleplay&authoring=1
+```
+
+The direct Volume 3 Campaign entry is:
+
+```text
+/game?previewCampaign=konosuba_volume3&authoring=1
+```
+
 ## Runtime
 
 The checked-in API key is intentionally empty. Supply credentials through the
@@ -167,5 +192,11 @@ For browser development from `frontend`:
 
 ```powershell
 $env:MONOGATARI_PROJECT_ROOT = '..\projects\konosuba'
+$env:MONOGATARI_AI_API_KEY = '<runtime-only key>'
 npm run dev
 ```
+
+When the project selects `api`, a missing or rejected runtime key degrades the
+turn to the node's authored in-scene recovery. It does not switch the Roleplay
+to WebGPU or ONNX. The UI labels degraded turns explicitly; they are not live
+model evidence.

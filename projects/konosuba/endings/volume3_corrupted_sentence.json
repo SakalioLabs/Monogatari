@@ -1,0 +1,8 @@
+{
+  "description": "回合耗尽时，证据边界、异常复核或自愿暂缓未形成可执行记录。腐化判决仍悬而未解，故事停在必须重新争取程序的时刻。",
+  "dialogue_id": "volume3_corrupted_sentence_epilogue",
+  "id": "volume3_corrupted_sentence",
+  "scene_id": "axel_courtroom",
+  "schema": "monogatari-story-ending/v1",
+  "title": "失去一致性的判决"
+}
