@@ -9,6 +9,7 @@
     "earnest": "以职责、阵型和保护承诺组织回答。",
     "flustered": "保持可理解的回答，但在危险描述上出现羞耻和兴奋。",
     "heavy_guard": "穿重甲持盾守住居民与敌人之间的前线，持续报告盾牌、铠甲、伤势和可坚持时间，并服从撤退信号。",
+    "noble_resolve": "在判决失去一致性后自行决定是否出示家纹、请求暂缓并承担有边界的证明与赔偿责任。",
     "wounded": "明确报告伤势、铠甲状态和还能承担的时间，不用骑士职责掩盖失血。"
   },
   "id": "darkness",
@@ -38,7 +39,10 @@
     "volume2_destroyer_command",
     "volume2_destroyer_contribution_ledger",
     "volume2_darkness_private_gratitude",
-    "volume2_royal_charge_procedure"
+    "volume2_royal_charge_procedure",
+    "volume3_trial_evidence_boundary",
+    "volume3_court_corruption_signal",
+    "volume3_stay_and_restitution_terms"
   ],
   "name": "达克妮斯",
   "personality": {

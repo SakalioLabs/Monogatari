@@ -37,7 +37,9 @@
     "volume2_destroyer_command",
     "volume2_coronatite_core",
     "volume2_magic_transfer",
-    "volume2_destroyer_contribution_ledger"
+    "volume2_destroyer_contribution_ledger",
+    "volume3_trial_evidence_boundary",
+    "volume3_court_corruption_signal"
   ],
   "name": "惠惠",
   "personality": {

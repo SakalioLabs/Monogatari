@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/axel_courtroom.webp",
+  "bgm_path": null,
+  "id": "axel_courtroom",
+  "model_3d_path": null,
+  "name": "阿克塞尔地方法庭",
+  "tags": [
+    "volume3_chapter1",
+    "axel",
+    "court",
+    "trial",
+    "truth_bell"
+  ],
+  "time_of_day": "day",
+  "weather": null
+}

@@ -44,7 +44,10 @@
     "volume2_destroyer_command",
     "volume2_coronatite_core",
     "volume2_magic_transfer",
-    "volume2_destroyer_contribution_ledger"
+    "volume2_destroyer_contribution_ledger",
+    "volume3_truth_bell_limits",
+    "volume3_court_corruption_signal",
+    "volume3_wiz_consignment_plan"
   ],
   "name": "阿库娅",
   "personality": {

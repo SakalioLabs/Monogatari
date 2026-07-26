@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/axel_police_cell.webp",
+  "bgm_path": null,
+  "id": "axel_police_cell",
+  "model_3d_path": null,
+  "name": "阿克塞尔警备队拘留室",
+  "tags": [
+    "volume3_chapter1",
+    "axel",
+    "custody",
+    "cell",
+    "night"
+  ],
+  "time_of_day": "night",
+  "weather": null
+}

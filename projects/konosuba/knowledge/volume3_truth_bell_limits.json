@@ -1,0 +1,18 @@
+{
+  "category": "volume3_chapter1",
+  "content": "讯问室的真伪铃会对说话者所相信的表述及其语境作出反应。身份夸饰、动机美化或范围过大的概括可能触发铃声，即使其中夹有真实事实；铃声不自动证明因果、犯罪构成、幕后来源或完整动机。应使用范围狭窄、可独立核验的陈述，并把原句、语境和外部证据分别记录。",
+  "id": "volume3_truth_bell_limits",
+  "importance": 1,
+  "related_entries": [
+    "volume3_coronatite_charge_record",
+    "volume3_trial_evidence_boundary"
+  ],
+  "tags": [
+    "truth_bell",
+    "interrogation",
+    "semantics",
+    "evidence",
+    "limits"
+  ],
+  "title": "真伪铃讯问的语义边界"
+}

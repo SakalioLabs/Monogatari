@@ -18,7 +18,12 @@
     }
   ],
   "knowledge_refs": [
-    "volume2_royal_charge_procedure"
+    "volume2_royal_charge_procedure",
+    "volume3_coronatite_charge_record",
+    "volume3_truth_bell_limits",
+    "volume3_trial_evidence_boundary",
+    "volume3_court_corruption_signal",
+    "volume3_stay_and_restitution_terms"
   ],
   "name": "塞娜",
   "personality": {
