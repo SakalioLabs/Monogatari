@@ -34,9 +34,33 @@ compatibility previews.
 
 Volume 2 Chapter 3 adds eight live ghost-mansion nodes, Wiz/Anna independent
 speaker and Knowledge context, four route scores, eight quoted evidence gates,
-three endings, and the third Campaign entry. The current project validates as
-124 runtime documents, 15 characters, 22 Knowledge entries, 26 scenes, 8
-Scene Roleplays, 24 endings, 8 Quality Suites, and 94/94 renderer assets.
+three endings, and the third Campaign entry.
+
+Volume 2 Chapter 4 currently has a validated source, Knowledge, character, and
+visual foundation rather than a playable route. It adds explicit adult-service
+consent, privacy-without-deception, dream/reality verification, mansion privacy,
+and proportional demon-response boundaries; two independent adult succubus
+NPCs; three generated backgrounds; and four reviewed transparent expression
+sprites. The current project validates as 132 runtime documents, 17
+characters, 25 Knowledge entries, 29 scenes, 8 Scene Roleplays, 24 endings, 8
+Quality Suites, and 106/106 declared renderer assets.
+
+- Volume 2 Chapter 4 foundation validation (2026-07-26): MCP
+  `validate_project` reports core-runtime acceptance with zero errors, and
+  `validate_delivery` resolves all 106 declared renderer assets with no
+  placeholders or issues. The chapter plan is bound to the private local EPUB
+  section `OEBPS/Text/chapter4-1.xhtml`; public appearance research informed
+  defining traits only. Both project succubi are explicitly adult, fully
+  dressed, and separated into independent speaker, Knowledge, relationship,
+  and expression contracts.
+
+- Volume 2 Chapter 4 asset Playtest (2026-07-26): direct `previewScene` routes
+  rendered the winter cafe alley, professional consultation room, and mansion
+  bath corridor at desktop size with no console errors. The bath-corridor route
+  also renders at `390x844`; document, body, and scroll widths remain exactly
+  390 pixels with no horizontal overflow. All four generated character assets
+  are `1024x1536` RGBA with transparent corners, while all three backgrounds
+  are `1536x1024` RGB.
 
 - Volume 2 Chapter 3 live provider Playtest (2026-07-26): direct Roleplay
   preview loaded `grok-4.5 API`; a free-form shop nonaggression message

@@ -25,6 +25,16 @@ or newly authored for bounded recovery and epilogues.
 - Production complete: eight live nodes, three deterministic endings, Campaign
   linkage, and a 16-turn clean plus structural-attack Quality replay
 
+## Chapter 4 status
+
+- Source and dramatic model: `VOLUME2_CHAPTER4_PLAN.md`
+- Planned Roleplay: `volume2_chapter4_roleplay`
+- Foundation complete: adult consent-centered adaptation boundary, three
+  Knowledge records, two independent succubus character contracts, three
+  generated backgrounds, and four reviewed transparent expression sprites
+- Production next: eight live nodes, endings, Campaign linkage, Quality replay,
+  provider-failure checks, and real-model browser Playtest
+
 ## Chapter 1 source boundary
 
 - Source: `F:\下载\美好世界\《为美好的世界献上祝福》轻小说 epub\正文\2.epub`

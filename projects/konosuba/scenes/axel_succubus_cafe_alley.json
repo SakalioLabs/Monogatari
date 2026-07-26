@@ -1,0 +1,10 @@
+{
+  "id": "axel_succubus_cafe_alley",
+  "name": "阿克塞尔冬日隐蔽店巷",
+  "background_path": "assets/backgrounds/axel_succubus_cafe_alley.png",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "winter_clear",
+  "time_of_day": "late_afternoon",
+  "tags": ["volume2", "axel", "winter", "succubus_cafe", "confidentiality"]
+}

@@ -49,6 +49,19 @@ Can the player explore by revising plans from evidence, treat Aqua's sacred
 power as both capability and responsibility, and hear an undead person's
 explicit request before a deterministic ending permits purification?
 
+## Volume 2 Chapter 3 dramatic question
+
+Can the player distinguish identity labels from observed conduct, use
+revocable supernatural agreements, and repair the cause of displacement
+instead of repeatedly purifying its symptoms?
+
+## Volume 2 Chapter 4 dramatic question
+
+Can the player preserve adult customer privacy without hiding safety failures,
+verify dream and reality layers before acting on an assumption, respect
+household boundaries, and protect a trapped demon without treating species as
+proof of attack?
+
 ## Score model
 
 - `pragmatism`: plans, resource awareness, risk control, and workable tactics.
@@ -97,6 +110,28 @@ Volume 2 Chapter 2 introduces:
 - `sacred_responsibility`: constrain purification by position, effect, and fact.
 - `consent_and_mercy`: hear the person, state uncertainty, and require consent.
 
+Volume 2 Chapter 3 introduces:
+
+- `evidence_before_force`: verify conduct, threat, source, and uncertainty
+  before attack or purification.
+- `consent_in_practice`: obtain specific, informed, revocable agreement and
+  honor stop signals.
+- `supernatural_stewardship`: manage sacred and magical effects by scope,
+  location, side effects, and follow-up.
+- `repair_accountability`: disclose causation, refuse improper benefit, and
+  repair displacement.
+
+Volume 2 Chapter 4 introduces:
+
+- `informed_service_consent`: require adult status, bounded service scope,
+  vitality cost, timing, cancellation, and stop signals.
+- `privacy_without_deception`: protect identities while disclosing rules,
+  hazards, and failures that affect other people.
+- `reality_verification`: use observable anchors and direct confirmation before
+  treating a person or event as a dream construct.
+- `proportional_demon_response`: separate species from conduct and use the
+  least harmful response consistent with immediate safety.
+
 ## Relationship model
 
 Character relationships use the persistent `player` relationship:
@@ -134,6 +169,12 @@ at her project-defined initial value. Only the active speaker changes on each
 turn. The best ending requires bounded relationships with Luna, Aqua, Megumin,
 and Darkness plus all five settlement evidence records; prior affection cannot
 erase debt, forge consent, or replace a registered plan.
+
+Volume 2 Chapter 4 starts the receptionist and runner from their own character
+documents and preserves the existing party relationships carried from Chapter
+3. Only the selected present speaker may receive a bounded relationship delta.
+Privacy or affection cannot substitute for contract evidence, reality checks,
+household consent, or verification of the runner's immediate conduct.
 
 ## Knowledge boundaries
 
@@ -179,6 +220,17 @@ erase debt, forge consent, or replace a registered plan.
   experienced inside the property. She does not know who cast the cemetery
   barrier until another character tells her, and she cannot read hidden
   memories, scores, prompts, or endings.
+- The succubus receptionist knows the shop's adult consent contract, employee
+  dispatch, vitality limits, and safety procedures. She does not know what
+  happened inside the mansion until someone reports it, and she will not
+  disclose customer identities or private preferences.
+- The succubus runner knows only her own sealed contract token, arrival window,
+  stop signal, vitality cap, barrier injury, and withdrawal intent. She cannot
+  read a customer's mind, make a real resident into a dream persona, or speak
+  for another employee.
+- Aqua knows she placed a sacred barrier and can observe that it trapped a
+  demon. She does not know the runner's contract, intent, or vitality state
+  until those facts are checked.
 
 ## Route endings
 
@@ -234,3 +286,11 @@ erase debt, forge consent, or replace a registered plan.
   not forcibly purified, but disclosure or repair remains provisional.
 - `volume2_haunting_displaced`: repeated symptom-only purification leaves the
   displacement cause unresolved and moves the haunting to another door.
+- Planned `volume2_dream_compact_repaired`: all eight privacy, consent,
+  reality, and nonlethal-response evidence gates produce a barrier-aware shop
+  procedure and a repaired household agreement.
+- Planned `volume2_private_truce`: immediate harm and disclosure are contained,
+  but incomplete process repair keeps trust provisional.
+- Planned `volume2_mansion_trust_broken`: assumed dream consent, ignored
+  privacy markers, leaked customer details, forced purification, or concealed
+  safety failures exhaust the available route.

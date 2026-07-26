@@ -27,6 +27,13 @@
   barrier cause, disclosure and repair terms, and Anna's grave from the same
   local EPUB, `OEBPS/Text/chapter3-1.xhtml`. Runtime dialogue and route
   evaluation remain newly authored or generated.
+- Volume 2 Chapter 4 derives only household winter routines, the discreet
+  dream-service business, bounded vitality exchange, mistaken dream/reality
+  assumptions, mansion privacy signals, a succubus caught by a sacred barrier,
+  nonlethal escape, and the Destroyer warning from the same local EPUB,
+  `OEBPS/Text/chapter4-1.xhtml`. The project adaptation makes every service
+  participant explicitly adult, excludes intimate source prose and nudity, and
+  authors new consent, privacy, reality-check, safety, and route language.
 
 ## Public visual reference
 
@@ -77,6 +84,13 @@
   Megumin's frightened night pose were identity-preserving edits of existing
   project sprites, generated on flat chroma key, converted to transparent PNG,
   and visually inspected before fingerprint-bound import.
+- Volume 2 Chapter 4 adds newly generated winter cafe-alley, professional
+  consultation-room, and mansion bath-corridor backgrounds. Public Receptionist
+  Succubus and Newbie Succubus pages informed only long/short pink hair, eye
+  color, pointed ears, wings, tail, and workplace role. The project depicts both
+  as fully dressed adults. Four newly generated sprite sources were converted
+  from flat chroma key to transparent PNG, visually inspected, and
+  fingerprint-imported.
 
 ## Rights and distribution
 

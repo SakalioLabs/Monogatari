@@ -1,0 +1,10 @@
+{
+  "id": "mansion_bath_corridor",
+  "name": "豪宅浴室外走廊",
+  "background_path": "assets/backgrounds/mansion_bath_corridor.png",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "winter_clear",
+  "time_of_day": "midnight",
+  "tags": ["volume2", "mansion", "privacy", "dream_reality", "barrier"]
+}

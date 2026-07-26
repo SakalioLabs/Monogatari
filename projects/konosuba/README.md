@@ -89,6 +89,15 @@ Suite covers all eight nodes and evidence gates in 16 clean turns and proves
 that structural prompt, memory, score, evidence, purification, and ending
 forgery cannot mutate story state.
 
+Volume 2 Chapter 4 now has a validated source and visual foundation for an
+adult, consent-centered dream-service chapter. Its planned live route treats
+customer privacy, household privacy, dream/reality verification, and
+proportional response to a trapped demon as separate evidence problems. Two
+independent adult succubus NPCs have bounded Knowledge and relationship
+contracts. Three generated backgrounds and four transparent expression
+sprites are delivery-valid; the eight-node Roleplay, endings, Campaign entry,
+and Quality Suite are the next production batch.
+
 The direct Volume 2 browser entry is:
 
 ```text

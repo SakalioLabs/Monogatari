@@ -1,0 +1,10 @@
+{
+  "id": "succubus_cafe_consultation",
+  "name": "梦境服务契约室",
+  "background_path": "assets/backgrounds/succubus_cafe_consultation.png",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "indoor",
+  "time_of_day": "late_afternoon",
+  "tags": ["volume2", "succubus_cafe", "contract", "adult_consent", "privacy"]
+}

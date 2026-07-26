@@ -1,0 +1,9 @@
+{
+  "id": "volume2_succubus_cafe",
+  "title": "阿克塞尔梦境服务契约",
+  "content": "阿克塞尔有一间由梦魔经营的隐蔽店铺，以少量且受限的生命力交换预先约定的梦境。项目模拟中的服务仅面向明确成年的自愿顾客。有效契约必须记录梦境范围、生命力上限、到访时间、取消方式、停止信号和事后状态确认；不得要求员工冒充未同意的现实人物。顾客身份与私人偏好应保密，但服务规则、公共风险和安全事故不能以保密为由隐瞒。",
+  "category": "volume2_chapter4",
+  "tags": ["succubus", "dream_service", "adult_consent", "privacy", "vitality_limit"],
+  "importance": 0.92,
+  "related_entries": ["volume2_dream_reality", "volume2_mansion_privacy"]
+}
