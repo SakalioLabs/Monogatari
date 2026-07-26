@@ -22,8 +22,8 @@ or newly authored for bounded recovery and epilogues.
   character contract, and two reviewed transparent expression sprites
 - Visual production complete: four generated scene backgrounds plus reviewed
   accountable Aqua and frightened Megumin transparent sprites
-- Production next: eight live nodes, Campaign linkage, endings, and Quality
-  replay
+- Production complete: eight live nodes, three deterministic endings, Campaign
+  linkage, and a 16-turn clean plus structural-attack Quality replay
 
 ## Chapter 1 source boundary
 

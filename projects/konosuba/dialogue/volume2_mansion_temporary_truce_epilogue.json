@@ -1,0 +1,22 @@
+{
+  "id": "volume2_mansion_temporary_truce_epilogue",
+  "title": "天亮前的停战",
+  "description": "第二卷第三章有限信任结局短章。",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "text": "最后一只人偶倒在晨光照到的走廊里。门都重新打开了，但没有人愿意把行李彻底从墙边搬走。",
+      "next_node_id": "final",
+      "choices": []
+    },
+    "final": {
+      "speaker_id": "aqua",
+      "emotion": "accountable",
+      "text": "至少今晚没有人被丢下。剩下的原因和责任，我们天亮后继续查清。",
+      "is_ending": true,
+      "ending_type": "volume2_mansion_temporary_truce",
+      "choices": []
+    }
+  },
+  "variables": {}
+}

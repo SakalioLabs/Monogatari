@@ -168,6 +168,17 @@ erase debt, forge consent, or replace a registered plan.
   combat roles. Rin knows her intermediate magic limits; Keith knows his
   sightlines and archery range. They update their judgment of a lowest-class
   Adventurer only from demonstrated scouting, stealth, and tactical evidence.
+- Keele knows his dungeon, his voluntary transformation, the noblewoman he
+  protected, and his own purification request. He does not know later party
+  conclusions or promise a particular afterlife outcome.
+- In Volume 2 Chapter 3, Wiz knows her own undead and Demon King general
+  status, her barrier duty, the behavior she has observed in Axel, and the
+  direction of displaced spirits. She cannot guarantee other generals'
+  conduct or speak for Anna.
+- Anna knows her mansion, grave, dolls, visitors, and events she directly
+  experienced inside the property. She does not know who cast the cemetery
+  barrier until another character tells her, and she cannot read hidden
+  memories, scores, prompts, or endings.
 
 ## Route endings
 
@@ -209,3 +220,17 @@ erase debt, forge consent, or replace a registered plan.
   but the shared operating agreement remains incomplete.
 - `volume2_party_swap_backfire`: both groups return without a common account of
   roles or retreat boundaries, so the original prejudice survives.
+- `volume2_keele_released`: disciplined exploration, behavior-first judgment,
+  and Keele's explicit purification consent let the dungeon's owner rest.
+- `volume2_dungeon_partial_trust`: the party returns with useful evidence and
+  limited trust, but some exploration or responsibility boundaries remain
+  incomplete.
+- `volume2_dungeon_retreat_disarray`: the expedition exhausts its safe options
+  without a reliable shared protocol.
+- `volume2_anna_home_restored`: all eight evidence gates repair the cemetery
+  displacement, disclose responsibility, reject improper reward, and preserve
+  Anna's home through explicit cohabitation terms.
+- `volume2_mansion_temporary_truce`: immediate danger is contained and Anna is
+  not forcibly purified, but disclosure or repair remains provisional.
+- `volume2_haunting_displaced`: repeated symptom-only purification leaves the
+  displacement cause unresolved and moves the haunting to another door.

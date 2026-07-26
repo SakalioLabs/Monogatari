@@ -1,0 +1,22 @@
+{
+  "id": "volume2_anna_home_restored_epilogue",
+  "title": "仍有人回家的房子",
+  "description": "第二卷第三章完整修复结局短章。",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "text": "清理过的墓碑映着冬日晨光。厨房的窗户亮着，豪宅里传来争论晚餐该讲哪一段冒险故事的声音。",
+      "next_node_id": "final",
+      "choices": []
+    },
+    "final": {
+      "speaker_id": "anna_filante",
+      "emotion": "relieved",
+      "text": "今晚也要讲故事。你们回来的时候，我会把这里看好。",
+      "is_ending": true,
+      "ending_type": "volume2_anna_home_restored",
+      "choices": []
+    }
+  },
+  "variables": {}
+}

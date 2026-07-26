@@ -1,5 +1,7 @@
 # Volume 2 Chapter 3 Dynamic Roleplay Plan
 
+Status: complete and playable as `volume2_chapter3_roleplay`.
+
 ## Source boundary
 
 - Private narrative source: local Volume 2 EPUB,

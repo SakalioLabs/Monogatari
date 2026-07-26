@@ -1,0 +1,22 @@
+{
+  "id": "volume2_haunting_displaced_epilogue",
+  "title": "被赶往下一扇门",
+  "description": "第二卷第三章失控结局短章。",
+  "start_node_id": "start",
+  "nodes": {
+    "start": {
+      "text": "豪宅终于安静下来。镇子另一端，却有一间空屋的窗帘在无人触碰时缓缓拉开。",
+      "next_node_id": "final",
+      "choices": []
+    },
+    "final": {
+      "speaker_id": "wiz",
+      "emotion": "cautious",
+      "text": "被赶走并不等于得到安息。若不找出原因，它们只会去敲下一扇门。",
+      "is_ending": true,
+      "ending_type": "volume2_haunting_displaced",
+      "choices": []
+    }
+  },
+  "variables": {}
+}

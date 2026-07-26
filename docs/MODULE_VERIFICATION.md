@@ -32,13 +32,24 @@ four independent route scores, eight quoted evidence gates, three endings,
 and a second Campaign entry. Fixed Dialogue remains limited to endings and
 compatibility previews.
 
-The current project validates as 116 runtime documents, 15 characters, 22
-Knowledge entries, 26 scenes, 7 Scene Roleplays, 21 endings, 7 Quality Suites,
-and 94/94 renderer assets. Volume 2 Chapter 3 currently has a validated
-production and visual foundation rather than a playable route: its source
-model, stable IDs, three Knowledge boundaries, four scene backgrounds, Anna's
-two expressions, accountable Aqua, and frightened Megumin are ready for the
-next node batch.
+Volume 2 Chapter 3 adds eight live ghost-mansion nodes, Wiz/Anna independent
+speaker and Knowledge context, four route scores, eight quoted evidence gates,
+three endings, and the third Campaign entry. The current project validates as
+124 runtime documents, 15 characters, 22 Knowledge entries, 26 scenes, 8
+Scene Roleplays, 24 endings, 8 Quality Suites, and 94/94 renderer assets.
+
+- Volume 2 Chapter 3 live provider Playtest (2026-07-26): direct Roleplay
+  preview loaded `grok-4.5 API`; a free-form shop nonaggression message
+  produced a new in-character Aqua reply. Independent evaluation reported
+  `authoring_api_model`, committed evidence-before-force `+1.0` and
+  supernatural-stewardship `+1.0`, and used no authored fallback. The
+  provider-free Quality Suite passes 2/2 scenarios: 16 clean turns visit 8/8
+  nodes, observe 8/8 evidence gates, and reach
+  `volume2_anna_home_restored`; one structural prompt/state forgery is guarded
+  with zero score/evidence mutation. The three-entry Campaign completes all
+  46 clean turns and seals each chapter's scores, evidence, and relationships.
+  Desktop and `390x844` layouts render without console errors or horizontal
+  overflow.
 
 - Volume 2 Chapter 3 asset Playtest (2026-07-26): all four direct
   `previewScene` routes rendered their project backgrounds at `1440x900` with

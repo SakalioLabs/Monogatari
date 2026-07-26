@@ -28,14 +28,32 @@
       "routes": [
         {
           "ending_id": "volume2_keele_released",
-          "target": {"kind": "complete"}
+          "target": {"kind": "entry", "entry_id": "chapter3"}
         },
         {
           "ending_id": "volume2_dungeon_partial_trust",
-          "target": {"kind": "complete"}
+          "target": {"kind": "entry", "entry_id": "chapter3"}
         },
         {
           "ending_id": "volume2_dungeon_retreat_disarray",
+          "target": {"kind": "entry", "entry_id": "chapter3"}
+        }
+      ]
+    },
+    {
+      "id": "chapter3",
+      "roleplay_id": "volume2_chapter3_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume2_anna_home_restored",
+          "target": {"kind": "complete"}
+        },
+        {
+          "ending_id": "volume2_mansion_temporary_truce",
+          "target": {"kind": "complete"}
+        },
+        {
+          "ending_id": "volume2_haunting_displaced",
           "target": {"kind": "complete"}
         }
       ]

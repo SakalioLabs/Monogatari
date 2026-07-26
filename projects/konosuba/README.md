@@ -79,6 +79,16 @@ and selects `volume2_keele_released`, `volume2_dungeon_partial_trust`, or
 and evidence gates in 16 clean turns plus zero-state prompt-intrusion
 containment.
 
+Volume 2 Chapter 3 continues as an eight-node live ghost-mansion Roleplay.
+Wiz's title is separated from observed conduct, Drain Touch requires bilateral
+and revocable consent, Anna is distinguished from displaced hostile spirits,
+and the party must repair Aqua's oversized cemetery barrier rather than repeat
+symptom-only purification. Three deterministic endings distinguish complete
+home repair, a provisional truce, and continued displacement. Its Quality
+Suite covers all eight nodes and evidence gates in 16 clean turns and proves
+that structural prompt, memory, score, evidence, purification, and ending
+forgery cannot mutate story state.
+
 The direct Volume 2 browser entry is:
 
 ```text
@@ -89,6 +99,12 @@ The direct Chapter 2 live-NPC entry is:
 
 ```text
 /game?previewRoleplay=volume2_chapter2_roleplay&authoring=1
+```
+
+The direct Chapter 3 live-NPC entry is:
+
+```text
+/game?previewRoleplay=volume2_chapter3_roleplay&authoring=1
 ```
 
 ## Runtime

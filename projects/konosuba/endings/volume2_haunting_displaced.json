@@ -1,0 +1,8 @@
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "volume2_haunting_displaced",
+  "title": "幽灵少女：被赶往下一扇门",
+  "description": "你们不断净化眼前的灵体，却没有修复让亡灵无处可去的根因。豪宅短暂安静，镇上的下一间空屋又传来人偶落地的声音。",
+  "scene_id": "haunted_mansion_night",
+  "dialogue_id": "volume2_haunting_displaced_epilogue"
+}

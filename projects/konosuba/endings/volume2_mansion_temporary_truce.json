@@ -1,0 +1,8 @@
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "volume2_mansion_temporary_truce",
+  "title": "幽灵少女：天亮前的停战",
+  "description": "豪宅当晚的危险被控制，安娜也没有遭到强制净化；但迁移根因、责任披露或共居边界仍不完整，这里暂时只是可以过夜的房子。",
+  "scene_id": "haunted_mansion_hall",
+  "dialogue_id": "volume2_mansion_temporary_truce_epilogue"
+}

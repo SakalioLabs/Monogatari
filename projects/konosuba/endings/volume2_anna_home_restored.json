@@ -1,0 +1,8 @@
+{
+  "schema": "monogatari-story-ending/v1",
+  "id": "volume2_anna_home_restored",
+  "title": "幽灵少女：仍有人回家的房子",
+  "description": "你们查清并修复了墓地结界造成的迁移，公开责任并拒绝不当报酬。安娜没有因幽灵身份被净化，而是作为无害住客获得墓地、故事和共同生活的明确约定。",
+  "scene_id": "anna_garden_grave",
+  "dialogue_id": "volume2_anna_home_restored_epilogue"
+}
