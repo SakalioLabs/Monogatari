@@ -153,6 +153,16 @@ sixteen quoted evidence gates select a chosen path with an open door, a
 respectful refusal with family trust, or public sabotage and broken trust. Its
 Quality Suite proves all three endings and structural intrusion containment.
 
+Volume 3 Chapter 4 is grounded as an eight-node real-time dungeon emergency.
+Sena's investigation separates observed self-destructing dolls from presumed
+party guilt; Aqua must disclose the lingering purification circle without
+claiming false causation; Vanir's mask, clay body, motive, and claimed
+nonlethality remain independently testable; and possessed Darkness retains a
+separate voice and changing control state. The planned final response layers
+distance, restraint, exorcism, seal handling, host-authorized mask removal, and
+a witnessed last-resort order. The chapter stops at the observed blast and
+does not import its result from the next source chapter.
+
 The direct Volume 2 browser entry is:
 
 ```text

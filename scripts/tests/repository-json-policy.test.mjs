@@ -31,7 +31,7 @@ test('checked-in repository JSON returns passing evidence', async () => {
   const files = await createRepositoryFileWalker()(repositoryRoot)
   const projectPrefix = path.join(repositoryRoot, 'projects', 'konosuba') + path.sep
   const projectJsonFiles = files.filter(file => file.startsWith(projectPrefix) && file.endsWith('.json'))
-  assert.equal(projectJsonFiles.length, 232)
+  assert.equal(projectJsonFiles.length, 239)
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'campaigns', 'volume1_campaign.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'campaigns', 'volume2_campaign.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'campaigns', 'volume3_campaign.json')))
@@ -56,6 +56,7 @@ test('checked-in repository JSON returns passing evidence', async () => {
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'quality_suites', 'volume3_chapter2_roleplay.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'quality_suites', 'volume3_chapter3_roleplay.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'characters', 'eris.json')))
+  assert(projectJsonFiles.includes(path.join(projectPrefix, 'characters', 'vanir.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'characters', 'anna_filante.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'characters', 'succubus_receptionist.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'characters', 'succubus_runner.json')))
@@ -102,6 +103,7 @@ test('checked-in repository JSON returns passing evidence', async () => {
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'endings', 'volume3_chosen_path_and_open_door.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'endings', 'volume3_respectful_refusal_and_family_trust.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'endings', 'volume3_public_sabotage_and_broken_trust.json')))
+  assert(projectJsonFiles.includes(path.join(projectPrefix, 'knowledge', 'volume3_possession_dual_control.json')))
 })
 
 test('Repository JSON evidence isolates parse and read failures', async () => {

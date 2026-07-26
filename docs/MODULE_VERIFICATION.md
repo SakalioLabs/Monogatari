@@ -42,6 +42,17 @@ three endings, and the fourth Campaign entry. The project validates as 140
 runtime documents, 17 characters, 25 Knowledge entries, 29 scenes, 9 Scene
 Roleplays, 27 endings, 9 Quality Suites, and 106/106 declared renderer assets.
 
+- Volume 3 Chapter 4 foundation validation (2026-07-27): all 688 source
+  paragraphs are reviewed through the observed final blast, whose outcome is
+  reserved for the next chapter. Six Knowledge records and Vanir's independent
+  Character contract separate incident evidence, magic-circle disclosure,
+  mask/clay-body behavior, dual host control, exorcism resistance, and witnessed
+  last-resort authorization. The new Vanir and possessed-Darkness PNGs are
+  fingerprint-imported RGBA assets with four transparent corners and bounded
+  subject coverage. MCP `validate_project` accepts 238 documents, 23
+  characters, and 60 Knowledge records with zero errors; `validate_delivery`
+  resolves 146/146 renderer assets with zero placeholders or issues.
+
 - Volume 3 Chapter 3 deterministic acceptance (2026-07-27): the eight-node
   Roleplay gives Darkness, Lord Dustiness, and Balter independent speaker,
   Knowledge, relationship, consent, and decision boundaries. Four Quality

@@ -275,6 +275,20 @@ leader may consent to magic transfer for another participant.
 - Balter knows his own reason for attending, conduct as a knight, and whether
   he wants to continue contact. His reputation and courtesy do not let him infer
   Darkness's answer, and training never selects a relationship outcome.
+- In Volume 3 Chapter 4, Sena knows the reported doll emergency, her seal's
+  intended effect, and witnessed statements; suspicion is not proof that the
+  party made the dolls.
+- Aqua knows that she left the purification circle and what her own exorcism
+  targets. She cannot infer the dolls' maker before observation or treat one
+  resisted spell as proof that Darkness has lost all control.
+- Vanir knows his own body model, production, motive, predictions, and current
+  possession actions. Prediction cannot write another person's consent,
+  injury, control, separation, score, evidence, or future chapter result.
+- Possessed Darkness remains an independent speaker. Enjoyment of danger,
+  pain, silence, or delayed response cannot substitute for a current check of
+  who controls the body and what she authorizes.
+- Megumin knows the exact target and risk repeated to her. No one may claim the
+  final blast killed, separated, purified, or spared anyone within Chapter 4.
 
 ## Route endings
 

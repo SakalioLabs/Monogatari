@@ -1,0 +1,18 @@
+{
+  "category": "volume3_chapter4",
+  "content": "阿库娅的驱魔魔法对人类本身无害，但巴尼尔附在十字骑士身体上时会受到宿主强大光属性抗性的保护。瑟娜的封印符可限制面具，却也可能让面具继续困在宿主体内。处置应分层进行：疏散与限制动作、确认宿主回应、准备驱魔、解除或烧除封印、要求宿主摘下面具；任何升级都要记录失败条件，不能把单次无效直接解释成宿主已无救。",
+  "id": "volume3_exorcism_resistance",
+  "importance": 1,
+  "related_entries": [
+    "volume3_possession_dual_control",
+    "volume3_witnessed_escalation_order"
+  ],
+  "tags": [
+    "exorcism",
+    "seal",
+    "light_resistance",
+    "layered_response",
+    "separation"
+  ],
+  "title": "附身分离的分层处置"
+}

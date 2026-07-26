@@ -1,0 +1,19 @@
+{
+  "category": "volume3_chapter4",
+  "content": "当普通驱魔、宿主抵抗和解除封印仍无法让面具分离时，任何爆裂魔法等最后手段都必须由宿主清楚提出或确认、由执行者复述目标与风险、由现场负责人下令并由瑟娜见证责任。第四章只确认命令与爆炸发生，爆炸后的伤亡、分离或讨伐结果尚未被观察，不能提前宣告。",
+  "id": "volume3_witnessed_escalation_order",
+  "importance": 1,
+  "related_entries": [
+    "volume3_possession_dual_control",
+    "volume3_exorcism_resistance",
+    "volume3_sena_return_notice"
+  ],
+  "tags": [
+    "last_resort",
+    "witness",
+    "authorization",
+    "responsibility",
+    "chapter_boundary"
+  ],
+  "title": "最终处置命令与章节结果边界"
+}

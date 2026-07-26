@@ -26,7 +26,13 @@
     "volume3_court_corruption_signal",
     "volume3_stay_and_restitution_terms",
     "volume3_explosion_toad_consequence",
-    "volume3_snowfield_rescue_record"
+    "volume3_snowfield_rescue_record",
+    "volume3_mask_doll_incident",
+    "volume3_lingering_purification_circle",
+    "volume3_vanir_body_and_motive",
+    "volume3_possession_dual_control",
+    "volume3_exorcism_resistance",
+    "volume3_witnessed_escalation_order"
   ],
   "name": "塞娜",
   "personality": {

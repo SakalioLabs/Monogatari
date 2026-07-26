@@ -143,6 +143,13 @@
   generated against flat chroma key, converted to transparent WebP, verified
   for alpha coverage and edge quality, visually inspected, and imported through
   the fingerprint-bound project asset importer.
+- Volume 3 Chapter 4 is grounded in all 688 paragraph nodes of the local Volume
+  3 EPUB, `OEBPS/Text/chapter4-1.xhtml`, ending at the observed blast without
+  importing its result from the next chapter. The new Vanir sprite is an
+  original masked demon-duke design, and the possessed Darkness state is an
+  identity-preserving edit of the existing project sprite. Both were generated
+  against flat chroma key, converted to transparent PNG, and validated for alpha
+  coverage before project use.
 
 ## Rights and distribution
 
