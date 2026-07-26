@@ -1,0 +1,13 @@
+{
+  "category": "volume3_chapter5",
+  "content": "瑟娜安排现场见证与后续程序后，和真一行因实际对抗魔王军干部而洗清间谍与颠覆国家嫌疑，瑟娜公开致歉并补发毁灭者奖金。账本先扣除既有债务和领主宅邸修缮费，再确认剩余四千万艾莉丝；洗清嫌疑不能抹除此前调查、损失或扣款事实。",
+  "id": "volume3_exoneration_and_reward_ledger",
+  "importance": 1,
+  "related_entries": [
+    "volume3_trial_evidence_boundary",
+    "volume3_blast_outcome_and_recovery",
+    "volume2_destroyer_contribution_ledger"
+  ],
+  "tags": ["sena", "exoneration", "apology", "debt", "reward"],
+  "title": "洗清嫌疑、公开致歉与四千万奖金账本"
+}

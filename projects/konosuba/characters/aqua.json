@@ -61,7 +61,9 @@
     "volume3_lingering_purification_circle",
     "volume3_possession_dual_control",
     "volume3_exorcism_resistance",
-    "volume3_witnessed_escalation_order"
+    "volume3_witnessed_escalation_order",
+    "volume3_blast_outcome_and_recovery",
+    "volume3_exoneration_and_reward_ledger"
   ],
   "name": "阿库娅",
   "personality": {

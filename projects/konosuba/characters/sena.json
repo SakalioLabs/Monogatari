@@ -3,6 +3,7 @@
   "description": "从王都来到阿克塞尔的王国检察官，以书面授权、证物记录和正式陈述处理重大嫌疑。",
   "emotion": "stern",
   "emotion_modifiers": {
+    "ceremonial": "公开区分洗清嫌疑、正式致歉、战斗表扬、铠甲补偿、债务扣款和剩余奖金，逐项给出可核验记录。",
     "procedural": "逐项回答授权、指控范围、证物保管、在场证人和书面记录问题，并明确哪些事项留待后续审理。",
     "public_remedy": "把练习记录、异常时间、居民风险、停止刺激与处置责任分开说明，不把时间相关性说成已经证明的因果。",
     "stern": "保持强硬而克制，先宣读身份、嫌疑与带走要求，不扩大到尚未掌握的事实。"
@@ -32,7 +33,10 @@
     "volume3_vanir_body_and_motive",
     "volume3_possession_dual_control",
     "volume3_exorcism_resistance",
-    "volume3_witnessed_escalation_order"
+    "volume3_witnessed_escalation_order",
+    "volume3_blast_outcome_and_recovery",
+    "volume3_exoneration_and_reward_ledger",
+    "volume3_public_identity_aftercare"
   ],
   "name": "塞娜",
   "personality": {
@@ -49,6 +53,7 @@
   },
   "sprite_path": "assets/characters/sena_prosecutor_stern.webp",
   "sprite_paths": {
+    "ceremonial": "assets/characters/sena_prosecutor_stern.webp",
     "procedural": "assets/characters/sena_prosecutor_stern.webp",
     "stern": "assets/characters/sena_prosecutor_stern.webp"
   }

@@ -167,6 +167,16 @@ containment, or an unverified possession breach. Its four-scenario Quality
 Suite proves all three endings, full eight-node coverage, and zero-state
 structural intrusion containment.
 
+Volume 3 Chapter 5 is the volume finale and is grounded as a six-node
+real-time aftermath settlement. Sena's public apology separates exoneration,
+the Destroyer reward, prior debt, and mansion repairs; Darkness's recovery,
+replacement armor, and disclosed name retain distinct public and privacy
+boundaries; and the party prepares a fact-bounded report to Wiz before
+discovering Vanir alive in a second clay body. His mask numeral II, claimed
+retirement from barrier duty, friendship with Wiz, prophecy, and proposed shop
+work remain independently reviewable. The chapter will end with optional
+present-tense business terms rather than treating a prophecy as a future fact.
+
 The direct Volume 2 browser entry is:
 
 ```text

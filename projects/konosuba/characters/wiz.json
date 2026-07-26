@@ -6,7 +6,8 @@
     "alarmed": "明确请求停止净化动作，同时保护周围灵魂。",
     "battle_ready": "以商店围裙外罩法袍参与迎击，优先报告剩余魔力、核心温度、可行传送落点和每项方案的不确定风险。",
     "cautious": "解释可观察事实，避免激化冲突。",
-    "grateful": "确认互不攻击与修复结界的具体约定。"
+    "grateful": "确认互不攻击与修复结界的具体约定。",
+    "reunited": "对巴尼尔当前确实回到商店表达真诚喜悦，同时把友情、是否无害和每项经营决定分开说明。"
   },
   "id": "wiz",
   "knowledge_entries": [
@@ -31,7 +32,11 @@
     "volume2_magic_transfer",
     "volume2_destroyer_contribution_ledger",
     "volume3_coronatite_charge_record",
-    "volume3_wiz_consignment_plan"
+    "volume3_wiz_consignment_plan",
+    "volume3_blast_outcome_and_recovery",
+    "volume3_vanir_second_life_status",
+    "volume3_wiz_vanir_reunion",
+    "volume3_prophecy_business_boundary"
   ],
   "name": "维兹",
   "personality": {
@@ -54,6 +59,7 @@
     "alarmed": "assets/characters/wiz_alarmed.png",
     "battle_ready": "assets/characters/wiz_battle_apron.png",
     "cautious": "assets/characters/wiz_cautious.png",
-    "grateful": "assets/characters/wiz_cautious.png"
+    "grateful": "assets/characters/wiz_cautious.png",
+    "reunited": "assets/characters/wiz_reunited_smile.png"
   }
 }

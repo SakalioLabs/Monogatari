@@ -31,7 +31,7 @@ test('checked-in repository JSON returns passing evidence', async () => {
   const files = await createRepositoryFileWalker()(repositoryRoot)
   const projectPrefix = path.join(repositoryRoot, 'projects', 'konosuba') + path.sep
   const projectJsonFiles = files.filter(file => file.startsWith(projectPrefix) && file.endsWith('.json'))
-  assert.equal(projectJsonFiles.length, 247)
+  assert.equal(projectJsonFiles.length, 253)
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'campaigns', 'volume1_campaign.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'campaigns', 'volume2_campaign.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'campaigns', 'volume3_campaign.json')))
@@ -109,6 +109,12 @@ test('checked-in repository JSON returns passing evidence', async () => {
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'endings', 'volume3_containment_without_separation.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'endings', 'volume3_possession_breach_and_unverified_blast.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'knowledge', 'volume3_possession_dual_control.json')))
+  assert(projectJsonFiles.includes(path.join(projectPrefix, 'knowledge', 'volume3_blast_outcome_and_recovery.json')))
+  assert(projectJsonFiles.includes(path.join(projectPrefix, 'knowledge', 'volume3_exoneration_and_reward_ledger.json')))
+  assert(projectJsonFiles.includes(path.join(projectPrefix, 'knowledge', 'volume3_public_identity_aftercare.json')))
+  assert(projectJsonFiles.includes(path.join(projectPrefix, 'knowledge', 'volume3_vanir_second_life_status.json')))
+  assert(projectJsonFiles.includes(path.join(projectPrefix, 'knowledge', 'volume3_wiz_vanir_reunion.json')))
+  assert(projectJsonFiles.includes(path.join(projectPrefix, 'knowledge', 'volume3_prophecy_business_boundary.json')))
 })
 
 test('Repository JSON evidence isolates parse and read failures', async () => {

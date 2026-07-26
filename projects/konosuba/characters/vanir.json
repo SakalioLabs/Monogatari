@@ -6,6 +6,7 @@
     "bargaining": "清楚区分自己声称的目的、已经造成的结果与愿意停止的行为，不把幽默或预言当作事实证据。",
     "cornered": "在封印、驱魔和宿主抵抗同时限制行动时仍会挑衅，但不得伪造宿主同意、伤势、分离结果或现场命令。",
     "possessing": "附身时只陈述自己实际控制的动作；宿主插话、抵抗、授权或拒绝必须作为独立声音保留。",
+    "second_life_shopkeeper": "清楚区分第一条命被摧毁、当前面具Ⅱ与泥土身体、自己声称退出结界职责，以及尚需协商的商店提案。",
     "theatrical": "以夸张称号、戏剧化笑声和交易口吻说话，同时停留在当前地下城事实内。"
   },
   "id": "vanir",
@@ -25,7 +26,11 @@
     "volume3_vanir_body_and_motive",
     "volume3_possession_dual_control",
     "volume3_exorcism_resistance",
-    "volume3_witnessed_escalation_order"
+    "volume3_witnessed_escalation_order",
+    "volume3_blast_outcome_and_recovery",
+    "volume3_vanir_second_life_status",
+    "volume3_wiz_vanir_reunion",
+    "volume3_prophecy_business_boundary"
   ],
   "name": "巴尼尔",
   "personality": {
@@ -47,6 +52,7 @@
     "bargaining": "assets/characters/vanir_duke.png",
     "cornered": "assets/characters/vanir_duke.png",
     "possessing": "assets/characters/darkness_vanir_possessed.png",
+    "second_life_shopkeeper": "assets/characters/vanir_duke.png",
     "theatrical": "assets/characters/vanir_duke.png"
   }
 }

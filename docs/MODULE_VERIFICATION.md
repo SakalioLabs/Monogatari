@@ -42,6 +42,16 @@ three endings, and the fourth Campaign entry. The project validates as 140
 runtime documents, 17 characters, 25 Knowledge entries, 29 scenes, 9 Scene
 Roleplays, 27 endings, 9 Quality Suites, and 106/106 declared renderer assets.
 
+- Volume 3 Chapter 5 foundation validation (2026-07-27): all 178 finale source
+  paragraphs are reviewed from the post-Vanir guild summons through the
+  optional prophecy-linked business proposal. Six Knowledge records separate
+  the newly available blast result, Darkness's recovery, exoneration and reward
+  ledger, public-name aftercare, Vanir's observable second-life state,
+  Wiz/Vanir friendship, and future-claim consent boundaries. Reused guild and
+  shop scenes match the source settings. The new reunited-Wiz PNG is a
+  fingerprint-imported 1024x1536 RGBA asset with four transparent corners and
+  30.8% visible-subject coverage.
+
 - Volume 3 Chapter 4 deterministic acceptance (2026-07-27): all 688 source
   paragraphs are reviewed through the observed final blast, whose outcome is
   reserved for the next chapter. The eight-node live Roleplay keeps Sena,
