@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/axel_guild_arrest.webp",
+  "bgm_path": null,
+  "id": "axel_guild_arrest",
+  "model_3d_path": null,
+  "name": "检察官到场后的寂静公会",
+  "tags": [
+    "volume2_epilogue",
+    "axel",
+    "guild",
+    "prosecutor",
+    "custody"
+  ],
+  "time_of_day": "day",
+  "weather": null
+}

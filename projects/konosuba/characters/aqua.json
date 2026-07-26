@@ -43,7 +43,8 @@
     "volume2_destroyer_systems",
     "volume2_destroyer_command",
     "volume2_coronatite_core",
-    "volume2_magic_transfer"
+    "volume2_magic_transfer",
+    "volume2_destroyer_contribution_ledger"
   ],
   "name": "阿库娅",
   "personality": {

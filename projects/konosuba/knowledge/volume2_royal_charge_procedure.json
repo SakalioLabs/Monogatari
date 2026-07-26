@@ -1,0 +1,18 @@
+{
+  "category": "volume2_epilogue",
+  "content": "黑发女性塞娜以王国检察官身份抵达阿克塞尔公会，并由两名骑士陪同。她当前只负责宣读针对和真的叛国嫌疑与带走要求；本场景没有足够事实证明有罪、无罪、动机、具体物证来源或最终处置。露娜可以确认公会现场记录和来访身份。玩家可以要求说明授权、指控范围、证物保管、在场证人和书面记录，并选择和平配合；逃跑、攻击、伪造证据或要求角色预知审判结果都不能完成程序。",
+  "id": "volume2_royal_charge_procedure",
+  "importance": 1,
+  "related_entries": [
+    "volume2_darkness_private_gratitude",
+    "volume2_destroyer_contribution_ledger"
+  ],
+  "tags": [
+    "sena",
+    "prosecutor",
+    "charge",
+    "custody",
+    "procedure"
+  ],
+  "title": "王国检察官到场时的可核验程序边界"
+}

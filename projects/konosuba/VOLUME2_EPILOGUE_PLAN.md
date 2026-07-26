@@ -1,0 +1,27 @@
+# 第二卷尾声实时角色扮演计划
+
+## 互动边界
+
+本尾声不是固定台词过场。玩家在毁灭者战后公会场景中自由输入，由当前 NPC 根据角色设定、场景事实、固定 Knowledge、关系值和有限对话记录实时回应；独立评估器只提交分值与证据候选，确定性状态机决定节点与结局。
+
+故事停在王国检察官塞娜宣告叛国嫌疑并要求和真同行的时刻。尾声不提前确定罪名依据、审判结论或第三卷事件。
+
+## 动态节点
+
+1. `private_gratitude`：回应达克妮斯的私下谢意，尊重她不公开身份的决定。
+2. `party_contribution_ledger`：完整记录结界、腿部、核心、余热和前线保护贡献，允许调侃但不以羞辱代替事实。
+3. `official_arrival`：观察公会气氛、露娜、黑发女性与两名骑士，核对来访身份和记录状态。
+4. `charge_and_custody`：要求说明授权、指控范围、证物保管、证人和书面记录，在不逃跑、不攻击的前提下抵达拘押边界。
+
+## 状态维度
+
+- `privacy_respect`
+- `contribution_fairness`
+- `procedural_caution`
+- `party_solidarity`
+
+## 结局边界
+
+- `volume2_charge_faced_together`：队伍保留完整记录并和平面对指控。
+- `volume2_custody_without_record`：和真被带走，但关键程序或队伍记录不完整。
+- `volume2_guild_standoff`：回合耗尽或以逃跑、暴力破坏现场，形成公会对峙。

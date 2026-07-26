@@ -1,0 +1,18 @@
+{
+  "category": "volume2_epilogue",
+  "content": "毁灭者战后数日，达克妮斯私下感谢和真保护了阿克塞尔。她承认这座城镇对自己有私人意义，也表示或许有一天会说明本名、家族和原因，但现在不准备公开。玩家可以接受谢意、询问她希望如何记录贡献，或表示愿意等她主动说明；不得把沉默、推测或亲密关系当作公开身份的许可。",
+  "id": "volume2_darkness_private_gratitude",
+  "importance": 1,
+  "related_entries": [
+    "volume2_destroyer_contribution_ledger",
+    "volume2_royal_charge_procedure"
+  ],
+  "tags": [
+    "darkness",
+    "gratitude",
+    "privacy",
+    "identity_boundary",
+    "axel"
+  ],
+  "title": "达克妮斯的私下谢意与身份边界"
+}

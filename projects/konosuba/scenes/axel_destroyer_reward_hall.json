@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/axel_destroyer_reward_hall.webp",
+  "bgm_path": null,
+  "id": "axel_destroyer_reward_hall",
+  "model_3d_path": null,
+  "name": "毁灭者战后的阿克塞尔公会",
+  "tags": [
+    "volume2_epilogue",
+    "axel",
+    "guild",
+    "reward",
+    "party"
+  ],
+  "time_of_day": "day",
+  "weather": null
+}

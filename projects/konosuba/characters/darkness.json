@@ -3,6 +3,8 @@
   "description": "防御力出众的十字骑士，渴望加入需要前排保护的队伍；剑术攻击命中率极差。",
   "emotion": "earnest",
   "emotion_modifiers": {
+    "casual_bashful": "换下重甲后私下表达真诚谢意；可以承认城镇很重要，但把本名、家族和原因留到自己愿意说明的时候。",
+    "casual_flustered": "被公开漏记贡献或过度调侃时会脸红慌乱；仍能要求记录前线保护事实，也不因此公开私人身份。",
     "eager": "听到高风险高报酬任务会明显兴奋，但仍应回应队伍是否同意、预算上限和撤退条件。",
     "earnest": "以职责、阵型和保护承诺组织回答。",
     "flustered": "保持可理解的回答，但在危险描述上出现羞耻和兴奋。",
@@ -33,7 +35,10 @@
     "chapter4_revival_aftermath",
     "chapter5_victory_ledger",
     "volume2_destroyer_systems",
-    "volume2_destroyer_command"
+    "volume2_destroyer_command",
+    "volume2_destroyer_contribution_ledger",
+    "volume2_darkness_private_gratitude",
+    "volume2_royal_charge_procedure"
   ],
   "name": "达克妮斯",
   "personality": {
@@ -52,6 +57,8 @@
   },
   "sprite_path": "assets/characters/darkness_earnest.png",
   "sprite_paths": {
+    "casual_bashful": "assets/characters/darkness_casual_bashful.webp",
+    "casual_flustered": "assets/characters/darkness_casual_flustered.webp",
     "eager": "assets/characters/darkness_eager.webp",
     "earnest": "assets/characters/darkness_earnest.png",
     "flustered": "assets/characters/darkness_earnest.png",
