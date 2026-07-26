@@ -31,7 +31,7 @@ test('checked-in repository JSON returns passing evidence', async () => {
   const files = await createRepositoryFileWalker()(repositoryRoot)
   const projectPrefix = path.join(repositoryRoot, 'projects', 'konosuba') + path.sep
   const projectJsonFiles = files.filter(file => file.startsWith(projectPrefix) && file.endsWith('.json'))
-  assert.equal(projectJsonFiles.length, 113)
+  assert.equal(projectJsonFiles.length, 117)
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'campaigns', 'volume1_campaign.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'campaigns', 'volume2_campaign.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'roleplays', 'chapter4_roleplay.json')))
@@ -47,6 +47,8 @@ test('checked-in repository JSON returns passing evidence', async () => {
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'knowledge', 'volume2_ghost_displacement.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'scenes', 'axel_winter_spirit_field.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'scenes', 'keele_hidden_chamber.json')))
+  assert(projectJsonFiles.includes(path.join(projectPrefix, 'scenes', 'wiz_magic_item_shop.json')))
+  assert(projectJsonFiles.includes(path.join(projectPrefix, 'scenes', 'haunted_mansion_night.json')))
 })
 
 test('Repository JSON evidence isolates parse and read failures', async () => {

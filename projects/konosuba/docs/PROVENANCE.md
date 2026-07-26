@@ -72,6 +72,11 @@
   full-body sources are newly generated, converted from flat chroma key to
   transparent PNG, visually inspected on a neutral matte, and imported through
   the fingerprint-bound project asset importer.
+- Volume 2 Chapter 3 also adds newly generated Wiz-shop, mansion-day,
+  mansion-night, and garden-grave backgrounds. Aqua's accountable pose and
+  Megumin's frightened night pose were identity-preserving edits of existing
+  project sprites, generated on flat chroma key, converted to transparent PNG,
+  and visually inspected before fingerprint-bound import.
 
 ## Rights and distribution
 

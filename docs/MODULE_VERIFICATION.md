@@ -32,12 +32,20 @@ four independent route scores, eight quoted evidence gates, three endings,
 and a second Campaign entry. Fixed Dialogue remains limited to endings and
 compatibility previews.
 
-The current project validates as 112 runtime documents, 15 characters, 22
-Knowledge entries, 22 scenes, 7 Scene Roleplays, 21 endings, 7 Quality Suites,
-and 90/90 renderer assets. Volume 2 Chapter 3 currently has a validated
-production foundation rather than a playable route: its source model, stable
-IDs, three Knowledge boundaries, and Anna's two expression sprites are ready
-for the next scene/node batch.
+The current project validates as 116 runtime documents, 15 characters, 22
+Knowledge entries, 26 scenes, 7 Scene Roleplays, 21 endings, 7 Quality Suites,
+and 94/94 renderer assets. Volume 2 Chapter 3 currently has a validated
+production and visual foundation rather than a playable route: its source
+model, stable IDs, three Knowledge boundaries, four scene backgrounds, Anna's
+two expressions, accountable Aqua, and frightened Megumin are ready for the
+next node batch.
+
+- Volume 2 Chapter 3 asset Playtest (2026-07-26): all four direct
+  `previewScene` routes rendered their project backgrounds at `1440x900` with
+  zero browser console errors and no horizontal overflow. The mansion-night
+  route also rendered at `390x844` after waiting for `.game-container`
+  visibility; sampling during the Vue route transition can otherwise capture
+  the outgoing workspace shell and is not valid visual evidence.
 
 - Volume 2 Chapter 2 live provider Playtest (2026-07-26): direct Roleplay
   preview loaded `grok-4.5 API`; a free-form expedition-boundary message

@@ -1,0 +1,10 @@
+{
+  "id": "anna_garden_grave",
+  "name": "安娜的庭院墓地",
+  "background_path": "assets/backgrounds/anna_garden_grave.png",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "winter_clear",
+  "time_of_day": "morning",
+  "tags": ["volume2", "mansion_garden", "anna", "grave", "repair"]
+}

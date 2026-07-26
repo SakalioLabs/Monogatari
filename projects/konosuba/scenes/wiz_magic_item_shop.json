@@ -1,0 +1,10 @@
+{
+  "id": "wiz_magic_item_shop",
+  "name": "维兹魔道具店",
+  "background_path": "assets/backgrounds/wiz_magic_item_shop.png",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "clear",
+  "time_of_day": "late_morning",
+  "tags": ["volume2", "axel", "magic_shop", "wiz", "negotiation"]
+}

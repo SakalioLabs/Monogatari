@@ -1,0 +1,10 @@
+{
+  "id": "haunted_mansion_night",
+  "name": "深夜豪宅走廊",
+  "background_path": "assets/backgrounds/haunted_mansion_night.png",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "clear_night",
+  "time_of_day": "midnight",
+  "tags": ["volume2", "mansion", "night", "possessed_dolls", "regroup"]
+}

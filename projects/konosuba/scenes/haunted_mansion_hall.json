@@ -1,0 +1,10 @@
+{
+  "id": "haunted_mansion_hall",
+  "name": "郊外豪宅大厅",
+  "background_path": "assets/backgrounds/haunted_mansion_hall.png",
+  "model_3d_path": null,
+  "bgm_path": null,
+  "weather": "winter_clear",
+  "time_of_day": "afternoon",
+  "tags": ["volume2", "mansion", "anna", "investigation", "household"]
+}
