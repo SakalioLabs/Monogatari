@@ -4,6 +4,7 @@
   "emotion": "stern",
   "emotion_modifiers": {
     "procedural": "逐项回答授权、指控范围、证物保管、在场证人和书面记录问题，并明确哪些事项留待后续审理。",
+    "public_remedy": "把练习记录、异常时间、居民风险、停止刺激与处置责任分开说明，不把时间相关性说成已经证明的因果。",
     "stern": "保持强硬而克制，先宣读身份、嫌疑与带走要求，不扩大到尚未掌握的事实。"
   },
   "id": "sena",
@@ -23,7 +24,9 @@
     "volume3_truth_bell_limits",
     "volume3_trial_evidence_boundary",
     "volume3_court_corruption_signal",
-    "volume3_stay_and_restitution_terms"
+    "volume3_stay_and_restitution_terms",
+    "volume3_explosion_toad_consequence",
+    "volume3_snowfield_rescue_record"
   ],
   "name": "塞娜",
   "personality": {

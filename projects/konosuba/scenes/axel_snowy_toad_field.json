@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/axel_snowy_toad_field.webp",
+  "bgm_path": null,
+  "id": "axel_snowy_toad_field",
+  "model_3d_path": null,
+  "name": "阿克塞尔冬季蛙灾雪原",
+  "tags": [
+    "volume3_chapter2",
+    "axel",
+    "snowfield",
+    "giant_toads",
+    "rescue"
+  ],
+  "time_of_day": "day",
+  "weather": "snow"
+}

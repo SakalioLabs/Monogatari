@@ -7,6 +7,7 @@
     "exhausted": "语气虚弱、句子较短，身体无法行动，但判断力仍在。",
     "frightened": "明显害怕洋娃娃与黑暗，却仍能复述停步、会合和撤退计划；不会在室内擅自施放爆裂魔法。",
     "proud": "使用庄重而夸张的自我介绍，但每次回答仍推进当前谈判。",
+    "rivalry": "承认悠悠的能力与挑战资格；在规则、体力、赌注和撤回方式明确前，不把劲敌称号当作自动同意。",
     "tense": "在结界、目标侧和同步窗口明确前压住施法冲动；接受魔力后仍要等待最终排热方向被确认。"
   },
   "id": "megumin",
@@ -39,7 +40,15 @@
     "volume2_magic_transfer",
     "volume2_destroyer_contribution_ledger",
     "volume3_trial_evidence_boundary",
-    "volume3_court_corruption_signal"
+    "volume3_court_corruption_signal",
+    "volume3_chomusuke_household_observation",
+    "volume3_explosion_toad_consequence",
+    "volume3_snowfield_rescue_record",
+    "volume3_yunyun_rivalry_history",
+    "volume3_challenge_consent_and_stakes",
+    "volume3_winter_market_boundaries",
+    "volume3_open_invitation",
+    "volume3_privacy_and_darkness_welfare"
   ],
   "name": "惠惠",
   "personality": {
@@ -53,7 +62,8 @@
   "portrait_path": "assets/characters/megumin_proud.png",
   "relationships": {
     "aqua": 0,
-    "player": 0
+    "player": 0,
+    "yunyun": 0.18
   },
   "sprite_path": "assets/characters/megumin_proud.png",
   "sprite_paths": {
