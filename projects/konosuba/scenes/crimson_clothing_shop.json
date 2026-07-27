@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/volume5_ch4_clothing_shop.png",
+  "bgm_path": null,
+  "id": "crimson_clothing_shop",
+  "model_3d_path": null,
+  "name": "红魔族服装店",
+  "tags": [
+    "volume5",
+    "chapter4",
+    "crimson_demon",
+    "shop",
+    "relic"
+  ],
+  "time_of_day": "day",
+  "weather": "clear"
+}

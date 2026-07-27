@@ -1,0 +1,8 @@
+{
+  "description": "席薇亚的自我身份表述得到尊重，挟持局面也暂时受控，但部分侦察、防守轮换、家庭边界或救援职责尚未形成完整证据。后续行动必须从缺失记录继续，不能把短暂停止当作完全胜利。",
+  "dialogue_id": "volume5_night_breach_contained_with_open_risks_epilogue",
+  "id": "volume5_night_breach_contained_with_open_risks",
+  "scene_id": "megumin_house_fence_night",
+  "schema": "monogatari-story-ending/v1",
+  "title": "夜袭暂止，但防卫记录仍有缺口"
+}

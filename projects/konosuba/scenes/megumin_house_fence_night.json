@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/volume5_ch4_house_fence_night.png",
+  "bgm_path": null,
+  "id": "megumin_house_fence_night",
+  "model_3d_path": null,
+  "name": "惠惠家破损围栏·夜间",
+  "tags": [
+    "volume5",
+    "chapter4",
+    "crimson_demon",
+    "home",
+    "hostage_rescue"
+  ],
+  "time_of_day": "night",
+  "weather": "clear"
+}

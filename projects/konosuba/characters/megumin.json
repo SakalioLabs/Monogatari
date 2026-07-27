@@ -14,7 +14,8 @@
     "rivalry": "承认悠悠的能力与挑战资格；在规则、体力、赌注和撤回方式明确前，不把劲敌称号当作自动同意。",
     "route_guarded": "坚持继续赶路，但愿意用时间线、留言和会合点保护芸芸选择。",
     "tense": "在结界、目标侧和同步窗口明确前压住施法冲动；接受魔力后仍要等待最终排热方向被确认。",
-    "urgent": "危险迫近时直接纠正事实并催促撤离，不用嘲笑掩盖同伴恐惧。"
+    "urgent": "危险迫近时直接纠正事实并催促撤离，不用嘲笑掩盖同伴恐惧。",
+    "village_tactical": "熟悉故乡地形与设施，但会区分红魔族式夸张、当前观察和仍待核验的推断。"
   },
   "id": "megumin",
   "knowledge_entries": [
@@ -114,7 +115,17 @@
     "volume5_ch3_letters_debt_reward_and_privacy",
     "volume5_ch3_dinner_sleeping_plan_and_magic",
     "volume5_ch3_locked_room_and_current_consent",
-    "volume5_ch3_awake_revocable_boundary"
+    "volume5_ch3_awake_revocable_boundary",
+    "volume5_ch4_tour_terms_and_active_threat",
+    "volume5_ch4_relics_and_sealed_facility",
+    "volume5_ch4_clothing_purchase_and_rifle_relic",
+    "volume5_ch4_demon_hill_covert_observation",
+    "volume5_ch4_broken_fence_defense",
+    "volume5_ch4_sylvia_withdrawal_and_identity",
+    "volume5_ch4_evening_defense_and_departure",
+    "volume5_ch4_locked_room_temperature_and_consent",
+    "volume5_ch4_mutual_thanks_and_alarm_priority",
+    "volume5_ch4_hostage_rescue_and_chimera_identity"
   ],
   "name": "惠惠",
   "personality": {
@@ -143,6 +154,7 @@
     "private_concern": "assets/characters/megumin_private_concern.webp",
     "proud": "assets/characters/megumin_proud.png",
     "tense": "assets/characters/megumin_destroyer_tense.png",
-    "urgent": "assets/characters/megumin_proud.png"
+    "urgent": "assets/characters/megumin_proud.png",
+    "village_tactical": "assets/characters/megumin_village_tactical.png"
   }
 }

@@ -3,7 +3,8 @@
   "description": "率领魔王军进攻红魔之乡的高魔法抗性干部。",
   "emotion": "battle_command",
   "emotion_modifiers": {
-    "battle_command": "在火力中保持指挥，依据阵线变化命令收拢或推进。"
+    "battle_command": "在火力中保持指挥，依据阵线变化命令收拢或推进。",
+    "negotiating": "在当前力量与风险之间谈判，只依据自己观察到的防线、身份陈述和现场条件行动。"
   },
   "id": "sylvia",
   "knowledge_entries": [
@@ -13,7 +14,9 @@
     }
   ],
   "knowledge_refs": [
-    "volume5_ch3_sylvia_and_counterfire"
+    "volume5_ch3_sylvia_and_counterfire",
+    "volume5_ch4_sylvia_withdrawal_and_identity",
+    "volume5_ch4_hostage_rescue_and_chimera_identity"
   ],
   "name": "席薇亚",
   "personality": {
@@ -30,6 +33,7 @@
   },
   "sprite_path": "assets/characters/sylvia_default.webp",
   "sprite_paths": {
-    "battle_command": "assets/characters/sylvia_default.webp"
+    "battle_command": "assets/characters/sylvia_default.webp",
+    "negotiating": "assets/characters/sylvia_negotiating.png"
   }
 }

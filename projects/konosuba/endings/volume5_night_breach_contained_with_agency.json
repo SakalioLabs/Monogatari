@@ -1,0 +1,8 @@
+{
+  "description": "队伍区分了村中传闻与危险事实，建立了可中止游览、警报、围栏轮换和夜间值守。外锁、睡眠魔法与低温压力被解除，感谢没有被索取为义务。夜袭中众人以最小必要武力完成挟持救援，并按席薇亚自己的陈述记录其奇美拉身份。",
+  "dialogue_id": "volume5_night_breach_contained_with_agency_epilogue",
+  "id": "volume5_night_breach_contained_with_agency",
+  "scene_id": "megumin_house_fence_night",
+  "schema": "monogatari-story-ending/v1",
+  "title": "夜袭受控，所有人的选择仍然有效"
+}

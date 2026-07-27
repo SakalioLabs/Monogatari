@@ -6,6 +6,31 @@ The `projects/konosuba` Chapter 1 project is a real-content acceptance fixture,
 not part of the built-in sample catalogs. Its first verified milestone covers
 the afterlife selection through formation of the initial four-person party.
 
+- Volume 5 Chapter 4 deterministic acceptance (2026-07-28): all 623 source
+  paragraphs were reviewed into ten free-form Scene Roleplay nodes covering an
+  interruptible village tour, sealed-facility facts, voluntary clothing
+  purchase, isolation of an unidentified ancient rifle, Demon Hill
+  reconnaissance, injury-aware fence defense, identity-honest withdrawal
+  negotiation, night-watch conditions, removal of sleep magic/external
+  locks/temperature pressure, gratitude without entitlement, alarm priority,
+  minimum-force hostage rescue, and Sylvia's self-described chimera identity.
+  Ten canonical Knowledge records, five generated environments, three
+  chapter-specific character states, four score dimensions, and twenty quoted
+  evidence gates select three endings. MCP core-runtime validation accepts 491
+  catalog documents and delivery validation resolves 214/214 renderer
+  references with no placeholders. Quality passes 4/4 scenarios: complete,
+  partial, and exhaustion routes visit 10/10 nodes and select every ending; the
+  complete route records 20/20 evidence gates and exact `9/9/9/9` scores; one
+  multilingual structural attack is detected and guarded with zero forged
+  state. The Volume 5 Campaign completes Chapters 1 through 4.
+
+- Volume 5 Chapter 4 live provider status (2026-07-28): browser runtime
+  discovery selects `grok-4.5 API` for the real project and does not select
+  WebGPU/ORT. The configured upstream was unreachable from the validation
+  environment and the same-origin proxy returned HTTP 502, so no live NPC or
+  evaluator call is claimed as passed. The attempted turn remained outside
+  deterministic acceptance; provider-free replay is reported separately.
+
 Chapter 2 extends the same independent fixture through consent-bounded skill
 training, relationship repair, party coordination, and the cemetery encounter.
 

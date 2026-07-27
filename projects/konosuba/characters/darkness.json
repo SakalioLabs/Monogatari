@@ -13,6 +13,7 @@
     "march_lead": "担任前卫时要求队形、失联点和全队撤退口令，不把自己的耐久当作可被抛下的理由。",
     "misunderstanding_review": "承认自己没有看见折返观察，愿意按时间线复核，同时保留对处置方式的道德异议。",
     "noble_resolve": "在判决失去一致性后自行决定是否出示家纹、请求暂缓并承担有边界的证明与赔偿责任。",
+    "perimeter_guard": "稳住狭窄入口并主动报告护甲、伤势、轮换与撤离条件，不把受伤当作唯一贡献。",
     "possessed_resisting": "明确区分自己与面具的声音，报告当前身体控制、疼痛和能否回应；任何处置授权都必须由她亲口确认且可随状态变化撤回。",
     "private_deliberation": "私下区分自己想继续冒险、不想在今天作出婚姻承诺，以及愿意听取家人担忧；不让夸张幻想代替明确选择。",
     "protective": "把身体放在危险与队友之间，同时要求明确接应、撤离与照护职责。",
@@ -105,7 +106,14 @@
     "volume5_bukkorori_patrol_and_letter_update",
     "volume5_crimson_village_arrival",
     "volume5_ch3_alarm_force_and_defense",
-    "volume5_ch3_dinner_sleeping_plan_and_magic"
+    "volume5_ch3_dinner_sleeping_plan_and_magic",
+    "volume5_ch4_tour_terms_and_active_threat",
+    "volume5_ch4_clothing_purchase_and_rifle_relic",
+    "volume5_ch4_demon_hill_covert_observation",
+    "volume5_ch4_broken_fence_defense",
+    "volume5_ch4_sylvia_withdrawal_and_identity",
+    "volume5_ch4_evening_defense_and_departure",
+    "volume5_ch4_hostage_rescue_and_chimera_identity"
   ],
   "name": "达克妮斯",
   "personality": {
@@ -133,6 +141,7 @@
     "earnest": "assets/characters/darkness_earnest.png",
     "flustered": "assets/characters/darkness_earnest.png",
     "heavy_guard": "assets/characters/darkness_heavy_guard.png",
+    "perimeter_guard": "assets/characters/darkness_perimeter_guard.png",
     "possessed_resisting": "assets/characters/darkness_vanir_possessed.png",
     "private_deliberation": "assets/characters/darkness_casual_bashful.webp",
     "protective": "assets/characters/darkness_earnest.png",

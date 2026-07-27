@@ -110,7 +110,13 @@
     "volume5_ch3_invisibility_and_patrol_identity",
     "volume5_ch3_village_magic_and_griffin_hazard",
     "volume5_ch3_komekko_food_and_safeguarding",
-    "volume5_ch3_dinner_sleeping_plan_and_magic"
+    "volume5_ch3_dinner_sleeping_plan_and_magic",
+    "volume5_ch4_tour_terms_and_active_threat",
+    "volume5_ch4_relics_and_sealed_facility",
+    "volume5_ch4_clothing_purchase_and_rifle_relic",
+    "volume5_ch4_broken_fence_defense",
+    "volume5_ch4_evening_defense_and_departure",
+    "volume5_ch4_hostage_rescue_and_chimera_identity"
   ],
   "name": "阿库娅",
   "personality": {

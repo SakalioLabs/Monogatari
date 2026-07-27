@@ -1,0 +1,23 @@
+{
+  "id": "volume5_night_breach_contained_with_open_risks_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "perimeter_guard",
+      "ending_type": "volume5_night_breach_contained_with_open_risks",
+      "is_ending": true,
+      "scene_id": "megumin_house_fence_night",
+      "speaker_id": "darkness",
+      "text": "席薇亚的自我身份表述得到尊重，挟持局面也暂时受控，但部分侦察、防守轮换、家庭边界或救援职责尚未形成完整证据。后续行动必须从缺失记录继续，不能把短暂停止当作完全胜利。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "megumin_house_fence_night",
+      "text": "席薇亚的自我身份表述得到尊重，挟持局面也暂时受控，但部分侦察、防守轮换、家庭边界或救援职责尚未形成完整证据。后续行动必须从缺失记录继续，不能把短暂停止当作完全胜利。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "夜袭暂止，但防卫记录仍有缺口",
+  "variables": {}
+}

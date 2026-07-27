@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/volume5_ch4_house_fence_dusk.png",
+  "bgm_path": null,
+  "id": "megumin_house_fence_dusk",
+  "model_3d_path": null,
+  "name": "惠惠家破损围栏·黄昏",
+  "tags": [
+    "volume5",
+    "chapter4",
+    "crimson_demon",
+    "home",
+    "perimeter"
+  ],
+  "time_of_day": "evening",
+  "weather": "clear"
+}

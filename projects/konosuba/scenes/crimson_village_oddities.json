@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/volume5_ch4_village_oddities.png",
+  "bgm_path": null,
+  "id": "crimson_village_oddities",
+  "model_3d_path": null,
+  "name": "红魔之乡奇观与封印设施",
+  "tags": [
+    "volume5",
+    "chapter4",
+    "crimson_demon",
+    "village",
+    "sealed_facility"
+  ],
+  "time_of_day": "day",
+  "weather": "clear"
+}

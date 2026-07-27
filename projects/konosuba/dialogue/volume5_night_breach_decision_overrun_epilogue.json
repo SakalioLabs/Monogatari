@@ -1,0 +1,23 @@
+{
+  "id": "volume5_night_breach_decision_overrun_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "negotiating",
+      "ending_type": "volume5_night_breach_decision_overrun",
+      "is_ending": true,
+      "scene_id": "megumin_house_fence_night",
+      "speaker_id": "sylvia",
+      "text": "敌情、家庭安全或挟持救援中的关键决定持续拖延，本段被迫停止。所有未确认事实、自由出口、人员位置和交叉火力边界必须继续保留，不能由默认台词替玩家决定。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "megumin_house_fence_night",
+      "text": "敌情、家庭安全或挟持救援中的关键决定持续拖延，本段被迫停止。所有未确认事实、自由出口、人员位置和交叉火力边界必须继续保留，不能由默认台词替玩家决定。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "难眠之夜的决策窗口耗尽",
+  "variables": {}
+}

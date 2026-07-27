@@ -61,17 +61,44 @@
         {
           "ending_id": "volume5_village_defended_and_boundaries_kept",
           "target": {
-            "kind": "complete"
+            "entry_id": "chapter4",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume5_village_safe_with_household_boundaries_unsettled",
           "target": {
-            "kind": "complete"
+            "entry_id": "chapter4",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume5_village_and_household_decision_overrun",
+          "target": {
+            "entry_id": "chapter4",
+            "kind": "entry"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter4",
+      "roleplay_id": "volume5_chapter4_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume5_night_breach_contained_with_agency",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume5_night_breach_contained_with_open_risks",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume5_night_breach_decision_overrun",
           "target": {
             "kind": "complete"
           }

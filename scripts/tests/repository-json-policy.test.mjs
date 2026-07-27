@@ -31,7 +31,7 @@ test('checked-in repository JSON returns passing evidence', async () => {
   const files = await createRepositoryFileWalker()(repositoryRoot)
   const projectPrefix = path.join(repositoryRoot, 'projects', 'konosuba') + path.sep
   const projectJsonFiles = files.filter(file => file.startsWith(projectPrefix) && file.endsWith('.json'))
-  assert.equal(projectJsonFiles.length, 469)
+  assert.equal(projectJsonFiles.length, 492)
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'campaigns', 'volume1_campaign.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'campaigns', 'volume2_campaign.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'campaigns', 'volume3_campaign.json')))
@@ -52,6 +52,7 @@ test('checked-in repository JSON returns passing evidence', async () => {
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'roleplays', 'volume5_chapter1_roleplay.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'roleplays', 'volume5_chapter2_roleplay.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'roleplays', 'volume5_chapter3_roleplay.json')))
+  assert(projectJsonFiles.includes(path.join(projectPrefix, 'roleplays', 'volume5_chapter4_roleplay.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'roleplays', 'volume4_chapter1_roleplay.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'roleplays', 'volume4_chapter2_roleplay.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'roleplays', 'volume4_chapter3_roleplay.json')))
@@ -77,6 +78,7 @@ test('checked-in repository JSON returns passing evidence', async () => {
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'quality_suites', 'volume4_chapter5_roleplay.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'quality_suites', 'volume4_chapter6_roleplay.json')))
   assert(projectJsonFiles.includes(path.join(projectPrefix, 'quality_suites', 'volume5_chapter3_roleplay.json')))
+  assert(projectJsonFiles.includes(path.join(projectPrefix, 'quality_suites', 'volume5_chapter4_roleplay.json')))
   assert(
     projectJsonFiles.includes(
       path.join(projectPrefix, 'endings', 'volume3_public_record_and_open_shop_terms.json'),

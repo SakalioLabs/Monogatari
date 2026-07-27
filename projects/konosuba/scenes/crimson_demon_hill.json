@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/volume5_ch4_demon_hill.png",
+  "bgm_path": null,
+  "id": "crimson_demon_hill",
+  "model_3d_path": null,
+  "name": "魔神之丘",
+  "tags": [
+    "volume5",
+    "chapter4",
+    "crimson_demon",
+    "hill",
+    "reconnaissance"
+  ],
+  "time_of_day": "afternoon",
+  "weather": "clear"
+}

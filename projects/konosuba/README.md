@@ -45,8 +45,9 @@ The player acts as Kazuma and writes free-form responses. Every primary or
 supporting character present in the current node is a selectable live NPC.
 Dialogue is generated from that NPC's own character, scene, Knowledge, and
 relationship context, while scores and authored evidence determine the route.
-Authored fallback text exists only to keep the story playable when inference
-is unavailable.
+Detected control attempts receive bounded in-scene containment without invoking
+the model. A clean-turn inference failure remains uncommitted and retryable; it
+does not become authored NPC dialogue or successful model evidence.
 
 The primary browser entry is:
 
@@ -334,6 +335,29 @@ The direct Volume 4 Campaign entry is:
 /game?previewCampaign=konosuba_volume4&authoring=1
 ```
 
+## Volume 5 production
+
+Volume 5 Chapters 1 through 4 form one continuous live-NPC Campaign. Chapter 4
+adds ten free-form scenes covering the village tour, sealed facility, clothing
+shop relic, Demon Hill reconnaissance, broken-fence defense, Sylvia's daylight
+withdrawal, the evening defense review, an unlocked current boundary, an alarm
+handoff, and a minimum-force hostage rescue. NPC prose is generated from the
+selected character's current motive and Knowledge; a separate evaluator
+proposes four bounded scores and twenty quoted evidence records; only the
+Roleplay state machine advances scenes and selects one of three endings.
+
+The direct Volume 5 Chapter 4 live-NPC entry is:
+
+```text
+/game?previewRoleplay=volume5_chapter4_roleplay&authoring=1
+```
+
+The direct Volume 5 Campaign entry is:
+
+```text
+/game?previewCampaign=volume5_campaign&authoring=1
+```
+
 ## Runtime
 
 The checked-in API key is intentionally empty. Supply credentials through the
@@ -347,7 +371,6 @@ $env:MONOGATARI_AI_API_KEY = '<runtime-only key>'
 npm run dev
 ```
 
-When the project selects `api`, a missing or rejected runtime key degrades the
-turn to the node's authored in-scene recovery. It does not switch the Roleplay
-to WebGPU or ONNX. The UI labels degraded turns explicitly; they are not live
-model evidence.
+When the project selects `api`, a missing, unreachable, or rejected provider
+leaves the clean turn uncommitted and retryable. It does not switch that turn
+to WebGPU or ONNX and does not substitute authored NPC prose.
