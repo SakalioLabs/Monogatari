@@ -579,6 +579,11 @@ import {
 import { hasTauriRuntime, invokeCommand } from '../lib/tauri'
 import { useI18n } from '../lib/i18n'
 import {
+  configureBrowserAuthoringApiSession,
+  type AuthoringApiRuntime,
+  type AuthoringApiRuntimeIssue,
+} from '../lib/authoringInference'
+import {
   configureWebGpuRuntime,
   detectWebGpuSupport,
   getWebGpuRuntimeConfig,
@@ -653,6 +658,7 @@ const provider = ref<SettingsAiProvider>(desktopRuntimeAvailable ? 'onnx' : 'web
 const apiBaseUrl = ref('https://api.openai.com/v1')
 const apiKey = ref('')
 const apiModel = ref('gpt-4o-mini')
+const browserAuthoringRuntime = ref<AuthoringApiRuntime | null>(null)
 const modelPath = ref('models/model.onnx')
 const tokenizerPath = ref('models/tokenizer.json')
 const useDirectML = ref(true)
@@ -831,10 +837,17 @@ const activeEngineLabel = computed(() => {
   if (provider.value === 'webgpu') {
     return webGpuReady.value ? 'WebGPU' : t('settings.not-initialized', 'Not initialized')
   }
+  if (provider.value === 'api' && !desktopRuntimeAvailable) {
+    return browserAuthoringRuntime.value?.ready
+      ? `${browserAuthoringRuntime.value.model} API`
+      : t('settings.no-ai-engine', 'No AI engine')
+  }
   return engineStatus.value?.active_ai_engine || t('settings.no-ai-engine', 'No AI engine')
 })
 const activeRuntimeReady = computed(() => provider.value === 'webgpu'
   ? webGpuReady.value
+  : provider.value === 'api' && !desktopRuntimeAvailable
+    ? browserAuthoringRuntime.value?.ready === true
   : Boolean(engineStatus.value?.active_ai_engine))
 const backendPlanRows = computed(() => backendPlan.value?.backends.filter(item => item.readiness !== 'unavailable') || [])
 const backendRecommendationLabel = computed(() => {
@@ -849,9 +862,11 @@ const aiReadyToConnect = computed(() => {
   if (provider.value === 'webgpu') return Boolean(webGpuModelId.value.trim() && webGpuMaxNewTokens.value > 0)
   return Boolean(modelPath.value.trim() && tokenizerPath.value.trim())
 })
-const aiActionAvailable = computed(() => provider.value === 'webgpu'
-  ? !desktopRuntimeAvailable && webGpuSupport.available
-  : desktopRuntimeAvailable)
+const aiActionAvailable = computed(() => {
+  if (provider.value === 'webgpu') return !desktopRuntimeAvailable && webGpuSupport.available
+  if (provider.value === 'api') return true
+  return desktopRuntimeAvailable
+})
 const aiActionTitle = computed(() => {
   if (provider.value === 'webgpu') {
     return webGpuSupport.available
@@ -1070,7 +1085,18 @@ async function saveAI() {
       })
       webGpuReady.value = true
     } else if (provider.value === 'api') {
-      await invokeCommand<void>('configure_api', { baseUrl: apiBaseUrl.value, apiKey: apiKey.value, model: apiModel.value })
+      if (desktopRuntimeAvailable) {
+        await invokeCommand<void>('configure_api', {
+          baseUrl: apiBaseUrl.value,
+          apiKey: apiKey.value,
+          model: apiModel.value,
+        })
+      } else {
+        const runtime = await configureBrowserAuthoringApiSession(apiKey.value)
+        browserAuthoringRuntime.value = runtime
+        apiKey.value = ''
+        if (!runtime.ready) throw new Error(authoringRuntimeIssueMessage(runtime.issue))
+      }
     } else {
       await invokeCommand<void>('configure_onnx', {
         modelPath: modelPath.value,
@@ -1085,6 +1111,19 @@ async function saveAI() {
   } finally {
     savingAI.value = false
   }
+}
+
+function authoringRuntimeIssueMessage(issue: AuthoringApiRuntimeIssue | null | undefined): string {
+  if (issue === 'credential_missing') {
+    return t('settings.runtime-credential-missing', 'Runtime credential is missing.')
+  }
+  if (issue === 'authentication_failed') {
+    return t('settings.runtime-authentication-failed', 'The provider rejected the runtime credential.')
+  }
+  if (issue === 'upstream_rejected') {
+    return t('settings.runtime-upstream-rejected', 'The provider rejected its health probe.')
+  }
+  return t('settings.runtime-upstream-unreachable', 'The configured provider is unreachable.')
 }
 
 async function initEngine() {

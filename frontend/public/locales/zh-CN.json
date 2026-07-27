@@ -1,6 +1,10 @@
 {
   "locale": "zh-CN",
   "strings": {
+    "settings.runtime-credential-missing": "运行时凭据尚未注入。",
+    "settings.runtime-authentication-failed": "供应商拒绝了运行时凭据。",
+    "settings.runtime-upstream-rejected": "供应商拒绝了健康检查请求。",
+    "settings.runtime-upstream-unreachable": "无法连接已配置的模型供应商。",
     "app.title": "Monogatari 引擎",
     "app.version": "引擎 v0.9.5",
     "app.compact": "紧凑",

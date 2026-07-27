@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { generateAuthoringApiChat } from '../authoringInference'
+import {
+  configureBrowserAuthoringApiSession,
+  generateAuthoringApiChat,
+} from '../authoringInference'
 
 describe('authoring API inference', () => {
   afterEach(() => {
@@ -84,6 +87,56 @@ describe('authoring API inference', () => {
       { role: 'user', content: 'Can you hear me?' },
     ])).rejects.toThrow('configured authoring API runtime is unreachable')
     expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('configures a credential only in the same-origin browser authoring session', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({
+      schema: 'monogatari-authoring-inference-runtime/v1',
+      provider: 'api',
+      endpoint: '/authoring-api/chat/completions',
+      model: 'session-roleplay-model',
+      ready: true,
+      issue: null,
+      max_new_tokens: 128,
+    }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(configureBrowserAuthoringApiSession('  runtime-only-secret  '))
+      .resolves.toMatchObject({
+        model: 'session-roleplay-model',
+        ready: true,
+        issue: null,
+      })
+
+    expect(fetchMock).toHaveBeenCalledWith('/authoring-api/session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Monogatari-Authoring-Session': '1',
+      },
+      body: JSON.stringify({ api_key: 'runtime-only-secret' }),
+    })
+    expect(localStorage.length).toBe(0)
+  })
+
+  it.each([
+    'credential_missing',
+    'authentication_failed',
+    'upstream_rejected',
+    'upstream_unreachable',
+  ] as const)('preserves the structured %s runtime issue', async (issue) => {
+    vi.resetModules()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({
+      schema: 'monogatari-authoring-inference-runtime/v1',
+      provider: 'api',
+      endpoint: '/authoring-api/chat/completions',
+      model: 'diagnostic-roleplay-model',
+      ready: false,
+      issue,
+    }), { status: 200 })))
+    const { loadAuthoringApiRuntime } = await import('../authoringInference')
+
+    await expect(loadAuthoringApiRuntime()).resolves.toMatchObject({ ready: false, issue })
   })
 
   it('rechecks an unreachable configured runtime on the next discovery', async () => {

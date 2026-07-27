@@ -1,6 +1,10 @@
 {
   "locale": "ja-JP",
   "strings": {
+    "settings.runtime-credential-missing": "ランタイム認証情報が設定されていません。",
+    "settings.runtime-authentication-failed": "プロバイダーがランタイム認証情報を拒否しました。",
+    "settings.runtime-upstream-rejected": "プロバイダーがヘルスチェックを拒否しました。",
+    "settings.runtime-upstream-unreachable": "設定されたプロバイダーに接続できません。",
     "app.title": "Monogatari エンジン",
     "app.version": "エンジン v0.9.5",
     "app.compact": "コンパクト",

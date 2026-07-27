@@ -1,6 +1,10 @@
 {
   "locale": "en",
   "strings": {
+    "settings.runtime-credential-missing": "Runtime credential is missing.",
+    "settings.runtime-authentication-failed": "The provider rejected the runtime credential.",
+    "settings.runtime-upstream-rejected": "The provider rejected its health probe.",
+    "settings.runtime-upstream-unreachable": "The configured provider is unreachable.",
     "app.title": "Monogatari Engine",
     "app.version": "Engine v0.9.5",
     "app.compact": "Compact",

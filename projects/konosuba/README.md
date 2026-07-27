@@ -387,6 +387,11 @@ $env:MONOGATARI_AI_API_KEY = '<runtime-only key>'
 npm run dev
 ```
 
+Alternatively, open Settings in the local Vite authoring session, select
+Development API, and enter the credential there. The accepted credential lives
+only in Vite memory for that process and is cleared from the browser form; it
+is never added to `settings.json`, localStorage, an exported manifest, or Git.
+
 When the project selects `api`, a missing, unreachable, or rejected provider
 leaves the clean turn uncommitted and retryable. It does not switch that turn
 to WebGPU or ONNX and does not substitute authored NPC prose.

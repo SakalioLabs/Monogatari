@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  classifyAuthoringApiRuntimeHealth,
   resolveAuthoringApiKey,
   resolveAuthoringApiRuntime,
 } from '../authoringRuntimeConfig'
@@ -21,6 +22,24 @@ describe('resolveAuthoringApiKey', () => {
   it('returns an empty credential when the runtime is not configured', () => {
     expect(resolveAuthoringApiKey({})).toBe('')
   })
+})
+
+describe('classifyAuthoringApiRuntimeHealth', () => {
+  it.each([
+    ['', null, false, 'credential_missing'],
+    ['runtime-key', null, false, 'upstream_unreachable'],
+    ['runtime-key', 200, true, null],
+    ['runtime-key', 204, true, null],
+    ['runtime-key', 401, false, 'authentication_failed'],
+    ['runtime-key', 403, false, 'authentication_failed'],
+    ['runtime-key', 404, false, 'upstream_rejected'],
+    ['runtime-key', 500, false, 'upstream_rejected'],
+  ] as const)(
+    'classifies credential=%s status=%s',
+    (credential, status, ready, issue) => {
+      expect(classifyAuthoringApiRuntimeHealth(credential, status)).toEqual({ ready, issue })
+    },
+  )
 })
 
 describe('resolveAuthoringApiRuntime', () => {

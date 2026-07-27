@@ -61,6 +61,19 @@ test.describe('configured project roleplay', () => {
     await expect(page.getByTestId('roleplay-runtime')).toBeVisible()
   })
 
+  test('rejects untrusted or empty browser credential-session requests', async ({ request }) => {
+    const untrusted = await request.post('/authoring-api/session', {
+      data: { api_key: 'test-only-placeholder' },
+    })
+    expect(untrusted.status()).toBe(403)
+
+    const empty = await request.post('/authoring-api/session', {
+      headers: { 'X-Monogatari-Authoring-Session': '1' },
+      data: { api_key: '   ' },
+    })
+    expect(empty.status()).toBe(400)
+  })
+
   test('uses separate live NPC and evaluator calls before deterministic commit', async ({ page }) => {
     test.skip(!liveAiEnabled, 'Set MONOGATARI_E2E_LIVE_AI=1 to call the configured model.')
     const runtimeErrors = captureRuntimeErrors(page)

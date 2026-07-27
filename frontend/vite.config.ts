@@ -1,8 +1,10 @@
 import { defineConfig, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import {
+  classifyAuthoringApiRuntimeHealth,
   resolveAuthoringApiKey,
   resolveAuthoringApiRuntime,
+  type AuthoringApiRuntimeHealth,
 } from './src/lib/authoringRuntimeConfig'
 import { createReadStream, readFileSync, readdirSync, statSync } from 'node:fs'
 import { createHash } from 'node:crypto'
@@ -36,7 +38,7 @@ const authoringRuntimeHealthTimeoutMs = 4_000
 let authoringRuntimeHealthCache: {
   key: string
   checkedAt: number
-  ready: boolean
+  health: AuthoringApiRuntimeHealth
 } | null = null
 
 const assetContentTypes: Record<string, string> = {
@@ -91,20 +93,23 @@ function serveProjectFile(rootDir: string) {
 }
 
 function projectDataDevPlugin(): Plugin {
+  let sessionApiKey = ''
+
   return {
     name: 'monogatari-project-data-dev',
     apply: 'serve' as const,
     configureServer(server) {
       server.middlewares.use('/authoring-inference-runtime.json', async (request, response, next) => {
         if ((request.url || '/').split('?')[0] !== '/') return next()
-        const runtime = authoringApiRuntime()
-        const ready = runtime ? await authoringApiRuntimeReady(runtime) : false
+        const runtime = authoringApiRuntime(sessionApiKey)
+        const health = runtime
+          ? await authoringApiRuntimeHealth(runtime)
+          : { ready: false, issue: 'upstream_unreachable' as const }
         response.setHeader('Content-Type', 'application/json; charset=utf-8')
         response.setHeader('Cache-Control', 'no-store')
         response.end(JSON.stringify(runtime ? {
           ...runtime.public,
-          ready,
-          issue: ready ? null : 'upstream_unreachable',
+          ...health,
         } : {
           schema: 'monogatari-authoring-inference-runtime/v1',
           provider: 'webgpu',
@@ -113,9 +118,46 @@ function projectDataDevPlugin(): Plugin {
         }))
       })
 
+      server.middlewares.use('/authoring-api/session', async (request, response, next) => {
+        if ((request.url || '/').split('?')[0] !== '/' || request.method !== 'POST') return next()
+        response.setHeader('Content-Type', 'application/json; charset=utf-8')
+        response.setHeader('Cache-Control', 'no-store')
+        if (!isTrustedAuthoringSessionRequest(request)) {
+          response.statusCode = 403
+          response.end(JSON.stringify({ error: { message: 'Authoring session request rejected.' } }))
+          return
+        }
+
+        try {
+          const body = JSON.parse((await readRequestBody(request, 16_384)).toString('utf8')) as {
+            api_key?: unknown
+          }
+          const apiKey = typeof body.api_key === 'string' ? body.api_key.trim() : ''
+          if (!apiKey || apiKey.length > 4_096) {
+            response.statusCode = 400
+            response.end(JSON.stringify({ error: { message: 'A bounded runtime credential is required.' } }))
+            return
+          }
+          const runtime = authoringApiRuntime(apiKey)
+          if (!runtime) {
+            response.statusCode = 409
+            response.end(JSON.stringify({ error: { message: 'The project API runtime is not configured.' } }))
+            return
+          }
+          sessionApiKey = apiKey
+          authoringRuntimeHealthCache = null
+          const health = await authoringApiRuntimeHealth(runtime)
+          response.statusCode = 200
+          response.end(JSON.stringify({ ...runtime.public, ...health }))
+        } catch {
+          response.statusCode = 400
+          response.end(JSON.stringify({ error: { message: 'Invalid authoring session request.' } }))
+        }
+      })
+
       server.middlewares.use('/authoring-api/chat/completions', async (request, response, next) => {
         if ((request.url || '/').split('?')[0] !== '/' || request.method !== 'POST') return next()
-        const runtime = authoringApiRuntime()
+        const runtime = authoringApiRuntime(sessionApiKey)
         if (!runtime) {
           response.statusCode = 404
           response.end()
@@ -130,10 +172,19 @@ function projectDataDevPlugin(): Plugin {
             headers,
             body,
           })
-          response.statusCode = upstream.status
-          response.setHeader('Content-Type', upstream.headers.get('content-type') || 'application/json; charset=utf-8')
           response.setHeader('Cache-Control', 'no-store')
-          response.end(Buffer.from(await upstream.arrayBuffer()))
+          if (upstream.ok) {
+            response.statusCode = upstream.status
+            response.setHeader('Content-Type', upstream.headers.get('content-type') || 'application/json; charset=utf-8')
+            response.end(Buffer.from(await upstream.arrayBuffer()))
+          } else {
+            response.statusCode = upstream.status
+            response.setHeader('Content-Type', 'application/json; charset=utf-8')
+            response.end(JSON.stringify({
+              error: { message: authoringProviderErrorMessage(upstream.status) },
+            }))
+            await upstream.body?.cancel().catch(() => undefined)
+          }
         } catch (error) {
           response.statusCode = 502
           response.setHeader('Content-Type', 'application/json; charset=utf-8')
@@ -169,7 +220,7 @@ function projectDataDevPlugin(): Plugin {
   }
 }
 
-function authoringApiRuntime() {
+function authoringApiRuntime(sessionApiKey = '') {
   try {
     const settings = JSON.parse(readFileSync(projectSettingsPath, 'utf8')) as Record<string, any>
     const configured = resolveAuthoringApiRuntime(process.env, settings.ai || {})
@@ -179,7 +230,7 @@ function authoringApiRuntime() {
     if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password) return null
     const baseUrl = parsed.pathname === '/' ? `${configuredBaseUrl}/v1` : configuredBaseUrl
     return {
-      apiKey: resolveAuthoringApiKey(process.env),
+      apiKey: sessionApiKey || resolveAuthoringApiKey(process.env),
       baseUrl,
       public: {
         schema: 'monogatari-authoring-inference-runtime/v1',
@@ -196,20 +247,22 @@ function authoringApiRuntime() {
   }
 }
 
-async function authoringApiRuntimeReady(
+async function authoringApiRuntimeHealth(
   runtime: NonNullable<ReturnType<typeof authoringApiRuntime>>,
-): Promise<boolean> {
-  const key = `${runtime.baseUrl}\n${runtime.public.model}`
+): Promise<AuthoringApiRuntimeHealth> {
+  if (!runtime.apiKey) return classifyAuthoringApiRuntimeHealth('', null)
+
+  const key = `${runtime.baseUrl}\n${runtime.public.model}\ncredential`
   const now = Date.now()
   if (authoringRuntimeHealthCache
     && authoringRuntimeHealthCache.key === key
     && now - authoringRuntimeHealthCache.checkedAt < authoringRuntimeHealthTtlMs) {
-    return authoringRuntimeHealthCache.ready
+    return authoringRuntimeHealthCache.health
   }
 
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), authoringRuntimeHealthTimeoutMs)
-  let ready = false
+  let health = classifyAuthoringApiRuntimeHealth(runtime.apiKey, null)
   try {
     const headers: Record<string, string> = {}
     if (runtime.apiKey) headers.Authorization = `Bearer ${runtime.apiKey}`
@@ -218,19 +271,40 @@ async function authoringApiRuntimeReady(
       headers,
       signal: controller.signal,
     })
-    ready = response.ok
+    health = classifyAuthoringApiRuntimeHealth(runtime.apiKey, response.status)
     try {
       await response.body?.cancel()
     } catch {
       // Readiness is determined by the upstream status, not body disposal.
     }
   } catch {
-    ready = false
+    health = classifyAuthoringApiRuntimeHealth(runtime.apiKey, null)
   } finally {
     clearTimeout(timeout)
   }
-  authoringRuntimeHealthCache = { key, checkedAt: now, ready }
-  return ready
+  authoringRuntimeHealthCache = { key, checkedAt: now, health }
+  return health
+}
+
+function isTrustedAuthoringSessionRequest(request: IncomingMessage): boolean {
+  if (request.headers['x-monogatari-authoring-session'] !== '1') return false
+  const fetchSite = request.headers['sec-fetch-site']
+  if (fetchSite && fetchSite !== 'same-origin') return false
+  const origin = request.headers.origin
+  const host = request.headers.host
+  if (!origin || !host) return true
+  try {
+    return new URL(origin).host === host
+  } catch {
+    return false
+  }
+}
+
+function authoringProviderErrorMessage(status: number): string {
+  if (status === 401 || status === 403) return 'The authoring API rejected its runtime credential.'
+  if (status === 404) return 'The authoring API route or model is unavailable.'
+  if (status === 408 || status === 429) return 'The authoring API is temporarily unavailable.'
+  return `The authoring API request failed with HTTP ${status}.`
 }
 
 function readRequestBody(request: IncomingMessage, maxBytes: number): Promise<Buffer> {

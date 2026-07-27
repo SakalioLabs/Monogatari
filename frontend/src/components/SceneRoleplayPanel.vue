@@ -211,7 +211,18 @@ const currentSceneName = computed(() => props.sceneName || currentNode.value.sce
 const activeEnding = computed(() => props.endings.find(ending => ending.id === props.snapshot.session.ending_id) || null)
 const runtimeIssue = computed(() => {
   if (props.desktopRuntime || authoringApiRuntime.value?.ready !== false) return null
-  return `${authoringApiRuntime.value.model} ${t('settings.backend-unavailable', 'Unavailable')}`
+  const issue = authoringApiRuntime.value.issue
+  let message: string
+  if (issue === 'credential_missing') {
+    message = t('settings.runtime-credential-missing', 'Runtime credential is missing.')
+  } else if (issue === 'authentication_failed') {
+    message = t('settings.runtime-authentication-failed', 'The provider rejected the runtime credential.')
+  } else if (issue === 'upstream_rejected') {
+    message = t('settings.runtime-upstream-rejected', 'The provider rejected its health probe.')
+  } else {
+    message = t('settings.runtime-upstream-unreachable', 'The configured provider is unreachable.')
+  }
+  return `${authoringApiRuntime.value.model}: ${message}`
 })
 const canSend = computed(() => Boolean(
   inputText.value.trim()

@@ -5,6 +5,7 @@ import {
   type WebGpuChatMessage,
   type WebGpuGenerationOptions,
 } from './webgpuInference'
+import type { AuthoringApiRuntimeIssue } from './authoringRuntimeConfig'
 
 export interface AuthoringApiRuntime {
   schema: 'monogatari-authoring-inference-runtime/v1'
@@ -12,11 +13,13 @@ export interface AuthoringApiRuntime {
   endpoint: string
   model: string
   ready?: boolean
-  issue?: 'upstream_unreachable' | null
+  issue?: AuthoringApiRuntimeIssue | null
   max_new_tokens: number
   temperature: number
   top_p: number
 }
+
+export type { AuthoringApiRuntimeIssue } from './authoringRuntimeConfig'
 
 interface AuthoringApiResponse {
   choices?: Array<{
@@ -40,6 +43,31 @@ export async function loadAuthoringApiRuntime(): Promise<AuthoringApiRuntime | n
   return runtime
 }
 
+export async function configureBrowserAuthoringApiSession(
+  apiKey: string,
+): Promise<AuthoringApiRuntime> {
+  const credential = apiKey.trim()
+  if (!credential) throw new Error('The authoring API credential is empty.')
+
+  const response = await fetch('/authoring-api/session', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Monogatari-Authoring-Session': '1',
+    },
+    body: JSON.stringify({ api_key: credential }),
+  })
+  const document = await response.json().catch(() => ({})) as Record<string, unknown>
+  if (!response.ok) {
+    throw new Error('The browser authoring API session could not be configured.')
+  }
+
+  runtimePromise = null
+  const runtime = parseAuthoringApiRuntime(document)
+  if (!runtime) throw new Error('The browser authoring API returned an invalid runtime status.')
+  return runtime
+}
+
 export async function generateAuthoringApiChat(
   messages: WebGpuChatMessage[],
   options: WebGpuGenerationOptions = {},
@@ -47,7 +75,7 @@ export async function generateAuthoringApiChat(
   const runtime = await loadAuthoringApiRuntime()
   if (!runtime) throw new Error('The authoring API runtime is unavailable.')
   if (runtime.ready === false) {
-    throw new Error('The configured authoring API runtime is unreachable.')
+    throw new Error(authoringApiUnavailableMessage(runtime.issue))
   }
   if (!messages.length) throw new Error('API generation requires at least one chat message.')
 
@@ -81,6 +109,17 @@ export async function generateAuthoringApiChat(
     }
   }
   throw lastError
+}
+
+function authoringApiUnavailableMessage(
+  issue: AuthoringApiRuntimeIssue | null | undefined,
+): string {
+  if (issue === 'credential_missing') return 'The authoring API runtime credential is missing.'
+  if (issue === 'authentication_failed') {
+    return 'The authoring API rejected its runtime credential.'
+  }
+  if (issue === 'upstream_rejected') return 'The authoring API rejected its health probe.'
+  return 'The configured authoring API runtime is unreachable.'
 }
 
 async function requestAuthoringApiChat(
@@ -143,29 +182,40 @@ async function fetchAuthoringApiRuntime(): Promise<AuthoringApiRuntime | null> {
   try {
     const response = await fetch('/authoring-inference-runtime.json', { cache: 'no-store' })
     if (!response.ok) return null
-    const document = await response.json() as Record<string, unknown>
-    if (document.schema !== 'monogatari-authoring-inference-runtime/v1'
-      || document.provider !== 'api'
-      || typeof document.endpoint !== 'string'
-      || typeof document.model !== 'string'
-      || !document.endpoint.trim()
-      || !document.model.trim()) {
-      return null
-    }
-    return {
-      schema: 'monogatari-authoring-inference-runtime/v1',
-      provider: 'api',
-      endpoint: document.endpoint,
-      model: document.model,
-      ready: document.ready !== false,
-      issue: document.issue === 'upstream_unreachable' ? document.issue : null,
-      max_new_tokens: positiveInteger(document.max_new_tokens, 256, 2_048),
-      temperature: finiteNumber(document.temperature, 0.7, 0, 2),
-      top_p: finiteNumber(document.top_p, 0.9, 0.01, 1),
-    }
+    return parseAuthoringApiRuntime(await response.json() as Record<string, unknown>)
   } catch {
     return null
   }
+}
+
+function parseAuthoringApiRuntime(document: Record<string, unknown>): AuthoringApiRuntime | null {
+  if (document.schema !== 'monogatari-authoring-inference-runtime/v1'
+    || document.provider !== 'api'
+    || typeof document.endpoint !== 'string'
+    || typeof document.model !== 'string'
+    || !document.endpoint.trim()
+    || !document.model.trim()) {
+    return null
+  }
+  const issue = isAuthoringApiRuntimeIssue(document.issue) ? document.issue : null
+  return {
+    schema: 'monogatari-authoring-inference-runtime/v1',
+    provider: 'api',
+    endpoint: document.endpoint,
+    model: document.model,
+    ready: document.ready !== false,
+    issue,
+    max_new_tokens: positiveInteger(document.max_new_tokens, 256, 2_048),
+    temperature: finiteNumber(document.temperature, 0.7, 0, 2),
+    top_p: finiteNumber(document.top_p, 0.9, 0.01, 1),
+  }
+}
+
+function isAuthoringApiRuntimeIssue(value: unknown): value is AuthoringApiRuntimeIssue {
+  return value === 'credential_missing'
+    || value === 'authentication_failed'
+    || value === 'upstream_rejected'
+    || value === 'upstream_unreachable'
 }
 
 function positiveInteger(value: unknown, fallback: number, max: number): number {

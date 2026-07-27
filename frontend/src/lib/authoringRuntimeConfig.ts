@@ -5,6 +5,30 @@ export interface AuthoringRuntimeEnvironment {
   MONOGATARI_AI_MODEL?: string
 }
 
+export type AuthoringApiRuntimeIssue =
+  | 'credential_missing'
+  | 'authentication_failed'
+  | 'upstream_rejected'
+  | 'upstream_unreachable'
+
+export interface AuthoringApiRuntimeHealth {
+  ready: boolean
+  issue: AuthoringApiRuntimeIssue | null
+}
+
+export function classifyAuthoringApiRuntimeHealth(
+  credential: string,
+  upstreamStatus: number | null,
+): AuthoringApiRuntimeHealth {
+  if (!credential.trim()) return { ready: false, issue: 'credential_missing' }
+  if (upstreamStatus === null) return { ready: false, issue: 'upstream_unreachable' }
+  if (upstreamStatus >= 200 && upstreamStatus < 300) return { ready: true, issue: null }
+  if (upstreamStatus === 401 || upstreamStatus === 403) {
+    return { ready: false, issue: 'authentication_failed' }
+  }
+  return { ready: false, issue: 'upstream_rejected' }
+}
+
 export function resolveAuthoringApiKey(environment: AuthoringRuntimeEnvironment): string {
   return String(
     environment.MONOGATARI_AI_API_KEY

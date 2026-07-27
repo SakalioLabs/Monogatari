@@ -229,9 +229,17 @@ normalizes a host-only OpenAI-compatible base to `/v1`, and exposes a
 same-origin authoring-only chat bridge. Its public runtime document contains no
 credential fields; an optional credential comes only from
 `MONOGATARI_AI_API_KEY` (or the legacy `MONOGATARI_API_KEY` fallback) and
-remains in the Node process. Before advertising an API as ready, the Vite
-process performs a bounded, cached `/models` preflight with that server-only
-credential and returns only `ready` plus a closed issue code. An explicitly
+remains in the Node process. Local Settings may also POST a credential to the
+same-origin `/authoring-api/session` boundary; that value remains only in the
+Vite process, is cleared from the accepted form, and is never written to
+project files or browser storage. The endpoint requires an explicit custom
+header, rejects cross-origin requests, bounds request size and credential
+length, and never echoes the credential. Before advertising an API as ready,
+the Vite process performs a bounded, cached `/models` preflight with that
+server-only credential and returns only `ready` plus one closed issue code:
+`credential_missing`, `authentication_failed`, `upstream_rejected`, or
+`upstream_unreachable`. Non-success provider bodies are replaced with bounded
+status messages before crossing the browser boundary. An explicitly
 configured but unreachable API disables the live composer and never becomes
 an implicit WebGPU fallback. Static Web/PWA packages
 retain the credential-free WebGPU contract, while Tauri continues to use the

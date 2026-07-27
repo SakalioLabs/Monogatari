@@ -1,6 +1,10 @@
 {
   "locale": "ko",
   "strings": {
+    "settings.runtime-credential-missing": "런타임 자격 증명이 설정되지 않았습니다.",
+    "settings.runtime-authentication-failed": "공급자가 런타임 자격 증명을 거부했습니다.",
+    "settings.runtime-upstream-rejected": "공급자가 상태 확인 요청을 거부했습니다.",
+    "settings.runtime-upstream-unreachable": "설정된 공급자에 연결할 수 없습니다.",
     "app.title": "Monogatari 엔진",
     "app.version": "엔진 v0.9.5",
     "app.compact": "간결",

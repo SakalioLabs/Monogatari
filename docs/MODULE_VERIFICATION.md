@@ -29,6 +29,21 @@ the afterlife selection through formation of the initial four-person party.
   A real NPC/evaluator call will be claimed only after the configured
   `grok-4.5 API` upstream reports ready; no WebGPU/ORT substitution is allowed.
 
+- Browser provider-session acceptance (2026-07-28): local Settings now injects
+  an API credential into Vite memory without Tauri, project persistence,
+  localStorage, response echo, or log output. Pure health classification covers
+  missing credential, 2xx readiness, 401/403 authentication failure, other
+  upstream rejection, and transport failure. Playwright proves accepted
+  credentials clear from the form and remain absent from exported manifests,
+  while unmarked and empty session requests are rejected with 403 and 400.
+  The configured `grok-4.5` host accepted TCP on port 8317 during validation
+  but returned no usable HTTP response, so live NPC/evaluator evidence remains
+  unclaimed and the deterministic turn remains disabled rather than falling
+  through to WebGPU/ORT.
+  Frontend unit coverage passes `251/251`; focused Settings and project
+  Roleplay Playwright coverage passes the browser-session, desktop/mobile
+  layout, stale scripted-link recovery, and rejected-request contracts.
+
 - Volume 5 Chapter 5 deterministic acceptance (2026-07-28): all 738 source
   paragraphs were reviewed into ten free-form Scene Roleplay nodes covering
   coerced arsenal access, unknown-interior containment, observed Magician

@@ -465,6 +465,25 @@ test('Quality Suite workbench presents generated evidence across desktop and mob
 })
 
 test('Settings keeps runtime credentials out of saved browser manifests across desktop and mobile', async ({ page }) => {
+  let sessionRequestBody = ''
+  await page.route('**/authoring-api/session', async (route) => {
+    sessionRequestBody = route.request().postData() || ''
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema: 'monogatari-authoring-inference-runtime/v1',
+        provider: 'api',
+        endpoint: '/authoring-api/chat/completions',
+        model: 'browser-session-model',
+        ready: true,
+        issue: null,
+        max_new_tokens: 128,
+        temperature: 0.7,
+        top_p: 0.9,
+      }),
+    })
+  })
   await page.setViewportSize({ width: 1280, height: 720 })
   await page.goto('/settings')
 
@@ -476,6 +495,12 @@ test('Settings keeps runtime credentials out of saved browser manifests across d
   await page.getByRole('button', { name: 'Development API' }).click()
   const runtimeCredential = `sk-${'A'.repeat(30)}`
   await page.getByLabel('API key').fill(runtimeCredential)
+  await page.getByRole('button', { name: 'Connect', exact: true }).click()
+  await expect(page.locator('.settings-toast')).toContainText('AI backend connected')
+  await expect(page.getByLabel('API key')).toHaveValue('')
+  expect(JSON.parse(sessionRequestBody)).toEqual({ api_key: runtimeCredential })
+  expect(await page.evaluate(key => Object.values(localStorage).includes(key), runtimeCredential)).toBe(false)
+
   await page.getByRole('button', { name: 'Save project' }).click()
   await expect(page.locator('.settings-toast')).toContainText('settings updated for this session')
 
