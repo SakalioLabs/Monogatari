@@ -1,0 +1,23 @@
+{
+  "id": "volume5_explosion_path_chosen_with_agency_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "proud",
+      "ending_type": "volume5_explosion_path_chosen_with_agency",
+      "is_ending": true,
+      "scene_id": "volume5_finale_forest_range",
+      "speaker_id": "megumin",
+      "text": "芸芸的战后认可没有变成称呼压力，旧同学关系由当事人重新命名，公开玩笑也没有替双方建立关系。惠惠区分了自责与能力证据，比较三条技能道路，保有自己的冒险者卡片，并在清空射界后亲自选择继续专精爆裂魔法。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "volume5_finale_forest_range",
+      "text": "芸芸的战后认可没有变成称呼压力，旧同学关系由当事人重新命名，公开玩笑也没有替双方建立关系。惠惠区分了自责与能力证据，比较三条技能道路，保有自己的冒险者卡片，并在清空射界后亲自选择继续专精爆裂魔法。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "爆裂道路由惠惠亲自选择",
+  "variables": {}
+}

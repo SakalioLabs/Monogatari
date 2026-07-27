@@ -1264,6 +1264,7 @@
     "roleplay.you": "你",
     "roleplay.responding": "正在回应",
     "roleplay.evaluating": "正在判定剧情状态",
+    "roleplay.degraded-evaluation": "作者规则降级评分",
     "roleplay.message-placeholder": "在当前场景中说些什么或采取行动...",
     "roleplay.send": "发送",
     "roleplay.ending": "结局",

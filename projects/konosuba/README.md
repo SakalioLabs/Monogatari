@@ -337,16 +337,17 @@ The direct Volume 4 Campaign entry is:
 
 ## Volume 5 production
 
-Volume 5 Chapters 1 through 5 form one continuous live-NPC Campaign. Chapter 5
-adds ten free-form scenes covering coerced arsenal access, unknown-interior
-containment, observed Magician Killer abilities, evacuation and breach
-accountability, voluntary decoy/teleport/mana rotation, research-log
-provenance, safe countermeasure recovery, charge diagnosis, Megumin's
-voluntary Explosion charge, controlled adult fire, reconstruction auditing,
-and her independent future magic choice. NPC prose is generated from the
+Volume 5 Chapters 1 through 5, the Finale, and the Epilogue form one continuous
+seven-entry live-NPC Campaign. Chapter 5 contains the arsenal crisis and
+controlled countermeasure. The Finale adds Yunyun's public recognition,
+self-named friendship, relationship privacy, three-way skill planning,
+Megumin-owned card authority, and a cleared magic demonstration. The Epilogue
+adds homecoming rest/reward/credit records, voluntary device borrowing,
+nonviolent visitor verification, Darkness's family dignity, and a
+recipient-controlled royal invitation. NPC prose is generated from the
 selected character's current motive and Knowledge; a separate evaluator
-proposes four bounded scores and twenty quoted evidence records; only the
-Roleplay state machine advances scenes and selects one of three endings.
+proposes bounded scores and quoted evidence; only the Roleplay state machine
+advances scenes and selects endings.
 
 The direct Volume 5 Chapter 4 live-NPC entry is:
 
@@ -358,6 +359,13 @@ The direct Volume 5 Chapter 5 live-NPC entry is:
 
 ```text
 /game?previewRoleplay=volume5_chapter5_roleplay&authoring=1
+```
+
+The direct Volume 5 Finale and Epilogue entries are:
+
+```text
+/game?previewRoleplay=volume5_finale_roleplay&authoring=1
+/game?previewRoleplay=volume5_epilogue_roleplay&authoring=1
 ```
 
 The direct Volume 5 Campaign entry is:

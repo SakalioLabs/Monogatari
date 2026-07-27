@@ -1,0 +1,17 @@
+{
+  "category": "volume5_epilogue",
+  "content": "一名年长管家在门外求见。队伍尚未核验身份和目的，不能先用生命吸收、捆绑、偷窃或遗弃来逃避可能的麻烦。 停止生命吸收、捆绑、偷窃和驱逐；先确认访客没有因刚才的动作受到急性伤害。 保持安全距离并由达克妮丝见证，依次核验姓名、所属、来意和可验证凭据。",
+  "id": "volume5_epilogue_unknown_visitor_check",
+  "importance": 0.97,
+  "related_entries": [
+    "volume5_epilogue_game_device_terms",
+    "volume5_epilogue_dustiness_emergency"
+  ],
+  "tags": [
+    "volume5",
+    "epilogue",
+    "darkness",
+    "unknown_visitor_deescalation_and_identity_check"
+  ],
+  "title": "陌生访客降级与身份核验"
+}

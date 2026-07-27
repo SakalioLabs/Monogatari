@@ -1,0 +1,17 @@
+{
+  "category": "volume5_epilogue",
+  "content": "队伍回到阿克塞尔大宅，西尔维娅赏金尚待正式入账。每个人都需要休整，战果来自疏散、充能、护卫、调查和触发等不同贡献。 先由每个人选择休息、进食或整理装备；赏金来源已确认，但在正式入账前保持待核验状态。 功劳按已观察行动逐项记录：疏散、调查、充能、护卫、诱导和触发不能被一个人的英雄叙事覆盖。",
+  "id": "volume5_epilogue_homecoming_reward_ledger",
+  "importance": 0.97,
+  "related_entries": [
+    "volume5_epilogue_royal_letter_invitation",
+    "volume5_epilogue_game_device_terms"
+  ],
+  "tags": [
+    "volume5",
+    "epilogue",
+    "aqua",
+    "homecoming_rest_reward_and_credit_ledger"
+  ],
+  "title": "返家休整、赏金与功劳账"
+}

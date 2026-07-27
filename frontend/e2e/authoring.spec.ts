@@ -335,6 +335,8 @@ test('Scene authoring saves a real background, previews, and rejects portable ID
   await expect(page.locator('.notice.success')).toContainText('Scene created')
   await page.getByRole('button', { name: 'Playtest', exact: true }).click()
   await expect(page).toHaveURL(/\/game\?previewScene=agent_scene_test&authoring=1$/)
+  await expect(page.locator('.scene-meta strong')).toHaveText('Agent Scene Test')
+  await expect(page.locator('.model-placeholder')).toBeVisible()
   await expect(page.locator('.scene-empty p')).toContainText(projectBackground)
   await expect(page.locator('.scene-backdrop')).toHaveAttribute('style', /url\(/)
 

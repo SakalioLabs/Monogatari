@@ -1,0 +1,17 @@
+{
+  "category": "volume5_epilogue",
+  "content": "阿库娅带回一台可运行的游戏装置。物品来源、当前保管者、使用时长和交换条件需要明确，抢夺与强迫劳动都不是借用协议。 先记录装置来源和当前由阿库娅保管，核对保存与操作限制；不抢夺、不拆解。 借用时段和家务交换由双方自愿确认，任何一方都可拒绝或在交接前撤回。",
+  "id": "volume5_epilogue_game_device_terms",
+  "importance": 0.97,
+  "related_entries": [
+    "volume5_epilogue_homecoming_reward_ledger",
+    "volume5_epilogue_unknown_visitor_check"
+  ],
+  "tags": [
+    "volume5",
+    "epilogue",
+    "aqua",
+    "game_device_borrowing_and_household_terms"
+  ],
+  "title": "游戏装置保管与借用协议"
+}

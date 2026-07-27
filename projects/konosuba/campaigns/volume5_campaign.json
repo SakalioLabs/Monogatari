@@ -115,17 +115,71 @@
         {
           "ending_id": "volume5_legacy_contained_with_shared_agency",
           "target": {
-            "kind": "complete"
+            "entry_id": "finale",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume5_legacy_contained_with_open_damage",
           "target": {
-            "kind": "complete"
+            "entry_id": "finale",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume5_legacy_decision_overrun",
+          "target": {
+            "entry_id": "finale",
+            "kind": "entry"
+          }
+        }
+      ]
+    },
+    {
+      "id": "finale",
+      "roleplay_id": "volume5_finale_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume5_explosion_path_chosen_with_agency",
+          "target": {
+            "entry_id": "epilogue",
+            "kind": "entry"
+          }
+        },
+        {
+          "ending_id": "volume5_diverse_magic_path_chosen_with_agency",
+          "target": {
+            "entry_id": "epilogue",
+            "kind": "entry"
+          }
+        },
+        {
+          "ending_id": "volume5_skill_path_deferred_without_proxy_choice",
+          "target": {
+            "entry_id": "epilogue",
+            "kind": "entry"
+          }
+        }
+      ]
+    },
+    {
+      "id": "epilogue",
+      "roleplay_id": "volume5_epilogue_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume5_royal_invitation_verified_with_party_plan",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume5_royal_invitation_held_for_bounded_review",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume5_homecoming_boundary_breach_unresolved",
           "target": {
             "kind": "complete"
           }

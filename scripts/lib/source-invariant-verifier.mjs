@@ -56,6 +56,8 @@ export function createSourceInvariantVerifier({
     const storyProgressSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyProgress.ts'), 'utf8')
     const storyAccessSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyAccess.ts'), 'utf8')
     const storyContentSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyContent.ts'), 'utf8')
+    const browserProjectDraftsSource = await readFile(path.join(frontendDir, 'src', 'lib', 'browserProjectDrafts.ts'), 'utf8')
+    const browserProjectDraftsTestSource = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'browserProjectDrafts.test.ts'), 'utf8')
     const storyPlaytestSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyPlaytest.ts'), 'utf8')
     const storyTextPlaybackSource = await readFile(path.join(frontendDir, 'src', 'lib', 'storyTextPlayback.ts'), 'utf8')
     const storyTextPlaybackTestSource = await readFile(path.join(frontendDir, 'src', 'lib', '__tests__', 'storyTextPlayback.test.ts'), 'utf8')
@@ -614,7 +616,11 @@ export function createSourceInvariantVerifier({
       [knowledgeContentSource, "invokeCommand<KnowledgeCatalogSnapshot>('save_knowledge_entry_definition'", 'save desktop knowledge entries through the authoring command'],
       [knowledgeContentSource, "invokeCommand<KnowledgeCatalogSnapshot>('delete_knowledge_entry_definition'", 'delete desktop knowledge entries through the authoring command'],
       [knowledgeContentSource, 'expectedCatalogFingerprint', 'save and delete knowledge entries with optimistic concurrency'],
-      [knowledgeContentSource, 'window.localStorage.setItem(browserDraftKey', 'persist Web/PWA knowledge authoring drafts'],
+      [knowledgeContentSource, 'saveScopedBrowserDrafts(browserDraftKey', 'persist Web/PWA knowledge authoring drafts through the shared project boundary'],
+      [knowledgeContentSource, 'activateBrowserProjectScope(manifest)', 'bind knowledge drafts to the active Web/PWA project'],
+      [browserProjectDraftsSource, 'window.localStorage.setItem(storageKey', 'own browser authoring persistence in one project-scoped boundary'],
+      [browserProjectDraftsSource, 'value.project_scope !== activeProjectScope', 'reject foreign-project browser authoring drafts'],
+      [browserProjectDraftsTestSource, 'ignores legacy and foreign-project live roleplay drafts', 'test live Roleplay draft isolation across projects'],
       [knowledgeContentSource, 'resetBrowserKnowledgeDrafts', 'restore packaged project knowledge after browser authoring'],
       [knowledgeContentSource, 'loadBrowserCharacterKnowledgeReferences', 'protect character-pinned knowledge from browser draft deletion'],
       [knowledgeContentSource, 'loadStoryCharacters()', 'protect references from the same packaged or browser-draft character catalog used by authoring'],

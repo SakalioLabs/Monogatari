@@ -1,5 +1,6 @@
 import type { KnowledgeEntryDefinition } from './knowledgeContent'
 import type { StoryCharacterInfo } from './storyContent'
+import { activateBrowserProjectScope } from './browserProjectDrafts'
 import { hasTauriRuntime, invokeCommand } from './tauri'
 import type { WebGpuChatMessage } from './webgpuInference'
 import { stripWebNpcPrivateReasoning } from './npcConversation'
@@ -218,21 +219,30 @@ export interface BrowserRoleplayTurnInput {
 
 interface WebProjectManifest {
   schema: string
+  project_scope?: string
+  character_files?: string[]
+  scene_files?: string[]
+  dialogue_files?: string[]
   roleplay_files?: string[]
+  campaign_files?: string[]
+  ending_files?: string[]
+  knowledge_files?: string[]
+  event_catalogs?: string[]
 }
 
 export async function loadSceneRoleplays(): Promise<SceneRoleplayDefinition[]> {
   if (hasTauriRuntime()) return invokeCommand<SceneRoleplayDefinition[]>('list_scene_roleplays')
-  const drafts = loadBrowserRoleplayDrafts()
-  if (drafts) {
-    return drafts.map(definition => validateBrowserSceneRoleplayDefinition(definition))
-      .sort((left, right) => left.id.localeCompare(right.id))
-  }
   const manifestResponse = await fetch(projectUrl('project-assets.json'), { cache: 'no-cache' })
   if (!manifestResponse.ok) throw new Error(`Project manifest returned HTTP ${manifestResponse.status}`)
   const manifest = await manifestResponse.json() as WebProjectManifest
   if (manifest.schema !== 'monogatari-web-project-assets/v1') {
     throw new Error(`Unsupported project manifest: ${String(manifest.schema)}`)
+  }
+  activateBrowserProjectScope(manifest)
+  const drafts = loadBrowserRoleplayDrafts()
+  if (drafts) {
+    return drafts.map(definition => validateBrowserSceneRoleplayDefinition(definition))
+      .sort((left, right) => left.id.localeCompare(right.id))
   }
   const documents = await Promise.all((manifest.roleplay_files || []).map(async (path) => {
     const response = await fetch(projectUrl(path), { cache: 'no-cache' })

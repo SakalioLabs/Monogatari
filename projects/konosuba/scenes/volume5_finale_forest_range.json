@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/volume5_finale_forest_range.png",
+  "bgm_path": null,
+  "id": "volume5_finale_forest_range",
+  "model_3d_path": null,
+  "name": "红魔之乡外安全魔法练习场",
+  "tags": [
+    "volume5",
+    "finale",
+    "forest",
+    "magic_range",
+    "backstop"
+  ],
+  "time_of_day": "late_morning",
+  "weather": "clear"
+}

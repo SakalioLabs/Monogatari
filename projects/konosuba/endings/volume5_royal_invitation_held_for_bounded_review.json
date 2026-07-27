@@ -1,0 +1,8 @@
+{
+  "description": "访客与信件权限得到保护，家族危机的来源和未知项被分别记录。收件人没有因恐惧或兴奋仓促答复，而是列出待核验问题、回复期限和保管责任；暂缓不被改写成拒绝。",
+  "dialogue_id": "volume5_royal_invitation_held_for_bounded_review_epilogue",
+  "id": "volume5_royal_invitation_held_for_bounded_review",
+  "scene_id": "axel_mansion_letter_table",
+  "schema": "monogatari-story-ending/v1",
+  "title": "王家邀请暂缓并进入有界复核"
+}

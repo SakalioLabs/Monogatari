@@ -1,3 +1,8 @@
+import {
+  activateBrowserProjectScope,
+  loadScopedBrowserDrafts,
+  saveScopedBrowserDrafts,
+} from './browserProjectDrafts'
 import { contentAccess, loadStoryContentAccess, type StoryContentAccessEntry } from './storyAccess'
 import { hasTauriRuntime, invokeCommand } from './tauri'
 
@@ -102,6 +107,7 @@ export interface StoryEndingDefinition {
 
 interface WebProjectManifest {
   schema: string
+  project_scope?: string
   scene_files?: string[]
   dialogue_files?: string[]
   roleplay_files?: string[]
@@ -109,6 +115,7 @@ interface WebProjectManifest {
   ending_files?: string[]
   character_files?: string[]
   knowledge_files?: string[]
+  event_catalogs?: string[]
 }
 
 export interface SceneDefinition {
@@ -142,8 +149,6 @@ const BROWSER_ENDING_DRAFT_KEY = 'monogatari:story-ending-catalog:v1'
 const BROWSER_SCENE_DRAFT_KEY = 'monogatari:scene-authoring-catalog:v1'
 const BROWSER_DIALOGUE_DRAFT_KEY = 'monogatari:dialogue-authoring-catalog:v1'
 const BROWSER_CHARACTER_DRAFT_KEY = 'monogatari:character-authoring-catalog:v1'
-const BROWSER_PROJECT_DRAFT_SCHEMA = 'monogatari-browser-project-drafts/v1'
-let activeBrowserProjectScope: string | null = null
 
 function baseUrl(): URL {
   const base = import.meta.env.BASE_URL || '/'
@@ -161,7 +166,7 @@ async function webProjectManifest(): Promise<WebProjectManifest> {
   if (manifest.schema !== 'monogatari-web-project-assets/v1') {
     throw new Error(`Unsupported project content manifest: ${String(manifest.schema)}`)
   }
-  activeBrowserProjectScope = browserProjectScope(manifest)
+  activateBrowserProjectScope(manifest)
   return manifest
 }
 
@@ -335,57 +340,6 @@ export function loadBrowserStoryEndingDrafts(): StoryEndingDefinition[] | null {
 
 export function saveBrowserStoryEndingDrafts(endings: StoryEndingDefinition[]): void {
   saveScopedBrowserDrafts(BROWSER_ENDING_DRAFT_KEY, endings)
-}
-
-function loadScopedBrowserDrafts<T>(
-  storageKey: string,
-  isEntry: (value: unknown) => value is T,
-): T[] | null {
-  if (typeof window === 'undefined' || !activeBrowserProjectScope) return null
-  const raw = window.localStorage.getItem(storageKey)
-  if (raw === null) return null
-  try {
-    const value = JSON.parse(raw) as Record<string, unknown>
-    if (value.schema !== BROWSER_PROJECT_DRAFT_SCHEMA
-      || value.project_scope !== activeBrowserProjectScope
-      || !Array.isArray(value.entries)) {
-      return null
-    }
-    const entries = value.entries.filter(isEntry)
-    return entries.length === value.entries.length ? entries : null
-  } catch {
-    return null
-  }
-}
-
-function saveScopedBrowserDrafts<T>(storageKey: string, entries: T[]): void {
-  if (typeof window === 'undefined') return
-  if (!activeBrowserProjectScope) {
-    throw new Error('Browser project content must be loaded before saving authoring drafts.')
-  }
-  window.localStorage.setItem(storageKey, JSON.stringify({
-    schema: BROWSER_PROJECT_DRAFT_SCHEMA,
-    project_scope: activeBrowserProjectScope,
-    entries,
-  }))
-}
-
-function browserProjectScope(manifest: WebProjectManifest): string {
-  const fields = [
-    manifest.character_files,
-    manifest.scene_files,
-    manifest.dialogue_files,
-    manifest.roleplay_files,
-    manifest.campaign_files,
-    manifest.ending_files,
-    manifest.knowledge_files,
-  ].map((paths) => [...(paths || [])].sort())
-  const source = JSON.stringify(fields)
-  let hash = 0x811c9dc5
-  for (let index = 0; index < source.length; index += 1) {
-    hash = Math.imul(hash ^ source.charCodeAt(index), 0x01000193)
-  }
-  return `catalog-${(hash >>> 0).toString(16).padStart(8, '0')}`
 }
 
 function isStoryEndingDefinition(value: unknown): value is StoryEndingDefinition {

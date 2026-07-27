@@ -5,6 +5,7 @@ import {
   resolveAuthoringApiRuntime,
 } from './src/lib/authoringRuntimeConfig'
 import { createReadStream, readFileSync, readdirSync, statSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -27,6 +28,9 @@ const projectDataRoots = {
   knowledge: path.join(projectDataDir, 'knowledge'),
 } as const
 const projectSettingsPath = path.join(projectDataDir, 'settings.json')
+const projectScope = `project-${createHash('sha256')
+  .update(path.normalize(projectDataDir).toLowerCase())
+  .digest('hex')}`
 const authoringRuntimeHealthTtlMs = 10_000
 const authoringRuntimeHealthTimeoutMs = 4_000
 let authoringRuntimeHealthCache: {
@@ -142,6 +146,7 @@ function projectDataDevPlugin(): Plugin {
         const manifest = {
           schema: 'monogatari-web-project-assets/v1',
           generated_by: 'frontend/vite.config.ts',
+          project_scope: projectScope,
           assets: projectFiles(projectDataRoots.assets, '/assets'),
           event_catalogs: projectFiles(projectDataRoots.events, '/events'),
           scene_files: projectFiles(projectDataRoots.scenes, '/scenes'),

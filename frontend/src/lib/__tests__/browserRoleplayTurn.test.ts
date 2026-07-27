@@ -255,20 +255,21 @@ describe('executeBrowserRoleplayTurn', () => {
     expect(turnRequest.snapshot.session.transcript).toEqual([])
   })
 
-  it('does not commit generated prose when independent evaluation fails', async () => {
+  it('commits guarded prose with authored fallback scoring when independent evaluation fails', async () => {
     const generateApiChat = vi.fn()
       .mockResolvedValueOnce('The receiver holds the coordinates inside the signal.')
       .mockRejectedValueOnce(new Error('evaluator unavailable'))
     const runtime = dependencies(generateApiChat)
     const turnRequest = request('Use a second receiver to verify the coordinates.')
 
-    await expect(executeBrowserRoleplayTurn(turnRequest, runtime)).rejects.toThrow(
-      'ROLEPLAY_EVALUATION_FAILED',
-    )
+    const result = await executeBrowserRoleplayTurn(turnRequest, runtime)
 
     expect(generateApiChat).toHaveBeenCalledTimes(2)
-    expect(turnRequest.snapshot.session.total_turns).toBe(0)
-    expect(turnRequest.snapshot.session.scores.trust).toBe(0)
-    expect(turnRequest.snapshot.session.transcript).toEqual([])
+    expect(result.response.evaluation_source).toBe('authoring_api_authored_fallback')
+    expect(result.response.session.total_turns).toBe(1)
+    expect(result.response.session.scores.trust).toBe(1)
+    expect(result.response.session.observed_evidence).toEqual(['verification'])
+    expect(result.response.session.transcript[0].npc_response)
+      .toBe('The receiver holds the coordinates inside the signal.')
   })
 })

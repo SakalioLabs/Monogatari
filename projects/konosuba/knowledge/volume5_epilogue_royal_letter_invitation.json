@@ -1,0 +1,17 @@
+{
+  "category": "volume5_epilogue",
+  "content": "王家来信点名邀请和真与第一王女会面，但信件送达路径、家族关联、礼仪和安全责任仍需核验。偷取或围观不能替代收件人授权，达克妮丝的恐惧也不能替全队拒绝。 先确认收件人与获准阅读者，再核验送达链、王家纹章和署名；不用偷窃取得信件内容。 收件人选择接受邀请；与达克妮丝明确礼仪、同行人员、退出条件和突发事件报告计划。 收件人选择暂缓答复；列出待核验问题、回复期限和信件保管责任，不把暂缓写成拒绝。",
+  "id": "volume5_epilogue_royal_letter_invitation",
+  "importance": 0.97,
+  "related_entries": [
+    "volume5_epilogue_dustiness_emergency",
+    "volume5_epilogue_homecoming_reward_ledger"
+  ],
+  "tags": [
+    "volume5",
+    "epilogue",
+    "darkness",
+    "royal_letter_access_and_invitation_decision"
+  ],
+  "title": "王家来信权限与邀请选择"
+}

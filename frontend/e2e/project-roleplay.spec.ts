@@ -34,7 +34,9 @@ test.describe('configured project roleplay', () => {
       await expect(roleplay).toHaveAttribute('data-roleplay-status', 'active')
       await expect(roleplay.locator('.node-kicker')).not.toBeEmpty()
       await expect(roleplay.locator('.narration-entry')).toBeVisible()
+      await expectNarrationInsideTranscript(roleplay)
       await expect(roleplay.locator('textarea')).toBeVisible()
+      await expect(page.getByTestId('npc-trigger')).toHaveCount(0)
       await expect(page.locator('.dialogue-text')).toHaveCount(0)
       await expect(page.getByTestId('npc-trigger')).toHaveCount(0)
       if (expectedTitle) await expect(roleplay).toContainText(expectedTitle)
@@ -49,6 +51,15 @@ test.describe('configured project roleplay', () => {
       expect(runtimeErrors, runtimeErrors.join('\n')).toEqual([])
     })
   }
+
+  test('stale scripted preview links recover into the primary live story', async ({ page }) => {
+    await page.goto('/game?previewDialogue=blue_frame_dialogue&authoring=1')
+
+    await expect(page.getByTestId('scene-roleplay')).toBeVisible({ timeout: 30_000 })
+    await expect(page).not.toHaveURL(/previewDialogue=/)
+    await expect(page).toHaveURL(/preview(?:Campaign|Roleplay)=/)
+    await expect(page.getByTestId('roleplay-runtime')).toBeVisible()
+  })
 
   test('uses separate live NPC and evaluator calls before deterministic commit', async ({ page }) => {
     test.skip(!liveAiEnabled, 'Set MONOGATARI_E2E_LIVE_AI=1 to call the configured model.')
@@ -105,6 +116,19 @@ async function expectLayoutInsideViewport(page: Page, roleplay: Locator) {
   expect(bounds!.y).toBeGreaterThanOrEqual(-1)
   expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewport!.width + 1)
   expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewport!.height + 1)
+}
+
+async function expectNarrationInsideTranscript(roleplay: Locator) {
+  await expect.poll(async () => {
+    const transcript = await roleplay.locator('.roleplay-transcript').boundingBox()
+    const narration = await roleplay.locator('.narration-entry p').boundingBox()
+    if (!transcript || !narration) return 0
+    return Math.max(
+      0,
+      Math.min(transcript.y + transcript.height, narration.y + narration.height)
+        - Math.max(transcript.y, narration.y),
+    )
+  }).toBeGreaterThan(16)
 }
 
 async function attachScreenshot(

@@ -1,0 +1,23 @@
+{
+  "id": "volume5_royal_invitation_held_for_bounded_review_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "private_deliberation",
+      "ending_type": "volume5_royal_invitation_held_for_bounded_review",
+      "is_ending": true,
+      "scene_id": "axel_mansion_letter_table",
+      "speaker_id": "darkness",
+      "text": "访客与信件权限得到保护，家族危机的来源和未知项被分别记录。收件人没有因恐惧或兴奋仓促答复，而是列出待核验问题、回复期限和保管责任；暂缓不被改写成拒绝。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "axel_mansion_letter_table",
+      "text": "访客与信件权限得到保护，家族危机的来源和未知项被分别记录。收件人没有因恐惧或兴奋仓促答复，而是列出待核验问题、回复期限和保管责任；暂缓不被改写成拒绝。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "王家邀请暂缓并进入有界复核",
+  "variables": {}
+}

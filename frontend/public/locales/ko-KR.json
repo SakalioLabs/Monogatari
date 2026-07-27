@@ -1264,6 +1264,7 @@
     "roleplay.you": "나",
     "roleplay.responding": "응답 중",
     "roleplay.evaluating": "이야기 상태 판정 중",
+    "roleplay.degraded-evaluation": "작성자 규칙 기반 대체 평가",
     "roleplay.message-placeholder": "이 장면에서 말하거나 행동하세요...",
     "roleplay.send": "보내기",
     "roleplay.ending": "엔딩",

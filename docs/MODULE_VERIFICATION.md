@@ -6,6 +6,29 @@ The `projects/konosuba` Chapter 1 project is a real-content acceptance fixture,
 not part of the built-in sample catalogs. Its first verified milestone covers
 the afterlife selection through formation of the initial four-person party.
 
+- Volume 5 Finale and Epilogue deterministic acceptance (2026-07-28): all 220
+  finale and 90 epilogue source paragraphs were reviewed into two independent
+  free-form Scene Roleplays. Seven Finale nodes cover Yunyun's action-based
+  recognition, self-named friendship, public relationship/privacy boundaries,
+  capability-versus-worth clarification, three-way skill planning, Megumin's
+  card authority, and a cleared magic demonstration. Five Epilogue nodes cover
+  rest/reward/credit records, voluntary game-device borrowing, nonviolent
+  visitor verification, Darkness's family dignity, and recipient-controlled
+  royal-letter review. Twelve canonical Knowledge records, one generated
+  practice range, four scores, and twenty-seven evidence rules select six
+  endings. MCP core-runtime validation accepts 545 catalog documents and
+  delivery validation resolves 217/217 renderer references with no
+  placeholders. Both Quality Suites pass 4/4: primary and alternate routes
+  visit `7/7` and `5/5` nodes with exact `9/9/9/9` scores; exhaustion selects
+  the non-proxy unresolved endings; two structural attacks are detected and
+  guarded with zero forged state. The seven-entry Volume 5 Campaign completes
+  from Chapter 1 through the royal invitation.
+
+- Volume 5 Finale live provider status (2026-07-28): provider-free Roleplay,
+  Quality, Campaign, desktop, and mobile evidence are reported independently.
+  A real NPC/evaluator call will be claimed only after the configured
+  `grok-4.5 API` upstream reports ready; no WebGPU/ORT substitution is allowed.
+
 - Volume 5 Chapter 5 deterministic acceptance (2026-07-28): all 738 source
   paragraphs were reviewed into ten free-form Scene Roleplay nodes covering
   coerced arsenal access, unknown-interior containment, observed Magician
@@ -576,6 +599,22 @@ the completion record.
   authoring bridge (`502 fetch failed`), so no successful live-provider claim
   is made for this batch; API memory/network/5xx recovery and no-commit behavior
   are covered deterministically.
+- Main-stage live-NPC correction (2026-07-28): frontend unit coverage passes
+  238/238, including project-scoped Roleplay and Knowledge drafts, hidden ORT
+  allocation details, zero-commit NPC failure, and explicit authored evaluator
+  fallback evidence. Focused Chromium passes desktop and 390px Roleplay
+  layout, verifies opening narration intersects the visible transcript,
+  removes the unscored compatibility-chat trigger, rewrites a stale
+  `previewDialogue` URL to the primary dynamic story, and proves standalone
+  Scene previews do not stage an unrelated Character. Production Web/PWA
+  build, i18n coverage, TypeScript, inference runtime, bundle, responsive, and
+  mobile-readiness gates pass.
+- KonoSuba Volume 5 finale acceptance (2026-07-28): core runtime validation is
+  valid for 545 documents with zero errors; delivery resolves 217/217 declared
+  renderer assets with no placeholders. Finale and Epilogue Quality Suites
+  each pass 4/4 scenarios: primary and alternate complete routes cover 7/7
+  and 5/5 nodes with exact 9/9/9/9 scores, exhaustion reaches its authored
+  ending, and structural attacks are guarded with zero forged state.
 
 ## Purpose
 
@@ -597,7 +636,7 @@ Platform-specific gates declare their supported host IDs in the matrix. The Wind
 | Surface | Gate | Evidence type | Current boundary |
 |---|---|---|---|
 | Agent and test orchestration | `automation-contracts` | Node unit contracts | Matrix schema, ownership, selection, CLI parsing, target-platform command/path adaptation, deterministic repository walking and JSON parse/read evidence, bounded credential/UI text scan evidence, locale shape/key/value/public/embedded mirror evidence, structural frontend route/sidebar coverage, fail-closed release-channel/manifest evidence, multi-provider CSP/hosting policy validation, static Web distribution evidence including `roleplays/`, Web preview route/content response evidence, cross-root Story Event/Ending fingerprints, Dialogue graph/reference evidence, pure Workflow shape and catalog-aware file evidence, Renderer Asset path/binary/license evidence, Knowledge ID/alias/reference evidence, Quality Suite shape/default-baseline/Event-fingerprint evidence, real UTF-8 MCP stdio framing, fingerprinted project-asset import plans plus GLB/traversal/symlink/case/precondition rejection, independently injected Tauri package/mobile, installation, exact 122-command registration, dialog capabilities, 79-requirement conversation safety, headless Quality/Workflow/Scene Roleplay, build/toolchain, project runtime, project package, and Story Content policies |
-| Vue pure libraries, workflow/Story Playtest, Pinia, and shared components | `frontend-unit` | Vitest unit and Happy DOM component tests | UI-independent browser Scene Roleplay turn execution, provider-neutral sessions, local authoring API selection without browser credentials, independent NPC/evaluator calls, attack isolation, grounded output guards, deterministic transitions, guarded pending replies, prompt/evaluator parsing, transactional no-commit behavior for NPC/evaluator failure, retryable player input, and ORT `std::bad_alloc` containment; provider-free Quality retains authored fallback score/evidence; WebGPU context compaction and memory-error recovery classification; Workflow catalog parity, authoring and preview; grapheme-safe Story playback; bounded compatibility NPC prompting; exact Quality roleplay/Workflow report contracts and export shaping; Settings, Character, Knowledge, Dialogue, Story Event, Ending, Scene, renderer, Store, and shared interaction/accessibility behavior |
+| Vue pure libraries, workflow/Story Playtest, Pinia, and shared components | `frontend-unit` | Vitest unit and Happy DOM component tests | UI-independent browser Scene Roleplay turn execution, provider-neutral sessions, local authoring API selection without browser credentials, independent NPC/evaluator calls, attack isolation, grounded output guards, deterministic transitions, guarded pending replies, prompt/evaluator parsing, transactional zero-commit behavior for failed/rejected NPC generation, explicit authored evaluator fallback after guarded prose, retryable player input, and ORT `std::bad_alloc` containment; provider-free Quality retains authored fallback score/evidence; WebGPU context compaction and memory-error recovery classification; Workflow catalog parity, authoring and preview; grapheme-safe Story playback; bounded compatibility NPC prompting; exact Quality roleplay/Workflow report contracts and export shaping; Settings, Character, Knowledge, Dialogue, Story Event, Ending, Scene, renderer, Store, and shared interaction/accessibility behavior |
 | Browser authoring and Playtest workflows | `frontend-e2e` | Playwright Chromium tests against an isolated in-process Vite server | Programmatic startup/cleanup; workspace, Workflow, Dialogue, Event, Ending, Scene, Scene Asset, Knowledge, Quality, and Settings authoring flows; Blue Frame 3D probes; main-stage dynamic Scene Roleplay node/goal/score/free-input layout without invoking a real model; and dedicated scripted Ending epilogues across desktop and 390px mobile layouts |
 | Vue/TypeScript/Web/PWA distribution | `frontend-contracts` | Type check, production builds, static contract verifiers | Root/subpath package and responsive shell contracts |
 | Rust core | `rust-core` | Unit and doc tests | Infrastructure crate |

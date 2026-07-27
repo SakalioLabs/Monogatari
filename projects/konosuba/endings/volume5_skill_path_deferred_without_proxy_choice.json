@@ -1,0 +1,8 @@
+{
+  "description": "决策窗口结束时，惠惠仍未确认不可逆的技能分配。卡片、点数和道路保持原状，其他人不能用效果、分数、预言或队伍需要替她按下按钮；后续可从已核验的选项继续。",
+  "dialogue_id": "volume5_skill_path_deferred_without_proxy_choice_epilogue",
+  "id": "volume5_skill_path_deferred_without_proxy_choice",
+  "scene_id": "volume5_finale_forest_range",
+  "schema": "monogatari-story-ending/v1",
+  "title": "技能道路暂缓，无人代理选择"
+}

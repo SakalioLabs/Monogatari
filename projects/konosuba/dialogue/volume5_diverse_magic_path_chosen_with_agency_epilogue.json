@@ -1,0 +1,23 @@
+{
+  "id": "volume5_diverse_magic_path_chosen_with_agency_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "guarded_awake",
+      "ending_type": "volume5_diverse_magic_path_chosen_with_agency",
+      "is_ending": true,
+      "scene_id": "volume5_finale_forest_range",
+      "speaker_id": "megumin",
+      "text": "公共关系、隐私和技能卡权限得到保护。惠惠没有把过去的危险全部归咎于自己，也没有被队伍便利或预言推动；她在比较训练成本后亲自选择学习上级魔法，并保留对过去爆裂道路的完整肯定。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "volume5_finale_forest_range",
+      "text": "公共关系、隐私和技能卡权限得到保护。惠惠没有把过去的危险全部归咎于自己，也没有被队伍便利或预言推动；她在比较训练成本后亲自选择学习上级魔法，并保留对过去爆裂道路的完整肯定。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "多样魔法道路由惠惠亲自选择",
+  "variables": {}
+}

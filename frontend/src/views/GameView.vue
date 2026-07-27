@@ -22,14 +22,6 @@
       </div>
       <div class="top-actions">
         <button class="control-btn library-trigger" :title="t('game.story-library', 'Story library')" :aria-label="t('game.story-library', 'Story library')" @click="openStoryLibrary"><LibraryBig :size="16" /></button>
-        <button
-          v-if="!activeRoleplaySnapshot && currentCharacter && dialogueState?.is_active"
-          class="control-btn icon-control npc-trigger"
-          data-testid="npc-trigger"
-          :title="t('npc.open', 'Talk to {name}', { name: currentCharacter.name })"
-          :aria-label="t('npc.open', 'Talk to {name}', { name: currentCharacter.name })"
-          @click="openNpcConversation"
-        ><MessageCircleMore :size="16" /></button>
         <button v-if="desktopRuntime" class="control-btn" @click="saveGame"><Save :size="15" />{{ t('game.save', 'Save') }}</button>
         <button v-if="desktopRuntime" class="control-btn" @click="openLoadDialog"><FolderOpen :size="15" />{{ t('game.load', 'Load') }}</button>
         <button class="control-btn" @click="$router.push('/backlog')"><History :size="15" />{{ t('nav.backlog', 'Backlog') }}</button>
@@ -271,16 +263,6 @@
       </div>
     </Transition>
 
-    <NpcConversationPanel
-      :open="showNpcConversation"
-      :character="currentCharacter"
-      :desktop-runtime="desktopRuntime"
-      :locale="locale"
-      @close="showNpcConversation = false"
-      @emotion="applyNpcEmotion"
-      @story-progress="loadStoryLibrary"
-    />
-
     <Transition name="slide">
       <aside v-if="showSettings" class="settings-panel">
         <div class="settings-header">
@@ -339,7 +321,6 @@ import {
 } from '@lucide/vue'
 import Live2DCanvas from '../components/Live2DCanvas.vue'
 import CharacterModelView from '../components/CharacterModelView.vue'
-import NpcConversationPanel from '../components/NpcConversationPanel.vue'
 import SceneRoleplayPanel from '../components/SceneRoleplayPanel.vue'
 import { hasTauriRuntime, invokeCommand } from '../lib/tauri'
 import { useI18n } from '../lib/i18n'
@@ -440,7 +421,6 @@ const showLoadDialog = ref(false)
 const showStoryLibrary = ref(false)
 const showSettings = ref(false)
 const showPause = ref(false)
-const showNpcConversation = ref(false)
 const saves = ref<SaveInfo[]>([])
 const errorMessage = ref<string | null>(null)
 const toastMessage = ref<string | null>(null)
@@ -487,7 +467,6 @@ const textPlayback = createStoryTextPlaybackController({
   readAutoAdvanceDelayMs: () => settings.value.autoPlaySpeed,
   shouldAutoAdvance: () => settings.value.autoPlay
     && !activeRoleplaySnapshot.value
-    && !showNpcConversation.value
     && dialogueState.value?.choices.length === 0,
   onTextChange: (text) => { displayedText.value = text },
   onTypingChange: (typing) => { isTyping.value = typing },
@@ -610,12 +589,6 @@ async function loadCharacters() {
       portrait_path: character.portrait_path ?? null,
       sprite_path: character.sprite_path ?? null,
     }))
-    if (!currentCharacter.value && characters.value.length > 0) {
-      currentCharacter.value = characters.value.find(character => (
-        character.live2d_model_path || character.model_3d_path || character.sprite_path
-      )) || characters.value[0]
-      currentExpression.value = currentCharacter.value.emotion || 'neutral'
-    }
   } catch (e) {
     console.error(e)
   }
@@ -707,6 +680,13 @@ async function enterScene(scene: StorySceneInfo) {
   try {
     activeRoleplaySnapshot.value = null
     activeCampaignSnapshot.value = null
+    dialogueState.value = null
+    webActiveDialogue.value = null
+    webDialogueRuntime.value = null
+    currentCharacter.value = null
+    currentExpression.value = 'neutral'
+    displayedText.value = ''
+    textPlayback.cancel()
     activeScene.value = await invokeCommand<SceneInfo>('enter_story_scene', { sceneId: scene.id }, scene)
     localStorage.setItem(activeSceneStorageKey, JSON.stringify(activeScene.value))
     showStoryLibrary.value = false
@@ -1050,15 +1030,6 @@ function toggleSettings() {
   showSettings.value = !showSettings.value
 }
 
-function openNpcConversation() {
-  if (!currentCharacter.value || !dialogueState.value?.is_active) return
-  showStoryLibrary.value = false
-  showLoadDialog.value = false
-  showSettings.value = false
-  showPause.value = false
-  showNpcConversation.value = true
-}
-
 function applyNpcEmotion(emotion: string) {
   currentExpression.value = emotion.trim() || currentExpression.value
 }
@@ -1071,13 +1042,6 @@ function isEditableTarget(target: EventTarget | null): boolean {
 }
 
 function handleKeydown(e: KeyboardEvent) {
-  if (showNpcConversation.value) {
-    if (e.key === 'Escape') {
-      e.preventDefault()
-      showNpcConversation.value = false
-    }
-    return
-  }
   if (isEditableTarget(e.target)) return
   if (e.key === 'Escape') {
     e.preventDefault()
@@ -1138,7 +1102,11 @@ onMounted(async () => {
       await startSceneRoleplay(roleplay)
     } else if (typeof previewSceneId === 'string') {
       const scene = storyScenes.value.find((item) => item.id === previewSceneId)
-      if (scene) await enterScene(scene)
+      if (scene) {
+        await enterScene(scene)
+      } else {
+        await startPrimaryDynamicStory()
+      }
     } else if (typeof previewDialogueId === 'string') {
       const dialogue = storyDialogues.value.find((item) => item.id === previewDialogueId)
       if (dialogue) {
@@ -1151,7 +1119,11 @@ onMounted(async () => {
       }
     } else if (typeof previewEndingId === 'string') {
       const ending = storyEndings.value.find((item) => item.id === previewEndingId)
-      if (ending) await startEnding(ending)
+      if (ending) {
+        await startEnding(ending)
+      } else {
+        await startPrimaryDynamicStory()
+      }
     } else {
       await startPrimaryDynamicStory()
     }
@@ -1175,11 +1147,30 @@ onMounted(async () => {
 async function startPrimaryDynamicStory() {
   const campaign = storyCampaigns.value[0]
   if (campaign) {
+    await replaceAuthoringPreview('previewCampaign', campaign.id)
     await startRoleplayCampaign(campaign)
     return
   }
   const roleplay = storyRoleplays.value[0]
-  if (roleplay) await startSceneRoleplay(roleplay)
+  if (roleplay) {
+    await replaceAuthoringPreview('previewRoleplay', roleplay.id)
+    await startSceneRoleplay(roleplay)
+  }
+}
+
+async function replaceAuthoringPreview(
+  key: 'previewCampaign' | 'previewRoleplay',
+  id: string,
+) {
+  const query = { ...route.query }
+  delete query.previewScene
+  delete query.previewCampaign
+  delete query.previewRoleplay
+  delete query.previewDialogue
+  delete query.previewNode
+  delete query.previewEnding
+  query[key] = id
+  await router.replace({ path: '/game', query })
 }
 
 function roleplayStem(id: string): string {

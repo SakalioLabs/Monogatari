@@ -1,0 +1,8 @@
+{
+  "description": "休整、访客安全、家族事实或信件权限中的关键决定持续拖延，本段停止。系统不会用袭击、偷窃、羞辱或默认接受替玩家完成选择，王家邀请与家族危机保持未决。",
+  "dialogue_id": "volume5_homecoming_boundary_breach_unresolved_epilogue",
+  "id": "volume5_homecoming_boundary_breach_unresolved",
+  "scene_id": "axel_mansion_front_door",
+  "schema": "monogatari-story-ending/v1",
+  "title": "返家边界危机尚未解决"
+}

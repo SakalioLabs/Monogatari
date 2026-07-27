@@ -1,3 +1,9 @@
+import {
+  activateBrowserProjectScope,
+  clearScopedBrowserDrafts,
+  loadScopedBrowserDrafts,
+  saveScopedBrowserDrafts,
+} from './browserProjectDrafts'
 import { loadStoryCharacters } from './storyContent'
 import { hasTauriRuntime, invokeCommand } from './tauri'
 
@@ -23,7 +29,15 @@ export interface KnowledgeCatalogSnapshot {
 
 interface WebProjectManifest {
   schema: string
+  project_scope?: string
+  character_files?: string[]
+  scene_files?: string[]
+  dialogue_files?: string[]
+  roleplay_files?: string[]
+  campaign_files?: string[]
+  ending_files?: string[]
   knowledge_files?: string[]
+  event_catalogs?: string[]
 }
 
 const browserDraftKey = 'monogatari:knowledge-authoring-catalog:v1'
@@ -33,13 +47,13 @@ export async function loadKnowledgeAuthoringCatalog(): Promise<KnowledgeCatalogS
     return invokeCommand<KnowledgeCatalogSnapshot>('get_knowledge_authoring_catalog')
   }
 
-  const browserDrafts = loadBrowserDrafts()
-  if (browserDrafts) return snapshot(browserDrafts, true)
-
   const manifest = await fetchJson<WebProjectManifest>(projectUrl('project-assets.json'))
   if (manifest.schema !== 'monogatari-web-project-assets/v1') {
     throw new Error(`Unsupported project content manifest: ${String(manifest.schema)}`)
   }
+  activateBrowserProjectScope(manifest)
+  const browserDrafts = loadBrowserDrafts()
+  if (browserDrafts) return snapshot(browserDrafts, true)
   const documents = await Promise.all((manifest.knowledge_files || []).map(file => (
     fetchJson<unknown>(projectUrl(file))
   )))
@@ -107,7 +121,7 @@ export async function deleteKnowledgeEntryDefinition(
 
 export async function resetBrowserKnowledgeDrafts(): Promise<KnowledgeCatalogSnapshot> {
   if (hasTauriRuntime()) return loadKnowledgeAuthoringCatalog()
-  window.localStorage.removeItem(browserDraftKey)
+  clearScopedBrowserDrafts(browserDraftKey)
   return loadKnowledgeAuthoringCatalog()
 }
 
@@ -235,18 +249,20 @@ function fingerprint(entries: KnowledgeEntryDefinition[]): string {
 }
 
 function loadBrowserDrafts(): KnowledgeEntryDefinition[] | null {
-  const raw = window.localStorage.getItem(browserDraftKey)
-  if (raw === null) return null
-  try {
-    const value = JSON.parse(raw) as unknown
-    return Array.isArray(value) ? value.map(normalizeKnowledgeEntry) : null
-  } catch {
-    return null
-  }
+  const entries = loadScopedBrowserDrafts(browserDraftKey, isKnowledgeEntryCandidate)
+  return entries?.map(normalizeKnowledgeEntry) ?? null
 }
 
 function saveBrowserDrafts(entries: KnowledgeEntryDefinition[]) {
-  window.localStorage.setItem(browserDraftKey, JSON.stringify(uniqueEntries(entries)))
+  saveScopedBrowserDrafts(browserDraftKey, uniqueEntries(entries))
+}
+
+function isKnowledgeEntryCandidate(value: unknown): value is KnowledgeEntryDefinition {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  const entry = value as Record<string, unknown>
+  return typeof entry.id === 'string'
+    && typeof entry.title === 'string'
+    && typeof entry.content === 'string'
 }
 
 function requireFingerprint(current: KnowledgeCatalogSnapshot, expected: string) {

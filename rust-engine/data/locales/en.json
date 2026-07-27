@@ -1264,6 +1264,7 @@
     "roleplay.you": "You",
     "roleplay.responding": "Responding",
     "roleplay.evaluating": "Evaluating story state",
+    "roleplay.degraded-evaluation": "Authored fallback evaluation",
     "roleplay.message-placeholder": "Say or do something in this scene...",
     "roleplay.send": "Send",
     "roleplay.ending": "Ending",

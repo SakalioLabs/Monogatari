@@ -65,7 +65,7 @@ for (const viewport of viewports) {
       excludedObjects: 3,
       minimumNonBackground: 40,
     })
-    await expectNpcConversationPanel(page)
+    await expect(page.getByTestId('npc-trigger')).toHaveCount(0)
 
     await openDialogueNode(page, 'first_test_choice', '记录本停在空白页')
     await expectChoicesInsideViewport(page, 3)
@@ -257,35 +257,23 @@ async function expectChoicesInsideViewport(page: Page, expectedCount: number): P
   }
 }
 
-async function expectNpcConversationPanel(page: Page): Promise<void> {
-  await page.getByTestId('npc-trigger').click()
-  const panel = page.getByTestId('npc-panel')
-  await expect(panel).toBeVisible()
-  await expect(panel).toHaveAttribute('data-npc-runtime', 'webgpu')
-  await expect(panel).toContainText('九号回声')
-  const composer = page.getByTestId('npc-input')
-  await expect(composer).toBeVisible()
-  const bounds = await composer.boundingBox()
-  const viewport = page.viewportSize()
-  expect(bounds).not.toBeNull()
-  expect(viewport).not.toBeNull()
-  expect(bounds!.x).toBeGreaterThanOrEqual(0)
-  expect(bounds!.y).toBeGreaterThanOrEqual(0)
-  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewport!.width)
-  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewport!.height)
-  await page.getByTestId('npc-close').click()
-  await expect(panel).toHaveCount(0)
-}
-
 async function expectLayoutInsideViewport(page: Page): Promise<void> {
   const layout = await page.evaluate(() => {
     const viewport = { width: window.innerWidth, height: window.innerHeight }
-    const boxes = ['.game-topbar', '.dialogue-box', '.sprite-stage img'].map((selector) => {
+    const boxes = ['.game-topbar', '.dialogue-box'].map((selector) => {
       const element = document.querySelector(selector)
       if (!element) return { selector, box: null }
       const box = element.getBoundingClientRect()
       return { selector, box: { left: box.left, top: box.top, right: box.right, bottom: box.bottom } }
     })
+    const sprite = document.querySelector('.sprite-stage img')
+    if (sprite) {
+      const box = sprite.getBoundingClientRect()
+      boxes.push({
+        selector: '.sprite-stage img',
+        box: { left: box.left, top: box.top, right: box.right, bottom: box.bottom },
+      })
+    }
     return {
       viewport,
       boxes,

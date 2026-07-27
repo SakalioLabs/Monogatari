@@ -191,6 +191,44 @@ describe('SceneRoleplayPanel', () => {
       .toBe('authoring_api_model')
   })
 
+  it('shows an explicit degraded state when authored fallback evaluation is used', async () => {
+    mocks.loadAuthoringApiRuntime.mockResolvedValue({
+      schema: 'monogatari-authoring-inference-runtime/v1',
+      provider: 'api',
+      endpoint: '/authoring-api/chat/completions',
+      model: 'remote-roleplay-model',
+      max_new_tokens: 256,
+      temperature: 0.7,
+      top_p: 0.9,
+    })
+    mocks.generateAuthoringApiChat
+      .mockResolvedValueOnce('The receiver holds the coordinates inside the signal.')
+      .mockRejectedValueOnce(new Error('evaluator unavailable'))
+    const wrapper = mount(SceneRoleplayPanel, {
+      props: {
+        snapshot: startBrowserSceneRoleplay(definition),
+        desktopRuntime: false,
+        characters: [character],
+        endings: [],
+        locale: 'en',
+        sceneName: 'Station',
+      },
+    })
+    await flushPromises()
+
+    await wrapper.get('textarea').setValue('Use a second receiver to verify the coordinates.')
+    await wrapper.get('.send-button').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="roleplay-degraded"]').text())
+      .toContain('Authored fallback evaluation')
+    expect(wrapper.get('[data-testid="scene-roleplay"]').attributes('data-evaluation-source'))
+      .toBe('authoring_api_authored_fallback')
+    const update = wrapper.emitted('update')?.at(-1)?.[0] as ReturnType<typeof startBrowserSceneRoleplay>
+    expect(update.session.scores.trust).toBe(1)
+    expect(update.session.observed_evidence).toEqual(['verification'])
+  })
+
   it('blocks input until the browser inference runtime is resolved', async () => {
     let resolveRuntime: (runtime: null) => void = () => {}
     mocks.loadAuthoringApiRuntime.mockReturnValue(new Promise((resolve) => {

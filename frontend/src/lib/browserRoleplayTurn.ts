@@ -10,6 +10,7 @@ import {
   buildBrowserRoleplayEvaluatorMessages,
   buildBrowserRoleplayNpcMessages,
   containedBrowserRoleplayEvaluation,
+  evaluateBrowserRoleplayFallback,
   parseBrowserRoleplayEvaluation,
   reconcileBrowserRoleplayEvaluation,
   type SceneRoleplaySnapshot,
@@ -173,8 +174,11 @@ export async function executeBrowserRoleplayTurn(
           ? 'authoring_api_model_reconciled'
           : 'browser_model_reconciled'
       }
-    } catch (error) {
-      throw roleplayInferenceError('evaluation', error)
+    } catch {
+      evaluation = evaluateBrowserRoleplayFallback(currentNode, playerMessage)
+      evaluationSource = apiRuntime
+        ? 'authoring_api_authored_fallback'
+        : 'browser_authored_fallback'
     }
   }
 

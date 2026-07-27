@@ -1,0 +1,23 @@
+{
+  "id": "volume5_royal_invitation_verified_with_party_plan_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "noble_resolve",
+      "ending_type": "volume5_royal_invitation_verified_with_party_plan",
+      "is_ending": true,
+      "scene_id": "axel_mansion_letter_table",
+      "speaker_id": "darkness",
+      "text": "队伍先获得休整和逐项功劳记录，以自愿协议共享遗物，停止对陌生来客的攻击，并将家族危机事实与羞辱性言辞分开。收件人与获准阅读者核验王家来信后选择接受邀请，并建立礼仪、同行、退出和报告计划。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "axel_mansion_letter_table",
+      "text": "队伍先获得休整和逐项功劳记录，以自愿协议共享遗物，停止对陌生来客的攻击，并将家族危机事实与羞辱性言辞分开。收件人与获准阅读者核验王家来信后选择接受邀请，并建立礼仪、同行、退出和报告计划。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "王家邀请完成核验并形成同行计划",
+  "variables": {}
+}

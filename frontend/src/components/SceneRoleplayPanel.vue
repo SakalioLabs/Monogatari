@@ -21,6 +21,11 @@
           :data-runtime-kind="runtimeKind"
           data-testid="roleplay-runtime"
         >{{ runtimeLabel }}</span>
+        <span
+          v-if="lastEvaluationSource.endsWith('_authored_fallback')"
+          class="degraded-source"
+          data-testid="roleplay-degraded"
+        >{{ t('roleplay.degraded-evaluation', 'Authored fallback evaluation') }}</span>
         <span>{{ t('roleplay.turn', 'Turn') }}</span>
         <strong>{{ snapshot.session.node_turns }} / {{ currentNode.max_turns }}</strong>
       </div>
@@ -477,6 +482,10 @@ function scrollToBottom() {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.degraded-source {
+  color: #f1c982;
+  font-size: 10px;
+}
 
 .roleplay-participants {
   display: flex;
@@ -608,7 +617,14 @@ function scrollToBottom() {
   .roleplay-head { padding: 12px; }
   .node-copy small { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
   .roleplay-participants { padding: 7px 12px; }
-  .score-strip { gap: 8px; padding: 9px 12px; }
+  .score-strip {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 9px 12px;
+    scrollbar-width: thin;
+  }
+  .score-item { flex: 0 0 116px; }
   .score-label { display: grid; gap: 1px; }
   .roleplay-transcript { padding: 12px; }
   .turn-entry { width: 92%; }

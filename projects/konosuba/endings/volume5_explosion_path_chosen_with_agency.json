@@ -1,0 +1,8 @@
+{
+  "description": "芸芸的战后认可没有变成称呼压力，旧同学关系由当事人重新命名，公开玩笑也没有替双方建立关系。惠惠区分了自责与能力证据，比较三条技能道路，保有自己的冒险者卡片，并在清空射界后亲自选择继续专精爆裂魔法。",
+  "dialogue_id": "volume5_explosion_path_chosen_with_agency_epilogue",
+  "id": "volume5_explosion_path_chosen_with_agency",
+  "scene_id": "volume5_finale_forest_range",
+  "schema": "monogatari-story-ending/v1",
+  "title": "爆裂道路由惠惠亲自选择"
+}

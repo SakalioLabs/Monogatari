@@ -54,6 +54,8 @@ describe('scene roleplay authoring domain', () => {
 
   it('persists browser drafts with optimistic catalog fingerprints', async () => {
     const definition = createSceneRoleplayDraft()
+    stubProjectCatalog([])
+    await loadSceneRoleplayAuthoringCatalog()
     saveBrowserRoleplayDrafts([definition])
     const before = await loadSceneRoleplayAuthoringCatalog()
     const edited = cloneSceneRoleplayDefinition(definition)
@@ -72,7 +74,6 @@ describe('scene roleplay authoring domain', () => {
       before.catalog_fingerprint,
     )).rejects.toThrow(/changed since it was opened/)
 
-    stubCampaignCatalog([])
     const removed = await deleteSceneRoleplayDefinition(
       definition.id,
       saved.catalog_fingerprint,
@@ -82,9 +83,7 @@ describe('scene roleplay authoring domain', () => {
 
   it('rejects browser deletion while a Campaign references the roleplay', async () => {
     const definition = createSceneRoleplayDraft()
-    saveBrowserRoleplayDrafts([definition])
-    const catalog = await loadSceneRoleplayAuthoringCatalog()
-    stubCampaignCatalog([{
+    stubProjectCatalog([{
       schema: 'monogatari-roleplay-campaign/v1',
       id: 'chapter_campaign',
       title: 'Chapter campaign',
@@ -98,6 +97,9 @@ describe('scene roleplay authoring domain', () => {
         }],
       }],
     }])
+    await loadSceneRoleplayAuthoringCatalog()
+    saveBrowserRoleplayDrafts([definition])
+    const catalog = await loadSceneRoleplayAuthoringCatalog()
 
     await expect(deleteSceneRoleplayDefinition(
       definition.id,
@@ -117,14 +119,26 @@ describe('scene roleplay authoring domain', () => {
   })
 })
 
-function stubCampaignCatalog(campaigns: unknown[]): void {
-  const fetchMock = vi.fn()
-    .mockResolvedValueOnce(new Response(JSON.stringify({
-      schema: 'monogatari-web-project-assets/v1',
-      campaign_files: campaigns.map((_, index) => `/campaigns/${index}.json`),
-    }), { status: 200 }))
-  for (const campaign of campaigns) {
-    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(campaign), { status: 200 }))
-  }
-  vi.stubGlobal('fetch', fetchMock)
+function stubProjectCatalog(campaigns: unknown[]): void {
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input)
+    if (url.endsWith('/project-assets.json')) {
+      return new Response(JSON.stringify({
+        schema: 'monogatari-web-project-assets/v1',
+        character_files: [],
+        scene_files: [],
+        dialogue_files: [],
+        roleplay_files: [],
+        campaign_files: campaigns.map((_, index) => `/campaigns/${index}.json`),
+        ending_files: [],
+        knowledge_files: [],
+        event_catalogs: [],
+      }), { status: 200 })
+    }
+    const campaignIndex = campaigns.findIndex((_, index) => url.endsWith(`/campaigns/${index}.json`))
+    if (campaignIndex >= 0) {
+      return new Response(JSON.stringify(campaigns[campaignIndex]), { status: 200 })
+    }
+    return new Response('', { status: 404 })
+  }))
 }

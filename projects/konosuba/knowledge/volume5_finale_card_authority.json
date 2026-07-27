@@ -1,0 +1,17 @@
+{
+  "category": "volume5_finale",
+  "content": "技能点操作可能不可逆。即使惠惠递出卡片、过去有预言或队伍希望更强，也不能由玩家猜测按钮、偷偷分配或把沉默当授权。 卡片和界面保持在惠惠控制下；我不会偷取、代按，也不会让预言替你分配技能点。 请由你亲自说明具体技能、点数和是否确认；在最终确认前可以撤回或选择暂缓。",
+  "id": "volume5_finale_card_authority",
+  "importance": 0.97,
+  "related_entries": [
+    "volume5_finale_skill_path_options",
+    "volume5_finale_safe_demonstration_and_path"
+  ],
+  "tags": [
+    "volume5",
+    "finale",
+    "megumin",
+    "adventurer_card_authority_and_current_choice"
+  ],
+  "title": "冒险者卡片与不可逆选择权限"
+}
