@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/arcanletia_poisoned_source_basin.webp",
+  "bgm_path": null,
+  "id": "arcanletia_poisoned_source_basin",
+  "model_3d_path": null,
+  "name": "阿尔坎雷提亚受污染源泉",
+  "tags": [
+    "volume4",
+    "chapter5",
+    "source",
+    "poison",
+    "sampling"
+  ],
+  "time_of_day": "noon",
+  "weather": "clear"
+}

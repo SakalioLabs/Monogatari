@@ -1,0 +1,24 @@
+{
+  "description": "第四卷第五章实时角色扮演结局短章。",
+  "id": "volume4_source_crisis_response_overrun_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "containment_shield",
+      "ending_type": "volume4_source_crisis_response_overrun",
+      "is_ending": true,
+      "scene_id": "arcanletia_upper_source_battlefield",
+      "speaker_id": "darkness",
+      "text": "队伍未能及时形成完整的源头、身份、隔离、协同或战后记录。当前人员与下游先撤出危险区，未完成项目、样本和责任范围被封存移交，不能把危机写成已经解决。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "arcanletia_upper_source_battlefield",
+      "text": "队伍未能及时形成完整的源头、身份、隔离、协同或战后记录。当前人员与下游先撤出危险区，未完成项目、样本和责任范围被封存移交，不能把危机写成已经解决。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "源头危机处置超时",
+  "variables": {}
+}

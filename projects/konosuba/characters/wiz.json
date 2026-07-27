@@ -6,6 +6,7 @@
     "alarmed": "明确请求停止净化动作，同时保护周围灵魂。",
     "battle_ready": "以商店围裙外罩法袍参与迎击，优先报告剩余魔力、核心温度、可行传送落点和每项方案的不确定风险。",
     "cautious": "解释可观察事实，避免激化冲突。",
+    "crystal_resolve": "面对平民伤害时语气克制而坚定；只陈述自己的中立条件、剩余魔力与可执行冻结范围，不替队伍决定升级。",
     "grateful": "确认互不攻击与修复结界的具体约定。",
     "reunited": "对巴尼尔当前确实回到商店表达真诚喜悦，同时把友情、是否无害和每项经营决定分开说明。"
   },
@@ -48,7 +49,13 @@
     "volume4_wiz_recovery_and_history_boundary",
     "volume4_hans_town_sighting",
     "volume4_beginner_bane_lich_interaction",
-    "volume4_fresh_contamination_alert"
+    "volume4_fresh_contamination_alert",
+    "volume4_dissolved_beginner_bane_trace",
+    "volume4_hans_true_identity",
+    "volume4_manager_civilian_harm",
+    "volume4_death_poison_slime_hazard",
+    "volume4_coordinated_hans_containment",
+    "volume4_aftermath_spring_and_restitution"
   ],
   "name": "维兹",
   "personality": {
@@ -71,6 +78,7 @@
     "alarmed": "assets/characters/wiz_alarmed.png",
     "battle_ready": "assets/characters/wiz_battle_apron.png",
     "cautious": "assets/characters/wiz_cautious.png",
+    "crystal_resolve": "assets/characters/wiz_crystal_resolve.webp",
     "grateful": "assets/characters/wiz_cautious.png",
     "reunited": "assets/characters/wiz_reunited_smile.png"
   }

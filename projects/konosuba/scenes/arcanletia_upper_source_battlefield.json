@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/arcanletia_upper_source_battlefield.webp",
+  "bgm_path": null,
+  "id": "arcanletia_upper_source_battlefield",
+  "model_3d_path": null,
+  "name": "阿尔坎雷提亚上层源泉隔离区",
+  "tags": [
+    "volume4",
+    "chapter5",
+    "source",
+    "battle",
+    "containment"
+  ],
+  "time_of_day": "afternoon",
+  "weather": "clear"
+}

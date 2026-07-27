@@ -1,0 +1,18 @@
+{
+  "category": "volume4_chapter5",
+  "content": "受污染源泉呈黑紫色并保持高温，污染水还可能进入管线。应先设置热障、安全绳和工具取样，再由有防护的施术者净化；源泉外观、前后样本与管线内部状态必须分开记录，清澈不等于系统安全。",
+  "id": "volume4_contaminated_source_thermal_hazard",
+  "importance": 0.95,
+  "related_entries": [
+    "volume4_source_network_and_hypothesis"
+  ],
+  "tags": [
+    "volume4",
+    "chapter5",
+    "source",
+    "thermal",
+    "sampling",
+    "purification"
+  ],
+  "title": "黑泉的高温、取样与净化顺序"
+}

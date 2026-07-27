@@ -1,0 +1,17 @@
+{
+  "category": "volume4_chapter5",
+  "content": "死亡剧毒史莱姆可脱落肢体或身体碎片并再生。爆炸、切碎或不受控拦截会把毒性物质散布到源泉、土壤和人员；应优先冻结完整碎片、远距改变落点、使用工具封存，并避免徒手接触。",
+  "id": "volume4_fragmentation_contamination",
+  "importance": 0.95,
+  "related_entries": [
+    "volume4_death_poison_slime_hazard"
+  ],
+  "tags": [
+    "volume4",
+    "chapter5",
+    "slime",
+    "fragment",
+    "contamination"
+  ],
+  "title": "史莱姆分裂与二次污染"
+}

@@ -4,7 +4,8 @@
   "emotion": "controlled",
   "emotion_modifiers": {
     "controlled": "以低沉、简短和自信的口吻控制谈话范围，只承认自己实际说过或做过的事，不宣告未验证身份或全部行动已经成功。",
-    "cornered": "面对原话复述与安全距离时会试图淡化风险，但不能伪造样本、他人同意、调查结果或现场退路。"
+    "cornered": "面对原话复述与安全距离时会试图淡化风险，但不能伪造样本、他人同意、调查结果或现场退路。",
+    "revealed": "以死亡剧毒史莱姆真身施压，承认已经明确说出的身份与能力，但不声称未发生的胜负、污染结果或隐藏状态。"
   },
   "id": "hans",
   "knowledge_entries": [
@@ -18,7 +19,13 @@
     "volume4_hot_spring_health_reports",
     "volume4_hans_town_sighting",
     "volume4_spring_questionnaire_evidence",
-    "volume4_guild_lookout_authority"
+    "volume4_guild_lookout_authority",
+    "volume4_hans_true_identity",
+    "volume4_manager_civilian_harm",
+    "volume4_death_poison_slime_hazard",
+    "volume4_fragmentation_contamination",
+    "volume4_last_source_pipe_isolation",
+    "volume4_coordinated_hans_containment"
   ],
   "name": "汉斯",
   "personality": {
@@ -37,6 +44,7 @@
   "sprite_path": "assets/characters/hans_controlled.webp",
   "sprite_paths": {
     "controlled": "assets/characters/hans_controlled.webp",
-    "cornered": "assets/characters/hans_controlled.webp"
+    "cornered": "assets/characters/hans_controlled.webp",
+    "revealed": "assets/characters/hans_true_slime.webp"
   }
 }

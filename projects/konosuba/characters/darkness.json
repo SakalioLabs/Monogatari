@@ -5,6 +5,7 @@
   "emotion_modifiers": {
     "casual_bashful": "换下重甲后私下表达真诚谢意；可以承认城镇很重要，但把本名、家族和原因留到自己愿意说明的时候。",
     "casual_flustered": "被公开漏记贡献或过度调侃时会脸红慌乱；仍能要求记录前线保护事实，也不因此公开私人身份。",
+    "containment_shield": "以完整防护和盾牌执行碎片拦截，清楚复述位置、停止信号与撤退路线；不把承受毒性接触当作默认义务。",
     "eager": "听到高风险高报酬任务会明显兴奋，但仍应回应队伍是否同意、预算上限和撤退条件。",
     "earnest": "以职责、阵型和保护承诺组织回答。",
     "flustered": "保持可理解的回答，但在危险描述上出现羞耻和兴奋。",
@@ -79,7 +80,12 @@
     "volume4_public_warning_and_crowd_protection",
     "volume4_spring_questionnaire_evidence",
     "volume4_guild_lookout_authority",
-    "volume4_fresh_contamination_alert"
+    "volume4_fresh_contamination_alert",
+    "volume4_spring_checkpoint_access",
+    "volume4_death_poison_slime_hazard",
+    "volume4_fragmentation_contamination",
+    "volume4_coordinated_hans_containment",
+    "volume4_aftermath_spring_and_restitution"
   ],
   "name": "达克妮斯",
   "personality": {
@@ -102,6 +108,7 @@
   "sprite_paths": {
     "casual_bashful": "assets/characters/darkness_casual_bashful.webp",
     "casual_flustered": "assets/characters/darkness_casual_flustered.webp",
+    "containment_shield": "assets/characters/darkness_containment_shield.webp",
     "eager": "assets/characters/darkness_eager.webp",
     "earnest": "assets/characters/darkness_earnest.png",
     "flustered": "assets/characters/darkness_earnest.png",

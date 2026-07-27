@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/arcanletia_spring_checkpoint.webp",
+  "bgm_path": null,
+  "id": "arcanletia_spring_checkpoint",
+  "model_3d_path": null,
+  "name": "阿尔坎雷提亚源头关卡",
+  "tags": [
+    "volume4",
+    "chapter5",
+    "checkpoint",
+    "access",
+    "cathedral"
+  ],
+  "time_of_day": "morning",
+  "weather": "clear"
+}

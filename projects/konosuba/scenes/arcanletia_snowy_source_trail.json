@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/arcanletia_snowy_source_trail.webp",
+  "bgm_path": null,
+  "id": "arcanletia_snowy_source_trail",
+  "model_3d_path": null,
+  "name": "阿尔坎雷提亚残雪管线山路",
+  "tags": [
+    "volume4",
+    "chapter5",
+    "mountain",
+    "pipes",
+    "evidence"
+  ],
+  "time_of_day": "late_morning",
+  "weather": "clear"
+}

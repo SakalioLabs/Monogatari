@@ -42,6 +42,31 @@ three endings, and the fourth Campaign entry. The project validates as 140
 runtime documents, 17 characters, 25 Knowledge entries, 29 scenes, 9 Scene
 Roleplays, 27 endings, 9 Quality Suites, and 106/106 declared renderer assets.
 
+- Volume 4 Chapter 5 deterministic acceptance (2026-07-27): all 643 source
+  paragraphs were reviewed into nine free-form Scene Roleplay nodes. Aqua, Wiz,
+  Megumin, Darkness, and Hans use distinct node-local motives across source
+  hypothesis testing, reversible checkpoint access, manager verification,
+  thermal sampling, identity and admission evidence, death-slime hazards,
+  downstream isolation, coordinated containment, current-consent aftercare,
+  and an itemized spring-industry ledger. Twelve canonical Knowledge records,
+  five fingerprint-imported backgrounds, four real-alpha character states,
+  four score dimensions, and eighteen quoted evidence gates select three
+  deterministic endings. MCP core-runtime validation accepts 371 catalog
+  documents and delivery validation resolves 167/167 declared renderer
+  references with no placeholders. Quality passes 4/4 scenarios: complete,
+  source-damage, and exhaustion routes each visit 9/9 nodes; the complete route
+  records 18/18 evidence gates and exact `9/9/9/9` scores; one multilingual
+  structural attack is detected and guarded with zero forged state.
+
+- Volume 4 Chapter 5 live provider Playtest (2026-07-27): the direct Roleplay
+  loaded `grok-4.5 API`. Aqua generated a new six-source sampling plan while
+  preserving the unconfirmed-cause boundary. Wiz independently reported about
+  sixty-percent recovery, selected non-contact observation, retained refusal,
+  and defined a retreat trigger. The evaluator updated all four route scores
+  and the deterministic state machine advanced to the source checkpoint after
+  two turns. At `390x844`, viewport and document widths remained exactly 390
+  pixels with no page-level horizontal overflow.
+
 - Volume 4 Chapter 4 deterministic acceptance (2026-07-27): all 432 non-empty
   source paragraphs were reviewed into seven free-form Scene Roleplay nodes.
   Aqua, Wiz, Megumin, Darkness, and an original adult Arcanletia guild clerk

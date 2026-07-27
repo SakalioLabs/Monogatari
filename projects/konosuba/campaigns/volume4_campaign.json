@@ -88,17 +88,44 @@
         {
           "ending_id": "volume4_bounded_hans_lookout_and_fresh_alert",
           "target": {
-            "kind": "complete"
+            "entry_id": "chapter5",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume4_lookout_with_disputed_public_record",
           "target": {
-            "kind": "complete"
+            "entry_id": "chapter5",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume4_investigation_handoff_overrun",
+          "target": {
+            "entry_id": "chapter5",
+            "kind": "entry"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter5",
+      "roleplay_id": "volume4_chapter5_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume4_hans_contained_and_springs_accounted",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume4_hans_defeated_with_source_damage",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume4_source_crisis_response_overrun",
           "target": {
             "kind": "complete"
           }

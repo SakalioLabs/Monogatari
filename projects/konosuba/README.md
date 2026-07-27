@@ -216,6 +216,16 @@ lookout, a lookout with disputed public records, or an overrun investigation
 handoff. A generated adult guild clerk joins the selectable NPC cast; fixed
 Dialogue remains limited to three ending epilogues.
 
+Volume 4 Chapter 5 continues as a nine-node live source-crisis Roleplay.
+Testable contamination hypotheses, reversible checkpoint access, manager
+identity, thermal sampling, Hans's separate recognition and admissions, death
+slime contact and fragmentation hazards, pipe isolation, coordinated
+containment, Wiz's current care consent, and an itemized spring-industry ledger
+remain independently reviewable. Four scores and eighteen quoted evidence
+gates select complete containment, victory with source damage, or an overrun
+response. Aqua, Wiz, Megumin, Darkness, and Hans each answer from distinct
+node-local motives; fixed Dialogue remains limited to three ending epilogues.
+
 The direct Volume 2 browser entry is:
 
 ```text
@@ -310,6 +320,12 @@ The direct Volume 4 Chapter 4 live-NPC entry is:
 
 ```text
 /game?previewRoleplay=volume4_chapter4_roleplay&authoring=1
+```
+
+The direct Volume 4 Chapter 5 live-NPC entry is:
+
+```text
+/game?previewRoleplay=volume4_chapter5_roleplay&authoring=1
 ```
 
 The direct Volume 4 Campaign entry is:

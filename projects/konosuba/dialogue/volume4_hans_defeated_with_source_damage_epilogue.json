@@ -1,0 +1,24 @@
+{
+  "description": "第四卷第五章实时角色扮演结局短章。",
+  "id": "volume4_hans_defeated_with_source_damage_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "crying",
+      "ending_type": "volume4_hans_defeated_with_source_damage",
+      "is_ending": true,
+      "scene_id": "arcanletia_return_carriage",
+      "speaker_id": "aqua",
+      "text": "汉斯威胁被阻止，平民、队伍与碎片也得到基本保护；但部分访问、取样、战术同意或产业记录仍不完整。泉水变成普通热水，返程前必须保留争议项目和后续修复责任。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "arcanletia_return_carriage",
+      "text": "汉斯威胁被阻止，平民、队伍与碎片也得到基本保护；但部分访问、取样、战术同意或产业记录仍不完整。泉水变成普通热水，返程前必须保留争议项目和后续修复责任。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "汉斯已败，源泉损失待修",
+  "variables": {}
+}

@@ -1,0 +1,24 @@
+{
+  "description": "第四卷第五章实时角色扮演结局短章。",
+  "id": "volume4_hans_contained_and_springs_accounted_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "cautious",
+      "ending_type": "volume4_hans_contained_and_springs_accounted",
+      "is_ending": true,
+      "scene_id": "arcanletia_return_carriage",
+      "speaker_id": "wiz",
+      "text": "队伍在管线隔离后以定向分割、盾挡、冻结和逐区净化控制汉斯，维兹得到双方同意的有限照护。公会账目公开每项贡献、普通热水结果、修复损失与悬赏用途，第五章在可复核责任中结束。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "arcanletia_return_carriage",
+      "text": "队伍在管线隔离后以定向分割、盾挡、冻结和逐区净化控制汉斯，维兹得到双方同意的有限照护。公会账目公开每项贡献、普通热水结果、修复损失与悬赏用途，第五章在可复核责任中结束。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "汉斯受控与温泉损失公开",
+  "variables": {}
+}

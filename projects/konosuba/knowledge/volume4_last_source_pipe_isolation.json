@@ -1,0 +1,18 @@
+{
+  "category": "volume4_chapter5",
+  "content": "最后源头有可操作隔离阀和可修复管段。交战前应通知下游暂停取水、关闭阀门、确认流量归零，并分别封存阀前阀后样本；受污染管段可以切除或更换，不能先交战再处理下游扩散。",
+  "id": "volume4_last_source_pipe_isolation",
+  "importance": 0.95,
+  "related_entries": [
+    "volume4_contaminated_source_thermal_hazard",
+    "volume4_fragmentation_contamination"
+  ],
+  "tags": [
+    "volume4",
+    "chapter5",
+    "source",
+    "pipe",
+    "isolation"
+  ],
+  "title": "最后源头的管线隔离"
+}

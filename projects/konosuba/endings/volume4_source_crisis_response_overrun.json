@@ -1,0 +1,8 @@
+{
+  "description": "队伍未能及时形成完整的源头、身份、隔离、协同或战后记录。当前人员与下游先撤出危险区，未完成项目、样本和责任范围被封存移交，不能把危机写成已经解决。",
+  "dialogue_id": "volume4_source_crisis_response_overrun_epilogue",
+  "id": "volume4_source_crisis_response_overrun",
+  "scene_id": "arcanletia_upper_source_battlefield",
+  "schema": "monogatari-story-ending/v1",
+  "title": "源头危机处置超时"
+}
