@@ -232,7 +232,8 @@ describe('executeBrowserRoleplayTurn', () => {
     )
 
     expect(generateApiChat).toHaveBeenCalledTimes(1)
-    expect(runtime.generateWebGpuChat).toHaveBeenCalledTimes(1)
+    expect(runtime.generateWebGpuChat).not.toHaveBeenCalled()
+    expect(result.apiRuntime).toBe(apiRuntime)
     expect(result.response.evaluation_source).toBe('authored_fallback_npc_inference_error')
     expect(result.response.npc_response)
       .toBe('The receiver keeps the coordinates inside the signal.')
@@ -240,17 +241,9 @@ describe('executeBrowserRoleplayTurn', () => {
     expect(result.response.session.observed_evidence).toEqual(['verification'])
   })
 
-  it('fails over from an unavailable project API to WebGPU in the same turn', async () => {
+  it('does not cross providers when the configured project API is unavailable', async () => {
     const generateApiChat = vi.fn().mockRejectedValue(new Error('401 Unauthorized'))
     const runtime = dependencies(generateApiChat)
-    vi.mocked(runtime.generateWebGpuChat)
-      .mockResolvedValueOnce('The receiver keeps the coordinates inside the signal.')
-      .mockResolvedValueOnce(JSON.stringify({
-        score_deltas: { trust: 1 },
-        evidence: { verification: 'coordinates' },
-        npc_emotion: 'steady',
-        summary: 'The local model completed the exchange.',
-      }))
 
     const result = await executeBrowserRoleplayTurn(
       request('Use a second receiver to verify the coordinates.'),
@@ -258,9 +251,9 @@ describe('executeBrowserRoleplayTurn', () => {
     )
 
     expect(generateApiChat).toHaveBeenCalledTimes(1)
-    expect(runtime.generateWebGpuChat).toHaveBeenCalledTimes(2)
-    expect(result.apiRuntime).toBeNull()
-    expect(result.response.evaluation_source).toBe('browser_model')
+    expect(runtime.generateWebGpuChat).not.toHaveBeenCalled()
+    expect(result.apiRuntime).toBe(apiRuntime)
+    expect(result.response.evaluation_source).toBe('authored_fallback_npc_inference_error')
     expect(result.response.session.scores.trust).toBe(1)
   })
 })

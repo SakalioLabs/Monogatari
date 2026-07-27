@@ -198,6 +198,7 @@ const inputElement = ref<HTMLTextAreaElement>()
 const transcriptElement = ref<HTMLElement>()
 let knowledgeEntries: KnowledgeEntryDefinition[] = []
 const authoringApiRuntime = ref<AuthoringApiRuntime | null>(null)
+const runtimeResolved = ref(props.desktopRuntime)
 let generationSequence = 0
 
 const currentNode = computed(() => props.snapshot.current_node)
@@ -209,13 +210,20 @@ const currentRelationship = computed(() => props.snapshot.session.relationships?
 const relationshipPercent = computed(() => (currentRelationship.value + 1) * 50)
 const currentSceneName = computed(() => props.sceneName || currentNode.value.scene_id)
 const activeEnding = computed(() => props.endings.find(ending => ending.id === props.snapshot.session.ending_id) || null)
-const canSend = computed(() => Boolean(inputText.value.trim() && !isGenerating.value && currentCharacter.value))
+const canSend = computed(() => Boolean(
+  inputText.value.trim()
+  && !isGenerating.value
+  && currentCharacter.value
+  && runtimeResolved.value,
+))
 const runtimeKind = computed(() => props.desktopRuntime
   ? 'desktop'
-  : authoringApiRuntime.value ? 'api' : 'webgpu')
+  : !runtimeResolved.value ? 'loading' : authoringApiRuntime.value ? 'api' : 'webgpu')
 const runtimeLabel = computed(() => props.desktopRuntime
   ? `LLM NPC · ${t('chat.desktop-runtime', 'Desktop LLM')}`
-  : authoringApiRuntime.value
+  : !runtimeResolved.value
+    ? `LLM NPC · ${t('settings.connecting', 'Connecting')}`
+    : authoringApiRuntime.value
     ? `LLM NPC · ${authoringApiRuntime.value.model} API`
     : `LLM NPC · ${t('chat.webgpu-runtime', 'WebGPU runtime')}`)
 
@@ -286,6 +294,7 @@ onMounted(async () => {
   ])
   knowledgeEntries = knowledgeResult.entries
   authoringApiRuntime.value = authoringRuntime
+  runtimeResolved.value = true
   emit('nodeChange', currentNode.value)
   scrollToBottom()
   nextTick(() => inputElement.value?.focus())

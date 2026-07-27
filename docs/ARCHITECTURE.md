@@ -229,7 +229,14 @@ credential fields; an optional credential comes only from
 `MONOGATARI_AI_API_KEY` (or the legacy `MONOGATARI_API_KEY` fallback) and
 remains in the Node process. Static Web/PWA packages
 retain the credential-free WebGPU contract, while Tauri continues to use the
-Rust inference pipeline.
+Rust inference pipeline. The Scene Roleplay composer remains disabled while
+browser runtime discovery is pending. Once a turn selects the project API, an
+API failure cannot cross providers and allocate the WebGPU/ORT model; the turn
+uses the scene-authored recovery and reports degraded provenance instead.
+Project production tests can bind an independent root and Roleplay ID through
+`MONOGATARI_PROJECT_ROOT` and `MONOGATARI_E2E_ROLEPLAY_ID`; an explicit
+`MONOGATARI_E2E_LIVE_AI=1` additionally proves separate NPC and evaluator API
+calls before deterministic state commit.
 
 Scene Roleplay evaluation has two layers. The model handles semantic scoring
 and evidence extraction, while authored fallback signals define deterministic

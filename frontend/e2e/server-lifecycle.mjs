@@ -39,6 +39,8 @@ export async function startE2eServer(options = {}) {
     async close() {
       if (closed) return
       closed = true
+      server.httpServer?.closeIdleConnections?.()
+      server.httpServer?.closeAllConnections?.()
       await server.close()
     },
   })

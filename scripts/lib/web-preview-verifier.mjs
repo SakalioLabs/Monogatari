@@ -11,6 +11,8 @@ const previewContentChecks = Object.freeze([
   ['/endings/best_friend_ending.json', 'schema', 'monogatari-story-ending/v1'],
 ])
 const maxPreviewOutputCharacters = 64 * 1024
+const defaultPreviewStartupTimeoutMs = 60_000
+const previewPollIntervalMs = 250
 
 export function previewUrl(port, basePath, routePath) {
   const pathBase = basePath === '/' ? '' : basePath.replace(/\/$/, '')
@@ -93,12 +95,16 @@ export function createWebPreviewVerifier({
   spawnProcess = spawn,
   nodeExecutable = process.execPath,
   environment = process.env,
+  startupTimeoutMs = defaultPreviewStartupTimeoutMs,
 } = {}) {
   if (typeof frontendDirectory !== 'string' || frontendDirectory.length === 0) {
     throw new Error('Web preview verifier requires a frontend directory.')
   }
   if (typeof fetchImpl !== 'function') {
     throw new Error('Web preview verifier requires a fetch implementation.')
+  }
+  if (!Number.isFinite(startupTimeoutMs) || startupTimeoutMs <= 0) {
+    throw new Error('Web preview verifier requires a positive startup timeout.')
   }
 
   return async function verifyWebPreview({ basePath = '/', env = {} } = {}) {
@@ -139,6 +145,7 @@ export function createWebPreviewVerifier({
           exitCode: child.exitCode,
           signalCode: child.signalCode,
         }),
+        timeoutMs: startupTimeoutMs,
       })
       const evidence = await collectWebPreviewEvidence({
         port,
@@ -186,9 +193,11 @@ async function waitForPreview({
   output,
   startupError,
   processStatus,
+  timeoutMs,
 }) {
   const routeUrl = previewUrl(port, basePath, '/')
-  for (let attempt = 0; attempt < 80; attempt += 1) {
+  const deadline = Date.now() + timeoutMs
+  do {
     const error = startupError()
     if (error) {
       throw new Error(`Web/PWA preview process failed to start: ${error.message}\n${output()}`)
@@ -204,8 +213,10 @@ async function waitForPreview({
       const response = await fetchImpl(routeUrl)
       if (response.ok) return
     } catch {}
-    await delay(250)
-  }
+    const remainingMs = deadline - Date.now()
+    if (remainingMs <= 0) break
+    await delay(Math.min(previewPollIntervalMs, remainingMs))
+  } while (Date.now() <= deadline)
   throw new Error(`Web/PWA preview did not become ready at ${routeUrl}\n${output()}`)
 }
 

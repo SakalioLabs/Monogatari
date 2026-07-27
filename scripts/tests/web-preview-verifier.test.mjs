@@ -67,6 +67,13 @@ test('requires an explicit frontend process boundary', () => {
     () => createWebPreviewVerifier({ frontendDirectory: 'frontend', fetchImpl: null }),
     /requires a fetch implementation/,
   )
+  assert.throws(
+    () => createWebPreviewVerifier({
+      frontendDirectory: 'frontend',
+      startupTimeoutMs: 0,
+    }),
+    /requires a positive startup timeout/,
+  )
 })
 
 test('fails promptly with bounded process output when Vite exits before readiness', async () => {
@@ -91,6 +98,33 @@ test('fails promptly with bounded process output when Vite exits before readines
     verify(),
     (error) => error.message.includes('exit code 1') && error.message.includes('vite startup failed'),
   )
+})
+
+test('bounds a preview process that stays alive without becoming ready', async () => {
+  const child = new EventEmitter()
+  child.stdout = new PassThrough()
+  child.stderr = new PassThrough()
+  child.exitCode = null
+  child.signalCode = null
+  child.kill = () => {
+    child.exitCode = 0
+    return true
+  }
+  let requests = 0
+  const verify = createWebPreviewVerifier({
+    frontendDirectory: 'frontend',
+    logger: { log() {} },
+    startupTimeoutMs: 5,
+    spawnProcess: () => child,
+    fetchImpl: async () => {
+      requests += 1
+      return { ok: false }
+    },
+  })
+
+  await assert.rejects(verify(), /preview did not become ready/)
+  assert(requests >= 1)
+  assert.equal(child.exitCode, 0)
 })
 
 test('release runner delegates live preview ownership to the importable module', async () => {

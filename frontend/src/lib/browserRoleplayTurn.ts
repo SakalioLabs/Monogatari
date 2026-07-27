@@ -92,7 +92,7 @@ export async function executeBrowserRoleplayTurn(
   } else {
     request.onPhase?.('npc')
     apiRuntime ||= await dependencies.loadApiRuntime()
-    let generateChat = apiRuntime
+    const generateChat = apiRuntime
       ? dependencies.generateApiChat
       : dependencies.generateWebGpuChat
     if (!apiRuntime) {
@@ -129,19 +129,6 @@ export async function executeBrowserRoleplayTurn(
       npcCandidate = sanitizeWebNpcReply(rawReply || generated)
     } catch {
       rawReply = ''
-      if (apiRuntime) {
-        apiRuntime = null
-        const support = dependencies.detectWebGpuSupport()
-        if (support.available) {
-          generateChat = dependencies.generateWebGpuChat
-          try {
-            const generated = await generateChat(npcMessages, npcOptions)
-            npcCandidate = sanitizeWebNpcReply(rawReply || generated)
-          } catch {
-            rawReply = ''
-          }
-        }
-      }
     }
 
     if (npcCandidate === null) {

@@ -204,6 +204,36 @@ describe('SceneRoleplayPanel', () => {
       .toBe('authoring_api_model')
   })
 
+  it('blocks input until the browser inference runtime is resolved', async () => {
+    let resolveRuntime: (runtime: null) => void = () => {}
+    mocks.loadAuthoringApiRuntime.mockReturnValue(new Promise((resolve) => {
+      resolveRuntime = resolve
+    }))
+    const wrapper = mount(SceneRoleplayPanel, {
+      props: {
+        snapshot: startBrowserSceneRoleplay(definition),
+        desktopRuntime: false,
+        characters: [character],
+        endings: [],
+        locale: 'en',
+        sceneName: 'Station',
+      },
+    })
+
+    await wrapper.get('textarea').setValue('Use a second receiver to verify the coordinates.')
+    expect(wrapper.get('[data-testid="roleplay-runtime"]').attributes('data-runtime-kind'))
+      .toBe('loading')
+    expect(wrapper.get('.send-button').attributes()).toHaveProperty('disabled')
+    await wrapper.get('.send-button').trigger('click')
+    expect(mocks.generateWebGpuChat).not.toHaveBeenCalled()
+
+    resolveRuntime(null)
+    await flushPromises()
+    expect(wrapper.get('[data-testid="roleplay-runtime"]').attributes('data-runtime-kind'))
+      .toBe('webgpu')
+    expect(wrapper.get('.send-button').attributes()).not.toHaveProperty('disabled')
+  })
+
   it('lets the player address every NPC present in the scene', async () => {
     const ensembleDefinition = structuredClone(definition)
     ensembleDefinition.nodes[0].supporting_character_ids = ['keeper']

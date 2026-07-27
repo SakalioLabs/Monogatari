@@ -59,6 +59,15 @@ Roleplays, 27 endings, 9 Quality Suites, and 106/106 declared renderer assets.
   now traverses Chapter 1 into Chapter 2 without converting the playable loop
   to fixed Dialogue.
 
+- Volume 5 Chapter 2 live provider Playtest (2026-07-27): desktop and 390px
+  mobile both opened `volume5_chapter2_roleplay` as the main free-form
+  interaction with no fixed Dialogue or optional NPC panel. A clean night-watch
+  turn made two successful `grok-4.5 API` calls, generated Megumin's scene-bound
+  reply, recorded `authoring_api_model`, committed four score deltas and two
+  evidence records, and showed no degraded state or runtime errors. Browser
+  runtime discovery now blocks premature input, and a configured API failure
+  cannot fall through to WebGPU/ORT.
+
 - Volume 5 Chapter 1 deterministic acceptance (2026-07-27): the prologue and
   all 529 Chapter 1 paragraph nodes were reviewed into ten free-form Scene
   Roleplay nodes. Yunyun, Megumin, Wiz, Vanir, Aqua, Darkness, and the

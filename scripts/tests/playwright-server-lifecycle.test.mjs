@@ -65,6 +65,34 @@ test('E2E server lifecycle closes a partially started Vite server', async () => 
   assert.equal(closeCount, 1)
 })
 
+test('E2E server lifecycle drains persistent HTTP connections before Vite shutdown', async () => {
+  const calls = []
+  const lifecycle = await startE2eServer({
+    async createServer() {
+      return {
+        httpServer: {
+          closeIdleConnections() {
+            calls.push('close-idle')
+          },
+          closeAllConnections() {
+            calls.push('close-all')
+          },
+        },
+        async listen() {
+          calls.push('listen')
+        },
+        async close() {
+          calls.push('close-vite')
+        },
+      }
+    },
+  })
+
+  await lifecycle.close()
+  await lifecycle.close()
+  assert.deepEqual(calls, ['listen', 'close-idle', 'close-all', 'close-vite'])
+})
+
 test('Playwright delegates server ownership without a shell child process', async () => {
   const config = await readFile(path.join(repositoryRoot, 'frontend', 'playwright.config.ts'), 'utf8')
   const setup = await readFile(path.join(repositoryRoot, 'frontend', 'e2e', 'global-setup.mjs'), 'utf8')
