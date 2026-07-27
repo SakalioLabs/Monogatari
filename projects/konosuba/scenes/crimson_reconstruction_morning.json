@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/volume5_ch5_reconstruction_morning.png",
+  "bgm_path": null,
+  "id": "crimson_reconstruction_morning",
+  "model_3d_path": null,
+  "name": "红魔之乡重建现场·清晨",
+  "tags": [
+    "volume5",
+    "chapter5",
+    "crimson_demon",
+    "reconstruction",
+    "agency"
+  ],
+  "time_of_day": "morning",
+  "weather": "clear"
+}

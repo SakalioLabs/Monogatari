@@ -1,0 +1,17 @@
+{
+  "category": "volume5_chapter5",
+  "content": "席薇亚一度被关进军火库，但众人不知道内部装置是否会启动、融合或破坏封印。单纯关门不能证明威胁已经受控。 关门只是暂时隔离，不代表威胁解除；内部装置可能被激活、融合或用于破门。 拉开警戒距离并疏散村民，持续观察门体；出现能量、温度或结构变化就按预案重新处置。",
+  "id": "volume5_ch5_unknown_interior_containment",
+  "importance": 0.97,
+  "related_entries": [
+    "volume5_ch5_sealed_arsenal_access_and_authority",
+    "volume5_ch5_magician_killer_observed_capabilities"
+  ],
+  "tags": [
+    "volume5",
+    "chapter5",
+    "megumin",
+    "containment_before_confinement"
+  ],
+  "title": "未知内部的隔离风险"
+}

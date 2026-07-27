@@ -337,11 +337,13 @@ The direct Volume 4 Campaign entry is:
 
 ## Volume 5 production
 
-Volume 5 Chapters 1 through 4 form one continuous live-NPC Campaign. Chapter 4
-adds ten free-form scenes covering the village tour, sealed facility, clothing
-shop relic, Demon Hill reconnaissance, broken-fence defense, Sylvia's daylight
-withdrawal, the evening defense review, an unlocked current boundary, an alarm
-handoff, and a minimum-force hostage rescue. NPC prose is generated from the
+Volume 5 Chapters 1 through 5 form one continuous live-NPC Campaign. Chapter 5
+adds ten free-form scenes covering coerced arsenal access, unknown-interior
+containment, observed Magician Killer abilities, evacuation and breach
+accountability, voluntary decoy/teleport/mana rotation, research-log
+provenance, safe countermeasure recovery, charge diagnosis, Megumin's
+voluntary Explosion charge, controlled adult fire, reconstruction auditing,
+and her independent future magic choice. NPC prose is generated from the
 selected character's current motive and Knowledge; a separate evaluator
 proposes four bounded scores and twenty quoted evidence records; only the
 Roleplay state machine advances scenes and selects one of three endings.
@@ -350,6 +352,12 @@ The direct Volume 5 Chapter 4 live-NPC entry is:
 
 ```text
 /game?previewRoleplay=volume5_chapter4_roleplay&authoring=1
+```
+
+The direct Volume 5 Chapter 5 live-NPC entry is:
+
+```text
+/game?previewRoleplay=volume5_chapter5_roleplay&authoring=1
 ```
 
 The direct Volume 5 Campaign entry is:

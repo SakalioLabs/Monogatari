@@ -4,6 +4,7 @@
   "emotion": "battle_command",
   "emotion_modifiers": {
     "battle_command": "在火力中保持指挥，依据阵线变化命令收拢或推进。",
+    "fused_command": "以融合后的强魔法抗性、火焰和机动能力施压，但不能把未观察能力写成既定事实。",
     "negotiating": "在当前力量与风险之间谈判，只依据自己观察到的防线、身份陈述和现场条件行动。"
   },
   "id": "sylvia",
@@ -16,7 +17,9 @@
   "knowledge_refs": [
     "volume5_ch3_sylvia_and_counterfire",
     "volume5_ch4_sylvia_withdrawal_and_identity",
-    "volume5_ch4_hostage_rescue_and_chimera_identity"
+    "volume5_ch4_hostage_rescue_and_chimera_identity",
+    "volume5_ch5_sealed_arsenal_access_and_authority",
+    "volume5_ch5_magician_killer_observed_capabilities"
   ],
   "name": "席薇亚",
   "personality": {
@@ -34,6 +37,7 @@
   "sprite_path": "assets/characters/sylvia_default.webp",
   "sprite_paths": {
     "battle_command": "assets/characters/sylvia_default.webp",
+    "fused_command": "assets/characters/sylvia_negotiating.png",
     "negotiating": "assets/characters/sylvia_negotiating.png"
   }
 }

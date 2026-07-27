@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/volume5_ch5_countermeasure_yard.png",
+  "bgm_path": null,
+  "id": "countermeasure_yard_dawn",
+  "model_3d_path": null,
+  "name": "服装店反制装置回收场",
+  "tags": [
+    "volume5",
+    "chapter5",
+    "crimson_demon",
+    "countermeasure",
+    "recovery"
+  ],
+  "time_of_day": "dawn",
+  "weather": "clear"
+}

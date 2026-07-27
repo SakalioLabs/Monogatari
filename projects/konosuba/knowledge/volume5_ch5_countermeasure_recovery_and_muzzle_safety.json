@@ -1,0 +1,17 @@
+{
+  "category": "volume5_chapter5",
+  "content": "反制装置长期被服装店当作晾衣杆。它的朝向、剩余能量和结构强度未知，取回过程本身也可能造成误触与倒塌。 三人共同承重，先清空搬运路线；枪口始终朝无人阻挡区，后坐区域也必须净空。 未知充能状态按危险处理，隔离扳机并禁止盲目触发；完成接口和结构检查前不试射。",
+  "id": "volume5_ch5_countermeasure_recovery_and_muzzle_safety",
+  "importance": 0.97,
+  "related_entries": [
+    "volume5_ch5_research_log_and_countermeasure",
+    "volume5_ch5_yunyun_decoy_and_charge_diagnosis"
+  ],
+  "tags": [
+    "volume5",
+    "chapter5",
+    "aqua",
+    "clothing_shop_countermeasure_recovery"
+  ],
+  "title": "服装店后院的装置回收"
+}

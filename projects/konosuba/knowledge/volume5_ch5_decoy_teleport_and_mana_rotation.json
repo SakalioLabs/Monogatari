@@ -1,0 +1,17 @@
+{
+  "category": "volume5_chapter5",
+  "content": "红魔族准备以攻击吸引、预置传送和法力轮换拖住魔术师杀手。任何居民都不能被默认当作可消耗诱饵。 攻击组只负责吸引，观察组报轨迹，隐藏传送组负责带离，落点有人接应；统一退出信号由指挥重复确认。 达到法力或伤势阈值立即轮换，任何人都可拒绝或退出；没有居民是可消耗的诱饵。",
+  "id": "volume5_ch5_decoy_teleport_and_mana_rotation",
+  "importance": 0.97,
+  "related_entries": [
+    "volume5_ch5_evacuation_damage_and_breach_accountability",
+    "volume5_ch5_research_log_and_countermeasure"
+  ],
+  "tags": [
+    "volume5",
+    "chapter5",
+    "darkness",
+    "decoy_teleport_and_mana_rotation"
+  ],
+  "title": "诱饵传送与法力轮换"
+}

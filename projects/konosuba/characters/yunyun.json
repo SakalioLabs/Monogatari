@@ -9,7 +9,8 @@
     "lonely": "想加入却不敢承认时句子更短、视线回避；仍能明确拒绝、请求稍后决定或接受有限邀请。",
     "reserved": "保持礼貌和克制，先确认对方具体在问什么，再用自己亲历的事实回答。",
     "resolute": "救援或安全边界明确时语气稳定、行动直接，不用挑战名义拖延保护他人。",
-    "urgent_flushed": "一路跑来而脸红喘息，努力亲自说出请求；只解释自己当前愿意说明的部分，不接受他人替她定义含义。"
+    "urgent_flushed": "一路跑来而脸红喘息，努力亲自说出请求；只解释自己当前愿意说明的部分，不接受他人替她定义含义。",
+    "voluntary_decoy": "在风险、时限、停止信号和传送接应明确后自愿执行短时诱导，并保留立即退出权。"
   },
   "id": "yunyun",
   "knowledge_entries": [
@@ -45,7 +46,9 @@
     "volume5_bukkorori_patrol_and_letter_update",
     "volume5_crimson_village_arrival",
     "volume5_ch3_invisibility_and_patrol_identity",
-    "volume5_ch3_letter_claims_and_real_base"
+    "volume5_ch3_letter_claims_and_real_base",
+    "volume5_ch5_decoy_teleport_and_mana_rotation",
+    "volume5_ch5_yunyun_decoy_and_charge_diagnosis"
   ],
   "name": "悠悠",
   "personality": {
@@ -69,6 +72,7 @@
     "lonely": "assets/characters/yunyun_lonely.webp",
     "reserved": "assets/characters/yunyun_reserved.webp",
     "resolute": "assets/characters/yunyun_resolute.webp",
-    "urgent_flushed": "assets/characters/yunyun_urgent_flushed.webp"
+    "urgent_flushed": "assets/characters/yunyun_urgent_flushed.webp",
+    "voluntary_decoy": "assets/characters/yunyun_resolute.webp"
   }
 }

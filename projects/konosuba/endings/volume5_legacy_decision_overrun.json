@@ -1,0 +1,8 @@
+{
+  "description": "疏散、充能、诱饵撤离或射界确认持续拖延，本段决策窗口耗尽。未知装置状态、人员位置和责任记录继续保留，系统不会以固定台词替玩家完成高风险选择。",
+  "dialogue_id": "volume5_legacy_decision_overrun_epilogue",
+  "id": "volume5_legacy_decision_overrun",
+  "scene_id": "magician_killer_battlefront_dawn",
+  "schema": "monogatari-story-ending/v1",
+  "title": "反制窗口耗尽"
+}

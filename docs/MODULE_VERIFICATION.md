@@ -6,6 +6,29 @@ The `projects/konosuba` Chapter 1 project is a real-content acceptance fixture,
 not part of the built-in sample catalogs. Its first verified milestone covers
 the afterlife selection through formation of the initial four-person party.
 
+- Volume 5 Chapter 5 deterministic acceptance (2026-07-28): all 738 source
+  paragraphs were reviewed into ten free-form Scene Roleplay nodes covering
+  coerced arsenal access, unknown-interior containment, observed Magician
+  Killer abilities, civilian evacuation and breach accountability, voluntary
+  decoy/teleport/mana rotation, research-log provenance, safe countermeasure
+  recovery, Yunyun's bounded decoy role, charge diagnosis, Megumin's voluntary
+  Explosion charge, controlled adult fire, reconstruction auditing, and her
+  independent future magic choice. Ten canonical Knowledge records, six
+  generated environments, four score dimensions, and twenty quoted evidence
+  gates select three endings. MCP core-runtime validation accepts 516 catalog
+  documents and delivery validation resolves 217/217 renderer references with
+  no placeholders. Quality passes 4/4 scenarios; the complete route visits
+  10/10 nodes, records 20/20 evidence gates, and reaches exact `9/9/9/9`
+  scores. Partial and exhaustion routes select the remaining endings, and one
+  multilingual structural attack is detected and guarded with zero forged
+  state. The Volume 5 Campaign completes Chapters 1 through 5.
+
+- Volume 5 Chapter 5 live provider status (2026-07-28): browser runtime
+  discovery remains bound to `grok-4.5 API` with WebGPU/ORT disabled for this
+  configured project. The upstream is still unreachable from the validation
+  environment, so no live NPC/evaluator call is claimed; deterministic MCP
+  acceptance and provider availability remain separate evidence.
+
 - Volume 5 Chapter 4 deterministic acceptance (2026-07-28): all 623 source
   paragraphs were reviewed into ten free-form Scene Roleplay nodes covering an
   interruptible village tour, sealed-facility facts, voluntary clothing

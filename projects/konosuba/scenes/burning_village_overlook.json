@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/volume5_ch5_burning_village_overlook.png",
+  "bgm_path": null,
+  "id": "burning_village_overlook",
+  "model_3d_path": null,
+  "name": "燃烧村庄与魔神之丘疏散线",
+  "tags": [
+    "volume5",
+    "chapter5",
+    "crimson_demon",
+    "evacuation",
+    "accountability"
+  ],
+  "time_of_day": "night",
+  "weather": "clear"
+}

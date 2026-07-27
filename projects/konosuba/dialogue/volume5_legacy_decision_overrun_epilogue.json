@@ -1,0 +1,23 @@
+{
+  "id": "volume5_legacy_decision_overrun_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "fused_command",
+      "ending_type": "volume5_legacy_decision_overrun",
+      "is_ending": true,
+      "scene_id": "magician_killer_battlefront_dawn",
+      "speaker_id": "sylvia",
+      "text": "疏散、充能、诱饵撤离或射界确认持续拖延，本段决策窗口耗尽。未知装置状态、人员位置和责任记录继续保留，系统不会以固定台词替玩家完成高风险选择。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "magician_killer_battlefront_dawn",
+      "text": "疏散、充能、诱饵撤离或射界确认持续拖延，本段决策窗口耗尽。未知装置状态、人员位置和责任记录继续保留，系统不会以固定台词替玩家完成高风险选择。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "反制窗口耗尽",
+  "variables": {}
+}

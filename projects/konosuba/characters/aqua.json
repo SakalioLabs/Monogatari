@@ -116,7 +116,16 @@
     "volume5_ch4_clothing_purchase_and_rifle_relic",
     "volume5_ch4_broken_fence_defense",
     "volume5_ch4_evening_defense_and_departure",
-    "volume5_ch4_hostage_rescue_and_chimera_identity"
+    "volume5_ch4_hostage_rescue_and_chimera_identity",
+    "volume5_ch5_sealed_arsenal_access_and_authority",
+    "volume5_ch5_unknown_interior_containment",
+    "volume5_ch5_magician_killer_observed_capabilities",
+    "volume5_ch5_evacuation_damage_and_breach_accountability",
+    "volume5_ch5_research_log_and_countermeasure",
+    "volume5_ch5_countermeasure_recovery_and_muzzle_safety",
+    "volume5_ch5_yunyun_decoy_and_charge_diagnosis",
+    "volume5_ch5_explosion_charge_and_fire_control",
+    "volume5_ch5_reconstruction_fiction_and_magic_agency"
   ],
   "name": "阿库娅",
   "personality": {

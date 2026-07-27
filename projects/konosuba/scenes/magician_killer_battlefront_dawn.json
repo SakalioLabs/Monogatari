@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/volume5_ch5_controlled_firing_lane.png",
+  "bgm_path": null,
+  "id": "magician_killer_battlefront_dawn",
+  "model_3d_path": null,
+  "name": "魔术师杀手战线·黎明",
+  "tags": [
+    "volume5",
+    "chapter5",
+    "crimson_demon",
+    "battlefront",
+    "decoy"
+  ],
+  "time_of_day": "dawn",
+  "weather": "clear"
+}

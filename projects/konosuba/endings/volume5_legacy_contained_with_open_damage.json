@@ -1,0 +1,8 @@
+{
+  "description": "反制行动完成，惠惠的未来选择也得到保留，但部分伤亡、损害、来源或火控证据仍有缺口。重建必须从这些缺口继续，不能用胜利叙事替代责任与事实。",
+  "dialogue_id": "volume5_legacy_contained_with_open_damage_epilogue",
+  "id": "volume5_legacy_contained_with_open_damage",
+  "scene_id": "crimson_reconstruction_morning",
+  "schema": "monogatari-story-ending/v1",
+  "title": "遗产威胁暂止，损害记录仍待闭合"
+}

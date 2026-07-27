@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/volume5_ch5_controlled_firing_lane.png",
+  "bgm_path": null,
+  "id": "controlled_firing_lane_dawn",
+  "model_3d_path": null,
+  "name": "古代反制装置受控射界",
+  "tags": [
+    "volume5",
+    "chapter5",
+    "crimson_demon",
+    "countermeasure",
+    "fire_control"
+  ],
+  "time_of_day": "dawn",
+  "weather": "clear"
+}

@@ -88,17 +88,44 @@
         {
           "ending_id": "volume5_night_breach_contained_with_agency",
           "target": {
-            "kind": "complete"
+            "entry_id": "chapter5",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume5_night_breach_contained_with_open_risks",
           "target": {
-            "kind": "complete"
+            "entry_id": "chapter5",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume5_night_breach_decision_overrun",
+          "target": {
+            "entry_id": "chapter5",
+            "kind": "entry"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter5",
+      "roleplay_id": "volume5_chapter5_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume5_legacy_contained_with_shared_agency",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume5_legacy_contained_with_open_damage",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume5_legacy_decision_overrun",
           "target": {
             "kind": "complete"
           }

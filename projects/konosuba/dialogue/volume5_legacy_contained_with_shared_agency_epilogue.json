@@ -1,0 +1,23 @@
+{
+  "id": "volume5_legacy_contained_with_shared_agency_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "proud",
+      "ending_type": "volume5_legacy_contained_with_shared_agency",
+      "is_ending": true,
+      "scene_id": "crimson_reconstruction_morning",
+      "speaker_id": "megumin",
+      "text": "队伍以可观察事实识别魔术师杀手，完成居民疏散、诱饵传送、古代装置核验与受控射击。突破责任、损害和重建形成记录，芸芸与惠惠保有退出权和未来选择，米米没有承担高风险触发职责。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "crimson_reconstruction_morning",
+      "text": "队伍以可观察事实识别魔术师杀手，完成居民疏散、诱饵传送、古代装置核验与受控射击。突破责任、损害和重建形成记录，芸芸与惠惠保有退出权和未来选择，米米没有承担高风险触发职责。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "可恨遗产受控，共同选择得以保留",
+  "variables": {}
+}

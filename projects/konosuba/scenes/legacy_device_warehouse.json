@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/volume5_ch5_legacy_warehouse.png",
+  "bgm_path": null,
+  "id": "legacy_device_warehouse",
+  "model_3d_path": null,
+  "name": "古代遗物仓库",
+  "tags": [
+    "volume5",
+    "chapter5",
+    "crimson_demon",
+    "research_log",
+    "provenance"
+  ],
+  "time_of_day": "dawn",
+  "weather": "clear"
+}
