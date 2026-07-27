@@ -1,0 +1,18 @@
+{
+  "category": "volume5_chapter2",
+  "content": "布克萝莉可用传送带队入村，但必须先完成身份交叉核验并取得每名队员明确同意。抵达后记录人员、伤情、魔力状态、巡逻接触和来信待核验项。",
+  "id": "volume5_crimson_village_arrival",
+  "importance": 0.96,
+  "related_entries": [
+    "volume5_bukkorori_patrol_and_letter_update",
+    "volume5_night_camp_watch_and_no_fire"
+  ],
+  "tags": [
+    "volume5",
+    "chapter2",
+    "teleport",
+    "village",
+    "handoff"
+  ],
+  "title": "传送进入红魔之乡"
+}

@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/crimson_village_arrival.webp",
+  "bgm_path": null,
+  "id": "crimson_village_arrival",
+  "model_3d_path": null,
+  "name": "红魔之乡传送入口",
+  "tags": [
+    "volume5",
+    "chapter2",
+    "crimson_demon",
+    "village",
+    "arrival"
+  ],
+  "time_of_day": "sunset",
+  "weather": "clear"
+}

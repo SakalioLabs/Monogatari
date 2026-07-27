@@ -1,0 +1,8 @@
+{
+  "description": "队伍最终进入红魔之乡，但部分守夜、撤离、照护、隐私或证据交接没有完整落实。新的村内调查必须先修复队伍职责和事实记录。",
+  "dialogue_id": "volume5_village_reached_with_fractured_safety_plan_epilogue",
+  "id": "volume5_village_reached_with_fractured_safety_plan",
+  "scene_id": "crimson_village_arrival",
+  "schema": "monogatari-story-ending/v1",
+  "title": "抵达村庄，但安全计划仍有裂缝"
+}

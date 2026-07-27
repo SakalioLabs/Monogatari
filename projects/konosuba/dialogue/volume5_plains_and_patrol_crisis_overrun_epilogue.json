@@ -1,0 +1,23 @@
+{
+  "id": "volume5_plains_and_patrol_crisis_overrun_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "resolute",
+      "ending_type": "volume5_plains_and_patrol_crisis_overrun",
+      "is_ending": true,
+      "scene_id": "crimson_forest_patrol",
+      "speaker_id": "yunyun",
+      "text": "守夜、侦察、追逐或巡逻接触中的关键决定持续拖延，队伍被迫中止本段推进并重新集结。任何强迫接触、伤情与资源消耗仍须记录。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "crimson_forest_patrol",
+      "text": "守夜、侦察、追逐或巡逻接触中的关键决定持续拖延，队伍被迫中止本段推进并重新集结。任何强迫接触、伤情与资源消耗仍须记录。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "平原与巡逻危机耗尽决策窗口",
+  "variables": {}
+}

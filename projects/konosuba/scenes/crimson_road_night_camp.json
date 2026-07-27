@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/crimson_road_night_camp.webp",
+  "bgm_path": null,
+  "id": "crimson_road_night_camp",
+  "model_3d_path": null,
+  "name": "红魔之乡山路无火营地",
+  "tags": [
+    "volume5",
+    "chapter2",
+    "crimson_demon",
+    "camp",
+    "watch"
+  ],
+  "time_of_day": "night",
+  "weather": "clear"
+}

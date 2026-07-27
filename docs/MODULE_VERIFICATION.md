@@ -42,6 +42,23 @@ three endings, and the fourth Campaign entry. The project validates as 140
 runtime documents, 17 characters, 25 Knowledge entries, 29 scenes, 9 Scene
 Roleplays, 27 endings, 9 Quality Suites, and 106/106 declared renderer assets.
 
+- Volume 5 Chapter 2 deterministic acceptance (2026-07-27): the night camp,
+  open plains, orc pursuit, forest recovery, Demon King patrol, and Crimson
+  Demon rescue beats were reviewed into ten free-form Scene Roleplay nodes.
+  Megumin, Darkness, the female orc, Yunyun, the patrol leader, and Bukkorori
+  use distinct scene-local motives; model prose remains separate from the
+  independent evaluator and deterministic state machine. Ten canonical
+  Knowledge records, four fingerprint-imported backgrounds, three real-alpha
+  NPC sprites, four score dimensions, and twenty quoted evidence gates select
+  three endings. MCP core-runtime validation accepts 439 catalog documents and
+  delivery validation resolves 191/191 renderer references with no
+  placeholders. Quality passes 4/4 scenarios: complete, partial, and exhaustion
+  routes visit 10/10 nodes and select every ending; the complete route records
+  20/20 evidence gates and exact `9/9/9/9` scores; one multilingual structural
+  attack is detected and guarded with zero forged state. The Volume 5 Campaign
+  now traverses Chapter 1 into Chapter 2 without converting the playable loop
+  to fixed Dialogue.
+
 - Volume 5 Chapter 1 deterministic acceptance (2026-07-27): the prologue and
   all 529 Chapter 1 paragraph nodes were reviewed into ten free-form Scene
   Roleplay nodes. Yunyun, Megumin, Wiz, Vanir, Aqua, Darkness, and the

@@ -1,0 +1,23 @@
+{
+  "id": "volume5_crimson_village_reached_with_party_and_evidence_intact_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "patrol_greeting",
+      "ending_type": "volume5_crimson_village_reached_with_party_and_evidence_intact",
+      "is_ending": true,
+      "scene_id": "crimson_village_arrival",
+      "speaker_id": "bukkorori",
+      "text": "队伍以共同守夜、侦察信号和撤退职责穿过平原；强迫捕获被清楚拒绝，芸芸完成控制救援，创伤与隐私得到保护。魔王军和红魔族巡逻都按行动核验，来信结论被更新而非抹除，全员明确同意后传送入村。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "crimson_village_arrival",
+      "text": "队伍以共同守夜、侦察信号和撤退职责穿过平原；强迫捕获被清楚拒绝，芸芸完成控制救援，创伤与隐私得到保护。魔王军和红魔族巡逻都按行动核验，来信结论被更新而非抹除，全员明确同意后传送入村。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "全员与证据完整抵达红魔之乡",
+  "variables": {}
+}

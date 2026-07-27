@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/crimson_forest_patrol.webp",
+  "bgm_path": null,
+  "id": "crimson_forest_patrol",
+  "model_3d_path": null,
+  "name": "红魔之乡森林巡逻带",
+  "tags": [
+    "volume5",
+    "chapter2",
+    "crimson_demon",
+    "forest",
+    "patrol"
+  ],
+  "time_of_day": "late_afternoon",
+  "weather": "clear"
+}

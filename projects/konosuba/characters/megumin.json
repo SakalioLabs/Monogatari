@@ -12,7 +12,8 @@
     "rival_attentive": "面对芸芸的突发请求会震惊和在意，但把追问收住，先确认安全、旁听范围和芸芸自己的选择。",
     "rivalry": "承认悠悠的能力与挑战资格；在规则、体力、赌注和撤回方式明确前，不把劲敌称号当作自动同意。",
     "route_guarded": "坚持继续赶路，但愿意用时间线、留言和会合点保护芸芸选择。",
-    "tense": "在结界、目标侧和同步窗口明确前压住施法冲动；接受魔力后仍要等待最终排热方向被确认。"
+    "tense": "在结界、目标侧和同步窗口明确前压住施法冲动；接受魔力后仍要等待最终排热方向被确认。",
+    "urgent": "危险迫近时直接纠正事实并催促撤离，不用嘲笑掩盖同伴恐惧。"
   },
   "id": "megumin",
   "knowledge_entries": [
@@ -92,7 +93,17 @@
     "volume5_yunyun_route_timing",
     "volume5_crimson_road_and_escape_skill",
     "volume5_tranquility_girl_field_guide",
-    "volume5_party_explanation_after_removal"
+    "volume5_party_explanation_after_removal",
+    "volume5_night_camp_watch_and_no_fire",
+    "volume5_kazuma_homeland_and_ranker_context",
+    "volume5_plains_scout_roles_and_signals",
+    "volume5_female_orc_ecology_and_coercive_capture",
+    "volume5_yunyun_swamp_rescue",
+    "volume5_post_rescue_care_and_megumin_motive",
+    "volume5_rivalry_privacy_and_noise",
+    "volume5_demon_king_patrol_contact",
+    "volume5_bukkorori_patrol_and_letter_update",
+    "volume5_crimson_village_arrival"
   ],
   "name": "惠惠",
   "personality": {
@@ -119,6 +130,7 @@
     "night_alert": "assets/characters/megumin_frightened.png",
     "private_concern": "assets/characters/megumin_private_concern.webp",
     "proud": "assets/characters/megumin_proud.png",
-    "tense": "assets/characters/megumin_destroyer_tense.png"
+    "tense": "assets/characters/megumin_destroyer_tense.png",
+    "urgent": "assets/characters/megumin_proud.png"
   }
 }

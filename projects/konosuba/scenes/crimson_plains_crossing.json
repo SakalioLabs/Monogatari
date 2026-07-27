@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/crimson_plains_crossing.webp",
+  "bgm_path": null,
+  "id": "crimson_plains_crossing",
+  "model_3d_path": null,
+  "name": "红魔之乡开阔平原",
+  "tags": [
+    "volume5",
+    "chapter2",
+    "crimson_demon",
+    "plains",
+    "scout"
+  ],
+  "time_of_day": "morning",
+  "weather": "clear"
+}

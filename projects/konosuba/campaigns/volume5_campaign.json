@@ -7,17 +7,44 @@
         {
           "ending_id": "volume5_tranquility_threat_contained_and_village_route_prepared",
           "target": {
-            "kind": "complete"
+            "entry_id": "chapter2",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume5_departure_with_unresolved_deception_risk",
           "target": {
-            "kind": "complete"
+            "entry_id": "chapter2",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume5_letter_and_trail_decision_overrun",
+          "target": {
+            "entry_id": "chapter2",
+            "kind": "entry"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter2",
+      "roleplay_id": "volume5_chapter2_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume5_crimson_village_reached_with_party_and_evidence_intact",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume5_village_reached_with_fractured_safety_plan",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume5_plains_and_patrol_crisis_overrun",
           "target": {
             "kind": "complete"
           }
