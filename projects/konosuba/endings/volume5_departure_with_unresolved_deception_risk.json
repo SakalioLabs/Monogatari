@@ -1,0 +1,8 @@
+{
+  "description": "队伍完成了返乡准备和最终路线交接，却仍有部分信件来源、非接触控制或安乐少女证据没有形成完整记录。警告被保留，下一段旅程必须继续复核。",
+  "dialogue_id": "volume5_departure_with_unresolved_deception_risk_epilogue",
+  "id": "volume5_departure_with_unresolved_deception_risk",
+  "scene_id": "crimson_route_forest_edge",
+  "schema": "monogatari-story-ending/v1",
+  "title": "队伍继续前进，但欺骗风险仍未收清"
+}

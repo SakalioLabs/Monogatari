@@ -86,7 +86,12 @@
       <article v-if="isGenerating" class="turn-entry character pending">
         <div class="turn-speaker">{{ currentCharacter?.name || currentNode.character_id }}</div>
         <p v-if="streamingReply">{{ streamingReply }}</p>
-        <div v-else class="thinking-line"><LoaderCircle :size="16" />{{ t('roleplay.responding', 'Responding') }}</div>
+        <div v-else class="thinking-line">
+          <LoaderCircle :size="16" />
+          {{ generationPhase === 'evaluation'
+            ? t('roleplay.evaluating', 'Evaluating story state')
+            : t('roleplay.responding', 'Responding') }}
+        </div>
       </article>
     </div>
 
@@ -185,6 +190,7 @@ const pendingPlayer = ref('')
 const streamingReply = ref('')
 const errorMessage = ref<string | null>(null)
 const isGenerating = ref(false)
+const generationPhase = ref<'npc' | 'evaluation'>('npc')
 const lastEvaluationSource = ref('')
 const lastEvaluationDeltaCount = ref(0)
 const lastEvaluationEvidenceCount = ref(0)
@@ -295,6 +301,7 @@ async function sendTurn() {
   streamingReply.value = ''
   errorMessage.value = null
   isGenerating.value = true
+  generationPhase.value = 'npc'
   scrollToBottom()
 
   try {
@@ -313,6 +320,9 @@ async function sendTurn() {
         knowledgeEntries,
         playerMessage,
         apiRuntime: authoringApiRuntime.value,
+        onPhase(phase) {
+          if (requestId === generationSequence) generationPhase.value = phase
+        },
         onNpcProgress(content) {
           if (requestId === generationSequence) streamingReply.value = content
         },
@@ -354,6 +364,7 @@ function resetTransientTurnState() {
   streamingReply.value = ''
   errorMessage.value = null
   isGenerating.value = false
+  generationPhase.value = 'npc'
   lastEvaluationSource.value = ''
   lastEvaluationDeltaCount.value = 0
   lastEvaluationEvidenceCount.value = 0

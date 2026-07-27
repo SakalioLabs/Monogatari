@@ -50,6 +50,7 @@ export interface BrowserRoleplayTurnRequest {
   knowledgeEntries: KnowledgeEntryDefinition[]
   playerMessage: string
   apiRuntime: AuthoringApiRuntime | null
+  onPhase?: (phase: 'npc' | 'evaluation') => void
   onNpcProgress?: (content: string) => void
 }
 
@@ -89,6 +90,7 @@ export async function executeBrowserRoleplayTurn(
     evaluation = containedBrowserRoleplayEvaluation(currentNode)
     evaluationSource = 'contained_intrusion'
   } else {
+    request.onPhase?.('npc')
     apiRuntime ||= await dependencies.loadApiRuntime()
     let generateChat = apiRuntime
       ? dependencies.generateApiChat
@@ -160,6 +162,7 @@ export async function executeBrowserRoleplayTurn(
         evaluation = evaluateBrowserRoleplayFallback(currentNode, playerMessage)
         evaluationSource = 'authored_fallback_npc_output'
       } else {
+        request.onPhase?.('evaluation')
         evaluationSource = apiRuntime ? 'authoring_api_model' : 'browser_model'
         try {
           const evaluatorOutput = await generateChat(

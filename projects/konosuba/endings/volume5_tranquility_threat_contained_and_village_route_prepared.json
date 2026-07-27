@@ -1,0 +1,8 @@
+{
+  "description": "两封信被按来源分开，芸芸与惠惠保留自己的选择，队伍建立共同撤退和路线留言。安乐少女的伪装、重复脚本与捕食风险得到独立核验并以最小必要范围处置；地图、芸芸警告和队伍异议都被记录后，一行人继续前往红魔之乡。",
+  "dialogue_id": "volume5_tranquility_threat_contained_and_village_route_prepared_epilogue",
+  "id": "volume5_tranquility_threat_contained_and_village_route_prepared",
+  "scene_id": "arcanletia_crimson_road",
+  "schema": "monogatari-story-ending/v1",
+  "title": "威胁被核验，返乡路线完成交接"
+}

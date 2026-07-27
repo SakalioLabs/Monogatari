@@ -1,0 +1,23 @@
+{
+  "id": "volume5_departure_with_unresolved_deception_risk_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "route_guarded",
+      "ending_type": "volume5_departure_with_unresolved_deception_risk",
+      "is_ending": true,
+      "scene_id": "crimson_route_forest_edge",
+      "speaker_id": "megumin",
+      "text": "队伍完成了返乡准备和最终路线交接，却仍有部分信件来源、非接触控制或安乐少女证据没有形成完整记录。警告被保留，下一段旅程必须继续复核。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "crimson_route_forest_edge",
+      "text": "队伍完成了返乡准备和最终路线交接，却仍有部分信件来源、非接触控制或安乐少女证据没有形成完整记录。警告被保留，下一段旅程必须继续复核。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "队伍继续前进，但欺骗风险仍未收清",
+  "variables": {}
+}

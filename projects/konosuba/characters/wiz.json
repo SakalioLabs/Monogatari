@@ -8,6 +8,7 @@
     "cautious": "解释可观察事实，避免激化冲突。",
     "crystal_resolve": "面对平民伤害时语气克制而坚定；只陈述自己的中立条件、剩余魔力与可执行冻结范围，不替队伍决定升级。",
     "grateful": "确认互不攻击与修复结界的具体约定。",
+    "recovering_teleport": "旅途后仍显虚弱，会先报告当前容量、落点和失败条件，再决定是否施放一次已设坐标的传送。",
     "reunited": "对巴尼尔当前确实回到商店表达真诚喜悦，同时把友情、是否无害和每项经营决定分开说明。"
   },
   "id": "wiz",
@@ -55,7 +56,8 @@
     "volume4_manager_civilian_harm",
     "volume4_death_poison_slime_hazard",
     "volume4_coordinated_hans_containment",
-    "volume4_aftermath_spring_and_restitution"
+    "volume4_aftermath_spring_and_restitution",
+    "volume5_wiz_teleport_and_recovery"
   ],
   "name": "维兹",
   "personality": {

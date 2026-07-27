@@ -1262,6 +1262,7 @@
     "roleplay.affinity": "Affinity",
     "roleplay.you": "You",
     "roleplay.responding": "Responding",
+    "roleplay.evaluating": "Evaluating story state",
     "roleplay.message-placeholder": "Say or do something in this scene...",
     "roleplay.send": "Send",
     "roleplay.ending": "Ending",

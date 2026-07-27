@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/axel_mansion_guest_bedroom_night.webp",
+  "bgm_path": null,
+  "id": "axel_mansion_guest_bedroom_night",
+  "model_3d_path": null,
+  "name": "阿克塞尔宅邸客房夜谈",
+  "tags": [
+    "volume5",
+    "chapter1",
+    "mansion",
+    "megumin",
+    "private"
+  ],
+  "time_of_day": "night",
+  "weather": "clear"
+}

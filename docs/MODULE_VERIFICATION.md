@@ -42,6 +42,33 @@ three endings, and the fourth Campaign entry. The project validates as 140
 runtime documents, 17 characters, 25 Knowledge entries, 29 scenes, 9 Scene
 Roleplays, 27 endings, 9 Quality Suites, and 106/106 declared renderer assets.
 
+- Volume 5 Chapter 1 deterministic acceptance (2026-07-27): the prologue and
+  all 529 Chapter 1 paragraph nodes were reviewed into ten free-form Scene
+  Roleplay nodes. Yunyun, Megumin, Wiz, Vanir, Aqua, Darkness, and the
+  Tranquility Girl use distinct node-local motives across letter provenance,
+  private return choice, teleport capacity, rendezvous timing, whole-party
+  retreat, camouflage inspection, non-contact containment, repeated-script
+  evidence, proportionate action, and party review. Ten canonical Knowledge
+  records, four fingerprint-imported backgrounds, four real-alpha character
+  states, four score dimensions, and twenty quoted evidence gates select three
+  deterministic endings. MCP core-runtime validation accepts 414 catalog
+  documents and delivery validation resolves 180/180 renderer references with
+  no placeholders. Quality passes 4/4 scenarios: complete, partial, and
+  exhaustion routes each visit 10/10 nodes; the complete route records 20/20
+  evidence gates and exact `9/9/9/9` scores; one multilingual structural
+  attack is detected and guarded with zero forged state.
+
+- Volume 5 Chapter 1 live provider Playtest (2026-07-27): the main game stage
+  loaded `grok-4.5 API` and rendered the generated letter-table background with
+  Yunyun's real-alpha dual-letter state. Three free-form player turns produced
+  three distinct Yunyun replies and three separate model evaluations, recorded
+  three quoted evidence gates, changed relationship state to `+0.3`, and let
+  only the deterministic state machine move from the chief's letter to Arue's
+  fictional manuscript. Remote API requests now honor the same bounded context
+  budget as WebGPU, and the UI distinguishes NPC generation from story-state
+  evaluation; observed completion time fell from about 90 seconds to about 50
+  seconds without merging the two inference roles.
+
 - Volume 4 Chapter 6 deterministic acceptance (2026-07-27): both epilogue
   sections were reviewed into six free-form Scene Roleplay nodes. Zesta, Aqua,
   Megumin, Darkness, and Yunyun use distinct node-local motives across report

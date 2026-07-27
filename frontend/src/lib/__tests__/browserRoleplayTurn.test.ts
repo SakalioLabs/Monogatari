@@ -165,6 +165,7 @@ describe('executeBrowserRoleplayTurn', () => {
 
   it('runs NPC generation and independent evaluation before deterministic commit', async () => {
     const progress = vi.fn()
+    const phase = vi.fn()
     const generateApiChat = vi.fn()
       .mockImplementationOnce(async (_messages, options) => {
         options?.onChunk?.('The receiver holds the ')
@@ -180,7 +181,11 @@ describe('executeBrowserRoleplayTurn', () => {
     const runtime = dependencies(generateApiChat)
 
     const result = await executeBrowserRoleplayTurn(
-      { ...request('Use a second receiver to verify the coordinates.'), onNpcProgress: progress },
+      {
+        ...request('Use a second receiver to verify the coordinates.'),
+        onNpcProgress: progress,
+        onPhase: phase,
+      },
       runtime,
     )
 
@@ -189,6 +194,7 @@ describe('executeBrowserRoleplayTurn', () => {
     expect(progress).toHaveBeenCalledExactlyOnceWith(
       'The receiver holds the coordinates inside the signal.',
     )
+    expect(phase.mock.calls).toEqual([['npc'], ['evaluation']])
     expect(result.response.evaluation_source).toBe('authoring_api_model')
     expect(result.response.session.scores.trust).toBe(1)
     expect(result.response.session.observed_evidence).toEqual(['verification'])

@@ -1,0 +1,23 @@
+{
+  "id": "volume5_tranquility_threat_contained_and_village_route_prepared_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "misunderstanding_review",
+      "ending_type": "volume5_tranquility_threat_contained_and_village_route_prepared",
+      "is_ending": true,
+      "scene_id": "arcanletia_crimson_road",
+      "speaker_id": "darkness",
+      "text": "两封信被按来源分开，芸芸与惠惠保留自己的选择，队伍建立共同撤退和路线留言。安乐少女的伪装、重复脚本与捕食风险得到独立核验并以最小必要范围处置；地图、芸芸警告和队伍异议都被记录后，一行人继续前往红魔之乡。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "arcanletia_crimson_road",
+      "text": "两封信被按来源分开，芸芸与惠惠保留自己的选择，队伍建立共同撤退和路线留言。安乐少女的伪装、重复脚本与捕食风险得到独立核验并以最小必要范围处置；地图、芸芸警告和队伍异议都被记录后，一行人继续前往红魔之乡。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "威胁被核验，返乡路线完成交接",
+  "variables": {}
+}

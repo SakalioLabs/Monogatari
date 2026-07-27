@@ -1,0 +1,32 @@
+{
+  "entries": [
+    {
+      "id": "chapter1",
+      "roleplay_id": "volume5_chapter1_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume5_tranquility_threat_contained_and_village_route_prepared",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume5_departure_with_unresolved_deception_risk",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume5_letter_and_trail_decision_overrun",
+          "target": {
+            "kind": "complete"
+          }
+        }
+      ]
+    }
+  ],
+  "id": "konosuba_volume5",
+  "schema": "monogatari-roleplay-campaign/v1",
+  "start_entry_id": "chapter1",
+  "title": "为美好的世界献上祝福！第五卷"
+}

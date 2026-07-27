@@ -1,0 +1,8 @@
+{
+  "description": "两封信、返乡职责或安乐少女风险没有在可用回合内形成足够证据。队伍暂停推进，保留现状并等待重新核验，不能用推测选择村庄或怪物结局。",
+  "dialogue_id": "volume5_letter_and_trail_decision_overrun_epilogue",
+  "id": "volume5_letter_and_trail_decision_overrun",
+  "scene_id": "axel_mansion_letter_table",
+  "schema": "monogatari-story-ending/v1",
+  "title": "信件与林口判断超时"
+}

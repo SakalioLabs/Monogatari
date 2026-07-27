@@ -1262,6 +1262,7 @@
     "roleplay.affinity": "親密度",
     "roleplay.you": "あなた",
     "roleplay.responding": "応答中",
+    "roleplay.evaluating": "物語状態を判定中",
     "roleplay.message-placeholder": "この場面で話す、または行動する...",
     "roleplay.send": "送信",
     "roleplay.ending": "エンディング",

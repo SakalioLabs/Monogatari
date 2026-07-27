@@ -66,4 +66,33 @@ describe('authoring API inference', () => {
     })
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
+
+  it('honors the shared context budget before calling the remote API', async () => {
+    vi.resetModules()
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        schema: 'monogatari-authoring-inference-runtime/v1',
+        provider: 'api',
+        endpoint: '/authoring-api/chat/completions',
+        model: 'bounded-roleplay-model',
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        choices: [{ message: { content: 'A bounded reply.' } }],
+      }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const { generateAuthoringApiChat: generateBoundedChat } = await import('../authoringInference')
+
+    await generateBoundedChat([
+      { role: 'system', content: `scene:${'a'.repeat(2_000)}` },
+      { role: 'user', content: `old:${'b'.repeat(2_000)}` },
+      { role: 'assistant', content: `reply:${'c'.repeat(2_000)}` },
+      { role: 'user', content: `latest:${'d'.repeat(2_000)}` },
+    ], { maxContextCharacters: 1_024 })
+
+    const body = JSON.parse(String(fetchMock.mock.calls[1][1]?.body))
+    const characters = body.messages
+      .reduce((total: number, message: { content: string }) => total + [...message.content].length, 0)
+    expect(characters).toBeLessThanOrEqual(1_024)
+    expect(body.messages.at(-1).content).toContain('latest:')
+  })
 })

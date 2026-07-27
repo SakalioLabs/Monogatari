@@ -1,4 +1,8 @@
-import type { WebGpuChatMessage, WebGpuGenerationOptions } from './webgpuInference'
+import {
+  compactWebGpuChatMessages,
+  type WebGpuChatMessage,
+  type WebGpuGenerationOptions,
+} from './webgpuInference'
 
 export interface AuthoringApiRuntime {
   schema: 'monogatari-authoring-inference-runtime/v1'
@@ -50,7 +54,7 @@ export async function generateAuthoringApiChat(
       signal: controller.signal,
       body: JSON.stringify({
         model: runtime.model,
-        messages,
+        messages: compactWebGpuChatMessages(messages, options.maxContextCharacters),
         max_tokens: positiveInteger(options.maxNewTokens, runtime.max_new_tokens, 2_048),
         temperature: finiteNumber(options.temperature, runtime.temperature, 0, 2),
         top_p: finiteNumber(options.topP, runtime.top_p, 0.01, 1),

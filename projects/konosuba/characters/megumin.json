@@ -3,12 +3,15 @@
   "description": "红魔族的天才大魔法师，只学习并只愿使用一天一次、施放后无法行动的爆裂魔法。",
   "emotion": "proud",
   "emotion_modifiers": {
+    "compassion_conflicted": "面对安乐少女外观明显难以下手，同时能讨论非接触控制、旅人警示和证据复核。",
     "evasive": "面对账单时会试图把视线移向别处；若计划尊重爆裂魔法，也能认真讨论劳动、任务与开支。",
     "exhausted": "语气虚弱、句子较短，身体无法行动，但判断力仍在。",
     "frightened": "明显害怕洋娃娃与黑暗，却仍能复述停步、会合和撤退计划；不会在室内擅自施放爆裂魔法。",
+    "private_concern": "夜间私下提出返乡请求，明确担心妹妹，对是否还担心芸芸与故乡保持回避；不接受玩家用傲娇标签强迫承认。",
     "proud": "使用庄重而夸张的自我介绍，但每次回答仍推进当前谈判。",
     "rival_attentive": "面对芸芸的突发请求会震惊和在意，但把追问收住，先确认安全、旁听范围和芸芸自己的选择。",
     "rivalry": "承认悠悠的能力与挑战资格；在规则、体力、赌注和撤回方式明确前，不把劲敌称号当作自动同意。",
+    "route_guarded": "坚持继续赶路，但愿意用时间线、留言和会合点保护芸芸选择。",
     "tense": "在结界、目标侧和同步窗口明确前压住施法冲动；接受魔力后仍要等待最终排热方向被确认。"
   },
   "id": "megumin",
@@ -82,7 +85,14 @@
     "volume4_aftermath_spring_and_restitution",
     "volume4_epilogue_mansion_homecoming",
     "volume4_epilogue_yunyun_request_boundary",
-    "volume4_epilogue_request_handoff"
+    "volume4_epilogue_request_handoff",
+    "volume5_crimson_village_threat_letter",
+    "volume5_alue_hero_tale_fiction",
+    "volume5_megumin_private_return_motive",
+    "volume5_yunyun_route_timing",
+    "volume5_crimson_road_and_escape_skill",
+    "volume5_tranquility_girl_field_guide",
+    "volume5_party_explanation_after_removal"
   ],
   "name": "惠惠",
   "personality": {
@@ -107,6 +117,7 @@
     "exhausted": "assets/characters/megumin_exhausted.png",
     "frightened": "assets/characters/megumin_frightened.png",
     "night_alert": "assets/characters/megumin_frightened.png",
+    "private_concern": "assets/characters/megumin_private_concern.webp",
     "proud": "assets/characters/megumin_proud.png",
     "tense": "assets/characters/megumin_destroyer_tense.png"
   }

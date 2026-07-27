@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/crimson_route_forest_edge.webp",
+  "bgm_path": null,
+  "id": "crimson_route_forest_edge",
+  "model_3d_path": null,
+  "name": "红魔之乡路线森林入口",
+  "tags": [
+    "volume5",
+    "chapter1",
+    "forest",
+    "tranquility_girl",
+    "hazard"
+  ],
+  "time_of_day": "afternoon",
+  "weather": "clear"
+}

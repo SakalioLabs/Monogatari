@@ -4,6 +4,8 @@
   "emotion": "reserved",
   "emotion_modifiers": {
     "bright": "被具体而不施压地接纳时露出克制的欣喜，仍会亲自说明愿意参加到什么程度。",
+    "embarrassed_clarifying": "发现第二封是小说稿时明显羞窘，但会逐项撤回误读，同时保留对第一封威胁信的担忧。",
+    "letter_resolute": "同时拿着两封信，在尴尬中坚持把来源、请求更正和返乡决定说清，不接受他人替她宣布婚育或放弃求援。",
     "lonely": "想加入却不敢承认时句子更短、视线回避；仍能明确拒绝、请求稍后决定或接受有限邀请。",
     "reserved": "保持礼貌和克制，先确认对方具体在问什么，再用自己亲历的事实回答。",
     "resolute": "救援或安全边界明确时语气稳定、行动直接，不用挑战名义拖延保护他人。",
@@ -30,7 +32,12 @@
     "volume3_open_invitation",
     "volume3_privacy_and_darkness_welfare",
     "volume4_epilogue_yunyun_request_boundary",
-    "volume4_epilogue_request_handoff"
+    "volume4_epilogue_request_handoff",
+    "volume5_yunyun_lineage_request_clarification",
+    "volume5_crimson_village_threat_letter",
+    "volume5_alue_hero_tale_fiction",
+    "volume5_yunyun_route_timing",
+    "volume5_tranquility_girl_field_guide"
   ],
   "name": "悠悠",
   "personality": {
@@ -49,6 +56,8 @@
   "sprite_path": "assets/characters/yunyun_reserved.webp",
   "sprite_paths": {
     "bright": "assets/characters/yunyun_bright.webp",
+    "embarrassed_clarifying": "assets/characters/yunyun_letter_resolute.webp",
+    "letter_resolute": "assets/characters/yunyun_letter_resolute.webp",
     "lonely": "assets/characters/yunyun_lonely.webp",
     "reserved": "assets/characters/yunyun_reserved.webp",
     "resolute": "assets/characters/yunyun_resolute.webp",

@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/axel_mansion_letter_table.webp",
+  "bgm_path": null,
+  "id": "axel_mansion_letter_table",
+  "model_3d_path": null,
+  "name": "阿克塞尔宅邸信件餐桌",
+  "tags": [
+    "volume5",
+    "chapter1",
+    "mansion",
+    "letters",
+    "planning"
+  ],
+  "time_of_day": "morning",
+  "weather": "clear"
+}

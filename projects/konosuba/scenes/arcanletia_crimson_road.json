@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/arcanletia_crimson_road.webp",
+  "bgm_path": null,
+  "id": "arcanletia_crimson_road",
+  "model_3d_path": null,
+  "name": "阿尔坎雷蒂亚至红魔之乡山路",
+  "tags": [
+    "volume5",
+    "chapter1",
+    "road",
+    "crimson_demon",
+    "expedition"
+  ],
+  "time_of_day": "late_morning",
+  "weather": "clear"
+}
