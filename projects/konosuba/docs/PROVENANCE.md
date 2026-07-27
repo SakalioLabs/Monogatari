@@ -62,6 +62,16 @@
   are newly authored or generated. Sexual humiliation, forced undressing,
   painful restraint, false pregnancy, violence, and reputation sabotage are
   excluded as rewarding player actions.
+- Volume 5 Chapter 3 derives chronology and public scene facts from the user's
+  local Volume 5 EPUB, `OEBPS/Text/chapter03.xhtml`: refraction invisibility,
+  the petrified griffin, the chief's theatrical letter, the real enemy base and
+  high-resistance commander, the village alarm and defense, Sylvia's assault,
+  Komekko's hunger, the family's debt/reward discussion, sleep magic, the
+  outside door lock, and Megumin leaving for Yunyun's home. Runtime NPC prose,
+  evaluator language, evidence wording, safeguards, scores, transitions, and
+  endings are newly authored or generated. Source intimacy involving a minor
+  is not reproduced; the adaptation requires an unlocked exit, separate
+  bedding, and awake, specific, revocable boundaries.
 
 ## Public visual reference
 
@@ -71,6 +81,10 @@
   https://konosuba.com/1st/character/
 - Official reference thumbnails were used only to identify defining appearance.
 - Final game backgrounds and sprite sources were generated for this simulation.
+  Volume 5 Chapter 3 adds five generated village/household environments and
+  generated sprites for the Crimson Demon chief, Sylvia, Soketto, Komekko,
+  Hyoizaburo, and Yuiyui. The generated sprite checkerboards were removed into
+  real alpha before fingerprint-bound WebP import and visual inspection.
   Chapter 2 adds the Axel training yard, flying-cabbage fields, public cemetery,
   two Chris expressions, and two Wiz expressions. Character sprites were
   generated against flat chroma backgrounds and converted to transparent PNGs.

@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/megumin_family_living_room.webp",
+  "bgm_path": null,
+  "id": "megumin_family_living_room",
+  "model_3d_path": null,
+  "name": "惠惠家的起居室",
+  "tags": [
+    "volume5",
+    "chapter3",
+    "crimson_demon",
+    "family",
+    "dinner"
+  ],
+  "time_of_day": "evening",
+  "weather": "clear"
+}

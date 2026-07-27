@@ -1,0 +1,8 @@
+{
+  "description": "村庄暂时安全，惠惠也保留了离开选择，但部分事实交接、家庭资源或住宿边界仍未完全落实。后续交流必须从解除压力、恢复隐私与重新确认当事人意愿开始。",
+  "dialogue_id": "volume5_village_safe_with_household_boundaries_unsettled_epilogue",
+  "id": "volume5_village_safe_with_household_boundaries_unsettled",
+  "scene_id": "megumin_family_living_room",
+  "schema": "monogatari-story-ending/v1",
+  "title": "村庄安全，但家庭压力尚未完全解决"
+}

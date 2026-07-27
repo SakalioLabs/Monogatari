@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/megumin_childhood_bedroom_night.webp",
+  "bgm_path": null,
+  "id": "megumin_childhood_bedroom_night",
+  "model_3d_path": null,
+  "name": "惠惠童年卧室夜间",
+  "tags": [
+    "volume5",
+    "chapter3",
+    "crimson_demon",
+    "family",
+    "boundary"
+  ],
+  "time_of_day": "night",
+  "weather": "clear"
+}

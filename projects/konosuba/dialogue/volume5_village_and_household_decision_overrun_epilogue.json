@@ -1,0 +1,23 @@
+{
+  "id": "volume5_village_and_household_decision_overrun_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "commanding",
+      "ending_type": "volume5_village_and_household_decision_overrun",
+      "is_ending": true,
+      "scene_id": "crimson_village_battlefront",
+      "speaker_id": "hiropon",
+      "text": "战场或家庭中的关键决定持续拖延，本段推进被迫停止。警报来源、资源状态、魔法影响、门锁、寝具与每个人的离开选择都必须保留记录，不能用默认结局替代。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "crimson_village_battlefront",
+      "text": "战场或家庭中的关键决定持续拖延，本段推进被迫停止。警报来源、资源状态、魔法影响、门锁、寝具与每个人的离开选择都必须保留记录，不能用默认结局替代。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "防卫与家庭决策窗口耗尽",
+  "variables": {}
+}

@@ -34,17 +34,44 @@
         {
           "ending_id": "volume5_crimson_village_reached_with_party_and_evidence_intact",
           "target": {
-            "kind": "complete"
+            "entry_id": "chapter3",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume5_village_reached_with_fractured_safety_plan",
           "target": {
-            "kind": "complete"
+            "entry_id": "chapter3",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume5_plains_and_patrol_crisis_overrun",
+          "target": {
+            "entry_id": "chapter3",
+            "kind": "entry"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter3",
+      "roleplay_id": "volume5_chapter3_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume5_village_defended_and_boundaries_kept",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume5_village_safe_with_household_boundaries_unsettled",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume5_village_and_household_decision_overrun",
           "target": {
             "kind": "complete"
           }

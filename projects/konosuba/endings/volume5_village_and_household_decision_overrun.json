@@ -1,0 +1,8 @@
+{
+  "description": "战场或家庭中的关键决定持续拖延，本段推进被迫停止。警报来源、资源状态、魔法影响、门锁、寝具与每个人的离开选择都必须保留记录，不能用默认结局替代。",
+  "dialogue_id": "volume5_village_and_household_decision_overrun_epilogue",
+  "id": "volume5_village_and_household_decision_overrun",
+  "scene_id": "crimson_village_battlefront",
+  "schema": "monogatari-story-ending/v1",
+  "title": "防卫与家庭决策窗口耗尽"
+}

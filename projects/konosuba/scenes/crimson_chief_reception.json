@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/crimson_chief_reception.webp",
+  "bgm_path": null,
+  "id": "crimson_chief_reception",
+  "model_3d_path": null,
+  "name": "红魔族长接待室",
+  "tags": [
+    "volume5",
+    "chapter3",
+    "crimson_demon",
+    "chief",
+    "briefing"
+  ],
+  "time_of_day": "day",
+  "weather": "clear"
+}

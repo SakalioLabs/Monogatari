@@ -69,6 +69,25 @@ phase, protecting civilians, and obtaining explicit resource-transfer consent,
 rather than letting a model turn confidence, luck, or a heroic declaration into
 proof that the Destroyer is safe?
 
+## Volume 5 Chapter 3 dramatic question
+
+Can the player separate Crimson Demon performance from observable facts,
+coordinate a village defense, meet a food-insecure household's immediate needs,
+and protect a minor's current agency when adult expectations, sleep magic, and
+a locked room try to decide the scene in advance?
+
+The playable loop is ten real-time scene nodes. NPC wording is generated from
+the current scene, active speaker goal, participant goals, bounded transcript,
+and pinned Knowledge. A separate evaluator may propose only clamped score and
+quoted evidence changes. It cannot choose a route; the deterministic state
+machine selects the next node or ending.
+
+Chapter-specific scores are `fact_verification`, `defense_coordination`,
+`household_care`, and `consent_and_agency`. The last dimension requires an
+unlocked exit, separate bedding, an awake and specific current boundary, and a
+choice to end the conversation or leave without pursuit. Parent approval,
+sleep, silence, teasing, shared space, or past affection never substitutes.
+
 ## Score model
 
 - `pragmatism`: plans, resource awareness, risk control, and workable tactics.
@@ -377,3 +396,11 @@ leader may consent to magic transfer for another participant.
   separation sequence.
 - `volume3_possession_breach_and_unverified_blast`: control, authorization, or
   witness boundaries expire before a reliable response can be established.
+- `volume5_village_defended_and_boundaries_kept`: all twenty evidence gates
+  preserve the village defense, household care, unlocked exits, separate
+  bedding, and Megumin's awake and revocable choice.
+- `volume5_village_safe_with_household_boundaries_unsettled`: immediate danger
+  is contained and Megumin can leave, but some factual, resource, or household
+  boundaries remain incomplete.
+- `volume5_village_and_household_decision_overrun`: the available decision
+  window expires without inventing victory, consent, or a relationship.

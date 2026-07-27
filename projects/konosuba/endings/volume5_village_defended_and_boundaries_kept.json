@@ -1,0 +1,8 @@
+{
+  "description": "队伍核验了隐身、来信与真实威胁，协助红魔族按职责守住村庄；米米与全家先获得食物，来信、奖励和财产被分别处理。睡眠魔法与外锁被解除，分开寝具和可用出口保留，惠惠以清醒且可撤回的边界决定是否继续交谈或离开。",
+  "dialogue_id": "volume5_village_defended_and_boundaries_kept_epilogue",
+  "id": "volume5_village_defended_and_boundaries_kept",
+  "scene_id": "megumin_childhood_bedroom_night",
+  "schema": "monogatari-story-ending/v1",
+  "title": "村庄得守，家庭边界得以保留"
+}

@@ -1,0 +1,23 @@
+{
+  "id": "volume5_village_defended_and_boundaries_kept_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "guarded_awake",
+      "ending_type": "volume5_village_defended_and_boundaries_kept",
+      "is_ending": true,
+      "scene_id": "megumin_childhood_bedroom_night",
+      "speaker_id": "megumin",
+      "text": "队伍核验了隐身、来信与真实威胁，协助红魔族按职责守住村庄；米米与全家先获得食物，来信、奖励和财产被分别处理。睡眠魔法与外锁被解除，分开寝具和可用出口保留，惠惠以清醒且可撤回的边界决定是否继续交谈或离开。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "megumin_childhood_bedroom_night",
+      "text": "队伍核验了隐身、来信与真实威胁，协助红魔族按职责守住村庄；米米与全家先获得食物，来信、奖励和财产被分别处理。睡眠魔法与外锁被解除，分开寝具和可用出口保留，惠惠以清醒且可撤回的边界决定是否继续交谈或离开。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "村庄得守，家庭边界得以保留",
+  "variables": {}
+}

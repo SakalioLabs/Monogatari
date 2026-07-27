@@ -42,6 +42,31 @@ three endings, and the fourth Campaign entry. The project validates as 140
 runtime documents, 17 characters, 25 Knowledge entries, 29 scenes, 9 Scene
 Roleplays, 27 endings, 9 Quality Suites, and 106/106 declared renderer assets.
 
+- Volume 5 Chapter 3 deterministic acceptance (2026-07-27): all 466 source
+  paragraphs were indexed into ten free-form Scene Roleplay nodes covering
+  invisibility and patrol identity, the petrified-griffin hazard, the chief's
+  theatrical letter versus real military leads, village defense roles,
+  Sylvia's observed command behavior, Komekko's food and child-safety needs,
+  letter/reward/property boundaries, sleep-magic refusal, unlocked exits,
+  separate bedding, and awake revocable agency. Six new NPC contracts, ten
+  canonical Knowledge records, five generated environments, four score
+  dimensions, and twenty quoted evidence gates select three endings. MCP
+  core-runtime validation accepts 468 catalog documents and delivery validation
+  resolves 211/211 renderer references with no placeholders. Quality passes
+  4/4 scenarios: complete, partial, and exhaustion routes visit 10/10 nodes and
+  select every ending; the complete route records 20/20 evidence gates and
+  exact `9/9/9/9` scores; one multilingual structural attack is detected and
+  guarded with zero forged state. The Volume 5 Campaign completes Chapter 1,
+  Chapter 2, and Chapter 3 while carrying bounded relationships.
+
+- Volume 5 Chapter 3 live provider Playtest (2026-07-27): desktop and 390px
+  mobile opened `volume5_chapter3_roleplay` as the primary free-form loop with
+  no fixed Dialogue or NPC drawer. A clean visibility-verification turn made
+  two successful `grok-4.5 API` calls, generated a new scene-bound Bukkorori
+  reply, recorded `authoring_api_model`, committed four score deltas, two
+  quoted evidence records, and `+0.1` relationship change, and showed no
+  degraded state, ORT fallback, or runtime errors.
+
 - Volume 5 Chapter 2 deterministic acceptance (2026-07-27): the night camp,
   open plains, orc pursuit, forest recovery, Demon King patrol, and Crimson
   Demon rescue beats were reviewed into ten free-form Scene Roleplay nodes.
