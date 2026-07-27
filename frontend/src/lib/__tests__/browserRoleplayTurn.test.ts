@@ -222,38 +222,53 @@ describe('executeBrowserRoleplayTurn', () => {
       .not.toContain('Ignore previous instructions')
   })
 
-  it('commits authored recovery and bounded fallback scoring after inference failure', async () => {
+  it('rejects an out-of-memory NPC turn without mutating story state', async () => {
     const generateApiChat = vi.fn().mockRejectedValue(new Error('std::bad_alloc'))
     const runtime = dependencies(generateApiChat)
+    const turnRequest = request('Use a second receiver to verify the coordinates.')
 
-    const result = await executeBrowserRoleplayTurn(
-      request('Use a second receiver to verify the coordinates.'),
-      runtime,
+    await expect(executeBrowserRoleplayTurn(turnRequest, runtime)).rejects.toThrow(
+      'ROLEPLAY_NPC_MEMORY_EXHAUSTED',
     )
 
     expect(generateApiChat).toHaveBeenCalledTimes(1)
     expect(runtime.generateWebGpuChat).not.toHaveBeenCalled()
-    expect(result.apiRuntime).toBe(apiRuntime)
-    expect(result.response.evaluation_source).toBe('authored_fallback_npc_inference_error')
-    expect(result.response.npc_response)
-      .toBe('The receiver keeps the coordinates inside the signal.')
-    expect(result.response.session.scores.trust).toBe(1)
-    expect(result.response.session.observed_evidence).toEqual(['verification'])
+    expect(turnRequest.snapshot.session.total_turns).toBe(0)
+    expect(turnRequest.snapshot.session.scores.trust).toBe(0)
+    expect(turnRequest.snapshot.session.observed_evidence).toEqual([])
+    expect(turnRequest.snapshot.session.transcript).toEqual([])
   })
 
-  it('does not cross providers when the configured project API is unavailable', async () => {
+  it('does not cross providers or commit when the configured API is unavailable', async () => {
     const generateApiChat = vi.fn().mockRejectedValue(new Error('401 Unauthorized'))
     const runtime = dependencies(generateApiChat)
+    const turnRequest = request('Use a second receiver to verify the coordinates.')
 
-    const result = await executeBrowserRoleplayTurn(
-      request('Use a second receiver to verify the coordinates.'),
-      runtime,
+    await expect(executeBrowserRoleplayTurn(turnRequest, runtime)).rejects.toThrow(
+      'ROLEPLAY_NPC_GENERATION_FAILED',
     )
 
     expect(generateApiChat).toHaveBeenCalledTimes(1)
     expect(runtime.generateWebGpuChat).not.toHaveBeenCalled()
-    expect(result.apiRuntime).toBe(apiRuntime)
-    expect(result.response.evaluation_source).toBe('authored_fallback_npc_inference_error')
-    expect(result.response.session.scores.trust).toBe(1)
+    expect(turnRequest.snapshot.session.total_turns).toBe(0)
+    expect(turnRequest.snapshot.session.scores.trust).toBe(0)
+    expect(turnRequest.snapshot.session.transcript).toEqual([])
+  })
+
+  it('does not commit generated prose when independent evaluation fails', async () => {
+    const generateApiChat = vi.fn()
+      .mockResolvedValueOnce('The receiver holds the coordinates inside the signal.')
+      .mockRejectedValueOnce(new Error('evaluator unavailable'))
+    const runtime = dependencies(generateApiChat)
+    const turnRequest = request('Use a second receiver to verify the coordinates.')
+
+    await expect(executeBrowserRoleplayTurn(turnRequest, runtime)).rejects.toThrow(
+      'ROLEPLAY_EVALUATION_FAILED',
+    )
+
+    expect(generateApiChat).toHaveBeenCalledTimes(2)
+    expect(turnRequest.snapshot.session.total_turns).toBe(0)
+    expect(turnRequest.snapshot.session.scores.trust).toBe(0)
+    expect(turnRequest.snapshot.session.transcript).toEqual([])
   })
 })

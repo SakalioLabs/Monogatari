@@ -96,14 +96,6 @@
     </div>
 
     <footer v-if="snapshot.session.status === 'active'" class="roleplay-composer">
-      <div
-        v-if="lastEvaluationSource.startsWith('authored_fallback')"
-        class="roleplay-degraded"
-        data-testid="roleplay-degraded"
-        role="status"
-      >
-        {{ t('roleplay.evaluation-fallback', 'Part of live inference was unavailable, so this turn used the scene\'s deterministic fallback.') }}
-      </div>
       <div v-if="errorMessage" class="roleplay-error">{{ errorMessage }}</div>
       <div class="composer-row">
         <textarea
@@ -354,7 +346,10 @@ async function sendTurn() {
     if (response.evaluation.npc_emotion) emit('emotion', response.evaluation.npc_emotion)
     if (response.outcome.ending_id) emit('ending', response.outcome.ending_id)
   } catch (error) {
-    if (requestId === generationSequence) errorMessage.value = String(error)
+    if (requestId === generationSequence) {
+      inputText.value = playerMessage
+      errorMessage.value = roleplayTurnErrorMessage(error)
+    }
   } finally {
     if (requestId === generationSequence) {
       pendingPlayer.value = ''
@@ -393,6 +388,37 @@ function scorePercent(dimension: RoleplayScoreDimension): number {
 
 function formatScore(value: number): string {
   return `${value > 0 ? '+' : ''}${value.toFixed(1)}`
+}
+
+function roleplayTurnErrorMessage(error: unknown): string {
+  const detail = error instanceof Error ? error.message : String(error)
+  if (/ROLEPLAY_\w+_MEMORY_EXHAUSTED|OrtRun|bad_alloc|out of memory|memory was exhausted/i.test(detail)) {
+    return `${t('npc.generation-error', 'Reply generation failed.')} ${t(
+      'npc.memory-error',
+      'The local model ran out of memory. Switch to the configured API runtime or use a smaller local model.',
+    )}`
+  }
+  if (detail.includes('ROLEPLAY_NPC_OUTPUT_REJECTED')) {
+    return t(
+      'roleplay.output-rejected',
+      'The generated reply was rejected by the active scene guard. Nothing was committed; retry the turn.',
+    )
+  }
+  if (detail.includes('ROLEPLAY_EVALUATION_FAILED')) {
+    return t(
+      'roleplay.evaluation-error',
+      'Story-state evaluation failed. Nothing was committed; retry the turn.',
+    )
+  }
+  if (detail.includes('ROLEPLAY_NPC_GENERATION_FAILED')) {
+    return t(
+      'roleplay.generation-error',
+      'NPC generation failed. Nothing was committed; retry the turn.',
+    )
+  }
+  return detail && detail !== '[object Object]'
+    ? detail
+    : t('npc.generation-error', 'Reply generation failed.')
 }
 
 function scrollToBottom() {
@@ -497,15 +523,6 @@ function scrollToBottom() {
   overscroll-behavior: contain;
   padding: 16px 18px 24px;
   scrollbar-color: #414b4c transparent;
-}
-
-.roleplay-degraded {
-  padding: 7px 10px;
-  border-left: 2px solid #d8b969;
-  background: rgba(216, 185, 105, 0.1);
-  color: #d9d5c5;
-  font-size: 11px;
-  line-height: 1.4;
 }
 
 .narration-entry {

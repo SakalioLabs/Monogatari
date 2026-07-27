@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../../lib/webgpuInference', () => ({
   detectWebGpuSupport: mocks.detectWebGpuSupport,
   generateWebGpuChat: mocks.generateWebGpuChat,
+  isWebGpuMemoryError: (error: unknown) => /bad_alloc|out of memory/i.test(String(error)),
 }))
 
 vi.mock('../../lib/knowledgeContent', () => ({
@@ -115,7 +116,7 @@ describe('SceneRoleplayPanel', () => {
     mocks.generateWebGpuChat.mockReset()
   })
 
-  it('commits an authored in-world turn when ORT exhausts memory', async () => {
+  it('keeps the turn retryable and uncommitted when ORT exhausts memory', async () => {
     mocks.generateWebGpuChat.mockRejectedValue(new Error(
       'failed to call OrtRun(). ERROR_CODE: 6, ERROR_MESSAGE: std::bad_alloc',
     ))
@@ -136,28 +137,14 @@ describe('SceneRoleplayPanel', () => {
     await flushPromises()
 
     expect(mocks.generateWebGpuChat).toHaveBeenCalledTimes(1)
-    expect(wrapper.find('.roleplay-error').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="scene-roleplay"]').attributes('data-evaluation-source'))
-      .toBe('authored_fallback_npc_inference_error')
-    expect(wrapper.get('[data-testid="roleplay-degraded"]').text())
-      .toContain('Part of live inference was unavailable')
-
-    const update = wrapper.emitted('update')?.at(-1)?.[0] as ReturnType<typeof startBrowserSceneRoleplay>
-    expect(update.session.scores.trust).toBe(1)
-    expect(update.session.observed_evidence).toEqual(['verification'])
-    expect(update.session.transcript[0].npc_response)
-      .toBe('The receiver keeps the coordinates inside the signal.')
-    expect(wrapper.text()).not.toContain('OrtRun')
-    expect(wrapper.text()).not.toContain('std::bad_alloc')
-
-    await wrapper.setProps({ snapshot: update })
-    await flushPromises()
-    await wrapper.setProps({ snapshot: startBrowserSceneRoleplay(definition) })
-    await flushPromises()
-
-    expect(wrapper.find('[data-testid="roleplay-degraded"]').exists()).toBe(false)
+    expect(wrapper.get('.roleplay-error').text()).toContain('ran out of memory')
+    expect(wrapper.get('textarea').element.value)
+      .toBe('Use a second receiver to verify the coordinates.')
+    expect(wrapper.emitted('update')).toBeUndefined()
     expect(wrapper.get('[data-testid="scene-roleplay"]').attributes('data-evaluation-source'))
       .toBeUndefined()
+    expect(wrapper.text()).not.toContain('OrtRun')
+    expect(wrapper.text()).not.toContain('std::bad_alloc')
   })
 
   it('uses the project authoring API for both NPC generation and evaluation', async () => {

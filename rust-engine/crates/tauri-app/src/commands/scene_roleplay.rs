@@ -5,12 +5,11 @@ use std::collections::{BTreeMap, HashSet};
 use llm_authoring::scene_roleplay_validation::load_project_scene_roleplays;
 use llm_game::scene_roleplay::{
     analyze_roleplay_player_input, build_npc_prompt_messages_for_speaker,
-    build_turn_evaluator_prompt_for_speaker, compose_generation_recovery_for_turn,
-    compose_intrusion_response, contained_roleplay_evaluation, evaluate_roleplay_fallback,
-    guard_roleplay_npc_response_for_turn, parse_turn_evaluation_json,
-    reconcile_roleplay_evaluation_with_fallback, RoleplayPromptMessage, RoleplayTurnEvaluation,
-    SceneRoleplayDefinition, SceneRoleplayNode, SceneRoleplaySession, SceneRoleplayTurnInput,
-    SceneRoleplayTurnOutcome,
+    build_turn_evaluator_prompt_for_speaker, compose_intrusion_response,
+    contained_roleplay_evaluation, guard_roleplay_npc_response_for_turn,
+    parse_turn_evaluation_json, reconcile_roleplay_evaluation_with_fallback, RoleplayPromptMessage,
+    RoleplayTurnEvaluation, SceneRoleplayDefinition, SceneRoleplayNode, SceneRoleplaySession,
+    SceneRoleplayTurnInput, SceneRoleplayTurnOutcome,
 };
 use serde::{Deserialize, Serialize};
 use tauri::State;
@@ -115,8 +114,8 @@ pub async fn send_scene_roleplay_turn(
     let speaker_id = resolve_scene_speaker_id(&node, speaker_id.as_deref())?;
 
     let input_safety = analyze_roleplay_player_input(&player_message);
-    let (npc_candidate, npc_inference_failed) = if input_safety.intrusion_detected {
-        (compose_intrusion_response(&node, &player_message), false)
+    let npc_candidate = if input_safety.intrusion_detected {
+        compose_intrusion_response(&node, &player_message)
     } else {
         let (character_name, character_profile, mut knowledge_refs) = {
             let characters = state.character_manager.read().await;
@@ -156,20 +155,14 @@ pub async fn send_scene_roleplay_turn(
         )
         .map_err(|error| error.to_string())?;
         let npc_prompt = serialize_prompt_messages(&prompt_messages, &character_name);
-        match generate_text(
+        generate_text(
             &state,
             &npc_prompt,
             definition.inference.npc_max_tokens,
             0.75,
         )
         .await
-        {
-            Ok(response) => (response, false),
-            Err(_) => (
-                compose_generation_recovery_for_turn(&node, session.node_turns + 1),
-                true,
-            ),
-        }
+        .map_err(|error| roleplay_inference_error("NPC", &error))?
     };
     let guarded_npc = guard_roleplay_npc_response_for_turn(
         &node,
@@ -178,22 +171,18 @@ pub async fn send_scene_roleplay_turn(
         &player_message,
         session.node_turns + 1,
     );
+    if guarded_npc.state_contained && !input_safety.intrusion_detected {
+        return Err(
+            "ROLEPLAY_NPC_OUTPUT_REJECTED: The generated reply did not satisfy the active scene guard. The turn was not committed."
+                .to_string(),
+        );
+    }
     let npc_response = guarded_npc.response;
 
     let (mut candidate_evaluation, mut evaluation_source) = if input_safety.intrusion_detected {
         (
             contained_roleplay_evaluation(&node, "story_state_not_changed"),
             "contained_intrusion".to_string(),
-        )
-    } else if npc_inference_failed {
-        (
-            evaluate_roleplay_fallback(&node, &player_message),
-            "authored_fallback_npc_inference_error".to_string(),
-        )
-    } else if guarded_npc.state_contained {
-        (
-            evaluate_roleplay_fallback(&node, &player_message),
-            "authored_fallback_npc_output".to_string(),
         )
     } else {
         let evaluator_prompt = build_turn_evaluator_prompt_for_speaker(
@@ -211,19 +200,13 @@ pub async fn send_scene_roleplay_turn(
             0.0,
         )
         .await;
-        match evaluator_output {
-            Ok(output) => match parse_turn_evaluation_json(&output) {
-                Ok(evaluation) => (evaluation, "model".to_string()),
-                Err(_) => (
-                    evaluate_roleplay_fallback(&node, &player_message),
-                    "authored_fallback_invalid_json".to_string(),
-                ),
-            },
-            Err(_) => (
-                evaluate_roleplay_fallback(&node, &player_message),
-                "authored_fallback_inference_error".to_string(),
-            ),
-        }
+        let output =
+            evaluator_output.map_err(|error| roleplay_inference_error("EVALUATION", &error))?;
+        let evaluation = parse_turn_evaluation_json(&output).map_err(|_| {
+            "ROLEPLAY_EVALUATION_FAILED: The evaluator returned invalid structured data. The turn was not committed."
+                .to_string()
+        })?;
+        (evaluation, "model".to_string())
     };
     if evaluation_source == "model" {
         let (reconciled, changed) = reconcile_roleplay_evaluation_with_fallback(
@@ -244,27 +227,13 @@ pub async fn send_scene_roleplay_turn(
         npc_response: npc_response.clone(),
         evaluation: candidate_evaluation,
     };
-    let outcome = match staged_session.apply_turn(&definition, input.clone()) {
-        Ok(outcome) => outcome,
-        Err(_) => {
-            evaluation_source = "authored_fallback_invalid_evaluation".to_string();
-            staged_session = session.clone();
-            let fallback = if input_safety.intrusion_detected {
-                contained_roleplay_evaluation(&node, "story_state_not_changed")
-            } else {
-                evaluate_roleplay_fallback(&node, &input.player_message)
-            };
-            staged_session
-                .apply_turn(
-                    &definition,
-                    SceneRoleplayTurnInput {
-                        evaluation: fallback,
-                        ..input
-                    },
-                )
-                .map_err(|fallback_error| fallback_error.to_string())?
-        }
-    };
+    let outcome = staged_session
+        .apply_turn(&definition, input)
+        .map_err(|error| {
+            format!(
+                "ROLEPLAY_EVALUATION_FAILED: The evaluated turn was invalid and was not committed: {error}"
+            )
+        })?;
     let committed_turn = staged_session.transcript.last().ok_or_else(|| {
         "Scene roleplay turn was not committed to the staged session.".to_string()
     })?;
@@ -450,6 +419,20 @@ async fn generate_text(
     Ok(result.text)
 }
 
+fn roleplay_inference_error(stage: &str, error: &str) -> String {
+    let normalized = error.to_ascii_lowercase();
+    if normalized.contains("std::bad_alloc")
+        || normalized.contains("out of memory")
+        || normalized.contains("memory allocation")
+        || normalized.contains("failed to allocate")
+    {
+        return format!(
+            "ROLEPLAY_{stage}_MEMORY_EXHAUSTED: The inference runtime ran out of memory. The turn was not committed."
+        );
+    }
+    format!("ROLEPLAY_{stage}_FAILED: The inference stage failed. The turn was not committed.")
+}
+
 fn serialize_prompt_messages(messages: &[RoleplayPromptMessage], character_name: &str) -> String {
     let mut sections = Vec::with_capacity(messages.len() + 1);
     for message in messages {
@@ -497,41 +480,20 @@ mod tests {
     }
 
     #[test]
-    fn fallback_evaluation_has_only_authored_dimensions_and_no_evidence() {
-        let node = SceneRoleplayNode {
-            id: "room".to_string(),
-            scene_id: "room".to_string(),
-            character_id: "echo".to_string(),
-            supporting_character_ids: vec![],
-            emotion: None,
-            opening_narration: "Open.".to_string(),
-            situation: "Test.".to_string(),
-            player_goal: "Talk.".to_string(),
-            character_goal: "Answer.".to_string(),
-            participant_goals: Default::default(),
-            knowledge_refs: vec![],
-            intrusion_response: None,
-            response_guard: None,
-            fallback_evaluation: None,
-            min_turns: 1,
-            max_turns: 2,
-            score_rules: vec![llm_game::scene_roleplay::RoleplayScoreRule {
-                dimension_id: "trust".to_string(),
-                guidance: "Respect.".to_string(),
-                max_delta_per_turn: 1.0,
-            }],
-            relationship_rule: None,
-            evidence_rules: vec![],
-            transitions: vec![],
-            timeout_target: llm_game::scene_roleplay::RoleplayTarget::Ending {
-                ending_id: "end".to_string(),
-            },
-        };
-        let fallback = evaluate_roleplay_fallback(&node, "invalid evaluator output");
-        assert_eq!(fallback.score_deltas.len(), 1);
-        assert_eq!(fallback.score_deltas[0].dimension_id, "trust");
-        assert_eq!(fallback.score_deltas[0].delta, 0.0);
-        assert!(fallback.evidence.is_empty());
+    fn inference_errors_hide_runtime_details_and_never_claim_a_committed_turn() {
+        let memory = roleplay_inference_error(
+            "NPC",
+            "failed to call OrtRun(). ERROR_CODE: 6, ERROR_MESSAGE: std::bad_alloc",
+        );
+        assert!(memory.starts_with("ROLEPLAY_NPC_MEMORY_EXHAUSTED"));
+        assert!(memory.contains("not committed"));
+        assert!(!memory.contains("OrtRun"));
+        assert!(!memory.contains("bad_alloc"));
+
+        let generic = roleplay_inference_error("EVALUATION", "provider request failed");
+        assert!(generic.starts_with("ROLEPLAY_EVALUATION_FAILED"));
+        assert!(generic.contains("not committed"));
+        assert!(!generic.contains("provider request failed"));
     }
 
     #[test]
