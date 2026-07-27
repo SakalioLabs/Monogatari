@@ -230,6 +230,7 @@ const navItems = computed<NavItem[]>(() => [
   { path: '/editor', label: t('nav.workflow', 'Story Flow'), mobileLabel: t('nav.mobile.flow', 'Flow'), icon: WorkflowIcon, group: 'create' },
   { path: '/character-editor', label: t('nav.editor', 'Character Editor'), mobileLabel: t('nav.mobile.create', 'Create'), icon: UserRoundPen, group: 'create' },
   { path: '/scene-editor', label: t('nav.scenes', 'Scenes'), mobileLabel: t('nav.scenes', 'Scenes'), icon: Clapperboard, group: 'create' },
+  { path: '/roleplay-editor', label: t('nav.roleplays', 'Live Roleplays'), mobileLabel: t('nav.roleplays', 'Roleplays'), icon: MessagesSquare, group: 'create' },
   { path: '/dialogue-editor', label: t('nav.dialogues', 'Dialogues'), mobileLabel: t('nav.dialogues', 'Dialogues'), icon: MessageSquareText, group: 'create' },
   { path: '/story-events', label: t('nav.events', 'Story Events'), mobileLabel: t('nav.events', 'Events'), icon: Zap, group: 'create' },
   { path: '/endings', label: t('nav.endings', 'Endings'), mobileLabel: t('nav.endings', 'Endings'), icon: Flag, group: 'create' },

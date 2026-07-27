@@ -51,7 +51,7 @@ Script execution is treated as bounded authoring logic. Tauri script commands va
 
 ## Frontend Architecture
 
-- **Router**: 22 routes with lazy-loaded views
+- **Router**: 23 routes with lazy-loaded views
 - **State**: Pinia store for game state (saves, scenes, relationships)
 - **Isolated Tests**: Vitest covers pure authoring and access contracts, shared proxy-safe JSON values, immutable Dialogue and Story Event editing, Workflow graph authoring plus execution-evidence presentation, exact Quality report contracts and generated preview/presentation behavior, renderer fallback selection, the browser workflow preview state machine, Pinia async state, and shared Vue component behavior in Happy DOM; production builds remain a separate package contract.
 - **Browser Workflow Preview**: `workflowContract.ts` owns transport-shaped frontend models, `workflowAuthoring.ts` owns pure graph editing and the offline node-catalog fallback, `workflowCanvasInteractions.ts` owns pointer geometry, immutable drag/connection updates, global-listener lifecycle, reentry cancellation, and disposal without depending on Vue, `workflowPreview.ts` owns graph validation and bounded execution, and `workflowExecutionPresentation.ts` owns trace indexing, defensive score/Event evidence parsing, scalar choices, coverage formatting, and canvas node outcomes. `WorkflowEditor.vue` supplies project catalogs, localization adapters, reactive state, transport, and narrow callbacks into those domains. Unsupported browser condition syntax stops the preview instead of silently selecting a story branch; missing numeric evidence remains absent instead of being coerced to zero. The authoritative Rust node catalog lives in `llm-authoring`, Tauri delegates to it, and release invariants check browser catalog parity, reject global pointer listeners in the view, and prevent execution-presentation logic from returning to the view.
@@ -223,6 +223,8 @@ validated runtime boundaries.
 
 Local browser authoring also respects an independent project's API provider.
 The Vite server reads the selected API base and model from `settings.json`,
+or accepts process-only `MONOGATARI_AI_BASE_URL` and
+`MONOGATARI_AI_MODEL` development overrides,
 normalizes a host-only OpenAI-compatible base to `/v1`, and exposes a
 same-origin authoring-only chat bridge. Its public runtime document contains no
 credential fields; an optional credential comes only from
@@ -232,7 +234,9 @@ retain the credential-free WebGPU contract, while Tauri continues to use the
 Rust inference pipeline. The Scene Roleplay composer remains disabled while
 browser runtime discovery is pending. Once a turn selects the project API, an
 API failure cannot cross providers and allocate the WebGPU/ORT model; the turn
-uses the scene-authored recovery and reports degraded provenance instead.
+retries bounded context/output profiles for allocation, network, and server
+failures, then remains uncommitted if inference is still unavailable. It never
+substitutes authored NPC prose or fallback scoring for a clean live turn.
 Project production tests can bind an independent root and Roleplay ID through
 `MONOGATARI_PROJECT_ROOT` and `MONOGATARI_E2E_ROLEPLAY_ID`; an explicit
 `MONOGATARI_E2E_LIVE_AI=1` additionally proves separate NPC and evaluator API
@@ -240,13 +244,29 @@ calls before deterministic state commit.
 
 Scene Roleplay evaluation has two layers. The model handles semantic scoring
 and evidence extraction, while authored fallback signals define deterministic
-meaning for explicit phrases and provider failure recovery. A clean model
+meaning for explicit phrases in provider-free Quality replay and constrain
+contradictory model evidence. A clean model
 result is reconciled only when it reverses a matched authored direction,
 assigns the opposite direction to an otherwise one-sided matched input, or
 omits evidence whose marker is directly present. Runtime provenance reports
 `model_reconciled`, `browser_model_reconciled`, or
 `authoring_api_model_reconciled`; prompt intrusions still freeze all story
 state before reconciliation.
+
+Scene Roleplay authoring follows a presentation/domain/transport split.
+`sceneRoleplayAuthoring.ts` owns proxy-safe drafts, defaults, normalization,
+stable validation, optimistic catalog fingerprints, and browser persistence;
+`RoleplayEditorView.vue` owns selection, localization, reactive forms, and
+navigation; Tauri owns project paths, locking, atomic replacement, full runtime
+validation, rollback, and active-session invalidation. The workbench edits
+scene-local situation and character goals, participant motives, Knowledge,
+scores, evidence, relationships, deterministic routes, inference budgets, and
+safety contracts. Fixed Dialogue is not part of this primary loop. Browser and
+desktop Playtest consume the same saved definition and execute free-form NPC
+generation, independent structured evaluation, then deterministic state
+transition as three explicit stages. Browser deletion resolves the active
+Campaign catalog first and rejects referenced Roleplays; desktop deletion
+receives the same guarantee from complete project validation before commit.
 
 Dialogue authoring separates transport from graph editing. `dialogueAuthoring.ts` owns desktop/browser catalog loading, optimistic persistence, normalization, and complete graph validation. `dialogueGraphEditing.ts` owns proxy-safe cloning, draft identity, node ordering, immutable node/edge/choice/relationship transformations, and portable case-folded ID checks. `DialogueEditorView.vue` is the reactive adapter for localization, transport calls, selection, and confirmation; it does not own graph mutation rules. The same saved graph then enters the pure Story Playtest runtime, and browser E2E coverage authors, renames, connects, persists, and plays a two-node route.
 

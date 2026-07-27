@@ -15,6 +15,7 @@ export const expectedFrontendRoutes = Object.freeze([
   { path: '/plugins', name: 'plugins', component: 'PluginView.vue', navKey: 'nav.plugins' },
   { path: '/audio', name: 'audio', component: 'AudioView.vue', navKey: 'nav.audio' },
   { path: '/knowledge', name: 'knowledge', component: 'KnowledgeBaseView.vue', navKey: 'nav.knowledge' },
+  { path: '/roleplay-editor', name: 'roleplay-editor', component: 'RoleplayEditorView.vue', navKey: 'nav.roleplays' },
   { path: '/dialogue-editor', name: 'dialogue-editor', component: 'DialogueEditorView.vue', navKey: 'nav.dialogues' },
   { path: '/story-events', name: 'story-events', component: 'StoryEventEditorView.vue', navKey: 'nav.events' },
   { path: '/endings', name: 'endings', component: 'EndingEditorView.vue', navKey: 'nav.endings' },

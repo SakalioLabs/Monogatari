@@ -2,7 +2,11 @@
 
 use std::collections::{BTreeMap, HashSet};
 
-use llm_authoring::scene_roleplay_validation::load_project_scene_roleplays;
+use llm_authoring::filesystem::{
+    ensure_regular_project_directory, sha256_json, stage_json_deletion, stage_json_replacement,
+};
+use llm_authoring::runtime_validation::validate_core_runtime_project;
+use llm_authoring::scene_roleplay_validation::{load_project_scene_roleplays, LoadedSceneRoleplay};
 use llm_game::scene_roleplay::{
     analyze_roleplay_player_input, build_npc_prompt_messages_for_speaker,
     build_turn_evaluator_prompt_for_speaker, compose_intrusion_response,
@@ -12,6 +16,7 @@ use llm_game::scene_roleplay::{
     SceneRoleplayTurnInput, SceneRoleplayTurnOutcome,
 };
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use tauri::State;
 
 use crate::commands::chat::build_character_knowledge_context_details;
@@ -20,6 +25,26 @@ use crate::state::AppState;
 
 pub const SCENE_ROLEPLAY_SNAPSHOT_SCHEMA_V1: &str = "monogatari-scene-roleplay-snapshot/v1";
 pub const SCENE_ROLEPLAY_TURN_SCHEMA_V1: &str = "monogatari-scene-roleplay-turn/v1";
+pub const SCENE_ROLEPLAY_AUTHORING_CATALOG_SCHEMA_V1: &str =
+    "monogatari-scene-roleplay-authoring-catalog/v1";
+const MAX_SCENE_ROLEPLAY_FILE_BYTES: u64 = 512 * 1024;
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SceneRoleplayAuthoringEntry {
+    pub definition: SceneRoleplayDefinition,
+    pub source_path: String,
+    pub content_fingerprint: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SceneRoleplayAuthoringCatalog {
+    pub schema: String,
+    pub catalog_fingerprint: String,
+    pub roleplay_count: usize,
+    pub node_count: usize,
+    pub score_dimension_count: usize,
+    pub roleplays: Vec<SceneRoleplayAuthoringEntry>,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SceneRoleplaySnapshot {
@@ -46,6 +71,39 @@ pub async fn list_scene_roleplays(
     state: State<'_, AppState>,
 ) -> Result<Vec<SceneRoleplayDefinition>, String> {
     load_definitions(&state).await
+}
+
+#[tauri::command]
+pub async fn get_scene_roleplay_authoring_catalog(
+    state: State<'_, AppState>,
+) -> Result<SceneRoleplayAuthoringCatalog, String> {
+    scene_roleplay_authoring_catalog(&state).await
+}
+
+#[tauri::command]
+pub async fn save_scene_roleplay_definition(
+    state: State<'_, AppState>,
+    definition: SceneRoleplayDefinition,
+    original_roleplay_id: Option<String>,
+    expected_catalog_fingerprint: String,
+) -> Result<SceneRoleplayAuthoringCatalog, String> {
+    save_scene_roleplay_definition_inner(
+        &state,
+        definition,
+        original_roleplay_id.as_deref(),
+        &expected_catalog_fingerprint,
+    )
+    .await
+}
+
+#[tauri::command]
+pub async fn delete_scene_roleplay_definition(
+    state: State<'_, AppState>,
+    roleplay_id: String,
+    expected_catalog_fingerprint: String,
+) -> Result<SceneRoleplayAuthoringCatalog, String> {
+    delete_scene_roleplay_definition_inner(&state, &roleplay_id, &expected_catalog_fingerprint)
+        .await
 }
 
 #[tauri::command]
@@ -340,6 +398,227 @@ pub(crate) async fn load_definitions(
         .map(|loaded| loaded.into_iter().map(|loaded| loaded.definition).collect())
 }
 
+async fn scene_roleplay_authoring_catalog(
+    state: &AppState,
+) -> Result<SceneRoleplayAuthoringCatalog, String> {
+    let root = state.current_project_data_root().await;
+    let loaded = load_project_scene_roleplays(&root)?;
+    Ok(scene_roleplay_authoring_catalog_from_loaded(loaded))
+}
+
+fn scene_roleplay_authoring_catalog_from_loaded(
+    loaded: Vec<LoadedSceneRoleplay>,
+) -> SceneRoleplayAuthoringCatalog {
+    let catalog_fingerprint = scene_roleplay_catalog_fingerprint(&loaded);
+    let node_count = loaded
+        .iter()
+        .map(|entry| entry.definition.nodes.len())
+        .sum();
+    let score_dimension_count = loaded
+        .iter()
+        .map(|entry| entry.definition.score_dimensions.len())
+        .sum();
+    let roleplays = loaded
+        .into_iter()
+        .map(|entry| SceneRoleplayAuthoringEntry {
+            content_fingerprint: sha256_json(
+                &serde_json::to_value(&entry.definition)
+                    .expect("scene roleplay definitions must serialize"),
+            ),
+            definition: entry.definition,
+            source_path: entry.source_path,
+        })
+        .collect::<Vec<_>>();
+    SceneRoleplayAuthoringCatalog {
+        schema: SCENE_ROLEPLAY_AUTHORING_CATALOG_SCHEMA_V1.to_string(),
+        catalog_fingerprint,
+        roleplay_count: roleplays.len(),
+        node_count,
+        score_dimension_count,
+        roleplays,
+    }
+}
+
+fn scene_roleplay_catalog_fingerprint(loaded: &[LoadedSceneRoleplay]) -> String {
+    sha256_json(&json!(loaded
+        .iter()
+        .map(|entry| json!({
+            "source_path": entry.source_path,
+            "definition": entry.definition,
+        }))
+        .collect::<Vec<_>>()))
+}
+
+fn ensure_scene_roleplay_catalog_fingerprint(
+    loaded: &[LoadedSceneRoleplay],
+    expected: &str,
+) -> Result<(), String> {
+    let actual = scene_roleplay_catalog_fingerprint(loaded);
+    if actual != expected {
+        return Err(
+            "Scene roleplay catalog changed since it was opened; reload before saving.".to_string(),
+        );
+    }
+    Ok(())
+}
+
+async fn save_scene_roleplay_definition_inner(
+    state: &AppState,
+    definition: SceneRoleplayDefinition,
+    original_roleplay_id: Option<&str>,
+    expected_catalog_fingerprint: &str,
+) -> Result<SceneRoleplayAuthoringCatalog, String> {
+    let _authoring_guard = state.story_content_authoring_lock.lock().await;
+    definition
+        .validate()
+        .map_err(|error| format!("Scene roleplay failed validation: {error}"))?;
+    let project_root = state.current_project_data_root().await;
+    let current = load_project_scene_roleplays(&project_root)?;
+    ensure_scene_roleplay_catalog_fingerprint(&current, expected_catalog_fingerprint)?;
+    let roleplay_root =
+        ensure_regular_project_directory(&project_root, "roleplays", "scene roleplay").await?;
+    let target_path = match original_roleplay_id {
+        Some(original_id) => {
+            if original_id != definition.id {
+                return Err(
+                    "Scene roleplay ids are immutable after creation; duplicate it to use a new id."
+                        .to_string(),
+                );
+            }
+            current
+                .iter()
+                .find(|entry| entry.definition.id == original_id)
+                .map(|entry| entry.absolute_path.clone())
+                .ok_or_else(|| {
+                    format!(
+                        "Scene roleplay `{original_id}` no longer exists; reload before saving."
+                    )
+                })?
+        }
+        None => {
+            if current
+                .iter()
+                .any(|entry| entry.definition.id.eq_ignore_ascii_case(&definition.id))
+            {
+                return Err(format!(
+                    "Scene roleplay `{}` already exists.",
+                    definition.id
+                ));
+            }
+            roleplay_root.join(format!("{}.json", definition.id))
+        }
+    };
+    let mut content = serde_json::to_string_pretty(&definition)
+        .map_err(|error| format!("Unable to serialize scene roleplay: {error}"))?;
+    content.push('\n');
+    let staged = stage_json_replacement(
+        &target_path,
+        content.as_bytes(),
+        MAX_SCENE_ROLEPLAY_FILE_BYTES,
+        "scene roleplay",
+    )
+    .await?;
+
+    let validation = validate_core_runtime_project(&project_root).await;
+    let loaded = match (validation, load_project_scene_roleplays(&project_root)) {
+        (Ok(report), Ok(loaded))
+            if report.valid && loaded.iter().any(|entry| entry.definition == definition) =>
+        {
+            loaded
+        }
+        (Ok(report), _) if !report.valid => {
+            staged.rollback().await?;
+            let issue = report
+                .issues
+                .first()
+                .map(|issue| issue.message.as_str())
+                .unwrap_or("project runtime validation failed");
+            return Err(format!(
+                "Saved scene roleplay broke project references and was rolled back: {issue}"
+            ));
+        }
+        (Err(error), _) | (_, Err(error)) => {
+            staged.rollback().await?;
+            return Err(format!(
+                "Saved scene roleplay failed project reload and was rolled back: {error}"
+            ));
+        }
+        _ => {
+            staged.rollback().await?;
+            return Err(
+                "Saved scene roleplay changed during replacement; the original was restored."
+                    .to_string(),
+            );
+        }
+    };
+    staged.commit().await?;
+    state
+        .scene_roleplay_sessions
+        .write()
+        .await
+        .remove(&definition.id);
+    Ok(scene_roleplay_authoring_catalog_from_loaded(loaded))
+}
+
+async fn delete_scene_roleplay_definition_inner(
+    state: &AppState,
+    roleplay_id: &str,
+    expected_catalog_fingerprint: &str,
+) -> Result<SceneRoleplayAuthoringCatalog, String> {
+    let _authoring_guard = state.story_content_authoring_lock.lock().await;
+    let project_root = state.current_project_data_root().await;
+    let current = load_project_scene_roleplays(&project_root)?;
+    ensure_scene_roleplay_catalog_fingerprint(&current, expected_catalog_fingerprint)?;
+    let target = current
+        .iter()
+        .find(|entry| entry.definition.id == roleplay_id)
+        .ok_or_else(|| format!("Scene roleplay `{roleplay_id}` does not exist."))?;
+    let staged = stage_json_deletion(&target.absolute_path, "scene roleplay").await?;
+
+    let validation = validate_core_runtime_project(&project_root).await;
+    let loaded = match (validation, load_project_scene_roleplays(&project_root)) {
+        (Ok(report), Ok(loaded))
+            if report.valid
+                && !loaded
+                    .iter()
+                    .any(|entry| entry.definition.id == roleplay_id) =>
+        {
+            loaded
+        }
+        (Ok(report), _) if !report.valid => {
+            staged.rollback().await?;
+            let issue = report
+                .issues
+                .first()
+                .map(|issue| issue.message.as_str())
+                .unwrap_or("project runtime validation failed");
+            return Err(format!(
+                "Deleting scene roleplay broke project references and was rolled back: {issue}"
+            ));
+        }
+        (Err(error), _) | (_, Err(error)) => {
+            staged.rollback().await?;
+            return Err(format!(
+                "Deleting scene roleplay failed project reload and was rolled back: {error}"
+            ));
+        }
+        _ => {
+            staged.rollback().await?;
+            return Err(
+                "Deleted scene roleplay remained in the catalog; the file was restored."
+                    .to_string(),
+            );
+        }
+    };
+    staged.commit().await?;
+    state
+        .scene_roleplay_sessions
+        .write()
+        .await
+        .remove(roleplay_id);
+    Ok(scene_roleplay_authoring_catalog_from_loaded(loaded))
+}
+
 async fn load_definition(
     state: &AppState,
     roleplay_id: &str,
@@ -534,5 +813,28 @@ mod tests {
         assert!(resolve_scene_speaker_id(&node, Some("kazuma"))
             .unwrap_err()
             .contains("not present"));
+    }
+
+    #[test]
+    fn empty_authoring_catalog_has_stable_schema_counts_and_fingerprint() {
+        let first = scene_roleplay_authoring_catalog_from_loaded(Vec::new());
+        let second = scene_roleplay_authoring_catalog_from_loaded(Vec::new());
+
+        assert_eq!(first.schema, SCENE_ROLEPLAY_AUTHORING_CATALOG_SCHEMA_V1);
+        assert_eq!(first.roleplay_count, 0);
+        assert_eq!(first.node_count, 0);
+        assert_eq!(first.score_dimension_count, 0);
+        assert_eq!(first.catalog_fingerprint, second.catalog_fingerprint);
+        assert!(first.roleplays.is_empty());
+    }
+
+    #[test]
+    fn authoring_catalog_rejects_stale_fingerprints() {
+        let loaded = Vec::new();
+        let fingerprint = scene_roleplay_catalog_fingerprint(&loaded);
+        assert!(ensure_scene_roleplay_catalog_fingerprint(&loaded, &fingerprint).is_ok());
+        assert!(ensure_scene_roleplay_catalog_fingerprint(&loaded, "stale")
+            .unwrap_err()
+            .contains("changed since it was opened"));
     }
 }

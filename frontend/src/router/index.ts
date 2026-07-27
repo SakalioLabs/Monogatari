@@ -90,6 +90,11 @@ const router = createRouter({
       component: () => import('../views/DialogueEditorView.vue'),
     },
     {
+      path: '/roleplay-editor',
+      name: 'roleplay-editor',
+      component: () => import('../views/RoleplayEditorView.vue'),
+    },
+    {
       path: '/story-events',
       name: 'story-events',
       component: () => import('../views/StoryEventEditorView.vue'),

@@ -95,4 +95,66 @@ describe('authoring API inference', () => {
     expect(characters).toBeLessThanOrEqual(1_024)
     expect(body.messages.at(-1).content).toContain('latest:')
   })
+
+  it('retries memory exhaustion with reduced context and output budgets', async () => {
+    vi.resetModules()
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        schema: 'monogatari-authoring-inference-runtime/v1',
+        provider: 'api',
+        endpoint: '/authoring-api/chat/completions',
+        model: 'recoverable-roleplay-model',
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        error: { message: 'failed to call OrtRun(): std::bad_alloc' },
+      }), { status: 500 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        choices: [{ message: { content: 'Recovered in-character reply.' } }],
+      }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const { generateAuthoringApiChat: generateRecoverableChat } = await import('../authoringInference')
+    const onReset = vi.fn()
+    const onChunk = vi.fn()
+
+    await expect(generateRecoverableChat([
+      { role: 'system', content: `scene:${'a'.repeat(5_000)}` },
+      { role: 'user', content: `latest:${'b'.repeat(2_000)}` },
+    ], {
+      maxContextCharacters: 6_000,
+      recoveryMaxContextCharacters: 2_000,
+      maxNewTokens: 160,
+      onReset,
+      onChunk,
+    })).resolves.toBe('Recovered in-character reply.')
+
+    const initialBody = JSON.parse(String(fetchMock.mock.calls[1][1]?.body))
+    const recoveredBody = JSON.parse(String(fetchMock.mock.calls[2][1]?.body))
+    expect(initialBody.max_tokens).toBe(160)
+    expect(recoveredBody.max_tokens).toBe(48)
+    expect(JSON.stringify(recoveredBody.messages).length)
+      .toBeLessThan(JSON.stringify(initialBody.messages).length)
+    expect(onReset).toHaveBeenCalledTimes(1)
+    expect(onChunk).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not retry client configuration failures', async () => {
+    vi.resetModules()
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        schema: 'monogatari-authoring-inference-runtime/v1',
+        provider: 'api',
+        endpoint: '/authoring-api/chat/completions',
+        model: 'protected-roleplay-model',
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        error: { message: 'invalid credential' },
+      }), { status: 401 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const { generateAuthoringApiChat: generateProtectedChat } = await import('../authoringInference')
+
+    await expect(generateProtectedChat([
+      { role: 'user', content: 'Hello?' },
+    ])).rejects.toThrow('invalid credential')
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
 })

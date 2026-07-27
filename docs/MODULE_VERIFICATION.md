@@ -510,6 +510,18 @@ the completion record.
   supporting NPCs, independent speaker relationships, and ORT
   allocation-failure containment.
 - Tauri Scene Roleplay command tests: 3/3 pass.
+- Live Roleplay authoring convergence (2026-07-28): frontend unit coverage
+  passes 232/232; the production Web/PWA build passes i18n, type, bundle,
+  inference-runtime, responsive-shell, and mobile-readiness checks; and Tauri
+  compiles with locked dependencies and incremental compilation disabled.
+  Three focused Chromium flows prove structured create/save/Playtest, one
+  free-form player turn with separate NPC and evaluator API requests followed
+  by a deterministic `+1.0` score commit, no fixed Dialogue surface, and
+  mobile catalog switching with exact 390px containment. A live upstream health
+  probe reached the configured host but received an empty response through the
+  authoring bridge (`502 fetch failed`), so no successful live-provider claim
+  is made for this batch; API memory/network/5xx recovery and no-commit behavior
+  are covered deterministically.
 
 ## Purpose
 
@@ -530,7 +542,7 @@ Platform-specific gates declare their supported host IDs in the matrix. The Wind
 
 | Surface | Gate | Evidence type | Current boundary |
 |---|---|---|---|
-| Agent and test orchestration | `automation-contracts` | Node unit contracts | Matrix schema, ownership, selection, CLI parsing, target-platform command/path adaptation, deterministic repository walking and JSON parse/read evidence, bounded credential/UI text scan evidence, locale shape/key/value/public/embedded mirror evidence, structural frontend route/sidebar coverage, fail-closed release-channel/manifest evidence, multi-provider CSP/hosting policy validation, static Web distribution evidence including `roleplays/`, Web preview route/content response evidence, cross-root Story Event/Ending fingerprints, Dialogue graph/reference evidence, pure Workflow shape and catalog-aware file evidence, Renderer Asset path/binary/license evidence, Knowledge ID/alias/reference evidence, Quality Suite shape/default-baseline/Event-fingerprint evidence, real UTF-8 MCP stdio framing, fingerprinted project-asset import plans plus GLB/traversal/symlink/case/precondition rejection, independently injected Tauri package/mobile, installation, exact 115-command registration, dialog capabilities, 79-requirement conversation safety, headless Quality/Workflow/Scene Roleplay, build/toolchain, project runtime, project package, and Story Content policies |
+| Agent and test orchestration | `automation-contracts` | Node unit contracts | Matrix schema, ownership, selection, CLI parsing, target-platform command/path adaptation, deterministic repository walking and JSON parse/read evidence, bounded credential/UI text scan evidence, locale shape/key/value/public/embedded mirror evidence, structural frontend route/sidebar coverage, fail-closed release-channel/manifest evidence, multi-provider CSP/hosting policy validation, static Web distribution evidence including `roleplays/`, Web preview route/content response evidence, cross-root Story Event/Ending fingerprints, Dialogue graph/reference evidence, pure Workflow shape and catalog-aware file evidence, Renderer Asset path/binary/license evidence, Knowledge ID/alias/reference evidence, Quality Suite shape/default-baseline/Event-fingerprint evidence, real UTF-8 MCP stdio framing, fingerprinted project-asset import plans plus GLB/traversal/symlink/case/precondition rejection, independently injected Tauri package/mobile, installation, exact 122-command registration, dialog capabilities, 79-requirement conversation safety, headless Quality/Workflow/Scene Roleplay, build/toolchain, project runtime, project package, and Story Content policies |
 | Vue pure libraries, workflow/Story Playtest, Pinia, and shared components | `frontend-unit` | Vitest unit and Happy DOM component tests | UI-independent browser Scene Roleplay turn execution, provider-neutral sessions, local authoring API selection without browser credentials, independent NPC/evaluator calls, attack isolation, grounded output guards, deterministic transitions, guarded pending replies, prompt/evaluator parsing, transactional no-commit behavior for NPC/evaluator failure, retryable player input, and ORT `std::bad_alloc` containment; provider-free Quality retains authored fallback score/evidence; WebGPU context compaction and memory-error recovery classification; Workflow catalog parity, authoring and preview; grapheme-safe Story playback; bounded compatibility NPC prompting; exact Quality roleplay/Workflow report contracts and export shaping; Settings, Character, Knowledge, Dialogue, Story Event, Ending, Scene, renderer, Store, and shared interaction/accessibility behavior |
 | Browser authoring and Playtest workflows | `frontend-e2e` | Playwright Chromium tests against an isolated in-process Vite server | Programmatic startup/cleanup; workspace, Workflow, Dialogue, Event, Ending, Scene, Scene Asset, Knowledge, Quality, and Settings authoring flows; Blue Frame 3D probes; main-stage dynamic Scene Roleplay node/goal/score/free-input layout without invoking a real model; and dedicated scripted Ending epilogues across desktop and 390px mobile layouts |
 | Vue/TypeScript/Web/PWA distribution | `frontend-contracts` | Type check, production builds, static contract verifiers | Root/subpath package and responsive shell contracts |

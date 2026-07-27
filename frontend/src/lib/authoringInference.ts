@@ -1,5 +1,7 @@
 import {
   compactWebGpuChatMessages,
+  isWebGpuMemoryError,
+  webGpuMemoryRecoveryProfiles,
   type WebGpuChatMessage,
   type WebGpuGenerationOptions,
 } from './webgpuInference'
@@ -44,6 +46,44 @@ export async function generateAuthoringApiChat(
   if (!runtime) throw new Error('The authoring API runtime is unavailable.')
   if (!messages.length) throw new Error('API generation requires at least one chat message.')
 
+  const requestedTokens = positiveInteger(options.maxNewTokens, runtime.max_new_tokens, 2_048)
+  const initialContextLimit = positiveInteger(options.maxContextCharacters, 6_000, 32_000)
+  const recoveryContextLimit = positiveInteger(
+    options.recoveryMaxContextCharacters,
+    Math.min(3_000, initialContextLimit),
+    initialContextLimit,
+  )
+  const attempts = [
+    { maxContextCharacters: initialContextLimit, maxNewTokens: requestedTokens },
+    ...webGpuMemoryRecoveryProfiles(recoveryContextLimit, requestedTokens),
+  ].filter((profile, index, profiles) =>
+    index === profiles.findIndex(candidate =>
+      candidate.maxContextCharacters === profile.maxContextCharacters
+      && candidate.maxNewTokens === profile.maxNewTokens))
+
+  let lastError: unknown
+  for (let index = 0; index < attempts.length; index += 1) {
+    const profile = attempts[index]
+    try {
+      const content = await requestAuthoringApiChat(runtime, messages, options, profile)
+      options.onChunk?.(content)
+      return content
+    } catch (error) {
+      lastError = error
+      const recoverable = isWebGpuMemoryError(error) || isTransientAuthoringApiError(error)
+      if (!recoverable || index === attempts.length - 1) throw error
+      options.onReset?.()
+    }
+  }
+  throw lastError
+}
+
+async function requestAuthoringApiChat(
+  runtime: AuthoringApiRuntime,
+  messages: WebGpuChatMessage[],
+  options: WebGpuGenerationOptions,
+  profile: { maxContextCharacters: number; maxNewTokens: number },
+): Promise<string> {
   const controller = new AbortController()
   const timeout = globalThis.setTimeout(() => controller.abort(), AUTHORING_API_TIMEOUT_MS)
   let response: Response
@@ -54,8 +94,8 @@ export async function generateAuthoringApiChat(
       signal: controller.signal,
       body: JSON.stringify({
         model: runtime.model,
-        messages: compactWebGpuChatMessages(messages, options.maxContextCharacters),
-        max_tokens: positiveInteger(options.maxNewTokens, runtime.max_new_tokens, 2_048),
+        messages: compactWebGpuChatMessages(messages, profile.maxContextCharacters),
+        max_tokens: profile.maxNewTokens,
         temperature: finiteNumber(options.temperature, runtime.temperature, 0, 2),
         top_p: finiteNumber(options.topP, runtime.top_p, 0.01, 1),
         stream: false,
@@ -71,12 +111,26 @@ export async function generateAuthoringApiChat(
   }
   const document = await response.json().catch(() => ({})) as AuthoringApiResponse
   if (!response.ok) {
-    throw new Error(document.error?.message || `Authoring API returned HTTP ${response.status}.`)
+    throw new AuthoringApiRequestError(
+      document.error?.message || `Authoring API returned HTTP ${response.status}.`,
+      response.status,
+    )
   }
   const content = document.choices?.[0]?.message?.content?.trim() || ''
   if (!content) throw new Error('The authoring API completed without generating text.')
-  options.onChunk?.(content)
   return content
+}
+
+class AuthoringApiRequestError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message)
+    this.name = 'AuthoringApiRequestError'
+  }
+}
+
+function isTransientAuthoringApiError(error: unknown): boolean {
+  if (error instanceof AuthoringApiRequestError) return error.status >= 500
+  return error instanceof TypeError
 }
 
 async function fetchAuthoringApiRuntime(): Promise<AuthoringApiRuntime | null> {

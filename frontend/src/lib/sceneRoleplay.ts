@@ -12,6 +12,7 @@ import {
   type RoleplayIntrusionResponse,
   type RoleplayResponseGuard,
 } from './sceneRoleplaySafety'
+import { loadBrowserRoleplayDrafts } from './sceneRoleplayContent'
 
 export const SCENE_ROLEPLAY_SCHEMA = 'monogatari-scene-roleplay/v1'
 const MAX_STORED_TURNS = 128
@@ -222,6 +223,11 @@ interface WebProjectManifest {
 
 export async function loadSceneRoleplays(): Promise<SceneRoleplayDefinition[]> {
   if (hasTauriRuntime()) return invokeCommand<SceneRoleplayDefinition[]>('list_scene_roleplays')
+  const drafts = loadBrowserRoleplayDrafts()
+  if (drafts) {
+    return drafts.map(definition => validateBrowserSceneRoleplayDefinition(definition))
+      .sort((left, right) => left.id.localeCompare(right.id))
+  }
   const manifestResponse = await fetch(projectUrl('project-assets.json'), { cache: 'no-cache' })
   if (!manifestResponse.ok) throw new Error(`Project manifest returned HTTP ${manifestResponse.status}`)
   const manifest = await manifestResponse.json() as WebProjectManifest
@@ -233,14 +239,15 @@ export async function loadSceneRoleplays(): Promise<SceneRoleplayDefinition[]> {
     if (!response.ok) throw new Error(`${path} returned HTTP ${response.status}`)
     return response.json() as Promise<SceneRoleplayDefinition>
   }))
-  return documents.map(validateBrowserDefinition).sort((left, right) => left.id.localeCompare(right.id))
+  return documents.map(validateBrowserSceneRoleplayDefinition)
+    .sort((left, right) => left.id.localeCompare(right.id))
 }
 
 export function startBrowserSceneRoleplay(
   definition: SceneRoleplayDefinition,
   initialRelationships: Record<string, number> = {},
 ): SceneRoleplaySnapshot {
-  validateBrowserDefinition(definition)
+  validateBrowserSceneRoleplayDefinition(definition)
   const session: SceneRoleplaySession = {
     roleplay_id: definition.id,
     current_node_id: definition.start_node_id,
@@ -632,7 +639,9 @@ export function resolveBrowserRoleplaySpeaker(
   return speakerId
 }
 
-function validateBrowserDefinition(definition: SceneRoleplayDefinition): SceneRoleplayDefinition {
+export function validateBrowserSceneRoleplayDefinition(
+  definition: SceneRoleplayDefinition,
+): SceneRoleplayDefinition {
   if (definition.schema !== SCENE_ROLEPLAY_SCHEMA) throw new Error(`Unsupported scene roleplay schema: ${definition.schema}`)
   if (!definition.id?.trim() || !definition.title?.trim()) throw new Error('Scene roleplay id and title are required.')
   if (!Array.isArray(definition.nodes) || definition.nodes.length === 0) throw new Error(`Scene roleplay "${definition.id}" has no nodes.`)

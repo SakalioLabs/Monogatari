@@ -17,9 +17,124 @@ test('workspace navigation exposes the authoring surfaces', async ({ page }) => 
   await expect(page).toHaveURL(/\/editor$/)
   await expect(page.getByRole('heading', { name: 'Workflow Editor' })).toBeVisible()
 
+  await page.getByRole('link', { name: 'Live Roleplays' }).click()
+  await expect(page).toHaveURL(/\/roleplay-editor$/)
+  await expect(page.getByRole('heading', { name: 'Scene Roleplay' })).toBeVisible()
+
   await page.getByRole('link', { name: 'Dialogues' }).click()
   await expect(page).toHaveURL(/\/dialogue-editor$/)
   await expect(page.getByRole('heading', { name: 'Dialogue Graph' })).toBeVisible()
+})
+
+test('live roleplay authoring saves a structured browser draft and opens the LLM NPC playtest', async ({ page }) => {
+  await page.goto('/roleplay-editor')
+
+  await expect(page.getByRole('heading', { name: 'Scene Roleplay' })).toBeVisible()
+  await expect(page.getByRole('tab')).toHaveCount(0)
+  await page.getByRole('button', { name: 'New', exact: true }).click()
+  await page.getByRole('button', { name: 'Story', exact: true }).click()
+  await page.getByLabel('Title').fill('Agent-authored live scene')
+  await page.getByRole('button', { name: 'Nodes', exact: true }).click()
+  await expect(page.getByLabel('Observable situation')).toBeVisible()
+  await page.getByLabel('Observable situation').fill('A player and one NPC face an observable scene problem.')
+  await page.getByLabel('Player goal').fill('Use free-form conversation to establish one verifiable fact.')
+  await page.getByLabel('Primary NPC goal').fill('Stay in character and test the player claim against pinned knowledge.')
+
+  const save = page.getByRole('button', { name: 'Save', exact: true })
+  await expect(save).toBeEnabled()
+  await save.click()
+  await expect(page.getByText('Live roleplay saved')).toBeVisible()
+
+  const playtest = page.getByRole('button', { name: 'Playtest', exact: true })
+  await expect(playtest).toBeEnabled()
+  await playtest.click()
+  await expect(page).toHaveURL(/previewRoleplay=new_roleplay/)
+  await expect(page.getByTestId('scene-roleplay')).toBeVisible()
+  await expect(page.locator('.dialogue-text')).toHaveCount(0)
+  await expect(page.getByTestId('roleplay-runtime')).toBeVisible()
+})
+
+test('live roleplay playtest generates an NPC turn then evaluates deterministic story state', async ({ page }) => {
+  let generationCalls = 0
+  await page.route('**/authoring-inference-runtime.json', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      schema: 'monogatari-authoring-inference-runtime/v1',
+      provider: 'api',
+      endpoint: '/authoring-api/chat/completions',
+      model: 'e2e-roleplay-model',
+      max_new_tokens: 128,
+      temperature: 0.7,
+      top_p: 0.9,
+    }),
+  }))
+  await page.route('**/authoring-api/chat/completions', async (route) => {
+    generationCalls += 1
+    const content = generationCalls === 1
+      ? 'I check the visible gate, then answer your proposal in character.'
+      : JSON.stringify({
+          score_deltas: [{
+            dimension_id: 'story_progress',
+            delta: 1,
+            reason: 'The player made a concrete scene-bound proposal.',
+          }],
+          evidence: [],
+          relationship_delta: 0,
+          relationship_reason: 'No relationship rule is active.',
+          npc_emotion: 'attentive',
+          summary: 'The proposal advances the current scene objective.',
+        })
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ choices: [{ message: { content } }] }),
+    })
+  })
+
+  await page.goto('/roleplay-editor')
+  await page.getByRole('button', { name: 'New', exact: true }).click()
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page.getByText('Live roleplay saved')).toBeVisible()
+  await page.getByRole('button', { name: 'Playtest', exact: true }).click()
+
+  const input = page.getByLabel('Say or do something in this scene...')
+  await input.fill('I point to the gate and offer to inspect it with you.')
+  await page.getByRole('button', { name: 'Send', exact: true }).click()
+
+  const roleplay = page.getByTestId('scene-roleplay')
+  await expect(roleplay).toHaveAttribute('data-evaluation-source', 'authoring_api_model')
+  await expect(roleplay).toHaveAttribute('data-evaluation-deltas', '1')
+  await expect(roleplay).toContainText('I check the visible gate')
+  await expect(roleplay.locator('.score-label')).toContainText('+1.0')
+  await expect(page.locator('.dialogue-text')).toHaveCount(0)
+  expect(generationCalls).toBe(2)
+})
+
+test('live roleplay authoring remains selectable and contained on mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/roleplay-editor')
+
+  const picker = page.getByLabel('Roleplay', { exact: true })
+  await expect(picker).toBeVisible()
+  await expect.poll(() => picker.inputValue()).not.toBe('')
+  const originalId = await picker.inputValue()
+
+  await page.getByRole('button', { name: 'New', exact: true }).click()
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page.getByText('Live roleplay saved')).toBeVisible()
+  await expect.poll(() => picker.locator('option').count()).toBeGreaterThan(1)
+  await picker.selectOption(originalId)
+
+  await expect(page.getByLabel('Roleplay ID')).toHaveValue(originalId)
+  await expect.poll(() => page.evaluate(() => document.body.scrollWidth)).toBe(390)
+  const geometry = await page.locator('.roleplay-editor').evaluate((element) => {
+    const rect = element.getBoundingClientRect()
+    return { left: rect.left, right: rect.right, bottom: rect.bottom }
+  })
+  expect(geometry.left).toBeGreaterThanOrEqual(0)
+  expect(geometry.right).toBeLessThanOrEqual(390)
+  expect(geometry.bottom).toBeLessThanOrEqual(784)
 })
 
 test('Workflow execution renders deterministic trace evidence across desktop and mobile', async ({ page }) => {

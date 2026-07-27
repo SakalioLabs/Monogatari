@@ -1,6 +1,9 @@
 import { defineConfig, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { resolveAuthoringApiKey } from './src/lib/authoringRuntimeConfig'
+import {
+  resolveAuthoringApiKey,
+  resolveAuthoringApiRuntime,
+} from './src/lib/authoringRuntimeConfig'
 import { createReadStream, readFileSync, readdirSync, statSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from 'node:path'
@@ -150,11 +153,9 @@ function projectDataDevPlugin(): Plugin {
 function authoringApiRuntime() {
   try {
     const settings = JSON.parse(readFileSync(projectSettingsPath, 'utf8')) as Record<string, any>
-    if (settings.ai?.provider !== 'api') return null
-    const api = settings.ai.api || {}
-    const configuredBaseUrl = String(api.base_url || api.baseUrl || '').trim().replace(/\/+$/, '')
-    const model = String(api.model || '').trim()
-    if (!configuredBaseUrl || !model) return null
+    const configured = resolveAuthoringApiRuntime(process.env, settings.ai || {})
+    if (!configured) return null
+    const configuredBaseUrl = configured.baseUrl.replace(/\/+$/, '')
     const parsed = new URL(configuredBaseUrl)
     if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password) return null
     const baseUrl = parsed.pathname === '/' ? `${configuredBaseUrl}/v1` : configuredBaseUrl
@@ -165,10 +166,10 @@ function authoringApiRuntime() {
         schema: 'monogatari-authoring-inference-runtime/v1',
         provider: 'api',
         endpoint: '/authoring-api/chat/completions',
-        model,
-        max_new_tokens: Number(api.max_tokens || api.maxTokens || 256),
-        temperature: Number(api.temperature || 0.7),
-        top_p: Number(api.top_p || api.topP || 0.9),
+        model: configured.model,
+        max_new_tokens: configured.maxNewTokens,
+        temperature: configured.temperature,
+        top_p: configured.topP,
       },
     }
   } catch {

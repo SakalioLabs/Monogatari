@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { resolveAuthoringApiKey } from '../authoringRuntimeConfig'
+import {
+  resolveAuthoringApiKey,
+  resolveAuthoringApiRuntime,
+} from '../authoringRuntimeConfig'
 
 describe('resolveAuthoringApiKey', () => {
   it('uses the documented AI runtime credential', () => {
@@ -17,5 +20,52 @@ describe('resolveAuthoringApiKey', () => {
 
   it('returns an empty credential when the runtime is not configured', () => {
     expect(resolveAuthoringApiKey({})).toBe('')
+  })
+})
+
+describe('resolveAuthoringApiRuntime', () => {
+  it('uses explicit development runtime overrides without exposing the credential', () => {
+    expect(resolveAuthoringApiRuntime({
+      MONOGATARI_AI_BASE_URL: ' http://127.0.0.1:8317/v1 ',
+      MONOGATARI_AI_MODEL: ' live-roleplay-model ',
+      MONOGATARI_AI_API_KEY: 'server-only-secret',
+    }, {
+      provider: 'onnx',
+      api: {
+        model: 'packaged-default',
+        maxTokens: 320,
+        temperature: 0.6,
+        topP: 0.85,
+      },
+    })).toEqual({
+      baseUrl: 'http://127.0.0.1:8317/v1',
+      model: 'live-roleplay-model',
+      maxNewTokens: 320,
+      temperature: 0.6,
+      topP: 0.85,
+    })
+  })
+
+  it('uses project API settings when no development override is present', () => {
+    expect(resolveAuthoringApiRuntime({}, {
+      provider: 'api',
+      api: {
+        baseUrl: 'https://example.test/v1',
+        model: 'story-model',
+      },
+    })).toMatchObject({
+      baseUrl: 'https://example.test/v1',
+      model: 'story-model',
+    })
+  })
+
+  it('does not silently enable an API runtime for an ONNX project', () => {
+    expect(resolveAuthoringApiRuntime({}, {
+      provider: 'onnx',
+      api: {
+        baseUrl: 'https://example.test/v1',
+        model: 'unused',
+      },
+    })).toBeNull()
   })
 })
