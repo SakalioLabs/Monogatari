@@ -105,6 +105,16 @@ for (const viewport of viewports) {
   })
 }
 
+test('legacy roleplay links are canonicalized to the live LLM NPC route', async ({ page }) => {
+  await page.goto('/game?previewDialogue=blue_frame_dialogue&authoring=1')
+
+  await expect(page.getByTestId('scene-roleplay')).toBeVisible({ timeout: 15_000 })
+  await expect(page).toHaveURL(/previewRoleplay=blue_frame_roleplay/)
+  expect(new URL(page.url()).searchParams.has('previewDialogue')).toBe(false)
+  await expect(page.getByTestId('roleplay-runtime')).toBeVisible()
+  await expect(page.locator('.dialogue-text')).toHaveCount(0)
+})
+
 test('Blue Frame ending previews start their dedicated epilogues', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1280, height: 720 })
   const runtimeErrors = captureRuntimeErrors(page)

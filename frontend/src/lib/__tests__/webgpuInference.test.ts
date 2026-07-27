@@ -2,11 +2,20 @@ import { describe, expect, it } from 'vitest'
 
 import {
   compactWebGpuChatMessages,
+  DEFAULT_WEBGPU_RUNTIME_CONFIG,
   isWebGpuMemoryError,
   webGpuMemoryRecoveryProfiles,
 } from '../webgpuInference'
 
 describe('WebGPU inference memory policy', () => {
+  it('defaults to the bounded instruction model used by packaged and development runtimes', () => {
+    expect(DEFAULT_WEBGPU_RUNTIME_CONFIG).toMatchObject({
+      modelId: 'onnx-community/Qwen2.5-0.5B-Instruct',
+      dtype: 'q4',
+      maxNewTokens: 96,
+    })
+  })
+
   it('keeps system identity and the latest player turn inside a total character budget', () => {
     const messages = [
       { role: 'system' as const, content: `identity ${'s'.repeat(8_000)}` },

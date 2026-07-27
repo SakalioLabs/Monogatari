@@ -263,7 +263,7 @@
                 <div class="form-grid two">
                   <label class="form-field wide">
                     <span>{{ t('settings.model-id', 'Model ID or packaged path') }}</span>
-                    <input v-model="webGpuModelId" class="input mono-input" placeholder="onnx-community/Qwen3.5-0.8B-Text-ONNX" spellcheck="false" />
+                    <input v-model="webGpuModelId" class="input mono-input" placeholder="onnx-community/Qwen2.5-0.5B-Instruct" spellcheck="false" />
                   </label>
                   <label class="form-field">
                     <span>{{ t('settings.dtype', 'Precision') }}</span>

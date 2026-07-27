@@ -37,7 +37,7 @@ export const WEBGPU_CONTEXT_CHARACTER_LIMIT = 6_000
 export const WEBGPU_RECOVERY_CONTEXT_CHARACTER_LIMIT = 3_000
 
 export const DEFAULT_WEBGPU_RUNTIME_CONFIG: WebGpuRuntimeConfig = {
-  modelId: 'onnx-community/Qwen3.5-0.8B-Text-ONNX',
+  modelId: 'onnx-community/Qwen2.5-0.5B-Instruct',
   dtype: 'q4',
   maxNewTokens: 96,
   temperature: 0.7,

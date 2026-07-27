@@ -265,7 +265,7 @@ async function webInferenceRuntime() {
     schema: 'monogatari-inference-runtime/v1',
     target: 'web',
     backend: 'webgpu',
-    model_id: webgpu.model_id || webgpu.modelId || 'onnx-community/Qwen3.5-0.8B-Text-ONNX',
+    model_id: webgpu.model_id || webgpu.modelId || 'onnx-community/Qwen2.5-0.5B-Instruct',
     dtype: webgpu.dtype || 'q4',
     max_new_tokens: Number(webgpu.max_new_tokens || webgpu.maxNewTokens || 96),
     temperature: Number(webgpu.temperature || 0.7),

@@ -349,7 +349,7 @@ pub fn default_project_config() -> Value {
                 "use_directml": true
             },
             "webgpu": {
-                "model_id": "onnx-community/Qwen3.5-0.8B-Text-ONNX",
+                "model_id": "onnx-community/Qwen2.5-0.5B-Instruct",
                 "dtype": "q4",
                 "max_new_tokens": 96,
                 "temperature": 0.7,

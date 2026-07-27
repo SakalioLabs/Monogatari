@@ -323,7 +323,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import {
   Cloud,
   FolderOpen,
@@ -384,6 +384,7 @@ import {
 
 const { locale, t } = useI18n()
 const route = useRoute()
+const router = useRouter()
 const desktopRuntime = hasTauriRuntime()
 
 type CharacterInfo = StoryCharacterInfo & {
@@ -1128,6 +1129,12 @@ onMounted(async () => {
     if (campaign) {
       await startRoleplayCampaign(campaign)
     } else if (roleplay) {
+      if (typeof previewRoleplayId !== 'string' && typeof previewDialogueId === 'string') {
+        const query = { ...route.query }
+        delete query.previewDialogue
+        query.previewRoleplay = roleplay.id
+        await router.replace({ path: '/game', query })
+      }
       await startSceneRoleplay(roleplay)
     } else if (typeof previewSceneId === 'string') {
       const scene = storyScenes.value.find((item) => item.id === previewSceneId)

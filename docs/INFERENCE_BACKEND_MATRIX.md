@@ -25,10 +25,11 @@ Settings > Diagnostics.
 
 ## Model and 3D contract
 
-The default text profile is:
+The default text profiles are:
 
-- Model family: Qwen3.5 0.8B
-- Web artifact: `onnx-community/Qwen3.5-0.8B-Text-ONNX`, Q4
+- Web model family: Qwen2.5 0.5B Instruct
+- Web artifact: `onnx-community/Qwen2.5-0.5B-Instruct`, Q4
+- Native/service model family: Qwen3.5 0.8B
 - Native/service artifact: Qwen3.5 0.8B GGUF Q4_K_M or an explicitly exported
   ORT GenAI directory
 - Required output contract: chat text, bounded generation, complete stream
@@ -438,6 +439,7 @@ private prompts, or user project paths.
 
 ## Primary references
 
+- [ONNX Community Qwen2.5 0.5B Instruct](https://huggingface.co/onnx-community/Qwen2.5-0.5B-Instruct)
 - [Qwen3.5 0.8B](https://huggingface.co/Qwen/Qwen3.5-0.8B)
 - [ONNX Community Qwen3.5 text model](https://huggingface.co/onnx-community/Qwen3.5-0.8B-Text-ONNX)
 - [ONNX Runtime GenAI](https://github.com/microsoft/onnxruntime-genai)
