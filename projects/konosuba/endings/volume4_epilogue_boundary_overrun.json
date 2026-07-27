@@ -1,0 +1,8 @@
+{
+  "description": "报告、身份、赔偿或芸芸请求未能及时形成可靠边界。教团暂停传播与返还行动，宅邸停止围观并先确认芸芸安全；未知内容被保留为未知，不能把本章写成身份公开、关系成立或请求已经解决。",
+  "dialogue_id": "volume4_epilogue_boundary_overrun_epilogue",
+  "id": "volume4_epilogue_boundary_overrun",
+  "scene_id": "axel_mansion_front_door",
+  "schema": "monogatari-story-ending/v1",
+  "title": "尾声边界处置超时"
+}

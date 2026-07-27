@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/arcanletia_high_priest_office.webp",
+  "bgm_path": null,
+  "id": "arcanletia_high_priest_office",
+  "model_3d_path": null,
+  "name": "阿尔坎雷蒂亚最高神官办公室",
+  "tags": [
+    "volume4",
+    "chapter6",
+    "office",
+    "report",
+    "restitution"
+  ],
+  "time_of_day": "morning",
+  "weather": "clear"
+}

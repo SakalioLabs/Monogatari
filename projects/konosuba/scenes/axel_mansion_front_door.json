@@ -1,0 +1,17 @@
+{
+  "background_path": "assets/backgrounds/axel_mansion_front_door.webp",
+  "bgm_path": null,
+  "id": "axel_mansion_front_door",
+  "model_3d_path": null,
+  "name": "阿克塞尔宅邸前门",
+  "tags": [
+    "volume4",
+    "chapter6",
+    "mansion",
+    "door",
+    "visitor",
+    "request"
+  ],
+  "time_of_day": "sunset",
+  "weather": "clear"
+}

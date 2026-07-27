@@ -115,17 +115,44 @@
         {
           "ending_id": "volume4_hans_contained_and_springs_accounted",
           "target": {
-            "kind": "complete"
+            "entry_id": "chapter6",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume4_hans_defeated_with_source_damage",
           "target": {
-            "kind": "complete"
+            "entry_id": "chapter6",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume4_source_crisis_response_overrun",
+          "target": {
+            "entry_id": "chapter6",
+            "kind": "entry"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter6",
+      "roleplay_id": "volume4_chapter6_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume4_epilogue_privacy_restitution_and_request_handoff",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume4_epilogue_return_with_unresolved_request",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume4_epilogue_boundary_overrun",
           "target": {
             "kind": "complete"
           }

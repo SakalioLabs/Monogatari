@@ -1,0 +1,8 @@
+{
+  "description": "教团完成基本更正，队伍也平安返家并听见芸芸的请求；但部分身份通知、返还选项、旁听边界或交接记录仍不完整。当前不推断请求含义，由芸芸选择何时、向谁继续说明。",
+  "dialogue_id": "volume4_epilogue_return_with_unresolved_request_epilogue",
+  "id": "volume4_epilogue_return_with_unresolved_request",
+  "scene_id": "axel_mansion_front_door",
+  "schema": "monogatari-story-ending/v1",
+  "title": "返家平安，请求仍待澄清"
+}

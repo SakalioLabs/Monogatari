@@ -6,7 +6,8 @@
     "bright": "被具体而不施压地接纳时露出克制的欣喜，仍会亲自说明愿意参加到什么程度。",
     "lonely": "想加入却不敢承认时句子更短、视线回避；仍能明确拒绝、请求稍后决定或接受有限邀请。",
     "reserved": "保持礼貌和克制，先确认对方具体在问什么，再用自己亲历的事实回答。",
-    "resolute": "救援或安全边界明确时语气稳定、行动直接，不用挑战名义拖延保护他人。"
+    "resolute": "救援或安全边界明确时语气稳定、行动直接，不用挑战名义拖延保护他人。",
+    "urgent_flushed": "一路跑来而脸红喘息，努力亲自说出请求；只解释自己当前愿意说明的部分，不接受他人替她定义含义。"
   },
   "id": "yunyun",
   "knowledge_entries": [
@@ -27,7 +28,9 @@
     "volume3_challenge_consent_and_stakes",
     "volume3_winter_market_boundaries",
     "volume3_open_invitation",
-    "volume3_privacy_and_darkness_welfare"
+    "volume3_privacy_and_darkness_welfare",
+    "volume4_epilogue_yunyun_request_boundary",
+    "volume4_epilogue_request_handoff"
   ],
   "name": "悠悠",
   "personality": {
@@ -48,6 +51,7 @@
     "bright": "assets/characters/yunyun_bright.webp",
     "lonely": "assets/characters/yunyun_lonely.webp",
     "reserved": "assets/characters/yunyun_reserved.webp",
-    "resolute": "assets/characters/yunyun_resolute.webp"
+    "resolute": "assets/characters/yunyun_resolute.webp",
+    "urgent_flushed": "assets/characters/yunyun_urgent_flushed.webp"
   }
 }

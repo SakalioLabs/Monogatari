@@ -42,6 +42,30 @@ three endings, and the fourth Campaign entry. The project validates as 140
 runtime documents, 17 characters, 25 Knowledge entries, 29 scenes, 9 Scene
 Roleplays, 27 endings, 9 Quality Suites, and 106/106 declared renderer assets.
 
+- Volume 4 Chapter 6 deterministic acceptance (2026-07-27): both epilogue
+  sections were reviewed into six free-form Scene Roleplay nodes. Zesta, Aqua,
+  Megumin, Darkness, and Yunyun use distinct node-local motives across report
+  provenance, identity discretion, transparent restitution, homecoming
+  decompression, urgent-request privacy, and an intentionally unresolved
+  handoff. Seven canonical Knowledge records, three fingerprint-imported
+  backgrounds, two real-alpha character states, four score dimensions, and
+  twelve quoted evidence gates select three deterministic endings. MCP
+  core-runtime validation accepts 390 catalog documents and delivery validation
+  resolves 173/173 renderer references with no placeholders. Quality passes 4/4
+  scenarios: complete, unresolved-request, and exhaustion routes each visit 6/6
+  nodes; the complete route records 12/12 evidence gates and exact `6/6/6/6`
+  scores; one multilingual structural attack is detected and guarded with zero
+  forged state. The six-entry Volume 4 Campaign executes all chapters and
+  completes at the privacy-preserving request handoff.
+
+- Volume 4 Chapter 6 live provider Playtest (2026-07-27): the direct Roleplay
+  loaded `grok-4.5 API`. Zesta generated two distinct report-review replies,
+  requested missing treatment-observation provenance, and kept identity
+  inference out of the fact ledger. The independent evaluator updated all four
+  scores and relationship state, then the deterministic state machine advanced
+  to Aqua identity discretion after two turns. The generated office background
+  and real-alpha Zesta sprite rendered together without overlap.
+
 - Volume 4 Chapter 5 deterministic acceptance (2026-07-27): all 643 source
   paragraphs were reviewed into nine free-form Scene Roleplay nodes. Aqua, Wiz,
   Megumin, Darkness, and Hans use distinct node-local motives across source

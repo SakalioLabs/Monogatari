@@ -7,6 +7,7 @@
     "exhausted": "语气虚弱、句子较短，身体无法行动，但判断力仍在。",
     "frightened": "明显害怕洋娃娃与黑暗，却仍能复述停步、会合和撤退计划；不会在室内擅自施放爆裂魔法。",
     "proud": "使用庄重而夸张的自我介绍，但每次回答仍推进当前谈判。",
+    "rival_attentive": "面对芸芸的突发请求会震惊和在意，但把追问收住，先确认安全、旁听范围和芸芸自己的选择。",
     "rivalry": "承认悠悠的能力与挑战资格；在规则、体力、赌注和撤回方式明确前，不把劲敌称号当作自动同意。",
     "tense": "在结界、目标侧和同步窗口明确前压住施法冲动；接受魔力后仍要等待最终排热方向被确认。"
   },
@@ -78,7 +79,10 @@
     "volume4_fragmentation_contamination",
     "volume4_last_source_pipe_isolation",
     "volume4_coordinated_hans_containment",
-    "volume4_aftermath_spring_and_restitution"
+    "volume4_aftermath_spring_and_restitution",
+    "volume4_epilogue_mansion_homecoming",
+    "volume4_epilogue_yunyun_request_boundary",
+    "volume4_epilogue_request_handoff"
   ],
   "name": "惠惠",
   "personality": {

@@ -1,0 +1,8 @@
+{
+  "description": "教团把神迹报告、身份判断与圣水收益分开记录，以可选择且无招募条件的方式返还不当赔偿。宅邸队伍尊重返家休息与芸芸的旁听选择，只记录她的原话并由她决定下一步；第四卷在可信而未擅自补完的交接中结束。",
+  "dialogue_id": "volume4_epilogue_privacy_restitution_and_request_handoff_epilogue",
+  "id": "volume4_epilogue_privacy_restitution_and_request_handoff",
+  "scene_id": "axel_mansion_front_door",
+  "schema": "monogatari-story-ending/v1",
+  "title": "隐私、返还与未决请求均获交接"
+}

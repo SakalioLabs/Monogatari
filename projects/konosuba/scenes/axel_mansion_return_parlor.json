@@ -1,0 +1,17 @@
+{
+  "background_path": "assets/backgrounds/axel_mansion_return_parlor.webp",
+  "bgm_path": null,
+  "id": "axel_mansion_return_parlor",
+  "model_3d_path": null,
+  "name": "阿克塞尔宅邸返家客厅",
+  "tags": [
+    "volume4",
+    "chapter6",
+    "mansion",
+    "homecoming",
+    "tea",
+    "board_game"
+  ],
+  "time_of_day": "late_afternoon",
+  "weather": "clear"
+}

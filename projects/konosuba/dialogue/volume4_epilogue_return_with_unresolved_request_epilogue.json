@@ -1,0 +1,24 @@
+{
+  "description": "第四卷终章实时角色扮演结局短章。",
+  "id": "volume4_epilogue_return_with_unresolved_request_epilogue",
+  "nodes": {
+    "final": {
+      "choices": [],
+      "emotion": "rival_attentive",
+      "ending_type": "volume4_epilogue_return_with_unresolved_request",
+      "is_ending": true,
+      "scene_id": "axel_mansion_front_door",
+      "speaker_id": "megumin",
+      "text": "教团完成基本更正，队伍也平安返家并听见芸芸的请求；但部分身份通知、返还选项、旁听边界或交接记录仍不完整。当前不推断请求含义，由芸芸选择何时、向谁继续说明。"
+    },
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "axel_mansion_front_door",
+      "text": "教团完成基本更正，队伍也平安返家并听见芸芸的请求；但部分身份通知、返还选项、旁听边界或交接记录仍不完整。当前不推断请求含义，由芸芸选择何时、向谁继续说明。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "返家平安，请求仍待澄清",
+  "variables": {}
+}

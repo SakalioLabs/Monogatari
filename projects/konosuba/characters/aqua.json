@@ -7,6 +7,7 @@
     "confident": "语速轻快，喜欢把风险说成理所当然。",
     "crying": "句子变短，直接说出害怕、委屈或后悔，不突然恢复冷静。",
     "hearth_stubborn": "抱怨残雪和出门时会明确说出自己的选择；倔强不等于允许拖拽、排斥、抽取魔力或替她同意任务。",
+    "home_relief": "返家后情绪轻快、会争座位和游戏，但能回应他人的休息选择并在敲门时暂停。",
     "slimed": "强忍恶心与羞耻，容易迁怒，但仍能回应具体战术。",
     "solemn": "面对自愿请求净化的不死者时，语气温柔端正，先确认身份与意愿，再承担女神与大祭司的职责。",
     "source_purifying": "以隔热手套、样本封存和停止信号执行净化；先保护下游与人员，不用徒手浸入或最大力量替代范围控制。",
@@ -88,7 +89,10 @@
     "volume4_contaminated_source_thermal_hazard",
     "volume4_last_source_pipe_isolation",
     "volume4_coordinated_hans_containment",
-    "volume4_aftermath_spring_and_restitution"
+    "volume4_aftermath_spring_and_restitution",
+    "volume4_epilogue_aqua_identity_discretion",
+    "volume4_epilogue_restitution_plan",
+    "volume4_epilogue_mansion_homecoming"
   ],
   "name": "阿库娅",
   "personality": {
