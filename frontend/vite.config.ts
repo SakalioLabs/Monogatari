@@ -27,6 +27,13 @@ const projectDataRoots = {
   knowledge: path.join(projectDataDir, 'knowledge'),
 } as const
 const projectSettingsPath = path.join(projectDataDir, 'settings.json')
+const authoringRuntimeHealthTtlMs = 10_000
+const authoringRuntimeHealthTimeoutMs = 4_000
+let authoringRuntimeHealthCache: {
+  key: string
+  checkedAt: number
+  ready: boolean
+} | null = null
 
 const assetContentTypes: Record<string, string> = {
   '.gif': 'image/gif',
@@ -84,14 +91,21 @@ function projectDataDevPlugin(): Plugin {
     name: 'monogatari-project-data-dev',
     apply: 'serve' as const,
     configureServer(server) {
-      server.middlewares.use('/authoring-inference-runtime.json', (request, response, next) => {
+      server.middlewares.use('/authoring-inference-runtime.json', async (request, response, next) => {
         if ((request.url || '/').split('?')[0] !== '/') return next()
         const runtime = authoringApiRuntime()
+        const ready = runtime ? await authoringApiRuntimeReady(runtime) : false
         response.setHeader('Content-Type', 'application/json; charset=utf-8')
         response.setHeader('Cache-Control', 'no-store')
-        response.end(JSON.stringify(runtime?.public || {
+        response.end(JSON.stringify(runtime ? {
+          ...runtime.public,
+          ready,
+          issue: ready ? null : 'upstream_unreachable',
+        } : {
           schema: 'monogatari-authoring-inference-runtime/v1',
           provider: 'webgpu',
+          ready: true,
+          issue: null,
         }))
       })
 
@@ -175,6 +189,43 @@ function authoringApiRuntime() {
   } catch {
     return null
   }
+}
+
+async function authoringApiRuntimeReady(
+  runtime: NonNullable<ReturnType<typeof authoringApiRuntime>>,
+): Promise<boolean> {
+  const key = `${runtime.baseUrl}\n${runtime.public.model}`
+  const now = Date.now()
+  if (authoringRuntimeHealthCache
+    && authoringRuntimeHealthCache.key === key
+    && now - authoringRuntimeHealthCache.checkedAt < authoringRuntimeHealthTtlMs) {
+    return authoringRuntimeHealthCache.ready
+  }
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), authoringRuntimeHealthTimeoutMs)
+  let ready = false
+  try {
+    const headers: Record<string, string> = {}
+    if (runtime.apiKey) headers.Authorization = `Bearer ${runtime.apiKey}`
+    const response = await fetch(`${runtime.baseUrl}/models`, {
+      method: 'GET',
+      headers,
+      signal: controller.signal,
+    })
+    ready = response.ok
+    try {
+      await response.body?.cancel()
+    } catch {
+      // Readiness is determined by the upstream status, not body disposal.
+    }
+  } catch {
+    ready = false
+  } finally {
+    clearTimeout(timeout)
+  }
+  authoringRuntimeHealthCache = { key, checkedAt: now, ready }
+  return ready
 }
 
 function readRequestBody(request: IncomingMessage, maxBytes: number): Promise<Buffer> {

@@ -67,6 +67,52 @@ describe('authoring API inference', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
+  it('does not call chat completion when the configured API runtime is unreachable', async () => {
+    vi.resetModules()
+    const fetchMock = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({
+      schema: 'monogatari-authoring-inference-runtime/v1',
+      provider: 'api',
+      endpoint: '/authoring-api/chat/completions',
+      model: 'offline-roleplay-model',
+      ready: false,
+      issue: 'upstream_unreachable',
+    }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const { generateAuthoringApiChat: generateUnavailableChat } = await import('../authoringInference')
+
+    await expect(generateUnavailableChat([
+      { role: 'user', content: 'Can you hear me?' },
+    ])).rejects.toThrow('configured authoring API runtime is unreachable')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('rechecks an unreachable configured runtime on the next discovery', async () => {
+    vi.resetModules()
+    const runtime = {
+      schema: 'monogatari-authoring-inference-runtime/v1',
+      provider: 'api',
+      endpoint: '/authoring-api/chat/completions',
+      model: 'recovering-roleplay-model',
+    }
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        ...runtime,
+        ready: false,
+        issue: 'upstream_unreachable',
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        ...runtime,
+        ready: true,
+        issue: null,
+      }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const { loadAuthoringApiRuntime } = await import('../authoringInference')
+
+    await expect(loadAuthoringApiRuntime()).resolves.toMatchObject({ ready: false })
+    await expect(loadAuthoringApiRuntime()).resolves.toMatchObject({ ready: true })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
   it('honors the shared context budget before calling the remote API', async () => {
     vi.resetModules()
     const fetchMock = vi.fn()

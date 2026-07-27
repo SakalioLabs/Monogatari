@@ -229,7 +229,11 @@ normalizes a host-only OpenAI-compatible base to `/v1`, and exposes a
 same-origin authoring-only chat bridge. Its public runtime document contains no
 credential fields; an optional credential comes only from
 `MONOGATARI_AI_API_KEY` (or the legacy `MONOGATARI_API_KEY` fallback) and
-remains in the Node process. Static Web/PWA packages
+remains in the Node process. Before advertising an API as ready, the Vite
+process performs a bounded, cached `/models` preflight with that server-only
+credential and returns only `ready` plus a closed issue code. An explicitly
+configured but unreachable API disables the live composer and never becomes
+an implicit WebGPU fallback. Static Web/PWA packages
 retain the credential-free WebGPU contract, while Tauri continues to use the
 Rust inference pipeline. The Scene Roleplay composer remains disabled while
 browser runtime discovery is pending. Once a turn selects the project API, an

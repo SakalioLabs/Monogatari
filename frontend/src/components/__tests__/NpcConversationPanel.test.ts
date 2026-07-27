@@ -159,6 +159,31 @@ describe('NpcConversationPanel', () => {
     expect(wrapper.text()).toContain('The signal is still here.')
   })
 
+  it('blocks an unreachable configured API without falling back to WebGPU', async () => {
+    mocks.loadAuthoringApiRuntime.mockResolvedValue({
+      schema: 'monogatari-authoring-inference-runtime/v1',
+      provider: 'api',
+      endpoint: '/authoring-api/chat/completions',
+      model: 'offline-roleplay-model',
+      ready: false,
+      issue: 'upstream_unreachable',
+      max_new_tokens: 96,
+      temperature: 0.7,
+      top_p: 0.9,
+    })
+    const wrapper = mount(NpcConversationPanel, {
+      props: { open: true, character, desktopRuntime: false, locale: 'en' },
+    })
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="npc-panel"]').attributes('data-npc-runtime')).toBe('api')
+    expect(wrapper.get('[role="alert"]').text()).toContain('offline-roleplay-model')
+    expect(wrapper.get('[data-testid="npc-input"]').attributes()).toHaveProperty('disabled')
+    expect(wrapper.get('[data-testid="npc-send"]').attributes()).toHaveProperty('disabled')
+    expect(mocks.generateAuthoringApiChat).not.toHaveBeenCalled()
+    expect(mocks.generateWebGpuChat).not.toHaveBeenCalled()
+  })
+
   it('rechecks the API runtime before falling back to WebGPU', async () => {
     const apiRuntime = {
       schema: 'monogatari-authoring-inference-runtime/v1' as const,

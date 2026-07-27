@@ -118,6 +118,7 @@ import { resolveAssetUrl } from '../lib/assets'
 import {
   generateAuthoringApiChat,
   loadAuthoringApiRuntime,
+  type AuthoringApiRuntime,
 } from '../lib/authoringInference'
 import { useI18n } from '../lib/i18n'
 import { loadKnowledgeAuthoringCatalog, type KnowledgeEntryDefinition } from '../lib/knowledgeContent'
@@ -168,6 +169,7 @@ let loadSequence = 0
 let messageSequence = 0
 let generationSequence = 0
 const authoringApiAvailable = ref(false)
+const authoringApiRuntime = ref<AuthoringApiRuntime | null>(null)
 
 const runtimeKind = computed(() => props.desktopRuntime
   ? 'tauri'
@@ -181,7 +183,11 @@ const avatarUrl = computed(() => resolveAssetUrl(
   props.character?.portrait_path || props.character?.sprite_path || null,
 ))
 const runtimeIssue = computed(() => {
-  if (props.desktopRuntime || authoringApiAvailable.value) return null
+  if (props.desktopRuntime) return null
+  if (authoringApiRuntime.value?.ready === false) {
+    return `${authoringApiRuntime.value.model} ${t('settings.backend-unavailable', 'Unavailable')}`
+  }
+  if (authoringApiAvailable.value) return null
   const support = detectWebGpuSupport()
   if (support.available) return null
   if (support.reason === 'insecure-context') {
@@ -226,6 +232,7 @@ async function prepareConversation() {
         loadAuthoringApiRuntime(),
       ])
       activeKnowledge = knowledge
+      authoringApiRuntime.value = apiRuntime
       authoringApiAvailable.value = Boolean(apiRuntime)
       if (requestId !== loadSequence) return
       messages.value = [...(browserSessions.get(character.id) || [])]
@@ -291,7 +298,8 @@ async function sendMessage() {
     } else {
       let rawReply = ''
       if (!authoringApiAvailable.value) {
-        authoringApiAvailable.value = Boolean(await loadAuthoringApiRuntime())
+        authoringApiRuntime.value = await loadAuthoringApiRuntime()
+        authoringApiAvailable.value = Boolean(authoringApiRuntime.value)
       }
       const generateChat = authoringApiAvailable.value
         ? generateAuthoringApiChat

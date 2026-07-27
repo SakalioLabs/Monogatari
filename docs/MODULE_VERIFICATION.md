@@ -417,6 +417,12 @@ the completion record.
 - Frontend: 213/213 unit tests and the production Web/PWA build pass. The
   generated project manifest inventories Campaign files and the service worker
   caches them.
+- Browser API readiness (2026-07-28): the configured `grok-4.5` authoring
+  runtime accepted a TCP connection but returned no HTTP response. The
+  credential-holding Vite preflight therefore reported
+  `ready=false`/`upstream_unreachable`; focused frontend tests prove both the
+  Scene Roleplay composer and compatibility NPC panel remain disabled without
+  calling API generation, WebGPU, or committing story state.
 - Browser Campaign Playtest: desktop `1440x900` and mobile `390x844` render
   without horizontal overflow. A real free-input turn produces an in-character
   Aqua response; unavailable external inference uses the authored in-scene

@@ -221,6 +221,40 @@ describe('SceneRoleplayPanel', () => {
     expect(wrapper.get('.send-button').attributes()).not.toHaveProperty('disabled')
   })
 
+  it('blocks an unreachable configured API without allocating the browser model', async () => {
+    mocks.loadAuthoringApiRuntime.mockResolvedValue({
+      schema: 'monogatari-authoring-inference-runtime/v1',
+      provider: 'api',
+      endpoint: '/authoring-api/chat/completions',
+      model: 'offline-roleplay-model',
+      ready: false,
+      issue: 'upstream_unreachable',
+      max_new_tokens: 256,
+      temperature: 0.7,
+      top_p: 0.9,
+    })
+    const wrapper = mount(SceneRoleplayPanel, {
+      props: {
+        snapshot: startBrowserSceneRoleplay(definition),
+        desktopRuntime: false,
+        characters: [character],
+        endings: [],
+        locale: 'en',
+        sceneName: 'Station',
+      },
+    })
+    await flushPromises()
+
+    await wrapper.get('textarea').setValue('Use a second receiver to verify the coordinates.')
+    expect(wrapper.get('[data-testid="roleplay-runtime"]').attributes('data-runtime-kind'))
+      .toBe('api')
+    expect(wrapper.get('.roleplay-error').text()).toContain('offline-roleplay-model')
+    expect(wrapper.get('.send-button').attributes()).toHaveProperty('disabled')
+    expect(mocks.generateAuthoringApiChat).not.toHaveBeenCalled()
+    expect(mocks.generateWebGpuChat).not.toHaveBeenCalled()
+    expect(wrapper.emitted('update')).toBeUndefined()
+  })
+
   it('lets the player address every NPC present in the scene', async () => {
     const ensembleDefinition = structuredClone(definition)
     ensembleDefinition.nodes[0].supporting_character_ids = ['keeper']

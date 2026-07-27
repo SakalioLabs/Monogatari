@@ -11,6 +11,8 @@ export interface AuthoringApiRuntime {
   provider: 'api'
   endpoint: string
   model: string
+  ready?: boolean
+  issue?: 'upstream_unreachable' | null
   max_new_tokens: number
   temperature: number
   top_p: number
@@ -34,7 +36,7 @@ export async function loadAuthoringApiRuntime(): Promise<AuthoringApiRuntime | n
   if (runtimePromise) return runtimePromise
   runtimePromise = fetchAuthoringApiRuntime()
   const runtime = await runtimePromise
-  if (!runtime) runtimePromise = null
+  if (!runtime || runtime.ready === false) runtimePromise = null
   return runtime
 }
 
@@ -44,6 +46,9 @@ export async function generateAuthoringApiChat(
 ): Promise<string> {
   const runtime = await loadAuthoringApiRuntime()
   if (!runtime) throw new Error('The authoring API runtime is unavailable.')
+  if (runtime.ready === false) {
+    throw new Error('The configured authoring API runtime is unreachable.')
+  }
   if (!messages.length) throw new Error('API generation requires at least one chat message.')
 
   const requestedTokens = positiveInteger(options.maxNewTokens, runtime.max_new_tokens, 2_048)
@@ -152,6 +157,8 @@ async function fetchAuthoringApiRuntime(): Promise<AuthoringApiRuntime | null> {
       provider: 'api',
       endpoint: document.endpoint,
       model: document.model,
+      ready: document.ready !== false,
+      issue: document.issue === 'upstream_unreachable' ? document.issue : null,
       max_new_tokens: positiveInteger(document.max_new_tokens, 256, 2_048),
       temperature: finiteNumber(document.temperature, 0.7, 0, 2),
       top_p: finiteNumber(document.top_p, 0.9, 0.01, 1),

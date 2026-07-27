@@ -96,7 +96,9 @@
     </div>
 
     <footer v-if="snapshot.session.status === 'active'" class="roleplay-composer">
-      <div v-if="errorMessage" class="roleplay-error">{{ errorMessage }}</div>
+      <div v-if="errorMessage || runtimeIssue" class="roleplay-error">
+        {{ errorMessage || runtimeIssue }}
+      </div>
       <div class="composer-row">
         <textarea
           ref="inputElement"
@@ -202,11 +204,16 @@ const currentRelationship = computed(() => props.snapshot.session.relationships?
 const relationshipPercent = computed(() => (currentRelationship.value + 1) * 50)
 const currentSceneName = computed(() => props.sceneName || currentNode.value.scene_id)
 const activeEnding = computed(() => props.endings.find(ending => ending.id === props.snapshot.session.ending_id) || null)
+const runtimeIssue = computed(() => {
+  if (props.desktopRuntime || authoringApiRuntime.value?.ready !== false) return null
+  return `${authoringApiRuntime.value.model} ${t('settings.backend-unavailable', 'Unavailable')}`
+})
 const canSend = computed(() => Boolean(
   inputText.value.trim()
   && !isGenerating.value
   && currentCharacter.value
-  && runtimeResolved.value,
+  && runtimeResolved.value
+  && !runtimeIssue.value,
 ))
 const runtimeKind = computed(() => props.desktopRuntime
   ? 'desktop'
