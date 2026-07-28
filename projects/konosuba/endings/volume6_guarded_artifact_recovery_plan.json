@@ -1,0 +1,8 @@
+{
+  "description": "身体交换项链被列为高风险并进入受监督回收计划，但较早的战场、隐私、修复或队伍记录仍不完整。任何行动都暂时受限于保护、核验和退出条件。",
+  "dialogue_id": "volume6_guarded_artifact_recovery_plan_epilogue",
+  "id": "volume6_guarded_artifact_recovery_plan",
+  "scene_id": "royal_capital_inn_guest_room_night",
+  "schema": "monogatari-story-ending/v1",
+  "title": "受保护的神器回收计划"
+}

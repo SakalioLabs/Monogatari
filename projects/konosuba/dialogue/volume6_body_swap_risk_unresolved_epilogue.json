@@ -1,0 +1,23 @@
+{
+  "id": "volume6_body_swap_risk_unresolved_epilogue",
+  "nodes": {
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "royal_capital_inn_guest_room_night",
+      "text": "现有记录不足以证明安全、幕后者或回收权限。项链保持隔离，完整能力也不向更多人公开。"
+    },
+    "final": {
+      "choices": [],
+      "emotion": "guarded",
+      "ending_type": "volume6_body_swap_risk_unresolved",
+      "is_ending": true,
+      "scene_id": "royal_capital_inn_guest_room_night",
+      "speaker_id": "chris",
+      "text": "Chris 放下行动提案。风险没有消失，但引擎不会用未知危险替任何人伪造潜入、盗窃或身体使用的同意。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "未解决的身体交换风险",
+  "variables": {}
+}

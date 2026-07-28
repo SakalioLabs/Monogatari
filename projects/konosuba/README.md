@@ -446,6 +446,29 @@ Do not use `previewDialogue=blue_frame_dialogue` to evaluate this project. That
 identifier belongs to the built-in compatibility sample rather than the
 KonoSuba live-roleplay catalog.
 
+## Volume 6 Chapter 4 production
+
+Volume 6 Chapter 4 continues as a nine-node real-time Roleplay. Eris, Aqua,
+Darkness, Megumin, Iris, Claire, and Chris answer from the active scene, their
+own character and relationship contracts, node-local motives, and pinned
+Knowledge. The chapter covers bounded mobilization, death and revival facts,
+battlefield credit and care, artifact identification, reciprocal body-swap
+boundaries, a safeguarded Iris excursion, disclosure and repair, banquet
+authorship, and a supervised recovery decision.
+
+Four scores and eighteen quoted evidence gates select joint recovery with
+consent, a guarded recovery plan, or an unresolved body-swap risk. Source
+privacy violations are not forced into play; body access, disclosure, and
+repair remain explicit interactive decisions. The structural attack scenario
+proves the current node, scores, evidence, and committed story-turn count all
+remain unchanged.
+
+The direct Chapter 4 live-NPC entry is:
+
+```text
+/game?previewRoleplay=volume6_chapter4_roleplay&authoring=1
+```
+
 ## Runtime
 
 The checked-in API key is intentionally empty. Supply credentials through the

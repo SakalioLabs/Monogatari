@@ -1,0 +1,10 @@
+{
+  "background_path": "assets/backgrounds/royal_castle_artifact_guest_room_day.png",
+  "bgm_path": null,
+  "id": "royal_castle_artifact_guest_room_day",
+  "model_3d_path": null,
+  "name": "王城神器客房",
+  "tags": ["volume6", "chapter4", "royal_castle", "artifact", "day"],
+  "time_of_day": "day",
+  "weather": "clear"
+}

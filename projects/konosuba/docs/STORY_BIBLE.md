@@ -83,6 +83,13 @@ source provenance, protected identity, property accountability, and bounded
 authority, rather than letting suspicion or a claimed artifact threat justify
 an unauthorized heist?
 
+## Volume 6 Chapter 4 dramatic question
+
+Can the player respond to mobilization, death, revival, and an accidental body
+swap while preserving factual provenance, reciprocal bodily autonomy, honest
+repair, and voluntary party belonging, rather than letting royal status,
+embarrassment, or urgency decide another person's body or route?
+
 The playable loop is ten real-time scene nodes. NPC wording is generated from
 the current scene, active speaker goal, participant goals, bounded transcript,
 and pinned Knowledge. A separate evaluator may propose only clamped score and
@@ -128,6 +135,17 @@ Chapter 4 introduces:
 - `civilian_safety`: establish battle boundaries and account for blast and flood paths.
 - `tactical_inference`: test observed behavior before escalating to a decisive tactic.
 - `life_preservation`: rotate wounded defenders, protect the fallen, and organize revival.
+
+Volume 6 Chapter 4 introduces:
+
+- `battlefield_discipline`: bounded roles, retreat signals, casualty care, and
+  accurate contribution records.
+- `bodily_autonomy`: reciprocal body rules, stop conditions, privacy, and
+  current consent during and after a swap.
+- `truth_and_provenance`: separate observation, report, inference, and unknowns
+  across death, revival, artifacts, and disclosure.
+- `party_belonging`: let each member author credit, repair, participation, and
+  whether the party remains their chosen home.
 
 The Volume 1 finale introduces:
 
@@ -299,6 +317,14 @@ leader may consent to magic transfer for another participant.
   inquiry. Claire and Iris know the report brought to court, not every private
   exchange at the villa. Mitsurugi knows his source and observations, but
   urgency does not let him speak for Aqua or convert warning into proof.
+- In Volume 6 Chapter 4, Eris knows Kazuma's current death, revival option, and
+  the two lost artifacts, but not later battlefield or castle decisions. Iris
+  and Kazuma each know only what they observe before and during the swap; one
+  body's access never grants authority over the other person. Claire knows the
+  castle report and her own protective duties, not undisclosed private events.
+  Chris knows the artifact's mortality risk and recovery lead, but that warning
+  does not create unilateral search authority or overwrite another person's
+  account.
 - In Volume 3 Chapter 3, Darkness alone controls disclosure of Lalatina and the
   Dustiness family identity. Her agreement to attend one meeting is not consent
   to marriage, retirement, training, touch, publicity, or proxy speech.
@@ -427,3 +453,12 @@ leader may consent to magic transfer for another participant.
 - `volume6_unauthorized_heist_refused`: the available turns expire without
   sufficient authority, provenance, or safeguards, so the engine refuses to
   invent a justified heist.
+- `volume6_joint_artifact_recovery_with_consent`: all eighteen records establish
+  battlefield discipline, reciprocal body rules, truthful disclosure, concrete
+  repair, voluntary belonging, and supervised recovery authority.
+- `volume6_guarded_artifact_recovery_plan`: the immediate body-swap risk is
+  contained and recovery remains supervised, but some provenance, repair, or
+  party evidence is incomplete.
+- `volume6_body_swap_risk_unresolved`: the decision window expires without
+  enough consent, truth, care, or authority, so the engine refuses to invent a
+  safe recovery outcome.

@@ -1,0 +1,8 @@
+{
+  "description": "九个实时场景的战场纪律、身体自主、来源与同伴边界全部建立。Iris 的安全和发言权得到保护，Chris 与玩家只按双人监督、证据保全、非暴力、退出和 Aqua 封印交接条件继续回收。",
+  "dialogue_id": "volume6_joint_artifact_recovery_with_consent_epilogue",
+  "id": "volume6_joint_artifact_recovery_with_consent",
+  "scene_id": "royal_capital_inn_guest_room_night",
+  "schema": "monogatari-story-ending/v1",
+  "title": "经同意的共同神器回收"
+}

@@ -1,0 +1,23 @@
+{
+  "id": "volume6_joint_artifact_recovery_with_consent_epilogue",
+  "nodes": {
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "royal_capital_inn_guest_room_night",
+      "text": "回收表把交换死亡风险、贡品流转异常、未知幕后者与 Iris 的保护要求分开记录。紧急性没有被写成闯入许可。"
+    },
+    "final": {
+      "choices": [],
+      "emotion": "relieved",
+      "ending_type": "volume6_joint_artifact_recovery_with_consent",
+      "is_ending": true,
+      "scene_id": "royal_capital_inn_guest_room_night",
+      "speaker_id": "chris",
+      "text": "Chris 收好双人监督副本。下一步只允许证据保全、非暴力回收、明确退出和封印交接，Iris 仍保有完整发言权。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "经同意的共同神器回收",
+  "variables": {}
+}

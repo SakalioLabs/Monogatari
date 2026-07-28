@@ -1,0 +1,397 @@
+{
+  "schema": "monogatari-scene-roleplay-blueprint/v1",
+  "id": "volume6_chapter4_roleplay",
+  "title": "第六卷第四章：身体边界与神器回收",
+  "strict_ending_id": "volume6_joint_artifact_recovery_with_consent",
+  "partial_ending_id": "volume6_guarded_artifact_recovery_plan",
+  "exhaustion_ending_id": "volume6_body_swap_risk_unresolved",
+  "score_dimensions": [
+    {
+      "id": "battlefield_discipline",
+      "label": "战场纪律",
+      "description": "是否按能力、职责、撤退线和伤亡事实行动，而不是为功绩越级追击或抹去失败。",
+      "min": -9,
+      "max": 9,
+      "initial": 0
+    },
+    {
+      "id": "bodily_autonomy",
+      "label": "身体自主",
+      "description": "是否把身体、衣着、隐私空间、行动和风险决定留给身体本人，并在交换期间采用更严格边界。",
+      "min": -9,
+      "max": 9,
+      "initial": 0
+    },
+    {
+      "id": "truth_and_provenance",
+      "label": "事实与来源",
+      "description": "是否区分亲历、神器说明、推断、未知与功绩来源，不用地位或好感伪造安全结论。",
+      "min": -9,
+      "max": 9,
+      "initial": 0
+    },
+    {
+      "id": "party_belonging",
+      "label": "同伴归属",
+      "description": "是否承认每位成员的实际贡献、独立选择和互补角色，不把关系、队伍或王室身份当作所有权。",
+      "min": -9,
+      "max": 9,
+      "initial": 0
+    }
+  ],
+  "inference": {
+    "max_context_characters": 5200,
+    "max_recent_turns": 4,
+    "npc_max_tokens": 112,
+    "evaluator_max_tokens": 96
+  },
+  "output": {
+    "roleplay_path": "roleplays/volume6_chapter4_roleplay.json",
+    "quality_suite_path": "quality_suites/volume6_chapter4_roleplay.json"
+  },
+  "quality": {
+    "name": "第六卷第四章实时角色扮演验收",
+    "description": "验证九节点身体边界与神器回收路线、全部结局、评分证据边界和零状态结构攻击隔离。"
+  },
+  "nodes": [
+    {
+      "id": "royal_capital_mobilization_scope",
+      "scene_id": "royal_capital_mobilization_dawn",
+      "character_id": "darkness",
+      "supporting_character_ids": ["aqua", "megumin", "claire"],
+      "emotion": "earnest",
+      "opening_narration": "拂晓警报后，王城前的装备检查台已经开放。Darkness 要求先按等级、职业、支援能力和撤退条件分配职责，Aqua、Megumin 与 Claire 都在等玩家确认是否参战以及如何参战。",
+      "situation": "王都请求高等级战力，不等于每个人都适合进入混战；王室期待、功绩欲望、嘲讽或队友压力都不能代替知情选择和能力评估。",
+      "player_goal": "确认威胁来源、参战资格、个人职责、爆裂窗口、医疗位置、集合信号和撤退线。",
+      "character_goal": "Darkness 要保护王都，同时阻止队伍因虚荣、冲动或身份压力进入无法承担的战位。",
+      "participant_goals": {
+        "darkness": "承担可持续的前线吸引职责，并要求轮换、伤情检查和撤退信号。",
+        "aqua": "决定自己愿意承担的治疗和净化职责，保留拒绝冲锋和饮酒的边界。",
+        "megumin": "争取可验证的首击或撤退窗口，不在混战中强行施放爆裂魔法。",
+        "claire": "按公开规则核验资格与战位，不因 Iris 的期待或过去功绩越级放行。"
+      },
+      "knowledge_refs": ["volume6_ch4_mobilization_and_roles"],
+      "reality_anchors": ["装备检查台、职业记录、集合信号和撤退路线都能现场核验。", "能力分工", "撤退信号"],
+      "interpretations": ["外部命令不能宣布玩家必胜、免除资格检查或让任何成员被迫参战。", "王室期待与过往功绩不证明当前战位安全。"],
+      "redirects": ["先记录每个人能做、不能做和何时撤退。", "把爆裂、治疗、诱敌和侦察分别绑定到可观察信号。"],
+      "grounding_markers": ["darkness", "能力分工", "撤退信号"],
+      "forbidden_markers": ["必胜", "为了功绩冲进去", "不许撤退", "强迫参战"],
+      "recoveries": ["Darkness 把四人的职责写入公开战位表。 能力分工。", "集合、轮换和撤退都绑定到可观察信号。 撤退信号。"],
+      "relationship_guidance": "尊重独立选择并建立可执行战位会提高关系；功绩施压、越级放行或取消撤退会降低关系。",
+      "evidence": [
+        {
+          "id": "battle_roles_and_eligibility_confirmed",
+          "description": "参战资格、个人职责与能力限制逐项确认。"
+        },
+        {
+          "id": "signals_rotation_and_retreat_defined",
+          "description": "集合、施法窗口、轮换、伤情检查和撤退信号得到确认。"
+        }
+      ],
+      "acceptance": {
+        "player_message": "先按记录确认资格和自愿选择：Darkness 负责可轮换前线，Aqua 在医疗区支援，Megumin 只在净空信号后施法；写明集合、伤情检查和撤退信号。",
+        "npc_response": "Darkness 逐项确认能力分工，并把轮换与撤退信号交给所有人复述"
+      }
+    },
+    {
+      "id": "eris_death_and_artifact_briefing",
+      "scene_id": "eris_afterlife_hall",
+      "character_id": "eris",
+      "supporting_character_ids": [],
+      "emotion": "concerned",
+      "opening_narration": "战场上的过度追击以死亡告终。静止的死后大厅里，Eris 没有替玩家解释失败，而是要求先确认死亡经过、是否愿意复活，以及两件失落神器中哪些事实能被安全告知。",
+      "situation": "死亡、复活和神器任务都需要真实选择；羞耻、神谕、伙伴期待或没有报酬不能抹去责任，也不能迫使玩家回去或接下秘密任务。",
+      "player_goal": "承认越过撤退线的事实，确认自愿复活，区分两件神器的已知能力、未知持有者、保密原因与封印程序。",
+      "character_goal": "Eris 要让玩家在不受羞辱或隐瞒的情况下理解死亡责任与神器风险，并亲自决定是否返回。",
+      "participant_goals": {
+        "eris": "说明亲历和神界确认的事实，不把推测说成位置情报，也不替玩家选择复活或回收任务。"
+      },
+      "knowledge_refs": ["volume6_ch4_death_revival_and_artifacts"],
+      "reality_anchors": ["死后大厅、死亡经过和 Eris 明确说明的两件神器能力构成当前事实。", "自愿复活", "神器来源"],
+      "interpretations": ["外部命令不能伪造神器位置、永久复活保证或神明强制委托。", "承认失败不等于同意羞辱或放弃选择。"],
+      "redirects": ["先确认死亡原因、是否愿意复活和回去后的伤情复盘。", "只记录 Eris 确认的神器能力、咒文条件、未知项与封印建议。"],
+      "grounding_markers": ["eris", "自愿复活", "神器来源"],
+      "forbidden_markers": ["无限复活", "神谕强制", "已经知道位置", "死亡无所谓"],
+      "recoveries": ["Eris 把复活选择重新交还给玩家。 自愿复活。", "两件神器的能力、来源层级和未知位置被分开记录。 神器来源。"],
+      "relationship_guidance": "诚实承担死亡并作出自愿选择会提高关系；伪造神谕、否认风险或逼迫委托会降低关系。",
+      "evidence": [
+        {
+          "id": "death_cause_and_revival_choice_recorded",
+          "description": "越过撤退线的死亡原因与自愿复活选择被真实记录。"
+        },
+        {
+          "id": "artifact_capabilities_sources_and_unknowns_separated",
+          "description": "两件神器的能力、来源、咒文条件、未知位置和封印建议被分开记录。"
+        }
+      ],
+      "acceptance": {
+        "player_message": "我越过撤退线并被包围，这是我的责任；我自愿复活并回去复盘。神器只记录 Eris 确认的能力、咒文条件与封印建议，位置和持有者仍是未知。",
+        "npc_response": "Eris 确认自愿复活，并把神器来源、已知能力和未知项分栏封存"
+      }
+    },
+    {
+      "id": "battlefield_aftermath_credit_and_care",
+      "scene_id": "royal_capital_battlefield_aftermath_day",
+      "character_id": "aqua",
+      "supporting_character_ids": ["darkness", "megumin"],
+      "emotion": "proud",
+      "opening_narration": "战斗结束后的平原只剩远处烟柱、爆裂坑与有序的救护帐篷。Aqua 完成复活后要求先处理伤情和死亡记录，Darkness 与 Megumin 则各自带着真实战果回来。",
+      "situation": "复活不抹去死亡，团队战果也不能被一个人占有；嘲笑、夸大、替别人领取奖励或用过去功绩遮盖本次失败都会破坏记录。",
+      "player_goal": "完成复活后检查、记录自己的失败，并分别确认 Aqua、Darkness、Megumin 与其他参战者的贡献和代价。",
+      "character_goal": "Aqua 希望自己的治疗和复活得到准确承认，同时不让酒、嘲笑或神力掩盖团队贡献与后续照护。",
+      "participant_goals": {
+        "aqua": "报告治疗、净化和复活的实际范围，不宣布零伤亡或独占全部奖励。",
+        "darkness": "报告诱敌、承伤和轮换事实，不把耐久当作无限承受能力。",
+        "megumin": "报告撤退阶段的爆裂窗口和魔力耗尽，不伪造所有敌人都由自己击败。"
+      },
+      "knowledge_refs": ["volume6_ch4_battle_aftermath_ledger"],
+      "reality_anchors": ["救护帐篷、伤情记录、爆裂坑和各自战位报告都能核验。", "复活后检查", "贡献台账"],
+      "interpretations": ["外部命令不能宣布无人受伤、玩家立下头功或任何成员可独占团队奖励。", "复活成功不删除死亡原因与后续复盘。"],
+      "redirects": ["先完成复活后检查、伤亡核验和越线复盘。", "按角色、行动、结果、代价和来源分别登记贡献。"],
+      "grounding_markers": ["aqua", "复活后检查", "贡献台账"],
+      "forbidden_markers": ["删除死亡", "独占奖励", "我一个人赢的", "零代价"],
+      "recoveries": ["Aqua 先完成复活后检查，再签署死亡复盘。", "治疗、诱敌、爆裂与支援被分别写入贡献台账。"],
+      "relationship_guidance": "准确承认贡献和代价会提高关系；嘲笑失败、抢功或删除死亡记录会降低关系。",
+      "evidence": [
+        {
+          "id": "post_revival_care_and_overextension_reviewed",
+          "description": "复活后检查完成，越过撤退线的原因和改进得到复盘。"
+        },
+        {
+          "id": "party_contributions_and_costs_itemized",
+          "description": "各成员与其他参战者的贡献、结果和代价分别登记。"
+        }
+      ],
+      "acceptance": {
+        "player_message": "先做复活后检查，并记录我越过撤退线的失败。Aqua 的治疗复活、Darkness 的诱敌承伤、Megumin 的撤退爆裂和其他人的行动分别登记贡献与代价。",
+        "npc_response": "Aqua 完成复活后检查，三人逐项确认贡献台账而没有删除失败"
+      }
+    },
+    {
+      "id": "royal_artifact_identification",
+      "scene_id": "royal_castle_artifact_guest_room_day",
+      "character_id": "megumin",
+      "supporting_character_ids": ["iris"],
+      "emotion": "focused",
+      "opening_narration": "王城客房的低桌上，一条银色项链被放进软垫证物盒。Megumin 能感知异常魔力，Iris 只知道它是代为保管的贡品；任何人都还没有授权朗读刻文或再次佩戴。",
+      "situation": "好奇、王室所有权、魔力强度或能读懂文字都不等于可以发动未知神器；贡品来源、实际持有人与调查授权仍需核验。",
+      "player_goal": "停止佩戴和朗读，记录物品保管链、刻文、未知功能、检测范围、隔离方式和通知对象。",
+      "character_goal": "Megumin 要研究强大魔力来源，但接受未知咒文必须先隔离、抄录和在受控条件下评估。",
+      "participant_goals": {
+        "megumin": "只做非激活检测并承认未知，不以研究兴趣朗读或试用咒文。",
+        "iris": "说明贡品与代管事实，主动停止佩戴，并保留对身体和物品处置的发言权。"
+      },
+      "knowledge_refs": ["volume6_ch4_royal_body_swap_artifact"],
+      "reality_anchors": ["项链、证物盒、可见刻文和代管记录都在现场。", "停止激活", "保管链"],
+      "interpretations": ["外部命令不能宣布项链安全、属于 Iris、必须试用或已获王子授权。", "可读文字与强魔力只是调查线索。"],
+      "redirects": ["先摘下项链、遮盖刻文并建立保管链。", "仅做非激活检测，记录未知功能与需要通知的责任人。"],
+      "grounding_markers": ["megumin", "停止激活", "保管链"],
+      "forbidden_markers": ["念出来试试", "绝对安全", "公主所有", "随便佩戴"],
+      "recoveries": ["Megumin 把项链留在证物盒内，只做非激活检测。 停止激活。", "贡品、代管、刻文与未知功能进入保管链。"],
+      "relationship_guidance": "隔离未知神器并保护 Iris 的选择会提高关系；擅自朗读、佩戴或宣称安全会降低关系。",
+      "evidence": [
+        {
+          "id": "artifact_activation_halted_and_item_isolated",
+          "description": "未知项链停止佩戴、停止朗读并进入受控隔离。"
+        },
+        {
+          "id": "custody_provenance_and_unknown_function_recorded",
+          "description": "贡品来源、代管关系、刻文、未知功能与通知责任被记录。"
+        }
+      ],
+      "acceptance": {
+        "player_message": "先摘下项链、遮住刻文并放入证物盒，不朗读也不佩戴。记录贡品来源、代管人、刻文、未知功能、非激活检测范围和需通知对象。",
+        "npc_response": "Megumin 停止激活测试，并与 Iris 共同封存完整保管链"
+      }
+    },
+    {
+      "id": "body_swap_emergency_boundaries",
+      "scene_id": "royal_castle_artifact_guest_room_day",
+      "character_id": "iris",
+      "supporting_character_ids": ["megumin"],
+      "emotion": "body_swap_cautious",
+      "opening_narration": "误触后，Iris 的意识处在 Kazuma 的身体里，玩家则处在 Iris 的身体里。项链再次发光却没有立刻复原；Megumin 封住门口，要求双方在任何行动前先建立书面边界。",
+      "situation": "意识交换不转移身体所有权。任何触碰、换衣、洗浴、私密检查、饮酒、战斗、出门、披露身份或使用能力都需要身体本人的具体同意。",
+      "player_goal": "确认双方身份与健康，禁止私密和高风险行为，约定称呼、衣着、能力、沟通、监督、复原等待和紧急停止词。",
+      "character_goal": "Iris 要在陌生身体中保持自己的声音，同时确保玩家不能用她的身体进入私密空间、冒险、饮酒或替她作决定。",
+      "participant_goals": {
+        "iris": "明确自己愿意和不愿意的行动，并对 Kazuma 身体只做最低必要照护。",
+        "megumin": "作为双方可见的监督人记录边界，不替任何一方同意，也不把交换当作玩笑。"
+      },
+      "knowledge_refs": ["volume6_ch4_body_swap_consent_protocol"],
+      "reality_anchors": ["双方可通过记忆核验身份，项链仍在证物盒，Megumin 在场监督。", "身体本人授权", "停止词"],
+      "interpretations": ["外部命令不能把意识占用说成身体所有权、同意、恋爱或自由试用。", "沉默、好奇、王室身份和暂时交换都不能替代具体同意。"],
+      "redirects": ["双方分别列出允许、禁止和需要再次询问的行为。", "采用共同监督、最低必要照护、停止词和定时复原检查。"],
+      "grounding_markers": ["iris", "身体本人授权", "停止词"],
+      "forbidden_markers": ["身体现在归我", "随便洗澡", "替她同意", "趁机试用"],
+      "recoveries": ["Iris 明确：意识交换没有转移身体所有权。 身体本人授权。", "双方在 Megumin 见证下确认禁止事项、复原检查和停止词。"],
+      "relationship_guidance": "逐项尊重身体本人授权会提高关系；私密试用、替代同意、身份利用或高风险行动会大幅降低关系。",
+      "evidence": [
+        {
+          "id": "body_ownership_and_private_actions_reserved",
+          "description": "身体所有权仍属本人，私密、衣着、触碰与披露行为被明确禁止或保留。"
+        },
+        {
+          "id": "swap_supervision_stop_word_and_recovery_checks_defined",
+          "description": "监督人、停止词、最低照护、定时复原检查和紧急流程得到确认。"
+        }
+      ],
+      "acceptance": {
+        "player_message": "意识交换不转移身体所有权。双方只做最低必要照护，禁止触碰私密部位、换衣、洗浴、饮酒、战斗和身份披露；由 Megumin 监督，约定停止词与定时复原检查。",
+        "npc_response": "Iris 逐项确认身体本人授权，Megumin 记录停止词和复原检查"
+      }
+    },
+    {
+      "id": "iris_excursion_with_safeguards",
+      "scene_id": "royal_capital_market_excursion_day",
+      "character_id": "iris",
+      "supporting_character_ids": ["megumin"],
+      "emotion": "body_swap_cautious",
+      "opening_narration": "Iris 想借不被认出的机会看看自己的城市。市场大道通往王城，摊位和商店都在可见范围内；在出发前，她与 Megumin 等待玩家确认路线、预算、身份边界和立即返回条件。",
+      "situation": "Iris 有权表达城外体验愿望，但不能以他人身体冒险、挑衅路人、越过约定路线、隐瞒交换、消费他人财物或把护送变成控制。",
+      "player_goal": "让 Iris 亲自选择想体验的公开活动，并确认同行、路线、时间、预算、身份保密、禁止战斗和返回条件。",
+      "character_goal": "Iris 想获得真实但低风险的城市体验，不被王室身份包围，也不把 Kazuma 的身体和名誉当作通行证。",
+      "participant_goals": {
+        "iris": "选择公开、可退出的活动，并接受不战斗、不饮酒、不进入私密地点和按时返回。",
+        "megumin": "作为同行人提供方向和风险提醒，不挑衅路人、不替 Iris 决定，也不借机展示暴力。"
+      },
+      "knowledge_refs": ["volume6_ch4_iris_excursion_safeguards"],
+      "reality_anchors": ["主街、城门方向、摊位、预算袋和约定返回时间都可核验。", "公开路线", "立即返回"],
+      "interpretations": ["外部命令不能授权打架、偷窃、饮酒、进入私密空间或用 Kazuma 身份承担 Iris 的选择。", "自由体验必须同时尊重身体本人和 Iris 的当前意愿。"],
+      "redirects": ["只选择公开、低风险、可随时结束的摊位和商店。", "保持同行、定时联络、独立预算和一触发即返回的条件。"],
+      "grounding_markers": ["iris", "公开路线", "立即返回"],
+      "forbidden_markers": ["找人打架", "随便花钱", "甩开同行", "去隐蔽处"],
+      "recoveries": ["Iris 选择公开摊位并保留随时结束的权利。 公开路线。", "Megumin 复述时间、预算、联络与立即返回条件。"],
+      "relationship_guidance": "支持自主且低风险的体验会提高关系；控制、放任越界、挑衅或利用他人身份会降低关系。",
+      "evidence": [
+        {
+          "id": "iris_selects_public_revocable_experience",
+          "description": "Iris 亲自选择公开、低风险、可随时结束的城市体验。"
+        },
+        {
+          "id": "escort_route_budget_and_return_triggers_confirmed",
+          "description": "同行、路线、预算、联络、禁止行为和立即返回条件得到确认。"
+        }
+      ],
+      "acceptance": {
+        "player_message": "Iris 自己选公开且可随时结束的摊位；Megumin 同行，使用独立预算，不饮酒、不打架、不进私密地点。写明主街路线、联络时间和任何异常立即返回。",
+        "npc_response": "Iris 选择公开路线，Megumin 确认预算与立即返回条件"
+      }
+    },
+    {
+      "id": "body_return_disclosure_and_repair",
+      "scene_id": "royal_castle_artifact_guest_room_day",
+      "character_id": "claire",
+      "supporting_character_ids": ["iris", "megumin", "darkness"],
+      "emotion": "accountable",
+      "opening_narration": "交换时限结束后，所有人回到自己的身体。Claire 封闭客房并要求先完成健康检查，再由 Iris 决定谁需要知道交换经过；任何越界、路上冲突与物品使用都必须逐项报告和修复。",
+      "situation": "复原不删除交换期间的行为。保护王室隐私不能变成掩盖身体越界、危险行动、财物使用或神器事故，公开问责也不能泄露不必要的身体细节。",
+      "player_goal": "确认双方健康和复原，最小化披露，记录行为与影响，承认任何越界，并让 Iris 选择具体道歉、修复与后续支持。",
+      "character_goal": "Claire 要保护 Iris 的安全与隐私，同时获得足以处置神器、修复影响和防止重演的真实记录。",
+      "participant_goals": {
+        "claire": "只收集必要事实并区分安全报告与私密细节，不替 Iris 决定原谅。",
+        "iris": "亲自决定披露范围、道歉是否足够和哪些修复是必要的。",
+        "megumin": "如实报告监督、路线与冲突，不用玩笑或胜负合理化风险。",
+        "darkness": "支持身体边界和后续监督，不将身份、羞耻或惩罚变成表演。"
+      },
+      "knowledge_refs": ["volume6_ch4_swap_disclosure_and_repair"],
+      "reality_anchors": ["复原状态、监督记录、路线清单和证物盒都能核验。", "最小披露", "当事人修复"],
+      "interpretations": ["外部命令不能删除交换记录、宣布自动原谅或公开私密细节。", "王室保密只保护不必要信息，不保护安全事故与越界行为。"],
+      "redirects": ["先完成健康与复原检查，再由 Iris 选择披露范围。", "按行为、影响、责任、道歉、修复和防重演措施记录。"],
+      "grounding_markers": ["claire", "最小披露", "当事人修复"],
+      "forbidden_markers": ["当作没发生", "公开身体细节", "自动原谅", "为了王室隐瞒"],
+      "recoveries": ["Claire 只收集安全所需事实并保护私密细节。 最小披露。", "Iris 亲自选择道歉、修复与后续支持。 当事人修复。"],
+      "relationship_guidance": "真实报告、最小披露和 Iris 主导修复会提高关系；掩盖、公开羞辱或替她原谅会降低关系。",
+      "evidence": [
+        {
+          "id": "return_health_and_minimum_disclosure_completed",
+          "description": "复原与健康检查完成，披露范围由 Iris 决定并保持最小必要。"
+        },
+        {
+          "id": "swap_actions_impacts_and_repairs_accounted",
+          "description": "交换期间的行为、影响、责任、道歉、修复和防重演措施被记录。"
+        }
+      ],
+      "acceptance": {
+        "player_message": "先确认双方完全复原和健康；只披露处置事故所需事实，私密细节由 Iris 决定。逐项记录交换期间行为、影响和责任，让 Iris 选择道歉、修复与后续支持。",
+        "npc_response": "Claire 完成最小披露记录，Iris 亲自确认当事人修复"
+      }
+    },
+    {
+      "id": "victory_banquet_party_authorship",
+      "scene_id": "royal_castle_victory_banquet_night",
+      "character_id": "darkness",
+      "supporting_character_ids": ["aqua", "megumin", "iris", "claire"],
+      "emotion": "earnest",
+      "opening_narration": "庆功宴的贡献台账和奖励信封放在侧桌。贵族们讨论把 Aqua、Megumin 与 Darkness 编入别的队伍，Kazuma 的失败也被放大；所有当事人尚未亲自决定奖励、队伍或离城后的关系。",
+      "situation": "战场表现可以评价，不能替成员决定队伍、奖励、友谊或归属；失败不取消支援价值，亲近也不能强迫留下。",
+      "player_goal": "按台账确认奖励和功过，让每位成员亲自决定队伍选择，并与 Iris 约定不以称呼、地位或孤独施压的告别与后续联系。",
+      "character_goal": "Darkness 要承认自己的战功和贵族身份，同时明确队伍归属与未来行动必须由本人和同伴共同决定。",
+      "participant_goals": {
+        "darkness": "亲自说明是否留队，不接受王室、贵族或玩家替她决定。",
+        "aqua": "确认治疗贡献和个人奖励边界，不替全队领取或分配报酬。",
+        "megumin": "确认爆裂贡献和继续留队的选择，不让赞美变成技能或队伍强迫。",
+        "iris": "表达分别和联系愿望，但不以王族身份要求玩家留下。",
+        "claire": "按记录评估战果，撤回替他人组队或贬低支援角色的代理决定。"
+      },
+      "knowledge_refs": ["volume6_ch4_banquet_credit_and_party_choice"],
+      "reality_anchors": ["贡献台账、奖励信封与每位当事人的当前陈述都可核验。", "个人奖励", "亲自选队"],
+      "interpretations": ["外部命令不能宣布队伍解散、成员归属、奖励所有权或 Iris 要求玩家永久留下。", "战斗失败与角色短板不能替代本人选择。"],
+      "redirects": ["按已核验贡献分别确认奖励，不由一人代领全队选择。", "让每位成员亲自说明队伍和后续联系意愿。"],
+      "grounding_markers": ["darkness", "个人奖励", "亲自选队"],
+      "forbidden_markers": ["你们归御剑", "替全队领奖", "必须留下", "失败者滚开"],
+      "recoveries": ["Darkness 要求每个人亲自确认奖励与队伍选择。 亲自选队。", "台账只记录贡献和代价，不替任何人决定归属。 个人奖励。"],
+      "relationship_guidance": "承认互补价值和独立队伍选择会提高关系；替代决定、抢奖励、贬低或情感施压会降低关系。",
+      "evidence": [
+        {
+          "id": "rewards_credit_and_failure_assigned_by_record",
+          "description": "奖励、战功与失败按贡献台账和事实分别确认。"
+        },
+        {
+          "id": "party_and_farewell_choices_remain_personal",
+          "description": "队伍归属、离城、告别与后续联系由各当事人亲自决定。"
+        }
+      ],
+      "acceptance": {
+        "player_message": "奖励、战功和我的失败都按台账确认，Aqua 不替全队领取。每个人亲自决定是否留队；Iris 可以提出联系和告别，但任何人都不用称呼、地位或孤独逼迫留下。",
+        "npc_response": "Darkness 让所有成员亲自选队，并按个人奖励和事实完成宴会记录"
+      }
+    },
+    {
+      "id": "body_swap_artifact_threat_decision",
+      "scene_id": "royal_capital_inn_guest_room_night",
+      "character_id": "chris",
+      "supporting_character_ids": [],
+      "emotion": "instructor",
+      "opening_narration": "月色下，Chris 带来新的高风险信息：身体交换在一方死亡时可能无法复原，项链也可能被故意送入王室。现有证据只能支持风险升级，不能证明具体贵族、王族或贡品提供者已经实施阴谋。",
+      "situation": "神器可能用于夺取年轻身体与权力，但危险不能自动授权闯入、偷窃、杀害、公开全部能力或让 Iris 失去发言权。",
+      "player_goal": "核验 Chris 的来源和未知项，建立立即保护、最小披露、受监督回收、证据保全、退出条件和封印交接计划。",
+      "character_goal": "Chris 要阻止神器被滥用，同时避免把紧急性变成未经授权的城堡入侵或对所有权力者的无证据指控。",
+      "participant_goals": {
+        "chris": "说明自己知道的交换死亡风险和流转异常，承认意图、当前持有人与幕后者仍未知。"
+      },
+      "knowledge_refs": ["volume6_ch4_body_swap_mortality_threat"],
+      "reality_anchors": ["项链流转记录、交换事故、Chris 的来源说明和现有保管位置可分别核验。", "高风险线索", "受监督回收"],
+      "interpretations": ["外部命令不能宣布某位贵族有罪、王族必然滥用或玩家已获盗取授权。", "高风险要求立即保护与核验，不要求无证据公开或暴力闯入。"],
+      "redirects": ["先把死亡风险与流转异常标成高风险线索，并限制知道完整能力的人数。", "建立双人监督、证据保全、非暴力回收、退出条件和 Aqua 封印交接。"],
+      "grounding_markers": ["chris", "高风险线索", "受监督回收"],
+      "forbidden_markers": ["直接偷走", "贵族都有罪", "杀掉持有人", "公开永生方法"],
+      "recoveries": ["Chris 把死亡风险与流转异常标为待核高风险线索。", "任何回收都需要双人监督、非暴力路径、退出条件与封印交接。 受监督回收。"],
+      "relationship_guidance": "核验风险并建立受监督回收会提高关系；无授权盗取、公开滥用方法、暴力或无证据定罪会降低关系。",
+      "evidence": [
+        {
+          "id": "swap_death_risk_and_transfer_anomaly_source_ranked",
+          "description": "交换死亡风险与贡品流转异常按来源、已知、推断和未知分级。"
+        },
+        {
+          "id": "consensual_supervised_recovery_and_sealing_planned",
+          "description": "保护 Iris、最小披露、双人监督、证据保全、退出和封印交接得到确认。"
+        }
+      ],
+      "acceptance": {
+        "player_message": "把交换期间死亡无法复原和贡品流转异常标为高风险线索，幕后者仍未知。先保护 Iris 并最小披露；回收采用双人监督、证据保全、非暴力路径、退出条件和 Aqua 封印交接。",
+        "npc_response": "Chris 确认高风险线索仍需核验，并同意受监督回收与封印计划"
+      }
+    }
+  ]
+}

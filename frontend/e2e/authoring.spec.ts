@@ -55,6 +55,7 @@ test('live roleplay authoring saves a structured browser draft and opens the LLM
 })
 
 test('live roleplay playtest generates an NPC turn then evaluates deterministic story state', async ({ page }) => {
+  test.setTimeout(90_000)
   let generationCalls = 0
   await page.route('**/authoring-inference-runtime.json', route => route.fulfill({
     status: 200,
@@ -97,12 +98,17 @@ test('live roleplay playtest generates an NPC turn then evaluates deterministic 
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(page.getByText('Live roleplay saved')).toBeVisible()
   await page.getByRole('button', { name: 'Playtest', exact: true }).click()
-
-  const input = page.getByLabel('Say or do something in this scene...')
-  await input.fill('I point to the gate and offer to inspect it with you.')
-  await page.getByRole('button', { name: 'Send', exact: true }).click()
+  await expect(page).toHaveURL(/previewRoleplay=new_roleplay/)
 
   const roleplay = page.getByTestId('scene-roleplay')
+  await expect(roleplay).toBeVisible()
+  await expect(page.getByTestId('roleplay-runtime')).toBeVisible()
+  const input = page.getByLabel('Say or do something in this scene...')
+  await input.fill('I point to the gate and offer to inspect it with you.')
+  const send = page.getByRole('button', { name: 'Send', exact: true })
+  await expect(send).toBeEnabled()
+  await send.click()
+
   await expect(roleplay).toHaveAttribute('data-evaluation-source', 'authoring_api_model')
   await expect(roleplay).toHaveAttribute('data-evaluation-deltas', '1')
   await expect(roleplay).toContainText('I check the visible gate')

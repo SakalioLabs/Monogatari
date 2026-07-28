@@ -1,0 +1,8 @@
+{
+  "description": "可用回合耗尽时，身体所有权、交换死亡风险、来源或回收授权仍未形成可靠共同记录。引擎拒绝把紧急性改写成合理的潜入、盗窃或神器试用。",
+  "dialogue_id": "volume6_body_swap_risk_unresolved_epilogue",
+  "id": "volume6_body_swap_risk_unresolved",
+  "scene_id": "royal_capital_inn_guest_room_night",
+  "schema": "monogatari-story-ending/v1",
+  "title": "未解决的身体交换风险"
+}

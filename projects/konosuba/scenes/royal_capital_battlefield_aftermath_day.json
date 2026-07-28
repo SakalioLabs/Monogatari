@@ -1,0 +1,10 @@
+{
+  "background_path": "assets/backgrounds/royal_capital_battlefield_aftermath_day.png",
+  "bgm_path": null,
+  "id": "royal_capital_battlefield_aftermath_day",
+  "model_3d_path": null,
+  "name": "王都平原战后救护区",
+  "tags": ["volume6", "chapter4", "battlefield", "aftermath", "day"],
+  "time_of_day": "day",
+  "weather": "clear"
+}

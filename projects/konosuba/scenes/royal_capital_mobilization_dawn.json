@@ -1,0 +1,10 @@
+{
+  "background_path": "assets/backgrounds/royal_capital_mobilization_dawn.png",
+  "bgm_path": null,
+  "id": "royal_capital_mobilization_dawn",
+  "model_3d_path": null,
+  "name": "王城前出征广场",
+  "tags": ["volume6", "chapter4", "royal_capital", "mobilization", "dawn"],
+  "time_of_day": "dawn",
+  "weather": "clear"
+}

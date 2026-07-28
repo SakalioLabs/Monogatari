@@ -683,6 +683,27 @@ the completion record.
   `grok-4.5` turn made separate NPC and evaluator requests with HTTP 200,
   committed through the deterministic state machine, and exposed no
   `OrtRun`, `std::bad_alloc`, provider, WebGPU, or ONNX Runtime diagnostics.
+- KonoSuba Volume 6 Chapter 4 acceptance (2026-07-28): the schema-backed
+  nine-node live-NPC Roleplay and four-scenario Quality Suite pass strict,
+  guarded, exhaustion, and structural attack routes. All clean routes cover
+  9/9 nodes; the strict route records all 18 quoted evidence gates with exact
+  9/9/9/9 scores, while the attack remains on
+  `royal_capital_mobilization_scope` and commits zero story turns, score,
+  evidence, or route state. The four-entry Volume 6 Campaign completes through
+  joint artifact recovery with 100% node coverage in every chapter. Project
+  validation reports 630 runtime documents, 33 Roleplays, 33 Quality Suites,
+  99 Endings, and 119 scenes. Shared delivery validation resolves 342/342
+  renderer assets with zero placeholders, errors, or warnings, including Scene
+  backgrounds newly exposed in delivery evidence. The focused authoring
+  delivery tests pass 4/4. A real `grok-4.5` browser turn generated a new
+  in-scene NPC response and made separate NPC and evaluator requests with HTTP
+  200 before deterministic commit; no page, console, or Roleplay error was
+  observed. The complete release gate passed in 516.2 seconds after its
+  end-to-end Roleplay test gained an explicit 90-second budget and runtime
+  readiness assertions; the isolated interaction itself completed in 7.3
+  seconds. The gate includes 127 automation contracts, 32 Playwright cases,
+  Rust workspace, MCP stdio, Tauri, Clippy, Web/PWA, mirror and sensitive-text
+  checks, plus 55/55 legacy .NET tests.
 
 ## Purpose
 

@@ -4,6 +4,7 @@
   "emotion": "curious_formal",
   "emotion_modifiers": {
     "apologetic_bright": "误会得到澄清后会直接道歉，并以自己的话确认仍想继续交流或提出邀请。",
+    "body_swap_cautious": "意识处在 Kazuma 身体中时仍保持 Iris 的礼貌与好奇，但逐项确认身体本人授权、监督、停止词和返回条件。",
     "curious_formal": "保持正式礼仪，同时会追问冒险经历的来源、细节和当事人的真实感受。",
     "hurt_defensive": "受到轻蔑或替代发言时明显受伤，但仍可要求停止、澄清和恢复直接对话。",
     "playful_strategy": "在规则公开的游戏中活泼、自信且愿意复盘，不以王族身份要求对方放水。",
@@ -34,7 +35,12 @@
     "volume6_ch2_return_negotiation",
     "volume6_ch2_banquet_reputation",
     "volume6_ch2_investigation_charter",
-    "volume6_ch3_royal_report_provenance"
+    "volume6_ch3_royal_report_provenance",
+    "volume6_ch4_royal_body_swap_artifact",
+    "volume6_ch4_body_swap_consent_protocol",
+    "volume6_ch4_iris_excursion_safeguards",
+    "volume6_ch4_swap_disclosure_and_repair",
+    "volume6_ch4_banquet_credit_and_party_choice"
   ],
   "name": "Iris",
   "personality": {
@@ -54,6 +60,7 @@
   "sprite_path": "assets/characters/iris_curious_formal.png",
   "sprite_paths": {
     "apologetic_bright": "assets/characters/iris_apologetic_bright.png",
+    "body_swap_cautious": "assets/characters/iris_body_swap_kazuma.png",
     "curious_formal": "assets/characters/iris_curious_formal.png",
     "hurt_defensive": "assets/characters/iris_hurt_defensive.png",
     "playful_strategy": "assets/characters/iris_playful_strategy.png",

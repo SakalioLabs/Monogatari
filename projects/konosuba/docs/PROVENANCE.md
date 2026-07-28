@@ -72,6 +72,15 @@
   endings are newly authored or generated. Source intimacy involving a minor
   is not reproduced; the adaptation requires an unlocked exit, separate
   bedding, and awake, specific, revocable boundaries.
+- Volume 6 Chapter 4 is grounded in all 633 heading and paragraph nodes across
+  nine sections of the user's local Volume 6 EPUB,
+  `OEBPS/Text/chapter04.xhtml`. The adaptation derives only mobilization,
+  death/revival, battlefield aftermath, body-swap artifact, return, banquet,
+  and mortality-warning chronology. Runtime NPC prose, evaluator language,
+  evidence wording, scores, transitions, recovery terms, and endings are newly
+  authored or generated. Source body/privacy violations are not reproduced as
+  required actions; play requires reciprocal boundaries, disclosure, repair,
+  and supervised recovery.
 
 ## Public visual reference
 
@@ -171,6 +180,12 @@
   it does not copy source prose. Six original backgrounds cover the villa,
   audience hall, cafe, and inn scenes. Existing reviewed project-generated
   character sprites are reused without importing novel or anime artwork.
+- Volume 6 Chapter 4 adds five newly generated royal-capital and castle
+  environments plus one newly generated Iris-in-Kazuma-body sprite. The
+  official third-season character page informed only Kazuma's defining
+  appearance. The sprite source was generated against flat chroma, converted
+  to real-alpha PNG, inspected for transparent corners and edge quality, and
+  fingerprint-imported. No novel or anime artwork is shipped.
 
 ## Rights and distribution
 

@@ -22,6 +22,7 @@ fn project(label: &str) -> PathBuf {
         "workflows",
         "quality_suites",
         "assets/portraits",
+        "assets/backgrounds",
     ] {
         std::fs::create_dir_all(root.join(directory)).unwrap();
     }
@@ -54,6 +55,24 @@ async fn reports_existing_and_placeholder_character_assets() {
     assert_eq!(report.declared_renderer_asset_count, 1);
     assert_eq!(report.existing_renderer_asset_count, 1);
     assert_eq!(report.placeholder_character_count, 1);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
+async fn counts_core_validated_scene_backgrounds() {
+    let root = project("backgrounds");
+    std::fs::write(root.join("assets/backgrounds/plaza.png"), b"png").unwrap();
+    std::fs::write(
+        root.join("scenes/plaza.json"),
+        r#"{"id":"plaza","name":"Plaza","background_path":"assets/backgrounds/plaza.png"}"#,
+    )
+    .unwrap();
+
+    let report = validate_project_delivery(&root).await.unwrap();
+
+    assert!(report.valid, "{:?}", report.issues);
+    assert_eq!(report.declared_renderer_asset_count, 1);
+    assert_eq!(report.existing_renderer_asset_count, 1);
     std::fs::remove_dir_all(root).unwrap();
 }
 

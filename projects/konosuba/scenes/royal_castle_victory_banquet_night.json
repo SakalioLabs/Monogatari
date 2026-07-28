@@ -1,0 +1,10 @@
+{
+  "background_path": "assets/backgrounds/royal_castle_victory_banquet_night.png",
+  "bgm_path": null,
+  "id": "royal_castle_victory_banquet_night",
+  "model_3d_path": null,
+  "name": "王城战胜庆功宴",
+  "tags": ["volume6", "chapter4", "royal_castle", "banquet", "night"],
+  "time_of_day": "night",
+  "weather": "clear"
+}

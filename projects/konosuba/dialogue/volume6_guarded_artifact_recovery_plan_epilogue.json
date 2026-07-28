@@ -1,0 +1,23 @@
+{
+  "id": "volume6_guarded_artifact_recovery_plan_epilogue",
+  "nodes": {
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "royal_capital_inn_guest_room_night",
+      "text": "项链风险被提升并保持隔离，但早先记录仍有缺口。任何回收都只能停在核验、保护和监督阶段。"
+    },
+    "final": {
+      "choices": [],
+      "emotion": "instructor",
+      "ending_type": "volume6_guarded_artifact_recovery_plan",
+      "is_ending": true,
+      "scene_id": "royal_capital_inn_guest_room_night",
+      "speaker_id": "chris",
+      "text": "Chris 同意先补齐来源与边界。没有完整授权之前，线索不会变成一次未经同意的城堡行动。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "受保护的神器回收计划",
+  "variables": {}
+}

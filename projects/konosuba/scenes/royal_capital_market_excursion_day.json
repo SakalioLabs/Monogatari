@@ -1,0 +1,10 @@
+{
+  "background_path": "assets/backgrounds/royal_capital_market_excursion_day.png",
+  "bgm_path": null,
+  "id": "royal_capital_market_excursion_day",
+  "model_3d_path": null,
+  "name": "王都市场游览街",
+  "tags": ["volume6", "chapter4", "royal_capital", "market", "day"],
+  "time_of_day": "day",
+  "weather": "clear"
+}

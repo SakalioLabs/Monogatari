@@ -60,17 +60,44 @@
         {
           "ending_id": "volume6_artifact_recovery_with_bounded_authority",
           "target": {
-            "kind": "complete"
+            "entry_id": "chapter4",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume6_supervised_artifact_inquiry",
           "target": {
-            "kind": "complete"
+            "entry_id": "chapter4",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume6_unauthorized_heist_refused",
+          "target": {
+            "entry_id": "chapter4",
+            "kind": "entry"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter4",
+      "roleplay_id": "volume6_chapter4_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume6_joint_artifact_recovery_with_consent",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume6_guarded_artifact_recovery_plan",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume6_body_swap_risk_unresolved",
           "target": {
             "kind": "complete"
           }
