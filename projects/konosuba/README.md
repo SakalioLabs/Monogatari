@@ -371,7 +371,29 @@ The direct Volume 5 Finale and Epilogue entries are:
 The direct Volume 5 Campaign entry is:
 
 ```text
-/game?previewCampaign=volume5_campaign&authoring=1
+/game?previewCampaign=konosuba_volume5&authoring=1
+```
+
+## Volume 6 Chapter 1 production
+
+Volume 6 Chapter 1 is a nine-node real-time royal-dinner roleplay. The player
+writes free-form Kazuma actions and can address every present NPC. Each
+selected NPC receives its own character profile, node-local motive, bounded
+history, relationship, and pinned Knowledge. A separate evaluator proposes
+score and quoted-evidence changes; only the deterministic Roleplay state
+machine advances from mansion preparation through shop promotion, royal
+greeting, adventure-story provenance, card privacy, conflict repair, and
+explicit teleport consent.
+
+The three reachable endings are a consensual castle visit, a repaired dinner
+with the visit deferred, and an unresolved-boundary exhaustion route. Fixed
+Dialogue is used only for the short post-ending epilogues.
+
+The direct Chapter 1 and Campaign entries are:
+
+```text
+/game?previewRoleplay=volume6_chapter1_roleplay&authoring=1
+/game?previewCampaign=konosuba_volume6&authoring=1
 ```
 
 ## Runtime

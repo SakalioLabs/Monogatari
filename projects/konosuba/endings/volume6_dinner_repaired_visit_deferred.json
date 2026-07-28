@@ -1,0 +1,8 @@
+{
+  "description": "冲突得到停止并恢复直接对话，但卡片披露、邀请细节或传送安排仍不完整。双方保留尊重与后续联系，王城访问推迟到条件明确之后。",
+  "dialogue_id": "volume6_dinner_repaired_visit_deferred_epilogue",
+  "id": "volume6_dinner_repaired_visit_deferred",
+  "scene_id": "dustiness_royal_banquet_hall",
+  "schema": "monogatari-story-ending/v1",
+  "title": "晚宴修复，访问暂缓"
+}

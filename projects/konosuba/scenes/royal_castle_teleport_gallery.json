@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/royal_castle_teleport_gallery.png",
+  "bgm_path": null,
+  "id": "royal_castle_teleport_gallery",
+  "model_3d_path": null,
+  "name": "王城传送接引廊",
+  "tags": [
+    "volume6",
+    "chapter1",
+    "royal_castle",
+    "teleport",
+    "handoff"
+  ],
+  "time_of_day": "night",
+  "weather": "clear"
+}

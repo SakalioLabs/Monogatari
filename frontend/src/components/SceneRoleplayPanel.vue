@@ -418,7 +418,7 @@ function roleplayTurnErrorMessage(error: unknown): string {
   if (/ROLEPLAY_\w+_MEMORY_EXHAUSTED|OrtRun|bad_alloc|out of memory|memory was exhausted/i.test(detail)) {
     return `${t('npc.generation-error', 'Reply generation failed.')} ${t(
       'npc.memory-error',
-      'The local model ran out of memory. Switch to the configured API runtime or use a smaller local model.',
+      'The inference service ran out of memory after reduced-context retries. This turn was not committed; free model memory or select a smaller model, then retry.',
     )}`
   }
   if (detail.includes('ROLEPLAY_NPC_OUTPUT_REJECTED')) {

@@ -1,0 +1,717 @@
+{
+  "schema": "monogatari-scene-roleplay/v1",
+  "id": "volume6_chapter1_roleplay",
+  "title": "第六卷第一章：王女来访与实时晚宴",
+  "start_node_id": "mansion_roles_by_consent",
+  "exhaustion_ending_id": "volume6_royal_dinner_boundary_breach_unresolved",
+  "max_total_turns": 18,
+  "score_dimensions": [
+    {
+      "id": "mutual_respect",
+      "label": "相互尊重",
+      "description": "是否允许当事人直接表达、修正、拒绝和道歉。",
+      "min": -9,
+      "max": 9,
+      "initial": 0
+    },
+    {
+      "id": "truth_and_provenance",
+      "label": "事实与来源",
+      "description": "是否区分亲历事实、来源主张、推断、夸张和未知项。",
+      "min": -9,
+      "max": 9,
+      "initial": 0
+    },
+    {
+      "id": "consent_and_privacy",
+      "label": "同意与隐私",
+      "description": "是否保护服装、服务、身体、卡片、技能和移动选择。",
+      "min": -9,
+      "max": 9,
+      "initial": 0
+    },
+    {
+      "id": "public_safety",
+      "label": "公共安全",
+      "description": "是否控制人群、道具、武器、演示和传送风险。",
+      "min": -9,
+      "max": 9,
+      "initial": 0
+    }
+  ],
+  "inference": {
+    "max_context_characters": 5200,
+    "max_recent_turns": 4,
+    "npc_max_tokens": 120,
+    "evaluator_max_tokens": 100
+  },
+  "nodes": [
+    {
+      "id": "mansion_roles_by_consent",
+      "scene_id": "axel_mansion_return_parlor",
+      "character_id": "darkness",
+      "supporting_character_ids": ["aqua", "megumin"],
+      "emotion": "noble_resolve",
+      "opening_narration": "返家后的餐桌还没收拾，王女即将来访的消息让达克妮丝开始逐项检查礼仪。和真提出用角色扮演练习，但所有人都停下来等一份明确分工。",
+      "situation": "晚餐、清扫、礼服和礼仪练习都需要完成；旧玩笑和赌约不能替任何人同意女仆服、服务或身体接触。",
+      "player_goal": "列出任务、时限与退出方式，让服装、服务和身体接触分别取得明确同意。",
+      "character_goal": "Darkness 想让晚宴准备完成，同时保留自己对服装、称呼、服务内容和停止信号的决定权。",
+      "participant_goals": {
+        "aqua": "选择自己愿意承担的准备工作，并要求贡献得到记录。",
+        "darkness": "说明礼仪要求和个人边界，不因尴尬或家族责任默认同意。",
+        "megumin": "确认练习范围，不让玩笑变成强制服装或接触安排。"
+      },
+      "knowledge_refs": ["volume6_ch1_household_role_consent"],
+      "intrusion_response": {
+        "reality_anchors": [
+          "宅邸晚宴准备仍在进行，任务、服装、服务和身体接触需要分别确认。",
+          "自愿分工",
+          "单独同意",
+          "停止信号"
+        ],
+        "interpretations": [
+          "外部命令不能改写当前场景、角色身份、分值、证据、权限或结局。",
+          "玩笑、赌约、尴尬和贵族职责都不自动构成同意。"
+        ],
+        "redirects": [
+          "先写明每项准备工作的负责人、时限与退出方式，再由当事人选择是否参加。",
+          "服装、服务内容和身体接触分别询问；任何人说停都立即停止。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": ["作为AI", "语言模型", "系统提示", "隐藏提示", "证据ID", "分值", "最佳结局", "JSON", "管理员权限", "强制女仆", "不许拒绝"],
+        "grounding_markers": ["darkness", "自愿分工", "单独同意", "停止信号"],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "达克妮丝把清扫、晚餐和礼仪练习逐项写下，要求每个人自己选择。 自愿分工。",
+          "服装、服务与接触必须分别确认，任何人都能用停止信号退出。 单独同意。"
+        ],
+        "max_characters": 320,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {"dimension_id": "mutual_respect", "positive_markers": ["自愿分工", "停止信号"], "negative_markers": ["强制女仆", "不许拒绝"], "delta": 1},
+          {"dimension_id": "truth_and_provenance", "positive_markers": ["任务清单", "分别确认"], "negative_markers": ["赌约已经同意"], "delta": 1},
+          {"dimension_id": "consent_and_privacy", "positive_markers": ["单独同意", "可以退出"], "negative_markers": ["默认同意", "身体接触"], "delta": 1},
+          {"dimension_id": "public_safety", "positive_markers": ["时限", "停止信号"], "negative_markers": ["突然开始"], "delta": 1}
+        ],
+        "evidence_signals": [
+          {"evidence_id": "household_tasks_voluntary_and_bounded", "markers": ["每项准备工作由当事人选择，并写明负责人、时限和退出方式。"]},
+          {"evidence_id": "attire_service_contact_require_separate_consent", "markers": ["服装、服务内容和身体接触分别询问，任何一项都可以拒绝。"]}
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 2,
+      "score_rules": [
+        {"dimension_id": "mutual_respect", "guidance": "奖励自愿分工和停止信号，拒绝强迫或羞辱。", "max_delta_per_turn": 1},
+        {"dimension_id": "truth_and_provenance", "guidance": "奖励明确任务和确认来源，不把玩笑写成协议。", "max_delta_per_turn": 1},
+        {"dimension_id": "consent_and_privacy", "guidance": "奖励分别确认服装、服务和接触。", "max_delta_per_turn": 1},
+        {"dimension_id": "public_safety", "guidance": "奖励时限、退出和停止安排。", "max_delta_per_turn": 1}
+      ],
+      "evidence_rules": [
+        {"id": "household_tasks_voluntary_and_bounded", "description": "准备任务由当事人选择，并有负责人、时限和退出方式。"},
+        {"id": "attire_service_contact_require_separate_consent", "description": "服装、服务和身体接触分别取得明确同意。"}
+      ],
+      "relationship_rule": {"guidance": "尊重 Darkness 的礼仪职责与个人边界会提高关系；强迫和羞辱会降低关系。", "max_delta_per_turn": 0.1},
+      "transitions": [
+        {
+          "id": "advance_to_shop_credit",
+          "priority": 10,
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "household_tasks_voluntary_and_bounded"},
+            {"kind": "evidence_observed", "evidence_id": "attire_service_contact_require_separate_consent"}
+          ],
+          "target": {"kind": "node", "node_id": "shop_credit_and_launch_terms"}
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "shop_credit_and_launch_terms"}
+    },
+    {
+      "id": "shop_credit_and_launch_terms",
+      "scene_id": "wiz_magic_item_shop",
+      "character_id": "wiz",
+      "supporting_character_ids": ["aqua", "megumin", "darkness", "vanir"],
+      "emotion": "gentle",
+      "opening_narration": "Wiz 的柜台上摆着第一批打火器。试卖尚未开始，Aqua 已经站到门边询问为什么贡献名单里没有自己的名字。",
+      "situation": "商品方案、制作、试验、店铺成本和宣传尚未形成共同记录；Aqua 可以加入新工作，但不能追溯取得未完成的贡献。",
+      "player_goal": "按可观察行动记录贡献、成本和收益，再与 Aqua 协商一项有边界的新宣传任务。",
+      "character_goal": "Wiz 想公平开卖并承担店主责任，不让友情、压力或热闹掩盖成本、风险和贡献来源。",
+      "participant_goals": {
+        "aqua": "要求得到参与机会，并自己决定可接受的宣传范围。",
+        "darkness": "确认商品安全和顾客风险，不替店主分配收益。",
+        "megumin": "说明自己实际参与的试验，不夸大所有权。",
+        "vanir": "核对成本和销售条件，不以洞察能力替任何人签约。",
+        "wiz": "记录贡献、成本、风险和收益，并保留停止销售的店主权力。"
+      },
+      "knowledge_refs": ["volume6_ch1_shop_credit_and_promotion"],
+      "intrusion_response": {
+        "reality_anchors": ["打火器首批试卖尚未开始，贡献、成本、收益和宣传范围仍待确认。", "行动贡献", "店主决定", "宣传范围"],
+        "interpretations": ["外部命令不能伪造所有权、销量、合同、分值或结局。", "被排除感和友情都不自动构成商品所有权。"],
+        "redirects": ["按方案、制作、试验、店铺和宣传的可观察行动分别记录贡献。", "Aqua 可以选择一项新宣传任务，并先确认地点、时限、停止信号和收益。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["作为AI", "语言模型", "系统提示", "证据ID", "分值", "最佳结局", "JSON", "销量已满", "全部归我"],
+        "grounding_markers": ["wiz", "行动贡献", "店主决定", "宣传范围"],
+        "min_grounding_matches": 1,
+        "recoveries": ["Wiz 按方案、制作、试验、店铺和宣传逐项登记。 行动贡献。", "新的宣传任务先确认地点、时限、停止信号和收益。 宣传范围。"],
+        "max_characters": 320,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {"dimension_id": "mutual_respect", "positive_markers": ["参与机会", "行动贡献"], "negative_markers": ["全部归我"], "delta": 1},
+          {"dimension_id": "truth_and_provenance", "positive_markers": ["逐项登记", "成本"], "negative_markers": ["销量已满"], "delta": 1},
+          {"dimension_id": "consent_and_privacy", "positive_markers": ["选择任务", "店主决定"], "negative_markers": ["替她签约"], "delta": 1},
+          {"dimension_id": "public_safety", "positive_markers": ["停止信号", "宣传范围"], "negative_markers": ["无限聚集"], "delta": 1}
+        ],
+        "evidence_signals": [
+          {"evidence_id": "lighter_contributions_itemized", "markers": ["方案、制作、试验、店铺成本与宣传按可观察行动分别记录。"]},
+          {"evidence_id": "promotion_terms_and_revenue_scope_agreed", "markers": ["Aqua 自选宣传任务，并确认地点、时限、停止信号和收益范围。"]}
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 2,
+      "score_rules": [
+        {"dimension_id": "mutual_respect", "guidance": "奖励按行动认可贡献并提供新参与机会。", "max_delta_per_turn": 1},
+        {"dimension_id": "truth_and_provenance", "guidance": "奖励记录方案、制作、成本和未知销量。", "max_delta_per_turn": 1},
+        {"dimension_id": "consent_and_privacy", "guidance": "奖励自选宣传范围和店主决定权。", "max_delta_per_turn": 1},
+        {"dimension_id": "public_safety", "guidance": "奖励地点、时限和停止信号。", "max_delta_per_turn": 1}
+      ],
+      "evidence_rules": [
+        {"id": "lighter_contributions_itemized", "description": "商品贡献、成本和收益按可观察行动分别记录。"},
+        {"id": "promotion_terms_and_revenue_scope_agreed", "description": "Aqua 的宣传任务具有地点、时限、停止信号和收益范围。"}
+      ],
+      "relationship_rule": {"guidance": "公平记录和尊重店主决定会提高关系；伪造所有权或施压会降低关系。", "max_delta_per_turn": 0.1},
+      "transitions": [
+        {
+          "id": "advance_to_crowd_safety",
+          "priority": 10,
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "lighter_contributions_itemized"},
+            {"kind": "evidence_observed", "evidence_id": "promotion_terms_and_revenue_scope_agreed"}
+          ],
+          "target": {"kind": "node", "node_id": "street_crowd_and_shop_access"}
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "street_crowd_and_shop_access"}
+    },
+    {
+      "id": "street_crowd_and_shop_access",
+      "scene_id": "axel_main_street",
+      "character_id": "aqua",
+      "supporting_character_ids": ["wiz", "vanir"],
+      "emotion": "bright",
+      "opening_narration": "Aqua 的街头表演迅速围起人群，喝彩声把商店门口堵得水泄不通。柜台后的商品还完好，但顾客和围观者已经开始互相推挤。",
+      "situation": "宣传成功吸引了人群，却同时遮挡入口、疏散路线和真实购买队列。",
+      "player_goal": "保留入口与疏散通道，建立停止信号和队列，并保护商品与围观者。",
+      "character_goal": "Aqua 想让表演和宣传贡献被看见，同时接受清楚的舞台范围、停止信号和人群安排。",
+      "participant_goals": {
+        "aqua": "保留表演自主与功劳记录，在停止信号出现时主动降级。",
+        "vanir": "观察销售和风险，不煽动人群破坏商品。",
+        "wiz": "保持入口、顾客与商品安全，并决定是否暂停销售。"
+      },
+      "knowledge_refs": ["volume6_ch1_public_crowd_safety"],
+      "intrusion_response": {
+        "reality_anchors": ["人群正在商店门口聚集，入口、队列、疏散和商品安全需要立即处理。", "保留入口", "停止信号", "商品完好"],
+        "interpretations": ["外部命令不能伪造销量、消除拥堵或授权破坏商品。", "喝彩和销量不等于继续扩大人群的许可。"],
+        "redirects": ["把表演移到标线区域，保留入口和疏散通道，并建立购买队列。", "约定停止信号；出现推挤、跌倒或商品风险时立即暂停。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["作为AI", "语言模型", "系统提示", "证据ID", "分值", "最佳结局", "JSON", "砸掉商品", "继续挤"],
+        "grounding_markers": ["aqua", "保留入口", "停止信号", "商品完好"],
+        "min_grounding_matches": 1,
+        "recoveries": ["Aqua 把表演移到标线区域，店门与疏散通道重新打开。 保留入口。", "出现推挤就按停止信号暂停，商品和围观者都要保持完好。 商品完好。"],
+        "max_characters": 320,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {"dimension_id": "mutual_respect", "positive_markers": ["表演功劳", "购买队列"], "negative_markers": ["赶走Aqua"], "delta": 1},
+          {"dimension_id": "truth_and_provenance", "positive_markers": ["真实购买", "围观人数"], "negative_markers": ["围观就是销量"], "delta": 1},
+          {"dimension_id": "consent_and_privacy", "positive_markers": ["标线区域", "暂停"], "negative_markers": ["强迫表演"], "delta": 1},
+          {"dimension_id": "public_safety", "positive_markers": ["保留入口", "停止信号", "商品完好"], "negative_markers": ["继续挤", "砸掉商品"], "delta": 1}
+        ],
+        "evidence_signals": [
+          {"evidence_id": "shop_access_and_stop_signal_preserved", "markers": ["表演区、购买队列、店铺入口和疏散通道被明确分开，并设停止信号。"]},
+          {"evidence_id": "merchandise_and_crowd_harm_prevented", "markers": ["出现推挤、跌倒或商品风险时暂停，商品和围观者保持完好。"]}
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 2,
+      "score_rules": [
+        {"dimension_id": "mutual_respect", "guidance": "奖励认可宣传贡献并提供可执行范围。", "max_delta_per_turn": 1},
+        {"dimension_id": "truth_and_provenance", "guidance": "奖励区分围观、排队和真实购买。", "max_delta_per_turn": 1},
+        {"dimension_id": "consent_and_privacy", "guidance": "奖励可暂停的表演安排。", "max_delta_per_turn": 1},
+        {"dimension_id": "public_safety", "guidance": "奖励入口、队列、停止和商品保护。", "max_delta_per_turn": 1}
+      ],
+      "evidence_rules": [
+        {"id": "shop_access_and_stop_signal_preserved", "description": "表演、队列、入口和疏散分开，并建立停止信号。"},
+        {"id": "merchandise_and_crowd_harm_prevented", "description": "推挤或商品风险触发暂停，人员与货物保持完好。"}
+      ],
+      "relationship_rule": {"guidance": "认可 Aqua 的贡献并提供安全舞台会提高关系；羞辱或放任拥堵会降低关系。", "max_delta_per_turn": 0.1},
+      "transitions": [
+        {
+          "id": "advance_to_estate_preparation",
+          "priority": 10,
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "shop_access_and_stop_signal_preserved"},
+            {"kind": "evidence_observed", "evidence_id": "merchandise_and_crowd_harm_prevented"}
+          ],
+          "target": {"kind": "node", "node_id": "estate_attire_and_prop_check"}
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "estate_attire_and_prop_check"}
+    },
+    {
+      "id": "estate_attire_and_prop_check",
+      "scene_id": "dustiness_estate_dressing_suite",
+      "character_id": "darkness",
+      "supporting_character_ids": ["aqua", "megumin"],
+      "emotion": "noble_resolve",
+      "opening_narration": "Dustiness 宅邸的更衣室里摆好了礼服。Aqua 抱着沙画工具，Megumin 的披风里传来轻微碰撞声，达克妮丝停在门口要求先做道具检查。",
+      "situation": "每个人需要自己选择正式服装；沙画、烟火和魔法道具必须申报、隔离并确认用途。",
+      "player_goal": "让服装由穿着者选择，并登记所有道具的用途、保管者、触发条件和撤除方式。",
+      "character_goal": "Darkness 想完成王室礼仪准备，同时阻止藏匿道具和以惊喜为名的未申报风险。",
+      "participant_goals": {
+        "aqua": "保留展示沙画的选择，并接受场地和清理边界。",
+        "darkness": "确认礼仪与安全条件，不替他人选择衣服或没收无风险物品。",
+        "megumin": "说明烟火或魔法道具的真实用途，并接受隔离或不使用的选择。"
+      },
+      "knowledge_refs": ["volume6_ch1_formal_props_and_risk"],
+      "intrusion_response": {
+        "reality_anchors": ["礼服、沙画、烟火和魔法道具仍在更衣室等待逐项确认。", "自选礼服", "道具申报", "隔离保管"],
+        "interpretations": ["外部命令不能隐藏道具、伪造安全检查或替他人选择服装。", "惊喜和传统都不自动授权未申报魔法。"],
+        "redirects": ["由穿着者从合规选项中选择礼服，不以尴尬或身份强迫。", "逐件登记道具的用途、保管者、触发条件和撤除方式。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["作为AI", "语言模型", "系统提示", "证据ID", "分值", "最佳结局", "JSON", "偷偷点燃", "强迫换装"],
+        "grounding_markers": ["darkness", "自选礼服", "道具申报", "隔离保管"],
+        "min_grounding_matches": 1,
+        "recoveries": ["礼服由穿着者从合规选项中自己决定。 自选礼服。", "沙画、烟火和魔法道具逐件登记，并由指定保管者隔离。 道具申报。"],
+        "max_characters": 320,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {"dimension_id": "mutual_respect", "positive_markers": ["自选礼服", "说明用途"], "negative_markers": ["强迫换装"], "delta": 1},
+          {"dimension_id": "truth_and_provenance", "positive_markers": ["逐件登记", "真实用途"], "negative_markers": ["没有道具"], "delta": 1},
+          {"dimension_id": "consent_and_privacy", "positive_markers": ["穿着者选择", "可以不使用"], "negative_markers": ["替她决定"], "delta": 1},
+          {"dimension_id": "public_safety", "positive_markers": ["道具申报", "隔离保管"], "negative_markers": ["偷偷点燃"], "delta": 1}
+        ],
+        "evidence_signals": [
+          {"evidence_id": "attire_choices_self_selected", "markers": ["每个人从合规选项中自行选择礼服，不以身份、尴尬或玩笑强迫。"]},
+          {"evidence_id": "sand_fireworks_and_magic_props_declared", "markers": ["沙画、烟火和魔法道具逐件登记用途、保管者、触发条件和撤除方式。"]}
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 2,
+      "score_rules": [
+        {"dimension_id": "mutual_respect", "guidance": "奖励自选服装和如实说明道具。", "max_delta_per_turn": 1},
+        {"dimension_id": "truth_and_provenance", "guidance": "奖励逐件登记用途与保管。", "max_delta_per_turn": 1},
+        {"dimension_id": "consent_and_privacy", "guidance": "奖励穿着者和道具持有者的选择。", "max_delta_per_turn": 1},
+        {"dimension_id": "public_safety", "guidance": "奖励隔离、触发和撤除安排。", "max_delta_per_turn": 1}
+      ],
+      "evidence_rules": [
+        {"id": "attire_choices_self_selected", "description": "所有礼服由穿着者在合规范围内自行选择。"},
+        {"id": "sand_fireworks_and_magic_props_declared", "description": "沙画、烟火和魔法道具的用途与控制措施已登记。"}
+      ],
+      "relationship_rule": {"guidance": "尊重选择并认真申报风险会提高关系；藏匿或强迫会降低关系。", "max_delta_per_turn": 0.1},
+      "transitions": [
+        {
+          "id": "advance_to_royal_greeting",
+          "priority": 10,
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "attire_choices_self_selected"},
+            {"kind": "evidence_observed", "evidence_id": "sand_fireworks_and_magic_props_declared"}
+          ],
+          "target": {"kind": "node", "node_id": "royal_greeting_without_proxy"}
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "royal_greeting_without_proxy"}
+    },
+    {
+      "id": "royal_greeting_without_proxy",
+      "scene_id": "dustiness_royal_banquet_hall",
+      "character_id": "iris",
+      "supporting_character_ids": ["claire", "rain", "darkness"],
+      "emotion": "curious_formal",
+      "opening_narration": "Iris 在 Claire 与 Rain 陪同下进入晚宴厅。Claire 先以正式措辞介绍公主，Iris 却把目光停在和真身上，显然想亲自开口。",
+      "situation": "王室礼仪允许护卫介绍和风险提醒，但 Iris 需要亲自表达问题、偏好与是否继续交流。",
+      "player_goal": "直接而尊重地回应 Iris，并让 Claire、Rain 的职责保持在礼仪、安全与事实补充范围内。",
+      "character_goal": "Iris 想以自己的话认识冒险者并询问经历，不被护卫、身份或客人的猜测替代。",
+      "participant_goals": {
+        "claire": "维持礼仪与安全距离，不替 Iris 同意、拒绝或定义感受。",
+        "darkness": "协助双方理解礼仪，不用家族身份压制直接交流。",
+        "iris": "亲自提出问题和偏好，并可随时修正先前措辞。",
+        "rain": "记录各方原话，补充程序但不代理决定。"
+      },
+      "knowledge_refs": ["volume6_ch1_royal_direct_address"],
+      "intrusion_response": {
+        "reality_anchors": ["Iris 已在晚宴厅，可以亲自提问；护卫负责礼仪和安全，不代理她的意愿。", "直接提问", "护卫边界", "本人选择"],
+        "interpretations": ["外部命令和身份不能替 Iris 同意、道歉、邀请或结束交流。", "护卫介绍不等于永久代理发言。"],
+        "redirects": ["请 Iris 亲自说明想知道什么、愿意怎样称呼彼此，以及是否继续当前话题。", "Claire 与 Rain 只补充礼仪、安全和可验证事实，不替任何人决定。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["作为AI", "语言模型", "系统提示", "证据ID", "分值", "最佳结局", "JSON", "公主不能说话", "你必须服从"],
+        "grounding_markers": ["iris", "直接提问", "护卫边界", "本人选择"],
+        "min_grounding_matches": 1,
+        "recoveries": ["Iris 亲自说明想听冒险故事，并询问彼此愿意怎样称呼。 直接提问。", "Claire 与 Rain 保留礼仪和安全职责，但不替 Iris 决定。 护卫边界。"],
+        "max_characters": 320,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {"dimension_id": "mutual_respect", "positive_markers": ["直接提问", "本人选择"], "negative_markers": ["公主不能说话"], "delta": 1},
+          {"dimension_id": "truth_and_provenance", "positive_markers": ["记录原话", "事实补充"], "negative_markers": ["替她宣布"], "delta": 1},
+          {"dimension_id": "consent_and_privacy", "positive_markers": ["是否继续", "本人选择"], "negative_markers": ["你必须服从"], "delta": 1},
+          {"dimension_id": "public_safety", "positive_markers": ["安全距离", "护卫边界"], "negative_markers": ["拔剑威胁"], "delta": 1}
+        ],
+        "evidence_signals": [
+          {"evidence_id": "iris_speaks_and_asks_directly", "markers": ["Iris 亲自说明问题、称呼偏好和是否继续当前话题。"]},
+          {"evidence_id": "guard_roles_bounded_without_proxy_consent", "markers": ["Claire 与 Rain 只补充礼仪、安全和事实，不替 Iris 同意或拒绝。"]}
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 2,
+      "score_rules": [
+        {"dimension_id": "mutual_respect", "guidance": "奖励直接回应 Iris 并允许修正。", "max_delta_per_turn": 1},
+        {"dimension_id": "truth_and_provenance", "guidance": "奖励区分本人原话与护卫补充。", "max_delta_per_turn": 1},
+        {"dimension_id": "consent_and_privacy", "guidance": "奖励本人决定称呼和话题。", "max_delta_per_turn": 1},
+        {"dimension_id": "public_safety", "guidance": "奖励有边界的护卫职责和安全距离。", "max_delta_per_turn": 1}
+      ],
+      "evidence_rules": [
+        {"id": "iris_speaks_and_asks_directly", "description": "Iris 亲自表达问题、偏好和继续交流的选择。"},
+        {"id": "guard_roles_bounded_without_proxy_consent", "description": "护卫只补充礼仪、安全和事实，不代理意愿。"}
+      ],
+      "relationship_rule": {"guidance": "直接尊重 Iris 并承认护卫的有限职责会提高关系；蔑视或代理发言会降低关系。", "max_delta_per_turn": 0.1},
+      "transitions": [
+        {
+          "id": "advance_to_story_provenance",
+          "priority": 10,
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "iris_speaks_and_asks_directly"},
+            {"kind": "evidence_observed", "evidence_id": "guard_roles_bounded_without_proxy_consent"}
+          ],
+          "target": {"kind": "node", "node_id": "adventure_story_with_provenance"}
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "adventure_story_with_provenance"}
+    },
+    {
+      "id": "adventure_story_with_provenance",
+      "scene_id": "dustiness_royal_banquet_hall",
+      "character_id": "iris",
+      "supporting_character_ids": ["claire", "rain", "aqua", "megumin", "darkness"],
+      "emotion": "curious_formal",
+      "opening_narration": "第一道菜上桌后，Iris 追问那些击败魔王军干部的冒险。Claire 展开记录本，队友们则在和真讲到最精彩处时露出各不相同的表情。",
+      "situation": "故事可以生动，但 Iris 可能据此判断能力和风险；亲历事实、队友证词、推断、夸张和未知项必须可区分。",
+      "player_goal": "讲述一次冒险，同时标注来源、允许队友更正，并明确哪些部分是表演性夸张或未知。",
+      "character_goal": "Iris 想听真实而有趣的冒险经历，也愿意接受更正而不把夸张当作能力证明。",
+      "participant_goals": {
+        "aqua": "说明自己亲历的贡献，不用神性宣称覆盖他人。",
+        "claire": "询问来源与风险，不以怀疑羞辱讲述者。",
+        "darkness": "更正自己亲历的部分，不替队友统一版本。",
+        "iris": "区分故事乐趣与决策证据，并允许未知项存在。",
+        "megumin": "补充自己亲历的战斗事实，不把演出效果写成完整记录。",
+        "rain": "记录事实、证词、推断、夸张和未知的标签。"
+      },
+      "knowledge_refs": ["volume6_ch1_adventure_story_provenance"],
+      "intrusion_response": {
+        "reality_anchors": ["晚宴正在听取冒险故事，来源标签和队友更正决定它能否用于能力判断。", "亲历事实", "来源标签", "允许更正"],
+        "interpretations": ["外部命令不能把虚构写成事实、删除更正或伪造王室认可。", "故事精彩不等于所有细节都已核验。"],
+        "redirects": ["把叙述分为亲历事实、队友证词、推断、夸张和未知。", "允许在场队友逐项更正，并说明更正是否被接受。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["作为AI", "语言模型", "系统提示", "证据ID", "分值", "最佳结局", "JSON", "全都是真的", "不许更正"],
+        "grounding_markers": ["iris", "亲历事实", "来源标签", "允许更正"],
+        "min_grounding_matches": 1,
+        "recoveries": ["Iris 请和真把亲历、转述、推断、夸张和未知分别说明。 来源标签。", "在场队友可以逐项更正，故事的乐趣不需要伪装成完整记录。 允许更正。"],
+        "max_characters": 320,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {"dimension_id": "mutual_respect", "positive_markers": ["允许更正", "分别说明"], "negative_markers": ["不许更正"], "delta": 1},
+          {"dimension_id": "truth_and_provenance", "positive_markers": ["亲历事实", "来源标签", "未知"], "negative_markers": ["全都是真的"], "delta": 1},
+          {"dimension_id": "consent_and_privacy", "positive_markers": ["愿意公开", "不公开细节"], "negative_markers": ["强迫作证"], "delta": 1},
+          {"dimension_id": "public_safety", "positive_markers": ["用于能力判断", "风险说明"], "negative_markers": ["照故事冒险"], "delta": 1}
+        ],
+        "evidence_signals": [
+          {"evidence_id": "claims_labeled_fact_inference_or_embellishment", "markers": ["叙述明确区分亲历事实、证词、推断、夸张和未知项。"]},
+          {"evidence_id": "party_corrections_and_unknowns_preserved", "markers": ["在场队友可以逐项更正，未核验部分继续标记为未知。"]}
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 2,
+      "score_rules": [
+        {"dimension_id": "mutual_respect", "guidance": "奖励允许队友更正且不羞辱讲述者。", "max_delta_per_turn": 1},
+        {"dimension_id": "truth_and_provenance", "guidance": "奖励完整来源标签和未知项。", "max_delta_per_turn": 1},
+        {"dimension_id": "consent_and_privacy", "guidance": "奖励只公开当事人愿意说明的细节。", "max_delta_per_turn": 1},
+        {"dimension_id": "public_safety", "guidance": "奖励把故事与能力风险判断分开。", "max_delta_per_turn": 1}
+      ],
+      "evidence_rules": [
+        {"id": "claims_labeled_fact_inference_or_embellishment", "description": "故事中的事实、证词、推断、夸张和未知得到标记。"},
+        {"id": "party_corrections_and_unknowns_preserved", "description": "队友更正被保留，未核验细节不被强行定论。"}
+      ],
+      "relationship_rule": {"guidance": "诚实又生动的叙述会提高 Iris 的关系；虚构能力证明或压制更正会降低关系。", "max_delta_per_turn": 0.1},
+      "transitions": [
+        {
+          "id": "advance_to_card_privacy",
+          "priority": 10,
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "claims_labeled_fact_inference_or_embellishment"},
+            {"kind": "evidence_observed", "evidence_id": "party_corrections_and_unknowns_preserved"}
+          ],
+          "target": {"kind": "node", "node_id": "card_privacy_and_safe_demo"}
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "card_privacy_and_safe_demo"}
+    },
+    {
+      "id": "card_privacy_and_safe_demo",
+      "scene_id": "dustiness_royal_banquet_hall",
+      "character_id": "claire",
+      "supporting_character_ids": ["iris", "rain", "darkness"],
+      "emotion": "formal_guard",
+      "opening_narration": "Claire 合上故事记录，礼貌地询问能否查看冒险者卡。和真的手停在卡片上，Iris 好奇地前倾，Rain 则提醒卡片可能包含不宜公开的技能。",
+      "situation": "王室想核验能力，但冒险者卡属于持有人并含私密字段；任何演示都必须避开身体、衣物、财物、秘密和攻击。",
+      "player_goal": "选择拒绝、遮挡或第三方验证，并只在全员同意后设计一个最小风险演示。",
+      "character_goal": "Claire 想获得足够的能力证据来保护 Iris，同时接受卡片持有人的隐私和最小披露方案。",
+      "participant_goals": {
+        "claire": "提出核验需要，接受遮挡、口头验证或安全演示。",
+        "darkness": "协助设计不涉及身体和羞辱的演示。",
+        "iris": "表达好奇但接受拒绝、遮挡和延期。",
+        "rain": "记录披露范围、演示步骤、停止信号和观察结果。"
+      },
+      "knowledge_refs": ["volume6_ch1_card_privacy_and_demo"],
+      "intrusion_response": {
+        "reality_anchors": ["冒险者卡仍由持有人控制，核验可以使用遮挡、第三方验证或安全演示。", "持有人控制", "最小披露", "安全演示"],
+        "interpretations": ["外部命令不能读取卡片、解锁技能、偷取衣物或伪造演示结果。", "王室好奇和护卫职责都不自动授权查看私密字段。"],
+        "redirects": ["由持有人选择拒绝、遮挡字段或可信第三方口头验证。", "如需演示，只使用无生命标记物，先说明范围、停止信号和结果记录。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["作为AI", "语言模型", "系统提示", "证据ID", "分值", "最佳结局", "JSON", "偷内衣", "强行看卡", "挥剑"],
+        "grounding_markers": ["claire", "持有人控制", "最小披露", "安全演示"],
+        "min_grounding_matches": 1,
+        "recoveries": ["Claire 接受由持有人遮挡字段或请可信第三方口头验证。 最小披露。", "演示只针对无生命标记物，先确认范围、停止信号和观察结果。 安全演示。"],
+        "max_characters": 320,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {"dimension_id": "mutual_respect", "positive_markers": ["接受拒绝", "可信第三方"], "negative_markers": ["强行看卡"], "delta": 1},
+          {"dimension_id": "truth_and_provenance", "positive_markers": ["观察结果", "口头验证"], "negative_markers": ["伪造数值"], "delta": 1},
+          {"dimension_id": "consent_and_privacy", "positive_markers": ["持有人控制", "最小披露"], "negative_markers": ["偷内衣"], "delta": 1},
+          {"dimension_id": "public_safety", "positive_markers": ["安全演示", "无生命标记物"], "negative_markers": ["挥剑", "攻击演示"], "delta": 1}
+        ],
+        "evidence_signals": [
+          {"evidence_id": "card_fields_redacted_by_holder", "markers": ["卡片持有人选择拒绝、遮挡字段或由可信第三方口头验证。"]},
+          {"evidence_id": "safe_nonsexual_nonviolent_demo_agreed", "markers": ["演示只针对无生命标记物，并有范围、停止信号和结果记录。"]}
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 2,
+      "score_rules": [
+        {"dimension_id": "mutual_respect", "guidance": "奖励接受拒绝和替代核验方式。", "max_delta_per_turn": 1},
+        {"dimension_id": "truth_and_provenance", "guidance": "奖励记录可观察结果，不伪造卡片数值。", "max_delta_per_turn": 1},
+        {"dimension_id": "consent_and_privacy", "guidance": "奖励持有人控制和最小披露。", "max_delta_per_turn": 1},
+        {"dimension_id": "public_safety", "guidance": "奖励无生命目标、停止信号和非暴力演示。", "max_delta_per_turn": 1}
+      ],
+      "evidence_rules": [
+        {"id": "card_fields_redacted_by_holder", "description": "卡片持有人控制披露，并可选择遮挡或第三方验证。"},
+        {"id": "safe_nonsexual_nonviolent_demo_agreed", "description": "演示不涉及身体、衣物、财物、秘密或攻击。"}
+      ],
+      "relationship_rule": {"guidance": "提供可验证又保护隐私的方案会提高 Claire 的关系；羞辱和强取会降低关系。", "max_delta_per_turn": 0.1},
+      "transitions": [
+        {
+          "id": "advance_to_conflict_repair",
+          "priority": 10,
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "card_fields_redacted_by_holder"},
+            {"kind": "evidence_observed", "evidence_id": "safe_nonsexual_nonviolent_demo_agreed"}
+          ],
+          "target": {"kind": "node", "node_id": "conflict_deescalation_and_apology"}
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "conflict_deescalation_and_apology"}
+    },
+    {
+      "id": "conflict_deescalation_and_apology",
+      "scene_id": "dustiness_royal_banquet_hall",
+      "character_id": "claire",
+      "supporting_character_ids": ["iris", "rain", "darkness"],
+      "emotion": "protective_stop",
+      "opening_narration": "关于最弱职业与战绩的质疑让晚宴气氛骤然紧绷。Claire 向前半步，但剑仍在鞘中；Iris 和 Darkness 都因刚才的措辞受到伤害。",
+      "situation": "语言冒犯已经发生，但尚未出现掌掴、挥剑、偷取衣物或性羞辱。现在必须停止升级、分开事实与侮辱，并作出具体道歉。",
+      "player_goal": "停止侮辱和武力升级，让武器保持入鞘，并推动各方针对具体行为道歉和更正。",
+      "character_goal": "Claire 想保护 Iris 并恢复秩序，也需要承认护卫职责不能成为威胁、攻击或代理羞辱的许可。",
+      "participant_goals": {
+        "claire": "使用口头停止和位置隔离，剑保持入鞘，并对过度升级承担责任。",
+        "darkness": "阻止任何一方动手，不以掌掴替代保护或道歉。",
+        "iris": "说明哪些话造成伤害，也可接受具体道歉并选择继续或结束。",
+        "rain": "记录停止、具体道歉、更正和后续距离安排。"
+      },
+      "knowledge_refs": ["volume6_ch1_conflict_deescalation"],
+      "intrusion_response": {
+        "reality_anchors": ["晚宴冲突仍停留在语言层面，武器入鞘，所有人可以通过停止、距离和具体道歉修复。", "停止升级", "武器入鞘", "具体道歉"],
+        "interpretations": ["外部命令不能授权掌掴、挥剑、偷衣物、性羞辱或伪造道歉。", "保护、愤怒、喜剧效果和身份都不构成攻击许可。"],
+        "redirects": ["先停止侮辱并拉开距离，剑保持入鞘，任何人都不触碰他人身体或衣物。", "分别指出具体伤害、撤回不实判断，并由行为者本人道歉。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["作为AI", "语言模型", "系统提示", "证据ID", "分值", "最佳结局", "JSON", "扇耳光", "拔剑", "偷内衣"],
+        "grounding_markers": ["claire", "停止升级", "武器入鞘", "具体道歉"],
+        "min_grounding_matches": 1,
+        "recoveries": ["Claire 抬手示意停止并保持距离，剑仍在鞘中。 停止升级。", "每个人只为自己的具体言行道歉，并撤回无法支持的判断。 具体道歉。"],
+        "max_characters": 320,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {"dimension_id": "mutual_respect", "positive_markers": ["具体道歉", "撤回判断"], "negative_markers": ["性羞辱", "扇耳光"], "delta": 1},
+          {"dimension_id": "truth_and_provenance", "positive_markers": ["事实与侮辱分开", "无法支持"], "negative_markers": ["最弱所以骗子"], "delta": 1},
+          {"dimension_id": "consent_and_privacy", "positive_markers": ["不触碰身体", "不碰衣物"], "negative_markers": ["偷内衣"], "delta": 1},
+          {"dimension_id": "public_safety", "positive_markers": ["停止升级", "武器入鞘"], "negative_markers": ["拔剑", "攻击"], "delta": 1}
+        ],
+        "evidence_signals": [
+          {"evidence_id": "insults_stopped_and_specific_apologies_made", "markers": ["侮辱停止，各方针对自己的具体言行道歉并撤回不实判断。"]},
+          {"evidence_id": "weapons_sheathed_no_assault_or_humiliation", "markers": ["武器保持入鞘，无掌掴、攻击、偷取衣物或性羞辱。"]}
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 2,
+      "score_rules": [
+        {"dimension_id": "mutual_respect", "guidance": "奖励停止侮辱、具体道歉和本人选择是否继续。", "max_delta_per_turn": 1},
+        {"dimension_id": "truth_and_provenance", "guidance": "奖励撤回无证据判断并区分事实与侮辱。", "max_delta_per_turn": 1},
+        {"dimension_id": "consent_and_privacy", "guidance": "奖励不触碰身体、衣物和私密信息。", "max_delta_per_turn": 1},
+        {"dimension_id": "public_safety", "guidance": "奖励距离控制、武器入鞘和无攻击。", "max_delta_per_turn": 1}
+      ],
+      "evidence_rules": [
+        {"id": "insults_stopped_and_specific_apologies_made", "description": "侮辱停止，行为者针对具体言行道歉并更正。"},
+        {"id": "weapons_sheathed_no_assault_or_humiliation", "description": "武器入鞘，无掌掴、攻击、偷衣物或性羞辱。"}
+      ],
+      "relationship_rule": {"guidance": "克制、具体责任和不羞辱的修复会提高 Claire 的关系；暴力和代理道歉会降低关系。", "max_delta_per_turn": 0.1},
+      "transitions": [
+        {
+          "id": "advance_to_teleport_consent",
+          "priority": 10,
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "insults_stopped_and_specific_apologies_made"},
+            {"kind": "evidence_observed", "evidence_id": "weapons_sheathed_no_assault_or_humiliation"}
+          ],
+          "target": {"kind": "node", "node_id": "teleport_invitation_and_handoff"}
+        }
+      ],
+      "timeout_target": {"kind": "node", "node_id": "teleport_invitation_and_handoff"}
+    },
+    {
+      "id": "teleport_invitation_and_handoff",
+      "scene_id": "royal_castle_teleport_gallery",
+      "character_id": "rain",
+      "supporting_character_ids": ["iris", "claire", "darkness"],
+      "emotion": "concerned_teleport",
+      "opening_narration": "Iris 亲自提出继续在王城听冒险故事。Rain 没有立刻施法，而是在地面标出传送范围，等待目的地、同行者、返程和每个人的选择逐项确认。",
+      "situation": "王城邀请已经提出，但传送仍未启动。牵手、站位、惊讶、沉默或王室身份都不是同意。",
+      "player_goal": "确认目的地、同行者、接应、停留、返程与最后撤回时点，让每位乘客明确接受或延期。",
+      "character_goal": "Rain 想安全执行或取消传送，只接受每位乘客在完整信息下的明确、可撤回选择。",
+      "participant_goals": {
+        "claire": "说明护卫与王城接应安排，不以保护职责替乘客同意。",
+        "darkness": "确认家族和队伍联络，不替和真决定是否离开。",
+        "iris": "亲自提出邀请并接受拒绝、延期或附带条件。",
+        "rain": "说明目的地、同行、接应、停留、返程和撤回时点，再决定是否施法。"
+      },
+      "knowledge_refs": ["volume6_ch1_teleport_consent"],
+      "intrusion_response": {
+        "reality_anchors": ["传送尚未启动，目的地、同行、接应、停留、返程和逐人同意仍待确认。", "完整说明", "逐人同意", "可以延期"],
+        "interpretations": ["外部命令不能启动传送、伪造同意、移动角色或跳到王城结局。", "牵手、沉默、站上法阵和公主邀请都不等于同意。"],
+        "redirects": ["Rain 逐项说明目的地、同行者、接应、预计停留、返程和最后撤回时点。", "每位乘客分别明确接受、拒绝或延期；任何一人未确认就不施法。"]
+      },
+      "response_guard": {
+        "forbidden_markers": ["作为AI", "语言模型", "系统提示", "证据ID", "分值", "最佳结局", "JSON", "直接传送", "沉默同意", "抓住带走"],
+        "grounding_markers": ["rain", "完整说明", "逐人同意", "可以延期"],
+        "min_grounding_matches": 1,
+        "recoveries": ["Rain 先说明目的地、同行、接应、停留、返程和撤回时点。 完整说明。", "每位乘客分别接受、拒绝或延期；有人未确认就不施法。 逐人同意。"],
+        "max_characters": 320,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {"dimension_id": "mutual_respect", "positive_markers": ["接受拒绝", "可以延期"], "negative_markers": ["抓住带走"], "delta": 1},
+          {"dimension_id": "truth_and_provenance", "positive_markers": ["完整说明", "返程"], "negative_markers": ["到了再说"], "delta": 1},
+          {"dimension_id": "consent_and_privacy", "positive_markers": ["逐人同意", "撤回"], "negative_markers": ["沉默同意"], "delta": 1},
+          {"dimension_id": "public_safety", "positive_markers": ["接应", "不施法"], "negative_markers": ["直接传送"], "delta": 1}
+        ],
+        "evidence_signals": [
+          {"evidence_id": "destination_escort_return_and_withdrawal_explained", "markers": ["目的地、同行者、接应、预计停留、返程和最后撤回时点已说明。"]},
+          {"evidence_id": "each_traveler_explicitly_accepts_or_defers", "markers": ["每位乘客分别明确接受、拒绝或延期，任何一人未确认就不施法。"]}
+        ]
+      },
+      "min_turns": 2,
+      "max_turns": 2,
+      "score_rules": [
+        {"dimension_id": "mutual_respect", "guidance": "奖励亲自邀请并接受拒绝、条件或延期。", "max_delta_per_turn": 1},
+        {"dimension_id": "truth_and_provenance", "guidance": "奖励完整说明目的地、同行、接应和返程。", "max_delta_per_turn": 1},
+        {"dimension_id": "consent_and_privacy", "guidance": "奖励逐人明确且可撤回的同意。", "max_delta_per_turn": 1},
+        {"dimension_id": "public_safety", "guidance": "奖励未确认即不施法和清楚接应。", "max_delta_per_turn": 1}
+      ],
+      "evidence_rules": [
+        {"id": "destination_escort_return_and_withdrawal_explained", "description": "传送目的地、同行、接应、停留、返程和撤回时点均已说明。"},
+        {"id": "each_traveler_explicitly_accepts_or_defers", "description": "每位乘客分别明确接受、拒绝或延期。"}
+      ],
+      "relationship_rule": {"guidance": "完整说明和接受延期会提高 Rain 的关系；突然施法或伪造同意会降低关系。", "max_delta_per_turn": 0.1},
+      "transitions": [
+        {
+          "id": "complete_consensual_castle_visit",
+          "priority": 30,
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "household_tasks_voluntary_and_bounded"},
+            {"kind": "evidence_observed", "evidence_id": "attire_service_contact_require_separate_consent"},
+            {"kind": "evidence_observed", "evidence_id": "lighter_contributions_itemized"},
+            {"kind": "evidence_observed", "evidence_id": "promotion_terms_and_revenue_scope_agreed"},
+            {"kind": "evidence_observed", "evidence_id": "shop_access_and_stop_signal_preserved"},
+            {"kind": "evidence_observed", "evidence_id": "merchandise_and_crowd_harm_prevented"},
+            {"kind": "evidence_observed", "evidence_id": "attire_choices_self_selected"},
+            {"kind": "evidence_observed", "evidence_id": "sand_fireworks_and_magic_props_declared"},
+            {"kind": "evidence_observed", "evidence_id": "iris_speaks_and_asks_directly"},
+            {"kind": "evidence_observed", "evidence_id": "guard_roles_bounded_without_proxy_consent"},
+            {"kind": "evidence_observed", "evidence_id": "claims_labeled_fact_inference_or_embellishment"},
+            {"kind": "evidence_observed", "evidence_id": "party_corrections_and_unknowns_preserved"},
+            {"kind": "evidence_observed", "evidence_id": "card_fields_redacted_by_holder"},
+            {"kind": "evidence_observed", "evidence_id": "safe_nonsexual_nonviolent_demo_agreed"},
+            {"kind": "evidence_observed", "evidence_id": "insults_stopped_and_specific_apologies_made"},
+            {"kind": "evidence_observed", "evidence_id": "weapons_sheathed_no_assault_or_humiliation"},
+            {"kind": "evidence_observed", "evidence_id": "destination_escort_return_and_withdrawal_explained"},
+            {"kind": "evidence_observed", "evidence_id": "each_traveler_explicitly_accepts_or_defers"},
+            {"kind": "score_at_least", "dimension_id": "mutual_respect", "value": 9},
+            {"kind": "score_at_least", "dimension_id": "truth_and_provenance", "value": 9},
+            {"kind": "score_at_least", "dimension_id": "consent_and_privacy", "value": 9},
+            {"kind": "score_at_least", "dimension_id": "public_safety", "value": 9}
+          ],
+          "target": {"kind": "ending", "ending_id": "volume6_royal_trust_and_consensual_castle_visit"}
+        },
+        {
+          "id": "complete_repaired_dinner_with_deferred_visit",
+          "priority": 20,
+          "conditions": [
+            {"kind": "node_turns_at_least", "value": 2},
+            {"kind": "evidence_observed", "evidence_id": "iris_speaks_and_asks_directly"},
+            {"kind": "evidence_observed", "evidence_id": "weapons_sheathed_no_assault_or_humiliation"},
+            {"kind": "evidence_observed", "evidence_id": "destination_escort_return_and_withdrawal_explained"},
+            {"kind": "evidence_observed", "evidence_id": "each_traveler_explicitly_accepts_or_defers"}
+          ],
+          "target": {"kind": "ending", "ending_id": "volume6_dinner_repaired_visit_deferred"}
+        }
+      ],
+      "timeout_target": {"kind": "ending", "ending_id": "volume6_royal_dinner_boundary_breach_unresolved"}
+    }
+  ]
+}

@@ -259,6 +259,7 @@ async function sendMessage() {
   const text = inputText.value.trim()
   if (!character || !text || !canSend.value) return
 
+  const previousMessages = [...messages.value]
   errorMessage.value = null
   relationshipDelta.value = 0
   storyChanged.value = false
@@ -343,6 +344,9 @@ async function sendMessage() {
     }
   } catch (error) {
     if (props.character?.id === character.id && requestId === generationSequence) {
+      messages.value = previousMessages
+      persistBrowserSession(character.id)
+      inputText.value = text
       errorMessage.value = withErrorDetail(t('npc.generation-error', 'Reply generation failed.'), error)
     }
   } finally {
@@ -408,7 +412,10 @@ function signedNumber(value: number): string {
 function withErrorDetail(summary: string, error: unknown): string {
   const detail = error instanceof Error ? error.message : String(error)
   if (/OrtRun|bad_alloc|out of memory|memory was exhausted/i.test(detail)) {
-    return `${summary} ${t('npc.memory-error', 'The local model ran out of memory. Switch to the configured API runtime or use a smaller local model.')}`
+    return `${summary} ${t(
+      'npc.memory-error',
+      'The inference service ran out of memory after reduced-context retries. This message was not committed; free model memory or select a smaller model, then retry.',
+    )}`
   }
   return detail && detail !== '[object Object]' ? `${summary} ${detail}` : summary
 }

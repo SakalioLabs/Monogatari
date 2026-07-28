@@ -1,0 +1,23 @@
+{
+  "id": "volume6_royal_dinner_boundary_breach_unresolved_epilogue",
+  "nodes": {
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "dustiness_royal_banquet_hall",
+      "text": "有限轮次结束时，仍有边界未能得到共同确认。Rain 停止传送准备，Claire 保持武器入鞘，双方从不同出口离场，已验证的事实和未解决的问题被分开记录。"
+    },
+    "final": {
+      "choices": [],
+      "emotion": "concerned_teleport",
+      "ending_type": "volume6_royal_dinner_boundary_breach_unresolved",
+      "is_ending": true,
+      "scene_id": "dustiness_royal_banquet_hall",
+      "speaker_id": "rain",
+      "text": "没有明确同意，就没有传送。争议保留到下一次能够安全复核的会面。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "王室晚宴边界争议未解",
+  "variables": {}
+}

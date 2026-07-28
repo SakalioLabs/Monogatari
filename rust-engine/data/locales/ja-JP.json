@@ -107,7 +107,7 @@
     "npc.history-loading": "会話を復元中",
     "npc.history-error": "会話履歴を読み込めませんでした。",
     "npc.generation-error": "応答の生成に失敗しました。",
-    "npc.memory-error": "ローカルモデルのメモリが不足しました。設定済みの API ランタイムに切り替えるか、より小さいローカルモデルを使用してください。",
+    "npc.memory-error": "推論サービスはコンテキストを縮小して再試行した後もメモリ不足でした。このターンは保存されていません。モデルのメモリを解放するか、より小さいモデルを選んで再試行してください。",
     "npc.webgpu-insecure": "WebGPU には安全なコンテキストが必要です。",
     "npc.webgpu-unavailable": "このブラウザでは WebGPU を利用できません。",
     "npc.knowledge-evidence": "固定ナレッジ参照 {count} 件",

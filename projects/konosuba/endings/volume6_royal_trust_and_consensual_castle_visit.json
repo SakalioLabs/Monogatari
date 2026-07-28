@@ -1,0 +1,8 @@
+{
+  "description": "晚宴完成事实更正、隐私保护和具体道歉。Iris 亲自提出王城邀请，Rain 逐项说明目的地、同行与返程，Kazuma 在可撤回条件下明确同意前往。",
+  "dialogue_id": "volume6_royal_trust_and_consensual_castle_visit_epilogue",
+  "id": "volume6_royal_trust_and_consensual_castle_visit",
+  "scene_id": "royal_castle_teleport_gallery",
+  "schema": "monogatari-story-ending/v1",
+  "title": "王室信任与自愿王城之行"
+}

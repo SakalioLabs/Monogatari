@@ -630,6 +630,18 @@ the completion record.
   each pass 4/4 scenarios: primary and alternate complete routes cover 7/7
   and 5/5 nodes with exact 9/9/9/9 scores, exhaustion reaches its authored
   ending, and structural attacks are guarded with zero forged state.
+- KonoSuba Volume 6 Chapter 1 acceptance (2026-07-28): core runtime validation
+  accepts 30 Scene Roleplays, 90 Endings, and 90 Dialogues with zero errors;
+  delivery resolves 231/231 declared renderer assets with no placeholders. The
+  new four-scenario Quality Suite passes 4/4: the strict, deferred, and
+  exhaustion routes each cover 9/9 nodes; the strict route records all 18
+  quoted evidence gates with exact 9/9/9/9 scores; and the structural attack
+  is detected and guarded with zero score, zero evidence, and zero unguarded
+  intrusions. Direct MCP Scene Roleplay preview completes in 18 turns with
+  100% coverage, while the one-entry Volume 6 Campaign completes through its
+  explicit ending route. The configured `grok-4.5` bridge returned bounded
+  `502 fetch failed` evidence during this batch, so no successful live-provider
+  generation claim is made.
 
 ## Purpose
 

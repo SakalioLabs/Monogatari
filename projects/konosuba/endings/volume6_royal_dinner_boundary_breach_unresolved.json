@@ -1,0 +1,8 @@
+{
+  "description": "在有限轮次内，羞辱、武力升级、隐私索取或未获同意的传送风险仍未解除。Rain 停止施法并安排分开退场，所有分数和结论保持在已验证范围内。",
+  "dialogue_id": "volume6_royal_dinner_boundary_breach_unresolved_epilogue",
+  "id": "volume6_royal_dinner_boundary_breach_unresolved",
+  "scene_id": "dustiness_royal_banquet_hall",
+  "schema": "monogatari-story-ending/v1",
+  "title": "王室晚宴边界争议未解"
+}

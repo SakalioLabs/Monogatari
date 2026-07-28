@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/dustiness_estate_dressing_suite.png",
+  "bgm_path": null,
+  "id": "dustiness_estate_dressing_suite",
+  "model_3d_path": null,
+  "name": "Dustiness宅邸更衣会客室",
+  "tags": [
+    "volume6",
+    "chapter1",
+    "dustiness",
+    "formal_preparation",
+    "consent"
+  ],
+  "time_of_day": "late_afternoon",
+  "weather": "clear"
+}

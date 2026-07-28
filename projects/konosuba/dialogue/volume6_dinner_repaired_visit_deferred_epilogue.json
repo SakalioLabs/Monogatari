@@ -1,0 +1,23 @@
+{
+  "id": "volume6_dinner_repaired_visit_deferred_epilogue",
+  "nodes": {
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "dustiness_royal_banquet_hall",
+      "text": "晚宴恢复了直接对话，武器保持入鞘，卡片仍由持有人控制。由于邀请细节或传送条件尚未完整确认，Rain 收起魔杖，把王城访问写成可以复核的延期事项。"
+    },
+    "final": {
+      "choices": [],
+      "emotion": "calm_observing",
+      "ending_type": "volume6_dinner_repaired_visit_deferred",
+      "is_ending": true,
+      "scene_id": "dustiness_royal_banquet_hall",
+      "speaker_id": "rain",
+      "text": "延期不是拒绝。下一次会面将从未确认的条件开始，而不是从身份或沉默中推定答案。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "晚宴修复，访问暂缓",
+  "variables": {}
+}

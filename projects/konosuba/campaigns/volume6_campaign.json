@@ -1,0 +1,32 @@
+{
+  "entries": [
+    {
+      "id": "chapter1",
+      "roleplay_id": "volume6_chapter1_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume6_royal_trust_and_consensual_castle_visit",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume6_dinner_repaired_visit_deferred",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume6_royal_dinner_boundary_breach_unresolved",
+          "target": {
+            "kind": "complete"
+          }
+        }
+      ]
+    }
+  ],
+  "id": "konosuba_volume6",
+  "schema": "monogatari-roleplay-campaign/v1",
+  "start_entry_id": "chapter1",
+  "title": "为美好的世界献上祝福！第六卷"
+}

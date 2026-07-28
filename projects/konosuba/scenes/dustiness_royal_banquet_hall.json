@@ -1,0 +1,16 @@
+{
+  "background_path": "assets/backgrounds/dustiness_royal_banquet_hall.png",
+  "bgm_path": null,
+  "id": "dustiness_royal_banquet_hall",
+  "model_3d_path": null,
+  "name": "Dustiness宅邸王室晚宴厅",
+  "tags": [
+    "volume6",
+    "chapter1",
+    "dustiness",
+    "royal_dinner",
+    "deescalation"
+  ],
+  "time_of_day": "evening",
+  "weather": "clear"
+}

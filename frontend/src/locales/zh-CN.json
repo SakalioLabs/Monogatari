@@ -107,7 +107,7 @@
     "npc.history-loading": "正在恢复会话",
     "npc.history-error": "无法加载会话记录。",
     "npc.generation-error": "回复生成失败。",
-    "npc.memory-error": "本地模型内存不足。请切换到已配置的 API 运行时，或使用更小的本地模型。",
+    "npc.memory-error": "推理服务在缩短上下文重试后仍然内存不足。本轮未写入对话或剧情状态；释放模型内存或切换较小模型后可直接重试。",
     "npc.webgpu-insecure": "WebGPU 需要安全上下文。",
     "npc.webgpu-unavailable": "当前浏览器无法使用 WebGPU。",
     "npc.knowledge-evidence": "{count} 条固定知识引用",

@@ -214,6 +214,27 @@ describe('NpcConversationPanel', () => {
     expect(wrapper.text()).toContain('The remote signal recovered.')
   })
 
+  it('rolls back an out-of-memory browser turn and restores the retryable input', async () => {
+    mocks.generateWebGpuChat.mockRejectedValue(
+      new Error('failed to call OrtRun(). ERROR_CODE: 6, ERROR_MESSAGE: std::bad_alloc'),
+    )
+    const wrapper = mount(NpcConversationPanel, {
+      props: { open: true, character, desktopRuntime: false, locale: 'zh-CN' },
+    })
+    await flushPromises()
+
+    await wrapper.get('[data-testid="npc-input"]').setValue('请再确认一次坐标。')
+    await wrapper.get('[data-testid="npc-send"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.findAll('[data-npc-message-role]')).toHaveLength(0)
+    expect((wrapper.get('[data-testid="npc-input"]').element as HTMLTextAreaElement).value)
+      .toBe('请再确认一次坐标。')
+    expect(wrapper.get('[role="alert"]').text()).toContain('not committed')
+    expect(wrapper.get('[role="alert"]').text()).not.toContain('OrtRun')
+    expect(wrapper.get('[role="alert"]').text()).not.toContain('std::bad_alloc')
+  })
+
   it('disables the composer when WebGPU is unavailable', async () => {
     mocks.detectWebGpuSupport.mockReturnValue({ available: false, reason: 'webgpu-unavailable' })
     const wrapper = mount(NpcConversationPanel, {

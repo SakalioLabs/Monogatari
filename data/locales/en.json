@@ -107,7 +107,7 @@
     "npc.history-loading": "Restoring conversation",
     "npc.history-error": "Conversation history could not be loaded.",
     "npc.generation-error": "Reply generation failed.",
-    "npc.memory-error": "The local model ran out of memory. Switch to the configured API runtime or use a smaller local model.",
+    "npc.memory-error": "The inference service ran out of memory after reduced-context retries. This turn was not committed; free model memory or select a smaller model, then retry.",
     "npc.webgpu-insecure": "WebGPU requires a secure context.",
     "npc.webgpu-unavailable": "WebGPU is unavailable in this browser.",
     "npc.knowledge-evidence": "{count} pinned knowledge refs",
