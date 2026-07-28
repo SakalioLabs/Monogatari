@@ -40,6 +40,14 @@ Binary assets are outside Agent JSON transactions. In this repository, plan a bo
 
 Use structured JSON editing and preserve unrelated author changes. Do not invent a parallel schema or bypass runtime validation with a custom parser.
 
+For a playable project, set `settings.json` `play.launch` to the stable internal
+ID of its primary `campaign` or `roleplay`. The filename is not the content ID.
+Queryless Web and desktop launches resolve this contract before catalog
+fallbacks, and packaging must reject a target that is not present in the
+shipped project documents. Fixed Dialogue is appropriate for intentional
+cutscenes and endings, not as the default interaction loop of an AI roleplay
+project.
+
 For a new multi-node real-time chapter in this repository, prefer the
 schema-backed blueprint compiler over hand-copying full Roleplay and Quality
 documents. Create one blueprint under `authoring/blueprints/`, then review and

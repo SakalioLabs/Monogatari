@@ -3,6 +3,7 @@
     class="roleplay-shell"
     :class="{ 'has-participants': participantIds.length > 1 }"
     data-testid="scene-roleplay"
+    :data-roleplay-id="snapshot.definition.id"
     :data-roleplay-status="snapshot.session.status"
     :data-evaluation-source="lastEvaluationSource || undefined"
     :data-evaluation-deltas="lastEvaluationDeltaCount"

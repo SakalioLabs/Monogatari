@@ -17,6 +17,12 @@
     "autoAdvanceDelay": 0,
     "defaultBackgroundAlpha": 210
   },
+  "play": {
+    "launch": {
+      "kind": "campaign",
+      "id": "konosuba_volume6"
+    }
+  },
   "ai": {
     "provider": "api",
     "api": {

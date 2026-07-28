@@ -333,6 +333,7 @@ async function verifyWebProjectAssets({ repositoryRoot, distDir, projectAssetMan
     issues.push('project-assets.json event_catalogs must be an array')
     return
   }
+  await verifyProjectLaunch(projectAssetManifest, distDir, issues)
 
   const manifestAssets = new Set(projectAssetManifest.assets)
   if (manifestAssets.size !== projectAssetManifest.assets.length) {
@@ -383,6 +384,7 @@ async function verifyWebProjectAssets({ repositoryRoot, distDir, projectAssetMan
     { directory: 'scenes', manifestField: 'scene_files', prefix: '/scenes/' },
     { directory: 'dialogue', manifestField: 'dialogue_files', prefix: '/dialogue/' },
     { directory: 'roleplays', manifestField: 'roleplay_files', prefix: '/roleplays/' },
+    { directory: 'campaigns', manifestField: 'campaign_files', prefix: '/campaigns/' },
     { directory: 'endings', manifestField: 'ending_files', prefix: '/endings/' },
     { directory: 'characters', manifestField: 'character_files', prefix: '/characters/' },
     { directory: 'knowledge', manifestField: 'knowledge_files', prefix: '/knowledge/' },
@@ -413,6 +415,42 @@ async function verifyWebProjectAssets({ repositoryRoot, distDir, projectAssetMan
         issues.push(`project-assets.json references missing project content: ${manifestPath}`)
       }
     }
+  }
+}
+
+async function verifyProjectLaunch(manifest, distDir, issues) {
+  if (manifest.launch == null) return
+  const launch = manifest.launch
+  if (!launch || typeof launch !== 'object' || Array.isArray(launch)) {
+    issues.push('project-assets.json launch must be an object or null')
+    return
+  }
+  if (!['campaign', 'roleplay'].includes(launch.kind)
+    || typeof launch.id !== 'string'
+    || !/^[A-Za-z0-9_-]{1,128}$/.test(launch.id)) {
+    issues.push('project-assets.json launch must identify a portable campaign or roleplay id')
+    return
+  }
+
+  const field = launch.kind === 'campaign' ? 'campaign_files' : 'roleplay_files'
+  const paths = manifest[field]
+  if (!Array.isArray(paths)) {
+    issues.push(`project-assets.json ${field} must be an array`)
+    return
+  }
+  let found = false
+  for (const manifestPath of paths) {
+    if (typeof manifestPath !== 'string') continue
+    try {
+      const filePath = path.join(distDir, manifestPath.replace(/^\/+/, ''))
+      const document = JSON.parse(await readFile(filePath, 'utf8'))
+      if (document?.id === launch.id) found = true
+    } catch {
+      // Missing and malformed content is reported by the project inventory checks.
+    }
+  }
+  if (!found) {
+    issues.push(`project-assets.json launch references missing ${launch.kind} id: ${launch.id}`)
   }
 }
 

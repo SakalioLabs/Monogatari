@@ -198,6 +198,7 @@ function projectDataDevPlugin(): Plugin {
           schema: 'monogatari-web-project-assets/v1',
           generated_by: 'frontend/vite.config.ts',
           project_scope: projectScope,
+          launch: projectLaunchTarget(),
           assets: projectFiles(projectDataRoots.assets, '/assets'),
           event_catalogs: projectFiles(projectDataRoots.events, '/events'),
           scene_files: projectFiles(projectDataRoots.scenes, '/scenes'),
@@ -217,6 +218,15 @@ function projectDataDevPlugin(): Plugin {
         server.middlewares.use(`/${route}`, serveProjectFile(rootDir))
       }
     },
+  }
+}
+
+function projectLaunchTarget() {
+  try {
+    const settings = JSON.parse(readFileSync(projectSettingsPath, 'utf8')) as Record<string, any>
+    return settings.play?.launch ?? null
+  } catch {
+    return null
   }
 }
 

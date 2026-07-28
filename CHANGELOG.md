@@ -1,6 +1,7 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Added a project-level `play.launch` contract for campaign-first or Roleplay-first startup. Queryless Web and desktop game launches now enter the configured real-time LLM NPC experience, authoring previews retain explicit precedence, and Web packaging rejects launch IDs that do not resolve to shipped content.
 - Added KonoSuba Volume 6 Chapter 2 as an eight-node real-time LLM NPC chapter covering revocable castle guest status, story and privacy boundaries, school and raid context, a mutual sibling-like role, fair-play disclosure, non-coercive return negotiation, banquet reputation repair, and a bounded phantom-thief investigation charter. Four scores and sixteen quoted evidence gates select three deterministic endings; generated castle-bedroom, courtyard, and Iris state assets are project-scoped and fingerprint imported.
 - Added the schema-backed Scene Roleplay blueprint compiler for Agent and human authors. One compact blueprint expands into complete runtime node safety, guard, fallback, transition, and four-scenario Quality contracts through a reviewed fingerprinted plan and atomic write.
 - Quality expectations can now assert the exact final Roleplay node and committed story-turn count. Browser and Rust attack handling both retain a guarded audit transcript while leaving node, score, evidence, relationships, story-turn counters, and route state unchanged.

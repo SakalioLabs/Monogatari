@@ -17,6 +17,12 @@
         "autoAdvanceDelay": 0,
         "defaultBackgroundAlpha": 200
     },
+    "play": {
+        "launch": {
+            "kind": "roleplay",
+            "id": "blue_frame_roleplay"
+        }
+    },
     "ai": {
         "provider": "onnx",
         "api": {

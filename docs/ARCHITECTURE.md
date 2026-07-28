@@ -4,6 +4,14 @@
 
 Monogatari is an AI-native visual novel and scene-roleplay engine built with Rust (Tauri 2.x) and Vue 3 + TypeScript. Its primary loop is free-form player input inside authored scene nodes: a model performs the NPC, an independent evaluator proposes score and evidence changes, and a deterministic state machine alone selects later nodes and endings. The workbench and Agent interfaces author and validate the same project contracts used by Web/PWA and Windows packages; fixed Dialogue remains available for intentionally scripted sequences.
 
+Project startup is content-addressed by `settings.json` through
+`play.launch = { kind: "campaign" | "roleplay", id }`. Web builds copy that
+target into `project-assets.json`; desktop builds read it from the active
+project configuration. Explicit authoring previews take precedence, while a
+queryless `/game` launch starts the configured real-time campaign or Roleplay.
+Scripted Dialogue remains available for authored cutscenes and endings, but is
+not the default interaction path.
+
 ## System Architecture
 
 ```

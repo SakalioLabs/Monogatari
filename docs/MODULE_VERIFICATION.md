@@ -2,6 +2,13 @@
 
 ## Independent Project Production Simulation
 
+- Project launch acceptance (2026-07-28): `settings.json` now selects a
+  campaign or Roleplay by stable content ID. Queryless Web and desktop game
+  entry resolves the configured live target before deterministic catalog
+  fallbacks, while explicit authoring previews retain precedence. Web manifests
+  carry the same launch target and distribution verification rejects targets
+  that do not resolve to packaged campaign or Roleplay documents.
+
 The `projects/konosuba` Chapter 1 project is a real-content acceptance fixture,
 not part of the built-in sample catalogs. Its first verified milestone covers
 the afterlife selection through formation of the initial four-person party.

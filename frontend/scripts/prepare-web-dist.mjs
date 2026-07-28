@@ -215,6 +215,7 @@ function vercelConfig() {
 }
 
 async function projectAssetManifest() {
+  const settings = JSON.parse(await readFile(projectSettingsPath, 'utf8'))
   const assetFiles = (await walkFiles(projectAssetsDir, []))
     .map((file) => `/assets/${path.relative(projectAssetsDir, file).replaceAll(path.sep, '/')}`)
     .sort()
@@ -246,6 +247,7 @@ async function projectAssetManifest() {
   return {
     schema: 'monogatari-web-project-assets/v1',
     generated_by: 'frontend/scripts/prepare-web-dist.mjs',
+    launch: settings.play?.launch ?? null,
     assets: assetFiles,
     event_catalogs: eventCatalogFiles,
     scene_files: sceneFiles,

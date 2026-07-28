@@ -362,6 +362,11 @@ import {
   type RoleplayCampaignDefinition,
   type RoleplayCampaignRuntimeSnapshot,
 } from '../lib/roleplayCampaign'
+import {
+  loadProjectLaunchTarget,
+  resolveProjectLaunch,
+  type ProjectLaunchTarget,
+} from '../lib/projectLaunch'
 
 const { locale, t } = useI18n()
 const route = useRoute()
@@ -433,6 +438,7 @@ const storyRoleplays = ref<SceneRoleplayDefinition[]>([])
 const storyCampaigns = ref<RoleplayCampaignDefinition[]>([])
 const activeRoleplaySnapshot = ref<SceneRoleplaySnapshot | null>(null)
 const activeCampaignSnapshot = ref<RoleplayCampaignRuntimeSnapshot | null>(null)
+const projectLaunchTarget = ref<ProjectLaunchTarget | null>(null)
 const libraryTab = ref<'campaigns' | 'roleplays' | 'scenes' | 'dialogues' | 'endings'>('campaigns')
 const storyAccess = ref<StoryContentAccessSnapshot>({
   schema: 'monogatari-story-content-access/v1',
@@ -662,6 +668,7 @@ async function loadStoryLibrary() {
     storyDialogues.value = dialogues
     storyEndings.value = endings
     storyAccess.value = access
+    projectLaunchTarget.value = await loadProjectLaunchTarget()
   } catch (error) {
     errorMessage.value = t('game.unable-load-library', 'Unable to load story library: {error}', { error: String(error) })
   }
@@ -1081,7 +1088,7 @@ onMounted(async () => {
   const previewDialogueId = route.query.previewDialogue
   const previewNodeId = route.query.previewNode
   const previewEndingId = route.query.previewEnding
-  if (!desktopRuntime && route.query.authoring === '1') {
+  if (route.query.authoring === '1') {
     const campaign = typeof previewCampaignId === 'string'
       ? storyCampaigns.value.find(item => item.id === previewCampaignId)
       : undefined
@@ -1127,6 +1134,8 @@ onMounted(async () => {
     } else {
       await startPrimaryDynamicStory()
     }
+  } else if (!dialogueState.value?.is_active) {
+    await startPrimaryDynamicStory()
   }
   window.addEventListener('keydown', handleKeydown)
   
@@ -1145,16 +1154,23 @@ onMounted(async () => {
 })
 
 async function startPrimaryDynamicStory() {
-  const campaign = storyCampaigns.value[0]
-  if (campaign) {
-    await replaceAuthoringPreview('previewCampaign', campaign.id)
-    await startRoleplayCampaign(campaign)
+  const launch = resolveProjectLaunch(
+    projectLaunchTarget.value,
+    storyCampaigns.value,
+    storyRoleplays.value,
+  )
+  if (launch?.kind === 'campaign') {
+    if (route.query.authoring === '1') {
+      await replaceAuthoringPreview('previewCampaign', launch.definition.id)
+    }
+    await startRoleplayCampaign(launch.definition)
     return
   }
-  const roleplay = storyRoleplays.value[0]
-  if (roleplay) {
-    await replaceAuthoringPreview('previewRoleplay', roleplay.id)
-    await startSceneRoleplay(roleplay)
+  if (launch?.kind === 'roleplay') {
+    if (route.query.authoring === '1') {
+      await replaceAuthoringPreview('previewRoleplay', launch.definition.id)
+    }
+    await startSceneRoleplay(launch.definition)
   }
 }
 

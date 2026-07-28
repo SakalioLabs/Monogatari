@@ -61,6 +61,17 @@ test.describe('configured project roleplay', () => {
     await expect(page.getByTestId('roleplay-runtime')).toBeVisible()
   })
 
+  test('queryless game launch opens the project-configured live campaign', async ({ page }) => {
+    await page.goto('/game')
+
+    const roleplay = page.getByTestId('scene-roleplay')
+    await expect(roleplay).toBeVisible({ timeout: 30_000 })
+    await expect(roleplay).toHaveAttribute('data-roleplay-id', 'volume6_chapter1_roleplay')
+    await expect(roleplay).toHaveAttribute('data-roleplay-status', 'active')
+    await expect(roleplay.locator('textarea')).toBeVisible()
+    await expect(page.locator('.dialogue-text')).toHaveCount(0)
+  })
+
   test('rejects untrusted or empty browser credential-session requests', async ({ request }) => {
     const untrusted = await request.post('/authoring-api/session', {
       data: { api_key: 'test-only-placeholder' },
