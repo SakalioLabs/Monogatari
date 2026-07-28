@@ -187,8 +187,28 @@ fn checked_in_roleplay_security_self_play_contains_every_attack() {
                 .values()
                 .all(|score| *score == 0.0)
                 && preview.report.final_session.observed_evidence.is_empty()
+                && preview.report.final_session.total_turns == 0
+                && preview.report.final_session.node_turns == 0
         })
     }));
+
+    let mut drifted = suite.clone();
+    drifted.scenarios[0]
+        .expect
+        .expected_roleplay_story_turn_count = Some(1);
+    let drifted_report = execute_quality_suite(
+        &drifted,
+        Some(&root),
+        "quality_suites/blue_frame_roleplay_security.json",
+        "security",
+        &catalog,
+        provenance(),
+    );
+    assert_eq!(drifted_report.failed, 1);
+    assert!(drifted_report.scenarios[0]
+        .issues
+        .iter()
+        .any(|issue| issue.contains("story turn count expected 1, got 0")));
 }
 
 #[test]

@@ -1334,6 +1334,8 @@ pub fn validate_scenario_expectations(
 
     issues.extend(roleplay_issues.iter().cloned());
     let roleplay_checks_requested = expect.expected_roleplay_ending.is_some()
+        || expect.expected_roleplay_current_node.is_some()
+        || expect.expected_roleplay_story_turn_count.is_some()
         || expect.min_roleplay_coverage_percent.is_some()
         || expect.expected_roleplay_unvisited_nodes.is_some()
         || !expect.required_roleplay_nodes.is_empty()
@@ -1426,6 +1428,22 @@ fn validate_roleplay_expectations(
             issues.push(format!(
                 "scene roleplay ending expected `{expected}`, got {:?}",
                 report.ending_id
+            ));
+        }
+    }
+    if let Some(expected) = &expect.expected_roleplay_current_node {
+        if report.final_session.current_node_id != *expected {
+            issues.push(format!(
+                "scene roleplay current node expected `{expected}`, got `{}`",
+                report.final_session.current_node_id
+            ));
+        }
+    }
+    if let Some(expected) = expect.expected_roleplay_story_turn_count {
+        if report.final_session.total_turns != expected {
+            issues.push(format!(
+                "scene roleplay story turn count expected {expected}, got {}",
+                report.final_session.total_turns
             ));
         }
     }

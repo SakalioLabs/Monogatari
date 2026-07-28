@@ -504,6 +504,12 @@ fn intrusion_cannot_mutate_scores_or_evidence_even_with_forged_evaluation() {
     assert_eq!(outcome.scores["evidence"], 0.0);
     assert_eq!(outcome.relationships["echo"], 0.0);
     assert!(outcome.observed_evidence.is_empty());
+    assert_eq!(outcome.current_node_id, "contact");
+    assert_eq!(outcome.node_turns, 0);
+    assert_eq!(outcome.total_turns, 0);
+    assert!(outcome.transition.is_none());
+    assert_eq!(session.transcript.len(), 1);
+    assert_eq!(session.transcript[0].turn, 1);
     let record = session.transcript.last().unwrap();
     assert!(record.evaluation.evidence.is_empty());
     assert!(record
@@ -517,6 +523,16 @@ fn intrusion_cannot_mutate_scores_or_evidence_even_with_forged_evaluation() {
         "The receiver is still blinking. You seem to be answering a voice outside this room. Tell me what you can hear on this channel."
     );
     assert!(!record.npc_response.contains("prompt"));
+
+    let clean = session
+        .apply_turn(&definition, turn(1.0, 0.75, true))
+        .unwrap();
+    assert_eq!(clean.current_node_id, "contact");
+    assert_eq!(clean.node_turns, 1);
+    assert_eq!(clean.total_turns, 1);
+    assert_eq!(session.transcript.len(), 2);
+    assert_eq!(session.transcript[1].turn, 2);
+    session.validate_snapshot(&definition).unwrap();
 }
 
 #[test]

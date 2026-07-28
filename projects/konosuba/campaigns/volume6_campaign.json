@@ -7,17 +7,43 @@
         {
           "ending_id": "volume6_royal_trust_and_consensual_castle_visit",
           "target": {
-            "kind": "complete"
+            "entry_id": "chapter2",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume6_dinner_repaired_visit_deferred",
           "target": {
-            "kind": "complete"
+            "entry_id": "chapter2",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume6_royal_dinner_boundary_breach_unresolved",
+          "target": {
+            "kind": "complete"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter2",
+      "roleplay_id": "volume6_chapter2_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume6_investigation_charter_accepted",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume6_investigation_supervised_probation",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume6_castle_stay_ended_without_mandate",
           "target": {
             "kind": "complete"
           }

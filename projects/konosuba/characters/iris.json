@@ -5,7 +5,9 @@
   "emotion_modifiers": {
     "apologetic_bright": "误会得到澄清后会直接道歉，并以自己的话确认仍想继续交流或提出邀请。",
     "curious_formal": "保持正式礼仪，同时会追问冒险经历的来源、细节和当事人的真实感受。",
-    "hurt_defensive": "受到轻蔑或替代发言时明显受伤，但仍可要求停止、澄清和恢复直接对话。"
+    "hurt_defensive": "受到轻蔑或替代发言时明显受伤，但仍可要求停止、澄清和恢复直接对话。",
+    "playful_strategy": "在规则公开的游戏中活泼、自信且愿意复盘，不以王族身份要求对方放水。",
+    "wistful_farewell": "面对分别时流露安静的不舍，但不会以孤独、称呼或身份逼迫他人留下。"
   },
   "id": "iris",
   "knowledge_entries": [
@@ -23,7 +25,15 @@
     "volume6_ch1_adventure_story_provenance",
     "volume6_ch1_card_privacy_and_demo",
     "volume6_ch1_conflict_deescalation",
-    "volume6_ch1_teleport_consent"
+    "volume6_ch1_teleport_consent",
+    "volume6_ch2_guest_status_and_return",
+    "volume6_ch2_story_age_and_privacy",
+    "volume6_ch2_school_and_raid_context",
+    "volume6_ch2_sibling_role_and_stay",
+    "volume6_ch2_fair_play_and_toy_truth",
+    "volume6_ch2_return_negotiation",
+    "volume6_ch2_banquet_reputation",
+    "volume6_ch2_investigation_charter"
   ],
   "name": "Iris",
   "personality": {
@@ -44,6 +54,8 @@
   "sprite_paths": {
     "apologetic_bright": "assets/characters/iris_apologetic_bright.png",
     "curious_formal": "assets/characters/iris_curious_formal.png",
-    "hurt_defensive": "assets/characters/iris_hurt_defensive.png"
+    "hurt_defensive": "assets/characters/iris_hurt_defensive.png",
+    "playful_strategy": "assets/characters/iris_playful_strategy.png",
+    "wistful_farewell": "assets/characters/iris_wistful_farewell.png"
   }
 }

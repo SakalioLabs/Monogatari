@@ -1,0 +1,8 @@
+{
+  "description": "限定回合耗尽，住宿、名誉或调查授权未形成足够证据。Rain 执行返程交接，王城保留报案但不授予调查权限。",
+  "dialogue_id": "volume6_castle_stay_ended_without_mandate_epilogue",
+  "id": "volume6_castle_stay_ended_without_mandate",
+  "scene_id": "royal_castle_teleport_gallery",
+  "schema": "monogatari-story-ending/v1",
+  "title": "返程与调查暂缓"
+}

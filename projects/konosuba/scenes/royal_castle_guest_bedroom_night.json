@@ -1,0 +1,10 @@
+{
+  "background_path": "assets/backgrounds/royal_castle_guest_bedroom_night.png",
+  "bgm_path": null,
+  "id": "royal_castle_guest_bedroom_night",
+  "model_3d_path": null,
+  "name": "王城访客卧室",
+  "tags": ["volume6", "chapter2", "royal_castle", "guest", "night"],
+  "time_of_day": "night",
+  "weather": "clear"
+}

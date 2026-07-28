@@ -1,0 +1,23 @@
+{
+  "id": "volume6_investigation_supervised_probation_epilogue",
+  "nodes": {
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "dustiness_royal_banquet_hall",
+      "text": "调查条件已经成形，但前序边界仍有需要复核的地方。Claire 将权限缩短为一天，Rain 负责在每次行动后核对证据与关系修复。"
+    },
+    "final": {
+      "choices": [],
+      "emotion": "calm_observing",
+      "ending_type": "volume6_investigation_supervised_probation",
+      "is_ending": true,
+      "scene_id": "dustiness_royal_banquet_hall",
+      "speaker_id": "rain",
+      "text": "Rain 收起试行表，提醒所有人：任何越权、造谣或故意拖延都会立即结束任务。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "调查试行与每日复核",
+  "variables": {}
+}

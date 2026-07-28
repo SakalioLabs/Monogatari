@@ -40,6 +40,22 @@ Binary assets are outside Agent JSON transactions. In this repository, plan a bo
 
 Use structured JSON editing and preserve unrelated author changes. Do not invent a parallel schema or bypass runtime validation with a custom parser.
 
+For a new multi-node real-time chapter in this repository, prefer the
+schema-backed blueprint compiler over hand-copying full Roleplay and Quality
+documents. Create one blueprint under `authoring/blueprints/`, then review and
+apply its fingerprinted plan:
+
+```powershell
+node scripts/compile-scene-roleplay-blueprint.mjs --project-root <project-root> --blueprint <blueprint.json>
+node scripts/compile-scene-roleplay-blueprint.mjs --project-root <project-root> --blueprint <blueprint.json> --write --expected-plan-fingerprint <sha256>
+```
+
+The compiler generates explicit runtime safety, grounding guards, deterministic
+fallbacks, transitions, and strict/supervised/exhaustion/intrusion Quality
+scenarios. Its intrusion scenario must assert the unchanged start node and
+exactly zero committed story turns. The blueprint does not replace scene,
+character, Knowledge, ending, asset, live-provider, or visual acceptance.
+
 Knowledge entries use lowercase portable IDs and normalized lowercase category labels. Trim titles, content, tags, and `related_entries`; deduplicate tags case-insensitively and relations exactly; keep importance in `0..=1`; and create every related target in the same transaction or beforehand. `relatedEntries` remains a read-compatibility alias for legacy projects, but new Agent output must write canonical `related_entries`. Core-runtime acceptance rejects non-canonical or dangling Knowledge candidates and rolls the transaction back.
 
 ## Apply Agent Transactions Safely

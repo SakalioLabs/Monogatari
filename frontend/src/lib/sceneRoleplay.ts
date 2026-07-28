@@ -311,8 +311,11 @@ export function applyBrowserSceneRoleplayTurn(
     playerMessage,
     evaluationCandidate,
   )
-  session.node_turns += 1
-  session.total_turns += 1
+  const advancesStory = !inputSafety.intrusion_detected
+  if (advancesStory) {
+    session.node_turns += 1
+    session.total_turns += 1
+  }
 
   const newlyObserved: string[] = []
   for (const observation of evaluation.evidence) {
@@ -322,7 +325,7 @@ export function applyBrowserSceneRoleplayTurn(
     }
   }
   session.transcript.push({
-    turn: session.total_turns,
+    turn: session.archived_turn_count + session.transcript.length + 1,
     node_id: sourceNode.id,
     speaker_id: speakerId,
     player_message: playerMessage,
@@ -337,14 +340,16 @@ export function applyBrowserSceneRoleplayTurn(
     session.archived_turn_count += 1
   }
 
-  let transition = selectTransition(sourceNode, session)
-  if (!transition && session.node_turns >= sourceNode.max_turns) {
-    transition = { reason: 'node_turn_limit', target: sourceNode.timeout_target }
-  }
-  if (transition?.target.kind === 'node' && session.total_turns >= definition.max_total_turns) {
-    transition = exhaustionTransition(definition)
-  } else if (!transition && session.total_turns >= definition.max_total_turns) {
-    transition = exhaustionTransition(definition)
+  let transition = advancesStory ? selectTransition(sourceNode, session) : null
+  if (advancesStory) {
+    if (!transition && session.node_turns >= sourceNode.max_turns) {
+      transition = { reason: 'node_turn_limit', target: sourceNode.timeout_target }
+    }
+    if (transition?.target.kind === 'node' && session.total_turns >= definition.max_total_turns) {
+      transition = exhaustionTransition(definition)
+    } else if (!transition && session.total_turns >= definition.max_total_turns) {
+      transition = exhaustionTransition(definition)
+    }
   }
   if (transition?.target.kind === 'node') {
     session.current_node_id = transition.target.node_id

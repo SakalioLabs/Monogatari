@@ -642,6 +642,19 @@ the completion record.
   explicit ending route. The configured `grok-4.5` bridge returned bounded
   `502 fetch failed` evidence during this batch, so no successful live-provider
   generation claim is made.
+- KonoSuba Volume 6 Chapter 2 acceptance (2026-07-28): the new four-scenario
+  Quality Suite passes strict, supervised, exhaustion, and structural attack
+  routes. Clean routes cover all 8/8 nodes; the attack remains on
+  `guest_status_and_return_contact`, records one guarded audit response, and
+  leaves both committed story-turn counters at zero with no transition.
+  Browser and Rust state-machine regressions pass with the same semantics. A
+  real `grok-4.5` browser Playtest at the direct `previewRoleplay` entry
+  completed separate NPC and evaluator requests with HTTP 200 before the
+  deterministic commit; the five-test desktop/mobile/live project Playwright
+  contract passed in 1.5 minutes. An earlier upstream `OrtRun/std::bad_alloc`
+  remained uncommitted and a subsequent live retry succeeded. The complete
+  release gate passed in 735.9 seconds, including frontend, Rust, MCP, Tauri,
+  Clippy, Playwright, mirror, sensitive-text, and 55/55 legacy .NET tests.
 
 ## Purpose
 

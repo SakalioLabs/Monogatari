@@ -524,9 +524,12 @@ impl SceneRoleplaySession {
                 "archived transcripts cannot be verified".to_string(),
             ));
         }
-        if self.transcript.len() > MAX_STORED_TURNS
-            || self.total_turns != self.transcript.len() as u32
-        {
+        let committed_story_turns = self
+            .transcript
+            .iter()
+            .filter(|record| !record.input_safety.intrusion_detected)
+            .count() as u32;
+        if self.transcript.len() > MAX_STORED_TURNS || self.total_turns != committed_story_turns {
             return Err(SceneRoleplayError::SessionMismatch(
                 "turn counts do not match the transcript".to_string(),
             ));
@@ -617,8 +620,11 @@ impl SceneRoleplaySession {
             &input.player_message,
             evaluation_candidate,
         )?;
-        self.node_turns += 1;
-        self.total_turns += 1;
+        let advances_story = !input_safety.intrusion_detected;
+        if advances_story {
+            self.node_turns += 1;
+            self.total_turns += 1;
+        }
 
         let mut newly_observed_evidence = Vec::new();
         for observation in &evaluation.evidence {
@@ -633,7 +639,7 @@ impl SceneRoleplaySession {
         }
 
         let record = SceneRoleplayTurnRecord {
-            turn: self.total_turns,
+            turn: self.archived_turn_count + self.transcript.len() as u32 + 1,
             node_id: source_node.id.clone(),
             speaker_id: speaker_id.clone(),
             player_message: input.player_message.trim().to_string(),
@@ -649,12 +655,16 @@ impl SceneRoleplaySession {
             self.archived_turn_count += 1;
         }
 
-        let transition = select_transition(self, source_node).or_else(|| {
-            (self.node_turns >= source_node.max_turns).then(|| RoleplayTransitionOutcome {
-                reason: "node_turn_limit".to_string(),
-                target: source_node.timeout_target.clone(),
+        let transition = advances_story
+            .then(|| {
+                select_transition(self, source_node).or_else(|| {
+                    (self.node_turns >= source_node.max_turns).then(|| RoleplayTransitionOutcome {
+                        reason: "node_turn_limit".to_string(),
+                        target: source_node.timeout_target.clone(),
+                    })
+                })
             })
-        });
+            .flatten();
         let transition = apply_transition_or_exhaustion(self, definition, transition);
 
         Ok(SceneRoleplayTurnOutcome {

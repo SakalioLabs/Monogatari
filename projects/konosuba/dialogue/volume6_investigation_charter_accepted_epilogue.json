@@ -1,0 +1,23 @@
+{
+  "id": "volume6_investigation_charter_accepted_epilogue",
+  "nodes": {
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "dustiness_royal_banquet_hall",
+      "text": "有限调查章程写明报案、权限、证据链、监督、期限、汇报和撤销条件。它只封存本章已经由当事人确认的事实，不替任何人预设有罪。"
+    },
+    "final": {
+      "choices": [],
+      "emotion": "accountable",
+      "ending_type": "volume6_investigation_charter_accepted",
+      "is_ending": true,
+      "scene_id": "dustiness_royal_banquet_hall",
+      "speaker_id": "claire",
+      "text": "Claire 封好章程，要求次日从第一份报案开始。留在王城不再是奖励，而是一项随时可以撤销的公共任务。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "受监督的义贼调查",
+  "variables": {}
+}

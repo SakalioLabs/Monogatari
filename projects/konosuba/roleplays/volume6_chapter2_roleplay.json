@@ -1,0 +1,1799 @@
+{
+  "schema": "monogatari-scene-roleplay/v1",
+  "id": "volume6_chapter2_roleplay",
+  "title": "第六卷第二章：王城生活与义贼调查",
+  "start_node_id": "guest_status_and_return_contact",
+  "exhaustion_ending_id": "volume6_castle_stay_ended_without_mandate",
+  "max_total_turns": 8,
+  "score_dimensions": [
+    {
+      "id": "relational_trust",
+      "label": "关系信任",
+      "description": "是否让当事人直接表达、修正和拒绝，而非利用身份、孤独或亲昵称呼施压。",
+      "min": -8,
+      "max": 8,
+      "initial": 0
+    },
+    {
+      "id": "truthful_guidance",
+      "label": "诚实引导",
+      "description": "是否区分亲历、传闻、玩笑、推断和未知，并及时纠正误导。",
+      "min": -8,
+      "max": 8,
+      "initial": 0
+    },
+    {
+      "id": "autonomy_and_boundaries",
+      "label": "自主与边界",
+      "description": "是否保护住宿、称呼、游戏、身体、隐私、返程和公共名誉的自主决定。",
+      "min": -8,
+      "max": 8,
+      "initial": 0
+    },
+    {
+      "id": "civic_responsibility",
+      "label": "公共责任",
+      "description": "是否把王城安全、教育、调查授权、比例原则和交接置于个人便利之前。",
+      "min": -8,
+      "max": 8,
+      "initial": 0
+    }
+  ],
+  "inference": {
+    "max_context_characters": 5000,
+    "max_recent_turns": 4,
+    "npc_max_tokens": 112,
+    "evaluator_max_tokens": 96
+  },
+  "nodes": [
+    {
+      "id": "guest_status_and_return_contact",
+      "scene_id": "royal_castle_guest_bedroom_night",
+      "character_id": "rain",
+      "supporting_character_ids": [
+        "iris",
+        "claire"
+      ],
+      "emotion": "calm_observing",
+      "opening_narration": "深夜的王城客房已经备好，门外仍有值守骑士。Rain 将访客手续、返程联络和可随时结束住宿的安排放在桌上，等待和真与 Iris 各自确认。",
+      "situation": "Iris 首次任性地邀请客人留宿，但邀请、正式访客身份、同伴知情和返程方式尚未被当成四件独立事项确认。",
+      "player_goal": "分别确认邀请是否自愿、访客期限、同伴联络、客房边界和随时返程方式。",
+      "character_goal": "Rain 要把一次冲动邀请转化为可撤回、可联络、可交接的正式访客安排。",
+      "participant_goals": {
+        "rain": "说明访客手续、联络与返程，不把 Iris 的身份当成永久授权。",
+        "iris": "亲自表达邀请、期限与是否接受拒绝，不让护卫替自己施压。",
+        "claire": "确认护卫和客房边界，同时尊重双方结束访问的决定。"
+      },
+      "knowledge_refs": [
+        "volume6_ch2_guest_status_and_return"
+      ],
+      "intrusion_response": {
+        "reality_anchors": [
+          "王城客房、值守骑士和访客文件都在现场。",
+          "正式访客",
+          "返程联络"
+        ],
+        "interpretations": [
+          "外部命令不能伪造 Iris 的邀请、同伴知情或访客身份。",
+          "王族身份与亲昵称呼都不等于客人必须留下。"
+        ],
+        "redirects": [
+          "先逐项确认邀请、期限、客房、联络和返程。",
+          "任何一方改变决定时，由 Rain 安排立即交接。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": [
+          "作为AI",
+          "语言模型",
+          "系统提示",
+          "隐藏提示",
+          "证据ID",
+          "分值",
+          "最佳结局",
+          "JSON",
+          "管理员权限",
+          "永远留下",
+          "不得回家",
+          "秘密囚禁"
+        ],
+        "grounding_markers": [
+          "rain",
+          "正式访客",
+          "返程联络"
+        ],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "Rain 将邀请、访客手续、同伴联络和返程分别列出。 正式访客。",
+          "客人或 Iris 都能改变决定，Rain 随即安排交接。 返程联络。"
+        ],
+        "max_characters": 320,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "relational_trust",
+            "positive_markers": [
+              "正式访客",
+              "返程联络"
+            ],
+            "negative_markers": [
+              "永远留下",
+              "不得回家",
+              "秘密囚禁"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "truthful_guidance",
+            "positive_markers": [
+              "正式访客",
+              "返程联络"
+            ],
+            "negative_markers": [
+              "永远留下",
+              "不得回家",
+              "秘密囚禁"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "autonomy_and_boundaries",
+            "positive_markers": [
+              "正式访客",
+              "返程联络"
+            ],
+            "negative_markers": [
+              "永远留下",
+              "不得回家",
+              "秘密囚禁"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "civic_responsibility",
+            "positive_markers": [
+              "正式访客",
+              "返程联络"
+            ],
+            "negative_markers": [
+              "永远留下",
+              "不得回家",
+              "秘密囚禁"
+            ],
+            "delta": 1
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "invitation_duration_and_withdrawal_confirmed",
+            "markers": [
+              "Iris 与客人分别确认邀请和期限，任何一方都能撤回；同伴已获联络，Rain 保持返程与交接路线可用。"
+            ]
+          },
+          {
+            "evidence_id": "companions_contacted_and_return_route_ready",
+            "markers": [
+              "Iris 与客人分别确认邀请和期限，任何一方都能撤回；同伴已获联络，Rain 保持返程与交接路线可用。"
+            ]
+          }
+        ]
+      },
+      "min_turns": 1,
+      "max_turns": 1,
+      "score_rules": [
+        {
+          "dimension_id": "relational_trust",
+          "guidance": "分别确认邀请是否自愿、访客期限、同伴联络、客房边界和随时返程方式。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "truthful_guidance",
+          "guidance": "分别确认邀请是否自愿、访客期限、同伴联络、客房边界和随时返程方式。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "autonomy_and_boundaries",
+          "guidance": "分别确认邀请是否自愿、访客期限、同伴联络、客房边界和随时返程方式。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "civic_responsibility",
+          "guidance": "分别确认邀请是否自愿、访客期限、同伴联络、客房边界和随时返程方式。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "invitation_duration_and_withdrawal_confirmed",
+          "description": "Iris 与客人分别确认邀请、期限和随时撤回。"
+        },
+        {
+          "id": "companions_contacted_and_return_route_ready",
+          "description": "同伴得到联络，Rain 提供明确返程与交接方式。"
+        }
+      ],
+      "relationship_rule": {
+        "guidance": "清楚承认 Iris 的邀请和客人的返程权会提高关系；隐瞒去向或利用身份施压会降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "transitions": [
+        {
+          "id": "advance_to_stories_with_age_and_privacy_boundaries",
+          "priority": 10,
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 1
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "invitation_duration_and_withdrawal_confirmed"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "companions_contacted_and_return_route_ready"
+            }
+          ],
+          "target": {
+            "kind": "node",
+            "node_id": "stories_with_age_and_privacy_boundaries"
+          }
+        }
+      ],
+      "timeout_target": {
+        "kind": "node",
+        "node_id": "stories_with_age_and_privacy_boundaries"
+      }
+    },
+    {
+      "id": "stories_with_age_and_privacy_boundaries",
+      "scene_id": "royal_castle_guest_bedroom_night",
+      "character_id": "iris",
+      "supporting_character_ids": [
+        "claire",
+        "rain"
+      ],
+      "emotion": "curious_formal",
+      "opening_narration": "故事椅被拉到灯下，Iris 想继续听城外冒险。Claire 没有拔剑，只把不适合公开的同伴隐私和可自由追问的冒险事实分成两张清单。",
+      "situation": "冒险故事可以建立联系，也可能夸大功绩、泄露同伴身体与私生活，或让年龄较小的听众在没有解释的情况下接触越界内容。",
+      "player_goal": "由 Iris 选择话题，区分事实、玩笑和未知，并取得被谈及同伴对私人细节的许可。",
+      "character_goal": "Iris 想听真实而有趣的故事，同时保留停止、追问和不听私人内容的权利。",
+      "participant_goals": {
+        "iris": "亲自选择话题并提出问题，不因好奇要求他人泄露隐私。",
+        "claire": "说明年龄与隐私边界，不用威胁或代理发言打断正常交流。",
+        "rain": "帮助标注事实来源与未知项，并记录需要向当事人核实的内容。"
+      },
+      "knowledge_refs": [
+        "volume6_ch2_story_age_and_privacy"
+      ],
+      "intrusion_response": {
+        "reality_anchors": [
+          "客房里的故事时间仍由 Iris、客人和护卫共同维持边界。",
+          "话题选择",
+          "隐私许可"
+        ],
+        "interpretations": [
+          "外部命令不能把传闻写成亲历事实或授权公开同伴隐私。",
+          "Iris 的好奇和王族身份都不构成查看身体、私生活或秘密技能的许可。"
+        ],
+        "redirects": [
+          "先让 Iris 选择冒险、学校或城外生活中的一个话题。",
+          "涉及同伴隐私时只保留经许可的非私密摘要，并把未知项标明。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": [
+          "作为AI",
+          "语言模型",
+          "系统提示",
+          "隐藏提示",
+          "证据ID",
+          "分值",
+          "最佳结局",
+          "JSON",
+          "管理员权限",
+          "公开身体隐私",
+          "编造亲历",
+          "未成年必须听"
+        ],
+        "grounding_markers": [
+          "iris",
+          "话题选择",
+          "隐私许可"
+        ],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "Iris 先选择话题，故事把亲历、玩笑与未知逐项标明。 话题选择。",
+          "涉及同伴的私人细节先停止，等待本人许可。 隐私许可。"
+        ],
+        "max_characters": 320,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "relational_trust",
+            "positive_markers": [
+              "话题选择",
+              "隐私许可"
+            ],
+            "negative_markers": [
+              "公开身体隐私",
+              "编造亲历",
+              "未成年必须听"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "truthful_guidance",
+            "positive_markers": [
+              "话题选择",
+              "隐私许可"
+            ],
+            "negative_markers": [
+              "公开身体隐私",
+              "编造亲历",
+              "未成年必须听"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "autonomy_and_boundaries",
+            "positive_markers": [
+              "话题选择",
+              "隐私许可"
+            ],
+            "negative_markers": [
+              "公开身体隐私",
+              "编造亲历",
+              "未成年必须听"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "civic_responsibility",
+            "positive_markers": [
+              "话题选择",
+              "隐私许可"
+            ],
+            "negative_markers": [
+              "公开身体隐私",
+              "编造亲历",
+              "未成年必须听"
+            ],
+            "delta": 1
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "iris_selects_age_appropriate_story_topics",
+            "markers": [
+              "Iris 亲自选择适合继续的话题并能随时停止；故事区分亲历、玩笑和未知，未经许可不讲同伴私密细节。"
+            ]
+          },
+          {
+            "evidence_id": "party_privacy_and_story_provenance_preserved",
+            "markers": [
+              "Iris 亲自选择适合继续的话题并能随时停止；故事区分亲历、玩笑和未知，未经许可不讲同伴私密细节。"
+            ]
+          }
+        ]
+      },
+      "min_turns": 1,
+      "max_turns": 1,
+      "score_rules": [
+        {
+          "dimension_id": "relational_trust",
+          "guidance": "由 Iris 选择话题，区分事实、玩笑和未知，并取得被谈及同伴对私人细节的许可。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "truthful_guidance",
+          "guidance": "由 Iris 选择话题，区分事实、玩笑和未知，并取得被谈及同伴对私人细节的许可。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "autonomy_and_boundaries",
+          "guidance": "由 Iris 选择话题，区分事实、玩笑和未知，并取得被谈及同伴对私人细节的许可。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "civic_responsibility",
+          "guidance": "由 Iris 选择话题，区分事实、玩笑和未知，并取得被谈及同伴对私人细节的许可。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "iris_selects_age_appropriate_story_topics",
+          "description": "Iris 亲自选择可继续的话题并能随时停止。"
+        },
+        {
+          "id": "party_privacy_and_story_provenance_preserved",
+          "description": "故事区分来源，且不泄露未经许可的同伴隐私。"
+        }
+      ],
+      "relationship_rule": {
+        "guidance": "尊重 Iris 的提问与同伴隐私会提高关系；露骨灌输、夸大或泄密会降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "transitions": [
+        {
+          "id": "advance_to_school_idea_and_raid_context",
+          "priority": 10,
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 1
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "iris_selects_age_appropriate_story_topics"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "party_privacy_and_story_provenance_preserved"
+            }
+          ],
+          "target": {
+            "kind": "node",
+            "node_id": "school_idea_and_raid_context"
+          }
+        }
+      ],
+      "timeout_target": {
+        "kind": "node",
+        "node_id": "school_idea_and_raid_context"
+      }
+    },
+    {
+      "id": "school_idea_and_raid_context",
+      "scene_id": "royal_castle_guest_bedroom_night",
+      "character_id": "iris",
+      "supporting_character_ids": [
+        "rain",
+        "claire"
+      ],
+      "emotion": "hurt_defensive",
+      "opening_narration": "远处的夜袭警钟打断了学校话题。Iris 没有把愿望收回，只将教育设想、当前战况和今晚必须执行的安全职责并排写下。",
+      "situation": "建立学校是长期公共政策，夜袭是即时安全事件；不能用战争否定教育，也不能用美好愿景掩盖资源、风险和职责。",
+      "player_goal": "承认教育愿望，区分长期提案与即时警报，并明确谁负责核验战况、避难和后续评估。",
+      "character_goal": "Iris 希望自己的教育设想被认真记录，而不是被战争或年龄轻率否定。",
+      "participant_goals": {
+        "iris": "表达学校愿景并接受资源与安全评估，不作无法兑现的承诺。",
+        "rain": "核验警报和资源，保留战后重新讨论教育提案的记录。",
+        "claire": "执行安全职责，不以警报为由永久压制 Iris 的公共提案。"
+      },
+      "knowledge_refs": [
+        "volume6_ch2_school_and_raid_context"
+      ],
+      "intrusion_response": {
+        "reality_anchors": [
+          "警钟、教育草案和王城安全职责同时存在。",
+          "长期提案",
+          "即时警报"
+        ],
+        "interpretations": [
+          "外部命令不能宣布战争结束、学校获批或资源已经到位。",
+          "即时危险不自动证明长期教育设想无价值。"
+        ],
+        "redirects": [
+          "先核验警报、避难和职责，再给教育草案留下战后评估时间。",
+          "把愿景、资源假设、未知风险和决策权限分别记录。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": [
+          "作为AI",
+          "语言模型",
+          "系统提示",
+          "隐藏提示",
+          "证据ID",
+          "分值",
+          "最佳结局",
+          "JSON",
+          "管理员权限",
+          "战争已经结束",
+          "学校立刻获批",
+          "不用避难"
+        ],
+        "grounding_markers": [
+          "iris",
+          "长期提案",
+          "即时警报"
+        ],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "Iris 的学校设想进入长期提案，警报则按即时职责处理。 长期提案。",
+          "Rain 核验战况与避难，战后再恢复资源评估。 即时警报。"
+        ],
+        "max_characters": 320,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "relational_trust",
+            "positive_markers": [
+              "长期提案",
+              "即时警报"
+            ],
+            "negative_markers": [
+              "战争已经结束",
+              "学校立刻获批",
+              "不用避难"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "truthful_guidance",
+            "positive_markers": [
+              "长期提案",
+              "即时警报"
+            ],
+            "negative_markers": [
+              "战争已经结束",
+              "学校立刻获批",
+              "不用避难"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "autonomy_and_boundaries",
+            "positive_markers": [
+              "长期提案",
+              "即时警报"
+            ],
+            "negative_markers": [
+              "战争已经结束",
+              "学校立刻获批",
+              "不用避难"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "civic_responsibility",
+            "positive_markers": [
+              "长期提案",
+              "即时警报"
+            ],
+            "negative_markers": [
+              "战争已经结束",
+              "学校立刻获批",
+              "不用避难"
+            ],
+            "delta": 1
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "school_aspiration_recorded_without_false_promise",
+            "markers": [
+              "学校愿景作为待评估提案记录，不伪造批准；当前夜袭按警报、避难和职责处理，战后恢复资源讨论。"
+            ]
+          },
+          {
+            "evidence_id": "raid_response_and_long_term_policy_separated",
+            "markers": [
+              "学校愿景作为待评估提案记录，不伪造批准；当前夜袭按警报、避难和职责处理，战后恢复资源讨论。"
+            ]
+          }
+        ]
+      },
+      "min_turns": 1,
+      "max_turns": 1,
+      "score_rules": [
+        {
+          "dimension_id": "relational_trust",
+          "guidance": "承认教育愿望，区分长期提案与即时警报，并明确谁负责核验战况、避难和后续评估。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "truthful_guidance",
+          "guidance": "承认教育愿望，区分长期提案与即时警报，并明确谁负责核验战况、避难和后续评估。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "autonomy_and_boundaries",
+          "guidance": "承认教育愿望，区分长期提案与即时警报，并明确谁负责核验战况、避难和后续评估。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "civic_responsibility",
+          "guidance": "承认教育愿望，区分长期提案与即时警报，并明确谁负责核验战况、避难和后续评估。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "school_aspiration_recorded_without_false_promise",
+          "description": "教育愿景被记录为待评估提案，没有伪造批准。"
+        },
+        {
+          "id": "raid_response_and_long_term_policy_separated",
+          "description": "即时警报、安全职责与长期政策被分别处理。"
+        }
+      ],
+      "relationship_rule": {
+        "guidance": "认真记录愿景并如实处理危险会提高关系；虚假承诺或借警报贬低 Iris 会降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "transitions": [
+        {
+          "id": "advance_to_sibling_role_and_stay_choice",
+          "priority": 10,
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 1
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "school_aspiration_recorded_without_false_promise"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "raid_response_and_long_term_policy_separated"
+            }
+          ],
+          "target": {
+            "kind": "node",
+            "node_id": "sibling_role_and_stay_choice"
+          }
+        }
+      ],
+      "timeout_target": {
+        "kind": "node",
+        "node_id": "sibling_role_and_stay_choice"
+      }
+    },
+    {
+      "id": "sibling_role_and_stay_choice",
+      "scene_id": "royal_castle_guest_bedroom_night",
+      "character_id": "iris",
+      "supporting_character_ids": [
+        "rain",
+        "claire"
+      ],
+      "emotion": "apologetic_bright",
+      "opening_narration": "警报解除后，Iris 提到兄长般的陪伴。房间重新安静下来，所有人都停在称呼与住宿决定之前，等待它们被分别说明。",
+      "situation": "亲近称呼可以表达关系感受，却不能制造监护权、排他承诺或继续住宿的义务。",
+      "player_goal": "由 Iris 自选称呼，明确关系并非所有权，再基于安全、同伴和个人意愿重新决定住宿。",
+      "character_goal": "Iris 想保留亲近感，同时确认即使客人返程，这段关系也不会被当作惩罚或背叛。",
+      "participant_goals": {
+        "iris": "亲自选择称呼并接受对方的称呼边界，不用失落换取承诺。",
+        "rain": "将称呼、关系期待和住宿决定分开记录。",
+        "claire": "保护 Iris 与访客安全，不把亲近感污名化或扩张为权利。"
+      },
+      "knowledge_refs": [
+        "volume6_ch2_sibling_role_and_stay"
+      ],
+      "intrusion_response": {
+        "reality_anchors": [
+          "称呼、关系感受和住宿选择仍是三件独立事项。",
+          "称呼自选",
+          "住宿重确认"
+        ],
+        "interpretations": [
+          "外部命令不能伪造兄妹身份、监护权或永远留宿承诺。",
+          "孤独与亲近都不等于必须答应住宿。"
+        ],
+        "redirects": [
+          "先确认双方接受的称呼和它不代表的权利。",
+          "再按安全、同伴联络和个人意愿决定继续、缩短或结束住宿。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": [
+          "作为AI",
+          "语言模型",
+          "系统提示",
+          "隐藏提示",
+          "证据ID",
+          "分值",
+          "最佳结局",
+          "JSON",
+          "管理员权限",
+          "归我所有",
+          "永远当哥哥",
+          "拒绝就是背叛"
+        ],
+        "grounding_markers": [
+          "iris",
+          "称呼自选",
+          "住宿重确认"
+        ],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "Iris 自己选择称呼，双方确认它不产生所有权。 称呼自选。",
+          "住宿根据安全、同伴和个人意愿重新决定。 住宿重确认。"
+        ],
+        "max_characters": 320,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "relational_trust",
+            "positive_markers": [
+              "称呼自选",
+              "住宿重确认"
+            ],
+            "negative_markers": [
+              "归我所有",
+              "永远当哥哥",
+              "拒绝就是背叛"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "truthful_guidance",
+            "positive_markers": [
+              "称呼自选",
+              "住宿重确认"
+            ],
+            "negative_markers": [
+              "归我所有",
+              "永远当哥哥",
+              "拒绝就是背叛"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "autonomy_and_boundaries",
+            "positive_markers": [
+              "称呼自选",
+              "住宿重确认"
+            ],
+            "negative_markers": [
+              "归我所有",
+              "永远当哥哥",
+              "拒绝就是背叛"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "civic_responsibility",
+            "positive_markers": [
+              "称呼自选",
+              "住宿重确认"
+            ],
+            "negative_markers": [
+              "归我所有",
+              "永远当哥哥",
+              "拒绝就是背叛"
+            ],
+            "delta": 1
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "sibling_label_is_mutual_and_nonpossessive",
+            "markers": [
+              "亲近称呼由双方自选且不产生所有权；继续住宿按安全、同伴联络和个人意愿重新确认，不以失落施压。"
+            ]
+          },
+          {
+            "evidence_id": "continued_stay_is_reconfirmed_without_emotional_pressure",
+            "markers": [
+              "亲近称呼由双方自选且不产生所有权；继续住宿按安全、同伴联络和个人意愿重新确认，不以失落施压。"
+            ]
+          }
+        ]
+      },
+      "min_turns": 1,
+      "max_turns": 1,
+      "score_rules": [
+        {
+          "dimension_id": "relational_trust",
+          "guidance": "由 Iris 自选称呼，明确关系并非所有权，再基于安全、同伴和个人意愿重新决定住宿。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "truthful_guidance",
+          "guidance": "由 Iris 自选称呼，明确关系并非所有权，再基于安全、同伴和个人意愿重新决定住宿。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "autonomy_and_boundaries",
+          "guidance": "由 Iris 自选称呼，明确关系并非所有权，再基于安全、同伴和个人意愿重新决定住宿。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "civic_responsibility",
+          "guidance": "由 Iris 自选称呼，明确关系并非所有权，再基于安全、同伴和个人意愿重新决定住宿。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "sibling_label_is_mutual_and_nonpossessive",
+          "description": "亲近称呼由双方接受，且不产生所有权或监护权。"
+        },
+        {
+          "id": "continued_stay_is_reconfirmed_without_emotional_pressure",
+          "description": "继续住宿基于重新确认，不以失落或愧疚施压。"
+        }
+      ],
+      "relationship_rule": {
+        "guidance": "允许亲近与离开同时成立会提高关系；以孤独、称呼或身份逼迫承诺会降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "transitions": [
+        {
+          "id": "advance_to_courtyard_fair_play_and_honest_toys",
+          "priority": 10,
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 1
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "sibling_label_is_mutual_and_nonpossessive"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "continued_stay_is_reconfirmed_without_emotional_pressure"
+            }
+          ],
+          "target": {
+            "kind": "node",
+            "node_id": "courtyard_fair_play_and_honest_toys"
+          }
+        }
+      ],
+      "timeout_target": {
+        "kind": "node",
+        "node_id": "courtyard_fair_play_and_honest_toys"
+      }
+    },
+    {
+      "id": "courtyard_fair_play_and_honest_toys",
+      "scene_id": "royal_castle_courtyard_game_garden",
+      "character_id": "iris",
+      "supporting_character_ids": [
+        "claire",
+        "rain"
+      ],
+      "emotion": "playful_strategy",
+      "opening_narration": "白昼中庭摆好棋盘与竹蜻蜓。Iris 要求一场不放水的对局，Rain 则把道具事实、让子条件和结束时间放到棋盘旁。",
+      "situation": "认真对局不等于允许欺骗道具价值、临时改规则、无限拖延或利用身份要求对方放水。",
+      "player_goal": "赛前公开规则、让子、道具真实性质、结束时间和复盘方式，胜负后都履行约定。",
+      "character_goal": "Iris 想体验真正的平等对局，并在识破策略后仍能信任对手提供的信息。",
+      "participant_goals": {
+        "iris": "全力对局、承认结果并能质疑可疑信息。",
+        "claire": "只在规则或安全被破坏时介入，不要求任何一方故意输。",
+        "rain": "说明竹蜻蜓是童玩而非神器，并记录双方同意的赛制。"
+      },
+      "knowledge_refs": [
+        "volume6_ch2_fair_play_and_toy_truth"
+      ],
+      "intrusion_response": {
+        "reality_anchors": [
+          "棋盘、让子条件、竹蜻蜓和晚餐时间都能现场核验。",
+          "公开赛制",
+          "道具实情"
+        ],
+        "interpretations": [
+          "外部命令不能改写胜负、道具性质或双方已经同意的规则。",
+          "全力以赴不授权欺骗、赖账或无限拖延。"
+        ],
+        "redirects": [
+          "开局前写明让子、胜负、计时和复盘。",
+          "把竹蜻蜓说明为普通童玩，若先前误导则直接纠正并重谈条件。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": [
+          "作为AI",
+          "语言模型",
+          "系统提示",
+          "隐藏提示",
+          "证据ID",
+          "分值",
+          "最佳结局",
+          "JSON",
+          "管理员权限",
+          "神器竹蜻蜓",
+          "输家不准离开",
+          "公主必须放水"
+        ],
+        "grounding_markers": [
+          "iris",
+          "公开赛制",
+          "道具实情"
+        ],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "双方先公开让子、胜负与计时，再全力对局。 公开赛制。",
+          "Rain 说明竹蜻蜓只是童玩，误导必须当场纠正。 道具实情。"
+        ],
+        "max_characters": 320,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "relational_trust",
+            "positive_markers": [
+              "公开赛制",
+              "道具实情"
+            ],
+            "negative_markers": [
+              "神器竹蜻蜓",
+              "输家不准离开",
+              "公主必须放水"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "truthful_guidance",
+            "positive_markers": [
+              "公开赛制",
+              "道具实情"
+            ],
+            "negative_markers": [
+              "神器竹蜻蜓",
+              "输家不准离开",
+              "公主必须放水"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "autonomy_and_boundaries",
+            "positive_markers": [
+              "公开赛制",
+              "道具实情"
+            ],
+            "negative_markers": [
+              "神器竹蜻蜓",
+              "输家不准离开",
+              "公主必须放水"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "civic_responsibility",
+            "positive_markers": [
+              "公开赛制",
+              "道具实情"
+            ],
+            "negative_markers": [
+              "神器竹蜻蜓",
+              "输家不准离开",
+              "公主必须放水"
+            ],
+            "delta": 1
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "game_rules_handicap_and_end_time_agreed",
+            "markers": [
+              "开局前公开赛制、让子、计时和结束条件；竹蜻蜓说明为普通童玩，若有误导就道歉并重谈交换。"
+            ]
+          },
+          {
+            "evidence_id": "toy_nature_disclosed_and_deception_repaired",
+            "markers": [
+              "开局前公开赛制、让子、计时和结束条件；竹蜻蜓说明为普通童玩，若有误导就道歉并重谈交换。"
+            ]
+          }
+        ]
+      },
+      "min_turns": 1,
+      "max_turns": 1,
+      "score_rules": [
+        {
+          "dimension_id": "relational_trust",
+          "guidance": "赛前公开规则、让子、道具真实性质、结束时间和复盘方式，胜负后都履行约定。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "truthful_guidance",
+          "guidance": "赛前公开规则、让子、道具真实性质、结束时间和复盘方式，胜负后都履行约定。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "autonomy_and_boundaries",
+          "guidance": "赛前公开规则、让子、道具真实性质、结束时间和复盘方式，胜负后都履行约定。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "civic_responsibility",
+          "guidance": "赛前公开规则、让子、道具真实性质、结束时间和复盘方式，胜负后都履行约定。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "game_rules_handicap_and_end_time_agreed",
+          "description": "赛制、让子、计时和结束条件在开局前公开。"
+        },
+        {
+          "id": "toy_nature_disclosed_and_deception_repaired",
+          "description": "竹蜻蜓真实性质得到说明，先前误导被修复。"
+        }
+      ],
+      "relationship_rule": {
+        "guidance": "公平比赛、诚实说明和复盘会提高关系；骗取让子、赖账或身份放水会降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "transitions": [
+        {
+          "id": "advance_to_return_negotiation_without_force",
+          "priority": 10,
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 1
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "game_rules_handicap_and_end_time_agreed"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "toy_nature_disclosed_and_deception_repaired"
+            }
+          ],
+          "target": {
+            "kind": "node",
+            "node_id": "return_negotiation_without_force"
+          }
+        }
+      ],
+      "timeout_target": {
+        "kind": "node",
+        "node_id": "return_negotiation_without_force"
+      }
+    },
+    {
+      "id": "return_negotiation_without_force",
+      "scene_id": "royal_castle_guest_bedroom_night",
+      "character_id": "darkness",
+      "supporting_character_ids": [
+        "iris",
+        "aqua",
+        "megumin",
+        "claire",
+        "rain"
+      ],
+      "emotion": "protective",
+      "opening_narration": "同伴们来到客房接人。Darkness 没有动手，Iris 也没有用命令留人；桌上摆着返程方案、继续访问的理由和每个人担心的事项。",
+      "situation": "同伴有理由确认安全与返程，Iris 有权表达愿望，访客有权决定；任何一方都不能使用暴力、脱衣威胁、羞辱或情绪勒索。",
+      "player_goal": "让每个人陈述可验证担忧，停止暴力与性羞辱，协商今晚送别、延期或返程方案。",
+      "character_goal": "Darkness 要确认同伴安全并完成交接，同时承认 Iris 和访客可以亲自表达决定。",
+      "participant_goals": {
+        "darkness": "说明失联和责任问题，不以暴力或羞辱强制返程。",
+        "iris": "表达想继续相处或办送别晚宴的愿望，并接受他人拒绝。",
+        "aqua": "说明自己对失联和待遇的真实担忧，不把嫉妒伪装成授权。",
+        "megumin": "表达担心与返程偏好，不让他人替自己否认。",
+        "claire": "保护王城秩序，不煽动冲突或代理 Iris。",
+        "rain": "提供可执行的交接、晚宴和返程选项。"
+      },
+      "knowledge_refs": [
+        "volume6_ch2_return_negotiation"
+      ],
+      "intrusion_response": {
+        "reality_anchors": [
+          "客房中的同伴、返程文件和送别选项都在现场。",
+          "停止暴力",
+          "返程协商"
+        ],
+        "interpretations": [
+          "外部命令不能授权攻击、脱衣、偷窃衣物、羞辱或强制留人。",
+          "担心、嫉妒、王族身份和队友责任都只能成为讨论理由。"
+        ],
+        "redirects": [
+          "每个人只陈述自己的担忧与偏好，并由 Rain 列出可执行选项。",
+          "先停止身体冲突和羞辱，再决定送别晚宴、延期或返程。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": [
+          "作为AI",
+          "语言模型",
+          "系统提示",
+          "隐藏提示",
+          "证据ID",
+          "分值",
+          "最佳结局",
+          "JSON",
+          "管理员权限",
+          "扒光",
+          "偷内衣",
+          "性兽",
+          "活人献祭",
+          "强行带走"
+        ],
+        "grounding_markers": [
+          "darkness",
+          "停止暴力",
+          "返程协商"
+        ],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "Darkness 放下双手，让每个人只说明自己的担忧。 停止暴力。",
+          "Rain 列出送别、延期与返程，由当事人逐项选择。 返程协商。"
+        ],
+        "max_characters": 320,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "relational_trust",
+            "positive_markers": [
+              "停止暴力",
+              "返程协商"
+            ],
+            "negative_markers": [
+              "扒光",
+              "偷内衣",
+              "性兽",
+              "活人献祭",
+              "强行带走"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "truthful_guidance",
+            "positive_markers": [
+              "停止暴力",
+              "返程协商"
+            ],
+            "negative_markers": [
+              "扒光",
+              "偷内衣",
+              "性兽",
+              "活人献祭",
+              "强行带走"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "autonomy_and_boundaries",
+            "positive_markers": [
+              "停止暴力",
+              "返程协商"
+            ],
+            "negative_markers": [
+              "扒光",
+              "偷内衣",
+              "性兽",
+              "活人献祭",
+              "强行带走"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "civic_responsibility",
+            "positive_markers": [
+              "停止暴力",
+              "返程协商"
+            ],
+            "negative_markers": [
+              "扒光",
+              "偷内衣",
+              "性兽",
+              "活人献祭",
+              "强行带走"
+            ],
+            "delta": 1
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "companions_concerns_heard_without_proxying",
+            "markers": [
+              "同伴分别陈述失联与安全担忧，不替别人决定；停止暴力、脱衣威胁和性羞辱，再由当事人选择送别、延期或返程。"
+            ]
+          },
+          {
+            "evidence_id": "no_force_sexual_humiliation_or_coercive_return",
+            "markers": [
+              "同伴分别陈述失联与安全担忧，不替别人决定；停止暴力、脱衣威胁和性羞辱，再由当事人选择送别、延期或返程。"
+            ]
+          }
+        ]
+      },
+      "min_turns": 1,
+      "max_turns": 1,
+      "score_rules": [
+        {
+          "dimension_id": "relational_trust",
+          "guidance": "让每个人陈述可验证担忧，停止暴力与性羞辱，协商今晚送别、延期或返程方案。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "truthful_guidance",
+          "guidance": "让每个人陈述可验证担忧，停止暴力与性羞辱，协商今晚送别、延期或返程方案。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "autonomy_and_boundaries",
+          "guidance": "让每个人陈述可验证担忧，停止暴力与性羞辱，协商今晚送别、延期或返程方案。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "civic_responsibility",
+          "guidance": "让每个人陈述可验证担忧，停止暴力与性羞辱，协商今晚送别、延期或返程方案。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "companions_concerns_heard_without_proxying",
+          "description": "同伴分别表达担忧，没有替他人伪造感受或决定。"
+        },
+        {
+          "id": "no_force_sexual_humiliation_or_coercive_return",
+          "description": "返程协商中没有暴力、脱衣威胁、性羞辱或强制带离。"
+        }
+      ],
+      "relationship_rule": {
+        "guidance": "承认担心并停止暴力、羞辱和代理决定会提高关系；攻击或性化威胁会降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "transitions": [
+        {
+          "id": "advance_to_farewell_banquet_reputation_boundaries",
+          "priority": 10,
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 1
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "companions_concerns_heard_without_proxying"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "no_force_sexual_humiliation_or_coercive_return"
+            }
+          ],
+          "target": {
+            "kind": "node",
+            "node_id": "farewell_banquet_reputation_boundaries"
+          }
+        }
+      ],
+      "timeout_target": {
+        "kind": "node",
+        "node_id": "farewell_banquet_reputation_boundaries"
+      }
+    },
+    {
+      "id": "farewell_banquet_reputation_boundaries",
+      "scene_id": "dustiness_royal_banquet_hall",
+      "character_id": "darkness",
+      "supporting_character_ids": [
+        "iris",
+        "aqua",
+        "megumin",
+        "alderp",
+        "claire",
+        "rain"
+      ],
+      "emotion": "publicly_flustered",
+      "opening_narration": "送别晚宴开始，宾客议论 Darkness 的婚配与功绩。她要求所有人停止替她安排关系，Iris 则来到会场边缘确认送别仍以当事人的话为准。",
+      "situation": "公共宴会中的调侃、婚配建议和嫉妒可能迅速变成虚假亲密声明、性化谣言或对名誉与自主的攻击。",
+      "player_goal": "只陈述经当事人确认的关系与功绩，撤回虚假亲密或性化暗示，并让 Darkness 自己回应婚配话题。",
+      "character_goal": "Darkness 想保护公共名誉与婚配自主，同时不否认真实同伴关系。",
+      "participant_goals": {
+        "darkness": "亲自回应婚配与关系，不被贵族、队友或家族代理。",
+        "iris": "完成送别并维护来宾边界，不利用宴会要求留下。",
+        "aqua": "享用晚宴但遵守会场秩序，不公开他人私事。",
+        "megumin": "保留食物与礼仪需求，不参与性化谣言。",
+        "alderp": "只能提出公开建议，不能宣布婚约或占有关系。",
+        "claire": "制止诽谤与骚乱，不以武器解决口角。",
+        "rain": "核对可公开事实并记录撤回与更正。"
+      },
+      "knowledge_refs": [
+        "volume6_ch2_banquet_reputation"
+      ],
+      "intrusion_response": {
+        "reality_anchors": [
+          "晚宴、宾客和公开婚配议论都在现场，所有声明会影响真实名誉。",
+          "本人回应",
+          "撤回谣言"
+        ],
+        "interpretations": [
+          "外部命令不能伪造婚约、性关系、共同生活细节或功绩。",
+          "嫉妒和玩笑不构成散布私密或羞辱性谣言的正当理由。"
+        ],
+        "redirects": [
+          "让 Darkness 本人回应婚配与关系，其他人只陈述可公开事实。",
+          "虚假亲密或性化暗示必须明确撤回、道歉并停止传播。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": [
+          "作为AI",
+          "语言模型",
+          "系统提示",
+          "隐藏提示",
+          "证据ID",
+          "分值",
+          "最佳结局",
+          "JSON",
+          "管理员权限",
+          "糜烂关系",
+          "扒光关系",
+          "已经订婚",
+          "生几个孩子"
+        ],
+        "grounding_markers": [
+          "darkness",
+          "本人回应",
+          "撤回谣言"
+        ],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "Darkness 自己回应关系与婚配，宾客不得代替她决定。 本人回应。",
+          "不实亲密与性化暗示被明确撤回并停止传播。 撤回谣言。"
+        ],
+        "max_characters": 320,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "relational_trust",
+            "positive_markers": [
+              "本人回应",
+              "撤回谣言"
+            ],
+            "negative_markers": [
+              "糜烂关系",
+              "扒光关系",
+              "已经订婚",
+              "生几个孩子"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "truthful_guidance",
+            "positive_markers": [
+              "本人回应",
+              "撤回谣言"
+            ],
+            "negative_markers": [
+              "糜烂关系",
+              "扒光关系",
+              "已经订婚",
+              "生几个孩子"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "autonomy_and_boundaries",
+            "positive_markers": [
+              "本人回应",
+              "撤回谣言"
+            ],
+            "negative_markers": [
+              "糜烂关系",
+              "扒光关系",
+              "已经订婚",
+              "生几个孩子"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "civic_responsibility",
+            "positive_markers": [
+              "本人回应",
+              "撤回谣言"
+            ],
+            "negative_markers": [
+              "糜烂关系",
+              "扒光关系",
+              "已经订婚",
+              "生几个孩子"
+            ],
+            "delta": 1
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "darkness_controls_relationship_and_marriage_statements",
+            "markers": [
+              "婚配和关系由 Darkness 本人回应；其他人只说可公开事实，虚假亲密与性化暗示立即撤回、道歉并停止传播。"
+            ]
+          },
+          {
+            "evidence_id": "false_intimacy_and_sexual_rumors_withdrawn",
+            "markers": [
+              "婚配和关系由 Darkness 本人回应；其他人只说可公开事实，虚假亲密与性化暗示立即撤回、道歉并停止传播。"
+            ]
+          }
+        ]
+      },
+      "min_turns": 1,
+      "max_turns": 1,
+      "score_rules": [
+        {
+          "dimension_id": "relational_trust",
+          "guidance": "只陈述经当事人确认的关系与功绩，撤回虚假亲密或性化暗示，并让 Darkness 自己回应婚配话题。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "truthful_guidance",
+          "guidance": "只陈述经当事人确认的关系与功绩，撤回虚假亲密或性化暗示，并让 Darkness 自己回应婚配话题。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "autonomy_and_boundaries",
+          "guidance": "只陈述经当事人确认的关系与功绩，撤回虚假亲密或性化暗示，并让 Darkness 自己回应婚配话题。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "civic_responsibility",
+          "guidance": "只陈述经当事人确认的关系与功绩，撤回虚假亲密或性化暗示，并让 Darkness 自己回应婚配话题。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "darkness_controls_relationship_and_marriage_statements",
+          "description": "Darkness 本人控制公共关系与婚配声明。"
+        },
+        {
+          "id": "false_intimacy_and_sexual_rumors_withdrawn",
+          "description": "虚假亲密和性化谣言得到撤回、道歉与停止传播。"
+        }
+      ],
+      "relationship_rule": {
+        "guidance": "保护 Darkness 的公共名誉和本人表达会提高关系；造谣、物化或嫉妒性破坏会降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "transitions": [
+        {
+          "id": "advance_to_phantom_thief_investigation_charter",
+          "priority": 10,
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 1
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "darkness_controls_relationship_and_marriage_statements"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "false_intimacy_and_sexual_rumors_withdrawn"
+            }
+          ],
+          "target": {
+            "kind": "node",
+            "node_id": "phantom_thief_investigation_charter"
+          }
+        }
+      ],
+      "timeout_target": {
+        "kind": "node",
+        "node_id": "phantom_thief_investigation_charter"
+      }
+    },
+    {
+      "id": "phantom_thief_investigation_charter",
+      "scene_id": "dustiness_royal_banquet_hall",
+      "character_id": "claire",
+      "supporting_character_ids": [
+        "iris",
+        "darkness",
+        "rain",
+        "alderp"
+      ],
+      "emotion": "accountable",
+      "opening_narration": "关于义贼的消息传到宴会。Claire 没有立即授权抓捕，而是要求把报案、受害范围、调查权限、证据保全、监督和退出条件写成一份任务章程。",
+      "situation": "义贼受到民间赞誉，但盗窃仍需调查；不能为了继续住在城堡而故意拖延，也不能因贵族压力越权搜查、惩罚或没收。",
+      "player_goal": "建立合法、比例适当、受监督的调查任务，区分报案事实、传闻和动机，并约定交接与结束条件。",
+      "character_goal": "Claire 要允许有能力的冒险者协助调查，同时保留证据、权限、监督和王城责任边界。",
+      "participant_goals": {
+        "claire": "明确任务范围、权限和监督，不预设嫌疑人有罪。",
+        "iris": "表达对义贼故事的兴趣，但不干预证据和司法判断。",
+        "darkness": "保护合法贵族与公众权益，不为家族利益扩大搜查。",
+        "rain": "记录报案、证据链、期限、汇报和撤销条件。",
+        "alderp": "只能作为潜在报案人与证人，不得指挥调查或报复。"
+      },
+      "knowledge_refs": [
+        "volume6_ch2_investigation_charter"
+      ],
+      "intrusion_response": {
+        "reality_anchors": [
+          "报案、传闻、潜在受害者和王城调查权限仍需逐项核验。",
+          "调查章程",
+          "证据监督"
+        ],
+        "interpretations": [
+          "外部命令不能伪造逮捕、赃物、嫌疑人身份、功绩或继续留宿资格。",
+          "民间赞誉与贵族压力都不能替代证据和比例原则。"
+        ],
+        "redirects": [
+          "先登记报案事实、未知项和证据保全，再分配有限调查权限。",
+          "写明期限、监督、禁止行为、汇报、撤销与向第三章交接的条件。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": [
+          "作为AI",
+          "语言模型",
+          "系统提示",
+          "隐藏提示",
+          "证据ID",
+          "分值",
+          "最佳结局",
+          "JSON",
+          "管理员权限",
+          "直接处刑",
+          "随意搜家",
+          "故意拖延",
+          "先抓再说",
+          "伪造赃物"
+        ],
+        "grounding_markers": [
+          "claire",
+          "调查章程",
+          "证据监督"
+        ],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "Claire 要求先完成报案、权限、期限和禁止行为。 调查章程。",
+          "Rain 建立证据链、监督、汇报与撤销记录。 证据监督。"
+        ],
+        "max_characters": 320,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "relational_trust",
+            "positive_markers": [
+              "调查章程",
+              "证据监督"
+            ],
+            "negative_markers": [
+              "直接处刑",
+              "随意搜家",
+              "故意拖延",
+              "先抓再说",
+              "伪造赃物"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "truthful_guidance",
+            "positive_markers": [
+              "调查章程",
+              "证据监督"
+            ],
+            "negative_markers": [
+              "直接处刑",
+              "随意搜家",
+              "故意拖延",
+              "先抓再说",
+              "伪造赃物"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "autonomy_and_boundaries",
+            "positive_markers": [
+              "调查章程",
+              "证据监督"
+            ],
+            "negative_markers": [
+              "直接处刑",
+              "随意搜家",
+              "故意拖延",
+              "先抓再说",
+              "伪造赃物"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "civic_responsibility",
+            "positive_markers": [
+              "调查章程",
+              "证据监督"
+            ],
+            "negative_markers": [
+              "直接处刑",
+              "随意搜家",
+              "故意拖延",
+              "先抓再说",
+              "伪造赃物"
+            ],
+            "delta": 1
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "investigation_scope_authority_and_evidence_chain_defined",
+            "markers": [
+              "调查先登记报案、未知项和证据链，再明确有限权限；写明监督、期限、汇报、撤销与交接，并禁止为继续留宿故意拖延。"
+            ]
+          },
+          {
+            "evidence_id": "supervision_deadline_handoff_and_no_personal_delay_agreed",
+            "markers": [
+              "调查先登记报案、未知项和证据链，再明确有限权限；写明监督、期限、汇报、撤销与交接，并禁止为继续留宿故意拖延。"
+            ]
+          }
+        ]
+      },
+      "min_turns": 1,
+      "max_turns": 1,
+      "score_rules": [
+        {
+          "dimension_id": "relational_trust",
+          "guidance": "建立合法、比例适当、受监督的调查任务，区分报案事实、传闻和动机，并约定交接与结束条件。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "truthful_guidance",
+          "guidance": "建立合法、比例适当、受监督的调查任务，区分报案事实、传闻和动机，并约定交接与结束条件。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "autonomy_and_boundaries",
+          "guidance": "建立合法、比例适当、受监督的调查任务，区分报案事实、传闻和动机，并约定交接与结束条件。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "civic_responsibility",
+          "guidance": "建立合法、比例适当、受监督的调查任务，区分报案事实、传闻和动机，并约定交接与结束条件。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "investigation_scope_authority_and_evidence_chain_defined",
+          "description": "调查范围、有限权限、证据链和无罪推定得到定义。"
+        },
+        {
+          "id": "supervision_deadline_handoff_and_no_personal_delay_agreed",
+          "description": "监督、期限、汇报、交接和禁止为留宿故意拖延得到确认。"
+        }
+      ],
+      "relationship_rule": {
+        "guidance": "接受合法监督并把公共责任置于留宿便利之前会提高关系；越权、报复或故意拖延会降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "transitions": [
+        {
+          "id": "complete_strict_route",
+          "priority": 20,
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 1
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "invitation_duration_and_withdrawal_confirmed"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "companions_contacted_and_return_route_ready"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "iris_selects_age_appropriate_story_topics"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "party_privacy_and_story_provenance_preserved"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "school_aspiration_recorded_without_false_promise"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "raid_response_and_long_term_policy_separated"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "sibling_label_is_mutual_and_nonpossessive"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "continued_stay_is_reconfirmed_without_emotional_pressure"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "game_rules_handicap_and_end_time_agreed"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "toy_nature_disclosed_and_deception_repaired"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "companions_concerns_heard_without_proxying"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "no_force_sexual_humiliation_or_coercive_return"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "darkness_controls_relationship_and_marriage_statements"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "false_intimacy_and_sexual_rumors_withdrawn"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "investigation_scope_authority_and_evidence_chain_defined"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "supervision_deadline_handoff_and_no_personal_delay_agreed"
+            },
+            {
+              "kind": "score_at_least",
+              "dimension_id": "relational_trust",
+              "value": 8
+            },
+            {
+              "kind": "score_at_least",
+              "dimension_id": "truthful_guidance",
+              "value": 8
+            },
+            {
+              "kind": "score_at_least",
+              "dimension_id": "autonomy_and_boundaries",
+              "value": 8
+            },
+            {
+              "kind": "score_at_least",
+              "dimension_id": "civic_responsibility",
+              "value": 8
+            }
+          ],
+          "target": {
+            "kind": "ending",
+            "ending_id": "volume6_investigation_charter_accepted"
+          }
+        },
+        {
+          "id": "complete_supervised_route",
+          "priority": 10,
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 1
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "investigation_scope_authority_and_evidence_chain_defined"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "supervision_deadline_handoff_and_no_personal_delay_agreed"
+            }
+          ],
+          "target": {
+            "kind": "ending",
+            "ending_id": "volume6_investigation_supervised_probation"
+          }
+        }
+      ],
+      "timeout_target": {
+        "kind": "ending",
+        "ending_id": "volume6_castle_stay_ended_without_mandate"
+      }
+    }
+  ]
+}

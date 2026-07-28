@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync } from 'node:fs'
+import { existsSync, statSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -70,8 +70,11 @@ function defaultBinary() {
   const candidates = [
     path.join(repositoryRoot, 'rust-engine', 'target', 'debug', executable),
     path.join(repositoryRoot, 'rust-engine', 'target', 'release', executable),
-  ]
-  return candidates.find(existsSync) || candidates[0]
+  ].filter(existsSync)
+  return candidates
+    .map(candidate => ({ candidate, modified: statSync(candidate).mtimeMs }))
+    .sort((left, right) => right.modified - left.modified)[0]?.candidate
+    || path.join(repositoryRoot, 'rust-engine', 'target', 'debug', executable)
 }
 
 try {

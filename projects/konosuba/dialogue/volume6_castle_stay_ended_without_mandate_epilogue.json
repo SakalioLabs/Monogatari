@@ -1,0 +1,23 @@
+{
+  "id": "volume6_castle_stay_ended_without_mandate_epilogue",
+  "nodes": {
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "royal_castle_teleport_gallery",
+      "text": "访客期限结束，王城没有把未完成的关系判断或传闻转化为调查权限。Rain 按既定路线完成返程，报案留待正式人员继续核验。"
+    },
+    "final": {
+      "choices": [],
+      "emotion": "wistful_farewell",
+      "ending_type": "volume6_castle_stay_ended_without_mandate",
+      "is_ending": true,
+      "scene_id": "royal_castle_teleport_gallery",
+      "speaker_id": "iris",
+      "text": "Iris 接受这次分别，并约定下一次见面仍由双方重新邀请和确认。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "返程与调查暂缓",
+  "variables": {}
+}

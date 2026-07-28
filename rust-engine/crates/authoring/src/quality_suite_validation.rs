@@ -137,6 +137,10 @@ pub struct QualityExpectation {
     #[serde(default)]
     pub expected_roleplay_ending: Option<String>,
     #[serde(default)]
+    pub expected_roleplay_current_node: Option<String>,
+    #[serde(default)]
+    pub expected_roleplay_story_turn_count: Option<u32>,
+    #[serde(default)]
     pub min_roleplay_coverage_percent: Option<f32>,
     #[serde(default)]
     pub expected_roleplay_unvisited_nodes: Option<Vec<String>>,
@@ -674,6 +678,8 @@ fn validate_roleplay_fixture(
 ) {
     let expect = &scenario.expect;
     let checks_requested = expect.expected_roleplay_ending.is_some()
+        || expect.expected_roleplay_current_node.is_some()
+        || expect.expected_roleplay_story_turn_count.is_some()
         || expect.min_roleplay_coverage_percent.is_some()
         || expect.expected_roleplay_unvisited_nodes.is_some()
         || !expect.required_roleplay_nodes.is_empty()
@@ -722,6 +728,15 @@ fn validate_roleplay_fixture(
     {
         issues.push(format!(
             "{scenario_label}: expected_roleplay_ending must be a portable id."
+        ));
+    }
+    if expect
+        .expected_roleplay_current_node
+        .as_deref()
+        .is_some_and(|id| !portable_workflow_node_id(id))
+    {
+        issues.push(format!(
+            "{scenario_label}: expected_roleplay_current_node must be a portable id."
         ));
     }
     for (kind, ids) in [

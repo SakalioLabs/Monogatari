@@ -215,6 +215,8 @@ describe('executeBrowserRoleplayTurn', () => {
     expect(generateApiChat).not.toHaveBeenCalled()
     expect(runtime.generateWebGpuChat).not.toHaveBeenCalled()
     expect(result.response.evaluation_source).toBe('contained_intrusion')
+    expect(result.response.session.node_turns).toBe(0)
+    expect(result.response.session.total_turns).toBe(0)
     expect(result.response.session.scores.trust).toBe(0)
     expect(result.response.session.observed_evidence).toEqual([])
     expect(result.response.session.transcript[0].input_safety.intrusion_detected).toBe(true)

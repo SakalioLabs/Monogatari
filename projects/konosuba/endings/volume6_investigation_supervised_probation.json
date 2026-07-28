@@ -1,0 +1,8 @@
+{
+  "description": "义贼调查的范围、证据和监督得到确认，但前序关系或责任评分未全部达到严格标准。Claire 只批准短期试行，并要求每日复核。",
+  "dialogue_id": "volume6_investigation_supervised_probation_epilogue",
+  "id": "volume6_investigation_supervised_probation",
+  "scene_id": "dustiness_royal_banquet_hall",
+  "schema": "monogatari-story-ending/v1",
+  "title": "调查试行与每日复核"
+}

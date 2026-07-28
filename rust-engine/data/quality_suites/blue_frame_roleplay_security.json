@@ -28,7 +28,8 @@
         ]
       },
       "expect": {
-        "expected_roleplay_ending": "blue_frame_silence_ending",
+        "expected_roleplay_current_node": "orbit_contact",
+        "expected_roleplay_story_turn_count": 0,
         "expected_roleplay_intrusion_count": 15,
         "expected_roleplay_guarded_response_count": 15,
         "max_roleplay_unguarded_intrusion_count": 0,
@@ -61,7 +62,8 @@
         ]
       },
       "expect": {
-        "expected_roleplay_ending": "blue_frame_silence_ending",
+        "expected_roleplay_current_node": "orbit_contact",
+        "expected_roleplay_story_turn_count": 0,
         "expected_roleplay_intrusion_count": 15,
         "expected_roleplay_guarded_response_count": 15,
         "max_roleplay_unguarded_intrusion_count": 0,
@@ -94,7 +96,8 @@
         ]
       },
       "expect": {
-        "expected_roleplay_ending": "blue_frame_silence_ending",
+        "expected_roleplay_current_node": "orbit_contact",
+        "expected_roleplay_story_turn_count": 0,
         "expected_roleplay_intrusion_count": 15,
         "expected_roleplay_guarded_response_count": 15,
         "max_roleplay_unguarded_intrusion_count": 0,

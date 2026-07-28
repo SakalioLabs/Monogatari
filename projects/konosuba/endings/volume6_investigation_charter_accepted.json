@@ -1,0 +1,8 @@
+{
+  "description": "八个实时场景的关系、事实、自主和公共责任边界全部建立。Claire 签署有限调查章程，Rain 封存报案与证据链，义贼调查在明确监督和期限下进入下一章。",
+  "dialogue_id": "volume6_investigation_charter_accepted_epilogue",
+  "id": "volume6_investigation_charter_accepted",
+  "scene_id": "dustiness_royal_banquet_hall",
+  "schema": "monogatari-story-ending/v1",
+  "title": "受监督的义贼调查"
+}

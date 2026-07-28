@@ -1,0 +1,10 @@
+{
+  "background_path": "assets/backgrounds/royal_castle_courtyard_game_garden.png",
+  "bgm_path": null,
+  "id": "royal_castle_courtyard_game_garden",
+  "model_3d_path": null,
+  "name": "王城棋局中庭",
+  "tags": ["volume6", "chapter2", "royal_castle", "courtyard", "game"],
+  "time_of_day": "day",
+  "weather": "clear"
+}

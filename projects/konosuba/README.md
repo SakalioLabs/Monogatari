@@ -396,6 +396,32 @@ The direct Chapter 1 and Campaign entries are:
 /game?previewCampaign=konosuba_volume6&authoring=1
 ```
 
+## Volume 6 Chapter 2 production
+
+Volume 6 Chapter 2 continues as an eight-node real-time castle Roleplay. The
+player writes free-form responses while Rain, Iris, Claire, Aqua, Megumin,
+Darkness, and Alderp answer from the active scene, their own character
+contract, node-local motive, relationship, and pinned Knowledge. The chapter
+covers revocable guest status, age-appropriate story boundaries, the school
+proposal and raid context, a mutual sibling-like role, fair courtyard games,
+non-coercive return negotiation, banquet reputation repair, and a bounded
+phantom-thief investigation charter.
+
+Four scores and sixteen quoted evidence gates select a complete investigation
+mandate, supervised probation, or an exhausted castle stay. The structural
+attack scenario proves the current node is unchanged and the committed
+story-turn count remains exactly zero.
+
+The direct Chapter 2 live-NPC entry is:
+
+```text
+/game?previewRoleplay=volume6_chapter2_roleplay&authoring=1
+```
+
+Do not use `previewDialogue=blue_frame_dialogue` to evaluate this project. That
+identifier belongs to the built-in compatibility sample rather than the
+KonoSuba live-roleplay catalog.
+
 ## Runtime
 
 The checked-in API key is intentionally empty. Supply credentials through the
