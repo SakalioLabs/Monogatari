@@ -42,6 +42,16 @@ pub struct SaveInfo {
     pub current_dialogue_id: Option<String>,
     pub character_state_count: usize,
     pub chat_session_count: usize,
+    pub active_scene_roleplay_id: Option<String>,
+    pub active_roleplay_campaign_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct GameLoadResult {
+    pub schema: String,
+    pub message: String,
+    pub active_scene_roleplay_id: Option<String>,
+    pub active_roleplay_campaign_id: Option<String>,
 }
 
 #[derive(Debug, Default, PartialEq)]
@@ -67,7 +77,10 @@ pub async fn save_game(
 
 /// Load a game state by save ID.
 #[tauri::command]
-pub async fn load_game(state: State<'_, AppState>, save_id: String) -> Result<String, String> {
+pub async fn load_game(
+    state: State<'_, AppState>,
+    save_id: String,
+) -> Result<GameLoadResult, String> {
     let save = {
         let save_mgr = state.save_manager.read().await;
         save_mgr.load(&save_id).await.map_err(|e| e.to_string())?
@@ -75,10 +88,15 @@ pub async fn load_game(state: State<'_, AppState>, save_id: String) -> Result<St
     let save_name = save.save_name.clone();
     let summary = restore_game_save(&state, save).await?;
 
-    Ok(format!(
-        "Loaded save: {save_name} ({} character state(s), {} chat session(s), {} applied story event(s))",
-        summary.character_count, summary.chat_session_count, summary.applied_event_count
-    ))
+    Ok(GameLoadResult {
+        schema: "monogatari-game-load-result/v1".to_string(),
+        message: format!(
+            "Loaded save: {save_name} ({} character state(s), {} chat session(s), {} applied story event(s))",
+            summary.character_count, summary.chat_session_count, summary.applied_event_count
+        ),
+        active_scene_roleplay_id: state.active_scene_roleplay_id.read().await.clone(),
+        active_roleplay_campaign_id: state.active_roleplay_campaign_id.read().await.clone(),
+    })
 }
 
 async fn capture_game_save(
@@ -142,10 +160,14 @@ async fn capture_game_save(
     save.chat_sessions = snapshot_chat_sessions(state).await?;
     save.scene_roleplay_sessions = state.scene_roleplay_sessions.read().await.clone();
     save.roleplay_campaign_sessions = state.roleplay_campaign_sessions.read().await.clone();
+    save.active_scene_roleplay_id = state.active_scene_roleplay_id.read().await.clone();
+    save.active_roleplay_campaign_id = state.active_roleplay_campaign_id.read().await.clone();
     validate_roleplay_runtime_snapshots(
         state,
         &save.scene_roleplay_sessions,
         &save.roleplay_campaign_sessions,
+        save.active_scene_roleplay_id.as_deref(),
+        save.active_roleplay_campaign_id.as_deref(),
     )
     .await?;
     Ok(save)
@@ -176,6 +198,8 @@ async fn restore_game_save(
         state,
         &save.scene_roleplay_sessions,
         &save.roleplay_campaign_sessions,
+        save.active_scene_roleplay_id.as_deref(),
+        save.active_roleplay_campaign_id.as_deref(),
     )
     .await?;
     let had_story_progress = save.story_progress.is_some();
@@ -219,6 +243,8 @@ async fn restore_game_save(
     *state.story_progress.write().await = story_progress;
     *state.scene_roleplay_sessions.write().await = save.scene_roleplay_sessions;
     *state.roleplay_campaign_sessions.write().await = save.roleplay_campaign_sessions;
+    *state.active_scene_roleplay_id.write().await = save.active_scene_roleplay_id;
+    *state.active_roleplay_campaign_id.write().await = save.active_roleplay_campaign_id;
     *state.active_scene_id.write().await = save.current_scene.clone();
     *state.scene_history.write().await = if scene_history.is_empty() {
         save.current_scene.into_iter().collect()
@@ -237,6 +263,8 @@ async fn validate_roleplay_runtime_snapshots(
     state: &AppState,
     roleplay_sessions: &HashMap<String, SceneRoleplaySession>,
     campaign_sessions: &HashMap<String, RoleplayCampaignSession>,
+    active_roleplay_id: Option<&str>,
+    active_campaign_id: Option<&str>,
 ) -> Result<(), String> {
     if roleplay_sessions.len() > MAX_SAVED_ROLEPLAY_SESSIONS {
         return Err(format!(
@@ -302,6 +330,62 @@ async fn validate_roleplay_runtime_snapshots(
                 ));
             }
         }
+    }
+    validate_active_roleplay_cursor(
+        roleplay_sessions,
+        campaign_sessions,
+        &campaigns,
+        active_roleplay_id,
+        active_campaign_id,
+    )?;
+    Ok(())
+}
+
+fn validate_active_roleplay_cursor(
+    roleplay_sessions: &HashMap<String, SceneRoleplaySession>,
+    campaign_sessions: &HashMap<String, RoleplayCampaignSession>,
+    campaign_definitions: &HashMap<String, RoleplayCampaignDefinition>,
+    active_roleplay_id: Option<&str>,
+    active_campaign_id: Option<&str>,
+) -> Result<(), String> {
+    if let Some(roleplay_id) = active_roleplay_id {
+        if !roleplay_sessions.contains_key(roleplay_id) {
+            return Err(format!(
+                "Active scene roleplay `{roleplay_id}` has no saved session."
+            ));
+        }
+    }
+    let Some(campaign_id) = active_campaign_id else {
+        return Ok(());
+    };
+    let session = campaign_sessions
+        .get(campaign_id)
+        .ok_or_else(|| format!("Active roleplay campaign `{campaign_id}` has no saved session."))?;
+    let definition = campaign_definitions
+        .get(campaign_id)
+        .ok_or_else(|| format!("Active roleplay campaign `{campaign_id}` is unavailable."))?;
+    match session.status {
+        RoleplayCampaignStatus::Active => {
+            let entry_id = session
+                .current_entry_id
+                .as_deref()
+                .ok_or_else(|| format!("Active campaign `{campaign_id}` has no current entry."))?;
+            let expected_roleplay_id = &definition
+                .entry(entry_id)
+                .ok_or_else(|| format!("Campaign entry `{entry_id}` is unavailable."))?
+                .roleplay_id;
+            if active_roleplay_id != Some(expected_roleplay_id.as_str()) {
+                return Err(format!(
+                    "Active campaign `{campaign_id}` requires roleplay `{expected_roleplay_id}`."
+                ));
+            }
+        }
+        RoleplayCampaignStatus::Completed if active_roleplay_id.is_some() => {
+            return Err(format!(
+                "Completed campaign `{campaign_id}` cannot retain an active roleplay."
+            ));
+        }
+        RoleplayCampaignStatus::Completed => {}
     }
     Ok(())
 }
@@ -637,6 +721,8 @@ pub async fn list_saves(state: State<'_, AppState>) -> Result<Vec<SaveInfo>, Str
             current_dialogue_id: save.current_dialogue_id,
             character_state_count: save.characters.len(),
             chat_session_count: save.chat_sessions.len(),
+            active_scene_roleplay_id: save.active_scene_roleplay_id,
+            active_roleplay_campaign_id: save.active_roleplay_campaign_id,
         })
         .collect())
 }
@@ -656,7 +742,12 @@ mod tests {
     use crate::commands::story_events::apply_story_event_definition;
     use llm_assets::GAME_SAVE_SCHEMA_V2;
     use llm_game::characters::{memory::MemoryType, Character};
-    use llm_game::{campaign::RoleplayCampaignSession, scene_roleplay::SceneRoleplaySession};
+    use llm_game::{
+        campaign::RoleplayCampaignSession,
+        scene_roleplay::{
+            evaluate_roleplay_fallback, SceneRoleplaySession, SceneRoleplayTurnInput,
+        },
+    };
 
     #[test]
     fn script_variable_json_round_trip_preserves_primitive_types() {
@@ -886,7 +977,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn v4_save_round_trip_restores_active_campaign_and_roleplay() {
+    async fn v5_save_round_trip_restores_active_campaign_and_roleplay_cursor() {
         let state = AppState::new();
         let campaign = campaign::load_campaign_definitions(&state)
             .await
@@ -906,7 +997,21 @@ mod tests {
             .find(|definition| definition.id == roleplay_id)
             .unwrap();
         let campaign_session = RoleplayCampaignSession::start(&campaign).unwrap();
-        let roleplay_session = SceneRoleplaySession::start(&roleplay).unwrap();
+        let mut roleplay_session = SceneRoleplaySession::start(&roleplay).unwrap();
+        let node = roleplay.node(&roleplay_session.current_node_id).unwrap();
+        let player_message = "Keep the scene observable and confirm each participant's choice.";
+        roleplay_session
+            .apply_turn(
+                &roleplay,
+                SceneRoleplayTurnInput {
+                    player_message: player_message.to_string(),
+                    speaker_id: String::new(),
+                    npc_response: "The participants confirm the bounded next step.".to_string(),
+                    evaluation: evaluate_roleplay_fallback(node, player_message),
+                },
+            )
+            .unwrap();
+        let expected_roleplay_session = roleplay_session.clone();
         state
             .roleplay_campaign_sessions
             .write()
@@ -917,16 +1022,28 @@ mod tests {
             .write()
             .await
             .insert(roleplay.id.clone(), roleplay_session);
+        *state.active_roleplay_campaign_id.write().await = Some(campaign.id.clone());
+        *state.active_scene_roleplay_id.write().await = Some(roleplay.id.clone());
 
         let save = capture_game_save(&state, "Campaign".to_string(), None)
             .await
             .unwrap();
-        assert_eq!(save.schema, llm_assets::GAME_SAVE_SCHEMA_V4);
+        assert_eq!(save.schema, llm_assets::GAME_SAVE_SCHEMA_V5);
         assert_eq!(save.roleplay_campaign_sessions.len(), 1);
         assert_eq!(save.scene_roleplay_sessions.len(), 1);
+        assert_eq!(
+            save.active_roleplay_campaign_id.as_deref(),
+            Some(campaign.id.as_str())
+        );
+        assert_eq!(
+            save.active_scene_roleplay_id.as_deref(),
+            Some(roleplay.id.as_str())
+        );
 
         state.roleplay_campaign_sessions.write().await.clear();
         state.scene_roleplay_sessions.write().await.clear();
+        *state.active_roleplay_campaign_id.write().await = None;
+        *state.active_scene_roleplay_id.write().await = None;
         restore_game_save(&state, save).await.unwrap();
 
         assert!(state
@@ -939,6 +1056,32 @@ mod tests {
             .read()
             .await
             .contains_key(&roleplay.id));
+        assert_eq!(
+            state.scene_roleplay_sessions.read().await[&roleplay.id],
+            expected_roleplay_session
+        );
+        assert_eq!(
+            state.active_roleplay_campaign_id.read().await.as_deref(),
+            Some(campaign.id.as_str())
+        );
+        assert_eq!(
+            state.active_scene_roleplay_id.read().await.as_deref(),
+            Some(roleplay.id.as_str())
+        );
+    }
+
+    #[tokio::test]
+    async fn forged_active_roleplay_cursor_is_rejected_before_runtime_mutation() {
+        let state = AppState::new();
+        *state.active_scene_roleplay_id.write().await = Some("keep_roleplay".to_string());
+        let mut save = SaveManager::create_save("Forged cursor", None, None, None);
+        save.active_scene_roleplay_id = Some("missing_roleplay".to_string());
+
+        assert!(restore_game_save(&state, save).await.is_err());
+        assert_eq!(
+            state.active_scene_roleplay_id.read().await.as_deref(),
+            Some("keep_roleplay")
+        );
     }
 
     #[tokio::test]

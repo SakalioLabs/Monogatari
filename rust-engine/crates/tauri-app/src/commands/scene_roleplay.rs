@@ -121,6 +121,8 @@ pub async fn start_scene_roleplay(
         .write()
         .await
         .insert(definition.id.clone(), session.clone());
+    *state.active_scene_roleplay_id.write().await = Some(definition.id.clone());
+    *state.active_roleplay_campaign_id.write().await = None;
     snapshot(definition, session)
 }
 
@@ -557,6 +559,7 @@ async fn save_scene_roleplay_definition_inner(
         .write()
         .await
         .remove(&definition.id);
+    clear_active_roleplay_if_matches(state, &definition.id).await;
     Ok(scene_roleplay_authoring_catalog_from_loaded(loaded))
 }
 
@@ -616,7 +619,16 @@ async fn delete_scene_roleplay_definition_inner(
         .write()
         .await
         .remove(roleplay_id);
+    clear_active_roleplay_if_matches(state, roleplay_id).await;
     Ok(scene_roleplay_authoring_catalog_from_loaded(loaded))
+}
+
+async fn clear_active_roleplay_if_matches(state: &AppState, roleplay_id: &str) {
+    let mut active = state.active_scene_roleplay_id.write().await;
+    if active.as_deref() == Some(roleplay_id) {
+        *active = None;
+        *state.active_roleplay_campaign_id.write().await = None;
+    }
 }
 
 async fn load_definition(

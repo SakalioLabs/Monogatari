@@ -118,6 +118,10 @@ pub(crate) async fn start_dialogue_authoring_inner(
     dm.start_dialogue(dialogue_id)
         .await
         .map_err(|e| e.to_string())?;
+    drop(dm);
+    *state.active_scene_roleplay_id.write().await = None;
+    *state.active_roleplay_campaign_id.write().await = None;
+    let dm = state.dialogue_manager.read().await;
     get_dialogue_state_inner(&dm)
 }
 

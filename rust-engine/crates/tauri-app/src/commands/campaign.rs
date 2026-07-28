@@ -52,11 +52,14 @@ async fn start_roleplay_campaign_for_state(
     let session = RoleplayCampaignSession::start_with_relationships(&definition, relationships)
         .map_err(|error| error.to_string())?;
     let active_roleplay = start_active_roleplay(state, &definition, &session, &roleplays).await?;
+    let active_roleplay_id = active_roleplay.definition.id.clone();
     state
         .roleplay_campaign_sessions
         .write()
         .await
         .insert(definition.id.clone(), session.clone());
+    *state.active_scene_roleplay_id.write().await = Some(active_roleplay_id);
+    *state.active_roleplay_campaign_id.write().await = Some(definition.id.clone());
     Ok(runtime_snapshot(
         definition,
         session,
@@ -164,6 +167,10 @@ async fn advance_roleplay_campaign_for_state(
         .write()
         .await
         .insert(definition.id.clone(), session.clone());
+    *state.active_scene_roleplay_id.write().await = active_roleplay
+        .as_ref()
+        .map(|snapshot| snapshot.definition.id.clone());
+    *state.active_roleplay_campaign_id.write().await = Some(definition.id.clone());
     Ok(runtime_snapshot(
         definition,
         session,
@@ -357,6 +364,17 @@ mod tests {
             .read()
             .await
             .contains_key(&campaign.id));
+        assert_eq!(
+            state.active_roleplay_campaign_id.read().await.as_deref(),
+            Some(campaign.id.as_str())
+        );
+        assert_eq!(
+            state.active_scene_roleplay_id.read().await.as_deref(),
+            snapshot
+                .active_roleplay
+                .as_ref()
+                .map(|roleplay| roleplay.definition.id.as_str())
+        );
     }
 
     #[tokio::test]
@@ -405,5 +423,10 @@ mod tests {
         assert_eq!(advanced.session.status, RoleplayCampaignStatus::Completed);
         assert!(advanced.active_roleplay.is_none());
         assert_eq!(advanced.session.completed_entries.len(), 1);
+        assert_eq!(
+            state.active_roleplay_campaign_id.read().await.as_deref(),
+            Some(campaign.id.as_str())
+        );
+        assert!(state.active_scene_roleplay_id.read().await.is_none());
     }
 }

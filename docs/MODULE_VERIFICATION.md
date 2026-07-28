@@ -2,6 +2,13 @@
 
 ## Independent Project Production Simulation
 
+- Real-time save restoration (2026-07-28): V5 saves retain explicit active
+  Campaign and Scene Roleplay IDs in addition to the complete validated session
+  maps. Restore binds the cursor to the Campaign's current entry, rejects
+  missing or forged cursor/session combinations before mutation, and returns a
+  typed load result that rehydrates the desktop game surface. Quick-save and
+  auto-save now remain active during free-form Roleplay.
+
 - Project launch acceptance (2026-07-28): `settings.json` now selects a
   campaign or Roleplay by stable content ID. Queryless Web and desktop game
   entry resolves the configured live target before deterministic catalog

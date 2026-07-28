@@ -18,6 +18,7 @@ pub const GAME_SAVE_SCHEMA_V1: &str = "monogatari-game-save/v1";
 pub const GAME_SAVE_SCHEMA_V2: &str = "monogatari-game-save/v2";
 pub const GAME_SAVE_SCHEMA_V3: &str = "monogatari-game-save/v3";
 pub const GAME_SAVE_SCHEMA_V4: &str = "monogatari-game-save/v4";
+pub const GAME_SAVE_SCHEMA_V5: &str = "monogatari-game-save/v5";
 pub const MAX_GAME_SAVE_BYTES: u64 = 32 * 1024 * 1024;
 
 fn default_game_save_schema() -> String {
@@ -73,12 +74,18 @@ pub struct GameSave {
     /// Versioned Tauri story progress payload for v3 snapshots.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub story_progress: Option<serde_json::Value>,
-    /// Active real-time roleplay sessions for v4 snapshots.
+    /// Real-time roleplay sessions introduced in v4 snapshots.
     #[serde(default)]
     pub scene_roleplay_sessions: HashMap<String, SceneRoleplaySession>,
-    /// Continuous roleplay campaign sessions for v4 snapshots.
+    /// Continuous roleplay campaign sessions introduced in v4 snapshots.
     #[serde(default)]
     pub roleplay_campaign_sessions: HashMap<String, RoleplayCampaignSession>,
+    /// Roleplay selected in the game surface for v5 snapshots.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub active_scene_roleplay_id: Option<String>,
+    /// Campaign selected in the game surface for v5 snapshots.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub active_roleplay_campaign_id: Option<String>,
 }
 
 /// Saved state for a single character.
@@ -98,7 +105,11 @@ impl GameSave {
     pub fn validate_schema(&self) -> Result<()> {
         if matches!(
             self.schema.as_str(),
-            GAME_SAVE_SCHEMA_V1 | GAME_SAVE_SCHEMA_V2 | GAME_SAVE_SCHEMA_V3 | GAME_SAVE_SCHEMA_V4
+            GAME_SAVE_SCHEMA_V1
+                | GAME_SAVE_SCHEMA_V2
+                | GAME_SAVE_SCHEMA_V3
+                | GAME_SAVE_SCHEMA_V4
+                | GAME_SAVE_SCHEMA_V5
         ) {
             Ok(())
         } else {
@@ -262,7 +273,7 @@ impl SaveManager {
         }
 
         Ok(GameSave {
-            schema: GAME_SAVE_SCHEMA_V4.to_string(),
+            schema: GAME_SAVE_SCHEMA_V5.to_string(),
             engine_version: env!("CARGO_PKG_VERSION").to_string(),
             save_id,
             save_name: name.into(),
@@ -279,6 +290,8 @@ impl SaveManager {
             story_progress: None,
             scene_roleplay_sessions: HashMap::new(),
             roleplay_campaign_sessions: HashMap::new(),
+            active_scene_roleplay_id: None,
+            active_roleplay_campaign_id: None,
         })
     }
 
@@ -397,7 +410,7 @@ mod tests {
 
     fn test_save(save_id: &str) -> GameSave {
         GameSave {
-            schema: GAME_SAVE_SCHEMA_V4.to_string(),
+            schema: GAME_SAVE_SCHEMA_V5.to_string(),
             engine_version: env!("CARGO_PKG_VERSION").to_string(),
             save_id: save_id.to_string(),
             save_name: "Test Save".to_string(),
@@ -414,11 +427,13 @@ mod tests {
             story_progress: None,
             scene_roleplay_sessions: HashMap::new(),
             roleplay_campaign_sessions: HashMap::new(),
+            active_scene_roleplay_id: None,
+            active_roleplay_campaign_id: None,
         }
     }
 
     #[test]
-    fn new_and_stable_slot_saves_use_v4_schema() {
+    fn new_and_stable_slot_saves_use_v5_schema() {
         let generated = SaveManager::create_save("Manual", None, None, None);
         let quick = SaveManager::create_save_with_id(
             "quick_save_0",
@@ -429,8 +444,8 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(generated.schema, GAME_SAVE_SCHEMA_V4);
-        assert_eq!(quick.schema, GAME_SAVE_SCHEMA_V4);
+        assert_eq!(generated.schema, GAME_SAVE_SCHEMA_V5);
+        assert_eq!(quick.schema, GAME_SAVE_SCHEMA_V5);
         assert_eq!(quick.save_id, "quick_save_0");
         assert!(
             SaveManager::create_save_with_id("../settings", "Unsafe", None, None, None).is_err()
@@ -466,6 +481,26 @@ mod tests {
         assert!(save.chat_sessions.is_empty());
         assert!(save.story_progress.is_none());
         assert!(save.characters["sakura"].memory.is_none());
+    }
+
+    #[test]
+    fn v4_roleplay_saves_deserialize_without_active_surface_cursors() {
+        let mut value = serde_json::to_value(test_save("legacy_v4")).unwrap();
+        value["schema"] = serde_json::json!(GAME_SAVE_SCHEMA_V4);
+        value
+            .as_object_mut()
+            .unwrap()
+            .remove("active_scene_roleplay_id");
+        value
+            .as_object_mut()
+            .unwrap()
+            .remove("active_roleplay_campaign_id");
+
+        let save: GameSave = serde_json::from_value(value).unwrap();
+
+        assert!(save.validate_schema().is_ok());
+        assert!(save.active_scene_roleplay_id.is_none());
+        assert!(save.active_roleplay_campaign_id.is_none());
     }
 
     #[tokio::test]

@@ -1601,11 +1601,11 @@ export function createSourceInvariantVerifier({
       ['load_rejects_ids_that_escape_save_directory', 'test load rejection for escaping ids'],
       ['delete_rejects_ids_that_escape_save_directory', 'test delete rejection for escaping ids'],
       ['list_saves_ignores_invalid_or_mismatched_save_ids', 'test list filtering for invalid or mismatched ids'],
-      ['GAME_SAVE_SCHEMA_V4', 'version complete runtime snapshots through the v4 save schema'],
+      ['GAME_SAVE_SCHEMA_V5', 'version active live-story cursors through the v5 save schema'],
       ['validate_schema', 'reject unsupported save schemas before restore'],
       ['create_save_with_id', 'support stable quick-save and auto-save slots'],
       ['legacy_save_payloads_deserialize_with_v1_defaults', 'test backward-compatible v1 save loading'],
-      ['new_and_stable_slot_saves_use_v4_schema', 'test generated and stable slots use the v4 contract'],
+      ['new_and_stable_slot_saves_use_v5_schema', 'test generated and stable slots use the v5 contract'],
       ['MAX_GAME_SAVE_BYTES', 'bound serialized save file reads and writes'],
       ['write_staged', 'stage save overwrites before replacing the active slot'],
       ['recover_backup_if_needed', 'recover interrupted stable-slot replacements'],
@@ -1626,7 +1626,10 @@ export function createSourceInvariantVerifier({
       ['story_progress', 'persist applied story events and unlocked content'],
       ['scene_roleplay_sessions', 'persist active real-time roleplay sessions'],
       ['roleplay_campaign_sessions', 'persist continuous roleplay campaign sessions'],
+      ['active_scene_roleplay_id', 'persist the Roleplay selected by the game surface'],
+      ['active_roleplay_campaign_id', 'persist the Campaign selected by the game surface'],
       ['validate_roleplay_runtime_snapshots', 'validate roleplay and campaign state before runtime restore'],
+      ['validate_active_roleplay_cursor', 'bind restored live-story cursors to validated sessions'],
       ['validate_snapshot', 'replay roleplay transcripts before accepting persisted story state'],
       ['let story_progress = state.story_progress.read().await', 'snapshot story progress before action-backed script flags using the executor lock order'],
       ['deserialize_story_progress', 'validate story progress before runtime restore'],
@@ -1637,10 +1640,22 @@ export function createSourceInvariantVerifier({
       ['game_save_round_trip_restores_character_chat_scene_and_script_state', 'test complete runtime save restoration'],
       ['v2_save_migrates_triggered_events_into_story_progress', 'test backward-compatible story progress migration'],
       ['invalid_story_progress_is_rejected_before_runtime_mutation', 'test atomic rejection of invalid progress snapshots'],
+      ['v5_save_round_trip_restores_active_campaign_and_roleplay_cursor', 'test live Campaign and Roleplay cursor restoration'],
+      ['forged_active_roleplay_cursor_is_rejected_before_runtime_mutation', 'reject forged live-story cursors atomically'],
     ]
     for (const [needle, description] of rustCommandRequirements) {
       if (!rustSaveCommandSource.includes(needle)) {
         issues.push(`Rust save commands must ${description}`)
+      }
+    }
+    for (const [needle, description] of [
+      ['restoreLoadedRoleplay(result)', 'restore the saved live-story surface after desktop load'],
+      ["'get_roleplay_campaign_state'", 'reload saved Campaign runtime snapshots'],
+      ["'get_scene_roleplay_state'", 'reload saved standalone Roleplay snapshots'],
+      ['dialogueState.value?.is_active || activeRoleplaySnapshot.value', 'auto-save both scripted and real-time play'],
+    ]) {
+      if (!gameViewSource.includes(needle)) {
+        issues.push(`GameView must ${description}`)
       }
     }
 

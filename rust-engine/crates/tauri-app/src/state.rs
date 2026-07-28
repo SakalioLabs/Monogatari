@@ -42,8 +42,12 @@ pub struct AppState {
     pub chat_sessions: Arc<RwLock<HashMap<String, ChatSession>>>,
     /// Score-driven scene roleplay sessions keyed by roleplay id.
     pub scene_roleplay_sessions: Arc<RwLock<HashMap<String, SceneRoleplaySession>>>,
+    /// Roleplay currently presented by the game surface.
+    pub active_scene_roleplay_id: Arc<RwLock<Option<String>>>,
     /// Multi-roleplay campaign sessions keyed by campaign id.
     pub roleplay_campaign_sessions: Arc<RwLock<HashMap<String, RoleplayCampaignSession>>>,
+    /// Campaign currently presented by the game surface.
+    pub active_roleplay_campaign_id: Arc<RwLock<Option<String>>>,
 }
 
 impl AppState {
@@ -69,7 +73,9 @@ impl AppState {
             scene_history: Arc::new(RwLock::new(Vec::new())),
             chat_sessions: Arc::new(RwLock::new(HashMap::new())),
             scene_roleplay_sessions: Arc::new(RwLock::new(HashMap::new())),
+            active_scene_roleplay_id: Arc::new(RwLock::new(None)),
             roleplay_campaign_sessions: Arc::new(RwLock::new(HashMap::new())),
+            active_roleplay_campaign_id: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -89,7 +95,9 @@ impl AppState {
     pub async fn reset_project_runtime_state(&self) {
         self.chat_sessions.write().await.clear();
         self.scene_roleplay_sessions.write().await.clear();
+        *self.active_scene_roleplay_id.write().await = None;
         self.roleplay_campaign_sessions.write().await.clear();
+        *self.active_roleplay_campaign_id.write().await = None;
         *self.active_scene_id.write().await = None;
         self.scene_history.write().await.clear();
         *self.scene_manager.write().await = SceneManager::new();
@@ -226,6 +234,8 @@ mod tests {
             .write()
             .await
             .insert("sakura".to_string(), ChatSession::new("sakura".to_string()));
+        *state.active_scene_roleplay_id.write().await = Some("first_roleplay".to_string());
+        *state.active_roleplay_campaign_id.write().await = Some("first_campaign".to_string());
         *state.active_scene_id.write().await = Some("park".to_string());
         state.scene_history.write().await.push("park".to_string());
         state
@@ -245,6 +255,8 @@ mod tests {
         state.set_project_data_root(second_root.clone()).await;
 
         assert!(state.chat_sessions.read().await.is_empty());
+        assert!(state.active_scene_roleplay_id.read().await.is_none());
+        assert!(state.active_roleplay_campaign_id.read().await.is_none());
         assert!(state.active_scene_id.read().await.is_none());
         assert!(state.scene_history.read().await.is_empty());
         assert!(state

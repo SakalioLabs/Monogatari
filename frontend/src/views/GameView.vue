@@ -26,7 +26,7 @@
         <button v-if="desktopRuntime" class="control-btn" @click="openLoadDialog"><FolderOpen :size="15" />{{ t('game.load', 'Load') }}</button>
         <button class="control-btn" @click="$router.push('/backlog')"><History :size="15" />{{ t('nav.backlog', 'Backlog') }}</button>
         <button class="control-btn" @click="toggleSettings"><SlidersHorizontal :size="15" />{{ t('game.tune', 'Tune') }}</button>
-        <span v-if="desktopRuntime && dialogueState?.is_active" class="auto-save-badge" :title="t('game.auto-save-active', 'Auto-save active')"><Cloud :size="15" /></span>
+        <span v-if="desktopRuntime && (dialogueState?.is_active || activeRoleplaySnapshot)" class="auto-save-badge" :title="t('game.auto-save-active', 'Auto-save active')"><Cloud :size="15" /></span>
       </div>
     </header>
 
@@ -385,6 +385,13 @@ interface SaveInfo {
   save_name: string
   timestamp: string
   current_scene: string | null
+}
+
+interface GameLoadResult {
+  schema: 'monogatari-game-load-result/v1'
+  message: string
+  active_scene_roleplay_id: string | null
+  active_roleplay_campaign_id: string | null
 }
 
 interface SceneInfo {
@@ -1009,14 +1016,46 @@ async function saveGame() {
 
 async function loadGame(saveId: string) {
   try {
-    await invokeCommand<void>('load_game', { saveId })
+    const result = await invokeCommand<GameLoadResult>('load_game', { saveId })
+    if (result.schema !== 'monogatari-game-load-result/v1') {
+      throw new Error(`Unsupported game load result: ${String(result.schema)}`)
+    }
     showLoadDialog.value = false
     toastMessage.value = t('game.save-loaded', 'Save loaded')
     await loadActiveScene()
     await updateDialogueState()
     await loadStoryLibrary()
+    await restoreLoadedRoleplay(result)
   } catch (e) {
     errorMessage.value = String(e)
+  }
+}
+
+async function restoreLoadedRoleplay(result: GameLoadResult) {
+  activeCampaignSnapshot.value = null
+  activeRoleplaySnapshot.value = null
+  if (result.active_roleplay_campaign_id) {
+    const campaign = await invokeCommand<RoleplayCampaignRuntimeSnapshot | null>(
+      'get_roleplay_campaign_state',
+      { campaignId: result.active_roleplay_campaign_id },
+    )
+    if (!campaign) throw new Error('Saved Roleplay campaign is unavailable after restore.')
+    activeCampaignSnapshot.value = campaign
+    activeRoleplaySnapshot.value = campaign.active_roleplay
+  } else if (result.active_scene_roleplay_id) {
+    activeRoleplaySnapshot.value = await invokeCommand<SceneRoleplaySnapshot | null>(
+      'get_scene_roleplay_state',
+      { roleplayId: result.active_scene_roleplay_id },
+    )
+    if (!activeRoleplaySnapshot.value) {
+      throw new Error('Saved scene Roleplay is unavailable after restore.')
+    }
+  }
+  if (activeRoleplaySnapshot.value) {
+    dialogueState.value = null
+    displayedText.value = ''
+    textPlayback.cancel()
+    await syncRoleplayNode(activeRoleplaySnapshot.value.current_node)
   }
 }
 
@@ -1059,7 +1098,7 @@ function handleKeydown(e: KeyboardEvent) {
   // Quick save/load
   if (desktopRuntime && e.key === 's' && !e.ctrlKey && !e.metaKey) {
     e.preventDefault()
-    if (dialogueState.value?.is_active) {
+    if (dialogueState.value?.is_active || activeRoleplaySnapshot.value) {
       saveQuick()
     }
     return
@@ -1141,7 +1180,7 @@ onMounted(async () => {
   
   if (desktopRuntime) {
     autoSaveTimer = window.setInterval(async () => {
-      if (dialogueState.value?.is_active) {
+      if (dialogueState.value?.is_active || activeRoleplaySnapshot.value) {
         try {
           const name = t('game.auto-save-name', 'Auto-save {time}', {
             time: new Date().toLocaleTimeString(locale.value, { hour: '2-digit', minute: '2-digit' }),
