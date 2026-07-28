@@ -669,6 +669,20 @@ the completion record.
   remained uncommitted and a subsequent live retry succeeded. The complete
   release gate passed in 735.9 seconds, including frontend, Rust, MCP, Tauri,
   Clippy, Playwright, mirror, sensitive-text, and 55/55 legacy .NET tests.
+- KonoSuba Volume 6 Chapter 3 acceptance (2026-07-28): the schema-backed
+  seven-node live-NPC Roleplay and four-scenario Quality Suite pass strict,
+  supervised, exhaustion, and structural attack routes. All clean routes cover
+  7/7 nodes; the strict route records all 14 quoted evidence gates, while the
+  attack remains on `alderp_villa_watch_charter` and commits zero story turns,
+  score, evidence, or route state. The three-entry Volume 6 Campaign completes
+  through bounded artifact recovery with 100% node coverage in each chapter.
+  Project validation reports 608 documents, 32 Roleplays, 32 Quality Suites,
+  96 Endings, and 114 scenes. Delivery resolves 233/233 declared renderer
+  assets with zero placeholders, errors, or warnings. The six-test
+  desktop/mobile/live Playwright contract passed in 33.1 seconds; a real
+  `grok-4.5` turn made separate NPC and evaluator requests with HTTP 200,
+  committed through the deterministic state machine, and exposed no
+  `OrtRun`, `std::bad_alloc`, provider, WebGPU, or ONNX Runtime diagnostics.
 
 ## Purpose
 

@@ -1,0 +1,23 @@
+{
+  "id": "volume6_artifact_recovery_with_bounded_authority_epilogue",
+  "nodes": {
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "royal_capital_inn_guest_room_night",
+      "text": "调查表只记录已经核验的神器能力、未知项与王城方向反应。有限侦察不包含潜入、盗窃、伤害或身体交换。"
+    },
+    "final": {
+      "choices": [],
+      "emotion": "relieved",
+      "ending_type": "volume6_artifact_recovery_with_bounded_authority",
+      "is_ending": true,
+      "scene_id": "royal_capital_inn_guest_room_night",
+      "speaker_id": "chris",
+      "text": "克莉丝收好任务副本。她可以继续追踪线索，但每一步都必须留下证据、接受监督，并在越过风险阈值前退出上报。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "有限授权的神器回收",
+  "variables": {}
+}

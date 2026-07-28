@@ -1,0 +1,23 @@
+{
+  "id": "volume6_unauthorized_heist_refused_epilogue",
+  "nodes": {
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "royal_capital_inn_guest_room_night",
+      "text": "神器风险没有被忽略，但它也没有变成一张空白授权。缺失的证据、监督和退出条件被逐项留在记录中。"
+    },
+    "final": {
+      "choices": [],
+      "emotion": "instructor",
+      "ending_type": "volume6_unauthorized_heist_refused",
+      "is_ending": true,
+      "scene_id": "royal_capital_inn_guest_room_night",
+      "speaker_id": "chris",
+      "text": "克莉丝接受暂缓行动。她会继续寻找可公开核验的线索，而不是把同伴拖进一次没有边界、没有退路的潜入。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "拒绝无授权潜入",
+  "variables": {}
+}

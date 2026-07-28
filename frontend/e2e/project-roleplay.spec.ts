@@ -106,6 +106,14 @@ test.describe('configured project roleplay', () => {
       { timeout: 240_000 },
     )
     await expect(roleplay.locator('.turn-entry:not(.pending)')).toHaveCount(2)
+    const npcReply = roleplay.locator('.turn-entry.character:not(.pending) p').last()
+    await expect(npcReply).toBeVisible()
+    const npcReplyText = (await npcReply.textContent())?.trim() || ''
+    expect(npcReplyText.length).toBeGreaterThan(10)
+    expect(npcReplyText).not.toMatch(
+      /OrtRun|std::bad_alloc|ROLEPLAY_[A-Z_]+|authoring API|WebGPU|ONNX Runtime/i,
+    )
+    await expect(roleplay.locator('.roleplay-error')).toHaveCount(0)
     await expect(page.getByTestId('roleplay-degraded')).toHaveCount(0)
     expect(inferenceStatuses).toEqual([200, 200])
     expect(runtimeErrors, runtimeErrors.join('\n')).toEqual([])

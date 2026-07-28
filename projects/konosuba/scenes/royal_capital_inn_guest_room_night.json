@@ -1,0 +1,10 @@
+{
+  "background_path": "assets/backgrounds/royal_capital_inn_guest_room_night.png",
+  "bgm_path": null,
+  "id": "royal_capital_inn_guest_room_night",
+  "model_3d_path": null,
+  "name": "王都旅馆客房",
+  "tags": ["volume6", "chapter3", "royal_capital", "inn", "night"],
+  "time_of_day": "night",
+  "weather": "clear"
+}

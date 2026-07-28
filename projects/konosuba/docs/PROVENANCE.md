@@ -164,6 +164,13 @@
   identity-preserving edit of the existing project sprite. Both were generated
   against flat chroma key, converted to transparent PNG, and validated for alpha
   coverage before project use.
+- Volume 6 Chapter 3 is grounded in all 574 heading and paragraph nodes of the
+  user's local Volume 6 EPUB, `OEBPS/Text/chapter03.xhtml`. The authored graph
+  paraphrases the chapter's villa watch, privacy hazard, night encounter,
+  protected disclosure, royal report, threat-source review, and artifact lead;
+  it does not copy source prose. Six original backgrounds cover the villa,
+  audience hall, cafe, and inn scenes. Existing reviewed project-generated
+  character sprites are reused without importing novel or anime artwork.
 
 ## Rights and distribution
 

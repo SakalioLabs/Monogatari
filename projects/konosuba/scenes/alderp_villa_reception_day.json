@@ -1,0 +1,10 @@
+{
+  "background_path": "assets/backgrounds/alderp_villa_reception_day.png",
+  "bgm_path": null,
+  "id": "alderp_villa_reception_day",
+  "model_3d_path": null,
+  "name": "阿尔达普别邸会客厅",
+  "tags": ["volume6", "chapter3", "alderp_villa", "watch", "day"],
+  "time_of_day": "day",
+  "weather": "clear"
+}

@@ -76,6 +76,13 @@ coordinate a village defense, meet a food-insecure household's immediate needs,
 and protect a minor's current agency when adult expectations, sleep magic, and
 a locked room try to decide the scene in advance?
 
+## Volume 6 Chapter 3 dramatic question
+
+Can the player investigate an apparent phantom thief while preserving privacy,
+source provenance, protected identity, property accountability, and bounded
+authority, rather than letting suspicion or a claimed artifact threat justify
+an unauthorized heist?
+
 The playable loop is ten real-time scene nodes. NPC wording is generated from
 the current scene, active speaker goal, participant goals, bounded transcript,
 and pinned Knowledge. A separate evaluator may propose only clamped score and
@@ -285,6 +292,13 @@ leader may consent to magic transfer for another participant.
 - Wiz knows Drain Touch, Teleport, her own magic reserve, and the core conditions
   she directly inspects. She cannot treat a random destination as safe or infer
   another participant's consent.
+- In Volume 6 Chapter 3, Alderp knows his own property claim and what he
+  personally observes, but his title does not prove a theft account or grant
+  unlimited search authority. Chris knows her own actions and artifact lead;
+  she does not have to expose a protected identity to establish a bounded
+  inquiry. Claire and Iris know the report brought to court, not every private
+  exchange at the villa. Mitsurugi knows his source and observations, but
+  urgency does not let him speak for Aqua or convert warning into proof.
 - In Volume 3 Chapter 3, Darkness alone controls disclosure of Lalatina and the
   Dustiness family identity. Her agreement to attend one meeting is not consent
   to marriage, retirement, training, touch, publicity, or proxy speech.
@@ -404,3 +418,12 @@ leader may consent to magic transfer for another participant.
   boundaries remain incomplete.
 - `volume5_village_and_household_decision_overrun`: the available decision
   window expires without inventing victory, consent, or a relationship.
+- `volume6_artifact_recovery_with_bounded_authority`: all fourteen records
+  establish privacy repair, source-separated reporting, property
+  accountability, and supervised artifact reconnaissance with exit conditions.
+- `volume6_supervised_artifact_inquiry`: the artifact lead is documented and
+  kept under supervision, but earlier investigation or repair evidence remains
+  incomplete.
+- `volume6_unauthorized_heist_refused`: the available turns expire without
+  sufficient authority, provenance, or safeguards, so the engine refuses to
+  invent a justified heist.

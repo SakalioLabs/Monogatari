@@ -1,0 +1,8 @@
+{
+  "description": "核心风险与身份保护得到确认，但部分证据或监督条件仍需补齐。行动停在非侵入核验阶段，不把紧迫感解释成潜入王城的许可。",
+  "dialogue_id": "volume6_supervised_artifact_inquiry_epilogue",
+  "id": "volume6_supervised_artifact_inquiry",
+  "scene_id": "royal_capital_inn_guest_room_night",
+  "schema": "monogatari-story-ending/v1",
+  "title": "受监督的神器核验"
+}

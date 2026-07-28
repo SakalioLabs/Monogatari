@@ -418,6 +418,30 @@ The direct Chapter 2 live-NPC entry is:
 /game?previewRoleplay=volume6_chapter2_roleplay&authoring=1
 ```
 
+## Volume 6 Chapter 3 production
+
+Volume 6 Chapter 3 continues as a seven-node real-time investigation Roleplay.
+Darkness, Alderp, Chris, Claire, Iris, Aqua, and Mitsurugi answer from the
+active scene, their own character and relationship contracts, node-local
+motives, and pinned Knowledge. The player defines the villa-watch mandate,
+stops a hidden-observation privacy violation, identifies a night intruder,
+handles Chris's disclosure and property accountability, gives a
+source-separated royal report, ranks Mitsurugi's warning, and decides whether
+artifact reconnaissance has enough authority to proceed.
+
+Four scores and fourteen quoted evidence gates select bounded artifact
+recovery, supervised inquiry, or refusal of an unauthorized heist. The
+four-scenario Quality Suite covers all seven nodes and all three endings while
+proving that a structural attack cannot commit a story turn or forge route
+state. Six generated environments are fingerprint-imported, and the Volume 6
+Campaign now runs Chapters 1 through 3.
+
+The direct Chapter 3 live-NPC entry is:
+
+```text
+/game?previewRoleplay=volume6_chapter3_roleplay&authoring=1
+```
+
 Do not use `previewDialogue=blue_frame_dialogue` to evaluate this project. That
 identifier belongs to the built-in compatibility sample rather than the
 KonoSuba live-roleplay catalog.

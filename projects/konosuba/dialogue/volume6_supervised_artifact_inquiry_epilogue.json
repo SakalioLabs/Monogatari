@@ -1,0 +1,23 @@
+{
+  "id": "volume6_supervised_artifact_inquiry_epilogue",
+  "nodes": {
+    "start": {
+      "choices": [],
+      "next_node_id": "final",
+      "scene_id": "royal_capital_inn_guest_room_night",
+      "text": "线索与风险已经登记，但证据链和监督条件还不足以支持进一步行动。当前任务被限定为公开资料与非侵入反应核验。"
+    },
+    "final": {
+      "choices": [],
+      "emotion": "earnest",
+      "ending_type": "volume6_supervised_artifact_inquiry",
+      "is_ending": true,
+      "scene_id": "royal_capital_inn_guest_room_night",
+      "speaker_id": "darkness",
+      "text": "Darkness 将未决条件写在最上方：没有新的事实与授权，就不进入王城限制区域，也不让任何同伴独自承担风险。"
+    }
+  },
+  "start_node_id": "start",
+  "title": "受监督的神器核验",
+  "variables": {}
+}

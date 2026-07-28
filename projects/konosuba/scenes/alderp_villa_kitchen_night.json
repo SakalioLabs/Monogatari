@@ -1,0 +1,10 @@
+{
+  "background_path": "assets/backgrounds/alderp_villa_kitchen_night.png",
+  "bgm_path": null,
+  "id": "alderp_villa_kitchen_night",
+  "model_3d_path": null,
+  "name": "阿尔达普别邸深夜厨房",
+  "tags": ["volume6", "chapter3", "alderp_villa", "intrusion", "night"],
+  "time_of_day": "night",
+  "weather": "clear"
+}

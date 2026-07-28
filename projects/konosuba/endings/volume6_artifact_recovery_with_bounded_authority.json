@@ -1,0 +1,8 @@
+{
+  "description": "七个实时场景的调查、来源、隐私与信任边界全部建立。克莉丝与 Darkness 只获得可监督、可撤回的有限侦察任务，并约定不伤害、证据链、退出和紧急上报条件。",
+  "dialogue_id": "volume6_artifact_recovery_with_bounded_authority_epilogue",
+  "id": "volume6_artifact_recovery_with_bounded_authority",
+  "scene_id": "royal_capital_inn_guest_room_night",
+  "schema": "monogatari-story-ending/v1",
+  "title": "有限授权的神器回收"
+}

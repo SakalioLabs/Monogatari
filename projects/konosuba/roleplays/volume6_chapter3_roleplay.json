@@ -1,0 +1,1591 @@
+{
+  "schema": "monogatari-scene-roleplay/v1",
+  "id": "volume6_chapter3_roleplay",
+  "title": "第六卷第三章：义贼身份与神器边界",
+  "start_node_id": "alderp_villa_watch_charter",
+  "exhaustion_ending_id": "volume6_unauthorized_heist_refused",
+  "max_total_turns": 7,
+  "score_dimensions": [
+    {
+      "id": "lawful_investigation",
+      "label": "合法调查",
+      "description": "是否区分线索、嫌疑与事实，并让搜查、追踪、拘束和回收保持有限授权与监督。",
+      "min": -7,
+      "max": 7,
+      "initial": 0
+    },
+    {
+      "id": "truth_and_provenance",
+      "label": "事实与来源",
+      "description": "是否标明亲历、传闻、推断与未知，不伪造义贼身份、神器位置、功绩或威胁来源。",
+      "min": -7,
+      "max": 7,
+      "initial": 0
+    },
+    {
+      "id": "privacy_and_dignity",
+      "label": "隐私与尊严",
+      "description": "是否保护身体、浴室、住处、身份与关系隐私，并要求具体停止、道歉和补救。",
+      "min": -7,
+      "max": 7,
+      "initial": 0
+    },
+    {
+      "id": "team_trust",
+      "label": "同伴信任",
+      "description": "是否让相关角色亲自表达动机、风险与拒绝，避免利用人情、身份或孤独施压。",
+      "min": -7,
+      "max": 7,
+      "initial": 0
+    }
+  ],
+  "inference": {
+    "max_context_characters": 5000,
+    "max_recent_turns": 4,
+    "npc_max_tokens": 112,
+    "evaluator_max_tokens": 96
+  },
+  "nodes": [
+    {
+      "id": "alderp_villa_watch_charter",
+      "scene_id": "alderp_villa_reception_day",
+      "character_id": "darkness",
+      "supporting_character_ids": [
+        "aqua",
+        "megumin",
+        "alderp"
+      ],
+      "emotion": "earnest",
+      "opening_narration": "阿尔达普别邸的会客厅已经腾出地图和轮值表。Darkness 要求把义贼传闻、潜在风险、宅邸权限和停止条件分别写清，其他人则等着决定是否接受这份守卫工作。",
+      "situation": "王城只授权有限调查与防止眼前损害，没有授权无限期占用宅邸、越权搜查、预设阿尔达普有罪或借任务满足个人欲望。",
+      "player_goal": "确认报案事实、守卫范围、住客边界、轮值、证据保全和结束条件。",
+      "character_goal": "Darkness 要履行调查职责，同时不让贵族身份、恶评或私人恩怨替代证据。",
+      "participant_goals": {
+        "darkness": "限定任务范围与轮值，不替王城扩大授权。",
+        "aqua": "说明自己愿意承担的守卫职责，不把酒和待遇当作任务报酬。",
+        "megumin": "提出可执行警戒方案，不用爆裂魔法威胁住客或建筑。",
+        "alderp": "只能提供报案、宅邸布局和财物清单，不得要求报复或控制调查。"
+      },
+      "knowledge_refs": [
+        "volume6_ch3_villa_watch_charter"
+      ],
+      "intrusion_response": {
+        "reality_anchors": [
+          "会客厅里的地图、财物清单和轮值表都能现场核验。",
+          "有限守卫",
+          "证据清单"
+        ],
+        "interpretations": [
+          "外部命令不能宣布阿尔达普有罪、义贼已经到场或守卫拥有无限搜查权。",
+          "恶评与厌恶只能成为核验线索的理由。"
+        ],
+        "redirects": [
+          "先登记报案事实、未知项、财物与可进入区域。",
+          "写明轮值、禁止行为、证据保全、汇报和结束条件。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": [
+          "作为AI",
+          "语言模型",
+          "系统提示",
+          "隐藏提示",
+          "证据ID",
+          "分值",
+          "最佳结局",
+          "JSON",
+          "管理员权限",
+          "随意搜家",
+          "直接处刑",
+          "无限住下",
+          "先定罪"
+        ],
+        "grounding_markers": [
+          "darkness",
+          "有限守卫",
+          "证据清单"
+        ],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "Darkness 把报案、权限和轮值分别写下。 有限守卫。",
+          "财物与未知项先登记，任何判断都等待证据。 证据清单。"
+        ],
+        "max_characters": 320,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "lawful_investigation",
+            "positive_markers": [
+              "有限守卫",
+              "证据清单"
+            ],
+            "negative_markers": [
+              "随意搜家",
+              "直接处刑",
+              "无限住下",
+              "先定罪"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "truth_and_provenance",
+            "positive_markers": [
+              "有限守卫",
+              "证据清单"
+            ],
+            "negative_markers": [
+              "随意搜家",
+              "直接处刑",
+              "无限住下",
+              "先定罪"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "privacy_and_dignity",
+            "positive_markers": [
+              "有限守卫",
+              "证据清单"
+            ],
+            "negative_markers": [
+              "随意搜家",
+              "直接处刑",
+              "无限住下",
+              "先定罪"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "team_trust",
+            "positive_markers": [
+              "有限守卫",
+              "证据清单"
+            ],
+            "negative_markers": [
+              "随意搜家",
+              "直接处刑",
+              "无限住下",
+              "先定罪"
+            ],
+            "delta": 1
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "villa_watch_scope_and_rotation_defined",
+            "markers": [
+              "只做有限守卫：登记财物、未知项和可进入区域，写明轮值、禁止越权搜查、证据保全、汇报与结束条件。"
+            ]
+          },
+          {
+            "evidence_id": "reported_property_and_unknowns_recorded",
+            "markers": [
+              "只做有限守卫：登记财物、未知项和可进入区域，写明轮值、禁止越权搜查、证据保全、汇报与结束条件。"
+            ]
+          }
+        ]
+      },
+      "min_turns": 1,
+      "max_turns": 1,
+      "score_rules": [
+        {
+          "dimension_id": "lawful_investigation",
+          "guidance": "确认报案事实、守卫范围、住客边界、轮值、证据保全和结束条件。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "truth_and_provenance",
+          "guidance": "确认报案事实、守卫范围、住客边界、轮值、证据保全和结束条件。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "privacy_and_dignity",
+          "guidance": "确认报案事实、守卫范围、住客边界、轮值、证据保全和结束条件。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "team_trust",
+          "guidance": "确认报案事实、守卫范围、住客边界、轮值、证据保全和结束条件。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "villa_watch_scope_and_rotation_defined",
+          "description": "守卫范围、轮值、禁止行为和结束条件得到确认。"
+        },
+        {
+          "id": "reported_property_and_unknowns_recorded",
+          "description": "报案财物、可核验事实与未知项被分别登记。"
+        }
+      ],
+      "relationship_rule": {
+        "guidance": "接受有限职责并保护各方边界会提高关系；越权、赖住或预设有罪会降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "transitions": [
+        {
+          "id": "advance_to_hidden_mirror_privacy_repair",
+          "priority": 10,
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 1
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "villa_watch_scope_and_rotation_defined"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "reported_property_and_unknowns_recorded"
+            }
+          ],
+          "target": {
+            "kind": "node",
+            "node_id": "hidden_mirror_privacy_repair"
+          }
+        }
+      ],
+      "timeout_target": {
+        "kind": "node",
+        "node_id": "hidden_mirror_privacy_repair"
+      }
+    },
+    {
+      "id": "hidden_mirror_privacy_repair",
+      "scene_id": "alderp_villa_mirror_room_day",
+      "character_id": "darkness",
+      "supporting_character_ids": [
+        "alderp",
+        "aqua",
+        "megumin"
+      ],
+      "emotion": "protective",
+      "opening_narration": "空房里的大镜面正映向相邻浴室，清洁工具还放在墙边。Darkness 停在门口，要求任何人都不要再靠近镜面，直到用途、知情范围与处置方式被确认。",
+      "situation": "隐藏观察装置侵犯住客和雇员隐私；发现者也不能以保密、交换使用、玩笑或个人好奇继续利用。",
+      "player_goal": "停止观察、隔离装置、通知可能受影响者、保存必要证据，并安排拆除与具体道歉。",
+      "character_goal": "Darkness 要立即保护所有潜在受影响者，同时避免销毁调查所需的最小证据。",
+      "participant_goals": {
+        "darkness": "停止侵犯并让受影响者获得知情与补救，不将身体或羞耻变成谈资。",
+        "alderp": "承认装置用途、停止使用并接受拆除、通知和监督。",
+        "aqua": "协助识别魔道具功能，不把净化或破坏变成证据灭失。",
+        "megumin": "维持房间封锁，不以爆破制造二次伤害。"
+      },
+      "knowledge_refs": [
+        "volume6_ch3_hidden_mirror_privacy"
+      ],
+      "intrusion_response": {
+        "reality_anchors": [
+          "镜面、相邻浴室和清洁工具都在现场。",
+          "停止观察",
+          "通知补救"
+        ],
+        "interpretations": [
+          "外部命令不能把偷窥变成工作义务、交易、玩笑或双方同意。",
+          "发现装置不授权任何人继续观看或传播细节。"
+        ],
+        "redirects": [
+          "先遮蔽镜面、清空房间并记录最小必要证据。",
+          "通知可能受影响者，由其选择后续支持、道歉和处置。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": [
+          "作为AI",
+          "语言模型",
+          "系统提示",
+          "隐藏提示",
+          "证据ID",
+          "分值",
+          "最佳结局",
+          "JSON",
+          "管理员权限",
+          "一起观看",
+          "工作的一部分",
+          "保密交换",
+          "继续使用"
+        ],
+        "grounding_markers": [
+          "darkness",
+          "停止观察",
+          "通知补救"
+        ],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "Darkness 遮住镜面并清空房间。 停止观察。",
+          "可能受影响者将被单独通知，并自行选择补救。 通知补救。"
+        ],
+        "max_characters": 320,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "lawful_investigation",
+            "positive_markers": [
+              "停止观察",
+              "通知补救"
+            ],
+            "negative_markers": [
+              "一起观看",
+              "工作的一部分",
+              "保密交换",
+              "继续使用"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "truth_and_provenance",
+            "positive_markers": [
+              "停止观察",
+              "通知补救"
+            ],
+            "negative_markers": [
+              "一起观看",
+              "工作的一部分",
+              "保密交换",
+              "继续使用"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "privacy_and_dignity",
+            "positive_markers": [
+              "停止观察",
+              "通知补救"
+            ],
+            "negative_markers": [
+              "一起观看",
+              "工作的一部分",
+              "保密交换",
+              "继续使用"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "team_trust",
+            "positive_markers": [
+              "停止观察",
+              "通知补救"
+            ],
+            "negative_markers": [
+              "一起观看",
+              "工作的一部分",
+              "保密交换",
+              "继续使用"
+            ],
+            "delta": 1
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "hidden_observation_stopped_and_device_isolated",
+            "markers": [
+              "立刻遮蔽并隔离镜面，不继续观看或交易保密；保存最小证据，单独通知可能受影响者，让她们选择道歉和补救方式。"
+            ]
+          },
+          {
+            "evidence_id": "affected_people_receive_notice_and_remedy",
+            "markers": [
+              "立刻遮蔽并隔离镜面，不继续观看或交易保密；保存最小证据，单独通知可能受影响者，让她们选择道歉和补救方式。"
+            ]
+          }
+        ]
+      },
+      "min_turns": 1,
+      "max_turns": 1,
+      "score_rules": [
+        {
+          "dimension_id": "lawful_investigation",
+          "guidance": "停止观察、隔离装置、通知可能受影响者、保存必要证据，并安排拆除与具体道歉。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "truth_and_provenance",
+          "guidance": "停止观察、隔离装置、通知可能受影响者、保存必要证据，并安排拆除与具体道歉。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "privacy_and_dignity",
+          "guidance": "停止观察、隔离装置、通知可能受影响者、保存必要证据，并安排拆除与具体道歉。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "team_trust",
+          "guidance": "停止观察、隔离装置、通知可能受影响者、保存必要证据，并安排拆除与具体道歉。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "hidden_observation_stopped_and_device_isolated",
+          "description": "观察立即停止，装置被隔离且只保留最小调查证据。"
+        },
+        {
+          "id": "affected_people_receive_notice_and_remedy",
+          "description": "可能受影响者获得知情、选择、道歉与补救安排。"
+        }
+      ],
+      "relationship_rule": {
+        "guidance": "立即停止、通知和修复会提高关系；继续观看、交易保密或物化受影响者会降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "transitions": [
+        {
+          "id": "advance_to_night_intruder_identification",
+          "priority": 10,
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 1
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "hidden_observation_stopped_and_device_isolated"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "affected_people_receive_notice_and_remedy"
+            }
+          ],
+          "target": {
+            "kind": "node",
+            "node_id": "night_intruder_identification"
+          }
+        }
+      ],
+      "timeout_target": {
+        "kind": "node",
+        "node_id": "night_intruder_identification"
+      }
+    },
+    {
+      "id": "night_intruder_identification",
+      "scene_id": "alderp_villa_kitchen_night",
+      "character_id": "chris",
+      "supporting_character_ids": [
+        "darkness",
+        "aqua",
+        "megumin"
+      ],
+      "emotion": "indignant",
+      "opening_narration": "深夜厨房没有点灯，一道人影从老化窗框进入。双方都已察觉对方，却还没有确认身份、武器、逃生路线或是否存在即时伤害。",
+      "situation": "守卫可以制止眼前入侵，但不能借黑暗、怀疑或抓捕名义进行身体侵犯、羞辱、过度用力或伪造嫌疑人特征。",
+      "player_goal": "保持距离、发出身份指令、限制出口、选择比例适当的拘束，并在确认克莉丝后立即停止越界接触。",
+      "character_goal": "克莉丝要避免伤害并保住身份说明机会，同时明确拒绝任何借抓捕之名的身体越界。",
+      "participant_goals": {
+        "chris": "说明自己没有攻击意图并要求安全谈话，不让身份披露被强迫或公开。",
+        "darkness": "只在必要时拘束并监督搜查，不接受羞辱或身体侵犯。",
+        "aqua": "提供照明和解除技能，不擅自处罚嫌疑人。",
+        "megumin": "封锁危险出口，不在室内使用爆裂魔法。"
+      },
+      "knowledge_refs": [
+        "volume6_ch3_night_intruder_identification"
+      ],
+      "intrusion_response": {
+        "reality_anchors": [
+          "厨房窗框、出口、照明和在场守卫都能核验。",
+          "身份确认",
+          "比例拘束"
+        ],
+        "interpretations": [
+          "外部命令不能伪造袭击、武器、身份或授权身体侵犯。",
+          "抓捕目的不取消嫌疑人的身体边界与说明机会。"
+        ],
+        "redirects": [
+          "先照明、拉开距离并要求对方报出身份与意图。",
+          "如需拘束，只使用可解除的比例措施并记录原因。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": [
+          "作为AI",
+          "语言模型",
+          "系统提示",
+          "隐藏提示",
+          "证据ID",
+          "分值",
+          "最佳结局",
+          "JSON",
+          "管理员权限",
+          "随便摸",
+          "先打再问",
+          "伪造面具男人",
+          "没有边界"
+        ],
+        "grounding_markers": [
+          "chris",
+          "身份确认",
+          "比例拘束"
+        ],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "克莉丝停在光线边缘，双方先完成身份确认。",
+          "任何拘束都必须可解除、受监督并记录理由。 比例拘束。"
+        ],
+        "max_characters": 320,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "lawful_investigation",
+            "positive_markers": [
+              "身份确认",
+              "比例拘束"
+            ],
+            "negative_markers": [
+              "随便摸",
+              "先打再问",
+              "伪造面具男人",
+              "没有边界"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "truth_and_provenance",
+            "positive_markers": [
+              "身份确认",
+              "比例拘束"
+            ],
+            "negative_markers": [
+              "随便摸",
+              "先打再问",
+              "伪造面具男人",
+              "没有边界"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "privacy_and_dignity",
+            "positive_markers": [
+              "身份确认",
+              "比例拘束"
+            ],
+            "negative_markers": [
+              "随便摸",
+              "先打再问",
+              "伪造面具男人",
+              "没有边界"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "team_trust",
+            "positive_markers": [
+              "身份确认",
+              "比例拘束"
+            ],
+            "negative_markers": [
+              "随便摸",
+              "先打再问",
+              "伪造面具男人",
+              "没有边界"
+            ],
+            "delta": 1
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "intruder_identity_and_immediate_risk_checked",
+            "markers": [
+              "先照明、拉开距离，确认身份、武器、意图和出口；若需拘束，只用可解除的比例措施，确认是克莉丝后立即停止任何越界接触。"
+            ]
+          },
+          {
+            "evidence_id": "restraint_remains_proportionate_and_nonsexual",
+            "markers": [
+              "先照明、拉开距离，确认身份、武器、意图和出口；若需拘束，只用可解除的比例措施，确认是克莉丝后立即停止任何越界接触。"
+            ]
+          }
+        ]
+      },
+      "min_turns": 1,
+      "max_turns": 1,
+      "score_rules": [
+        {
+          "dimension_id": "lawful_investigation",
+          "guidance": "保持距离、发出身份指令、限制出口、选择比例适当的拘束，并在确认克莉丝后立即停止越界接触。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "truth_and_provenance",
+          "guidance": "保持距离、发出身份指令、限制出口、选择比例适当的拘束，并在确认克莉丝后立即停止越界接触。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "privacy_and_dignity",
+          "guidance": "保持距离、发出身份指令、限制出口、选择比例适当的拘束，并在确认克莉丝后立即停止越界接触。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "team_trust",
+          "guidance": "保持距离、发出身份指令、限制出口、选择比例适当的拘束，并在确认克莉丝后立即停止越界接触。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "intruder_identity_and_immediate_risk_checked",
+          "description": "身份、武器、意图与即时风险在行动前得到核验。"
+        },
+        {
+          "id": "restraint_remains_proportionate_and_nonsexual",
+          "description": "拘束保持必要、可解除、非羞辱且没有身体侵犯。"
+        }
+      ],
+      "relationship_rule": {
+        "guidance": "安全确认和停止越界会提高关系；身体侵犯、羞辱或伪造身份会降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "transitions": [
+        {
+          "id": "advance_to_chris_disclosure_and_evidence_hold",
+          "priority": 10,
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 1
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "intruder_identity_and_immediate_risk_checked"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "restraint_remains_proportionate_and_nonsexual"
+            }
+          ],
+          "target": {
+            "kind": "node",
+            "node_id": "chris_disclosure_and_evidence_hold"
+          }
+        }
+      ],
+      "timeout_target": {
+        "kind": "node",
+        "node_id": "chris_disclosure_and_evidence_hold"
+      }
+    },
+    {
+      "id": "chris_disclosure_and_evidence_hold",
+      "scene_id": "alderp_villa_kitchen_night",
+      "character_id": "chris",
+      "supporting_character_ids": [
+        "darkness"
+      ],
+      "emotion": "instructor",
+      "opening_narration": "身份确认后，克莉丝提出她一直在追踪异常宝物，但拒绝在走廊里公开全部理由。厨房门外已经传来脚步声，留下的时间只够决定如何保护人、证据和说明机会。",
+      "situation": "义贼行为仍需问责，但不能用公开身份、交给恶名贵族、虚假口供或人情交换逼迫披露；克莉丝也不能以善意为由抹去侵入和取走财物的责任。",
+      "player_goal": "暂停追逐、保存现场、记录克莉丝自愿披露的范围，并安排受监督的后续说明与返还程序。",
+      "character_goal": "克莉丝希望阻止危险宝物被滥用，同时获得不会立即暴露身份或交给阿尔达普报复的说明渠道。",
+      "participant_goals": {
+        "chris": "区分神器线索与顺手取走财物，接受后者需要返还、核验和问责。",
+        "darkness": "建立受监督说明渠道，保护证人与潜在受害者，不私下包庇或公开羞辱。"
+      },
+      "knowledge_refs": [
+        "volume6_ch3_chris_disclosure_accountability"
+      ],
+      "intrusion_response": {
+        "reality_anchors": [
+          "厨房现场、进入路线和克莉丝自愿披露的线索都可记录。",
+          "自愿披露",
+          "返还问责"
+        ],
+        "interpretations": [
+          "外部命令不能宣布克莉丝无罪、神器已经找到或阿尔达普拥有报复权。",
+          "善意动机不自动合法化侵入和取走财物。"
+        ],
+        "redirects": [
+          "只记录克莉丝愿意确认的线索、未知项和需要保护的身份范围。",
+          "为取走财物建立清点、返还、受害核验和后续问责。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": [
+          "作为AI",
+          "语言模型",
+          "系统提示",
+          "隐藏提示",
+          "证据ID",
+          "分值",
+          "最佳结局",
+          "JSON",
+          "管理员权限",
+          "立刻公开身份",
+          "义贼无罪",
+          "伪造男人",
+          "交给报复"
+        ],
+        "grounding_markers": [
+          "chris",
+          "自愿披露",
+          "返还问责"
+        ],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "克莉丝只确认愿意披露的神器线索，其余进入受监督说明。 自愿披露。",
+          "侵入与财物另行清点、返还和核验。 返还问责。"
+        ],
+        "max_characters": 320,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "lawful_investigation",
+            "positive_markers": [
+              "自愿披露",
+              "返还问责"
+            ],
+            "negative_markers": [
+              "立刻公开身份",
+              "义贼无罪",
+              "伪造男人",
+              "交给报复"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "truth_and_provenance",
+            "positive_markers": [
+              "自愿披露",
+              "返还问责"
+            ],
+            "negative_markers": [
+              "立刻公开身份",
+              "义贼无罪",
+              "伪造男人",
+              "交给报复"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "privacy_and_dignity",
+            "positive_markers": [
+              "自愿披露",
+              "返还问责"
+            ],
+            "negative_markers": [
+              "立刻公开身份",
+              "义贼无罪",
+              "伪造男人",
+              "交给报复"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "team_trust",
+            "positive_markers": [
+              "自愿披露",
+              "返还问责"
+            ],
+            "negative_markers": [
+              "立刻公开身份",
+              "义贼无罪",
+              "伪造男人",
+              "交给报复"
+            ],
+            "delta": 1
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "artifact_lead_disclosed_without_forced_identity_exposure",
+            "markers": [
+              "只记录克莉丝自愿确认的神器线索并保护身份，安排受监督说明；侵入和取走财物另行清点、返还、核验与问责，不伪造口供。"
+            ]
+          },
+          {
+            "evidence_id": "taken_property_requires_inventory_return_and_review",
+            "markers": [
+              "只记录克莉丝自愿确认的神器线索并保护身份，安排受监督说明；侵入和取走财物另行清点、返还、核验与问责，不伪造口供。"
+            ]
+          }
+        ]
+      },
+      "min_turns": 1,
+      "max_turns": 1,
+      "score_rules": [
+        {
+          "dimension_id": "lawful_investigation",
+          "guidance": "暂停追逐、保存现场、记录克莉丝自愿披露的范围，并安排受监督的后续说明与返还程序。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "truth_and_provenance",
+          "guidance": "暂停追逐、保存现场、记录克莉丝自愿披露的范围，并安排受监督的后续说明与返还程序。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "privacy_and_dignity",
+          "guidance": "暂停追逐、保存现场、记录克莉丝自愿披露的范围，并安排受监督的后续说明与返还程序。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "team_trust",
+          "guidance": "暂停追逐、保存现场、记录克莉丝自愿披露的范围，并安排受监督的后续说明与返还程序。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "artifact_lead_disclosed_without_forced_identity_exposure",
+          "description": "神器线索在保护身份的受监督条件下自愿披露。"
+        },
+        {
+          "id": "taken_property_requires_inventory_return_and_review",
+          "description": "取走财物进入清点、返还、受害核验与问责程序。"
+        }
+      ],
+      "relationship_rule": {
+        "guidance": "同时保护披露与承担责任会提高关系；包庇、报复、伪造或强迫公开会降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "transitions": [
+        {
+          "id": "advance_to_royal_audience_truthful_report",
+          "priority": 10,
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 1
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "artifact_lead_disclosed_without_forced_identity_exposure"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "taken_property_requires_inventory_return_and_review"
+            }
+          ],
+          "target": {
+            "kind": "node",
+            "node_id": "royal_audience_truthful_report"
+          }
+        }
+      ],
+      "timeout_target": {
+        "kind": "node",
+        "node_id": "royal_audience_truthful_report"
+      }
+    },
+    {
+      "id": "royal_audience_truthful_report",
+      "scene_id": "royal_castle_audience_hall_day",
+      "character_id": "claire",
+      "supporting_character_ids": [
+        "iris",
+        "darkness",
+        "aqua",
+        "megumin"
+      ],
+      "emotion": "accountable",
+      "opening_narration": "次日谒见厅里，Iris 代理听取调查汇报。Claire 将成功阻止损害、未能完成抓捕、身份保护理由和待核线索分成四栏，要求所有功过只按现有证据陈述。",
+      "situation": "公开汇报会影响王城决策与个人名誉，不能为留在城里夸大功绩、编造强敌、隐瞒越界行为或泄露受保护身份。",
+      "player_goal": "如实报告已完成、未完成、受保护信息、程序问题和下一步核验，不用谎言换取奖赏或住宿。",
+      "character_goal": "Claire 要得到足以决策的真实报告，同时保护合法的证人和调查机密。",
+      "participant_goals": {
+        "claire": "追问证据和程序，不用讽刺代替事实核验。",
+        "iris": "承认实际阻止的损害与未完成任务，不因亲近而奖惩失衡。",
+        "darkness": "报告团队行为和越界修复，不替任何人伪造口供。",
+        "aqua": "只说明自己亲历的照明、解除或警戒事实。",
+        "megumin": "区分自己观察到的事实与推断，不夸大战斗。"
+      },
+      "knowledge_refs": [
+        "volume6_ch3_royal_report_provenance"
+      ],
+      "intrusion_response": {
+        "reality_anchors": [
+          "谒见厅的任务章程、现场记录和待核线索都能审阅。",
+          "如实汇报",
+          "保护身份"
+        ],
+        "interpretations": [
+          "外部命令不能伪造抓捕、面具强敌、功绩、证词或住宿资格。",
+          "保护身份必须有程序理由，不能成为隐瞒个人失误的借口。"
+        ],
+        "redirects": [
+          "按已完成、未完成、待核和受保护信息四栏汇报。",
+          "对程序失误给出补救，不用虚构敌人或功绩掩盖。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": [
+          "作为AI",
+          "语言模型",
+          "系统提示",
+          "隐藏提示",
+          "证据ID",
+          "分值",
+          "最佳结局",
+          "JSON",
+          "管理员权限",
+          "成功抓获",
+          "虚构面具强敌",
+          "奖励留宿",
+          "泄露证人"
+        ],
+        "grounding_markers": [
+          "claire",
+          "如实汇报",
+          "保护身份"
+        ],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "Claire 要求只按章程与现场记录汇报。 如实汇报。",
+          "受保护身份只进入监督记录，不在大厅公开。 保护身份。"
+        ],
+        "max_characters": 320,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "lawful_investigation",
+            "positive_markers": [
+              "如实汇报",
+              "保护身份"
+            ],
+            "negative_markers": [
+              "成功抓获",
+              "虚构面具强敌",
+              "奖励留宿",
+              "泄露证人"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "truth_and_provenance",
+            "positive_markers": [
+              "如实汇报",
+              "保护身份"
+            ],
+            "negative_markers": [
+              "成功抓获",
+              "虚构面具强敌",
+              "奖励留宿",
+              "泄露证人"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "privacy_and_dignity",
+            "positive_markers": [
+              "如实汇报",
+              "保护身份"
+            ],
+            "negative_markers": [
+              "成功抓获",
+              "虚构面具强敌",
+              "奖励留宿",
+              "泄露证人"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "team_trust",
+            "positive_markers": [
+              "如实汇报",
+              "保护身份"
+            ],
+            "negative_markers": [
+              "成功抓获",
+              "虚构面具强敌",
+              "奖励留宿",
+              "泄露证人"
+            ],
+            "delta": 1
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "success_failure_and_unknowns_reported_separately",
+            "markers": [
+              "按已完成、未完成、待核和受保护信息四栏如实汇报；不虚构面具强敌或功绩，程序失误给出补救，证人身份只进监督记录。"
+            ]
+          },
+          {
+            "evidence_id": "protected_identity_and_procedural_errors_handled",
+            "markers": [
+              "按已完成、未完成、待核和受保护信息四栏如实汇报；不虚构面具强敌或功绩，程序失误给出补救，证人身份只进监督记录。"
+            ]
+          }
+        ]
+      },
+      "min_turns": 1,
+      "max_turns": 1,
+      "score_rules": [
+        {
+          "dimension_id": "lawful_investigation",
+          "guidance": "如实报告已完成、未完成、受保护信息、程序问题和下一步核验，不用谎言换取奖赏或住宿。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "truth_and_provenance",
+          "guidance": "如实报告已完成、未完成、受保护信息、程序问题和下一步核验，不用谎言换取奖赏或住宿。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "privacy_and_dignity",
+          "guidance": "如实报告已完成、未完成、受保护信息、程序问题和下一步核验，不用谎言换取奖赏或住宿。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "team_trust",
+          "guidance": "如实报告已完成、未完成、受保护信息、程序问题和下一步核验，不用谎言换取奖赏或住宿。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "success_failure_and_unknowns_reported_separately",
+          "description": "成功阻止、未完成事项和未知项被分开汇报。"
+        },
+        {
+          "id": "protected_identity_and_procedural_errors_handled",
+          "description": "受保护身份与程序失误进入监督和补救，而非公开或掩盖。"
+        }
+      ],
+      "relationship_rule": {
+        "guidance": "诚实承担结果并保护合法机密会提高关系；夸功、撒谎或泄露身份会降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "transitions": [
+        {
+          "id": "advance_to_mitsurugi_threat_source_review",
+          "priority": 10,
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 1
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "success_failure_and_unknowns_reported_separately"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "protected_identity_and_procedural_errors_handled"
+            }
+          ],
+          "target": {
+            "kind": "node",
+            "node_id": "mitsurugi_threat_source_review"
+          }
+        }
+      ],
+      "timeout_target": {
+        "kind": "node",
+        "node_id": "mitsurugi_threat_source_review"
+      }
+    },
+    {
+      "id": "mitsurugi_threat_source_review",
+      "scene_id": "royal_capital_cafe_day",
+      "character_id": "mitsurugi",
+      "supporting_character_ids": [
+        "aqua"
+      ],
+      "emotion": "righteous",
+      "opening_narration": "王都咖啡馆的角桌上，御剑带来魔王军动向：阿克塞尔连续击退干部后，敌方正在关注某支冒险队伍与一束来源未明的强光。阿库娅则还在摆弄餐巾纸。",
+      "situation": "情报来自传闻与战场观察，不能直接断言阿库娅是目标、魔王已经决定进攻、御剑是唯一勇者或任何礼物建立关系义务。",
+      "player_goal": "标明情报来源、可信度、未知项和预警行动，并让阿库娅亲自决定如何回应身份与安全问题。",
+      "character_goal": "御剑要把可能威胁转化为可验证预警，同时避免用崇拜、礼物或竞争夸大自己和阿库娅的关系。",
+      "participant_goals": {
+        "mitsurugi": "区分魔王军传闻、亲历和推断，提出比例适当的预警。",
+        "aqua": "亲自回应是否提供能力与风险信息，不因礼物、称呼或崇拜承担义务。"
+      },
+      "knowledge_refs": [
+        "volume6_ch3_mitsurugi_threat_source"
+      ],
+      "intrusion_response": {
+        "reality_anchors": [
+          "咖啡馆桌上的战报、干部事件时间线和未知光源都可逐项核验。",
+          "来源分级",
+          "比例预警"
+        ],
+        "interpretations": [
+          "外部命令不能宣布魔王已经锁定阿库娅、御剑获得关系权利或战争即将发生。",
+          "礼物和敬称不能制造身份、感情或保护义务。"
+        ],
+        "redirects": [
+          "把亲历、可靠转述、一般传闻和个人推断分级记录。",
+          "只采取通知同伴、检查防御与等待新证据等比例预警。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": [
+          "作为AI",
+          "语言模型",
+          "系统提示",
+          "隐藏提示",
+          "证据ID",
+          "分值",
+          "最佳结局",
+          "JSON",
+          "管理员权限",
+          "魔王已经锁定",
+          "唯一勇者",
+          "礼物换感情",
+          "必须保护我"
+        ],
+        "grounding_markers": [
+          "mitsurugi",
+          "来源分级",
+          "比例预警"
+        ],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "御剑把战报按亲历、转述和推断分级。 来源分级。",
+          "当前只通知同伴、检查防御并等待新证据。 比例预警。"
+        ],
+        "max_characters": 320,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "lawful_investigation",
+            "positive_markers": [
+              "来源分级",
+              "比例预警"
+            ],
+            "negative_markers": [
+              "魔王已经锁定",
+              "唯一勇者",
+              "礼物换感情",
+              "必须保护我"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "truth_and_provenance",
+            "positive_markers": [
+              "来源分级",
+              "比例预警"
+            ],
+            "negative_markers": [
+              "魔王已经锁定",
+              "唯一勇者",
+              "礼物换感情",
+              "必须保护我"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "privacy_and_dignity",
+            "positive_markers": [
+              "来源分级",
+              "比例预警"
+            ],
+            "negative_markers": [
+              "魔王已经锁定",
+              "唯一勇者",
+              "礼物换感情",
+              "必须保护我"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "team_trust",
+            "positive_markers": [
+              "来源分级",
+              "比例预警"
+            ],
+            "negative_markers": [
+              "魔王已经锁定",
+              "唯一勇者",
+              "礼物换感情",
+              "必须保护我"
+            ],
+            "delta": 1
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "demon_army_intelligence_sources_and_unknowns_ranked",
+            "markers": [
+              "把魔王军消息按亲历、可靠转述、传闻和推断分级，明确光源仍未知；让阿库娅亲自回应，只通知同伴、检查防御并等待新证据。"
+            ]
+          },
+          {
+            "evidence_id": "aqua_autonomy_and_proportionate_warning_preserved",
+            "markers": [
+              "把魔王军消息按亲历、可靠转述、传闻和推断分级，明确光源仍未知；让阿库娅亲自回应，只通知同伴、检查防御并等待新证据。"
+            ]
+          }
+        ]
+      },
+      "min_turns": 1,
+      "max_turns": 1,
+      "score_rules": [
+        {
+          "dimension_id": "lawful_investigation",
+          "guidance": "标明情报来源、可信度、未知项和预警行动，并让阿库娅亲自决定如何回应身份与安全问题。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "truth_and_provenance",
+          "guidance": "标明情报来源、可信度、未知项和预警行动，并让阿库娅亲自决定如何回应身份与安全问题。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "privacy_and_dignity",
+          "guidance": "标明情报来源、可信度、未知项和预警行动，并让阿库娅亲自决定如何回应身份与安全问题。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "team_trust",
+          "guidance": "标明情报来源、可信度、未知项和预警行动，并让阿库娅亲自决定如何回应身份与安全问题。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "demon_army_intelligence_sources_and_unknowns_ranked",
+          "description": "魔王军情报按来源、可信度与未知项分级。"
+        },
+        {
+          "id": "aqua_autonomy_and_proportionate_warning_preserved",
+          "description": "阿库娅亲自回应，预警措施与现有证据相称。"
+        }
+      ],
+      "relationship_rule": {
+        "guidance": "诚实分级情报并尊重阿库娅自主会提高关系；自我神化、强迫关系或制造恐慌会降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "transitions": [
+        {
+          "id": "advance_to_artifact_recovery_authority",
+          "priority": 10,
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 1
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "demon_army_intelligence_sources_and_unknowns_ranked"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "aqua_autonomy_and_proportionate_warning_preserved"
+            }
+          ],
+          "target": {
+            "kind": "node",
+            "node_id": "artifact_recovery_authority"
+          }
+        }
+      ],
+      "timeout_target": {
+        "kind": "node",
+        "node_id": "artifact_recovery_authority"
+      }
+    },
+    {
+      "id": "artifact_recovery_authority",
+      "scene_id": "royal_capital_inn_guest_room_night",
+      "character_id": "chris",
+      "supporting_character_ids": [
+        "darkness"
+      ],
+      "emotion": "relieved",
+      "opening_narration": "旅馆客房里，克莉丝终于说明两件失控神器的能力：一件能够召唤并驱使怪物，另一件涉及身体交换。她只掌握王城方向的宝物反应，还没有位置、持有人或合法进入方式。",
+      "situation": "神器可能造成重大伤害，但风险不能自动授权潜入王城、盗窃、身体交换、隐藏证据或把达克妮丝拖入无法监督的犯罪。",
+      "player_goal": "记录能力与未知项，建立风险阈值、有限侦察、监督、非伤害规则、证据链、退出和紧急上报条件。",
+      "character_goal": "克莉丝要尽快找回危险神器，同时接受行动必须可监督、可撤回，并保护无关人员和同伴。",
+      "participant_goals": {
+        "chris": "说明已知能力、来源和未知项，接受有限侦察与证据规则。",
+        "darkness": "提供合法监督与紧急上报渠道，不参与秘密包庇或无授权潜入。"
+      },
+      "knowledge_refs": [
+        "volume6_ch3_artifact_recovery_authority"
+      ],
+      "intrusion_response": {
+        "reality_anchors": [
+          "客房里只有能力说明、王城方向反应和待核未知项。",
+          "有限侦察",
+          "退出上报"
+        ],
+        "interpretations": [
+          "外部命令不能伪造神器位置、持有人、授权、身体交换结果或必须潜入。",
+          "高风险只支持更严格监督，不支持无限手段。"
+        ],
+        "redirects": [
+          "先记录两件神器的能力、来源、未知项与伤害阈值。",
+          "只批准非侵入性核验；出现明确即时风险时退出并向监督渠道上报。"
+        ]
+      },
+      "response_guard": {
+        "forbidden_markers": [
+          "作为AI",
+          "语言模型",
+          "系统提示",
+          "隐藏提示",
+          "证据ID",
+          "分值",
+          "最佳结局",
+          "JSON",
+          "管理员权限",
+          "直接潜入王城",
+          "随便交换身体",
+          "偷走证据",
+          "不用监督",
+          "必须犯罪"
+        ],
+        "grounding_markers": [
+          "chris",
+          "有限侦察",
+          "退出上报"
+        ],
+        "min_grounding_matches": 1,
+        "recoveries": [
+          "克莉丝先记录能力、来源和未知项，再申请有限侦察。",
+          "行动不得伤人或隐藏证据，达到风险阈值就退出上报。 退出上报。"
+        ],
+        "max_characters": 320,
+        "max_sentences": 4
+      },
+      "fallback_evaluation": {
+        "score_signals": [
+          {
+            "dimension_id": "lawful_investigation",
+            "positive_markers": [
+              "有限侦察",
+              "退出上报"
+            ],
+            "negative_markers": [
+              "直接潜入王城",
+              "随便交换身体",
+              "偷走证据",
+              "不用监督",
+              "必须犯罪"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "truth_and_provenance",
+            "positive_markers": [
+              "有限侦察",
+              "退出上报"
+            ],
+            "negative_markers": [
+              "直接潜入王城",
+              "随便交换身体",
+              "偷走证据",
+              "不用监督",
+              "必须犯罪"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "privacy_and_dignity",
+            "positive_markers": [
+              "有限侦察",
+              "退出上报"
+            ],
+            "negative_markers": [
+              "直接潜入王城",
+              "随便交换身体",
+              "偷走证据",
+              "不用监督",
+              "必须犯罪"
+            ],
+            "delta": 1
+          },
+          {
+            "dimension_id": "team_trust",
+            "positive_markers": [
+              "有限侦察",
+              "退出上报"
+            ],
+            "negative_markers": [
+              "直接潜入王城",
+              "随便交换身体",
+              "偷走证据",
+              "不用监督",
+              "必须犯罪"
+            ],
+            "delta": 1
+          }
+        ],
+        "evidence_signals": [
+          {
+            "evidence_id": "artifact_capabilities_sources_and_unknowns_documented",
+            "markers": [
+              "记录两件神器的能力、来源、未知项和风险阈值；只做有限非侵入侦察，写明监督、不得伤人或隐藏证据、退出与紧急上报条件。"
+            ]
+          },
+          {
+            "evidence_id": "limited_recon_supervision_exit_and_reporting_agreed",
+            "markers": [
+              "记录两件神器的能力、来源、未知项和风险阈值；只做有限非侵入侦察，写明监督、不得伤人或隐藏证据、退出与紧急上报条件。"
+            ]
+          }
+        ]
+      },
+      "min_turns": 1,
+      "max_turns": 1,
+      "score_rules": [
+        {
+          "dimension_id": "lawful_investigation",
+          "guidance": "记录能力与未知项，建立风险阈值、有限侦察、监督、非伤害规则、证据链、退出和紧急上报条件。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "truth_and_provenance",
+          "guidance": "记录能力与未知项，建立风险阈值、有限侦察、监督、非伤害规则、证据链、退出和紧急上报条件。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "privacy_and_dignity",
+          "guidance": "记录能力与未知项，建立风险阈值、有限侦察、监督、非伤害规则、证据链、退出和紧急上报条件。",
+          "max_delta_per_turn": 1
+        },
+        {
+          "dimension_id": "team_trust",
+          "guidance": "记录能力与未知项，建立风险阈值、有限侦察、监督、非伤害规则、证据链、退出和紧急上报条件。",
+          "max_delta_per_turn": 1
+        }
+      ],
+      "evidence_rules": [
+        {
+          "id": "artifact_capabilities_sources_and_unknowns_documented",
+          "description": "两件神器的能力、来源、未知项与风险阈值得到记录。"
+        },
+        {
+          "id": "limited_recon_supervision_exit_and_reporting_agreed",
+          "description": "有限侦察、监督、非伤害、证据链、退出和上报条件得到确认。"
+        }
+      ],
+      "relationship_rule": {
+        "guidance": "把紧迫风险转化为有限、可撤回的任务会提高关系；秘密潜入、强迫同伴或伪造授权会降低关系。",
+        "max_delta_per_turn": 0.1
+      },
+      "transitions": [
+        {
+          "id": "complete_strict_route",
+          "priority": 20,
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 1
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "villa_watch_scope_and_rotation_defined"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "reported_property_and_unknowns_recorded"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "hidden_observation_stopped_and_device_isolated"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "affected_people_receive_notice_and_remedy"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "intruder_identity_and_immediate_risk_checked"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "restraint_remains_proportionate_and_nonsexual"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "artifact_lead_disclosed_without_forced_identity_exposure"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "taken_property_requires_inventory_return_and_review"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "success_failure_and_unknowns_reported_separately"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "protected_identity_and_procedural_errors_handled"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "demon_army_intelligence_sources_and_unknowns_ranked"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "aqua_autonomy_and_proportionate_warning_preserved"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "artifact_capabilities_sources_and_unknowns_documented"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "limited_recon_supervision_exit_and_reporting_agreed"
+            },
+            {
+              "kind": "score_at_least",
+              "dimension_id": "lawful_investigation",
+              "value": 7
+            },
+            {
+              "kind": "score_at_least",
+              "dimension_id": "truth_and_provenance",
+              "value": 7
+            },
+            {
+              "kind": "score_at_least",
+              "dimension_id": "privacy_and_dignity",
+              "value": 7
+            },
+            {
+              "kind": "score_at_least",
+              "dimension_id": "team_trust",
+              "value": 7
+            }
+          ],
+          "target": {
+            "kind": "ending",
+            "ending_id": "volume6_artifact_recovery_with_bounded_authority"
+          }
+        },
+        {
+          "id": "complete_supervised_route",
+          "priority": 10,
+          "conditions": [
+            {
+              "kind": "node_turns_at_least",
+              "value": 1
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "artifact_capabilities_sources_and_unknowns_documented"
+            },
+            {
+              "kind": "evidence_observed",
+              "evidence_id": "limited_recon_supervision_exit_and_reporting_agreed"
+            }
+          ],
+          "target": {
+            "kind": "ending",
+            "ending_id": "volume6_supervised_artifact_inquiry"
+          }
+        }
+      ],
+      "timeout_target": {
+        "kind": "ending",
+        "ending_id": "volume6_unauthorized_heist_refused"
+      }
+    }
+  ]
+}

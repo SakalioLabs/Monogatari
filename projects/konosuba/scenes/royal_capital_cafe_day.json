@@ -1,0 +1,10 @@
+{
+  "background_path": "assets/backgrounds/royal_capital_cafe_day.png",
+  "bgm_path": null,
+  "id": "royal_capital_cafe_day",
+  "model_3d_path": null,
+  "name": "王都露台咖啡馆",
+  "tags": ["volume6", "chapter3", "royal_capital", "cafe", "day"],
+  "time_of_day": "day",
+  "weather": "clear"
+}

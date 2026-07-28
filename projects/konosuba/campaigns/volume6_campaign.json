@@ -33,17 +33,44 @@
         {
           "ending_id": "volume6_investigation_charter_accepted",
           "target": {
-            "kind": "complete"
+            "entry_id": "chapter3",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume6_investigation_supervised_probation",
           "target": {
-            "kind": "complete"
+            "entry_id": "chapter3",
+            "kind": "entry"
           }
         },
         {
           "ending_id": "volume6_castle_stay_ended_without_mandate",
+          "target": {
+            "entry_id": "chapter3",
+            "kind": "entry"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chapter3",
+      "roleplay_id": "volume6_chapter3_roleplay",
+      "routes": [
+        {
+          "ending_id": "volume6_artifact_recovery_with_bounded_authority",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume6_supervised_artifact_inquiry",
+          "target": {
+            "kind": "complete"
+          }
+        },
+        {
+          "ending_id": "volume6_unauthorized_heist_refused",
           "target": {
             "kind": "complete"
           }

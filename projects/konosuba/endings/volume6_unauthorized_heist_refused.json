@@ -1,0 +1,8 @@
+{
+  "description": "在期限内未能建立足够的事实、监督与退出条件。克莉丝的风险说明被保留，但任何无授权潜入、盗窃或身体交换方案都被明确拒绝。",
+  "dialogue_id": "volume6_unauthorized_heist_refused_epilogue",
+  "id": "volume6_unauthorized_heist_refused",
+  "scene_id": "royal_capital_inn_guest_room_night",
+  "schema": "monogatari-story-ending/v1",
+  "title": "拒绝无授权潜入"
+}

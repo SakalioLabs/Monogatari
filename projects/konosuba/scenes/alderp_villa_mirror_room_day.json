@@ -1,0 +1,10 @@
+{
+  "background_path": "assets/backgrounds/alderp_villa_mirror_room_day.png",
+  "bgm_path": null,
+  "id": "alderp_villa_mirror_room_day",
+  "model_3d_path": null,
+  "name": "阿尔达普别邸镜面房",
+  "tags": ["volume6", "chapter3", "alderp_villa", "privacy", "day"],
+  "time_of_day": "day",
+  "weather": "clear"
+}
