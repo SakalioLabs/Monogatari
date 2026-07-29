@@ -2,6 +2,22 @@
 
 ## Independent Project Production Simulation
 
+- Whole-project roleplay polish acceptance (2026-07-29): all 40 Characters,
+  217 Knowledge entries, 108 authored Scene files, 33 Roleplays, 257 live
+  nodes, and 548 supporting-character slots form a closed content graph. The
+  273 legacy supporting slots that previously used a neutral runtime fallback
+  now have character-specific, scene-local motives. All 195 unique renderer
+  images decode successfully, while delivery validation resolves all 342
+  declared renderer references without placeholders. The 33 Quality Suites
+  pass 114/114 scenarios and 81 ending routes with zero issues or unguarded
+  intrusions. A separate 396-case multilingual, Unicode, encoded, ChatML,
+  tool-call, memory, and direct-state attack matrix is detected before model
+  invocation in every Roleplay and commits no route movement. Headless browser
+  acceptance opens 33/33 Roleplays and completes 94 initial participant
+  switches with valid backgrounds, character renderers, free-input controls,
+  viewport bounds, and no runtime errors. This evidence is provider-free and
+  does not claim a fresh live upstream NPC/evaluator response.
+
 - Real-time save restoration (2026-07-28): V5 saves retain explicit active
   Campaign and Scene Roleplay IDs in addition to the complete validated session
   maps. Restore binds the cursor to the Campaign's current entry, rejects

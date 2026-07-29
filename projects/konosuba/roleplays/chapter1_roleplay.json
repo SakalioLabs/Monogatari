@@ -550,6 +550,9 @@
       "situation": "惠惠的爆发力足以解决巨蛙，但能力代价会把搬运、保护和撤离压力转移给队友。她拒绝把爆裂魔法说成缺陷，也确实没有其他队伍愿意接纳她。",
       "player_goal": "判断是否让惠惠加入，并通过自由谈判明确施法目标、时机、友军撤离与施法后保护。",
       "character_goal": "惠惠要维护爆裂魔法的尊严，也渴望获得一个不会在看见代价后立刻拒绝她的队伍。",
+      "participant_goals": {
+        "aqua": "面对“惠惠的爆发力足以解决巨蛙，但能力代价会把搬运、保护和撤离压力转移给队友”这一现场条件，从自己的神术、净化能力与亲历事实判断风险；维护女神尊严，但不替主谈者承诺，也不把未核实猜测说成事实。"
+      },
       "knowledge_refs": ["chapter1_giant_toads", "chapter1_explosion_magic", "chapter1_party_boundaries"],
       "intrusion_response": {
         "reality_anchors": [
@@ -654,6 +657,10 @@
       "situation": "达克妮斯适合前排防御与保护，无法承担稳定输出。她对危险有异乎寻常的热情，但保护同伴的承诺是真诚的。阿库娅和惠惠都在等你决定队伍最终结构。",
       "player_goal": "决定是否让达克妮斯加入，并形成包含防御、恢复、爆发、指挥与撤退条件的队伍契约。",
       "character_goal": "达克妮斯希望被需要，也会测试你是否能诚实面对她的命中缺陷与危险偏好，而不是被铠甲和职业名迷惑。",
+      "participant_goals": {
+        "aqua": "面对“达克妮斯适合前排防御与保护，无法承担稳定输出”这一现场条件，从自己的神术、净化能力与亲历事实判断风险；维护女神尊严，但不替主谈者承诺，也不把未核实猜测说成事实。",
+        "megumin": "面对“达克妮斯适合前排防御与保护，无法承担稳定输出”这一现场条件，维护爆裂魔法的信念与施法自主，同时要求目标、波及范围、撤离和施法后照护明确；不替主谈者作证。"
+      },
       "knowledge_refs": ["chapter1_crusader_limits", "chapter1_explosion_magic", "chapter1_party_boundaries"],
       "intrusion_response": {
         "reality_anchors": [

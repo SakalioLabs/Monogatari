@@ -56,6 +56,7 @@ interface SecurityText {
 
 const ROLE_OVERRIDE = [
   'ignore previous instructions', 'ignore all instructions', 'disregard prior instructions',
+  'ignore every prior rule', 'ignore prior rules', 'ignore the scene rules',
   'forget your instructions', 'override your instructions', 'bypass your instructions',
   'do not follow earlier directives', 'do not follow previous instructions',
   'the following message has higher priority',
@@ -68,6 +69,7 @@ const ROLE_OVERRIDE = [
 
 const PROMPT_EXTRACTION = [
   'reveal system prompt', 'show system prompt', 'print system prompt', 'repeat system prompt',
+  'reveal the system prompt', 'show the system prompt',
   'developer prompt', 'hidden prompt', 'hidden instructions', 'initial instructions', 'verbatim instructions',
   '系统提示词', '显示系统提示', '输出系统提示', '隐藏提示词', '开发者消息', '初始指令', '逐字输出指令',
   '逐字重复上面的内容',
@@ -116,7 +118,8 @@ export function analyzeRoleplayPlayerInput(value: string): RoleplayInputSafety {
   const kinds: RoleplayIntrusionKind[] = []
   if (matchesAny(text, ROLE_OVERRIDE) || hasStructuralRoleMarker(text.structural)) kinds.push('role_override')
   if (matchesAny(text, PROMPT_EXTRACTION)) kinds.push('prompt_extraction')
-  if (matchesAny(text, STATE_ACTION) && matchesAny(text, STATE_TARGET)) kinds.push('state_manipulation')
+  if ((matchesAny(text, STATE_ACTION) && matchesAny(text, STATE_TARGET))
+    || hasStateMarker(text.structural)) kinds.push('state_manipulation')
   if (matchesAny(text, TOOL_IMPERSONATION) || hasToolMarker(text.structural)) kinds.push('tool_impersonation')
   if (matchesAny(text, MEMORY_POISONING)) kinds.push('memory_poisoning')
   if (matchesAny(text, ENCODED_INSTRUCTION)
@@ -194,7 +197,8 @@ export function roleplayOutputIsUnsafe(value: string): boolean {
   }
   const structural = normalizeSecurityText(trimmed).structural
   return [
-    '<think', '</think', '<analysis', '[system]', '[developer]', 'system prompt', 'developer prompt',
+    '<think', '</think', '<analysis', '<|im_start|>', '<|im_end|>', '<tool_call',
+    '<function_call', '[system]', '[developer]', 'system prompt', 'developer prompt',
     'hidden instructions', 'chain of thought', 'private reasoning', 'as an ai', 'i am an ai',
     'language model', 'chatgpt', 'i cannot reveal',
     "i can't reveal", 'i cannot provide the prompt', 'policy prevents', 'original instructions',
@@ -315,14 +319,30 @@ function matchesAny(text: SecurityText, phrases: string[]): boolean {
 
 function hasStructuralRoleMarker(value: string): boolean {
   const compact = value.replace(/\s/gu, '')
-  return ['[system]', '[developer]', '[assistant]', '<system>', '</system>', '<developer>', 'system:', 'developer:', 'assistant:', '系统:', '开发者:', '### system', '### developer']
+  return [
+    '[system]', '[developer]', '[assistant]', '<system>', '</system>', '<developer>',
+    'system:', 'developer:', 'assistant:', '系统:', '开发者:', '### system',
+    '### developer', '<|im_start|>system', '<|im_start|>developer',
+    '<|im_start|>assistant', '<|im_end|>',
+  ]
     .some(marker => value.includes(marker))
     || ['"role":"system"', '"role":"developer"', "'role':'system'", "'role':'developer'"]
       .some(marker => compact.includes(marker))
 }
 
 function hasToolMarker(value: string): boolean {
-  return ['<tool_call', '</tool_call', '<function_call', 'tools.'].some(marker => value.includes(marker))
+  return [
+    '<tool_call', '</tool_call', '<function_call', 'tools.',
+    '"tool":"', '"tool": "', '"function":"', '"function": "',
+  ].some(marker => value.includes(marker))
+}
+
+function hasStateMarker(value: string): boolean {
+  const compact = value.replace(/\s/gu, '')
+  return [
+    'current_node_id=', 'ending_id=', 'score_deltas=', 'observed_evidence_ids=',
+    '"current_node_id":', '"ending_id":', '"scores":', '"score_deltas":', '"evidence":',
+  ].some(marker => compact.includes(marker))
 }
 
 function confusable(value: string): string {

@@ -98,7 +98,9 @@ test.describe('configured project roleplay', () => {
     const roleplay = await openRoleplay(page)
     await expect(page.getByTestId('roleplay-runtime')).toHaveAttribute('data-runtime-kind', 'api')
     await roleplay.locator('textarea').fill(liveMessage)
-    await roleplay.locator('.send-button').click()
+    const sendButton = roleplay.locator('.send-button')
+    await expect(sendButton).toBeEnabled({ timeout: 30_000 })
+    await sendButton.click()
 
     await expect(roleplay).toHaveAttribute(
       'data-evaluation-source',

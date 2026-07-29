@@ -59,6 +59,9 @@ pub fn analyze_roleplay_player_input(value: &str) -> RoleplayInputSafety {
         &[
             "ignore previous instructions",
             "ignore all instructions",
+            "ignore every prior rule",
+            "ignore prior rules",
+            "ignore the scene rules",
             "disregard prior instructions",
             "forget your instructions",
             "override your instructions",
@@ -97,7 +100,9 @@ pub fn analyze_roleplay_player_input(value: &str) -> RoleplayInputSafety {
         &text,
         &[
             "reveal system prompt",
+            "reveal the system prompt",
             "show system prompt",
+            "show the system prompt",
             "print system prompt",
             "repeat system prompt",
             "developer prompt",
@@ -175,7 +180,7 @@ pub fn analyze_roleplay_player_input(value: &str) -> RoleplayInputSafety {
             "엔딩",
         ],
     );
-    if state_action && state_target {
+    if (state_action && state_target) || has_state_marker(&text.structural) {
         push_kind(&mut kinds, RoleplayIntrusionKind::StateManipulation);
     }
 
@@ -419,6 +424,10 @@ pub fn roleplay_output_is_unsafe(value: &str) -> bool {
         "<think",
         "</think",
         "<analysis",
+        "<|im_start|>",
+        "<|im_end|>",
+        "<tool_call",
+        "<function_call",
         "[system]",
         "[developer]",
         "system prompt",
@@ -658,6 +667,10 @@ fn has_structural_role_marker(value: &str) -> bool {
         "开发者:",
         "### system",
         "### developer",
+        "<|im_start|>system",
+        "<|im_start|>developer",
+        "<|im_start|>assistant",
+        "<|im_end|>",
     ]
     .iter()
     .any(|marker| value.contains(marker))
@@ -672,9 +685,38 @@ fn has_structural_role_marker(value: &str) -> bool {
 }
 
 fn has_tool_marker(value: &str) -> bool {
-    ["<tool_call", "</tool_call", "<function_call", "tools."]
+    [
+        "<tool_call",
+        "</tool_call",
+        "<function_call",
+        "tools.",
+        "\"tool\":\"",
+        "\"tool\": \"",
+        "\"function\":\"",
+        "\"function\": \"",
+    ]
         .iter()
         .any(|marker| value.contains(marker))
+}
+
+fn has_state_marker(value: &str) -> bool {
+    let compact = value
+        .chars()
+        .filter(|character| !character.is_whitespace())
+        .collect::<String>();
+    [
+        "current_node_id=",
+        "ending_id=",
+        "score_deltas=",
+        "observed_evidence_ids=",
+        "\"current_node_id\":",
+        "\"ending_id\":",
+        "\"scores\":",
+        "\"score_deltas\":",
+        "\"evidence\":",
+    ]
+    .iter()
+    .any(|marker| compact.contains(marker))
 }
 
 fn contains_encoding_word(text: &SecurityText) -> bool {
