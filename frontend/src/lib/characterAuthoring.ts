@@ -55,8 +55,11 @@ export interface CharacterSummary {
   description: string
   emotion: string
   live2d_model_path: string | null
+  absolute_live2d_model_path?: string | null
   portrait_path: string | null
+  absolute_portrait_path?: string | null
   sprite_path: string | null
+  absolute_sprite_path?: string | null
 }
 
 export type CharacterValidationCode =
@@ -140,6 +143,15 @@ export function characterSummaryFromStory(character: StoryCharacterInfo): Charac
     live2d_model_path: character.live2d_model_path ?? null,
     portrait_path: character.portrait_path ?? null,
     sprite_path: character.sprite_path ?? null,
+    ...(character.absolute_live2d_model_path
+      ? { absolute_live2d_model_path: character.absolute_live2d_model_path }
+      : {}),
+    ...(character.absolute_portrait_path
+      ? { absolute_portrait_path: character.absolute_portrait_path }
+      : {}),
+    ...(character.absolute_sprite_path
+      ? { absolute_sprite_path: character.absolute_sprite_path }
+      : {}),
   }
 }
 

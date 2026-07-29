@@ -4,10 +4,15 @@ export type RendererAssetMode = 'live2d' | 'model3d' | 'sprite' | 'placeholder'
 
 export interface CharacterRendererSource {
   live2d_model_path?: string | null
+  absolute_live2d_model_path?: string | null
   model_3d_path?: string | null
+  absolute_model_3d_path?: string | null
   portrait_path?: string | null
+  absolute_portrait_path?: string | null
   sprite_path?: string | null
+  absolute_sprite_path?: string | null
   sprite_paths?: Record<string, unknown> | null
+  absolute_sprite_paths?: Record<string, unknown> | null
   emotion?: string | null
 }
 
@@ -65,20 +70,26 @@ export function selectCharacterRendererAsset(
 
   const expression = options.expression?.trim() || character.emotion?.trim() || 'neutral'
   const blockedPaths = rendererBlockedPathSet(options.blockedPaths)
-  const live2d = assetChoice('live2d', character.live2d_model_path, rendererAssetSpecs[0].extensions, options.validatePaths, blockedPaths)
+  const live2d = assetChoice('live2d', character.live2d_model_path, character.absolute_live2d_model_path, rendererAssetSpecs[0].extensions, options.validatePaths, blockedPaths)
   if (live2d) return live2d
 
-  const model3d = assetChoice('model3d', character.model_3d_path, rendererAssetSpecs[1].extensions, options.validatePaths, blockedPaths)
+  const model3d = assetChoice('model3d', character.model_3d_path, character.absolute_model_3d_path, rendererAssetSpecs[1].extensions, options.validatePaths, blockedPaths)
   if (model3d) return model3d
 
   const sprites = cleanRendererPathMap(character.sprite_paths)
-  const spritePath = sprites[expression]
-    || sprites[character.emotion?.trim() || '']
-    || sprites.neutral
-    || character.sprite_path
-    || character.portrait_path
-  const sprite = assetChoice('sprite', spritePath, imageAssetExtensions, options.validatePaths, blockedPaths)
-  if (sprite) return sprite
+  const absoluteSprites = cleanRendererPathMap(character.absolute_sprite_paths)
+  const emotion = character.emotion?.trim() || ''
+  const spriteCandidates: Array<[string | null | undefined, string | null | undefined]> = [
+    [sprites[expression], absoluteSprites[expression]],
+    [sprites[emotion], absoluteSprites[emotion]],
+    [sprites.neutral, absoluteSprites.neutral],
+    [character.sprite_path, character.absolute_sprite_path],
+    [character.portrait_path, character.absolute_portrait_path],
+  ]
+  for (const [authoredPath, runtimePath] of spriteCandidates) {
+    const sprite = assetChoice('sprite', authoredPath, runtimePath, imageAssetExtensions, options.validatePaths, blockedPaths)
+    if (sprite) return sprite
+  }
 
   return placeholderChoice()
 }
@@ -86,6 +97,7 @@ export function selectCharacterRendererAsset(
 function assetChoice(
   mode: RendererAssetMode,
   path: string | null | undefined,
+  runtimePath: string | null | undefined,
   extensions: string[],
   validatePaths = false,
   blockedPaths: Set<string> = new Set(),
@@ -93,8 +105,13 @@ function assetChoice(
   const trimmed = path?.trim()
   if (!trimmed) return null
   if (validatePaths && rendererAssetValidationMessage(trimmed, extensions)) return null
-  const resolvedUrl = resolveAssetUrl(trimmed)
-  if (blockedPaths.has(trimmed) || (resolvedUrl && blockedPaths.has(resolvedUrl))) return null
+  const runtimeTrimmed = runtimePath?.trim() || trimmed
+  const resolvedUrl = resolveAssetUrl(runtimeTrimmed)
+  if (
+    blockedPaths.has(trimmed)
+    || blockedPaths.has(runtimeTrimmed)
+    || (resolvedUrl && blockedPaths.has(resolvedUrl))
+  ) return null
 
   return {
     mode,

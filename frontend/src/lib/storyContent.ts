@@ -34,10 +34,15 @@ export interface StoryCharacterInfo {
   currentEmotion?: string
   personality?: Record<string, unknown>
   portrait_path: string | null
+  absolute_portrait_path?: string | null
   sprite_path: string | null
+  absolute_sprite_path?: string | null
   sprite_paths?: Record<string, string>
+  absolute_sprite_paths?: Record<string, string>
   live2d_model_path?: string | null
+  absolute_live2d_model_path?: string | null
   model_3d_path?: string | null
+  absolute_model_3d_path?: string | null
   relationships?: Record<string, number>
   knowledge_entries?: Array<{ topic: string; content: string }>
   knowledge_refs?: string[]

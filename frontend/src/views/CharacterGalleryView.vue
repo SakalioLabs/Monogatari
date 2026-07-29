@@ -168,7 +168,9 @@ interface Character {
   live2d_model_path: string | null
   model_3d_path: string | null
   portrait_path: string | null
+  absolute_portrait_path?: string | null
   sprite_path: string | null
+  absolute_sprite_path?: string | null
 }
 
 const router = useRouter()
@@ -224,7 +226,12 @@ function avatarColor(id: string): string {
 }
 
 function characterImage(character: Character): string | null {
-  return resolveAssetUrl(character.portrait_path || character.sprite_path)
+  return resolveAssetUrl(
+    character.absolute_portrait_path
+      || character.absolute_sprite_path
+      || character.portrait_path
+      || character.sprite_path,
+  )
 }
 
 function personalityValue(key: PersonalityTrait): number {

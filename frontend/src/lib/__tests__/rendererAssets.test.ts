@@ -56,4 +56,18 @@ describe('renderer asset selection', () => {
       validatePaths: true,
     }).mode).toBe('placeholder')
   })
+
+  it('keeps portable authored paths while resolving active-project runtime assets', () => {
+    const choice = selectCharacterRendererAsset({
+      sprite_paths: { happy: 'assets/characters/aoi_happy.png' },
+      absolute_sprite_paths: { happy: 'C:\\Projects\\Aoi\\assets\\characters\\aoi_happy.png' },
+    }, { expression: 'happy', validatePaths: true })
+
+    expect(choice).toMatchObject({
+      mode: 'sprite',
+      path: 'assets/characters/aoi_happy.png',
+    })
+    expect(choice.resolvedUrl).toContain('aoi_happy.png')
+    expect(choice.resolvedUrl).toContain('C:/Projects/Aoi')
+  })
 })

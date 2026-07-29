@@ -180,7 +180,11 @@ const runtimeLabel = computed(() => props.desktopRuntime
     ? t('settings.api-provider-short', 'Development API')
     : t('chat.webgpu-runtime', 'WebGPU runtime'))
 const avatarUrl = computed(() => resolveAssetUrl(
-  props.character?.portrait_path || props.character?.sprite_path || null,
+  props.character?.absolute_portrait_path
+    || props.character?.absolute_sprite_path
+    || props.character?.portrait_path
+    || props.character?.sprite_path
+    || null,
 ))
 const runtimeIssue = computed(() => {
   if (props.desktopRuntime) return null

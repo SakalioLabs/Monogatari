@@ -697,7 +697,12 @@ function avatarColor(id: string): string {
 
 function characterImage(character: CharacterSummary): string | null {
   if (failedCharacterImages.value[character.id]) return null
-  return resolveAssetUrl(character.portrait_path || character.sprite_path)
+  return resolveAssetUrl(
+    character.absolute_portrait_path
+      || character.absolute_sprite_path
+      || character.portrait_path
+      || character.sprite_path,
+  )
 }
 
 function markCharacterImageFailed(characterId: string) {

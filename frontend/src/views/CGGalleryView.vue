@@ -120,6 +120,7 @@ interface SceneData {
   id: string
   name: string
   background_path: string | null
+  absolute_background_path?: string | null
   weather: string | null
   time_of_day: string | null
   tags: string[]
@@ -132,7 +133,9 @@ interface CharacterData {
   description: string
   emotion: string
   portrait_path?: string | null
+  absolute_portrait_path?: string | null
   sprite_path?: string | null
+  absolute_sprite_path?: string | null
   unlocked?: boolean
 }
 
@@ -161,7 +164,7 @@ function initials(name: string): string {
 
 function thumbStyle(scene: SceneData) {
   const c = colorForId(scene.id)
-  const imageUrl = resolveAssetUrl(scene.background_path)
+  const imageUrl = resolveAssetUrl(scene.absolute_background_path || scene.background_path)
   return {
     backgroundColor: scene.unlocked ? `${c}22` : 'var(--surface-3)',
     backgroundImage: scene.unlocked && imageUrl ? `url("${imageUrl}")` : undefined,
@@ -178,13 +181,20 @@ function charThumbStyle(char: CharacterData) {
 }
 
 function characterAssetUrl(char: CharacterData): string | null {
-  return resolveAssetUrl(char.portrait_path || char.sprite_path)
+  return resolveAssetUrl(
+    char.absolute_portrait_path
+      || char.absolute_sprite_path
+      || char.portrait_path
+      || char.sprite_path,
+  )
 }
 
 const previewBgStyle = computed(() => {
   if (!previewScene.value) return {}
   const c = colorForId(previewScene.value.id)
-  const imageUrl = resolveAssetUrl(previewScene.value.background_path)
+  const imageUrl = resolveAssetUrl(
+    previewScene.value.absolute_background_path || previewScene.value.background_path,
+  )
   return {
     backgroundColor: `${c}22`,
     backgroundImage: imageUrl ? `url("${imageUrl}")` : undefined,
