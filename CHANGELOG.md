@@ -1,6 +1,7 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Added per-scene stage composition for bottom, top, and side dialogue layouts, independently adjustable character framing, live Scene Editor preview, Workflow-to-Scene editing, and a shared schema for human and Agent-authored projects.
 - Rebuilt Workflow canvas connections around the runtime's indexed output contract. Start, linear, boolean/event, choice, random, and end nodes now expose distinct input/output ports with stable branch labels, exact-port drop targets, reconnect-by-replacement behavior, and overflow validation shared by browser and Rust. Scene, Character, Workflow, score-metric, and action references now use active-project catalog selectors; choices and random weights use indexed multiline editors that directly control branch ports.
 - Added a project-first desktop launcher with device-local recent-project history, clean project creation, existing-folder opening, and verified `.monogatari` import. Windows engine packages now contain only the application shell; Tideglass and KonoSuba are distributed as independent sample project packages rather than implicit engine data.
 - Hardened the shared browser/Rust Scene Roleplay boundary against ChatML role blocks, JSON tool/function impersonation, direct node/ending/score/evidence assignments, and additional English prompt-extraction variants. A 396-case pressure run across all 33 KonoSuba Roleplays now detects every attack before inference, commits no story movement, and reports zero unguarded responses.

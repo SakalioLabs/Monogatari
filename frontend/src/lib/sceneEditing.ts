@@ -4,6 +4,7 @@ import {
   type SceneAuthoringEntry,
 } from './sceneAuthoring'
 import type { SceneDefinition } from './storyContent'
+import { normalizeScenePresentation, scenePresentationPreset } from './scenePresentation'
 
 export type SceneSourceFilter = 'all' | 'authored' | 'inferred'
 
@@ -26,6 +27,9 @@ export function cloneSceneDefinition(scene: SceneDefinition): SceneDefinition {
     weather: scene.weather,
     time_of_day: scene.time_of_day,
     tags: [...scene.tags],
+    presentation: scene.presentation
+      ? normalizeScenePresentation(scene.presentation)
+      : null,
   }
 }
 
@@ -82,6 +86,7 @@ export function createSceneDraft(
     weather: null,
     time_of_day: null,
     tags: [],
+    presentation: scenePresentationPreset('classic_bottom'),
   }
 }
 

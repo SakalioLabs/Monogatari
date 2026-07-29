@@ -213,6 +213,14 @@
                     {{ event.event_id }} / {{ event.event_type }}
                   </option>
                 </select>
+                <button
+                  v-if="field === 'scene_id' && currentConfigValue(field)"
+                  type="button"
+                  class="related-editor-btn"
+                  @click="openSceneComposer(currentConfigValue(field))"
+                >
+                  <Clapperboard :size="13" />{{ t('workflow.edit-scene-layout', 'Edit scene layout') }}
+                </button>
                 <input
                   v-else-if="field === 'event_type' && selectedNode.node_type === 'trigger_event'"
                   class="input mono-input"
@@ -446,11 +454,12 @@
 <script setup lang="ts">
 import { useI18n } from '../lib/i18n'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { onBeforeRouteLeave, type NavigationGuardNext } from 'vue-router'
+import { onBeforeRouteLeave, useRouter, type NavigationGuardNext } from 'vue-router'
 import {
   Blocks,
   CheckCircle2,
   CircleAlert,
+  Clapperboard,
   Download,
   FileJson,
   FilePlus2,
@@ -538,6 +547,7 @@ import {
   workflowStepCanChoose as canChooseStep,
   workflowStringValue as stringValue,
 } from '../lib/workflowExecutionPresentation'
+
 import {
   aggregatePresetMatrixCoverage,
   runWorkflowLocally,
@@ -545,6 +555,7 @@ import {
   workflowRunContextPayloadFromValues,
 } from '../lib/workflowPreview'
 
+const router = useRouter()
 const { t } = useI18n()
 
 type InspectorTab = 'properties' | 'validation' | 'execution'
@@ -863,6 +874,10 @@ function configFieldPlaceholder(field: string): string {
 
 function currentConfigValue(field: string): string {
   return String(selectedNode.value?.config[field] || '')
+}
+
+function openSceneComposer(sceneId: string) {
+  void router.push({ path: '/scene-editor', query: { scene: sceneId } })
 }
 
 function updateConfigFromSelect(node: WorkflowNode, field: string, value: string) {
@@ -2223,6 +2238,27 @@ onUnmounted(() => {
   min-height: 34px;
   padding: 7px 9px;
   font-size: 10px;
+}
+
+.related-editor-btn {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  font-size: 9px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.related-editor-btn:hover {
+  border-color: var(--brand);
+  color: var(--text-primary);
 }
 
 .mono-input {

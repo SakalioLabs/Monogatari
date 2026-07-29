@@ -18,6 +18,7 @@ function scene(overrides: Partial<SceneDefinition> = {}): SceneDefinition {
     weather: null,
     time_of_day: 'night',
     tags: ['studio'],
+    presentation: null,
     ...overrides,
   }
 }

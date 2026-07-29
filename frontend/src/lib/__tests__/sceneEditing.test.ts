@@ -26,6 +26,7 @@ function definition(overrides: Partial<SceneDefinition> = {}): SceneDefinition {
     weather: null,
     time_of_day: 'night',
     tags: ['studio'],
+    presentation: null,
     ...overrides,
   }
 }
@@ -98,6 +99,10 @@ describe('scene editing domain', () => {
       weather: null,
       time_of_day: null,
       tags: [],
+      presentation: expect.objectContaining({
+        dialogue_position: 'bottom',
+        character_anchor: 'center',
+      }),
     })
 
     const source = definition()

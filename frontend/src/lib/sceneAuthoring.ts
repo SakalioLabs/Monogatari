@@ -9,6 +9,7 @@ import {
   type StorySceneInfo,
 } from './storyContent'
 import { hasTauriRuntime, invokeCommand } from './tauri'
+import { normalizeScenePresentation } from './scenePresentation'
 
 export const SCENE_AUTHORING_CATALOG_SCHEMA = 'monogatari-scene-authoring-catalog/v1'
 
@@ -136,6 +137,9 @@ export function normalizeSceneDefinition(scene: SceneDefinition): SceneDefinitio
     weather: optionalText(scene.weather),
     time_of_day: optionalText(scene.time_of_day),
     tags: [...new Set(scene.tags.map((tag) => tag.trim()).filter(Boolean))].sort(),
+    presentation: scene.presentation
+      ? normalizeScenePresentation(scene.presentation)
+      : null,
   }
 }
 

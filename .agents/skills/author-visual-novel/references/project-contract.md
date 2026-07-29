@@ -22,7 +22,7 @@
 | Project configuration | `settings.json` | Configured content paths and render metadata |
 | Character identity | `characters/` | Character IDs, knowledge refs, renderer assets |
 | World knowledge | `knowledge/` | Entry IDs, tags, related entry IDs |
-| Story space | `scenes/` and `assets/` | Scene IDs, 2D/3D presentation, and project-relative asset paths |
+| Story space | `scenes/` and `assets/` | Scene IDs, 2D/3D assets, bounded stage-composition presentation, and project-relative asset paths |
 | Dynamic story loop | `roleplays/` | Roleplay IDs, scene nodes, character goals, score/evidence rules, transitions, and ending targets |
 | Branching prose | `dialogue/` | Dialogue IDs, node IDs, speaker IDs, next-node IDs |
 | Progression | `events/` | Event IDs, character scopes, unlock targets, flags |

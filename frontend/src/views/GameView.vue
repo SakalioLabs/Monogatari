@@ -30,8 +30,8 @@
       </div>
     </header>
 
-    <main class="stage" :class="{ 'roleplay-active': activeRoleplaySnapshot }">
-      <section class="model-area">
+    <main class="stage" :class="{ 'roleplay-active': activeRoleplaySnapshot }" :style="activePresentationStyles.stage">
+      <section class="model-area" :style="activePresentationStyles.character">
         <Live2DCanvas
           v-if="currentLive2dPath"
           :model-path="currentLive2dPath"
@@ -62,7 +62,7 @@
         </div>
       </section>
 
-      <section class="dialogue-area" :class="{ 'roleplay-dialogue-area': activeRoleplaySnapshot }">
+      <section class="dialogue-area" :class="{ 'roleplay-dialogue-area': activeRoleplaySnapshot }" :style="activePresentationStyles.dialogue">
         <SceneRoleplayPanel
           v-if="activeRoleplaySnapshot"
           :snapshot="activeRoleplaySnapshot"
@@ -349,6 +349,11 @@ import {
   type StorySceneInfo,
 } from '../lib/storyContent'
 import {
+  scenePresentationPreset,
+  scenePresentationStyles,
+  type ScenePresentation,
+} from '../lib/scenePresentation'
+import {
   loadSceneRoleplays,
   startBrowserSceneRoleplay,
   type SceneRoleplayDefinition,
@@ -403,6 +408,7 @@ interface SceneInfo {
   weather: string | null
   time_of_day: string | null
   tags: string[]
+  presentation?: ScenePresentation | null
   source: string
   background_exists: boolean
   absolute_background_path: string | null
@@ -519,6 +525,12 @@ const activeSceneModel3dPath = computed(() => {
   const resolved = resolveAssetUrl(path)
   if (!resolved || failedRendererAssets.value[path] || failedRendererAssets.value[resolved]) return null
   return resolved
+})
+const activePresentationStyles = computed(() => {
+  const fallback = activeRoleplaySnapshot.value
+    ? scenePresentationPreset('split_left')
+    : scenePresentationPreset('classic_bottom')
+  return scenePresentationStyles(activeScene.value?.presentation || fallback)
 })
 
 const currentRendererAsset = computed(() =>
@@ -1286,7 +1298,7 @@ onUnmounted(() => {
 .scene-horizon { z-index: 1; pointer-events: none; }
 
 .scene-horizon {
-  background: rgba(15,17,21,0.46);
+  background: rgba(15, 17, 21, var(--scene-background-dim, 0.24));
 }
 
 .game-topbar {
@@ -1374,33 +1386,16 @@ onUnmounted(() => {
 .stage {
   position: relative;
   z-index: 1;
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
   min-height: 0;
-}
-
-.stage.roleplay-active {
-  grid-template-columns: minmax(280px, 0.82fr) minmax(480px, 1.18fr);
-  grid-template-rows: minmax(0, 1fr);
-}
-
-.roleplay-active .model-area {
-  grid-column: 1;
-  grid-row: 1;
-}
-
-.roleplay-active .roleplay-dialogue-area {
-  grid-column: 2;
-  grid-row: 1;
-  min-height: 0;
-  padding: 16px;
 }
 
 .model-area {
+  position: absolute;
   min-height: 0;
   display: grid;
   place-items: center;
-  padding: 24px;
+  padding: 0;
+  overflow: hidden;
 }
 
 .model-placeholder {
@@ -1415,8 +1410,10 @@ onUnmounted(() => {
 }
 
 .sprite-stage {
-  width: min(460px, 76vw);
-  height: min(680px, 62vh);
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
   min-height: 0;
   display: grid;
   place-items: end center;
@@ -1424,21 +1421,31 @@ onUnmounted(() => {
 }
 
 .sprite-stage img {
+  position: absolute;
+  inset: 0;
   display: block;
-  width: min(460px, 76vw);
-  height: min(680px, 62vh);
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
   filter: drop-shadow(0 28px 36px rgba(0,0,0,0.46));
 }
 
 .dialogue-area {
-  padding: 20px;
+  position: absolute;
+  z-index: 2;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  overflow: auto;
 }
 
 .dialogue-box,
 .scene-empty {
-  max-width: 920px;
-  margin: 0 auto;
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: var(--radius-lg);
   background: rgba(21,25,34,0.88);
@@ -1448,6 +1455,11 @@ onUnmounted(() => {
 
 .dialogue-box {
   padding: 20px;
+}
+
+.roleplay-dialogue-area > * {
+  width: 100%;
+  min-height: 100%;
 }
 
 .speaker-name {
@@ -1897,15 +1909,34 @@ onUnmounted(() => {
     white-space: normal;
   }
   .stage { min-height: 0; }
-  .stage.roleplay-active {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(150px, 32vh) minmax(0, 1fr);
+  .model-area {
+    left: 50% !important;
+    bottom: 42% !important;
+    width: 88% !important;
+    height: 56% !important;
+    transform: translateX(-50%) !important;
   }
-  .roleplay-active .model-area { grid-column: 1; grid-row: 1; padding: 8px; }
-  .roleplay-active .roleplay-dialogue-area { grid-column: 1; grid-row: 2; padding: 8px; }
-
   .dialogue-area {
-    padding: 12px;
+    left: 4% !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: 2% !important;
+    width: 92% !important;
+    height: 44% !important;
+    transform: none !important;
+  }
+  .stage.roleplay-active .model-area {
+    left: 50% !important;
+    top: 0 !important;
+    bottom: auto !important;
+    width: 92% !important;
+    height: 28% !important;
+  }
+  .stage.roleplay-active .dialogue-area {
+    left: 2% !important;
+    bottom: 1% !important;
+    width: 96% !important;
+    height: 68% !important;
   }
 
   .dialogue-text {

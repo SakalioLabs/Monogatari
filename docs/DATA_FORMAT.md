@@ -151,11 +151,23 @@ Scenes are stored in `rust-engine/data/scenes/`.
   "bgm_path": null,
   "weather": "spring|summer|autumn|winter|clear|rain|snow|enchanted",
   "time_of_day": "day|night|dawn|dusk|golden_hour|eternal_twilight",
-  "tags": ["outdoor", "calm", "demo"]
+  "tags": ["outdoor", "calm", "demo"],
+  "presentation": {
+    "dialogue_position": "bottom|top|left|right",
+    "dialogue_width_percent": 92,
+    "dialogue_height_percent": 38,
+    "dialogue_inset_percent": 4,
+    "character_anchor": "left|center|right",
+    "character_width_percent": 46,
+    "character_height_percent": 76,
+    "character_offset_x_percent": 0,
+    "character_offset_y_percent": 0,
+    "background_dim_percent": 24
+  }
 }
 ```
 
-Scene IDs and asset paths are portable. Backgrounds must use a supported image extension, 3D scene models use `.glb` or `.gltf`, and both resolve to existing project files; BGM references use supported audio extensions. Playtest renders `model_3d_path` as the full scene presentation and retains `background_path` as a loading fallback. The `monogatari-scene-authoring-catalog/v1` snapshot includes both JSON-authored scenes and virtual scenes inferred from unclaimed background files. Saving an inferred entry promotes it into `scenes/<id>.json`. Deleting removes only that metadata document and never deletes the background asset; deletion is blocked by matching Story Event, ending, workflow, or dialogue-node scene references. Desktop writes use an expected catalog fingerprint and rollback-capable replacement, while browser builds keep a complete local draft read by Playtest.
+Scene IDs and asset paths are portable. Backgrounds must use a supported image extension, 3D scene models use `.glb` or `.gltf`, and both resolve to existing project files; BGM references use supported audio extensions. The optional `presentation` object is the shared human/Agent stage-composition contract. It independently positions and sizes the active character and dialogue surfaces, controls their stage inset and background dimming, and is interpreted by both Scene Editor preview and Playtest. Percentage fields are bounded by shared frontend and Rust validation; scenes without the object retain the compatible runtime default. Playtest renders `model_3d_path` as the full scene presentation and retains `background_path` as a loading fallback. The `monogatari-scene-authoring-catalog/v1` snapshot includes both JSON-authored scenes and virtual scenes inferred from unclaimed background files. Saving an inferred entry promotes it into `scenes/<id>.json`. Deleting removes only that metadata document and never deletes the background asset; deletion is blocked by matching Story Event, ending, workflow, or dialogue-node scene references. Desktop writes use an expected catalog fingerprint and rollback-capable replacement, while browser builds keep a complete local draft read by Playtest.
 
 Dialogue nodes may add `"scene_id": "scene_id"`. The runtime activates that scene when the node is entered, enabling one validated dialogue graph to drive visual scene changes. Core-runtime validation rejects unknown scene IDs.
 

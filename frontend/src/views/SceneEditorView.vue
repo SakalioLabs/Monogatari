@@ -93,6 +93,13 @@
             <strong>{{ draft.background_path || draft.model_3d_path ? t('scene.visual-unavailable', 'Scene visual unavailable') : t('scene.no-visual-assigned', 'No scene visual assigned') }}</strong>
           </div>
           <div class="stage-shade"></div>
+          <div class="composition-character" :style="presentationStyles.character">
+            <span>{{ t('scene.composer-character', 'Character') }}</span>
+          </div>
+          <div class="composition-dialogue" :style="presentationStyles.dialogue">
+            <strong>{{ t('scene.composer-speaker', 'Speaker') }}</strong>
+            <p>{{ t('scene.composer-line', 'Dialogue and choices are placed here at runtime.') }}</p>
+          </div>
           <div class="stage-caption">
             <span>{{ draft.time_of_day || t('scene.any-time', 'Any time') }}</span>
             <h2>{{ draft.name || t('scene.untitled', 'Untitled scene') }}</h2>
@@ -150,7 +157,10 @@
             <div class="field-grid">
               <label class="form-field full-field">
                 <span>{{ t('scene.background-path', 'Background path') }}</span>
-                <input v-model="draft.background_path" class="input mono" placeholder="assets/backgrounds/scene.svg" />
+                <input v-model="draft.background_path" class="input mono" list="scene-background-options" placeholder="assets/backgrounds/scene.svg" />
+                <datalist id="scene-background-options">
+                  <option v-for="path in availableBackgroundPaths" :key="path" :value="path" />
+                </datalist>
               </label>
               <label class="form-field full-field">
                 <span>{{ t('scene.model-3d-path', '3D scene model') }}</span>
@@ -159,6 +169,72 @@
               <label class="form-field full-field">
                 <span>{{ t('scene.bgm', 'BGM path') }}</span>
                 <input v-model="draft.bgm_path" class="input mono" placeholder="assets/audio/theme.ogg" />
+              </label>
+            </div>
+          </section>
+
+          <section class="form-section">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">{{ t('scene.composition', 'Composition') }}</span>
+                <h2>{{ t('scene.stage-layout', 'Stage layout') }}</h2>
+              </div>
+            </div>
+            <div class="layout-presets" role="group" :aria-label="t('scene.layout-presets', 'Layout presets')">
+              <button type="button" class="preset-btn" @click="applyPresentationPreset('classic_bottom')">{{ t('scene.preset-bottom', 'Bottom dialogue') }}</button>
+              <button type="button" class="preset-btn" @click="applyPresentationPreset('split_left')">{{ t('scene.preset-left', 'Character left') }}</button>
+              <button type="button" class="preset-btn" @click="applyPresentationPreset('split_right')">{{ t('scene.preset-right', 'Character right') }}</button>
+              <button type="button" class="preset-btn" @click="applyPresentationPreset('focus')">{{ t('scene.preset-focus', 'Character focus') }}</button>
+            </div>
+            <div class="field-grid composition-grid">
+              <label class="form-field">
+                <span>{{ t('scene.dialogue-position', 'Dialogue position') }}</span>
+                <select v-model="presentation.dialogue_position" class="input">
+                  <option value="bottom">{{ t('scene.position-bottom', 'Bottom') }}</option>
+                  <option value="top">{{ t('scene.position-top', 'Top') }}</option>
+                  <option value="left">{{ t('scene.position-left', 'Left') }}</option>
+                  <option value="right">{{ t('scene.position-right', 'Right') }}</option>
+                </select>
+              </label>
+              <label class="form-field">
+                <span>{{ t('scene.character-anchor', 'Character anchor') }}</span>
+                <select v-model="presentation.character_anchor" class="input">
+                  <option value="left">{{ t('scene.position-left', 'Left') }}</option>
+                  <option value="center">{{ t('scene.position-center', 'Center') }}</option>
+                  <option value="right">{{ t('scene.position-right', 'Right') }}</option>
+                </select>
+              </label>
+              <label class="range-field">
+                <span>{{ t('scene.dialogue-width', 'Dialogue width') }} <output>{{ presentation.dialogue_width_percent }}%</output></span>
+                <input v-model.number="presentation.dialogue_width_percent" type="range" min="30" max="96" step="1" />
+              </label>
+              <label class="range-field">
+                <span>{{ t('scene.dialogue-height', 'Dialogue height') }} <output>{{ presentation.dialogue_height_percent }}%</output></span>
+                <input v-model.number="presentation.dialogue_height_percent" type="range" min="20" max="90" step="1" />
+              </label>
+              <label class="range-field">
+                <span>{{ t('scene.character-width', 'Character width') }} <output>{{ presentation.character_width_percent }}%</output></span>
+                <input v-model.number="presentation.character_width_percent" type="range" min="20" max="80" step="1" />
+              </label>
+              <label class="range-field">
+                <span>{{ t('scene.character-height', 'Character height') }} <output>{{ presentation.character_height_percent }}%</output></span>
+                <input v-model.number="presentation.character_height_percent" type="range" min="35" max="96" step="1" />
+              </label>
+              <label class="range-field">
+                <span>{{ t('scene.character-offset-x', 'Horizontal offset') }} <output>{{ presentation.character_offset_x_percent }}%</output></span>
+                <input v-model.number="presentation.character_offset_x_percent" type="range" min="-30" max="30" step="1" />
+              </label>
+              <label class="range-field">
+                <span>{{ t('scene.character-offset-y', 'Vertical offset') }} <output>{{ presentation.character_offset_y_percent }}%</output></span>
+                <input v-model.number="presentation.character_offset_y_percent" type="range" min="-10" max="30" step="1" />
+              </label>
+              <label class="range-field">
+                <span>{{ t('scene.dialogue-inset', 'Dialogue inset') }} <output>{{ presentation.dialogue_inset_percent }}%</output></span>
+                <input v-model.number="presentation.dialogue_inset_percent" type="range" min="0" max="12" step="1" />
+              </label>
+              <label class="range-field">
+                <span>{{ t('scene.background-dim', 'Background dim') }} <output>{{ presentation.background_dim_percent }}%</output></span>
+                <input v-model.number="presentation.background_dim_percent" type="range" min="0" max="80" step="1" />
               </label>
             </div>
           </section>
@@ -253,7 +329,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { onBeforeRouteLeave, useRouter } from 'vue-router'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { Copy, Play, Plus, RotateCcw, Save, Trash2 } from '@lucide/vue'
 import CharacterModelView from '../components/CharacterModelView.vue'
 import { resolveAssetUrl } from '../lib/assets'
@@ -281,6 +357,13 @@ import {
   type SceneAuthoringEntry,
 } from '../lib/sceneAuthoring'
 import type { SceneDefinition } from '../lib/storyContent'
+import {
+  normalizeScenePresentation,
+  scenePresentationPreset,
+  scenePresentationStyles,
+  type ScenePresentation,
+  type ScenePresentationPreset,
+} from '../lib/scenePresentation'
 import { hasTauriRuntime, invokeCommand } from '../lib/tauri'
 
 interface BackgroundAsset {
@@ -293,6 +376,7 @@ interface SceneAssetCatalog {
 }
 
 const router = useRouter()
+const route = useRoute()
 const { t } = useI18n()
 const snapshot = ref<SceneAuthoringCatalogSnapshot | null>(null)
 const draft = ref<SceneDefinition | null>(null)
@@ -314,6 +398,13 @@ const filteredScenes = computed(() => filterSceneAuthoringEntries(
 
 const selectedEntry = computed(() => (snapshot.value?.scenes || [])
   .find((scene) => scene.id === selectedCatalogId.value) || null)
+const presentation = computed<ScenePresentation>(() => {
+  if (!draft.value) return normalizeScenePresentation(null)
+  if (!draft.value.presentation) draft.value.presentation = normalizeScenePresentation(null)
+  return draft.value.presentation
+})
+const presentationStyles = computed(() => scenePresentationStyles(presentation.value))
+const availableBackgroundPaths = computed(() => Object.keys(backgroundPaths.value).sort())
 const dirty = computed(() => sceneDraftSnapshot(draft.value) !== baseline.value)
 const gatedCount = computed(() => (snapshot.value?.scenes || []).filter((scene) => scene.access.gated).length)
 const errorCount = computed(() => (snapshot.value?.issues || []).filter((issue) => issue.severity === 'error').length)
@@ -377,10 +468,16 @@ function sceneImage(scene: SceneAuthoringEntry): string | null {
 
 function setDraft(definition: SceneDefinition, catalogId: string | null, isSaved = true) {
   draft.value = cloneSceneDefinition(definition)
+  draft.value.presentation ||= normalizeScenePresentation(null)
   selectedCatalogId.value = catalogId
   baseline.value = isSaved ? sceneDraftSnapshot(draft.value) : ''
   previewFailed.value = false
   modelPreviewFailed.value = false
+}
+
+function applyPresentationPreset(preset: ScenePresentationPreset) {
+  if (!draft.value) return
+  draft.value.presentation = scenePresentationPreset(preset)
 }
 
 function confirmDiscard(): boolean {
@@ -531,7 +628,7 @@ onBeforeRouteLeave(() => confirmDiscard())
 onMounted(async () => {
   window.addEventListener('beforeunload', handleBeforeUnload)
   window.addEventListener('keydown', handleKeydown)
-  await loadCatalog()
+  await loadCatalog(typeof route.query.scene === 'string' ? route.query.scene : null)
 })
 
 onUnmounted(() => {
@@ -681,11 +778,43 @@ onUnmounted(() => {
 .stage-empty span { font-family: var(--font-mono); font-size: 26px; font-weight: 900; }
 .stage-empty strong { font-size: 12px; }
 .stage-shade { position: absolute; inset: 0; background: rgba(8, 10, 14, 0.34); pointer-events: none; }
-.stage-caption { position: absolute; left: 24px; right: 24px; bottom: 20px; min-width: 0; }
+.composition-character {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  border: 1px dashed rgba(240, 215, 142, 0.72);
+  background: rgba(16, 19, 20, 0.32);
+  color: rgba(255, 255, 255, 0.82);
+  pointer-events: none;
+}
+.composition-character span {
+  padding: 4px 7px;
+  background: rgba(16, 19, 20, 0.78);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.composition-dialogue {
+  position: absolute;
+  z-index: 3;
+  min-width: 0;
+  overflow: hidden;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 5px;
+  background: rgba(18, 22, 23, 0.86);
+  color: white;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+.composition-dialogue strong { color: var(--brand-light); font-size: 10px; }
+.composition-dialogue p { margin-top: 5px; font-size: 10px; line-height: 1.45; }
+.stage-caption { position: absolute; z-index: 4; left: 14px; top: 12px; max-width: 54%; min-width: 0; }
 .stage-caption span { color: var(--brand-light); font-size: 10px; font-weight: 800; text-transform: uppercase; }
-.stage-caption h2 { margin-top: 3px; overflow: hidden; color: white; font-size: 22px; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+.stage-caption h2 { margin-top: 3px; overflow: hidden; color: white; font-size: 16px; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
 .stage-caption p { margin-top: 3px; overflow: hidden; color: rgba(255, 255, 255, 0.68); font-family: var(--font-mono); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
-.source-badge { position: absolute; top: 14px; right: 14px; font-weight: 800; }
+.source-badge { position: absolute; z-index: 4; top: 14px; right: 14px; font-weight: 800; }
 
 .validation-banner {
   min-height: 46px;
@@ -711,6 +840,35 @@ onUnmounted(() => {
 .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
 .identity-grid { grid-template-columns: minmax(180px, 0.75fr) minmax(240px, 1.25fr); }
 .atmosphere-grid { grid-template-columns: 1fr 1fr; }
+.composition-grid { margin-top: 14px; }
+.layout-presets {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+.preset-btn {
+  min-height: 34px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.preset-btn:hover { border-color: var(--brand); color: var(--text-primary); }
+.range-field { min-width: 0; display: grid; gap: 7px; }
+.range-field > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 800;
+}
+.range-field output { color: var(--brand-light); font-family: var(--font-mono); }
+.range-field input { width: 100%; accent-color: var(--brand); }
 .form-field { min-width: 0; display: grid; gap: 5px; }
 .form-field > span { color: var(--text-secondary); font-size: 11px; font-weight: 800; }
 .form-field small { color: var(--text-tertiary); font-size: 10px; }
@@ -804,7 +962,8 @@ onUnmounted(() => {
   .inspector-section { border-right: none; border-bottom: 1px solid var(--border); }
   .field-grid,
   .identity-grid,
-  .atmosphere-grid { grid-template-columns: 1fr; }
+  .atmosphere-grid,
+  .layout-presets { grid-template-columns: 1fr; }
   .full-field { grid-column: auto; }
   .form-footer { align-items: flex-start; }
   .footer-actions { flex-wrap: wrap; justify-content: flex-end; }

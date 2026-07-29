@@ -4,6 +4,7 @@ import {
   saveScopedBrowserDrafts,
 } from './browserProjectDrafts'
 import { contentAccess, loadStoryContentAccess, type StoryContentAccessEntry } from './storyAccess'
+import type { ScenePresentation } from './scenePresentation'
 import { hasTauriRuntime, invokeCommand } from './tauri'
 
 export interface StorySceneInfo {
@@ -15,6 +16,7 @@ export interface StorySceneInfo {
   weather: string | null
   time_of_day: string | null
   tags: string[]
+  presentation?: ScenePresentation | null
   source: string
   background_exists: boolean
   absolute_background_path: string | null
@@ -127,6 +129,7 @@ export interface SceneDefinition {
   weather: string | null
   time_of_day: string | null
   tags: string[]
+  presentation?: ScenePresentation | null
 }
 
 interface SceneDocument extends Partial<SceneDefinition> {
@@ -203,6 +206,7 @@ export async function loadStoryScenes(): Promise<StorySceneInfo[]> {
         weather: scene.weather ?? null,
         time_of_day: scene.time_of_day ?? null,
         tags: Array.isArray(scene.tags) ? scene.tags : [],
+        presentation: scene.presentation ?? null,
       }, 'web_project', access)
     }).sort((left, right) => left.id.localeCompare(right.id))
   } catch {
@@ -359,6 +363,8 @@ function isSceneDefinition(value: unknown): value is SceneDefinition {
       .every((field) => scene[field] === undefined || scene[field] === null || typeof scene[field] === 'string')
     && Array.isArray(scene.tags)
     && scene.tags.every((tag) => typeof tag === 'string')
+    && (scene.presentation === undefined || scene.presentation === null
+      || (typeof scene.presentation === 'object' && !Array.isArray(scene.presentation)))
 }
 
 function isDialogueDefinition(value: unknown): value is DialogueDefinition {
@@ -419,6 +425,7 @@ const browserSceneFallback: Omit<StorySceneInfo, 'access'>[] = [
   weather: null,
   time_of_day: null,
   tags: [],
+  presentation: null,
   source: 'web_bundled_fallback',
   background_exists: true,
   absolute_background_path: null,

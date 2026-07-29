@@ -6,11 +6,11 @@ use std::path::{Component, Path, PathBuf};
 use llm_authoring::filesystem::{
     ensure_regular_project_directory, sha256_json, stage_json_deletion, stage_json_replacement,
 };
-pub use llm_authoring::story_content_validation::SceneDefinition;
 use llm_authoring::story_content_validation::{
     load_scene_documents, normalize_scene_definition, validate_scene_definition,
     LoadedSceneDefinition,
 };
+pub use llm_authoring::story_content_validation::{SceneDefinition, ScenePresentation};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tauri::State;
@@ -42,6 +42,8 @@ pub struct SceneInfo {
     pub time_of_day: Option<String>,
     #[serde(default)]
     pub tags: Vec<String>,
+    #[serde(default)]
+    pub presentation: Option<ScenePresentation>,
     #[serde(default = "default_scene_source")]
     pub source: String,
     #[serde(default)]
@@ -258,6 +260,7 @@ pub(crate) async fn set_scene_inner(
             weather: None,
             time_of_day: None,
             tags: Vec::new(),
+            presentation: None,
             source: "runtime".to_string(),
             background_exists: false,
             absolute_background_path: None,
@@ -568,6 +571,7 @@ fn scene_definition_from_info(scene: &SceneInfo) -> SceneDefinition {
         weather: scene.weather.clone(),
         time_of_day: scene.time_of_day.clone(),
         tags: scene.tags.clone(),
+        presentation: scene.presentation.clone(),
     }
 }
 
@@ -653,6 +657,7 @@ pub(crate) fn build_scene_asset_catalog(project_root: &Path) -> Result<SceneAsse
             weather: None,
             time_of_day: None,
             tags: vec!["background".to_string()],
+            presentation: None,
             source: "background".to_string(),
             background_exists: true,
             absolute_background_path: Some(asset.absolute_path.clone()),
@@ -1131,6 +1136,7 @@ mod tests {
                 "night".to_string(),
                 "night".to_string(),
             ],
+            presentation: None,
         };
         let saved = save_scene_definition_inner(
             &state,

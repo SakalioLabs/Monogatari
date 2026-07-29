@@ -95,3 +95,62 @@ fn rejects_missing_or_unsupported_scene_models() {
         .contains("unsupported file type"));
     std::fs::remove_dir_all(root).unwrap();
 }
+
+#[test]
+fn validates_scene_presentation_bounds_and_enums() {
+    let root = root("scene_presentation");
+    std::fs::write(
+        root.join("scenes/stage.json"),
+        r#"{
+          "id":"stage",
+          "name":"Stage",
+          "presentation":{
+            "dialogue_position":"right",
+            "dialogue_width_percent":44,
+            "dialogue_height_percent":82,
+            "dialogue_inset_percent":3,
+            "character_anchor":"left",
+            "character_width_percent":50,
+            "character_height_percent":82,
+            "character_offset_x_percent":0,
+            "character_offset_y_percent":0,
+            "background_dim_percent":18
+          }
+        }"#,
+    )
+    .unwrap();
+    let scenes = load_scene_documents(&root).unwrap();
+    assert_eq!(
+        scenes[0]
+            .scene
+            .presentation
+            .as_ref()
+            .map(|presentation| presentation.dialogue_width_percent),
+        Some(44)
+    );
+
+    std::fs::write(
+        root.join("scenes/stage.json"),
+        r#"{
+          "id":"stage",
+          "name":"Stage",
+          "presentation":{
+            "dialogue_position":"right",
+            "dialogue_width_percent":99,
+            "dialogue_height_percent":82,
+            "dialogue_inset_percent":3,
+            "character_anchor":"left",
+            "character_width_percent":50,
+            "character_height_percent":82,
+            "character_offset_x_percent":0,
+            "character_offset_y_percent":0,
+            "background_dim_percent":18
+          }
+        }"#,
+    )
+    .unwrap();
+    assert!(load_scene_documents(&root)
+        .unwrap_err()
+        .contains("dialogue_width_percent"));
+    std::fs::remove_dir_all(root).unwrap();
+}

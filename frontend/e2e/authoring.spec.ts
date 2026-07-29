@@ -350,6 +350,8 @@ test('Scene authoring saves a real background, previews, and rejects portable ID
   await page.getByLabel('Name', { exact: true }).fill('Agent Scene Test')
   await page.getByLabel('Background path').fill(projectBackground)
   await page.getByLabel('Tags').fill('agent, delivery, agent')
+  await page.getByLabel('Dialogue position').selectOption('right')
+  await page.getByLabel('Character anchor').selectOption('left')
   await page.locator('.header-actions').getByRole('button', { name: 'Save', exact: true }).click()
 
   await expect(page.locator('.notice.success')).toContainText('Scene created')
@@ -359,6 +361,8 @@ test('Scene authoring saves a real background, previews, and rejects portable ID
   await expect(page.locator('.model-placeholder')).toBeVisible()
   await expect(page.locator('.scene-empty p')).toContainText(projectBackground)
   await expect(page.locator('.scene-backdrop')).toHaveAttribute('style', /url\(/)
+  await expect(page.locator('.dialogue-area')).toHaveAttribute('style', /right: 4%/)
+  await expect(page.locator('.model-area')).toHaveAttribute('style', /left: 25%/)
 
   await page.goto('/scene-editor')
   await expect(page.locator('.scene-item').first()).toBeVisible()

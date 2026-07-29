@@ -33,6 +33,40 @@ pub struct SceneDefinition {
     pub time_of_day: Option<String>,
     #[serde(default)]
     pub tags: Vec<String>,
+    #[serde(default)]
+    pub presentation: Option<ScenePresentation>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ScenePresentation {
+    pub dialogue_position: SceneDialoguePosition,
+    pub dialogue_width_percent: u8,
+    pub dialogue_height_percent: u8,
+    pub dialogue_inset_percent: u8,
+    pub character_anchor: SceneCharacterAnchor,
+    pub character_width_percent: u8,
+    pub character_height_percent: u8,
+    pub character_offset_x_percent: i8,
+    pub character_offset_y_percent: i8,
+    pub background_dim_percent: u8,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum SceneDialoguePosition {
+    Bottom,
+    Top,
+    Left,
+    Right,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum SceneCharacterAnchor {
+    Left,
+    Center,
+    Right,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema, PartialEq, Eq)]
@@ -332,6 +366,80 @@ pub fn validate_scene_definition(root: &Path, scene: &SceneDefinition) -> Result
             return Err(format!(
                 "Scene `{}` BGM uses an unsupported file type: {path}",
                 scene.id
+            ));
+        }
+    }
+    if let Some(presentation) = &scene.presentation {
+        validate_scene_presentation(&scene.id, presentation)?;
+    }
+    Ok(())
+}
+
+fn validate_scene_presentation(
+    scene_id: &str,
+    presentation: &ScenePresentation,
+) -> Result<(), String> {
+    for (label, value, min, max) in [
+        (
+            "dialogue_width_percent",
+            presentation.dialogue_width_percent,
+            30,
+            96,
+        ),
+        (
+            "dialogue_height_percent",
+            presentation.dialogue_height_percent,
+            20,
+            90,
+        ),
+        (
+            "dialogue_inset_percent",
+            presentation.dialogue_inset_percent,
+            0,
+            12,
+        ),
+        (
+            "character_width_percent",
+            presentation.character_width_percent,
+            20,
+            80,
+        ),
+        (
+            "character_height_percent",
+            presentation.character_height_percent,
+            35,
+            96,
+        ),
+        (
+            "background_dim_percent",
+            presentation.background_dim_percent,
+            0,
+            80,
+        ),
+    ] {
+        if value < min || value > max {
+            return Err(format!(
+                "Scene `{scene_id}` presentation {label} must be in {min}..={max}."
+            ));
+        }
+    }
+    for (label, value, min, max) in [
+        (
+            "character_offset_x_percent",
+            presentation.character_offset_x_percent,
+            -30,
+            30,
+        ),
+        (
+            "character_offset_y_percent",
+            presentation.character_offset_y_percent,
+            -10,
+            30,
+        ),
+    ] {
+        if value < min || value > max {
+            return Err(format!(
+                "Scene `{scene_id}` presentation {label} must be in {min}..={max}."
             ));
         }
     }
