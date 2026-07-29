@@ -1,9 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Monogatari">
-  <rect width="512" height="512" fill="#F4F0E8"/>
-  <rect x="64" y="64" width="384" height="384" rx="96" fill="#17181C"/>
-  <path d="M143 190c40-13 78-2 113 31 35-33 73-44 113-31v143c-41-12-79-1-113 32-34-33-72-44-113-32V190Z" fill="#F4F0E8"/>
-  <path d="M256 221v144c-34-33-72-44-113-32V190c40-13 78-2 113 31Z" fill="#E7E0D4"/>
-  <path d="M256 221v144" fill="none" stroke="#17181C" stroke-width="10" stroke-linecap="round"/>
-  <path d="M256 176v32m0-32-35 23m35-23 35 23" fill="none" stroke="#E4573D" stroke-width="11" stroke-linecap="round"/>
-  <circle cx="256" cy="156" r="18" fill="#E4573D"/>
+  <defs>
+    <linearGradient id="g" x1="128" y1="172" x2="384" y2="350" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6D5CFF"/>
+      <stop offset=".52" stop-color="#A855F7"/>
+      <stop offset="1" stop-color="#FF5C78"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="#0C0D12"/>
+  <rect x="64" y="64" width="384" height="384" rx="96" fill="#11131A"/>
+  <path d="M146 344V194c0-19 22-29 37-17l73 59 73-59c15-12 37-2 37 17v150" fill="none" stroke="url(#g)" stroke-width="50" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="256" cy="236" r="15" fill="#F8F8FC" stroke="#11131A" stroke-width="8"/>
 </svg>

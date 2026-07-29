@@ -2,19 +2,20 @@
 
 The Monogatari mark combines three project ideas in one compact symbol:
 
-- an open book for authored narrative;
-- an abstract **M** formed by the pages and spine;
-- a vermilion branching node for bounded, AI-assisted story paths.
+- a continuous ribbon for a living, generative narrative;
+- an abstract **M** for Monogatari;
+- a central node for deterministic control over AI-assisted story paths.
 
 ## Palette
 
 | Role | Color |
 |---|---|
-| Ink | `#17181C` |
-| Paper | `#F4F0E8` |
-| Paper shadow | `#E7E0D4` |
-| Narrative node | `#E4573D` |
-| Secondary text | `#5F6065` |
+| Midnight | `#0C0D12` |
+| Violet | `#6D5CFF` |
+| Electric purple | `#A855F7` |
+| Coral | `#FF5C78` |
+| Cloud | `#F8F8FC` |
+| Secondary text | `#686A75` |
 
 ## Files
 
