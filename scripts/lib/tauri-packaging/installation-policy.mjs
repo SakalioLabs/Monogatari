@@ -29,7 +29,7 @@ export async function collectTauriInstallationPolicyEvidence(options = {}) {
     ],
     [
       installationVerifierSource,
-      'monogatari-installation-verification/v1',
+      'monogatari-installation-verification/v2',
       'version the installed-runtime report schema',
     ],
     [
@@ -39,48 +39,23 @@ export async function collectTauriInstallationPolicyEvidence(options = {}) {
     ],
     [
       installationVerifierSource,
-      'discover_bundled_project_data_root',
-      'resolve data from the installed executable resource directory',
+      'PROHIBITED_PROJECT_ENTRIES',
+      'enumerate project content forbidden beside the installed executable',
     ],
     [
       installationVerifierSource,
-      'scrub_runtime_secret_config(&settings)',
-      'reject bundled runtime secrets through the shared project policy',
+      'project_content_embedded: false',
+      'report that the installed engine contains no project content',
     ],
     [
       installationVerifierSource,
-      'ALLOWED_PROJECT_WARNING_CODES',
-      'reject every warning outside the allowed runtime-credential set',
+      'Installed engine must not contain project content',
+      'reject an installation that contains adjacent project data',
     ],
     [
       installationVerifierSource,
-      'engine::load_project_content',
-      'load bundled content through real runtime managers',
-    ],
-    [
-      installationVerifierSource,
-      'validate_story_ending_references',
-      'validate bundled ending references',
-    ],
-    [
-      installationVerifierSource,
-      'load_project_workflow',
-      'validate bundled workflows through the shared headless document loader',
-    ],
-    [
-      installationVerifierSource,
-      'parse_quality_suite',
-      'validate bundled Quality Suite schemas',
-    ],
-    [
-      installationVerifierSource,
-      'load_locale_from_project',
-      'validate bundled locale schemas',
-    ],
-    [
-      installationVerifierSource,
-      'build_project_export_manifest',
-      'fingerprint the complete bundled project inventory',
+      'installation_rejects_adjacent_project_content',
+      'test that project content invalidates an installed shell',
     ],
     [
       installationVerifierSource,
@@ -95,8 +70,8 @@ export async function collectTauriInstallationPolicyEvidence(options = {}) {
     ],
     [
       installationVerifierSource,
-      'checked_in_data_passes_installed_runtime_verification',
-      'test checked-in data through installed-runtime verification',
+      'project_free_installation_passes_verification',
+      'test a project-free installed shell',
     ],
     [
       windowsInstallerVerifierSource,
@@ -145,8 +120,8 @@ export async function collectTauriInstallationPolicyEvidence(options = {}) {
     ],
     [
       windowsInstallerVerifierSource,
-      'compareContentSets(sourceData, installedData)',
-      'compare source and installed resource hashes',
+      'Administrative image contains project content',
+      'reject project content found in the extracted MSI image',
     ],
     [
       windowsInstallerVerifierSource,
@@ -155,8 +130,8 @@ export async function collectTauriInstallationPolicyEvidence(options = {}) {
     ],
     [
       windowsInstallerVerifierSource,
-      'JSON.stringify([])',
-      'require the bundled DirectML project to install without configuration warnings',
+      'envelope.report.project_content_embedded !== false',
+      'require the extracted application to prove project-free startup',
     ],
     [
       windowsInstallerVerifierSource,

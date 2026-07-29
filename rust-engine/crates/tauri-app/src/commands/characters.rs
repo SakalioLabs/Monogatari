@@ -89,7 +89,7 @@ pub(crate) async fn ensure_project_characters_loaded(state: &AppState) -> Result
     {
         return Ok(());
     }
-    let character_root = state.current_project_data_root().await.join("characters");
+    let character_root = state.current_project_data_root().await?.join("characters");
     if !character_root.is_dir() {
         return Ok(());
     }

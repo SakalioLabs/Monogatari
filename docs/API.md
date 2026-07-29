@@ -4,7 +4,7 @@ All Tauri commands are invoked from the frontend via `invokeCommand(commandName,
 
 ## Engine
 
-Engine `projectPath` values must resolve to an existing local project directory before initialization binds runtime state. Empty input reuses the active/default project root; URI-like input, control characters, missing paths, and file paths are rejected before managers load content.
+Engine `projectPath` values must resolve to an existing local project directory before initialization binds runtime state. Empty input reuses an already active project root and is rejected when no project is open; URI-like input, control characters, missing paths, and file paths are rejected before managers load content.
 
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
@@ -15,7 +15,7 @@ Engine `projectPath` values must resolve to an existing local project directory 
 
 Content loader `directory` values are project content references, not arbitrary filesystem paths. `characters` resolves to the active project `characters/` directory; nested references resolve under that same content root. Absolute paths, URI-like prefixes, empty path segments, and `.`/`..` traversal are rejected before load.
 
-Character authoring IDs are portable slugs, not filenames or paths. `create_character.id` and `delete_character.characterId` may contain only ASCII letters, numbers, underscores, or hyphens; the backend resolves the active or discovered default project data root and writes or deletes only `<id>.json` directly under `characters/`.
+Character authoring IDs are portable slugs, not filenames or paths. `create_character.id` and `delete_character.characterId` may contain only ASCII letters, numbers, underscores, or hyphens; the backend requires the active project data root and writes or deletes only `<id>.json` directly under `characters/`.
 
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|
@@ -190,7 +190,7 @@ Generated system, Azure, and ElevenLabs speech files are written under the activ
 
 ## Plugin System
 
-Plugin manifest IDs are portable slugs, not filenames or paths. `register_plugin.manifest.id` and `remove_plugin.pluginId` may contain only ASCII letters, numbers, underscores, or hyphens; the backend resolves the active or discovered default project data root and writes or deletes only `<id>.json` directly under `plugins/`. Optional `manifest.script_path` values are plugin-root-relative `.rhai` references; absolute paths, URI/drive prefixes, backslashes, empty segments, `.`/`..` traversal, and non-portable segment characters are rejected before the manifest is stored or listed.
+Plugin manifest IDs are portable slugs, not filenames or paths. `register_plugin.manifest.id` and `remove_plugin.pluginId` may contain only ASCII letters, numbers, underscores, or hyphens; the backend requires the active project data root and writes or deletes only `<id>.json` directly under `plugins/`. Optional `manifest.script_path` values are plugin-root-relative `.rhai` references; absolute paths, URI/drive prefixes, backslashes, empty segments, `.`/`..` traversal, and non-portable segment characters are rejected before the manifest is stored or listed.
 
 | Command | Args | Returns | Description |
 |---------|------|---------|-------------|

@@ -36,6 +36,14 @@ export async function collectTauriProjectRuntimeEvidence(options = {}) {
     'utf8',
   )
   const tauriScenesSource = await readFile(path.join(commandDirectory, 'scenes.rs'), 'utf8')
+  const tauriProjectWorkspaceSource = await readFile(
+    path.join(commandDirectory, 'project_workspace.rs'),
+    'utf8',
+  )
+  const authoringProjectCreationSource = await readFile(
+    path.join(authoringDirectory, 'project_creation.rs'),
+    'utf8',
+  )
   const tauriAnalyticsSource = await readFile(
     path.join(commandDirectory, 'analytics.rs'),
     'utf8',
@@ -60,17 +68,20 @@ export async function collectTauriProjectRuntimeEvidence(options = {}) {
   const issues = []
 
   const runtimeRootRequirements = [
-    [tauriMainSource, 'resource_dir()', 'resolve the Tauri resource directory during setup'],
-    [tauriMainSource, 'discover_bundled_project_data_root', 'look for bundled data resources at startup'],
-    [tauriMainSource, 'set_project_data_root(data_root)', 'bind discovered project data into AppState at startup'],
-    [tauriStateSource, 'pub fn default_project_data_root()', 'centralize default project data-root discovery'],
-    [tauriStateSource, 'pub fn discover_bundled_project_data_root', 'centralize bundled Tauri data-resource discovery'],
-    [tauriStateSource, 'pub fn is_project_data_root', 'validate project data roots before binding them'],
+    [tauriMainSource, '.manage(AppState::new())', 'start with explicit project-free application state'],
+    [tauriMainSource, 'commands::project_workspace::get_project_workspace', 'register the project launcher transport'],
+    [tauriStateSource, 'No project is open. Select, create, or import a project first.', 'reject project commands before selection'],
+    [tauriStateSource, 'active_project_data_root', 'expose optional active-project inspection without fallback'],
     [tauriStateSource, 'AssetManager::new(&data_path)', 'rebind the asset manager when project roots change'],
     [tauriStateSource, 'SaveManager::new(data_path.join("saves"))', 'rebind the save manager when project roots change'],
     [tauriStateSource, 'story_event_catalog: Arc<RwLock<StoryEventCatalog>>', 'keep the active story event catalog project-scoped'],
     [tauriStateSource, 'story_progress: Arc<RwLock<StoryProgressState>>', 'keep persistent story progress project-scoped'],
-    [tauriEngineSource, 'current_project_data_root().await', 'keep empty engine initialization paths on the active or discovered default root'],
+    [tauriEngineSource, 'current_project_data_root().await?', 'require an active root for empty engine initialization paths'],
+    [tauriProjectWorkspaceSource, 'monogatari-project-registry/v1', 'version device-local recent-project history'],
+    [tauriProjectWorkspaceSource, 'create_empty_project', 'delegate clean project creation to the headless authoring domain'],
+    [tauriProjectWorkspaceSource, 'activate_project(&state', 'validate projects before recording them as active'],
+    [authoringProjectCreationSource, 'create_empty_project', 'provide transport-neutral empty-project creation'],
+    [authoringProjectCreationSource, 'create_dir(&staging)', 'stage new projects before committing their directory'],
     [tauriEngineSource, 'load_project_content(&path).await?', 'stage all project content before replacing active managers'],
     [authoringRuntimeValidationSource, 'StoryEventCatalog::load_from_project_root(project_root)', 'stage project story events during shared engine initialization'],
     [authoringRuntimeValidationSource, 'validate_character_references', 'validate character-scoped story events before activation'],
@@ -96,7 +107,7 @@ export async function collectTauriProjectRuntimeEvidence(options = {}) {
     [tauriContentReferencesSource, 'scene_references', 'scan scene references before metadata deletion'],
     [tauriContentReferencesSource, 'dialogue_references', 'scan dialogue references before script deletion'],
     [tauriContentReferencesSource, 'workflow_scene_references', 'include workflow scene transitions in reference protection'],
-    [tauriScenesSource, 'Ok(default_project_data_root())', 'scan scene assets from the discovered default root before explicit initialization'],
+    [tauriScenesSource, 'state.current_project_data_root().await', 'reject scene scans before explicit project initialization'],
     [tauriAnalyticsSource, 'state.current_project_data_root().await', 'persist analytics under the active project root'],
     [tauriAnalyticsSource, 'project_root.join("analytics.json")', 'keep analytics files project-scoped'],
     [tauriAnalyticsSource, 'HashMap<PathBuf, Vec<AnalyticsEvent>>', 'keep in-memory analytics stores project-scoped'],

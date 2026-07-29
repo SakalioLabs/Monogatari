@@ -76,7 +76,7 @@ pub async fn list_story_endings(
 async fn list_story_endings_inner(
     state: &AppState,
 ) -> Result<Vec<StoryEndingCatalogEntry>, String> {
-    let definitions = load_story_ending_sources(&state.current_project_data_root().await)?;
+    let definitions = load_story_ending_sources(&state.current_project_data_root().await?)?;
     let catalog = state.story_event_catalog.read().await;
     let progress = state.story_progress.read().await;
     Ok(definitions
@@ -164,7 +164,7 @@ async fn launch_story_ending_inner(
     ending_id: &str,
     enforce_player_access: bool,
 ) -> Result<StoryEndingLaunch, String> {
-    let ending = load_story_endings(&state.current_project_data_root().await)?
+    let ending = load_story_endings(&state.current_project_data_root().await?)?
         .into_iter()
         .find(|ending| ending.id == ending_id)
         .ok_or_else(|| {
@@ -216,7 +216,7 @@ async fn launch_story_ending_inner(
 }
 
 async fn ending_catalog_snapshot(state: &AppState) -> Result<StoryEndingCatalogSnapshot, String> {
-    let root = state.current_project_data_root().await;
+    let root = state.current_project_data_root().await?;
     let loaded = load_story_ending_sources(&root)?;
     ending_catalog_snapshot_from_loaded(state, loaded).await
 }
@@ -260,7 +260,7 @@ async fn save_story_ending_inner(
     ending.title = ending.title.trim().to_string();
     ending.description = ending.description.trim().to_string();
 
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let current = load_story_ending_sources(&project_root)?;
     ensure_expected_catalog_fingerprint(&current, expected_catalog_fingerprint)?;
     validate_ending(&ending, Path::new("<authoring-request>"))?;
@@ -352,7 +352,7 @@ async fn delete_story_ending_inner(
     expected_catalog_fingerprint: &str,
 ) -> Result<StoryEndingCatalogSnapshot, String> {
     let _authoring_guard = state.story_content_authoring_lock.lock().await;
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let current = load_story_ending_sources(&project_root)?;
     ensure_expected_catalog_fingerprint(&current, expected_catalog_fingerprint)?;
     let target = current

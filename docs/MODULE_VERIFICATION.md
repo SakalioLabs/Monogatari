@@ -2,6 +2,14 @@
 
 ## Independent Project Production Simulation
 
+- Project-first desktop acceptance (2026-07-29): Tauri starts without an
+  implicit project, exposes recent/open/create/import flows, and binds runtime
+  managers only after full project validation. Empty project creation is
+  transactionally staged in `llm-authoring`; device-local history stores paths
+  and display metadata only. The desktop distribution gate rejects project
+  catalogs and settings from `dist`, while installed-runtime and MSI
+  administrative-image checks require `project_content_embedded: false`.
+
 - Whole-project roleplay polish acceptance (2026-07-29): all 40 Characters,
   217 Knowledge entries, 108 authored Scene files, 33 Roleplays, 257 live
   nodes, and 548 supporting-character slots form a closed content graph. The

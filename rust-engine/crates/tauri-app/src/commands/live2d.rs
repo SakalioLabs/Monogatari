@@ -169,7 +169,7 @@ pub async fn load_model(
     // 2. Parse expressions and motions from the model config
     // 3. Initialize the WebGL rendering context
 
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     load_live2d_model_from_project(&project_root, &model_path)
 }
 

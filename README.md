@@ -9,8 +9,8 @@
 
 <p align="center">
   <a href="https://github.com/SakalioLabs/Monogatari/actions/workflows/ci.yml"><img src="https://github.com/SakalioLabs/Monogatari/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-E4573D.svg" alt="MIT License"></a>
-  <img src="https://img.shields.io/badge/version-0.9.5-17181C.svg" alt="Version 0.9.5">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-FF5C78.svg" alt="MIT License"></a>
+  <img src="https://img.shields.io/badge/version-0.9.5-0C0D12.svg" alt="Version 0.9.5">
 </p>
 
 <p align="center">
@@ -38,6 +38,7 @@ This separation lets creators use generative characters without surrendering sto
 - **Local-first delivery** — WebGPU in Web/PWA builds, compatible local runtimes on desktop, and optional OpenAI-compatible services.
 - **Quality as content** — replayable suites cover routes, endings, character stability, scoring boundaries, and adversarial input.
 - **Portable projects** — validated `.monogatari` packages with bounded paths and SHA-256 inventories.
+- **Project-first desktop startup** — choose recent work, create a clean project, or import a package before the engine loads any story content.
 
 Start with the [English documentation](readme_en.md), [中文说明](readme_ch.md), or the [architecture guide](docs/ARCHITECTURE.md).
 

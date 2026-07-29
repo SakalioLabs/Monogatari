@@ -190,7 +190,7 @@ pub async fn configure_onnx(
     tokenizer_path: String,
     use_directml: Option<bool>,
 ) -> Result<String, String> {
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let config = apply_onnx_runtime_options(
         onnx_model_config_in_project(&project_root, &model_path, &tokenizer_path)?,
         use_directml,

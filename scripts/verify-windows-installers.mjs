@@ -10,10 +10,9 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const rustDir = path.join(root, 'rust-engine')
 const tauriAppDir = path.join(rustDir, 'crates', 'tauri-app')
 const bundleDir = path.join(rustDir, 'target', 'release', 'bundle')
-const sourceDataDir = path.join(root, 'data')
 const defaultOutPath = path.join(root, 'release', 'monogatari-windows-installer-audit.json')
 const auditSchema = 'monogatari-windows-installer-audit/v1'
-const runtimeSchema = 'monogatari-installation-verification/v1'
+const runtimeSchema = 'monogatari-installation-verification/v2'
 const minimumInstallerBytes = 1024 * 1024
 const maximumInstallerBytes = 512 * 1024 * 1024
 const maximumPayloadFiles = 20_000
@@ -21,6 +20,22 @@ const maximumPayloadEntries = 30_000
 const maximumPayloadBytes = 16 * 1024 * 1024 * 1024
 const expectedSignerFragment = 'SakalioLabs'
 const expectedMsiUpgradeCode = 'c4c2d20f-f307-5c7b-91e6-5edeea14fdd0'
+const prohibitedProjectEntries = [
+  'data',
+  'campaigns',
+  'characters',
+  'dialogue',
+  'endings',
+  'events',
+  'knowledge',
+  'models',
+  'project-assets.json',
+  'quality_suites',
+  'roleplays',
+  'scenes',
+  'settings.json',
+  'workflows',
+]
 
 const args = process.argv.slice(2)
 const argSet = new Set(args)
@@ -45,7 +60,6 @@ async function main() {
   }
 
   const installers = await locateInstallers(version)
-  const sourceData = await contentSet(sourceDataDir)
   const metadata = installerMetadata(installers.msi.path, installers.nsis.path)
   validateInstallerMetadata(metadata, version)
 
@@ -68,7 +82,6 @@ async function main() {
     extractionEvidence = await verifyAdministrativeImage(
       installers.msi.path,
       temporaryRoot,
-      sourceData,
       version,
       sourceState,
       allowUnsigned,
@@ -91,10 +104,9 @@ async function main() {
     release_ready: signatureStatuses.every((status) => status === 'Valid'),
     unsigned_allowed_for_audit: allowUnsigned,
     source_state: sourceState,
-    source_data: {
-      file_count: sourceData.file_count,
-      total_bytes: sourceData.total_bytes,
-      content_sha256: sourceData.content_sha256,
+    project_payload: {
+      embedded: false,
+      prohibited_entries: prohibitedProjectEntries,
     },
     installers: [
       installerEntry(installers.msi, metadata.msi),
@@ -112,7 +124,7 @@ async function main() {
     console.log(`[windows-installer] Wrote ${relative(outPath)}`)
   }
   console.log(
-    `[windows-installer] OK (MSI ${formatBytes(installers.msi.size_bytes)}, NSIS ${formatBytes(installers.nsis.size_bytes)}, ${sourceData.file_count} bundled data files, signatures=${signatureStatuses.join('/')}, runtime=${extractionEvidence.runtime.status})`,
+    `[windows-installer] OK (MSI ${formatBytes(installers.msi.size_bytes)}, NSIS ${formatBytes(installers.nsis.size_bytes)}, project-content=none, signatures=${signatureStatuses.join('/')}, runtime=${extractionEvidence.runtime.status})`,
   )
 }
 
@@ -240,7 +252,6 @@ function validateInstallerMetadata(metadata, version) {
 async function verifyAdministrativeImage(
   msiPath,
   temporaryRoot,
-  sourceData,
   version,
   sourceState,
   allowUnsigned,
@@ -271,15 +282,20 @@ async function verifyAdministrativeImage(
     throw new Error(`Administrative image must contain one application executable; found ${applicationExecutables.length}.`)
   }
   const executablePath = applicationExecutables[0]
-  const installedDataDir = path.join(path.dirname(executablePath), 'data')
+  const resourceRoot = path.dirname(executablePath)
   const applicationSignature = authenticodeSignature(executablePath)
   validateSignatureSet(
     [{ name: 'extracted application', signature: applicationSignature }],
     allowUnsigned,
     'Extracted application',
   )
-  const installedData = await contentSet(installedDataDir)
-  compareContentSets(sourceData, installedData)
+  const embeddedEntries = prohibitedProjectEntries.filter((entry) => (
+    extractedFiles.some((file) => comparableWindowsPath(file) === comparableWindowsPath(path.join(resourceRoot, entry))
+      || comparableWindowsPath(file).startsWith(`${comparableWindowsPath(path.join(resourceRoot, entry))}${path.sep}`))
+  ))
+  if (embeddedEntries.length > 0) {
+    throw new Error(`Administrative image contains project content: ${embeddedEntries.join(', ')}.`)
+  }
 
   const reportPath = path.join(temporaryRoot, 'runtime-verification.json')
   const runtime = spawnSync(executablePath, ['--verify-installation', reportPath], {
@@ -298,18 +314,13 @@ async function verifyAdministrativeImage(
   if (envelope.report.engine_version !== version) {
     throw new Error(`Extracted application reports engine version ${envelope.report.engine_version}, expected ${version}.`)
   }
-  if (envelope.report.project_warning_count !== 0
-      || JSON.stringify(envelope.report.project_warning_codes) !== JSON.stringify([])) {
-    throw new Error('Extracted application reported unexpected project configuration warnings.')
-  }
-  if (envelope.report.data_file_count !== sourceData.file_count) {
-    throw new Error('Extracted runtime data file count does not match source data.')
-  }
-  if (!/^[a-f0-9]{64}$/.test(envelope.report.project_content_sha256 ?? '')) {
-    throw new Error('Extracted runtime project fingerprint is invalid.')
+  if (envelope.report.project_content_embedded !== false
+      || !Array.isArray(envelope.report.prohibited_project_entries_checked)
+      || !envelope.report.prohibited_project_entries_checked.includes('data')) {
+    throw new Error('Extracted application did not prove a project-free runtime.')
   }
   if (comparableWindowsPath(envelope.report.executable_path) !== comparableWindowsPath(executablePath)
-      || comparableWindowsPath(envelope.report.resource_root) !== comparableWindowsPath(installedDataDir)) {
+      || comparableWindowsPath(envelope.report.resource_root) !== comparableWindowsPath(resourceRoot)) {
     throw new Error('Extracted runtime report paths do not identify the audited administrative image.')
   }
   if (!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(envelope.report.git_commit ?? '')) {
@@ -328,7 +339,7 @@ async function verifyAdministrativeImage(
   const runtimeReport = {
     ...envelope.report,
     executable_path: path.relative(extractionRoot, executablePath).replaceAll('\\', '/'),
-    resource_root: path.relative(extractionRoot, installedDataDir).replaceAll('\\', '/'),
+    resource_root: path.relative(extractionRoot, resourceRoot).replaceAll('\\', '/'),
   }
 
   return {
@@ -336,8 +347,7 @@ async function verifyAdministrativeImage(
     payload_file_count: extractedFiles.length,
     application_path: path.relative(extractionRoot, executablePath).replaceAll('\\', '/'),
     application_signature: applicationSignature,
-    source_data_match: true,
-    source_data_content_sha256: sourceData.content_sha256,
+    project_content_embedded: false,
     runtime: runtimeReport,
   }
 }

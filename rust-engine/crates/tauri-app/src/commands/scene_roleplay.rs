@@ -395,7 +395,7 @@ pub(crate) async fn load_initial_relationships(
 pub(crate) async fn load_definitions(
     state: &AppState,
 ) -> Result<Vec<SceneRoleplayDefinition>, String> {
-    let root = state.current_project_data_root().await;
+    let root = state.current_project_data_root().await?;
     load_project_scene_roleplays(&root)
         .map(|loaded| loaded.into_iter().map(|loaded| loaded.definition).collect())
 }
@@ -403,7 +403,7 @@ pub(crate) async fn load_definitions(
 async fn scene_roleplay_authoring_catalog(
     state: &AppState,
 ) -> Result<SceneRoleplayAuthoringCatalog, String> {
-    let root = state.current_project_data_root().await;
+    let root = state.current_project_data_root().await?;
     let loaded = load_project_scene_roleplays(&root)?;
     Ok(scene_roleplay_authoring_catalog_from_loaded(loaded))
 }
@@ -474,7 +474,7 @@ async fn save_scene_roleplay_definition_inner(
     definition
         .validate()
         .map_err(|error| format!("Scene roleplay failed validation: {error}"))?;
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let current = load_project_scene_roleplays(&project_root)?;
     ensure_scene_roleplay_catalog_fingerprint(&current, expected_catalog_fingerprint)?;
     let roleplay_root =
@@ -569,7 +569,7 @@ async fn delete_scene_roleplay_definition_inner(
     expected_catalog_fingerprint: &str,
 ) -> Result<SceneRoleplayAuthoringCatalog, String> {
     let _authoring_guard = state.story_content_authoring_lock.lock().await;
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let current = load_project_scene_roleplays(&project_root)?;
     ensure_scene_roleplay_catalog_fingerprint(&current, expected_catalog_fingerprint)?;
     let target = current

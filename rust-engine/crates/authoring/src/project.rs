@@ -27,6 +27,19 @@ const SECRET_CONFIG_KEYS: &[&str] = &[
 
 pub const MAX_PROJECT_SETTINGS_BYTES: u64 = 1024 * 1024;
 
+pub fn project_title(config: &Value) -> String {
+    config
+        .pointer("/engine/title")
+        .and_then(Value::as_str)
+        .or_else(|| config.pointer("/render/title").and_then(Value::as_str))
+        .map(str::trim)
+        .filter(|title| !title.is_empty())
+        .unwrap_or("Monogatari Project")
+        .chars()
+        .take(120)
+        .collect()
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 pub struct ProjectPathStatus {
     pub key: String,
@@ -967,5 +980,21 @@ mod tests {
             sanitize_export_config(&config)["sync"]["token"],
             "<redacted>"
         );
+    }
+
+    #[test]
+    fn project_title_prefers_engine_title_and_reads_legacy_render_title() {
+        assert_eq!(
+            project_title(&json!({
+                "engine": { "title": " Current Project " },
+                "render": { "title": "Legacy Project" }
+            })),
+            "Current Project"
+        );
+        assert_eq!(
+            project_title(&json!({ "render": { "title": "Legacy Project" } })),
+            "Legacy Project"
+        );
+        assert_eq!(project_title(&json!({})), "Monogatari Project");
     }
 }

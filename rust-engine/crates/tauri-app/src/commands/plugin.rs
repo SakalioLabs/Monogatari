@@ -187,7 +187,7 @@ fn normalize_plugin_manifest(mut manifest: PluginManifest) -> Result<PluginManif
 /// List all installed plugins.
 #[tauri::command]
 pub async fn list_plugins(state: State<'_, AppState>) -> Result<Vec<PluginManifest>, String> {
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let dir = project_root.join("plugins");
     if !dir.exists() {
         return Ok(Vec::new());
@@ -231,7 +231,7 @@ pub async fn register_plugin(
     manifest: PluginManifest,
 ) -> Result<String, String> {
     let manifest = normalize_plugin_manifest(manifest)?;
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let (id, path) = plugin_file_path(&project_root, &manifest.id)?;
     let dir = project_root.join("plugins");
 
@@ -249,7 +249,7 @@ pub async fn remove_plugin(
     state: State<'_, AppState>,
     plugin_id: String,
 ) -> Result<String, String> {
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let (id, path) = plugin_file_path(&project_root, &plugin_id)?;
     if !path.exists() {
         return Err(format!("Plugin not found: {id}"));

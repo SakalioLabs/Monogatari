@@ -9,6 +9,7 @@
     "test:e2e": "playwright test",
     "prebuild": "npm run test:unit",
     "build": "npm run verify:i18n && vue-tsc --noEmit && vite build && node scripts/prepare-web-dist.mjs && node scripts/verify-inference-runtime.mjs && node scripts/verify-bundle-budget.mjs && node scripts/verify-responsive-shell.mjs && node scripts/verify-mobile-readiness.mjs",
+    "build:desktop": "npm run verify:i18n && vue-tsc --noEmit && vite build && node scripts/prepare-desktop-dist.mjs && node scripts/verify-bundle-budget.mjs && node scripts/verify-responsive-shell.mjs && node scripts/verify-mobile-readiness.mjs",
     "build:web": "npm run verify:i18n && vue-tsc --noEmit && vite build && node scripts/prepare-web-dist.mjs && node scripts/verify-inference-runtime.mjs && node scripts/verify-bundle-budget.mjs && node scripts/verify-responsive-shell.mjs && node scripts/verify-mobile-readiness.mjs",
     "sync:locales": "node scripts/sync-locales.mjs --write",
     "verify:i18n": "node scripts/sync-locales.mjs && node scripts/verify-i18n-coverage.mjs",

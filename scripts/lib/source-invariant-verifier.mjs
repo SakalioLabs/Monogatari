@@ -284,7 +284,7 @@ export function createSourceInvariantVerifier({
       ['injectServiceWorkerBuildId()', 'inject a content-derived service worker cache identity after packaging'],
       ['distServiceWorkerPath', 'target the built service worker without mutating the source template'],
       ["'offline-i18n.js'", 'package the CSP-compatible offline localization script'],
-      ["path.join(rootDir, 'data')", 'retain the checked-in data root as the default project'],
+      ["path.join(rootDir, 'data')", 'retain the checked-in data root as the Web distribution fixture'],
       ['process.env.MONOGATARI_PROJECT_ROOT', 'allow an explicit independent project root'],
       ["path.join(projectDataDir, 'assets')", 'derive project assets from the selected project root'],
       ["path.join(projectDataDir, 'events')", 'derive story event catalogs from the selected project root'],
@@ -1494,7 +1494,7 @@ export function createSourceInvariantVerifier({
     const settingsViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'SettingsView.vue'), 'utf8')
 
     const engineRequirements = [
-      ['current_project_data_root', 'reuse the active/default project root when initialization receives an empty project path'],
+      ['current_project_data_root', 'reuse only an explicitly active project root when initialization receives an empty project path'],
       ['normalize_project_path_from', 'centralize testable engine project path normalization'],
       ['validate_engine_project_root', 'validate engine project roots before binding state'],
       ['Project path cannot contain control characters', 'reject control-character project path input'],
@@ -2265,7 +2265,7 @@ export function createSourceInvariantVerifier({
     const gameCharacterSource = await readFile(path.join(rustDir, 'crates', 'game', 'src', 'characters', 'character.rs'), 'utf8')
 
     const characterManagerRequirements = [
-      ['state.current_project_data_root().await', 'resolve character authoring against the active or discovered default project root'],
+      ['state.current_project_data_root().await', 'resolve character authoring against the active project root'],
       ['character_file_path', 'centralize character JSON file path construction'],
       ['normalize_character_id', 'validate character ids before path construction'],
       ['project_root.join("characters")', 'scope character JSON files to the project characters directory'],
@@ -2289,7 +2289,7 @@ export function createSourceInvariantVerifier({
       issues.push('Character manager commands must not build character JSON paths directly from raw command input')
     }
     if (characterManagerSource.includes('No project path configured.')) {
-      issues.push('Character manager commands must not fail before trying the default project data root')
+      issues.push('Character manager commands must use the shared active-project error contract')
     }
 
     if (issues.length > 0) {
@@ -2305,7 +2305,7 @@ export function createSourceInvariantVerifier({
     const pluginViewSource = await readFile(path.join(frontendDir, 'src', 'views', 'PluginView.vue'), 'utf8')
 
     const pluginRequirements = [
-      ['state.current_project_data_root().await', 'resolve plugin management against the active or discovered default project root'],
+      ['state.current_project_data_root().await', 'resolve plugin management against the active project root'],
       ['plugin_file_path', 'centralize plugin JSON file path construction'],
       ['normalize_plugin_id', 'validate plugin ids before path construction'],
       ['normalize_plugin_manifest', 'normalize plugin manifests before writing them'],
@@ -2332,7 +2332,7 @@ export function createSourceInvariantVerifier({
       issues.push('Plugin manager commands must not build plugin JSON paths directly from raw command input')
     }
     if (pluginSource.includes('No project path configured.')) {
-      issues.push('Plugin manager commands must not fail before trying the default project data root')
+      issues.push('Plugin manager commands must use the shared active-project error contract')
     }
 
     const pluginViewRequirements = [

@@ -11,6 +11,6 @@ pub(crate) async fn resolve_project_content_dir(
     requested_dir: &str,
     canonical_dir: &str,
 ) -> Result<PathBuf, String> {
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     project_content_dir(&project_root, requested_dir, canonical_dir)
 }

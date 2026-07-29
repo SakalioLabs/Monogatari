@@ -25,7 +25,7 @@ pub use llm_authoring::quality_suite_validation::{
 
 #[cfg(test)]
 use crate::commands::{chat, prompt_guard};
-use crate::state::{default_project_data_root, AppState};
+use crate::state::AppState;
 use crate::story_events::StoryEventCatalog;
 
 const DEFAULT_SUITE_JSON: &str =
@@ -36,7 +36,7 @@ const DEFAULT_SUITE_PATH: &str = "quality_suites/character_stability.json";
 pub async fn list_quality_suites(
     state: State<'_, AppState>,
 ) -> Result<Vec<QualitySuiteSummary>, String> {
-    let root = project_root(&state).await;
+    let root = project_root(&state).await?;
     let mut summaries = list_project_quality_suite_summaries(&root)?;
 
     if summaries.is_empty() {
@@ -57,7 +57,7 @@ pub async fn run_quality_suite(
     state: State<'_, AppState>,
     suite_path: Option<String>,
 ) -> Result<QualitySuiteReport, String> {
-    let root = project_root(&state).await;
+    let root = project_root(&state).await?;
     let loaded = load_quality_suite_from_root(&root, suite_path)?;
     let event_catalog = state.story_event_catalog.read().await.clone();
     Ok(run_quality_suite_inner(
@@ -109,12 +109,8 @@ fn built_in_quality_suite() -> Result<LoadedQualitySuite, String> {
     })
 }
 
-async fn project_root(state: &State<'_, AppState>) -> PathBuf {
-    if let Some(root) = state.project_path.read().await.clone() {
-        return root;
-    }
-
-    default_project_data_root()
+async fn project_root(state: &State<'_, AppState>) -> Result<PathBuf, String> {
+    state.current_project_data_root().await
 }
 
 #[cfg(test)]

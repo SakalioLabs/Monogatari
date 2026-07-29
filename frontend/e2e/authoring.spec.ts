@@ -12,6 +12,10 @@ test.beforeEach(async ({ page }) => {
 test('workspace navigation exposes the authoring surfaces', async ({ page }) => {
   await page.goto('/')
 
+  await expect(page.getByRole('heading', { name: 'Choose a project' })).toBeVisible()
+  await expect(page.getByText('Packaged Web Project')).toBeVisible()
+  await page.getByRole('button', { name: 'Continue' }).click()
+  await expect(page).toHaveURL(/\/workspace$/)
   await expect(page.getByRole('link', { name: 'Monogatari Engine' })).toBeVisible()
   await page.getByRole('link', { name: 'Story Flow' }).click()
   await expect(page).toHaveURL(/\/editor$/)

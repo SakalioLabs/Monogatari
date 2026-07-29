@@ -1,11 +1,18 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
+import { ensureActiveProject } from '../lib/projectWorkspace'
+import { hasTauriRuntime } from '../lib/tauri'
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
       path: '/',
+      name: 'projects',
+      component: () => import('../views/ProjectLauncherView.vue'),
+    },
+    {
+      path: '/workspace',
       name: 'home',
       component: HomeView,
     },
@@ -120,6 +127,15 @@ const router = createRouter({
       component: () => import('../views/BacklogView.vue'),
     },
   ],
+})
+
+router.beforeEach(async (to) => {
+  if (!hasTauriRuntime() || to.name === 'projects') return true
+  if (await ensureActiveProject()) return true
+  return {
+    name: 'projects',
+    query: { redirect: to.fullPath },
+  }
 })
 
 export default router

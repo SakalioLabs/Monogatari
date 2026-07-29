@@ -104,6 +104,10 @@ cd frontend && npm run build:web
 cd rust-engine/crates/tauri-app && cargo tauri build
 ```
 
+The Windows application opens to the project launcher. Open a folder containing
+`settings.json`, create a clean project, or import a `.monogatari` package.
+The installer contains no Tideglass, KonoSuba, or other project content.
+
 On Windows, verify both installer formats, the exact MSI payload, and the extracted production runtime before publication:
 
 ```powershell

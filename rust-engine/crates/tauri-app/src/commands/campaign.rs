@@ -182,7 +182,7 @@ async fn advance_roleplay_campaign_for_state(
 pub(crate) async fn load_campaign_definitions(
     state: &AppState,
 ) -> Result<Vec<RoleplayCampaignDefinition>, String> {
-    let root = state.current_project_data_root().await;
+    let root = state.current_project_data_root().await?;
     load_project_roleplay_campaigns(&root)
         .map(|loaded| loaded.into_iter().map(|loaded| loaded.definition).collect())
 }
@@ -328,7 +328,8 @@ mod tests {
 
     async fn loaded_state() -> AppState {
         let state = AppState::new();
-        let root = state.current_project_data_root().await;
+        let root = crate::state::default_project_data_root();
+        state.set_project_data_root(root.clone()).await;
         let (characters, dialogues, knowledge, events) = load_project_content(&root).await.unwrap();
         *state.character_manager.write().await = characters;
         *state.dialogue_manager.write().await = dialogues;

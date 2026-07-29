@@ -16,7 +16,7 @@ use serde_json::{json, Value};
 use tauri::State;
 
 use crate::content_references::scene_references;
-use crate::state::{default_project_data_root, AppState};
+use crate::state::AppState;
 use crate::story_access::{
     ensure_story_content_access, story_content_access, StoryContentAccessEntry, StoryContentKind,
 };
@@ -904,11 +904,7 @@ async fn project_root(state: &State<'_, AppState>) -> Result<PathBuf, String> {
 }
 
 async fn project_root_inner(state: &AppState) -> Result<PathBuf, String> {
-    if let Some(path) = state.project_path.read().await.clone() {
-        return Ok(path);
-    }
-
-    Ok(default_project_data_root())
+    state.current_project_data_root().await
 }
 
 fn relative_path(root: &Path, path: &Path) -> String {

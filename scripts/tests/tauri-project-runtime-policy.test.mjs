@@ -18,7 +18,7 @@ test('checked-in project runtime roots and compatibility contracts return passin
   const evidence = await collectTauriProjectRuntimeEvidence(boundaries)
   assert.deepEqual(evidence.issues, [])
   assert.deepEqual(evidence.requirementCounts, {
-    runtimeRoot: 48,
+    runtimeRoot: 51,
     runtimeCompatibility: 5,
   })
   assert.equal(evidence.structuralCheckCount, 3)
@@ -27,6 +27,7 @@ test('checked-in project runtime roots and compatibility contracts return passin
 test('root binding, staged loading, compatibility, and current-directory drift stays actionable', async () => {
   const mainPath = path.join(tauriAppDirectory, 'src', 'main.rs')
   const statePath = path.join(tauriAppDirectory, 'src', 'state.rs')
+  const projectWorkspacePath = path.join(commandDirectory, 'project_workspace.rs')
   const runtimeValidationPath = path.join(authoringDirectory, 'runtime_validation.rs')
   const filesystemPath = path.join(authoringDirectory, 'filesystem.rs')
   const analyticsPath = path.join(commandDirectory, 'analytics.rs')
@@ -39,7 +40,7 @@ test('root binding, staged loading, compatibility, and current-directory drift s
       const source = await readFile(filePath, encoding)
       const resolved = path.resolve(filePath)
       if (resolved === mainPath) {
-        return source.replaceAll('resource_dir()', 'resolve_app_resources()')
+        return source.replaceAll('.manage(AppState::new())', '.manage(AppState::with_default_project())')
       }
       if (resolved === statePath) {
         return source.replaceAll('reset_project_runtime_state', 'retain_project_runtime_state')
@@ -48,6 +49,12 @@ test('root binding, staged loading, compatibility, and current-directory drift s
         return source.replaceAll(
           'StoryEventCatalog::load_from_project_root(project_root)',
           'StoryEventCatalog::default()',
+        )
+      }
+      if (resolved === projectWorkspacePath) {
+        return source.replaceAll(
+          'monogatari-project-registry/v1',
+          'monogatari-project-registry/drifted',
         )
       }
       if (resolved === filesystemPath) {
@@ -77,7 +84,8 @@ test('root binding, staged loading, compatibility, and current-directory drift s
   })
 
   for (const issue of [
-    'Tauri runtime data-root handling must resolve the Tauri resource directory during setup',
+    'Tauri runtime data-root handling must start with explicit project-free application state',
+    'Tauri runtime data-root handling must version device-local recent-project history',
     'Tauri runtime data-root handling must clear mutable chat, scene, and script state across project reloads',
     'Tauri runtime data-root handling must stage project story events during shared engine initialization',
     'Tauri runtime data-root handling must stage bounded atomic JSON replacements',

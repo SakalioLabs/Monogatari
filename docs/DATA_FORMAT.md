@@ -4,6 +4,8 @@
 
 Complete desktop project handoffs use the `.monogatari` extension. The file is a ZIP archive with one root manifest, `monogatari-project.json`, followed by the project files declared by that manifest. `settings.json` is regenerated with runtime credentials removed rather than copied from disk.
 
+Windows engine installers do not contain a default project. Example projects are separate `.monogatari` files selected from the project launcher, so installing or upgrading the engine cannot silently replace project content.
+
 ```json
 {
   "format": "monogatari-project",

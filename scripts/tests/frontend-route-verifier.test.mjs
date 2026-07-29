@@ -104,7 +104,7 @@ test('duplicate routes and missing component files remain independently actionab
 
   assert(evidence.issues.includes('frontend router has duplicate path /'))
   assert(evidence.issues.includes(`frontend router must expose ${expectedFrontendRoutes.length} routes, found ${expectedFrontendRoutes.length + 1}`))
-  assert(evidence.issues.includes('route / component file is missing: HomeView.vue'))
+  assert(evidence.issues.includes('route /workspace component file is missing: HomeView.vue'))
 })
 
 test('sidebar policy rejects full-screen exposure, literal badges, and missing locale keys', async () => {
@@ -119,7 +119,10 @@ test('sidebar policy rejects full-screen exposure, literal badges, and missing l
       'const navItems = computed<NavItem[]>(() => [',
       "const navItems = computed<NavItem[]>(() => [{ path: '/title', label: t('nav.unknown'), badge: 'Beta' },",
     )
-    .replace("route.name !== 'game' && route.name !== 'title'", "route.name !== 'game'")
+    .replace(
+      "route.name !== 'projects' && route.name !== 'game' && route.name !== 'title'",
+      "route.name !== 'game'",
+    )
   const evidence = frontendRouteCoverageEvidence({
     routerSource,
     appSource: invalidApp,
@@ -131,7 +134,7 @@ test('sidebar policy rejects full-screen exposure, literal badges, and missing l
   assert(evidence.issues.includes('sidebar nav item /title targets a full-screen route'))
   assert(evidence.issues.includes('sidebar nav /title label key is missing from data/locales/en.json: nav.unknown'))
   assert(evidence.issues.includes("sidebar nav /title badge must use t('badge.*') instead of a literal"))
-  assert(evidence.issues.includes('App.vue must keep game and title as full-screen routes without the sidebar'))
+  assert(evidence.issues.includes('App.vue must keep the project launcher, game, and title as full-screen routes without the sidebar'))
 })
 
 test('release runner delegates route policy while retaining filesystem orchestration', async () => {

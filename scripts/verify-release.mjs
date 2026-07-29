@@ -419,7 +419,7 @@ async function verifyI18nLocalePathInvariants() {
   }
 
   if (i18nCommandSource.includes('ok_or("No project path")')) {
-    issues.push('i18n commands must use the active/default project data root consistently')
+    issues.push('i18n commands must use the active project data root consistently')
   }
 
   if (issues.length > 0) {

@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
+use crate::project::project_title;
+
 use super::portable_path::{portable_case_key, validate_portable_path};
 use super::ARCHIVE_MANIFEST_PATH;
 
@@ -244,17 +246,7 @@ pub fn validate_manifest(raw: Value) -> Result<ValidatedManifest, String> {
         );
     }
 
-    let project_title = parsed
-        .settings
-        .get("render")
-        .and_then(|render| render.get("title"))
-        .and_then(Value::as_str)
-        .map(str::trim)
-        .filter(|title| !title.is_empty())
-        .unwrap_or("Monogatari Project")
-        .chars()
-        .take(120)
-        .collect::<String>();
+    let project_title = project_title(&parsed.settings);
 
     Ok(ValidatedManifest {
         raw,

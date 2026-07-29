@@ -1,6 +1,7 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Added a project-first desktop launcher with device-local recent-project history, clean project creation, existing-folder opening, and verified `.monogatari` import. Windows engine packages now contain only the application shell; Tideglass and KonoSuba are distributed as independent sample project packages rather than implicit engine data.
 - Hardened the shared browser/Rust Scene Roleplay boundary against ChatML role blocks, JSON tool/function impersonation, direct node/ending/score/evidence assignments, and additional English prompt-extraction variants. A 396-case pressure run across all 33 KonoSuba Roleplays now detects every attack before inference, commits no story movement, and reports zero unguarded responses.
 - Completed scene-local motives for all 548 selectable supporting-character slots across the 257 KonoSuba Roleplay nodes. The 273 previously neutral legacy slots now combine the current observable situation with the selected character's own ability, knowledge, consent, and responsibility boundaries instead of inheriting the primary NPC's private goal.
 - Added a repository content-graph regression test for the KonoSuba production fixture. It requires every Roleplay character, Scene, and Knowledge reference to resolve, every supporting NPC to have a non-empty scene-local motive, motive keys to name present participants only, and all 40 Characters to participate in the live story graph.

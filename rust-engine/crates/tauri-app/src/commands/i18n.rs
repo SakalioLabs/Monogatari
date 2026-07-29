@@ -116,14 +116,14 @@ fn translate_from_project(
 /// Load a locale file from the project locales directory.
 #[tauri::command]
 pub async fn load_locale(state: State<'_, AppState>, locale: String) -> Result<LocaleData, String> {
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     load_locale_from_project(&project_root, &locale)
 }
 
 /// List available locales.
 #[tauri::command]
 pub async fn list_locales(state: State<'_, AppState>) -> Result<Vec<String>, String> {
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     list_locale_ids(&project_root)
 }
 
@@ -134,7 +134,7 @@ pub async fn translate(
     key: String,
     locale: Option<String>,
 ) -> Result<String, String> {
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     translate_from_project(&project_root, key, locale)
 }
 

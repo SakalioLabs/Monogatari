@@ -13,8 +13,7 @@ mod story_access;
 mod story_events;
 mod story_progress;
 
-use state::{discover_bundled_project_data_root, is_project_data_root, AppState};
-use tauri::Manager;
+use state::AppState;
 use tracing_subscriber::EnvFilter;
 
 fn main() {
@@ -32,38 +31,6 @@ fn main() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(AppState::new())
-        .setup(|app| {
-            let development_root = state::default_project_data_root();
-            let bundled_root = app
-                .path()
-                .resource_dir()
-                .map(
-                    |resource_dir| match discover_bundled_project_data_root(&resource_dir) {
-                        Some(root) => {
-                            tracing::info!("Found bundled project data at {}", root.display());
-                            Some(root)
-                        }
-                        None => None,
-                    },
-                )
-                .unwrap_or_else(|error| {
-                    tracing::warn!("Unable to resolve Tauri resource directory: {error}");
-                    None
-                });
-            let data_root = if is_project_data_root(&development_root) {
-                Some(development_root)
-            } else {
-                bundled_root
-            };
-
-            if let Some(data_root) = data_root {
-                let app_state = app.state::<AppState>();
-                tracing::info!("Using project data root: {}", data_root.display());
-                tauri::async_runtime::block_on(app_state.set_project_data_root(data_root));
-            }
-
-            Ok(())
-        })
         .invoke_handler(tauri::generate_handler![
             commands::engine::initialize_engine,
             commands::engine::get_engine_status,
@@ -81,6 +48,11 @@ fn main() {
             commands::project::get_project_config,
             commands::project::save_project_config,
             commands::project::export_project,
+            commands::project_workspace::get_project_workspace,
+            commands::project_workspace::open_project,
+            commands::project_workspace::create_project,
+            commands::project_workspace::forget_project,
+            commands::project_workspace::close_project,
             commands::project_archive::commands::export_project_archive,
             commands::project_archive::commands::inspect_project_archive,
             commands::project_archive::commands::import_project_archive,

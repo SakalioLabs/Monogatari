@@ -31,7 +31,7 @@
         <span class="status-dot" />
         <span>
           <small>{{ t('app.workspace-label', 'Workspace') }}</small>
-          <strong>{{ t('app.local-project', 'Local project') }}</strong>
+          <strong>{{ activeProject?.project_title || t('app.no-project', 'No project open') }}</strong>
         </span>
       </div>
 
@@ -190,6 +190,7 @@ import ProgressBar from './components/ProgressBar.vue'
 import { useI18n } from './lib/i18n'
 import { hasTauriRuntime } from './lib/tauri'
 import { loadPackagedWebGpuConfig } from './lib/webgpuInference'
+import { activeProject, refreshProjectWorkspace } from './lib/projectWorkspace'
 
 const appIconUrl = `${import.meta.env.BASE_URL}icons/app-icon.svg`
 
@@ -223,10 +224,10 @@ const expandedGroups = reactive<Record<NavGroupId, boolean>>({
   manage: false,
 })
 
-const showShell = computed(() => route.name !== 'game' && route.name !== 'title')
+const showShell = computed(() => route.name !== 'projects' && route.name !== 'game' && route.name !== 'title')
 
 const navItems = computed<NavItem[]>(() => [
-  { path: '/', label: t('nav.dashboard', 'Dashboard'), mobileLabel: t('nav.mobile.home', 'Home'), icon: LayoutDashboard, group: 'overview' },
+  { path: '/workspace', label: t('nav.dashboard', 'Dashboard'), mobileLabel: t('nav.mobile.home', 'Home'), icon: LayoutDashboard, group: 'overview' },
   { path: '/editor', label: t('nav.workflow', 'Story Flow'), mobileLabel: t('nav.mobile.flow', 'Flow'), icon: WorkflowIcon, group: 'create' },
   { path: '/character-editor', label: t('nav.editor', 'Character Editor'), mobileLabel: t('nav.mobile.create', 'Create'), icon: UserRoundPen, group: 'create' },
   { path: '/scene-editor', label: t('nav.scenes', 'Scenes'), mobileLabel: t('nav.scenes', 'Scenes'), icon: Clapperboard, group: 'create' },
@@ -262,7 +263,7 @@ const currentPageLabel = computed(() => activeNavItem.value?.label || t('app.tit
 const currentGroupLabel = computed(() => (
   navGroups.value.find((group) => group.id === activeNavItem.value?.group)?.label || t('nav.group.overview', 'Overview')
 ))
-const mobilePrimaryItems = computed(() => ['/', '/editor', '/character-editor', '/game']
+const mobilePrimaryItems = computed(() => ['/workspace', '/editor', '/character-editor', '/game']
   .map((path) => navItems.value.find((item) => item.path === path))
   .filter((item): item is NavItem => Boolean(item)))
 
@@ -312,6 +313,7 @@ function handleGlobalKeydown(event: KeyboardEvent) {
 
 onMounted(() => {
   applyTheme()
+  void refreshProjectWorkspace()
   if (!hasTauriRuntime()) void loadPackagedWebGpuConfig()
   window.addEventListener('keydown', handleGlobalKeydown)
 })

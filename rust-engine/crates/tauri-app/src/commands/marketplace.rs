@@ -200,7 +200,7 @@ pub async fn export_template(
     manifest: ExportManifest,
     output_path: String,
 ) -> Result<String, String> {
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let manifest_path = export_template_to_project(&project_root, &manifest, &output_path)?;
     Ok(format!("Exported template to {}", manifest_path.display()))
 }
@@ -210,7 +210,7 @@ pub async fn import_template(
     state: State<'_, AppState>,
     template_path: String,
 ) -> Result<String, String> {
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let manifest = import_template_from_project(&project_root, &template_path)?;
     Ok(format!("Imported template '{}'", manifest.name))
 }

@@ -16,7 +16,7 @@ const boundaries = {
 test('checked-in installed-runtime and installer audit policy returns passing evidence', async () => {
   const evidence = await collectTauriInstallationPolicyEvidence(boundaries)
   assert.deepEqual(evidence.issues, [])
-  assert.equal(evidence.requirementCount, 32)
+  assert.equal(evidence.requirementCount, 27)
 })
 
 test('injected startup, runtime, and signature drift stays independently actionable', async () => {

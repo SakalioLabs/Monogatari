@@ -13,7 +13,7 @@ use llm_authoring::project_package::{
 use serde_json::Value;
 use tauri::State;
 
-use crate::state::{default_project_data_root, AppState};
+use crate::state::AppState;
 
 /// Load project settings and readiness diagnostics.
 #[tauri::command]
@@ -47,7 +47,7 @@ pub(crate) async fn resolve_project_root(
     if let Some(path) = state.project_path.read().await.clone() {
         return Ok(path);
     }
-    normalize_project_path(None)
+    Err("No project is open. Select, create, or import a project first.".to_string())
 }
 
 fn normalize_project_path(project_path: Option<String>) -> Result<PathBuf, String> {
@@ -55,7 +55,7 @@ fn normalize_project_path(project_path: Option<String>) -> Result<PathBuf, Strin
         .filter(|path| !path.trim().is_empty())
         .map(PathBuf::from)
     else {
-        return Ok(default_project_data_root());
+        return Err("Project path cannot be empty.".to_string());
     };
 
     if path.is_absolute() {

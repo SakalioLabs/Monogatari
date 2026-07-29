@@ -267,7 +267,7 @@ pub async fn configure_cloud_sync(
 /// Get current cloud sync status with local manifest analysis.
 #[tauri::command]
 pub async fn get_sync_status(state: State<'_, AppState>) -> Result<CloudSyncStatus, String> {
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let manifest = load_manifest(&project_root);
     let device_id = get_device_id();
     let inventory = analyze_sync_inventory(&project_root, &manifest, &device_id);
@@ -297,7 +297,7 @@ pub async fn push_saves_to_cloud(
 ) -> Result<String, String> {
     let sm = state.save_manager.read().await;
     let saves = sm.list_saves().await.map_err(|e| e.to_string())?;
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let mut manifest = load_manifest(&project_root);
     let device_id = get_device_id();
 
@@ -349,7 +349,7 @@ pub async fn push_saves_to_cloud(
 pub async fn pull_saves_from_cloud(
     state: State<'_, AppState>,
 ) -> Result<Vec<CloudSaveEntry>, String> {
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let manifest = load_manifest(&project_root);
     Ok(manifest
         .entries
@@ -369,7 +369,7 @@ pub async fn resolve_sync_conflict(
     if !is_valid_save_id(&save_id) {
         return Err("Save id is invalid for sync conflict resolution.".to_string());
     }
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let mut manifest = load_manifest(&project_root);
     if !use_local {
         manifest.entries.remove(&save_id);

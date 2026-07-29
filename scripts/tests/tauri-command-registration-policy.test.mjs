@@ -16,9 +16,9 @@ const tauriAppDirectory = path.join(repositoryRoot, 'rust-engine', 'crates', 'ta
 test('every checked-in Tauri command declaration is registered exactly once', async () => {
   const evidence = await collectTauriCommandRegistrationEvidence({ tauriAppDirectory })
   assert.deepEqual(evidence.issues, [])
-  assert.equal(evidence.declaredCount, 122)
-  assert.equal(evidence.registeredCount, 122)
-  assert.equal(evidence.commandFileCount, 26)
+  assert.equal(evidence.declaredCount, 127)
+  assert.equal(evidence.registeredCount, 127)
+  assert.equal(evidence.commandFileCount, 27)
 })
 
 test('command declaration and handler parsers fail closed on unsupported shapes', () => {

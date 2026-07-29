@@ -1,7 +1,9 @@
 //! Application state management.
 
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+#[cfg(test)]
+use std::path::Path;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use tokio::sync::{Mutex, RwLock};
@@ -51,9 +53,12 @@ pub struct AppState {
 }
 
 impl AppState {
-    /// Create a new application state with default paths.
+    /// Create application state without selecting a project.
     pub fn new() -> Self {
-        let data_path = default_project_data_root();
+        let inactive_root = std::env::temp_dir().join(format!(
+            "monogatari-no-active-project-{}",
+            std::process::id()
+        ));
 
         Self {
             character_manager: Arc::new(RwLock::new(CharacterManager::new())),
@@ -61,8 +66,8 @@ impl AppState {
             knowledge_base: Arc::new(RwLock::new(KnowledgeBase::new())),
             scene_manager: Arc::new(RwLock::new(SceneManager::new())),
             inference_pipeline: Arc::new(RwLock::new(InferencePipeline::new())),
-            asset_manager: Arc::new(RwLock::new(AssetManager::new(&data_path))),
-            save_manager: Arc::new(RwLock::new(SaveManager::new(data_path.join("saves")))),
+            asset_manager: Arc::new(RwLock::new(AssetManager::new(&inactive_root))),
+            save_manager: Arc::new(RwLock::new(SaveManager::new(inactive_root.join("saves")))),
             script_engine: Arc::new(RwLock::new(ScriptEngine::new())),
             story_event_catalog: Arc::new(RwLock::new(StoryEventCatalog::default())),
             story_progress: Arc::new(RwLock::new(StoryProgressState::default())),
@@ -111,13 +116,20 @@ impl AppState {
         *self.initialized.write().await = false;
     }
 
-    /// Resolve the active project data root for project-scoped commands.
-    pub async fn current_project_data_root(&self) -> PathBuf {
-        self.project_path
-            .read()
-            .await
-            .clone()
-            .unwrap_or_else(default_project_data_root)
+    /// Resolve the active project root or reject project-scoped work.
+    pub async fn current_project_data_root(&self) -> Result<PathBuf, String> {
+        self.project_path.read().await.clone().ok_or_else(|| {
+            "No project is open. Select, create, or import a project first.".to_string()
+        })
+    }
+
+    pub async fn active_project_data_root(&self) -> Option<PathBuf> {
+        self.project_path.read().await.clone()
+    }
+
+    pub async fn clear_active_project(&self) {
+        self.reset_project_runtime_state().await;
+        *self.project_path.write().await = None;
     }
 }
 
@@ -127,13 +139,13 @@ impl Default for AppState {
     }
 }
 
-/// Resolve the best development/default project data root from the process working directory.
+#[cfg(test)]
 pub fn default_project_data_root() -> PathBuf {
     let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
     discover_project_data_root(&current_dir).unwrap_or_else(|| current_dir.join("data"))
 }
 
-/// Discover a project data root by walking upward from a start path.
+#[cfg(test)]
 pub fn discover_project_data_root(start: &Path) -> Option<PathBuf> {
     let mut first_valid = None;
 
@@ -154,14 +166,7 @@ pub fn discover_project_data_root(start: &Path) -> Option<PathBuf> {
     first_valid
 }
 
-/// Discover a bundled `data/` resource emitted by Tauri installers/builds.
-pub fn discover_bundled_project_data_root(resource_dir: &Path) -> Option<PathBuf> {
-    [resource_dir.join("data"), resource_dir.to_path_buf()]
-        .into_iter()
-        .find(|candidate| is_project_data_root(candidate))
-}
-
-/// A project data root must include the core authoring/runtime content folders.
+#[cfg(test)]
 pub fn is_project_data_root(path: &Path) -> bool {
     path.join("characters").is_dir() && path.join("knowledge").is_dir()
 }
@@ -202,16 +207,11 @@ mod tests {
         std::fs::remove_dir_all(root).unwrap();
     }
 
-    #[test]
-    fn discovers_bundled_data_root_from_tauri_resource_dir() {
-        let resource_dir = temp_root("monogatari_state_resource_dir");
-        let bundled_data = resource_dir.join("data");
-        make_data_root(&bundled_data, true);
-
-        let found = discover_bundled_project_data_root(&resource_dir);
-        assert_eq!(found.as_deref(), Some(bundled_data.as_path()));
-
-        std::fs::remove_dir_all(resource_dir).unwrap();
+    #[tokio::test]
+    async fn new_state_has_no_implicit_project_root() {
+        let state = AppState::new();
+        assert!(state.current_project_data_root().await.is_err());
+        assert!(state.active_project_data_root().await.is_none());
     }
 
     #[tokio::test]
@@ -226,9 +226,10 @@ mod tests {
         )
         .unwrap();
         state.set_project_data_root(first_root.clone()).await;
-        *state.story_event_catalog.write().await =
-            StoryEventCatalog::load_from_project_root(&state.current_project_data_root().await)
-                .unwrap();
+        *state.story_event_catalog.write().await = StoryEventCatalog::load_from_project_root(
+            &state.current_project_data_root().await.unwrap(),
+        )
+        .unwrap();
         state
             .chat_sessions
             .write()
@@ -273,7 +274,10 @@ mod tests {
             .definition("first_only", None)
             .is_none());
         assert!(!*state.initialized.read().await);
-        assert_eq!(state.current_project_data_root().await, second_root);
+        assert_eq!(
+            state.current_project_data_root().await.unwrap(),
+            second_root
+        );
         std::fs::remove_dir_all(first_root).unwrap();
     }
 

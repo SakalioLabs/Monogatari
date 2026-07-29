@@ -7,7 +7,7 @@
     "frontendDist": "../../../frontend/dist",
     "devUrl": "http://localhost:5173",
     "beforeDevCommand": "cd ../../frontend && npm run dev",
-    "beforeBuildCommand": "cd ../.. && node scripts/sync-project-mirror.mjs --check && cd frontend && npm run build"
+    "beforeBuildCommand": "cd ../.. && node scripts/sync-project-mirror.mjs --check && cd frontend && npm run build:desktop"
   },
   "app": {
     "windows": [
@@ -45,9 +45,7 @@
       "icons/icon_512x512.png",
       "icons/icon.ico"
     ],
-    "resources": {
-      "../../data": "data"
-    },
+    "resources": {},
     "windows": {
       "allowDowngrades": false,
       "wix": {

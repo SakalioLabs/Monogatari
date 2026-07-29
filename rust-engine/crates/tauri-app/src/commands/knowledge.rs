@@ -53,7 +53,7 @@ pub async fn load_knowledge(
     directory: String,
 ) -> Result<usize, String> {
     let path = resolve_project_content_dir(&state, &directory, "knowledge").await?;
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let documents =
         load_knowledge_documents(&project_root, &path).map_err(|error| error.to_string())?;
     let count = documents
@@ -122,7 +122,7 @@ async fn save_knowledge_entry_definition_inner(
     expected_catalog_fingerprint: &str,
 ) -> Result<KnowledgeAuthoringCatalogSnapshot, String> {
     let _authoring_guard = state.story_content_authoring_lock.lock().await;
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let documents = load_project_knowledge_documents(&project_root)?;
     require_catalog_fingerprint(
         &knowledge_catalog_fingerprint(&documents),
@@ -234,7 +234,7 @@ async fn delete_knowledge_entry_definition_inner(
 ) -> Result<KnowledgeAuthoringCatalogSnapshot, String> {
     ensure_valid_knowledge_id(entry_id)?;
     let _authoring_guard = state.story_content_authoring_lock.lock().await;
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let documents = load_project_knowledge_documents(&project_root)?;
     require_catalog_fingerprint(
         &knowledge_catalog_fingerprint(&documents),
@@ -325,7 +325,7 @@ fn knowledge_result(entry: &KnowledgeEntry) -> KnowledgeResult {
 async fn knowledge_authoring_snapshot(
     state: &AppState,
 ) -> Result<KnowledgeAuthoringCatalogSnapshot, String> {
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let documents = load_project_knowledge_documents(&project_root)?;
     Ok(snapshot_from_documents(&documents))
 }

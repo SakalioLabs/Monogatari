@@ -90,13 +90,14 @@ pub async fn import_project_archive(
         &normalize_local_path(&destination_parent, "Import destination")?,
         "Import destination",
     )?;
-    let active_root = state.current_project_data_root().await;
-    if let Ok(active_root) = active_root.canonicalize() {
-        if destination_parent.starts_with(&active_root) {
-            return Err(
-                "Imported projects must be created outside the active project directory."
-                    .to_string(),
-            );
+    if let Some(active_root) = state.active_project_data_root().await {
+        if let Ok(active_root) = active_root.canonicalize() {
+            if destination_parent.starts_with(&active_root) {
+                return Err(
+                    "Imported projects must be created outside the active project directory."
+                        .to_string(),
+                );
+            }
         }
     }
 

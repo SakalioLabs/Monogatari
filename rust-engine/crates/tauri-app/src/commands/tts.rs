@@ -484,7 +484,7 @@ pub async fn synthesize_speech(
         .map(|voice| voice.voice_id.clone())
         .or_else(|| config.api_voice_id.clone())
         .or_else(|| config.default_voice.clone());
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let ts = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()

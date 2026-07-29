@@ -749,6 +749,18 @@ mod tests {
         },
     };
 
+    async fn loaded_project_state() -> AppState {
+        let state = AppState::new();
+        let project_root = crate::state::default_project_data_root();
+        let (_, _, _, events) = crate::commands::engine::load_project_content(&project_root)
+            .await
+            .unwrap();
+
+        state.set_project_data_root(project_root).await;
+        *state.story_event_catalog.write().await = events;
+        state
+    }
+
     #[test]
     fn script_variable_json_round_trip_preserves_primitive_types() {
         let values = HashMap::from([
@@ -793,7 +805,7 @@ mod tests {
 
     #[tokio::test]
     async fn game_save_round_trip_restores_character_chat_scene_and_script_state() {
-        let state = AppState::new();
+        let state = loaded_project_state().await;
         let mut character = Character::new("sakura", "Sakura");
         character.set_emotion("happy");
         character.relationships.insert("player".to_string(), 0.65);
@@ -930,7 +942,7 @@ mod tests {
 
     #[tokio::test]
     async fn v2_save_migrates_triggered_events_into_story_progress() {
-        let state = AppState::new();
+        let state = loaded_project_state().await;
         state
             .character_manager
             .write()
@@ -978,7 +990,7 @@ mod tests {
 
     #[tokio::test]
     async fn v5_save_round_trip_restores_active_campaign_and_roleplay_cursor() {
-        let state = AppState::new();
+        let state = loaded_project_state().await;
         let campaign = campaign::load_campaign_definitions(&state)
             .await
             .unwrap()
@@ -1086,7 +1098,7 @@ mod tests {
 
     #[tokio::test]
     async fn forged_roleplay_snapshot_is_rejected_before_runtime_mutation() {
-        let state = AppState::new();
+        let state = loaded_project_state().await;
         let roleplay = scene_roleplay::load_definitions(&state)
             .await
             .unwrap()

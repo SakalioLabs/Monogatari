@@ -1,5 +1,6 @@
 export const expectedFrontendRoutes = Object.freeze([
-  { path: '/', name: 'home', component: 'HomeView.vue', navKey: 'nav.dashboard' },
+  { path: '/', name: 'projects', component: 'ProjectLauncherView.vue', sidebar: false },
+  { path: '/workspace', name: 'home', component: 'HomeView.vue', navKey: 'nav.dashboard' },
   { path: '/title', name: 'title', component: 'TitleScreenView.vue', sidebar: false },
   { path: '/game', name: 'game', component: 'GameView.vue', navKey: 'nav.story' },
   { path: '/chat', name: 'chat', component: 'ChatView.vue', navKey: 'nav.chat' },
@@ -161,8 +162,8 @@ export function frontendRouteCoverageEvidence({
     }
   }
 
-  if (typeof appSource === 'string' && !/route\.name\s*!==\s*(['"])game\1\s*&&\s*route\.name\s*!==\s*(['"])title\2/.test(appSource)) {
-    issues.push('App.vue must keep game and title as full-screen routes without the sidebar')
+  if (typeof appSource === 'string' && !/route\.name\s*!==\s*(['"])projects\1\s*&&\s*route\.name\s*!==\s*(['"])game\2\s*&&\s*route\.name\s*!==\s*(['"])title\3/.test(appSource)) {
+    issues.push('App.vue must keep the project launcher, game, and title as full-screen routes without the sidebar')
   }
 
   return { issues, routes, navItems }

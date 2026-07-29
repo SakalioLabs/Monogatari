@@ -69,7 +69,7 @@ pub async fn record_analytics_event(
     event_type: String,
     data: serde_json::Value,
 ) -> Result<String, String> {
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let event = AnalyticsEvent {
         event_type: event_type.clone(),
         timestamp: format!(
@@ -100,7 +100,7 @@ pub async fn record_analytics_event(
 /// Get analytics summary from recorded events.
 #[tauri::command]
 pub async fn get_analytics_summary(state: State<'_, AppState>) -> Result<AnalyticsSummary, String> {
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let mut store = ANALYTICS_STORE.write().await;
     if !store.contains_key(&project_root) {
         let events = load_events_from_disk(&project_root).await;
@@ -190,7 +190,7 @@ pub async fn export_analytics(
     state: State<'_, AppState>,
     _format: Option<String>,
 ) -> Result<String, String> {
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let mut store = ANALYTICS_STORE.write().await;
     if !store.contains_key(&project_root) {
         let events = load_events_from_disk(&project_root).await;

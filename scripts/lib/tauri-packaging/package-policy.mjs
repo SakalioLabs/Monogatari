@@ -32,6 +32,10 @@ export async function collectTauriPackagePolicyEvidence(options = {}) {
     path.join(root, 'docs', 'MOBILE_DEPLOYMENT.md'),
     'utf8',
   )
+  const desktopDistSource = await readFile(
+    path.join(frontendDir, 'scripts', 'prepare-desktop-dist.mjs'),
+    'utf8',
+  )
   const workspaceVersion = cargoWorkspace.match(
     /\[workspace\.package\][\s\S]*?\nversion\s*=\s*"([^"]+)"/,
   )?.[1]
@@ -60,9 +64,9 @@ export async function collectTauriPackagePolicyEvidence(options = {}) {
       'tauri.conf.json build.frontendDist must resolve to the repository frontend/dist directory',
     )
   }
-  if (!String(config.build?.beforeBuildCommand ?? '').includes('npm run build')) {
+  if (!String(config.build?.beforeBuildCommand ?? '').includes('npm run build:desktop')) {
     issues.push(
-      'tauri.conf.json build.beforeBuildCommand must run the production frontend build before desktop packaging',
+      'tauri.conf.json build.beforeBuildCommand must run the project-free desktop frontend build',
     )
   }
   if (
@@ -196,42 +200,20 @@ export async function collectTauriPackagePolicyEvidence(options = {}) {
     : bundle.resources && typeof bundle.resources === 'object'
       ? Object.entries(bundle.resources)
       : []
-  const bundledDesktopData = resourceEntries.find(
-    ([source]) => path.resolve(tauriAppDir, source) === path.join(rustDir, 'data'),
-  )
-  if (!bundledDesktopData) {
-    issues.push(
-      'tauri.conf.json bundle.resources must include ../../data so installed builds use the verified desktop project mirror',
-    )
-  } else {
-    const [source, target] = bundledDesktopData
-    if (target !== 'data') {
-      issues.push(
-        'tauri.conf.json bundle.resources must map ../../data to clean data/ resource output',
-      )
-    }
-    const dataRoot = path.resolve(tauriAppDir, source)
-    for (const dir of [
-      'assets',
-      'characters',
-      'dialogue',
-      'endings',
-      'events',
-      'knowledge',
-      'locales',
-      'quality_suites',
-      'scenes',
-      'workflows',
-    ]) {
-      if (!(await directoryExists(path.join(dataRoot, dir)))) {
-        issues.push(`bundled data resource is missing ${dir}/`)
-      }
-    }
-    if (!(await fileExists(path.join(dataRoot, 'settings.json')))) {
-      issues.push('bundled data resource is missing settings.json')
-    }
-    if (await fileExists(path.join(dataRoot, '.monogatari-mcp-project.lock'))) {
-      issues.push('bundled data resource must not contain the transient MCP project lease file')
+  const bundledDesktopData = resourceEntries.find(([source, target]) => (
+    path.resolve(tauriAppDir, source) === path.join(rustDir, 'data')
+    || target === 'data'
+  ))
+  if (bundledDesktopData) {
+    issues.push('tauri.conf.json bundle.resources must not embed a project data directory')
+  }
+  for (const [needle, description] of [
+    ['monogatari-desktop-shell/v1', 'version the project-free desktop shell'],
+    ['project_content_embedded: false', 'declare that desktop project content is absent'],
+    ['prohibitedProjectEntries', 'reject project directories from the desktop distribution'],
+  ]) {
+    if (!desktopDistSource.includes(needle)) {
+      issues.push(`Desktop distribution preparation must ${description}`)
     }
   }
 

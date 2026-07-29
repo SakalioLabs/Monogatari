@@ -7,7 +7,7 @@ use tauri::State;
 use llm_authoring::runtime_validation::load_core_runtime_project;
 use llm_game::{characters::CharacterManager, dialogue::DialogueManager, knowledge::KnowledgeBase};
 
-use crate::state::{default_project_data_root, AppState};
+use crate::state::AppState;
 use crate::story_events::StoryEventCatalog;
 
 #[derive(Serialize)]
@@ -32,12 +32,16 @@ pub async fn initialize_engine(
     project_path: String,
 ) -> Result<String, String> {
     let path = if project_path.trim().is_empty() {
-        state.current_project_data_root().await
+        state.current_project_data_root().await?
     } else {
         normalize_project_path(&project_path)?
     };
-    let path = validate_engine_project_root(path)?;
+    activate_project(&state, path).await?;
+    Ok("Engine initialized successfully".to_string())
+}
 
+pub(crate) async fn activate_project(state: &AppState, path: PathBuf) -> Result<(), String> {
+    let path = validate_engine_project_root(path)?;
     let (characters, dialogues, knowledge, story_events) = load_project_content(&path).await?;
 
     // Initialize AI backends before replacing the active project state.
@@ -55,7 +59,7 @@ pub async fn initialize_engine(
     *state.story_event_catalog.write().await = story_events;
     *state.initialized.write().await = true;
 
-    Ok("Engine initialized successfully".to_string())
+    Ok(())
 }
 
 pub(crate) async fn load_project_content(
@@ -100,7 +104,7 @@ fn normalize_project_path(project_path: &str) -> Result<PathBuf, String> {
 fn normalize_project_path_from(project_path: &str, current_dir: &Path) -> Result<PathBuf, String> {
     let trimmed = project_path.trim();
     let requested = if trimmed.is_empty() {
-        return Ok(default_project_data_root());
+        return Err("Project path cannot be empty.".to_string());
     } else {
         if trimmed.chars().any(char::is_control) {
             return Err("Project path cannot contain control characters.".to_string());

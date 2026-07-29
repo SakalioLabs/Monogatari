@@ -14,6 +14,7 @@ pub mod knowledge_documents;
 pub mod knowledge_validation;
 pub mod paths;
 pub mod project;
+pub mod project_creation;
 pub mod project_package;
 pub mod prompt_guard;
 pub mod quality_suite_execution;

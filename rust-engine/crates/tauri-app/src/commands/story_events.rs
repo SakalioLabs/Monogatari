@@ -60,7 +60,7 @@ pub async fn save_story_event_catalog(
 async fn reload_story_event_catalog_inner(
     state: &AppState,
 ) -> Result<StoryEventCatalogSnapshot, String> {
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let catalog = StoryEventCatalog::load_from_project_root(&project_root)?;
     let character_ids = state.character_manager.read().await.character_ids();
     catalog.validate_character_references(character_ids.iter().map(String::as_str))?;
@@ -75,7 +75,7 @@ async fn save_story_event_catalog_inner(
     expected_catalog_fingerprint: &str,
 ) -> Result<StoryEventCatalogSnapshot, String> {
     let _authoring_guard = state.story_content_authoring_lock.lock().await;
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let event_directory = StoryEventCatalog::project_event_directory(&project_root)?;
     let target_path = editable_event_document_path(&event_directory)?;
     let source_path = target_path

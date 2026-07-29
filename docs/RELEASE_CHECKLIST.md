@@ -75,8 +75,8 @@
 - [ ] Dialogue authoring catalogs reject unknown fields, broken or unreachable graphs, unknown speakers/relationship targets, invalid deltas, unsafe scripts/prompts, and stale writes through shared headless rules used by both desktop saves and Agent candidate acceptance; successful saves hot-reload runtime scripts and protected deletes scan Story Events and endings
 - [ ] Knowledge authoring catalogs reject unknown fields/shapes, non-canonical or out-of-bound fields, duplicate IDs, invalid/self/missing relations, symlinks, oversized files/catalogs, and stale writes through shared headless rules used by desktop and Agent candidates; runtime indexes preserve custom categories and legacy relations, successful saves hot-reload, and deletion scans character plus Knowledge references
 - [ ] Character, dialogue, and knowledge loader commands read only from the active project `characters/`, `dialogue/`, and `knowledge/` directories
-- [ ] Character create/delete commands resolve through the active or discovered default project data root, validate portable character IDs, and touch only direct JSON files under `characters/`
-- [ ] Plugin listing, registration, and removal commands resolve through the active or discovered default project data root, validate portable plugin IDs, normalize optional `.rhai` script references under `plugins/`, and touch only direct manifest JSON files under `plugins/`
+- [ ] Character create/delete commands require the active project data root, validate portable character IDs, and touch only direct JSON files under `characters/`
+- [ ] Plugin listing, registration, and removal commands require the active project data root, validate portable plugin IDs, normalize optional `.rhai` script references under `plugins/`, and touch only direct manifest JSON files under `plugins/`
 - [ ] Marketplace import/export commands resolve template references only under the active project `templates/` directory or built-in catalog IDs
 - [ ] Live2D model commands load only project-relative `.model3.json`/`.json` model files under the active project data root
 

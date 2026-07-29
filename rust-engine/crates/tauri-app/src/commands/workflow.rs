@@ -863,7 +863,7 @@ pub async fn save_workflow(
     path: String,
 ) -> Result<String, String> {
     let _authoring_guard = state.story_content_authoring_lock.lock().await;
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     save_project_workflow(&project_root, &workflow, &path).await?;
     Ok("Workflow saved".to_string())
 }
@@ -873,14 +873,14 @@ pub async fn save_workflow(
 pub async fn list_workflows(
     state: State<'_, AppState>,
 ) -> Result<Vec<WorkflowFileSummary>, String> {
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     list_project_workflow_summaries(&project_root)
 }
 
 /// Load a workflow from a file.
 #[tauri::command]
 pub async fn load_workflow(state: State<'_, AppState>, path: String) -> Result<Workflow, String> {
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     load_project_workflow(&project_root, &path).await
 }
 

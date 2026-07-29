@@ -285,7 +285,7 @@ pub async fn load_dialogues(
 async fn dialogue_authoring_catalog_snapshot(
     state: &AppState,
 ) -> Result<DialogueAuthoringCatalogSnapshot, String> {
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let loaded = load_dialogue_authoring_state(&project_root).await?;
     dialogue_authoring_snapshot_from_loaded(state, loaded).await
 }
@@ -347,7 +347,7 @@ async fn save_dialogue_definition_inner(
     expected_catalog_fingerprint: &str,
 ) -> Result<DialogueAuthoringCatalogSnapshot, String> {
     let _authoring_guard = state.story_content_authoring_lock.lock().await;
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let character_ids = load_project_character_ids(&project_root).await?;
     let dialogue = normalize_dialogue_script(dialogue)?;
     ensure_valid_dialogue_script(&dialogue, &character_ids)?;
@@ -433,7 +433,7 @@ async fn delete_dialogue_definition_inner(
     expected_catalog_fingerprint: &str,
 ) -> Result<DialogueAuthoringCatalogSnapshot, String> {
     let _authoring_guard = state.story_content_authoring_lock.lock().await;
-    let project_root = state.current_project_data_root().await;
+    let project_root = state.current_project_data_root().await?;
     let character_ids = load_project_character_ids(&project_root).await?;
     let current = load_dialogue_documents(&project_root, &character_ids)?;
     ensure_dialogue_catalog_fingerprint(&current, expected_catalog_fingerprint)?;
@@ -654,7 +654,7 @@ pub(crate) async fn ensure_project_dialogues_loaded(state: &AppState) -> Result<
         return Ok(());
     }
 
-    let dialogue_root = state.current_project_data_root().await.join("dialogue");
+    let dialogue_root = state.current_project_data_root().await?.join("dialogue");
     if !dialogue_root.is_dir() {
         return Ok(());
     }
