@@ -77,7 +77,7 @@ pub async fn open_project(
     project_path: String,
 ) -> Result<ProjectLauncherEntry, String> {
     let path = normalize_existing_project_path(&project_path)?;
-    activate_project(&state, path.clone()).await?;
+    activate_project(&app, &state, path.clone()).await?;
     record_project(&app, &path).await
 }
 
@@ -92,7 +92,7 @@ pub async fn create_project(
     let parent = normalize_existing_directory(&parent_directory, "Project parent directory")?;
     let created = create_empty_project(&parent, &directory_name, &project_title)?;
     let project_path = PathBuf::from(&created.project_path);
-    if let Err(error) = activate_project(&state, project_path.clone()).await {
+    if let Err(error) = activate_project(&app, &state, project_path.clone()).await {
         let _ = std::fs::remove_dir_all(&project_path);
         return Err(format!(
             "The project was created but failed initial validation: {error}"

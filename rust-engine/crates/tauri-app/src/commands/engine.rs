@@ -2,7 +2,7 @@
 
 use serde::Serialize;
 use std::path::{Path, PathBuf};
-use tauri::State;
+use tauri::{AppHandle, Manager, State};
 
 use llm_authoring::runtime_validation::load_core_runtime_project;
 use llm_game::{characters::CharacterManager, dialogue::DialogueManager, knowledge::KnowledgeBase};
@@ -28,6 +28,7 @@ pub struct EngineStatus {
 /// Initialize the engine with data from the project directory.
 #[tauri::command]
 pub async fn initialize_engine(
+    app: AppHandle,
     state: State<'_, AppState>,
     project_path: String,
 ) -> Result<String, String> {
@@ -36,11 +37,15 @@ pub async fn initialize_engine(
     } else {
         normalize_project_path(&project_path)?
     };
-    activate_project(&state, path).await?;
+    activate_project(&app, &state, path).await?;
     Ok("Engine initialized successfully".to_string())
 }
 
-pub(crate) async fn activate_project(state: &AppState, path: PathBuf) -> Result<(), String> {
+pub(crate) async fn activate_project(
+    app: &AppHandle,
+    state: &AppState,
+    path: PathBuf,
+) -> Result<(), String> {
     let path = validate_engine_project_root(path)?;
     let (characters, dialogues, knowledge, story_events) = load_project_content(&path).await?;
 
@@ -48,6 +53,10 @@ pub(crate) async fn activate_project(state: &AppState, path: PathBuf) -> Result<
     let pipeline = state.inference_pipeline.read().await;
     pipeline.initialize_all().await.map_err(|e| e.to_string())?;
     drop(pipeline);
+
+    app.asset_protocol_scope()
+        .allow_directory(&path, true)
+        .map_err(|error| format!("Unable to authorize active-project assets: {error}"))?;
 
     let root_changed = state.set_project_data_root(path).await;
     if !root_changed {
