@@ -1,4 +1,5 @@
 import type { StoryEventDefinition } from './storyEvents'
+import { workflowSemanticOutputCount } from './workflowAuthoring'
 import {
   evaluateLocalCondition as evaluateCondition,
   type LocalConditionScope,
@@ -279,6 +280,16 @@ export function validateWorkflowLocally(
           addIssue('error', 'node_condition_invalid', node.id, `Condition field \`condition\` is invalid: ${error}`)
         }
       }
+    }
+
+    const outputCount = workflowSemanticOutputCount(node)
+    if (node.connections.length > outputCount) {
+      addIssue(
+        'error',
+        'connection_output_overflow',
+        node.id,
+        `Node type \`${node.node_type}\` exposes ${outputCount} output port(s), but has ${node.connections.length} connections.`,
+      )
     }
 
     const localTargets = new Set<string>()

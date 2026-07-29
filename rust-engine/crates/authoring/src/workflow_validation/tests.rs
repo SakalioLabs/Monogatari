@@ -66,6 +66,28 @@ fn validates_a_minimal_graph_without_tauri_state() {
 }
 
 #[test]
+fn rejects_connections_beyond_runtime_output_ports() {
+    let workflow = Workflow {
+        id: "overflow".into(),
+        name: "Overflow".into(),
+        start_node_id: "start".into(),
+        nodes: vec![
+            node("start", "start", &["first", "second"]),
+            node("first", "end", &[]),
+            node("second", "end", &[]),
+        ],
+    };
+
+    let result = validate_workflow_graph(&workflow);
+
+    assert!(!result.valid);
+    assert!(result
+        .issues
+        .iter()
+        .any(|issue| issue.code == "connection_output_overflow"));
+}
+
+#[test]
 fn rejects_broken_links_invalid_state_keys_and_conditions() {
     let mut condition = node("condition", "condition", &["missing"]);
     condition.config = json!({"condition": "flag\u{0000}name"});

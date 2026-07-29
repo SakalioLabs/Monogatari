@@ -10,10 +10,29 @@ export type { WorkflowFileSummary, WorkflowNodeTypeInfo } from './workflowContra
 export interface WorkflowConnectionGeometry {
   sourceNodeId: string
   targetNodeId: string
+  sourcePortIndex: number
   x1: number
   y1: number
   x2: number
   y2: number
+}
+
+export type WorkflowPortKind =
+  | 'next'
+  | 'true'
+  | 'false'
+  | 'triggered'
+  | 'blocked'
+  | 'choice'
+  | 'branch'
+  | 'extra'
+
+export interface WorkflowOutputPort {
+  index: number
+  kind: WorkflowPortKind
+  label: string
+  connectedTargetId: string | null
+  connectable: boolean
 }
 
 export interface WorkflowPoint {
@@ -35,10 +54,23 @@ export interface WorkflowDefaultFlow {
 export interface WorkflowConnectionUpdate {
   nodes: WorkflowNode[]
   changed: boolean
+  reason:
+    | 'connected'
+    | 'replaced'
+    | 'source_missing'
+    | 'target_missing'
+    | 'target_has_no_input'
+    | 'self'
+    | 'duplicate'
+    | 'invalid_output'
+    | 'output_gap'
 }
 
 export const WORKFLOW_NODE_WIDTH = 214
 export const WORKFLOW_NODE_HEIGHT = 92
+export const WORKFLOW_PORT_HIT_RADIUS = 16
+const WORKFLOW_NODE_HEADER_HEIGHT = 45
+const WORKFLOW_PORT_ROW_HEIGHT = 24
 
 const DEFAULT_WORKFLOW_NODE_TYPES: readonly WorkflowNodeTypeInfo[] = [
   { node_type: 'start', label: 'Start', description: 'Starting point of the workflow', category: 'flow', configurable_fields: [] },
@@ -75,16 +107,19 @@ export function workflowConnections(nodes: readonly WorkflowNode[]): WorkflowCon
   const lookup = new Map(nodes.map((node) => [node.id, node]))
   const connections: WorkflowConnectionGeometry[] = []
   for (const node of nodes) {
-    for (const targetNodeId of node.connections) {
+    for (const [sourcePortIndex, targetNodeId] of node.connections.entries()) {
       const target = lookup.get(targetNodeId)
       if (!target) continue
+      const sourcePoint = workflowOutputPortPoint(node, sourcePortIndex)
+      const targetPoint = workflowInputPortPoint(target)
       connections.push({
         sourceNodeId: node.id,
         targetNodeId,
-        x1: node.x + WORKFLOW_NODE_WIDTH,
-        y1: node.y + WORKFLOW_NODE_HEIGHT / 2,
-        x2: target.x,
-        y2: target.y + WORKFLOW_NODE_HEIGHT / 2,
+        sourcePortIndex,
+        x1: sourcePoint.x,
+        y1: sourcePoint.y,
+        x2: targetPoint.x,
+        y2: targetPoint.y,
       })
     }
   }
@@ -264,27 +299,111 @@ export function removeWorkflowNode(
 ): WorkflowNode[] {
   return nodes
     .filter((node) => node.id !== nodeId)
-    .map((node) => node.connections.includes(nodeId)
-      ? { ...node, connections: node.connections.filter((targetId) => targetId !== nodeId) }
-      : node)
+    .map((node) => {
+      const removedIndex = node.connections.indexOf(nodeId)
+      return removedIndex >= 0
+        ? { ...node, connections: node.connections.slice(0, removedIndex) }
+        : node
+    })
 }
 
 export function connectWorkflowNodes(
   nodes: readonly WorkflowNode[],
   sourceNodeId: string,
   targetNodeId: string,
+  sourcePortIndex = 0,
 ): WorkflowConnectionUpdate {
   const source = nodes.find((node) => node.id === sourceNodeId)
-  const targetExists = nodes.some((node) => node.id === targetNodeId)
-  if (!source || !targetExists || sourceNodeId === targetNodeId || source.connections.includes(targetNodeId)) {
-    return { nodes: [...nodes], changed: false }
+  const target = nodes.find((node) => node.id === targetNodeId)
+  if (!source) return unchangedConnection(nodes, 'source_missing')
+  if (!target) return unchangedConnection(nodes, 'target_missing')
+  if (!workflowNodeHasInput(target)) return unchangedConnection(nodes, 'target_has_no_input')
+  if (sourceNodeId === targetNodeId) return unchangedConnection(nodes, 'self')
+  if (!Number.isInteger(sourcePortIndex) || sourcePortIndex < 0
+    || sourcePortIndex >= workflowSemanticOutputCount(source)) {
+    return unchangedConnection(nodes, 'invalid_output')
   }
+  if (sourcePortIndex > source.connections.length) return unchangedConnection(nodes, 'output_gap')
+  if (source.connections.includes(targetNodeId)) return unchangedConnection(nodes, 'duplicate')
+
+  const connections = [...source.connections]
+  const reason = sourcePortIndex < connections.length ? 'replaced' : 'connected'
+  connections[sourcePortIndex] = targetNodeId
   return {
     nodes: nodes.map((node) => node.id === sourceNodeId
-      ? { ...node, connections: [...node.connections, targetNodeId] }
+      ? { ...node, connections }
       : node),
     changed: true,
+    reason,
   }
+}
+
+export function workflowNodeHasInput(node: Pick<WorkflowNode, 'node_type'>): boolean {
+  return node.node_type !== 'start'
+}
+
+export function workflowOutputPorts(node: WorkflowNode): WorkflowOutputPort[] {
+  const semanticCount = workflowSemanticOutputCount(node)
+  const visibleCount = Math.max(semanticCount, node.connections.length)
+  return Array.from({ length: visibleCount }, (_, index) => {
+    const semantic = index < semanticCount
+    return {
+      index,
+      ...workflowOutputPortIdentity(node, index, semantic),
+      connectedTargetId: node.connections[index] || null,
+      connectable: semantic && index <= node.connections.length,
+    }
+  })
+}
+
+export function workflowSemanticOutputCount(node: Pick<WorkflowNode, 'node_type' | 'config' | 'connections'>): number {
+  if (node.node_type === 'end') return 0
+  if (node.node_type === 'condition'
+    || node.node_type === 'evaluation'
+    || node.node_type === 'trigger_event') return 2
+  if (node.node_type === 'choice') {
+    return Math.max(1, indexedConfigValues(node.config.choices).length)
+  }
+  if (node.node_type === 'random_branch') {
+    return Math.max(2, indexedConfigValues(node.config.weights).length)
+  }
+  return 1
+}
+
+export function workflowNodeHeight(node: WorkflowNode): number {
+  const portCount = workflowOutputPorts(node).length
+  return Math.max(
+    WORKFLOW_NODE_HEIGHT,
+    WORKFLOW_NODE_HEADER_HEIGHT + Math.max(1, portCount) * WORKFLOW_PORT_ROW_HEIGHT + 12,
+  )
+}
+
+export function workflowInputPortPoint(node: WorkflowNode): WorkflowPoint {
+  return { x: node.x, y: node.y + workflowNodeHeight(node) / 2 }
+}
+
+export function workflowOutputPortPoint(node: WorkflowNode, portIndex: number): WorkflowPoint {
+  const ports = workflowOutputPorts(node)
+  if (ports.length <= 1) {
+    return { x: node.x + WORKFLOW_NODE_WIDTH, y: node.y + workflowNodeHeight(node) / 2 }
+  }
+  const bodyHeight = workflowNodeHeight(node) - WORKFLOW_NODE_HEADER_HEIGHT
+  return {
+    x: node.x + WORKFLOW_NODE_WIDTH,
+    y: node.y + WORKFLOW_NODE_HEADER_HEIGHT + bodyHeight * ((portIndex + 0.5) / ports.length),
+  }
+}
+
+export function workflowInputPortAtPoint(
+  nodes: readonly WorkflowNode[],
+  point: WorkflowPoint,
+  radius = WORKFLOW_PORT_HIT_RADIUS,
+): WorkflowNode | undefined {
+  return nodes.find((node) => {
+    if (!workflowNodeHasInput(node)) return false
+    const port = workflowInputPortPoint(node)
+    return Math.hypot(point.x - port.x, point.y - port.y) <= radius
+  })
 }
 
 export function workflowNodeAtPoint(
@@ -294,7 +413,7 @@ export function workflowNodeAtPoint(
   return nodes.find((node) => point.x >= node.x
     && point.x <= node.x + WORKFLOW_NODE_WIDTH
     && point.y >= node.y
-    && point.y <= node.y + WORKFLOW_NODE_HEIGHT)
+    && point.y <= node.y + workflowNodeHeight(node))
 }
 
 export function synchronizeWorkflowDocument(
@@ -342,4 +461,43 @@ export function isWorkflowDocument(value: unknown): value is Workflow {
 
 function isRecord(value: unknown): value is Record<string, any> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
+
+function unchangedConnection(
+  nodes: readonly WorkflowNode[],
+  reason: WorkflowConnectionUpdate['reason'],
+): WorkflowConnectionUpdate {
+  return { nodes: [...nodes], changed: false, reason }
+}
+
+function indexedConfigValues(value: unknown): unknown[] {
+  if (Array.isArray(value)) return value
+  if (typeof value !== 'string') return []
+  return value.split(/\r?\n/).map(item => item.trim()).filter(Boolean)
+}
+
+function workflowOutputPortIdentity(
+  node: Pick<WorkflowNode, 'node_type' | 'config'>,
+  index: number,
+  semantic: boolean,
+): Pick<WorkflowOutputPort, 'kind' | 'label'> {
+  if (!semantic) return { kind: 'extra', label: `Extra ${index + 1}` }
+  if (node.node_type === 'condition' || node.node_type === 'evaluation') {
+    return index === 0
+      ? { kind: 'true', label: node.node_type === 'evaluation' ? 'Pass' : 'True' }
+      : { kind: 'false', label: node.node_type === 'evaluation' ? 'Fail' : 'False' }
+  }
+  if (node.node_type === 'trigger_event') {
+    return index === 0
+      ? { kind: 'triggered', label: 'Triggered' }
+      : { kind: 'blocked', label: 'Blocked' }
+  }
+  if (node.node_type === 'choice') {
+    const choices = indexedConfigValues(node.config.choices)
+    return { kind: 'choice', label: String(choices[index] ?? `Choice ${index + 1}`) }
+  }
+  if (node.node_type === 'random_branch') {
+    return { kind: 'branch', label: `Branch ${index + 1}` }
+  }
+  return { kind: 'next', label: 'Next' }
 }

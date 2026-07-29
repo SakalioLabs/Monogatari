@@ -16,7 +16,11 @@ import {
   synchronizeWorkflowDocument,
   workflowConnectionPath,
   workflowConnections,
+  workflowInputPortAtPoint,
+  workflowNodeHasInput,
+  workflowNodeHeight,
   workflowNodeAtPoint,
+  workflowOutputPorts,
   workflowNumericFieldStep,
   WORKFLOW_NODE_HEIGHT,
   WORKFLOW_NODE_WIDTH,
@@ -72,13 +76,14 @@ describe('workflow authoring contracts', () => {
 
   it('builds deterministic connection geometry and bezier paths', () => {
     const nodes = [
-      node('start', { x: 10, y: 20, connections: ['end', 'missing'] }),
+      node('start', { x: 10, y: 20, connections: ['end'] }),
       node('end', { node_type: 'end', x: 400, y: 80 }),
     ]
     const connections = workflowConnections(nodes)
     expect(connections).toEqual([{
       sourceNodeId: 'start',
       targetNodeId: 'end',
+      sourcePortIndex: 0,
       x1: 10 + WORKFLOW_NODE_WIDTH,
       y1: 20 + WORKFLOW_NODE_HEIGHT / 2,
       x2: 400,
@@ -137,6 +142,54 @@ describe('workflow authoring contracts', () => {
     expect(removed.map((entry) => entry.id)).toEqual(['start'])
     expect(removed[0].connections).toEqual([])
     expect(connected.nodes[0].connections).toEqual(['end'])
+
+    const branched = [
+      node('gate', { node_type: 'condition', connections: ['yes', 'no'] }),
+      node('yes'),
+      node('no'),
+    ]
+    expect(removeWorkflowNode(branched, 'yes')[0].connections).toEqual([])
+    expect(removeWorkflowNode(branched, 'no')[0].connections).toEqual(['yes'])
+  })
+
+  it('models runtime branch ports and replaces only the selected output', () => {
+    const condition = node('gate', {
+      node_type: 'condition',
+      config: { condition: 'score > 0.5' },
+      connections: ['yes', 'no'],
+    })
+    expect(workflowOutputPorts(condition).map(port => [port.index, port.kind, port.label]))
+      .toEqual([[0, 'true', 'True'], [1, 'false', 'False']])
+
+    const choice = node('choice', {
+      node_type: 'choice',
+      config: { choices: ['Stay', 'Leave', 'Ask'] },
+    })
+    expect(workflowOutputPorts(choice).map(port => port.label)).toEqual(['Stay', 'Leave', 'Ask'])
+    expect(workflowOutputPorts(node('random', { node_type: 'random_branch' }))).toHaveLength(2)
+    expect(workflowNodeHeight(choice)).toBeGreaterThan(WORKFLOW_NODE_HEIGHT)
+
+    const graph = [
+      condition,
+      node('yes'),
+      node('no'),
+      node('later'),
+      node('start', { node_type: 'start' }),
+    ]
+    const replaced = connectWorkflowNodes(graph, 'gate', 'later', 1)
+    expect(replaced.reason).toBe('replaced')
+    expect(replaced.nodes[0].connections).toEqual(['yes', 'later'])
+    expect(connectWorkflowNodes(graph, 'gate', 'start', 0).reason).toBe('target_has_no_input')
+    expect(connectWorkflowNodes(graph, 'gate', 'later', 2).reason).toBe('invalid_output')
+  })
+
+  it('accepts connection drops only on input ports', () => {
+    const start = node('start', { node_type: 'start', x: 10, y: 10 })
+    const target = node('target', { x: 300, y: 100 })
+    expect(workflowNodeHasInput(start)).toBe(false)
+    expect(workflowNodeHasInput(target)).toBe(true)
+    expect(workflowInputPortAtPoint([start, target], { x: 300, y: 146 })).toBe(target)
+    expect(workflowInputPortAtPoint([start, target], { x: 350, y: 146 })).toBeUndefined()
   })
 
   it('finds nodes at inclusive canvas boundaries', () => {

@@ -1935,7 +1935,7 @@ export function createSourceInvariantVerifier({
       [workflowEditorSource, 'synchronizeWorkflowDocument(', 'delegate document synchronization to the authoring domain'],
       [workflowEditorSource, "from '../lib/workflowCanvasInteractions'", 'delegate pointer interactions to the canvas controller'],
       [workflowEditorSource, 'canvasInteractions.startNodeDrag(event, node.id)', 'delegate node dragging to the canvas controller'],
-      [workflowEditorSource, 'canvasInteractions.startConnection(event, node.id)', 'delegate connection gestures to the canvas controller'],
+      [workflowEditorSource, 'canvasInteractions.startConnection(event, node.id, portIndex)', 'delegate indexed connection gestures to the canvas controller'],
       [workflowEditorSource, 'canvasInteractions.dispose()', 'dispose canvas listeners with the Vue lifecycle'],
     ]
     for (const [source, needle, description] of workflowAuthoringRequirements) {

@@ -117,7 +117,7 @@
           :key="node.id"
           class="workflow-node"
           :class="[{ selected: selectedNode?.id === node.id }, nodeRunClass(node), 'node-type-' + node.node_type]"
-          :style="{ left: node.x + 'px', top: node.y + 'px' }"
+          :style="{ left: node.x + 'px', top: node.y + 'px', height: nodeHeight(node) + 'px' }"
           @mousedown.stop="onNodeMouseDown($event, node)"
           @click.stop="selectNode(node)"
         >
@@ -136,14 +136,29 @@
           <div class="node-body">
             <span>{{ node.node_type }}</span>
             <small v-if="nodeRunDetail(node)" class="node-run-detail">{{ nodeRunDetail(node) }}</small>
-            <button
-              v-if="node.node_type !== 'end'"
-              class="node-port output"
-              :title="t('workflow.connect-node', 'Connect node')"
-              :aria-label="t('workflow.connect-node', 'Connect node')"
-              @mousedown.stop="startConnection($event, node)"
-            ></button>
           </div>
+          <button
+            v-if="nodeHasInput(node)"
+            class="node-port input"
+            :title="t('workflow.input-port', 'Input')"
+            :aria-label="t('workflow.input-port', 'Input')"
+          ></button>
+          <template v-for="port in outputPorts(node)" :key="port.index">
+            <span
+              v-if="outputPorts(node).length > 1"
+              class="node-port-label"
+              :style="{ top: outputPortTop(node, port.index) + 'px' }"
+            >{{ portLabel(port) }}</span>
+            <button
+              class="node-port output"
+              :class="{ connected: port.connectedTargetId, disabled: !port.connectable }"
+              :style="{ top: outputPortTop(node, port.index) + 'px' }"
+              :disabled="!port.connectable"
+              :title="portTitle(port)"
+              :aria-label="portTitle(port)"
+              @mousedown.stop="startConnection($event, node, port.index)"
+            ></button>
+          </template>
         </article>
 
         <div class="canvas-status">
@@ -204,6 +219,28 @@
                   :value="selectedNode.config[field] || ''"
                   readonly
                 />
+                <select
+                  v-else-if="configFieldOptions(selectedNode, field).length"
+                  class="input"
+                  :value="selectedNode.config[field] || ''"
+                  @change="updateConfigFromSelect(selectedNode, field, ($event.target as HTMLSelectElement).value)"
+                >
+                  <option value="" disabled>{{ configFieldPlaceholder(field) }}</option>
+                  <option
+                    v-if="currentConfigValue(field) && !configFieldOptions(selectedNode, field).some(option => option.value === currentConfigValue(field))"
+                    :value="currentConfigValue(field)"
+                  >{{ currentConfigValue(field) }}</option>
+                  <option v-for="option in configFieldOptions(selectedNode, field)" :key="option.value" :value="option.value">
+                    {{ option.label }}
+                  </option>
+                </select>
+                <textarea
+                  v-else-if="field === 'choices' || field === 'weights'"
+                  class="input"
+                  rows="4"
+                  :value="formatIndexedConfig(selectedNode.config[field])"
+                  @input="updateIndexedConfig(field, ($event.target as HTMLTextAreaElement).value)"
+                ></textarea>
                 <textarea
                   v-else-if="isLongField(field)"
                   class="input"
@@ -232,10 +269,10 @@
                   <span class="count-chip">{{ selectedNode.connections.length }}</span>
                 </div>
                 <div v-if="selectedNode.connections.length" class="connection-list">
-                  <div v-for="targetId in selectedNode.connections" :key="targetId">
+                  <div v-for="(targetId, index) in selectedNode.connections" :key="`${index}:${targetId}`">
                     <Link2 :size="13" />
-                    <span><strong>{{ connectionTargetLabel(targetId) }}</strong><small>{{ targetId }}</small></span>
-                    <button :title="t('workflow.remove-connection', 'Remove connection')" :aria-label="t('workflow.remove-connection', 'Remove connection')" @click="removeConnection(targetId)"><X :size="13" /></button>
+                    <span><strong>{{ portLabel(outputPorts(selectedNode)[index]) }} → {{ connectionTargetLabel(targetId) }}</strong><small>{{ targetId }}</small></span>
+                    <button :title="t('workflow.remove-connection', 'Remove connection')" :aria-label="t('workflow.remove-connection', 'Remove connection')" @click="removeConnection(index)"><X :size="13" /></button>
                   </div>
                 </div>
                 <p v-else class="muted-copy">{{ t('workflow.no-connections', 'No outgoing connections') }}</p>
@@ -433,6 +470,12 @@ import {
   X,
 } from '@lucide/vue'
 import { hasTauriRuntime, invokeCommand } from '../lib/tauri'
+import {
+  loadStoryCharacters,
+  loadStoryScenes,
+  type StoryCharacterInfo,
+  type StorySceneInfo,
+} from '../lib/storyContent'
 import { loadStoryEventCatalog, type StoryEventDefinition } from '../lib/storyEvents'
 import {
   createDefaultWorkflowFlow,
@@ -451,9 +494,14 @@ import {
   workflowConfigFields,
   workflowConnectionPath as connectionPath,
   workflowConnections,
+  workflowNodeHasInput,
+  workflowNodeHeight,
   workflowNodeIcon as getNodeIcon,
   workflowNumericFieldStep as numericFieldStep,
+  workflowOutputPortPoint,
+  workflowOutputPorts,
   WORKFLOW_NODE_WIDTH as NODE_WIDTH,
+  type WorkflowOutputPort,
   type WorkflowFileSummary,
   type WorkflowNodeTypeInfo,
 } from '../lib/workflowAuthoring'
@@ -509,6 +557,8 @@ const nodes = ref<WorkflowNode[]>([])
 const selectedNode = ref<WorkflowNode | null>(null)
 const nodeTypes = ref<WorkflowNodeTypeInfo[]>([])
 const storyEvents = ref<StoryEventDefinition[]>([])
+const storyScenes = ref<StorySceneInfo[]>([])
+const storyCharacters = ref<StoryCharacterInfo[]>([])
 const canvasRef = ref<HTMLDivElement>()
 const validationResult = ref<WorkflowValidationResult | null>(null)
 const validationMessage = ref('')
@@ -601,6 +651,9 @@ const canvasInteractions = createWorkflowCanvasInteractionController({
       selectedNode.value = nodes.value.find((node) => node.id === changedNodeId) || null
     }
     markWorkflowDirty()
+  },
+  onConnectionRejected(reason) {
+    showWorkflowNotice(connectionRejectionMessage(reason), 'error')
   },
 })
 
@@ -753,14 +806,112 @@ function updateConfigFromInput(field: string, event: Event) {
   updateConfig(field, isNumericField(field) && value !== '' ? Number(value) : value)
 }
 
+function formatIndexedConfig(value: unknown): string {
+  return Array.isArray(value) ? value.join('\n') : String(value || '')
+}
+
+function updateIndexedConfig(field: string, value: string) {
+  const items = value.split(/\r?\n/).map(item => item.trim()).filter(Boolean)
+  updateConfig(field, field === 'weights' ? items.map(Number).filter(Number.isFinite) : items)
+}
+
 function connectionTargetLabel(targetId: string): string {
   return nodes.value.find((node) => node.id === targetId)?.label || t('workflow.missing-target', 'Missing target')
 }
 
-function removeConnection(targetId: string) {
+function removeConnection(index: number) {
   if (!selectedNode.value) return
-  selectedNode.value.connections = selectedNode.value.connections.filter((id) => id !== targetId)
+  if (index < selectedNode.value.connections.length - 1) {
+    showWorkflowNotice(t('workflow.port-remove-later-first', 'Disconnect later branches first.'), 'error')
+    return
+  }
+  selectedNode.value.connections.splice(index, 1)
   markWorkflowDirty()
+}
+
+type WorkflowSelectOption = { value: string; label: string }
+
+function configFieldOptions(node: WorkflowNode, field: string): WorkflowSelectOption[] {
+  if (field === 'scene_id') {
+    return storyScenes.value.map(scene => ({ value: scene.id, label: `${scene.name} / ${scene.id}` }))
+  }
+  if (field === 'character_id' || (field === 'speaker' && node.node_type === 'dialogue')) {
+    return storyCharacters.value.map(character => ({ value: character.id, label: `${character.name} / ${character.id}` }))
+  }
+  if (field === 'workflow_path') {
+    return workflowFiles.value.map(file => ({ value: file.path, label: `${file.name} / ${file.path}` }))
+  }
+  if (field === 'criteria') {
+    return ['friendliness', 'engagement', 'creativity', 'overall']
+      .map(value => ({ value, label: metricLabel(value) }))
+  }
+  if (field === 'action' && node.node_type === 'bgm') {
+    return ['play', 'stop', 'pause', 'resume'].map(value => ({ value, label: value }))
+  }
+  if (field === 'action' && node.node_type === 'camera') {
+    return ['move', 'zoom', 'reset'].map(value => ({ value, label: value }))
+  }
+  return []
+}
+
+function configFieldPlaceholder(field: string): string {
+  if (field === 'scene_id') return t('workflow.select-scene', 'Select scene')
+  if (field === 'character_id' || field === 'speaker') return t('workflow.select-character', 'Select character')
+  if (field === 'workflow_path') return t('workflow.select-workflow', 'Select workflow')
+  return t('workflow.select-value', 'Select value')
+}
+
+function currentConfigValue(field: string): string {
+  return String(selectedNode.value?.config[field] || '')
+}
+
+function updateConfigFromSelect(node: WorkflowNode, field: string, value: string) {
+  updateConfig(field, value)
+  if (field === 'workflow_path') {
+    const file = workflowFiles.value.find(candidate => candidate.path === value)
+    if (file) node.config.workflow_id = file.workflow_id
+  }
+}
+
+function outputPorts(node: WorkflowNode): WorkflowOutputPort[] {
+  return workflowOutputPorts(node)
+}
+
+function nodeHasInput(node: WorkflowNode): boolean {
+  return workflowNodeHasInput(node)
+}
+
+function nodeHeight(node: WorkflowNode): number {
+  return workflowNodeHeight(node)
+}
+
+function outputPortTop(node: WorkflowNode, index: number): number {
+  return workflowOutputPortPoint(node, index).y - node.y
+}
+
+function portLabel(port: WorkflowOutputPort | undefined): string {
+  if (!port) return t('workflow.port.extra', 'Extra')
+  if (port.kind === 'next') return t('workflow.port.next', 'Next')
+  if (port.kind === 'true') return port.label === 'Pass' ? t('workflow.pass', 'Pass') : t('workflow.port.true', 'True')
+  if (port.kind === 'false') return port.label === 'Fail' ? t('workflow.fail', 'Fail') : t('workflow.port.false', 'False')
+  if (port.kind === 'triggered') return t('workflow.triggered', 'Triggered')
+  if (port.kind === 'blocked') return t('workflow.blocked', 'Blocked')
+  if (port.kind === 'branch') return t('workflow.port.branch', 'Branch {index}', { index: port.index + 1 })
+  return port.label
+}
+
+function portTitle(port: WorkflowOutputPort): string {
+  if (!port.connectable) return t('workflow.port-connect-previous', 'Connect the previous branch first')
+  return t('workflow.connect-port', 'Connect {port}', { port: portLabel(port) })
+}
+
+function connectionRejectionMessage(reason: string): string {
+  if (reason === 'input_port_required') return t('workflow.connection-input-required', 'Drop the line on a node input port.')
+  if (reason === 'target_has_no_input') return t('workflow.connection-start-target', 'Start nodes do not accept incoming connections.')
+  if (reason === 'self') return t('workflow.connection-self', 'A node cannot connect to itself.')
+  if (reason === 'duplicate') return t('workflow.connection-duplicate', 'That target is already connected from this node.')
+  if (reason === 'output_gap') return t('workflow.port-connect-previous', 'Connect the previous branch first.')
+  return t('workflow.connection-invalid', 'This connection is not valid for the selected port.')
 }
 
 function openInspector(tab: InspectorTab) {
@@ -1156,8 +1307,8 @@ function onCanvasMouseDown() {
   selectedNode.value = null
 }
 
-function startConnection(event: MouseEvent, node: WorkflowNode) {
-  canvasInteractions.startConnection(event, node.id)
+function startConnection(event: MouseEvent, node: WorkflowNode, portIndex: number) {
+  canvasInteractions.startConnection(event, node.id, portIndex)
 }
 
 function createNewWorkflow(markDirty = true) {
@@ -1392,12 +1543,16 @@ onBeforeRouteLeave((_to, _from, next) => {
 
 onMounted(async () => {
   try {
-    const [loadedNodeTypes, eventCatalog] = await Promise.all([
+    const [loadedNodeTypes, eventCatalog, scenes, characters] = await Promise.all([
       invokeCommand<WorkflowNodeTypeInfo[]>('get_workflow_nodes', undefined, fallbackNodeTypes),
       loadStoryEventCatalog(),
+      loadStoryScenes(),
+      loadStoryCharacters(),
     ])
     nodeTypes.value = loadedNodeTypes
     storyEvents.value = eventCatalog.events
+    storyScenes.value = scenes
+    storyCharacters.value = characters
   } catch (error) {
     nodeTypes.value = fallbackNodeTypes
     showWorkflowNotice(t('workflow.error.catalogs', 'Unable to load authoring catalogs: {error}', { error: formatWorkflowError(error) }), 'error')
@@ -1784,7 +1939,7 @@ onUnmounted(() => {
   position: absolute;
   z-index: 2;
   width: 214px;
-  height: 92px;
+  min-height: 92px;
   overflow: visible;
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -1851,7 +2006,7 @@ onUnmounted(() => {
 .node-body {
   position: relative;
   display: grid;
-  height: 47px;
+  min-height: 47px;
   align-content: center;
   gap: 2px;
   padding: 0 30px 0 11px;
@@ -1877,7 +2032,6 @@ onUnmounted(() => {
 .node-port {
   position: absolute;
   top: 50%;
-  right: -8px;
   z-index: 3;
   width: 15px;
   height: 15px;
@@ -1886,6 +2040,40 @@ onUnmounted(() => {
   background: var(--brand);
   cursor: crosshair;
   transform: translateY(-50%);
+}
+
+.node-port.output {
+  right: -8px;
+}
+
+.node-port.input {
+  left: -8px;
+  background: var(--surface-3);
+}
+
+.node-port.connected {
+  background: var(--success);
+}
+
+.node-port.disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.node-port-label {
+  position: absolute;
+  right: 14px;
+  z-index: 2;
+  max-width: 92px;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  line-height: 18px;
+  pointer-events: none;
+  text-overflow: ellipsis;
+  transform: translateY(-50%);
+  white-space: nowrap;
 }
 
 .node-type-narration { border-left: 3px solid var(--narrative); }

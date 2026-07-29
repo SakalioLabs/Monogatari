@@ -183,7 +183,12 @@ test('Workflow canvas delegates drag and connection gestures', async ({ page }) 
   await page.goto('/editor')
 
   const startNode = page.locator('.workflow-node.node-type-start')
+  const endNode = page.locator('.workflow-node.node-type-end')
   await expect(startNode).toHaveCount(1)
+  await expect(startNode.locator('.node-port.input')).toHaveCount(0)
+  await expect(startNode.locator('.node-port.output')).toHaveCount(1)
+  await expect(endNode.locator('.node-port.input')).toHaveCount(1)
+  await expect(endNode.locator('.node-port.output')).toHaveCount(0)
   const beforeDrag = await startNode.boundingBox()
   expect(beforeDrag).not.toBeNull()
   await page.mouse.move(beforeDrag!.x + 80, beforeDrag!.y + 40)
@@ -198,10 +203,10 @@ test('Workflow canvas delegates drag and connection gestures', async ({ page }) 
   await expect(page.locator('.workflow-node')).toHaveCount(3)
 
   const narrationPort = page.locator('.workflow-node.node-type-narration .node-port.output')
-  const endNode = page.locator('.workflow-node.node-type-end')
-  const [portBox, endBox] = await Promise.all([narrationPort.boundingBox(), endNode.boundingBox()])
+  const endInput = endNode.locator('.node-port.input')
+  const [portBox, inputBox] = await Promise.all([narrationPort.boundingBox(), endInput.boundingBox()])
   expect(portBox).not.toBeNull()
-  expect(endBox).not.toBeNull()
+  expect(inputBox).not.toBeNull()
   const portCenter = {
     x: portBox!.x + portBox!.width / 2,
     y: portBox!.y + portBox!.height / 2,
@@ -211,10 +216,15 @@ test('Workflow canvas delegates drag and connection gestures', async ({ page }) 
   )?.className ?? '', portCenter)).toContain('node-port')
   await page.mouse.move(portCenter.x, portCenter.y)
   await page.mouse.down()
-  await page.mouse.move(endBox!.x + endBox!.width - 20, endBox!.y + endBox!.height / 2)
+  await page.mouse.move(inputBox!.x + inputBox!.width / 2, inputBox!.y + inputBox!.height / 2)
   await page.mouse.up()
 
   await expect(page.locator('.connections path')).toHaveCount(2)
+
+  await page.locator('.palette-node').filter({ hasText: 'Scene Change' }).click()
+  const sceneField = page.locator('.property-group').filter({ hasText: 'Scene ID' }).locator('select')
+  await expect(sceneField).toBeVisible()
+  await expect(sceneField.locator('option')).not.toHaveCount(1)
 })
 
 test('character authoring persists a validated browser draft across reloads', async ({ page }) => {

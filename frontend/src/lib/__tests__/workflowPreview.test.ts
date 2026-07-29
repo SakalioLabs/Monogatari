@@ -87,6 +87,19 @@ describe('browser workflow preview', () => {
     ]))
   })
 
+  it('rejects connections that exceed the runtime output-port contract', () => {
+    const result = validateWorkflowLocally(workflow([
+      node('start', 'start', ['first', 'second']),
+      node('first', 'end'),
+      node('second', 'end'),
+    ]))
+
+    expect(result.valid).toBe(false)
+    expect(result.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: 'connection_output_overflow', node_id: 'start' }),
+    ]))
+  })
+
   it('mirrors local variable and flag writes through condition branches', () => {
     const current = workflow([
       node('start', 'start', ['set_route']),

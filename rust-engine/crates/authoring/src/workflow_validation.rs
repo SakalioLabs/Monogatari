@@ -607,6 +607,21 @@ pub fn validate_workflow_graph(workflow: &Workflow) -> WorkflowValidationResult 
         validate_workflow_state_keys(node, &mut issues);
         validate_workflow_condition(node, &mut issues);
 
+        let output_count = workflow_output_count(node);
+        if node.connections.len() > output_count {
+            push_issue(
+                &mut issues,
+                "error",
+                "connection_output_overflow",
+                Some(node.id.clone()),
+                format!(
+                    "Node type `{}` exposes {output_count} output port(s), but has {} connections.",
+                    node.node_type,
+                    node.connections.len()
+                ),
+            );
+        }
+
         let mut local_targets = HashSet::new();
         for target_id in &node.connections {
             if target_id.trim().is_empty() {
@@ -928,6 +943,26 @@ fn config_field_present(config: &serde_json::Value, field: &str) -> bool {
         serde_json::Value::Array(value) => !value.is_empty(),
         serde_json::Value::Object(value) => !value.is_empty(),
         serde_json::Value::Bool(_) | serde_json::Value::Number(_) => true,
+    }
+}
+
+fn workflow_output_count(node: &WorkflowNode) -> usize {
+    match node.node_type.as_str() {
+        "end" => 0,
+        "condition" | "evaluation" | "trigger_event" => 2,
+        "choice" => indexed_config_len(node.config.get("choices")).max(1),
+        "random_branch" => indexed_config_len(node.config.get("weights")).max(2),
+        _ => 1,
+    }
+}
+
+fn indexed_config_len(value: Option<&serde_json::Value>) -> usize {
+    match value {
+        Some(serde_json::Value::Array(items)) => items.len(),
+        Some(serde_json::Value::String(text)) => {
+            text.lines().filter(|line| !line.trim().is_empty()).count()
+        }
+        _ => 0,
     }
 }
 

@@ -53,19 +53,19 @@ describe('workflow canvas interactions', () => {
     const bounds = { left: 100, top: 50, width: 400, height: 300 }
     expect(workflowCanvasPoint(pointer(145, 95), bounds)).toEqual({ x: 45, y: 45 })
     expect(workflowDraggedNodePosition(
-      { x: 20, y: 30 },
+      node('drag-source'),
       pointer(150, 100),
       pointer(250, 200),
       bounds,
     )).toEqual({ x: 120, y: 130 })
     expect(workflowDraggedNodePosition(
-      { x: 20, y: 30 },
+      node('drag-source'),
       pointer(150, 100),
       pointer(1_000, 1_000),
       bounds,
     )).toEqual({ x: 186, y: 208 })
     expect(workflowDraggedNodePosition(
-      { x: 20, y: 30 },
+      node('drag-source'),
       pointer(150, 100),
       pointer(0, 0),
       bounds,
@@ -125,18 +125,18 @@ describe('workflow canvas interactions', () => {
     })
     const preventDefault = vi.fn()
 
-    controller.startConnection({ ...pointer(334, 126), preventDefault }, 'source')
-    eventTarget.dispatch('mouseup', 410, 160)
+    controller.startConnection({ ...pointer(334, 126), preventDefault }, 'source', 0)
+    eventTarget.dispatch('mouseup', 400, 196)
     expect(preventDefault).toHaveBeenCalledOnce()
     expect(nodes[0].connections).toEqual(['target'])
     expect(commits).toEqual(['source'])
     expect(eventTarget.listenerCount('mouseup')).toBe(0)
 
-    controller.startConnection({ ...pointer(334, 126), preventDefault }, 'source')
-    eventTarget.dispatch('mouseup', 410, 160)
-    controller.startConnection({ ...pointer(334, 126), preventDefault }, 'source')
+    controller.startConnection({ ...pointer(334, 126), preventDefault }, 'source', 0)
+    eventTarget.dispatch('mouseup', 400, 196)
+    controller.startConnection({ ...pointer(334, 126), preventDefault }, 'source', 0)
     eventTarget.dispatch('mouseup', 130, 90)
-    controller.startConnection({ ...pointer(334, 126), preventDefault }, 'source')
+    controller.startConnection({ ...pointer(334, 126), preventDefault }, 'source', 0)
     eventTarget.dispatch('mouseup', 900, 500)
     expect(commits).toEqual(['source'])
   })
@@ -155,7 +155,7 @@ describe('workflow canvas interactions', () => {
 
     controller.startNodeDrag(pointer(20, 30), 'source')
     expect(eventTarget.listenerCount('mousemove')).toBe(1)
-    controller.startConnection({ ...pointer(234, 76), preventDefault: vi.fn() }, 'source')
+    controller.startConnection({ ...pointer(234, 76), preventDefault: vi.fn() }, 'source', 0)
     expect(eventTarget.listenerCount('mousemove')).toBe(0)
     expect(eventTarget.listenerCount('mouseup')).toBe(1)
     controller.dispose()

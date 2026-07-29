@@ -1,7 +1,7 @@
 import {
   connectWorkflowNodes,
-  workflowNodeAtPoint,
-  WORKFLOW_NODE_HEIGHT,
+  workflowInputPortAtPoint,
+  workflowNodeHeight,
   WORKFLOW_NODE_WIDTH,
   type WorkflowPoint,
 } from './workflowAuthoring'
@@ -29,6 +29,7 @@ export interface WorkflowCanvasInteractionOptions {
   getCanvasBounds: () => WorkflowCanvasBounds | null
   getNodes: () => readonly WorkflowNode[]
   commitNodes: (nodes: WorkflowNode[], changedNodeId: string) => void
+  onConnectionRejected?: (reason: string) => void
 }
 
 export interface WorkflowCanvasInteractionController {
@@ -36,6 +37,7 @@ export interface WorkflowCanvasInteractionController {
   startConnection: (
     event: WorkflowPointerPosition & Pick<MouseEvent, 'preventDefault'>,
     sourceNodeId: string,
+    sourcePortIndex: number,
   ) => void
   cancel: () => void
   dispose: () => void
@@ -52,7 +54,7 @@ export function workflowCanvasPoint(
 }
 
 export function workflowDraggedNodePosition(
-  startNode: Pick<WorkflowNode, 'x' | 'y'>,
+  startNode: WorkflowNode,
   startPointer: WorkflowPointerPosition,
   currentPointer: WorkflowPointerPosition,
   bounds: Pick<WorkflowCanvasBounds, 'width' | 'height'>,
@@ -66,7 +68,7 @@ export function workflowDraggedNodePosition(
     y: clamp(
       startNode.y + currentPointer.clientY - startPointer.clientY,
       0,
-      Math.max(0, bounds.height - WORKFLOW_NODE_HEIGHT),
+      Math.max(0, bounds.height - workflowNodeHeight(startNode)),
     ),
   }
 }
@@ -99,7 +101,7 @@ export function createWorkflowCanvasInteractionController(
         return
       }
       const position = workflowDraggedNodePosition(
-        startPosition,
+        { ...startNode, ...startPosition },
         startPointer,
         moveEvent,
         bounds,
@@ -124,6 +126,7 @@ export function createWorkflowCanvasInteractionController(
   function startConnection(
     event: WorkflowPointerPosition & Pick<MouseEvent, 'preventDefault'>,
     sourceNodeId: string,
+    sourcePortIndex: number,
   ) {
     event.preventDefault()
     cancel()
@@ -133,10 +136,13 @@ export function createWorkflowCanvasInteractionController(
       const bounds = options.getCanvasBounds()
       const currentNodes = options.getNodes()
       if (bounds) {
-        const target = workflowNodeAtPoint(currentNodes, workflowCanvasPoint(upEvent, bounds))
+        const target = workflowInputPortAtPoint(currentNodes, workflowCanvasPoint(upEvent, bounds))
         if (target) {
-          const update = connectWorkflowNodes(currentNodes, sourceNodeId, target.id)
+          const update = connectWorkflowNodes(currentNodes, sourceNodeId, target.id, sourcePortIndex)
           if (update.changed) options.commitNodes(update.nodes, sourceNodeId)
+          else options.onConnectionRejected?.(update.reason)
+        } else {
+          options.onConnectionRejected?.('input_port_required')
         }
       }
       cancel()
