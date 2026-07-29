@@ -442,7 +442,22 @@ onMounted(() => {
 .sample-list p { margin: 0; color: var(--text-secondary); font-size: 11px; line-height: 1.45; }
 .sample-list code { overflow: hidden; color: var(--text-tertiary); font-family: var(--font-mono); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 
-.create-dialog { width: min(520px, calc(100vw - 32px)); border: 1px solid var(--border); border-radius: var(--radius); padding: 0; background: var(--surface-1); color: var(--text-primary); box-shadow: var(--shadow-lg); }
+.create-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100svh - 32px);
+  margin: 0;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0;
+  background: var(--surface-1);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-lg);
+  transform: translate(-50%, -50%);
+}
 .create-dialog::backdrop { background: rgb(0 0 0 / 42%); }
 .create-dialog form { display: grid; gap: 16px; padding: 20px; }
 .create-dialog header, .create-dialog footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }

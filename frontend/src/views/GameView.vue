@@ -12,7 +12,10 @@
     </div>
 
     <header class="game-topbar">
-      <button class="control-btn icon-control" :title="t('game.home', 'Home')" :aria-label="t('game.home', 'Home')" @click="$router.push('/')"><House :size="16" /></button>
+      <button class="control-btn icon-control" :title="previewExitLabel" :aria-label="previewExitLabel" @click="exitPreview">
+        <ArrowLeft v-if="authoringPreview" :size="16" />
+        <House v-else :size="16" />
+      </button>
       <div class="scene-meta">
         <span class="eyebrow">{{ t('game.story-mode', 'Playtest') }}</span>
         <strong>{{ activeCampaignSnapshot?.definition.title || activeRoleplaySnapshot?.definition.title || currentCharacter?.name || dialogueState?.speaker || activeScene?.name || t('game.demo-scene', 'Demo Scene') }}</strong>
@@ -307,6 +310,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
+  ArrowLeft,
   Cloud,
   FolderOpen,
   History,
@@ -377,6 +381,18 @@ const { locale, t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const desktopRuntime = hasTauriRuntime()
+const authoringPreview = computed(() => route.query.authoring === '1')
+const previewExitLabel = computed(() => authoringPreview.value
+  ? t('game.return-to-editor', 'Return to editor')
+  : t('game.home', 'Home'))
+
+function exitPreview() {
+  if (authoringPreview.value && typeof route.query.previewRoleplay === 'string') {
+    void router.push({ path: '/roleplay-editor', query: { roleplay: route.query.previewRoleplay } })
+    return
+  }
+  void router.push(authoringPreview.value ? '/workspace' : '/')
+}
 
 type CharacterInfo = StoryCharacterInfo & {
   live2d_model_path: string | null

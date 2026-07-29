@@ -2045,13 +2045,18 @@ onUnmounted(() => {
 }
 
 .node-port {
+  display: block;
   position: absolute;
   top: 50%;
   z-index: 3;
+  min-width: 15px;
+  min-height: 15px;
   width: 15px;
   height: 15px;
+  padding: 0;
   border: 2px solid var(--surface-0);
   border-radius: 50%;
+  appearance: none;
   background: var(--brand);
   cursor: crosshair;
   transform: translateY(-50%);

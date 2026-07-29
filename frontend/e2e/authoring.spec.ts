@@ -14,6 +14,20 @@ test('workspace navigation exposes the authoring surfaces', async ({ page }) => 
 
   await expect(page.getByRole('heading', { name: 'Choose a project' })).toBeVisible()
   await expect(page.getByText('Packaged Web Project')).toBeVisible()
+  const launcherDialog = page.locator('.create-dialog')
+  await launcherDialog.evaluate((dialog: HTMLDialogElement) => dialog.showModal())
+  const dialogGeometry = await launcherDialog.evaluate((dialog) => {
+    const rect = dialog.getBoundingClientRect()
+    return {
+      centerX: rect.left + rect.width / 2,
+      centerY: rect.top + rect.height / 2,
+      viewportCenterX: window.innerWidth / 2,
+      viewportCenterY: window.innerHeight / 2,
+    }
+  })
+  expect(Math.abs(dialogGeometry.centerX - dialogGeometry.viewportCenterX)).toBeLessThanOrEqual(1)
+  expect(Math.abs(dialogGeometry.centerY - dialogGeometry.viewportCenterY)).toBeLessThanOrEqual(1)
+  await launcherDialog.evaluate((dialog: HTMLDialogElement) => dialog.close())
   await page.getByRole('button', { name: 'Continue' }).click()
   await expect(page).toHaveURL(/\/workspace$/)
   await expect(page.getByRole('link', { name: 'Monogatari Engine' })).toBeVisible()
@@ -56,6 +70,20 @@ test('live roleplay authoring saves a structured browser draft and opens the LLM
   await expect(page.getByTestId('scene-roleplay')).toBeVisible()
   await expect(page.locator('.dialogue-text')).toHaveCount(0)
   await expect(page.getByTestId('roleplay-runtime')).toBeVisible()
+  await page.getByRole('button', { name: 'Return to editor' }).click()
+  await expect(page).toHaveURL(/\/roleplay-editor\?roleplay=new_roleplay$/)
+  await expect(page.getByRole('heading', { name: 'Scene Roleplay' })).toBeVisible()
+})
+
+test('live roleplay authoring presents its primary controls in Chinese', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('monogatari-locale', 'zh-CN'))
+  await page.goto('/roleplay-editor')
+
+  await expect(page.getByRole('heading', { name: '场景角色扮演' })).toBeVisible()
+  await expect(page.getByRole('button', { name: '新建', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: '试玩', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: '剧情', exact: true })).toBeVisible()
+  await expect(page.getByText('实时剧情契约')).toBeVisible()
 })
 
 test('live roleplay playtest generates an NPC turn then evaluates deterministic story state', async ({ page }) => {
@@ -189,6 +217,11 @@ test('Workflow canvas delegates drag and connection gestures', async ({ page }) 
   await expect(startNode.locator('.node-port.output')).toHaveCount(1)
   await expect(endNode.locator('.node-port.input')).toHaveCount(1)
   await expect(endNode.locator('.node-port.output')).toHaveCount(0)
+  const portGeometry = await page.locator('.node-port').evaluateAll((ports) => ports.map((port) => {
+    const rect = port.getBoundingClientRect()
+    return { width: rect.width, height: rect.height, radius: getComputedStyle(port).borderRadius }
+  }))
+  expect(portGeometry.every(port => port.width === 15 && port.height === 15 && port.radius === '50%')).toBe(true)
   const beforeDrag = await startNode.boundingBox()
   expect(beforeDrag).not.toBeNull()
   await page.mouse.move(beforeDrag!.x + 80, beforeDrag!.y + 40)

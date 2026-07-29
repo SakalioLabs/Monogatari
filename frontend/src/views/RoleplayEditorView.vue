@@ -2,31 +2,31 @@
   <div class="roleplay-editor">
     <header class="editor-header">
       <div>
-        <span class="eyebrow">Live LLM NPC</span>
-        <h1>Scene Roleplay</h1>
-        <p>Author scene-bound character goals, evaluation evidence, scores, and deterministic routes.</p>
+        <span class="eyebrow">{{ t('roleplay-editor.eyebrow', 'Live LLM NPC') }}</span>
+        <h1>{{ t('roleplay-editor.title', 'Scene Roleplay') }}</h1>
+        <p>{{ t('roleplay-editor.copy', 'Author scene-bound character goals, evaluation evidence, scores, and deterministic routes.') }}</p>
       </div>
       <div class="header-actions">
-        <button class="btn btn-secondary btn-sm" :disabled="busy" @click="createRoleplay"><Plus :size="14" />New</button>
-        <button class="btn btn-secondary btn-sm" :disabled="!draft || busy" @click="duplicateRoleplay"><Copy :size="14" />Duplicate</button>
-        <button class="btn btn-secondary btn-sm" :disabled="busy" @click="reloadCatalog"><RotateCcw :size="14" />Reload</button>
-        <button class="btn btn-secondary btn-sm" :disabled="!canPreview || busy" @click="previewRoleplay"><Play :size="14" />Playtest</button>
-        <button class="btn btn-primary btn-sm" :disabled="!canSave || busy" @click="saveRoleplay"><Save :size="14" />{{ busy ? 'Working' : 'Save' }}</button>
+        <button class="btn btn-secondary btn-sm" :disabled="busy" @click="createRoleplay()"><Plus :size="14" />{{ t('roleplay-editor.new', 'New') }}</button>
+        <button class="btn btn-secondary btn-sm" :disabled="!draft || busy" @click="duplicateRoleplay"><Copy :size="14" />{{ t('roleplay-editor.duplicate', 'Duplicate') }}</button>
+        <button class="btn btn-secondary btn-sm" :disabled="busy" @click="reloadCatalog"><RotateCcw :size="14" />{{ t('roleplay-editor.reload', 'Reload') }}</button>
+        <button class="btn btn-secondary btn-sm" :disabled="!canPreview || busy" @click="previewRoleplay"><Play :size="14" />{{ t('roleplay-editor.playtest', 'Playtest') }}</button>
+        <button class="btn btn-primary btn-sm" :disabled="!canSave || busy" @click="saveRoleplay"><Save :size="14" />{{ busy ? t('roleplay-editor.working', 'Working') : t('common.save', 'Save') }}</button>
       </div>
     </header>
 
     <section class="metrics-strip">
-      <span><strong>{{ snapshot?.roleplay_count || 0 }}</strong> roleplays</span>
-      <span><strong>{{ snapshot?.node_count || 0 }}</strong> scene nodes</span>
-      <span><strong>{{ snapshot?.score_dimension_count || 0 }}</strong> score dimensions</span>
-      <span><strong>{{ snapshot?.catalog_fingerprint.slice(0, 12) || 'unavailable' }}</strong> catalog</span>
-      <span v-if="dirty" class="dirty-indicator">Unsaved changes</span>
+      <span><strong>{{ snapshot?.roleplay_count || 0 }}</strong> {{ t('roleplay-editor.metric-roleplays', 'roleplays') }}</span>
+      <span><strong>{{ snapshot?.node_count || 0 }}</strong> {{ t('roleplay-editor.metric-nodes', 'scene nodes') }}</span>
+      <span><strong>{{ snapshot?.score_dimension_count || 0 }}</strong> {{ t('roleplay-editor.metric-scores', 'score dimensions') }}</span>
+      <span><strong>{{ snapshot?.catalog_fingerprint.slice(0, 12) || t('roleplay-editor.unavailable', 'unavailable') }}</strong> {{ t('roleplay-editor.metric-catalog', 'catalog') }}</span>
+      <span v-if="dirty" class="dirty-indicator">{{ t('roleplay-editor.unsaved', 'Unsaved changes') }}</span>
     </section>
 
     <label class="mobile-roleplay-picker">
-      <span>Roleplay</span>
-      <select aria-label="Roleplay" :value="originalRoleplayId || ''" :disabled="busy" @change="selectRoleplayById(selectValue($event))">
-        <option v-if="!originalRoleplayId" value="">Unsaved roleplay</option>
+      <span>{{ t('roleplay-editor.roleplay', 'Roleplay') }}</span>
+      <select :aria-label="t('roleplay-editor.roleplay', 'Roleplay')" :value="originalRoleplayId || ''" :disabled="busy" @change="selectRoleplayById(selectValue($event))">
+        <option v-if="!originalRoleplayId" value="">{{ t('roleplay-editor.unsaved-roleplay', 'Unsaved roleplay') }}</option>
         <option v-for="entry in snapshot?.roleplays || []" :key="entry.definition.id" :value="entry.definition.id">
           {{ entry.definition.title }}
         </option>
@@ -36,14 +36,14 @@
     <div v-if="notice" class="notice" :class="notice.type">
       <strong>{{ notice.title }}</strong>
       <span>{{ notice.message }}</span>
-      <button class="icon-button" title="Dismiss" @click="notice = null"><X :size="15" /></button>
+      <button class="icon-button" :title="t('common.close', 'Close')" @click="notice = null"><X :size="15" /></button>
     </div>
 
     <main class="editor-grid">
       <aside class="catalog-pane">
         <label class="search-field">
           <Search :size="15" />
-          <input v-model="search" placeholder="Search roleplays" />
+          <input v-model="search" :placeholder="t('roleplay-editor.search', 'Search roleplays')" />
         </label>
         <div class="catalog-list">
           <button
@@ -55,14 +55,14 @@
           >
             <strong>{{ entry.definition.title }}</strong>
             <span>{{ entry.definition.id }}</span>
-            <small>{{ entry.definition.nodes.length }} nodes · {{ entry.definition.score_dimensions.length }} scores</small>
+            <small>{{ t('roleplay-editor.catalog-summary', '{nodes} nodes · {scores} scores', { nodes: entry.definition.nodes.length, scores: entry.definition.score_dimensions.length }) }}</small>
           </button>
-          <div v-if="!filteredRoleplays.length" class="empty-list">No roleplays in this catalog.</div>
+          <div v-if="!filteredRoleplays.length" class="empty-list">{{ t('roleplay-editor.empty-catalog', 'No roleplays in this catalog.') }}</div>
         </div>
       </aside>
 
       <section v-if="draft" class="work-pane">
-        <nav class="editor-tabs" aria-label="Roleplay editor sections">
+        <nav class="editor-tabs" :aria-label="t('roleplay-editor.sections', 'Roleplay editor sections')">
           <button v-for="item in tabs" :key="item.id" :class="{ active: tab === item.id }" @click="tab = item.id">
             <component :is="item.icon" :size="15" />{{ item.label }}
           </button>
@@ -72,7 +72,7 @@
           <section v-if="validationIssues.length" class="issues-panel">
             <AlertTriangle :size="17" />
             <div>
-              <strong>{{ validationIssues.length }} blocking issues</strong>
+              <strong>{{ t('roleplay-editor.blocking-issues', '{count} blocking issues', { count: validationIssues.length }) }}</strong>
               <p v-for="issue in validationIssues.slice(0, 6)" :key="issue">{{ issue }}</p>
             </div>
           </section>
@@ -80,50 +80,50 @@
           <template v-if="tab === 'story'">
             <section class="editor-section">
               <div class="section-heading">
-                <div><span class="eyebrow">Identity</span><h2>Live story contract</h2></div>
+                <div><span class="eyebrow">{{ t('roleplay-editor.identity', 'Identity') }}</span><h2>{{ t('roleplay-editor.story-contract', 'Live story contract') }}</h2></div>
                 <code>{{ sourcePath }}</code>
               </div>
               <div class="form-grid">
-                <label class="form-field"><span>Roleplay ID</span><input v-model="draft.id" :disabled="Boolean(originalRoleplayId)" /></label>
-                <label class="form-field wide"><span>Title</span><input v-model="draft.title" /></label>
-                <label class="form-field"><span>Start node</span>
+                <label class="form-field"><span>{{ t('roleplay-editor.roleplay-id', 'Roleplay ID') }}</span><input v-model="draft.id" :disabled="Boolean(originalRoleplayId)" /></label>
+                <label class="form-field wide"><span>{{ t('roleplay-editor.field-title', 'Title') }}</span><input v-model="draft.title" /></label>
+                <label class="form-field"><span>{{ t('roleplay-editor.start-node', 'Start node') }}</span>
                   <select v-model="draft.start_node_id"><option v-for="node in draft.nodes" :key="node.id" :value="node.id">{{ node.id }}</option></select>
                 </label>
-                <label class="form-field"><span>Exhaustion ending</span>
-                  <select v-model="draft.exhaustion_ending_id"><option value="">Select ending</option><option v-for="ending in endings" :key="ending.id" :value="ending.id">{{ ending.title }}</option></select>
+                <label class="form-field"><span>{{ t('roleplay-editor.exhaustion-ending', 'Exhaustion ending') }}</span>
+                  <select v-model="draft.exhaustion_ending_id"><option value="">{{ t('roleplay-editor.select-ending', 'Select ending') }}</option><option v-for="ending in endings" :key="ending.id" :value="ending.id">{{ ending.title }}</option></select>
                 </label>
-                <label class="form-field"><span>Maximum total turns</span><input v-model.number="draft.max_total_turns" type="number" min="1" max="512" /></label>
+                <label class="form-field"><span>{{ t('roleplay-editor.max-total-turns', 'Maximum total turns') }}</span><input v-model.number="draft.max_total_turns" type="number" min="1" max="512" /></label>
               </div>
             </section>
 
             <section class="editor-section">
-              <div class="section-heading"><div><span class="eyebrow">Inference</span><h2>Bounded two-stage generation</h2></div></div>
+              <div class="section-heading"><div><span class="eyebrow">{{ t('roleplay-editor.inference', 'Inference') }}</span><h2>{{ t('roleplay-editor.inference-title', 'Bounded two-stage generation') }}</h2></div></div>
               <div class="form-grid four">
-                <label class="form-field"><span>Context characters</span><input v-model.number="draft.inference.max_context_characters" type="number" min="1024" max="32000" step="256" /></label>
-                <label class="form-field"><span>Recent turns</span><input v-model.number="draft.inference.max_recent_turns" type="number" min="1" max="16" /></label>
-                <label class="form-field"><span>NPC output tokens</span><input v-model.number="draft.inference.npc_max_tokens" type="number" min="16" max="512" /></label>
-                <label class="form-field"><span>Evaluator tokens</span><input v-model.number="draft.inference.evaluator_max_tokens" type="number" min="32" max="512" /></label>
+                <label class="form-field"><span>{{ t('roleplay-editor.context-characters', 'Context characters') }}</span><input v-model.number="draft.inference.max_context_characters" type="number" min="1024" max="32000" step="256" /></label>
+                <label class="form-field"><span>{{ t('roleplay-editor.recent-turns', 'Recent turns') }}</span><input v-model.number="draft.inference.max_recent_turns" type="number" min="1" max="16" /></label>
+                <label class="form-field"><span>{{ t('roleplay-editor.npc-tokens', 'NPC output tokens') }}</span><input v-model.number="draft.inference.npc_max_tokens" type="number" min="16" max="512" /></label>
+                <label class="form-field"><span>{{ t('roleplay-editor.evaluator-tokens', 'Evaluator tokens') }}</span><input v-model.number="draft.inference.evaluator_max_tokens" type="number" min="32" max="512" /></label>
               </div>
               <div class="pipeline">
-                <span>Scene + character + knowledge</span><ArrowRight :size="15" /><span>NPC generation</span><ArrowRight :size="15" /><span>Independent evaluation</span><ArrowRight :size="15" /><span>Deterministic route</span>
+                <span>{{ t('roleplay-editor.pipeline-context', 'Scene + character + knowledge') }}</span><ArrowRight :size="15" /><span>{{ t('roleplay-editor.pipeline-generation', 'NPC generation') }}</span><ArrowRight :size="15" /><span>{{ t('roleplay-editor.pipeline-evaluation', 'Independent evaluation') }}</span><ArrowRight :size="15" /><span>{{ t('roleplay-editor.pipeline-route', 'Deterministic route') }}</span>
               </div>
             </section>
           </template>
 
           <section v-else-if="tab === 'scores'" class="editor-section">
             <div class="section-heading">
-              <div><span class="eyebrow">Global state</span><h2>Score dimensions</h2></div>
-              <button class="btn btn-secondary btn-sm" @click="addDimension"><Plus :size="14" />Dimension</button>
+              <div><span class="eyebrow">{{ t('roleplay-editor.global-state', 'Global state') }}</span><h2>{{ t('roleplay-editor.score-dimensions', 'Score dimensions') }}</h2></div>
+              <button class="btn btn-secondary btn-sm" @click="addDimension"><Plus :size="14" />{{ t('roleplay-editor.dimension', 'Dimension') }}</button>
             </div>
             <div class="repeat-list">
               <article v-for="(dimension, index) in draft.score_dimensions" :key="`${index}-${dimension.id}`" class="repeat-row dimension-row">
                 <label class="form-field"><span>ID</span><input v-model="dimension.id" /></label>
-                <label class="form-field"><span>Label</span><input v-model="dimension.label" /></label>
-                <label class="form-field description"><span>Description</span><input v-model="dimension.description" /></label>
-                <label class="form-field numeric"><span>Min</span><input v-model.number="dimension.min" type="number" /></label>
-                <label class="form-field numeric"><span>Initial</span><input v-model.number="dimension.initial" type="number" /></label>
-                <label class="form-field numeric"><span>Max</span><input v-model.number="dimension.max" type="number" /></label>
-                <button class="icon-button danger" title="Remove dimension" :disabled="draft.score_dimensions.length === 1" @click="removeDimension(index)"><Trash2 :size="15" /></button>
+                <label class="form-field"><span>{{ t('roleplay-editor.label', 'Label') }}</span><input v-model="dimension.label" /></label>
+                <label class="form-field description"><span>{{ t('roleplay-editor.description', 'Description') }}</span><input v-model="dimension.description" /></label>
+                <label class="form-field numeric"><span>{{ t('roleplay-editor.min', 'Min') }}</span><input v-model.number="dimension.min" type="number" /></label>
+                <label class="form-field numeric"><span>{{ t('roleplay-editor.initial', 'Initial') }}</span><input v-model.number="dimension.initial" type="number" /></label>
+                <label class="form-field numeric"><span>{{ t('roleplay-editor.max', 'Max') }}</span><input v-model.number="dimension.max" type="number" /></label>
+                <button class="icon-button danger" :title="t('roleplay-editor.remove-dimension', 'Remove dimension')" :disabled="draft.score_dimensions.length === 1" @click="removeDimension(index)"><Trash2 :size="15" /></button>
               </article>
             </div>
           </section>
@@ -131,33 +131,33 @@
           <template v-else>
             <div class="node-layout">
               <aside class="node-list">
-                <div class="node-list-head"><strong>Scene nodes</strong><button class="icon-button" title="Add node" @click="addNode"><Plus :size="15" /></button></div>
+                <div class="node-list-head"><strong>{{ t('roleplay-editor.scene-nodes', 'Scene nodes') }}</strong><button class="icon-button" :title="t('roleplay-editor.add-node', 'Add node')" @click="addNode"><Plus :size="15" /></button></div>
                 <button v-for="node in draft.nodes" :key="node.id" :class="{ active: node.id === selectedNodeId }" @click="selectedNodeId = node.id">
-                  <strong>{{ node.id || 'untitled' }}</strong><span>{{ sceneName(node.scene_id) }}</span>
+                  <strong>{{ node.id || t('roleplay-editor.untitled', 'untitled') }}</strong><span>{{ sceneName(node.scene_id) }}</span>
                 </button>
               </aside>
 
               <div v-if="selectedNode" class="node-work">
                 <section v-if="tab === 'nodes'" class="editor-section">
                   <div class="section-heading">
-                    <div><span class="eyebrow">Current node</span><h2>{{ selectedNode.id || 'Untitled node' }}</h2></div>
-                    <button class="btn btn-danger btn-sm" :disabled="draft.nodes.length === 1" @click="removeSelectedNode"><Trash2 :size="14" />Delete node</button>
+                    <div><span class="eyebrow">{{ t('roleplay-editor.current-node', 'Current node') }}</span><h2>{{ selectedNode.id || t('roleplay-editor.untitled-node', 'Untitled node') }}</h2></div>
+                    <button class="btn btn-danger btn-sm" :disabled="draft.nodes.length === 1" @click="removeSelectedNode"><Trash2 :size="14" />{{ t('roleplay-editor.delete-node', 'Delete node') }}</button>
                   </div>
                   <div class="form-grid">
-                    <label class="form-field"><span>Node ID</span><input v-model="selectedNode.id" @change="synchronizeNodeId" /></label>
-                    <label class="form-field"><span>Scene</span><select v-model="selectedNode.scene_id"><option value="">Select scene</option><option v-for="scene in scenes" :key="scene.id" :value="scene.id">{{ scene.name }}</option></select></label>
-                    <label class="form-field"><span>Primary NPC</span><select v-model="selectedNode.character_id"><option value="">Select character</option><option v-for="character in characters" :key="character.id" :value="character.id">{{ character.name }}</option></select></label>
-                    <label class="form-field"><span>Initial emotion</span><input v-model="selectedNode.emotion" placeholder="neutral" /></label>
-                    <label class="form-field numeric"><span>Minimum turns</span><input v-model.number="selectedNode.min_turns" type="number" min="1" /></label>
-                    <label class="form-field numeric"><span>Maximum turns</span><input v-model.number="selectedNode.max_turns" type="number" min="1" /></label>
-                    <label class="form-field full"><span>Opening narration</span><textarea v-model="selectedNode.opening_narration" rows="3" /></label>
-                    <label class="form-field full"><span>Observable situation</span><textarea v-model="selectedNode.situation" rows="4" /></label>
-                    <label class="form-field full"><span>Player goal</span><textarea v-model="selectedNode.player_goal" rows="3" /></label>
-                    <label class="form-field full"><span>Primary NPC goal</span><textarea v-model="selectedNode.character_goal" rows="3" /></label>
+                    <label class="form-field"><span>{{ t('roleplay-editor.node-id', 'Node ID') }}</span><input v-model="selectedNode.id" @change="synchronizeNodeId" /></label>
+                    <label class="form-field"><span>{{ t('roleplay-editor.scene', 'Scene') }}</span><select v-model="selectedNode.scene_id"><option value="">{{ t('roleplay-editor.select-scene', 'Select scene') }}</option><option v-for="scene in scenes" :key="scene.id" :value="scene.id">{{ scene.name }}</option></select></label>
+                    <label class="form-field"><span>{{ t('roleplay-editor.primary-npc', 'Primary NPC') }}</span><select v-model="selectedNode.character_id"><option value="">{{ t('roleplay-editor.select-character', 'Select character') }}</option><option v-for="character in characters" :key="character.id" :value="character.id">{{ character.name }}</option></select></label>
+                    <label class="form-field"><span>{{ t('roleplay-editor.initial-emotion', 'Initial emotion') }}</span><input v-model="selectedNode.emotion" placeholder="neutral" /></label>
+                    <label class="form-field numeric"><span>{{ t('roleplay-editor.minimum-turns', 'Minimum turns') }}</span><input v-model.number="selectedNode.min_turns" type="number" min="1" /></label>
+                    <label class="form-field numeric"><span>{{ t('roleplay-editor.maximum-turns', 'Maximum turns') }}</span><input v-model.number="selectedNode.max_turns" type="number" min="1" /></label>
+                    <label class="form-field full"><span>{{ t('roleplay-editor.opening-narration', 'Opening narration') }}</span><textarea v-model="selectedNode.opening_narration" rows="3" /></label>
+                    <label class="form-field full"><span>{{ t('roleplay-editor.observable-situation', 'Observable situation') }}</span><textarea v-model="selectedNode.situation" rows="4" /></label>
+                    <label class="form-field full"><span>{{ t('roleplay-editor.player-goal', 'Player goal') }}</span><textarea v-model="selectedNode.player_goal" rows="3" /></label>
+                    <label class="form-field full"><span>{{ t('roleplay-editor.primary-goal', 'Primary NPC goal') }}</span><textarea v-model="selectedNode.character_goal" rows="3" /></label>
                   </div>
 
                   <div class="subsection">
-                    <div class="subsection-head"><strong>Scene participants</strong><small>Every selected supporting NPC gets an independent local motive.</small></div>
+                    <div class="subsection-head"><strong>{{ t('roleplay-editor.participants', 'Scene participants') }}</strong><small>{{ t('roleplay-editor.participants-copy', 'Every selected supporting NPC gets an independent local motive.') }}</small></div>
                     <div class="check-grid">
                       <label v-for="character in characters" :key="character.id" class="check-row">
                         <input type="checkbox" :checked="nodeHasSupportingCharacter(character.id)" :disabled="character.id === selectedNode.character_id" @change="toggleSupportingCharacter(character.id)" />
@@ -166,12 +166,12 @@
                     </div>
                     <div v-for="characterId in selectedNode.supporting_character_ids" :key="characterId" class="participant-goal">
                       <strong>{{ characterName(characterId) }}</strong>
-                      <input :value="selectedNode.participant_goals?.[characterId] || ''" placeholder="Scene-local motive" @input="setParticipantGoal(characterId, inputValue($event))" />
+                      <input :value="selectedNode.participant_goals?.[characterId] || ''" :placeholder="t('roleplay-editor.local-motive', 'Scene-local motive')" @input="setParticipantGoal(characterId, inputValue($event))" />
                     </div>
                   </div>
 
                   <div class="subsection">
-                    <div class="subsection-head"><strong>Pinned knowledge</strong><small>Only checked entries enter this node's grounding context.</small></div>
+                    <div class="subsection-head"><strong>{{ t('roleplay-editor.pinned-knowledge', 'Pinned knowledge') }}</strong><small>{{ t('roleplay-editor.pinned-copy', 'Only checked entries enter this node’s grounding context.') }}</small></div>
                     <div class="check-grid">
                       <label v-for="entry in knowledge" :key="entry.id" class="check-row">
                         <input type="checkbox" :checked="selectedNode.knowledge_refs.includes(entry.id)" @change="toggleKnowledge(entry.id)" />
@@ -181,109 +181,109 @@
                   </div>
 
                   <div class="subsection">
-                    <div class="subsection-head"><strong>Per-turn score rules</strong><button class="btn btn-secondary btn-xs" @click="addScoreRule"><Plus :size="13" />Rule</button></div>
+                    <div class="subsection-head"><strong>{{ t('roleplay-editor.score-rules', 'Per-turn score rules') }}</strong><button class="btn btn-secondary btn-xs" @click="addScoreRule"><Plus :size="13" />{{ t('roleplay-editor.rule', 'Rule') }}</button></div>
                     <div v-for="(rule, index) in selectedNode.score_rules" :key="index" class="compact-row">
                       <select v-model="rule.dimension_id"><option v-for="dimension in draft.score_dimensions" :key="dimension.id" :value="dimension.id">{{ dimension.label }}</option></select>
-                      <input v-model="rule.guidance" placeholder="Evaluation guidance" />
+                      <input v-model="rule.guidance" :placeholder="t('roleplay-editor.evaluation-guidance', 'Evaluation guidance')" />
                       <input v-model.number="rule.max_delta_per_turn" class="short-input" type="number" min="0.1" max="10" step="0.1" />
-                      <button class="icon-button danger" title="Remove score rule" @click="selectedNode.score_rules.splice(index, 1)"><Trash2 :size="14" /></button>
+                      <button class="icon-button danger" :title="t('roleplay-editor.remove-score-rule', 'Remove score rule')" @click="selectedNode.score_rules.splice(index, 1)"><Trash2 :size="14" /></button>
                     </div>
                   </div>
 
                   <div class="subsection">
-                    <div class="subsection-head"><strong>Evidence gates</strong><button class="btn btn-secondary btn-xs" @click="addEvidenceRule"><Plus :size="13" />Evidence</button></div>
+                    <div class="subsection-head"><strong>{{ t('roleplay-editor.evidence-gates', 'Evidence gates') }}</strong><button class="btn btn-secondary btn-xs" @click="addEvidenceRule"><Plus :size="13" />{{ t('roleplay-editor.evidence', 'Evidence') }}</button></div>
                     <div v-for="(rule, index) in selectedNode.evidence_rules" :key="index" class="compact-row evidence-row">
                       <input v-model="rule.id" placeholder="evidence_id" />
-                      <input v-model="rule.description" placeholder="What exact player statement proves this?" />
-                      <button class="icon-button danger" title="Remove evidence" @click="selectedNode.evidence_rules.splice(index, 1)"><Trash2 :size="14" /></button>
+                      <input v-model="rule.description" :placeholder="t('roleplay-editor.evidence-placeholder', 'What exact player statement proves this?')" />
+                      <button class="icon-button danger" :title="t('roleplay-editor.remove-evidence', 'Remove evidence')" @click="selectedNode.evidence_rules.splice(index, 1)"><Trash2 :size="14" /></button>
                     </div>
                   </div>
 
                   <label class="toggle-row">
                     <input type="checkbox" :checked="Boolean(selectedNode.relationship_rule)" @change="toggleRelationshipRule" />
-                    <span><strong>Relationship evaluation</strong><small>Apply a bounded affinity delta to the active speaker.</small></span>
+                    <span><strong>{{ t('roleplay-editor.relationship', 'Relationship evaluation') }}</strong><small>{{ t('roleplay-editor.relationship-copy', 'Apply a bounded affinity delta to the active speaker.') }}</small></span>
                   </label>
                   <div v-if="selectedNode.relationship_rule" class="compact-row relationship-row">
-                    <input v-model="selectedNode.relationship_rule.guidance" placeholder="Relationship evaluation guidance" />
+                    <input v-model="selectedNode.relationship_rule.guidance" :placeholder="t('roleplay-editor.relationship-guidance', 'Relationship evaluation guidance')" />
                     <input v-model.number="selectedNode.relationship_rule.max_delta_per_turn" class="short-input" type="number" min="0.01" max="0.5" step="0.01" />
                   </div>
                 </section>
 
                 <section v-else-if="tab === 'routes'" class="editor-section">
                   <div class="section-heading">
-                    <div><span class="eyebrow">Deterministic state machine</span><h2>Transitions</h2></div>
-                    <button class="btn btn-secondary btn-sm" @click="addTransition"><Plus :size="14" />Transition</button>
+                    <div><span class="eyebrow">{{ t('roleplay-editor.state-machine', 'Deterministic state machine') }}</span><h2>{{ t('roleplay-editor.transitions', 'Transitions') }}</h2></div>
+                    <button class="btn btn-secondary btn-sm" @click="addTransition"><Plus :size="14" />{{ t('roleplay-editor.transition', 'Transition') }}</button>
                   </div>
                   <article v-for="(transition, transitionIndex) in selectedNode.transitions" :key="transitionIndex" class="route-block">
                     <div class="route-head">
                       <input v-model="transition.id" placeholder="transition_id" />
-                      <label>Priority <input v-model.number="transition.priority" type="number" /></label>
-                      <select :value="transition.target.kind" @change="setTransitionTargetKind(transitionIndex, selectValue($event) as 'node' | 'ending')"><option value="node">Node</option><option value="ending">Ending</option></select>
+                      <label>{{ t('roleplay-editor.priority', 'Priority') }} <input v-model.number="transition.priority" type="number" /></label>
+                      <select :value="transition.target.kind" @change="setTransitionTargetKind(transitionIndex, selectValue($event) as 'node' | 'ending')"><option value="node">{{ t('roleplay-editor.node', 'Node') }}</option><option value="ending">{{ t('roleplay-editor.ending', 'Ending') }}</option></select>
                       <select v-if="transition.target.kind === 'node'" v-model="transition.target.node_id"><option v-for="node in draft.nodes" :key="node.id" :value="node.id">{{ node.id }}</option></select>
                       <select v-else v-model="transition.target.ending_id"><option v-for="ending in endings" :key="ending.id" :value="ending.id">{{ ending.title }}</option></select>
-                      <button class="icon-button danger" title="Remove transition" @click="selectedNode.transitions.splice(transitionIndex, 1)"><Trash2 :size="14" /></button>
+                      <button class="icon-button danger" :title="t('roleplay-editor.remove-transition', 'Remove transition')" @click="selectedNode.transitions.splice(transitionIndex, 1)"><Trash2 :size="14" /></button>
                     </div>
                     <div class="condition-list">
                       <div v-for="(condition, conditionIndex) in transition.conditions" :key="conditionIndex" class="condition-row">
                         <select :value="condition.kind" @change="replaceCondition(transitionIndex, conditionIndex, selectValue($event) as any)">
-                          <option value="score_at_least">Score at least</option><option value="score_at_most">Score at most</option>
-                          <option value="evidence_observed">Evidence observed</option>
-                          <option value="relationship_at_least">Relationship at least</option><option value="relationship_at_most">Relationship at most</option>
-                          <option value="node_turns_at_least">Node turns at least</option><option value="total_turns_at_least">Total turns at least</option>
+                          <option value="score_at_least">{{ t('roleplay-editor.condition-score-at-least', 'Score at least') }}</option><option value="score_at_most">{{ t('roleplay-editor.condition-score-at-most', 'Score at most') }}</option>
+                          <option value="evidence_observed">{{ t('roleplay-editor.condition-evidence', 'Evidence observed') }}</option>
+                          <option value="relationship_at_least">{{ t('roleplay-editor.condition-relationship-at-least', 'Relationship at least') }}</option><option value="relationship_at_most">{{ t('roleplay-editor.condition-relationship-at-most', 'Relationship at most') }}</option>
+                          <option value="node_turns_at_least">{{ t('roleplay-editor.condition-node-turns', 'Node turns at least') }}</option><option value="total_turns_at_least">{{ t('roleplay-editor.condition-total-turns', 'Total turns at least') }}</option>
                         </select>
                         <select v-if="'dimension_id' in condition" v-model="condition.dimension_id"><option v-for="dimension in draft.score_dimensions" :key="dimension.id" :value="dimension.id">{{ dimension.label }}</option></select>
                         <select v-if="'evidence_id' in condition" v-model="condition.evidence_id"><option v-for="evidence in selectedNode.evidence_rules" :key="evidence.id" :value="evidence.id">{{ evidence.id }}</option></select>
                         <select v-if="'character_id' in condition" v-model="condition.character_id"><option v-for="characterId in nodeParticipantIds" :key="characterId" :value="characterId">{{ characterName(characterId) }}</option></select>
                         <input v-if="'value' in condition" v-model.number="condition.value" type="number" step="0.1" />
-                        <button class="icon-button danger" title="Remove condition" @click="transition.conditions.splice(conditionIndex, 1)"><Trash2 :size="14" /></button>
+                        <button class="icon-button danger" :title="t('roleplay-editor.remove-condition', 'Remove condition')" @click="transition.conditions.splice(conditionIndex, 1)"><Trash2 :size="14" /></button>
                       </div>
-                      <button class="btn btn-secondary btn-xs" @click="addCondition(transitionIndex)"><Plus :size="13" />Condition</button>
+                      <button class="btn btn-secondary btn-xs" @click="addCondition(transitionIndex)"><Plus :size="13" />{{ t('roleplay-editor.condition', 'Condition') }}</button>
                     </div>
                   </article>
-                  <div v-if="!selectedNode.transitions.length" class="empty-state">No conditional transition. The timeout target will be used when the node turn limit is reached.</div>
+                  <div v-if="!selectedNode.transitions.length" class="empty-state">{{ t('roleplay-editor.no-transitions', 'No conditional transition. The timeout target will be used when the node turn limit is reached.') }}</div>
 
                   <div class="timeout-row">
-                    <div><strong>Timeout target</strong><small>Mandatory deterministic route when maximum node turns are exhausted.</small></div>
-                    <select :value="selectedNode.timeout_target.kind" @change="setTimeoutTargetKind(selectValue($event) as 'node' | 'ending')"><option value="node">Node</option><option value="ending">Ending</option></select>
+                    <div><strong>{{ t('roleplay-editor.timeout-target', 'Timeout target') }}</strong><small>{{ t('roleplay-editor.timeout-copy', 'Mandatory deterministic route when maximum node turns are exhausted.') }}</small></div>
+                    <select :value="selectedNode.timeout_target.kind" @change="setTimeoutTargetKind(selectValue($event) as 'node' | 'ending')"><option value="node">{{ t('roleplay-editor.node', 'Node') }}</option><option value="ending">{{ t('roleplay-editor.ending', 'Ending') }}</option></select>
                     <select v-if="selectedNode.timeout_target.kind === 'node'" v-model="selectedNode.timeout_target.node_id"><option v-for="node in draft.nodes" :key="node.id" :value="node.id">{{ node.id }}</option></select>
                     <select v-else v-model="selectedNode.timeout_target.ending_id"><option v-for="ending in endings" :key="ending.id" :value="ending.id">{{ ending.title }}</option></select>
                   </div>
                 </section>
 
                 <section v-else class="editor-section">
-                  <div class="section-heading"><div><span class="eyebrow">Containment and recovery</span><h2>Scene safety</h2></div></div>
-                  <label class="toggle-row"><input type="checkbox" :checked="Boolean(selectedNode.intrusion_response)" @change="toggleIntrusionResponse" /><span><strong>Authored intrusion containment</strong><small>Control attempts never enter model context literally and cannot change story state.</small></span></label>
+                  <div class="section-heading"><div><span class="eyebrow">{{ t('roleplay-editor.containment', 'Containment and recovery') }}</span><h2>{{ t('roleplay-editor.scene-safety', 'Scene safety') }}</h2></div></div>
+                  <label class="toggle-row"><input type="checkbox" :checked="Boolean(selectedNode.intrusion_response)" @change="toggleIntrusionResponse" /><span><strong>{{ t('roleplay-editor.intrusion', 'Authored intrusion containment') }}</strong><small>{{ t('roleplay-editor.intrusion-copy', 'Control attempts never enter model context literally and cannot change story state.') }}</small></span></label>
                   <div v-if="selectedNode.intrusion_response" class="safety-grid">
-                    <label class="form-field"><span>Reality anchors, one per line</span><textarea :value="selectedNode.intrusion_response.reality_anchors.join('\n')" rows="5" @input="setIntrusionList('reality_anchors', inputValue($event))" /></label>
-                    <label class="form-field"><span>In-world interpretations</span><textarea :value="selectedNode.intrusion_response.interpretations.join('\n')" rows="5" @input="setIntrusionList('interpretations', inputValue($event))" /></label>
-                    <label class="form-field"><span>Redirects</span><textarea :value="selectedNode.intrusion_response.redirects.join('\n')" rows="5" @input="setIntrusionList('redirects', inputValue($event))" /></label>
+                    <label class="form-field"><span>{{ t('roleplay-editor.reality-anchors', 'Reality anchors, one per line') }}</span><textarea :value="selectedNode.intrusion_response.reality_anchors.join('\n')" rows="5" @input="setIntrusionList('reality_anchors', inputValue($event))" /></label>
+                    <label class="form-field"><span>{{ t('roleplay-editor.interpretations', 'In-world interpretations') }}</span><textarea :value="selectedNode.intrusion_response.interpretations.join('\n')" rows="5" @input="setIntrusionList('interpretations', inputValue($event))" /></label>
+                    <label class="form-field"><span>{{ t('roleplay-editor.redirects', 'Redirects') }}</span><textarea :value="selectedNode.intrusion_response.redirects.join('\n')" rows="5" @input="setIntrusionList('redirects', inputValue($event))" /></label>
                   </div>
 
-                  <label class="toggle-row"><input type="checkbox" :checked="Boolean(selectedNode.response_guard)" @change="toggleResponseGuard" /><span><strong>Generated reply guard</strong><small>Reject identity drift, hidden-state leaks, and ungrounded output before display.</small></span></label>
+                  <label class="toggle-row"><input type="checkbox" :checked="Boolean(selectedNode.response_guard)" @change="toggleResponseGuard" /><span><strong>{{ t('roleplay-editor.reply-guard', 'Generated reply guard') }}</strong><small>{{ t('roleplay-editor.reply-guard-copy', 'Reject identity drift, hidden-state leaks, and ungrounded output before display.') }}</small></span></label>
                   <div v-if="selectedNode.response_guard" class="safety-grid">
-                    <label class="form-field"><span>Forbidden markers</span><textarea :value="selectedNode.response_guard.forbidden_markers.join('\n')" rows="5" @input="setGuardList('forbidden_markers', inputValue($event))" /></label>
-                    <label class="form-field"><span>Grounding markers</span><textarea :value="(selectedNode.response_guard.grounding_markers || []).join('\n')" rows="5" @input="setGuardList('grounding_markers', inputValue($event))" /></label>
-                    <label class="form-field"><span>In-world recoveries</span><textarea :value="selectedNode.response_guard.recoveries.join('\n')" rows="5" @input="setGuardList('recoveries', inputValue($event))" /></label>
-                    <label class="form-field numeric"><span>Minimum grounding terms</span><input v-model.number="selectedNode.response_guard.min_grounding_matches" type="number" min="1" /></label>
-                    <label class="form-field numeric"><span>Maximum characters</span><input v-model.number="selectedNode.response_guard.max_characters" type="number" min="40" max="1000" /></label>
-                    <label class="form-field numeric"><span>Maximum sentences</span><input v-model.number="selectedNode.response_guard.max_sentences" type="number" min="1" max="5" /></label>
+                    <label class="form-field"><span>{{ t('roleplay-editor.forbidden-markers', 'Forbidden markers') }}</span><textarea :value="selectedNode.response_guard.forbidden_markers.join('\n')" rows="5" @input="setGuardList('forbidden_markers', inputValue($event))" /></label>
+                    <label class="form-field"><span>{{ t('roleplay-editor.grounding-markers', 'Grounding markers') }}</span><textarea :value="(selectedNode.response_guard.grounding_markers || []).join('\n')" rows="5" @input="setGuardList('grounding_markers', inputValue($event))" /></label>
+                    <label class="form-field"><span>{{ t('roleplay-editor.recoveries', 'In-world recoveries') }}</span><textarea :value="selectedNode.response_guard.recoveries.join('\n')" rows="5" @input="setGuardList('recoveries', inputValue($event))" /></label>
+                    <label class="form-field numeric"><span>{{ t('roleplay-editor.min-grounding', 'Minimum grounding terms') }}</span><input v-model.number="selectedNode.response_guard.min_grounding_matches" type="number" min="1" /></label>
+                    <label class="form-field numeric"><span>{{ t('roleplay-editor.max-characters', 'Maximum characters') }}</span><input v-model.number="selectedNode.response_guard.max_characters" type="number" min="40" max="1000" /></label>
+                    <label class="form-field numeric"><span>{{ t('roleplay-editor.max-sentences', 'Maximum sentences') }}</span><input v-model.number="selectedNode.response_guard.max_sentences" type="number" min="1" max="5" /></label>
                   </div>
 
-                  <label class="toggle-row"><input type="checkbox" :checked="Boolean(selectedNode.fallback_evaluation)" @change="toggleFallbackEvaluation" /><span><strong>Provider-free fallback evidence</strong><small>Conservative markers for Quality replay; never substitutes for a successful live model turn.</small></span></label>
+                  <label class="toggle-row"><input type="checkbox" :checked="Boolean(selectedNode.fallback_evaluation)" @change="toggleFallbackEvaluation" /><span><strong>{{ t('roleplay-editor.fallback-evidence', 'Provider-free fallback evidence') }}</strong><small>{{ t('roleplay-editor.fallback-copy', 'Conservative markers for Quality replay; never substitutes for a successful live model turn.') }}</small></span></label>
                   <div v-if="selectedNode.fallback_evaluation" class="subsection">
-                    <div class="subsection-head"><strong>Fallback score signals</strong><button class="btn btn-secondary btn-xs" @click="addFallbackScore"><Plus :size="13" />Signal</button></div>
+                    <div class="subsection-head"><strong>{{ t('roleplay-editor.fallback-score-signals', 'Fallback score signals') }}</strong><button class="btn btn-secondary btn-xs" @click="addFallbackScore"><Plus :size="13" />{{ t('roleplay-editor.signal', 'Signal') }}</button></div>
                     <div v-for="(signal, index) in selectedNode.fallback_evaluation.score_signals" :key="`score-${index}`" class="fallback-row">
                       <select v-model="signal.dimension_id"><option v-for="rule in selectedNode.score_rules" :key="rule.dimension_id" :value="rule.dimension_id">{{ rule.dimension_id }}</option></select>
-                      <input :value="signal.positive_markers.join(', ')" placeholder="positive markers" @input="signal.positive_markers = commaList(inputValue($event))" />
-                      <input :value="signal.negative_markers.join(', ')" placeholder="negative markers" @input="signal.negative_markers = commaList(inputValue($event))" />
+                      <input :value="signal.positive_markers.join(', ')" :placeholder="t('roleplay-editor.positive-markers', 'positive markers')" @input="signal.positive_markers = commaList(inputValue($event))" />
+                      <input :value="signal.negative_markers.join(', ')" :placeholder="t('roleplay-editor.negative-markers', 'negative markers')" @input="signal.negative_markers = commaList(inputValue($event))" />
                       <input v-model.number="signal.delta" class="short-input" type="number" min="0.1" step="0.1" />
-                      <button class="icon-button danger" title="Remove signal" @click="selectedNode.fallback_evaluation!.score_signals.splice(index, 1)"><Trash2 :size="14" /></button>
+                      <button class="icon-button danger" :title="t('roleplay-editor.remove-signal', 'Remove signal')" @click="selectedNode.fallback_evaluation!.score_signals.splice(index, 1)"><Trash2 :size="14" /></button>
                     </div>
-                    <div class="subsection-head"><strong>Fallback evidence signals</strong><button class="btn btn-secondary btn-xs" @click="addFallbackEvidence"><Plus :size="13" />Signal</button></div>
+                    <div class="subsection-head"><strong>{{ t('roleplay-editor.fallback-evidence-signals', 'Fallback evidence signals') }}</strong><button class="btn btn-secondary btn-xs" @click="addFallbackEvidence"><Plus :size="13" />{{ t('roleplay-editor.signal', 'Signal') }}</button></div>
                     <div v-for="(signal, index) in selectedNode.fallback_evaluation.evidence_signals" :key="`evidence-${index}`" class="fallback-row evidence">
                       <select v-model="signal.evidence_id"><option v-for="rule in selectedNode.evidence_rules" :key="rule.id" :value="rule.id">{{ rule.id }}</option></select>
-                      <input :value="signal.markers.join(', ')" placeholder="required markers" @input="signal.markers = commaList(inputValue($event))" />
-                      <button class="icon-button danger" title="Remove signal" @click="selectedNode.fallback_evaluation!.evidence_signals.splice(index, 1)"><Trash2 :size="14" /></button>
+                      <input :value="signal.markers.join(', ')" :placeholder="t('roleplay-editor.required-markers', 'required markers')" @input="signal.markers = commaList(inputValue($event))" />
+                      <button class="icon-button danger" :title="t('roleplay-editor.remove-signal', 'Remove signal')" @click="selectedNode.fallback_evaluation!.evidence_signals.splice(index, 1)"><Trash2 :size="14" /></button>
                     </div>
                   </div>
                 </section>
@@ -294,10 +294,10 @@
       </section>
 
       <aside v-if="draft" class="inspector-pane">
-        <section><span class="eyebrow">Runtime graph</span><div class="metric-row"><span>Nodes</span><strong>{{ draft.nodes.length }}</strong></div><div class="metric-row"><span>Transitions</span><strong>{{ transitionCount }}</strong></div><div class="metric-row"><span>Endings targeted</span><strong>{{ targetedEndingCount }}</strong></div></section>
-        <section><span class="eyebrow">Active node</span><div class="metric-row"><span>Participants</span><strong>{{ nodeParticipantIds.length }}</strong></div><div class="metric-row"><span>Knowledge</span><strong>{{ selectedNode?.knowledge_refs.length || 0 }}</strong></div><div class="metric-row"><span>Evidence gates</span><strong>{{ selectedNode?.evidence_rules.length || 0 }}</strong></div></section>
-        <section><span class="eyebrow">Transaction</span><p>{{ validationIssues.length ? `${validationIssues.length} issues block save.` : dirty ? 'Ready to validate and save.' : 'Catalog and draft are synchronized.' }}</p><small>NPC text, evaluator output, score, evidence, relationship, and route commit as one turn.</small></section>
-        <button v-if="originalRoleplayId" class="btn btn-danger btn-sm delete-roleplay" :disabled="busy" @click="removeRoleplay"><Trash2 :size="14" />Delete roleplay</button>
+        <section><span class="eyebrow">{{ t('roleplay-editor.runtime-graph', 'Runtime graph') }}</span><div class="metric-row"><span>{{ t('roleplay-editor.nodes', 'Nodes') }}</span><strong>{{ draft.nodes.length }}</strong></div><div class="metric-row"><span>{{ t('roleplay-editor.transitions', 'Transitions') }}</span><strong>{{ transitionCount }}</strong></div><div class="metric-row"><span>{{ t('roleplay-editor.endings-targeted', 'Endings targeted') }}</span><strong>{{ targetedEndingCount }}</strong></div></section>
+        <section><span class="eyebrow">{{ t('roleplay-editor.active-node', 'Active node') }}</span><div class="metric-row"><span>{{ t('roleplay-editor.participants-short', 'Participants') }}</span><strong>{{ nodeParticipantIds.length }}</strong></div><div class="metric-row"><span>{{ t('roleplay-editor.knowledge', 'Knowledge') }}</span><strong>{{ selectedNode?.knowledge_refs.length || 0 }}</strong></div><div class="metric-row"><span>{{ t('roleplay-editor.evidence-gates', 'Evidence gates') }}</span><strong>{{ selectedNode?.evidence_rules.length || 0 }}</strong></div></section>
+        <section><span class="eyebrow">{{ t('roleplay-editor.transaction', 'Transaction') }}</span><p>{{ transactionStatus }}</p><small>{{ t('roleplay-editor.transaction-copy', 'NPC text, evaluator output, score, evidence, relationship, and route commit as one turn.') }}</small></section>
+        <button v-if="originalRoleplayId" class="btn btn-danger btn-sm delete-roleplay" :disabled="busy" @click="removeRoleplay"><Trash2 :size="14" />{{ t('roleplay-editor.delete-roleplay', 'Delete roleplay') }}</button>
       </aside>
     </main>
   </div>
@@ -305,7 +305,7 @@
 
 <script setup lang="ts">
 import { computed, markRaw, onMounted, onUnmounted, ref } from 'vue'
-import { onBeforeRouteLeave, useRouter } from 'vue-router'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import {
   AlertTriangle, ArrowRight, BookOpen, Copy, GitBranch, ListTree, Play, Plus,
   RotateCcw, Save, Search, ShieldCheck, SlidersHorizontal, Trash2, X,
@@ -333,6 +333,7 @@ import type {
 } from '../lib/sceneRoleplay'
 import type { RoleplayIntrusionResponse } from '../lib/sceneRoleplaySafety'
 import { loadKnowledgeAuthoringCatalog, type KnowledgeEntryDefinition } from '../lib/knowledgeContent'
+import { useI18n } from '../lib/i18n'
 import {
   loadStoryCharacters, loadStoryEndings, loadStoryScenes,
   type StoryCharacterInfo, type StoryEndingInfo, type StorySceneInfo,
@@ -341,6 +342,8 @@ import {
 type EditorTab = 'story' | 'scores' | 'nodes' | 'routes' | 'safety'
 
 const router = useRouter()
+const route = useRoute()
+const { t } = useI18n()
 const snapshot = ref<SceneRoleplayAuthoringCatalog | null>(null)
 const draft = ref<SceneRoleplayDefinition | null>(null)
 const originalRoleplayId = ref<string | null>(null)
@@ -355,13 +358,13 @@ const characters = ref<StoryCharacterInfo[]>([])
 const endings = ref<StoryEndingInfo[]>([])
 const knowledge = ref<KnowledgeEntryDefinition[]>([])
 
-const tabs = [
-  { id: 'story' as const, label: 'Story', icon: markRaw(BookOpen) },
-  { id: 'scores' as const, label: 'Scores', icon: markRaw(SlidersHorizontal) },
-  { id: 'nodes' as const, label: 'Nodes', icon: markRaw(ListTree) },
-  { id: 'routes' as const, label: 'Routes', icon: markRaw(GitBranch) },
-  { id: 'safety' as const, label: 'Safety', icon: markRaw(ShieldCheck) },
-]
+const tabs = computed(() => [
+  { id: 'story' as const, label: t('roleplay-editor.tab-story', 'Story'), icon: markRaw(BookOpen) },
+  { id: 'scores' as const, label: t('roleplay-editor.tab-scores', 'Scores'), icon: markRaw(SlidersHorizontal) },
+  { id: 'nodes' as const, label: t('roleplay-editor.tab-nodes', 'Nodes'), icon: markRaw(ListTree) },
+  { id: 'routes' as const, label: t('roleplay-editor.tab-routes', 'Routes'), icon: markRaw(GitBranch) },
+  { id: 'safety' as const, label: t('roleplay-editor.tab-safety', 'Safety'), icon: markRaw(ShieldCheck) },
+])
 
 const filteredRoleplays = computed(() => {
   const query = search.value.trim().toLowerCase()
@@ -385,9 +388,14 @@ const targetedEndingCount = computed(() => {
 })
 const validationIssues = computed(() => draft.value
   ? [...validateSceneRoleplayDefinition(draft.value), ...referenceIssues(draft.value)]
-  : ['No roleplay selected.'])
+  : [t('roleplay-editor.no-selection', 'No roleplay selected.')])
 const canSave = computed(() => Boolean(snapshot.value && draft.value && dirty.value && !validationIssues.value.length))
 const canPreview = computed(() => Boolean(originalRoleplayId.value && !dirty.value && !validationIssues.value.length))
+const transactionStatus = computed(() => validationIssues.value.length
+  ? t('roleplay-editor.transaction-blocked', '{count} issues block save.', { count: validationIssues.value.length })
+  : dirty.value
+    ? t('roleplay-editor.transaction-ready', 'Ready to validate and save.')
+    : t('roleplay-editor.transaction-synced', 'Catalog and draft are synchronized.'))
 
 function setDraft(definition: SceneRoleplayDefinition, originalId: string | null) {
   draft.value = cloneSceneRoleplayDefinition(definition)
@@ -407,12 +415,12 @@ function selectRoleplayById(id: string) {
   selectRoleplay(entry)
 }
 
-function createRoleplay() {
+function createRoleplay(markDirty = true) {
   if (!confirmDiscard()) return
   const definition = createSceneRoleplayDraft(snapshot.value?.roleplays.map(entry => entry.definition.id) || [])
   hydrateNewDefinitionReferences(definition)
   setDraft(definition, null)
-  baseline.value = ''
+  baseline.value = markDirty ? '' : sceneRoleplayDraftSnapshot(draft.value)
   tab.value = 'story'
 }
 
@@ -443,9 +451,9 @@ async function loadCatalog(preferredId?: string | null) {
     knowledge.value = nextKnowledge.entries
     const target = next.roleplays.find(entry => entry.definition.id === preferredId) || next.roleplays[0]
     if (target) setDraft(target.definition, target.definition.id)
-    else createRoleplay()
+    else createRoleplay(false)
   } catch (error) {
-    showNotice('error', 'Roleplay catalog unavailable', String(error))
+    showNotice('error', t('roleplay-editor.notice-catalog-error', 'Roleplay catalog unavailable'), String(error))
   } finally {
     busy.value = false
   }
@@ -454,7 +462,7 @@ async function loadCatalog(preferredId?: string | null) {
 async function reloadCatalog() {
   if (!confirmDiscard()) return
   await loadCatalog(originalRoleplayId.value)
-  showNotice('success', 'Roleplay catalog reloaded', 'Definitions and referenced project catalogs are current.')
+  showNotice('success', t('roleplay-editor.notice-reloaded', 'Roleplay catalog reloaded'), t('roleplay-editor.notice-reloaded-copy', 'Definitions and referenced project catalogs are current.'))
 }
 
 async function saveRoleplay() {
@@ -466,9 +474,9 @@ async function saveRoleplay() {
     snapshot.value = next
     const saved = next.roleplays.find(entry => entry.definition.id === normalized.id)
     if (saved) setDraft(saved.definition, saved.definition.id)
-    showNotice('success', 'Live roleplay saved', `${normalized.title} passed schema and project reference validation.`)
+    showNotice('success', t('roleplay-editor.notice-saved', 'Live roleplay saved'), t('roleplay-editor.notice-saved-copy', '{title} passed schema and project reference validation.', { title: normalized.title }))
   } catch (error) {
-    showNotice('error', 'Save rejected', String(error))
+    showNotice('error', t('roleplay-editor.notice-save-error', 'Save rejected'), String(error))
   } finally {
     busy.value = false
   }
@@ -477,7 +485,7 @@ async function saveRoleplay() {
 async function removeRoleplay() {
   if (!snapshot.value || !originalRoleplayId.value) return
   const id = originalRoleplayId.value
-  if (!window.confirm(`Delete roleplay "${id}"?`)) return
+  if (!window.confirm(t('roleplay-editor.confirm-delete', 'Delete roleplay “{id}”?', { id }))) return
   busy.value = true
   try {
     const next = await deleteSceneRoleplayDefinition(id, snapshot.value.catalog_fingerprint)
@@ -485,9 +493,9 @@ async function removeRoleplay() {
     const target = next.roleplays[0]
     if (target) setDraft(target.definition, target.definition.id)
     else createRoleplay()
-    showNotice('success', 'Roleplay deleted', `${id} was removed from the catalog.`)
+    showNotice('success', t('roleplay-editor.notice-deleted', 'Roleplay deleted'), t('roleplay-editor.notice-deleted-copy', '{id} was removed from the catalog.', { id }))
   } catch (error) {
-    showNotice('error', 'Delete rejected', String(error))
+    showNotice('error', t('roleplay-editor.notice-delete-error', 'Delete rejected'), String(error))
   } finally {
     busy.value = false
   }
@@ -735,7 +743,7 @@ function selectValue(event: Event) { return (event.target as HTMLSelectElement).
 function lineList(value: string) { return value.split(/\r?\n/).map(item => item.trim()).filter(Boolean) }
 function commaList(value: string) { return value.split(',').map(item => item.trim()).filter(Boolean) }
 function showNotice(type: 'success' | 'error', title: string, message: string) { notice.value = { type, title, message } }
-function confirmDiscard() { return !dirty.value || window.confirm('Discard unsaved roleplay changes?') }
+function confirmDiscard() { return !dirty.value || window.confirm(t('roleplay-editor.confirm-discard', 'Discard unsaved roleplay changes?')) }
 
 function handleBeforeUnload(event: BeforeUnloadEvent) {
   if (!dirty.value) return
@@ -753,7 +761,7 @@ onBeforeRouteLeave(() => confirmDiscard())
 onMounted(async () => {
   window.addEventListener('beforeunload', handleBeforeUnload)
   window.addEventListener('keydown', handleKeydown)
-  await loadCatalog()
+  await loadCatalog(typeof route.query.roleplay === 'string' ? route.query.roleplay : undefined)
 })
 onUnmounted(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload)

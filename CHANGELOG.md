@@ -1,6 +1,7 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Fixed the Windows project-creation dialog to remain viewport-centered, localized the Scene Roleplay editor in Chinese and enrolled it in strict UI translation checks, kept empty auto-created roleplay drafts from trapping navigation, added an authoring-preview return path, and normalized Workflow input/output ports to identical circular geometry.
 - Added per-scene stage composition for bottom, top, and side dialogue layouts, independently adjustable character framing, live Scene Editor preview, Workflow-to-Scene editing, and a shared schema for human and Agent-authored projects.
 - Rebuilt Workflow canvas connections around the runtime's indexed output contract. Start, linear, boolean/event, choice, random, and end nodes now expose distinct input/output ports with stable branch labels, exact-port drop targets, reconnect-by-replacement behavior, and overflow validation shared by browser and Rust. Scene, Character, Workflow, score-metric, and action references now use active-project catalog selectors; choices and random weights use indexed multiline editors that directly control branch ports.
 - Added a project-first desktop launcher with device-local recent-project history, clean project creation, existing-folder opening, and verified `.monogatari` import. Windows engine packages now contain only the application shell; Tideglass and KonoSuba are distributed as independent sample project packages rather than implicit engine data.

@@ -27,11 +27,11 @@ test('checked-in locale catalogs return passing mirror and shape evidence', asyn
 
   assert.deepEqual(evidence, {
     issues: [],
-    baseKeyCount: 1968,
+    baseKeyCount: 2123,
     publicLocaleCount: 7,
     embeddedLocaleCount: 3,
   })
-  assert.deepEqual(messages, ['[release] Locale coverage OK (1968 keys, 7 public locale(s))'])
+  assert.deepEqual(messages, ['[release] Locale coverage OK (2123 keys, 7 public locale(s))'])
 })
 
 test('locale evidence keeps shape, key, value, public, and embedded drift actionable', async () => {
