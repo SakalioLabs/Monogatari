@@ -236,6 +236,52 @@ describe('authoring API inference', () => {
     expect(onChunk).toHaveBeenCalledTimes(1)
   })
 
+  it('reaches a last-resort ORT budget without exposing the failed attempts', async () => {
+    vi.resetModules()
+    const runtime = new Response(JSON.stringify({
+      schema: 'monogatari-authoring-inference-runtime/v1',
+      provider: 'api',
+      endpoint: '/authoring-api/chat/completions',
+      model: 'memory-bound-roleplay-model',
+    }), { status: 200 })
+    const exhausted = () => new Response(JSON.stringify({
+      error: { message: 'failed to call OrtRun(). ERROR_CODE: 6, ERROR_MESSAGE: std::bad_alloc' },
+    }), { status: 500 })
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(runtime)
+      .mockResolvedValueOnce(exhausted())
+      .mockResolvedValueOnce(exhausted())
+      .mockResolvedValueOnce(exhausted())
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        choices: [{ message: { content: 'A short in-character recovery.' } }],
+      }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const { generateAuthoringApiChat: generateMemoryBoundChat } = await import('../authoringInference')
+
+    await expect(generateMemoryBoundChat([
+      { role: 'system', content: `scene:${'a'.repeat(8_000)}` },
+      { role: 'user', content: `latest:${'b'.repeat(2_000)}` },
+    ], {
+      maxContextCharacters: 8_000,
+      recoveryMaxContextCharacters: 3_000,
+      maxNewTokens: 180,
+    })).resolves.toBe('A short in-character recovery.')
+
+    const attempts = fetchMock.mock.calls.slice(1).map(call =>
+      JSON.parse(String(call[1]?.body)))
+    expect(attempts.map(body => body.max_tokens)).toEqual([180, 48, 32, 16])
+    const contextCharacters = attempts.map(body =>
+      body.messages.reduce(
+        (total: number, message: { content: string }) => total + [...message.content].length,
+        0,
+      ))
+    expect(contextCharacters[0]).toBeLessThanOrEqual(8_000)
+    expect(contextCharacters[1]).toBeLessThanOrEqual(3_000)
+    expect(contextCharacters[2]).toBeLessThanOrEqual(768)
+    expect(contextCharacters[3]).toBeLessThanOrEqual(384)
+    expect(contextCharacters[3]).toBeLessThan(contextCharacters[2])
+  })
+
   it('does not retry client configuration failures', async () => {
     vi.resetModules()
     const fetchMock = vi.fn()

@@ -638,6 +638,15 @@ the completion record.
   Scene previews do not stage an unrelated Character. Production Web/PWA
   build, i18n coverage, TypeScript, inference runtime, bundle, responsive, and
   mobile-readiness gates pass.
+- ORT low-memory recovery correction (2026-07-29): 31 focused frontend tests
+  prove that browser and same-origin API retries actually transmit progressively
+  smaller prompts down to 384 characters instead of being silently raised to
+  the former 1024-character compaction floor. WebGPU and API providers retain
+  separate output budgets, failed attempts reset pending prose, and exhausted
+  NPC generation still commits no transcript, score, evidence, relationship,
+  node, or ending state. Focused Chromium also proves that the stale
+  `previewDialogue=blue_frame_dialogue` link enters the free-input
+  `blue_frame_roleplay` main stage with no fixed Dialogue surface.
 - KonoSuba Volume 5 finale acceptance (2026-07-28): core runtime validation is
   valid for 545 documents with zero errors; delivery resolves 217/217 declared
   renderer assets with no placeholders. Finale and Epilogue Quality Suites

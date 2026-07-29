@@ -35,6 +35,21 @@ describe('WebGPU inference memory policy', () => {
     expect(compacted.length).toBeLessThan(messages.length)
   })
 
+  it('honors an emergency low-memory API budget below the WebGPU default floor', () => {
+    const compacted = compactWebGpuChatMessages([
+      { role: 'system', content: `identity:${'s'.repeat(2_000)}` },
+      { role: 'user', content: `latest:${'u'.repeat(1_000)}` },
+    ], 384)
+    const total = compacted.reduce(
+      (sum, message) => sum + [...message.content].length,
+      0,
+    )
+
+    expect(total).toBeLessThanOrEqual(384)
+    expect(compacted[0].content).toContain('identity:')
+    expect(compacted.at(-1)?.content).toContain('latest:')
+  })
+
   it('recognizes the reported ORT allocation failure without classifying unrelated errors', () => {
     expect(isWebGpuMemoryError(new Error(
       'failed to call OrtRun(). ERROR_CODE: 6, ERROR_MESSAGE: std::bad_alloc',
@@ -46,10 +61,17 @@ describe('WebGPU inference memory policy', () => {
   it('reduces both context and output before a final minimum-memory attempt', () => {
     expect(webGpuMemoryRecoveryProfiles(3_000, 96)).toEqual([
       { maxContextCharacters: 3_000, maxNewTokens: 48 },
-      { maxContextCharacters: 1_024, maxNewTokens: 24 },
+      { maxContextCharacters: 768, maxNewTokens: 24 },
+      { maxContextCharacters: 384, maxNewTokens: 16 },
     ])
     expect(webGpuMemoryRecoveryProfiles(1_024, 16)).toEqual([
       { maxContextCharacters: 1_024, maxNewTokens: 16 },
+      { maxContextCharacters: 768, maxNewTokens: 16 },
+      { maxContextCharacters: 384, maxNewTokens: 16 },
+    ])
+    expect(webGpuMemoryRecoveryProfiles(384, 96)).toEqual([
+      { maxContextCharacters: 384, maxNewTokens: 48 },
+      { maxContextCharacters: 384, maxNewTokens: 16 },
     ])
   })
 })

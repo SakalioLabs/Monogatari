@@ -1,7 +1,6 @@
 import {
   compactWebGpuChatMessages,
   isWebGpuMemoryError,
-  webGpuMemoryRecoveryProfiles,
   type WebGpuChatMessage,
   type WebGpuGenerationOptions,
 } from './webgpuInference'
@@ -88,7 +87,7 @@ export async function generateAuthoringApiChat(
   )
   const attempts = [
     { maxContextCharacters: initialContextLimit, maxNewTokens: requestedTokens },
-    ...webGpuMemoryRecoveryProfiles(recoveryContextLimit, requestedTokens),
+    ...authoringApiMemoryRecoveryProfiles(recoveryContextLimit, requestedTokens),
   ].filter((profile, index, profiles) =>
     index === profiles.findIndex(candidate =>
       candidate.maxContextCharacters === profile.maxContextCharacters
@@ -109,6 +108,34 @@ export async function generateAuthoringApiChat(
     }
   }
   throw lastError
+}
+
+function authoringApiMemoryRecoveryProfiles(
+  recoveryContextCharacters: number,
+  requestedTokens: number,
+): Array<{ maxContextCharacters: number; maxNewTokens: number }> {
+  const firstContextCharacters = Math.min(
+    32_000,
+    Math.max(256, Math.round(recoveryContextCharacters)),
+  )
+  const profiles = [
+    {
+      maxContextCharacters: firstContextCharacters,
+      maxNewTokens: Math.min(requestedTokens, 48),
+    },
+    {
+      maxContextCharacters: 768,
+      maxNewTokens: Math.min(requestedTokens, 32),
+    },
+    {
+      maxContextCharacters: 384,
+      maxNewTokens: Math.min(requestedTokens, 16),
+    },
+  ].filter(profile => profile.maxContextCharacters <= firstContextCharacters)
+  return profiles.filter((profile, index) =>
+    index === profiles.findIndex(candidate =>
+      candidate.maxContextCharacters === profile.maxContextCharacters
+      && candidate.maxNewTokens === profile.maxNewTokens))
 }
 
 function authoringApiUnavailableMessage(

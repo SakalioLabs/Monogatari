@@ -233,18 +233,25 @@ export function webGpuMemoryRecoveryProfiles(
   recoveryContextCharacters: number,
   requestedTokens: number,
 ): WebGpuMemoryRecoveryProfile[] {
-  const first = {
-    maxContextCharacters: Math.round(clamp(recoveryContextCharacters, 1_024, 32_000)),
-    maxNewTokens: Math.round(clamp(requestedTokens, 1, 48)),
-  }
-  const minimum = {
-    maxContextCharacters: 1_024,
-    maxNewTokens: Math.round(clamp(requestedTokens, 1, 24)),
-  }
-  return first.maxContextCharacters === minimum.maxContextCharacters
-    && first.maxNewTokens === minimum.maxNewTokens
-    ? [first]
-    : [first, minimum]
+  const firstContextCharacters = Math.round(clamp(recoveryContextCharacters, 256, 32_000))
+  const profiles = [
+    {
+      maxContextCharacters: firstContextCharacters,
+      maxNewTokens: Math.round(clamp(requestedTokens, 1, 48)),
+    },
+    {
+      maxContextCharacters: 768,
+      maxNewTokens: Math.round(clamp(requestedTokens, 1, 24)),
+    },
+    {
+      maxContextCharacters: 384,
+      maxNewTokens: Math.round(clamp(requestedTokens, 1, 16)),
+    },
+  ].filter(profile => profile.maxContextCharacters <= firstContextCharacters)
+  return profiles.filter((profile, index) =>
+    index === profiles.findIndex(candidate =>
+      candidate.maxContextCharacters === profile.maxContextCharacters
+      && candidate.maxNewTokens === profile.maxNewTokens))
 }
 
 async function disposeWebGpuGenerator(): Promise<void> {
@@ -265,7 +272,7 @@ export function compactWebGpuChatMessages(
   messages: WebGpuChatMessage[],
   characterLimit = WEBGPU_CONTEXT_CHARACTER_LIMIT,
 ): WebGpuChatMessage[] {
-  const limit = Math.round(clamp(characterLimit, 1_024, 32_000))
+  const limit = Math.round(clamp(characterLimit, 256, 32_000))
   const normalized = messages
     .filter((message) => ['system', 'user', 'assistant'].includes(message.role) && message.content.trim())
     .map((message) => ({ ...message, content: message.content.trim() }))
@@ -283,7 +290,7 @@ export function compactWebGpuChatMessages(
 
   const latest = conversation.at(-1)
   if (!latest) return compacted
-  const latestContent = prefixCharacters(latest.content, Math.max(256, Math.floor(limit * 0.34)))
+  const latestContent = prefixCharacters(latest.content, Math.max(64, Math.floor(limit * 0.34)))
   const latestMessage = { ...latest, content: latestContent }
   used += [...latestContent].length
 
