@@ -30,6 +30,22 @@ test('workspace navigation exposes the authoring surfaces', async ({ page }) => 
   await launcherDialog.evaluate((dialog: HTMLDialogElement) => dialog.close())
   await page.getByRole('button', { name: 'Continue' }).click()
   await expect(page).toHaveURL(/\/workspace$/)
+  const shellMetrics = await page.evaluate(() => {
+    const appFrame = document.querySelector<HTMLElement>('.app-frame')
+    const appMain = document.querySelector<HTMLElement>('.app-main')
+    if (!appFrame || !appMain) throw new Error('Application shell is not rendered')
+
+    return {
+      documentHeight: document.documentElement.scrollHeight,
+      viewportHeight: window.innerHeight,
+      frameHeight: Math.round(appFrame.getBoundingClientRect().height),
+      mainClientHeight: appMain.clientHeight,
+      mainScrollHeight: appMain.scrollHeight,
+    }
+  })
+  expect(shellMetrics.documentHeight).toBe(shellMetrics.viewportHeight)
+  expect(shellMetrics.frameHeight).toBe(shellMetrics.viewportHeight)
+  expect(shellMetrics.mainScrollHeight).toBeGreaterThan(shellMetrics.mainClientHeight)
   await expect(page.getByRole('link', { name: 'Monogatari Engine' })).toBeVisible()
   await page.getByRole('link', { name: 'Story Flow' }).click()
   await expect(page).toHaveURL(/\/editor$/)

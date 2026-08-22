@@ -79,4 +79,19 @@ describe('shared components', () => {
     expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
     wrapper.unmount()
   })
+
+  it('uses the supplied scroll container instead of the window', async () => {
+    const scrollTarget = document.createElement('main')
+    const scrollTo = vi.fn()
+    Object.defineProperty(scrollTarget, 'scrollTop', { configurable: true, value: 400 })
+    Object.defineProperty(scrollTarget, 'scrollTo', { configurable: true, value: scrollTo })
+    const wrapper = mount(BackToTop, { props: { scrollTarget } })
+
+    scrollTarget.dispatchEvent(new Event('scroll'))
+    await nextTick()
+    await wrapper.get('button').trigger('click')
+
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
+    wrapper.unmount()
+  })
 })

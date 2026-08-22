@@ -7,22 +7,45 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onUnmounted, ref, watch } from 'vue'
+
+const props = defineProps<{
+  scrollTarget?: HTMLElement | null
+}>()
 
 const visible = ref(false)
 let scrollHandler: (() => void) | null = null
+let activeScrollTarget: HTMLElement | Window | null = null
 
 function scrollToTop() {
+  if (props.scrollTarget) {
+    props.scrollTarget.scrollTo({ top: 0, behavior: 'smooth' })
+    return
+  }
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-onMounted(() => {
-  scrollHandler = () => { visible.value = window.scrollY > 300 }
-  window.addEventListener('scroll', scrollHandler, { passive: true })
-})
+function updateVisibility() {
+  visible.value = (props.scrollTarget?.scrollTop ?? window.scrollY) > 300
+}
+
+function bindScrollTarget(target: HTMLElement | null | undefined) {
+  if (activeScrollTarget && scrollHandler) {
+    activeScrollTarget.removeEventListener('scroll', scrollHandler)
+  }
+
+  activeScrollTarget = target ?? window
+  scrollHandler = updateVisibility
+  activeScrollTarget.addEventListener('scroll', scrollHandler, { passive: true })
+  updateVisibility()
+}
+
+watch(() => props.scrollTarget, bindScrollTarget, { immediate: true })
 
 onUnmounted(() => {
-  if (scrollHandler) window.removeEventListener('scroll', scrollHandler)
+  if (activeScrollTarget && scrollHandler) {
+    activeScrollTarget.removeEventListener('scroll', scrollHandler)
+  }
 })
 </script>
 

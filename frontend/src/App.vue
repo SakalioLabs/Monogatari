@@ -115,7 +115,7 @@
         </div>
       </header>
 
-      <main class="app-main">
+      <main ref="mainElement" class="app-main">
         <ErrorBoundary>
           <router-view v-slot="{ Component }">
             <transition name="page" mode="out-in">
@@ -140,7 +140,7 @@
     <ToastNotification />
     <KeyboardShortcutsHelp :visible="showShortcuts" @close="showShortcuts = false" />
     <WhatsNew />
-    <BackToTop />
+    <BackToTop :scroll-target="mainElement" />
     <ProgressBar />
     <ProjectActivityOverlay />
   </div>
@@ -212,6 +212,7 @@ const { locale, supportedLocales, t, setLocale } = useI18n()
 const sidebarCollapsed = ref(localStorage.getItem('monogatari-sidebar') === 'collapsed')
 const mobileNavigationOpen = ref(false)
 const showShortcuts = ref(false)
+const mainElement = ref<HTMLElement | null>(null)
 const themeDesignVersion = 'pale-monochrome-v1'
 const storedTheme = localStorage.getItem('monogatari-theme')
 const currentTheme = ref(
@@ -329,8 +330,10 @@ onUnmounted(() => {
 .app-frame {
   display: grid;
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
-  min-height: 100vh;
-  min-height: 100svh;
+  height: 100vh;
+  height: 100svh;
+  min-height: 0;
+  overflow: hidden;
   background: var(--surface-0);
   transition: grid-template-columns var(--transition);
 }
@@ -497,7 +500,7 @@ onUnmounted(() => {
 .sidebar-collapsed .nav-item.router-link-exact-active::before { left: -8px; }
 .sidebar-collapsed .sidebar-footer { justify-content: center; }
 
-.app-workspace { display: grid; min-width: 0; min-height: 100svh; grid-template-rows: auto minmax(0, 1fr); }
+.app-workspace { display: grid; min-width: 0; height: 100%; min-height: 0; grid-template-rows: auto minmax(0, 1fr); }
 .fullscreen-route .app-workspace {
   display: block;
   height: 100%;
