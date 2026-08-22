@@ -1,4 +1,5 @@
 import { hasTauriRuntime, invokeCommand } from './tauri'
+import { runProjectActivity } from './projectActivity'
 
 export interface ProjectArchiveInspection {
   archive_path: string
@@ -73,9 +74,13 @@ export async function importProjectPackage(): Promise<ProjectArchiveImportFlow |
   })
   if (!selectedArchive || Array.isArray(selectedArchive)) return null
 
-  const inspection = await invokeCommand<ProjectArchiveInspection>('inspect_project_archive', {
+  const inspection = await runProjectActivity({
+    operation: 'import',
+    phase: 'inspecting_package',
+    project_path: selectedArchive,
+  }, () => invokeCommand<ProjectArchiveInspection>('inspect_project_archive', {
     archivePath: selectedArchive,
-  })
+  }))
   const destinationParent = await open({
     title: `Import ${inspection.project_title}`,
     directory: true,
@@ -85,10 +90,14 @@ export async function importProjectPackage(): Promise<ProjectArchiveImportFlow |
   if (!destinationParent || Array.isArray(destinationParent)) {
     return { inspection, imported: null }
   }
-  const imported = await invokeCommand<ProjectArchiveImportResult>('import_project_archive', {
+  const imported = await runProjectActivity({
+    operation: 'import',
+    phase: 'extracting_package',
+    project_path: selectedArchive,
+  }, () => invokeCommand<ProjectArchiveImportResult>('import_project_archive', {
     archivePath: selectedArchive,
     destinationParent,
-  })
+  }))
   return { inspection, imported }
 }
 

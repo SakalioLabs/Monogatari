@@ -142,6 +142,7 @@
     <WhatsNew />
     <BackToTop />
     <ProgressBar />
+    <ProjectActivityOverlay />
   </div>
 </template>
 
@@ -187,6 +188,7 @@ import WhatsNew from './components/WhatsNew.vue'
 import GlobalSearch from './components/GlobalSearch.vue'
 import BackToTop from './components/BackToTop.vue'
 import ProgressBar from './components/ProgressBar.vue'
+import ProjectActivityOverlay from './components/ProjectActivityOverlay.vue'
 import { useI18n } from './lib/i18n'
 import { hasTauriRuntime } from './lib/tauri'
 import { loadPackagedWebGpuConfig } from './lib/webgpuInference'

@@ -2,13 +2,61 @@
 
 use serde::Serialize;
 use std::path::{Path, PathBuf};
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 
 use llm_authoring::runtime_validation::load_core_runtime_project;
 use llm_game::{characters::CharacterManager, dialogue::DialogueManager, knowledge::KnowledgeBase};
 
 use crate::state::AppState;
 use crate::story_events::StoryEventCatalog;
+
+pub(crate) const PROJECT_ACTIVITY_EVENT: &str = "project-activity";
+
+#[derive(Debug, Clone, Copy, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum ProjectActivityOperation {
+    Open,
+    Create,
+    Import,
+    Initialize,
+}
+
+#[derive(Debug, Clone, Copy, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum ProjectActivityPhase {
+    CheckingProject,
+    LoadingContent,
+    InitializingAi,
+    AuthorizingAssets,
+    InspectingPackage,
+    ExtractingPackage,
+    ValidatingImport,
+    FinalizingImport,
+    Ready,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub(crate) struct ProjectActivityUpdate {
+    pub operation: ProjectActivityOperation,
+    pub phase: ProjectActivityPhase,
+    pub project_path: Option<String>,
+}
+
+pub(crate) fn emit_project_activity(
+    app: &AppHandle,
+    operation: ProjectActivityOperation,
+    phase: ProjectActivityPhase,
+    project_path: Option<&Path>,
+) {
+    let update = ProjectActivityUpdate {
+        operation,
+        phase,
+        project_path: project_path.map(|path| path.to_string_lossy().to_string()),
+    };
+    if let Err(error) = app.emit(PROJECT_ACTIVITY_EVENT, update) {
+        tracing::debug!(%error, "Unable to emit project activity update");
+    }
+}
 
 #[derive(Serialize)]
 pub struct EngineStatus {
@@ -37,7 +85,7 @@ pub async fn initialize_engine(
     } else {
         normalize_project_path(&project_path)?
     };
-    activate_project(&app, &state, path).await?;
+    activate_project(&app, &state, path, ProjectActivityOperation::Initialize).await?;
     Ok("Engine initialized successfully".to_string())
 }
 
@@ -45,20 +93,45 @@ pub(crate) async fn activate_project(
     app: &AppHandle,
     state: &AppState,
     path: PathBuf,
+    operation: ProjectActivityOperation,
 ) -> Result<(), String> {
+    emit_project_activity(
+        app,
+        operation,
+        ProjectActivityPhase::CheckingProject,
+        Some(&path),
+    );
     let path = validate_engine_project_root(path)?;
+    emit_project_activity(
+        app,
+        operation,
+        ProjectActivityPhase::LoadingContent,
+        Some(&path),
+    );
     let (characters, dialogues, knowledge, story_events) = load_project_content(&path).await?;
 
     // Initialize AI backends before replacing the active project state.
+    emit_project_activity(
+        app,
+        operation,
+        ProjectActivityPhase::InitializingAi,
+        Some(&path),
+    );
     let pipeline = state.inference_pipeline.read().await;
     pipeline.initialize_all().await.map_err(|e| e.to_string())?;
     drop(pipeline);
 
+    emit_project_activity(
+        app,
+        operation,
+        ProjectActivityPhase::AuthorizingAssets,
+        Some(&path),
+    );
     app.asset_protocol_scope()
         .allow_directory(&path, true)
         .map_err(|error| format!("Unable to authorize active-project assets: {error}"))?;
 
-    let root_changed = state.set_project_data_root(path).await;
+    let root_changed = state.set_project_data_root(path.clone()).await;
     if !root_changed {
         state.reset_project_runtime_state().await;
     }
@@ -67,6 +140,8 @@ pub(crate) async fn activate_project(
     *state.knowledge_base.write().await = knowledge;
     *state.story_event_catalog.write().await = story_events;
     *state.initialized.write().await = true;
+
+    emit_project_activity(app, operation, ProjectActivityPhase::Ready, Some(&path));
 
     Ok(())
 }
@@ -196,6 +271,20 @@ pub async fn get_engine_status(state: State<'_, AppState>) -> Result<EngineStatu
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn project_activity_updates_keep_the_frontend_contract_stable() {
+        let update = ProjectActivityUpdate {
+            operation: ProjectActivityOperation::Import,
+            phase: ProjectActivityPhase::ValidatingImport,
+            project_path: Some("C:/Stories/imported-project".to_string()),
+        };
+        let value = serde_json::to_value(update).unwrap();
+
+        assert_eq!(value["operation"], "import");
+        assert_eq!(value["phase"], "validating_import");
+        assert_eq!(value["project_path"], "C:/Stories/imported-project");
+    }
 
     fn temp_root(label: &str) -> PathBuf {
         std::env::temp_dir().join(format!(

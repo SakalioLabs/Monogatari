@@ -11,7 +11,9 @@ use tauri::{AppHandle, Manager, State};
 
 use crate::state::AppState;
 
-use super::engine::activate_project;
+use super::engine::{
+    activate_project, emit_project_activity, ProjectActivityOperation, ProjectActivityPhase,
+};
 
 const REGISTRY_SCHEMA: &str = "monogatari-project-registry/v1";
 const MAX_RECENT_PROJECTS: usize = 50;
@@ -77,7 +79,7 @@ pub async fn open_project(
     project_path: String,
 ) -> Result<ProjectLauncherEntry, String> {
     let path = normalize_existing_project_path(&project_path)?;
-    activate_project(&app, &state, path.clone()).await?;
+    activate_project(&app, &state, path.clone(), ProjectActivityOperation::Open).await?;
     record_project(&app, &path).await
 }
 
@@ -90,9 +92,22 @@ pub async fn create_project(
     project_title: String,
 ) -> Result<ProjectLauncherEntry, String> {
     let parent = normalize_existing_directory(&parent_directory, "Project parent directory")?;
+    emit_project_activity(
+        &app,
+        ProjectActivityOperation::Create,
+        ProjectActivityPhase::CheckingProject,
+        Some(&parent),
+    );
     let created = create_empty_project(&parent, &directory_name, &project_title)?;
     let project_path = PathBuf::from(&created.project_path);
-    if let Err(error) = activate_project(&app, &state, project_path.clone()).await {
+    if let Err(error) = activate_project(
+        &app,
+        &state,
+        project_path.clone(),
+        ProjectActivityOperation::Create,
+    )
+    .await
+    {
         let _ = std::fs::remove_dir_all(&project_path);
         return Err(format!(
             "The project was created but failed initial validation: {error}"

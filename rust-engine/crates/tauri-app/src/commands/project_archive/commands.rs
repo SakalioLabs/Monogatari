@@ -1,12 +1,15 @@
 //! Tauri adapters for project-package export, inspection, and transactional import.
 
-use tauri::State;
+use tauri::{AppHandle, State};
 
 use llm_authoring::delivery_validation::{
     validate_project_delivery, DeliveryIssueSeverity, DeliveryValidationReport,
 };
 use llm_authoring::project_package::{extract_project_package, inspect_project_package};
 
+use crate::commands::engine::{
+    emit_project_activity, ProjectActivityOperation, ProjectActivityPhase,
+};
 use crate::state::AppState;
 
 use super::super::project::{
@@ -70,9 +73,16 @@ pub async fn export_project_archive(
 /// Verify an archive without writing any project content.
 #[tauri::command]
 pub async fn inspect_project_archive(
+    app: AppHandle,
     archive_path: String,
 ) -> Result<ProjectArchiveInspection, String> {
     let archive_path = normalize_archive_path(&archive_path)?;
+    emit_project_activity(
+        &app,
+        ProjectActivityOperation::Import,
+        ProjectActivityPhase::InspectingPackage,
+        Some(&archive_path),
+    );
     tokio::task::spawn_blocking(move || inspect_project_package(&archive_path))
         .await
         .map_err(|error| format!("Project package inspection task failed: {error}"))?
@@ -81,11 +91,18 @@ pub async fn inspect_project_archive(
 /// Import a verified package into a new sibling directory under `destination_parent`.
 #[tauri::command]
 pub async fn import_project_archive(
+    app: AppHandle,
     state: State<'_, AppState>,
     archive_path: String,
     destination_parent: String,
 ) -> Result<ProjectArchiveImportResult, String> {
     let archive_path = normalize_archive_path(&archive_path)?;
+    emit_project_activity(
+        &app,
+        ProjectActivityOperation::Import,
+        ProjectActivityPhase::ExtractingPackage,
+        Some(&archive_path),
+    );
     let destination_parent = canonical_regular_directory(
         &normalize_local_path(&destination_parent, "Import destination")?,
         "Import destination",
@@ -127,6 +144,12 @@ pub async fn import_project_archive(
         }
     };
 
+    emit_project_activity(
+        &app,
+        ProjectActivityOperation::Import,
+        ProjectActivityPhase::ValidatingImport,
+        Some(&staging_root),
+    );
     let delivery = match validate_project_delivery(&staging_root).await {
         Ok(delivery) => delivery,
         Err(error) => {
@@ -163,6 +186,12 @@ pub async fn import_project_archive(
             destination.display()
         ));
     }
+    emit_project_activity(
+        &app,
+        ProjectActivityOperation::Import,
+        ProjectActivityPhase::FinalizingImport,
+        Some(&destination),
+    );
     if let Err(error) = std::fs::rename(&staging_root, &destination) {
         remove_import_staging(&staging_root);
         return Err(format!(
@@ -170,6 +199,13 @@ pub async fn import_project_archive(
             destination.display()
         ));
     }
+
+    emit_project_activity(
+        &app,
+        ProjectActivityOperation::Import,
+        ProjectActivityPhase::Ready,
+        Some(&destination),
+    );
 
     Ok(ProjectArchiveImportResult {
         archive_path: verified.archive_path,

@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 import { hasTauriRuntime, invokeCommand } from './tauri'
+import { runProjectActivity } from './projectActivity'
 
 export interface ProjectLauncherEntry {
   project_path: string
@@ -51,11 +52,17 @@ export async function ensureActiveProject() {
 }
 
 export async function openWorkspaceProject(projectPath: string) {
-  const entry = await invokeCommand<ProjectLauncherEntry>('open_project', {
-    projectPath,
+  return runProjectActivity({
+    operation: 'open',
+    phase: 'checking_project',
+    project_path: projectPath,
+  }, async () => {
+    const entry = await invokeCommand<ProjectLauncherEntry>('open_project', {
+      projectPath,
+    })
+    await refreshProjectWorkspace()
+    return entry
   })
-  await refreshProjectWorkspace()
-  return entry
 }
 
 export async function createWorkspaceProject(input: {
@@ -63,9 +70,14 @@ export async function createWorkspaceProject(input: {
   directoryName: string
   projectTitle: string
 }) {
-  const entry = await invokeCommand<ProjectLauncherEntry>('create_project', input)
-  await refreshProjectWorkspace()
-  return entry
+  return runProjectActivity({
+    operation: 'create',
+    phase: 'checking_project',
+  }, async () => {
+    const entry = await invokeCommand<ProjectLauncherEntry>('create_project', input)
+    await refreshProjectWorkspace()
+    return entry
+  })
 }
 
 export async function forgetWorkspaceProject(projectPath: string) {
