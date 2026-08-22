@@ -21,13 +21,13 @@ Build project data that the real Monogatari runtime can load. Treat a project as
 2. Create knowledge and character records.
 3. Add renderer assets and scenes, using project-relative portable paths.
 4. Add endings before any dynamic route targets them.
-5. For interactive AI stories, create `roleplays/` as the primary story graph: define scene-bound nodes, player and NPC goals, optional per-NPC `participant_goals` for every selectable supporting character with a distinct current motive, score dimensions, evidence rules, inference budgets, deterministic transitions, timeouts, ending targets, scene-specific `intrusion_response`, grounded `response_guard` recoveries, and conservative `fallback_evaluation` signals. Higher numeric transition priorities win; assign more specific routes higher priorities and never let a broader condition set shadow a strict superset.
-6. Add `dialogue/` only for intentionally scripted sequences, tutorials, or non-AI projects; verify every scripted node, speaker, choice, and terminal path.
+5. For a conventional visual novel, create `dialogue/` as the primary story graph: define scene-bound nodes, fixed player choices, authored targets, terminal paths, and optional `response_generation` contracts that let the model vary only the visible character wording. Every route remains graph-owned and must be reachable and validated.
+6. Use `roleplays/` only for explicit special scenes or chapter checkpoints that genuinely require free-form interaction. Define their scene-bound nodes, player and NPC goals, optional per-NPC `participant_goals` for every selectable supporting character with a distinct current motive, score dimensions, evidence rules, inference budgets, deterministic transitions, timeouts, ending targets, scene-specific `intrusion_response`, grounded `response_guard` recoveries, and conservative `fallback_evaluation` signals. Higher numeric transition priorities win; assign more specific routes higher priorities and never let a broader condition set shadow a strict superset.
 7. Add event unlock rules and workflows after their referenced character, scene, roleplay, dialogue, and ending IDs are stable.
 8. Add or update a Quality Suite that replays critical free-form turns and adversarial controls. Prove node coverage, score/evidence boundaries, every required ending, character identity, knowledge boundaries, exact intrusion/guard counts, zero unguarded intrusions, and forbidden response-marker absence.
 9. Keep mirrored `data/` and `rust-engine/data/` roots byte-equivalent when editing the built-in project.
 
-When the brief requires real-time AI roleplay, do not replace it with fixed Dialogue or an optional chat panel. The main playable loop must accept free-form player input, generate normal clean-turn NPC responses from the current node's scene, character, goals, bounded transcript, pinned Knowledge, and closed grounding vocabulary, obtain a separate structured score/evidence evaluation, and let only the deterministic roleplay state machine select transitions and endings. Fixed authored lines are permitted only as bounded intrusion or inference/output recovery. Detected control attempts must not enter model context literally: convert them into authored in-world uncertainty or redirection, skip model scoring, and commit zero score/evidence. Do not use real-world mental-health diagnoses as a fallback. A provider-free replay proves authored rules, route coverage, and deterministic containment; it does not prove live model generation. Verify the configured desktop or WebGPU clean-turn generation path separately, including forced NPC/evaluator failure, and report fallback turns as degraded behavior rather than successful model evidence.
+For a standard visual-novel brief, do not replace the authored Dialogue graph with an always-open chat panel. The main playable loop presents fixed choices, and only graph targets decide later nodes and endings. A `response_generation` contract may generate a short in-character variation for the active node, but it has no route, relationship, event, unlock, flag, or variable authority and always falls back to authored `text`. A `free_talk` contract may expose a limited conversation at an explicitly authored checkpoint; it must have a scene boundary, a fallback, a turn cap, no chat-history persistence, and no story-state writes. When the brief explicitly requires real-time AI roleplay, its node state machine still owns transitions and endings; free-form generation and evaluation must remain bounded and provider-neutral.
 
 Synchronize and verify the built-in project after an accepted transaction:
 
@@ -41,12 +41,11 @@ Binary assets are outside Agent JSON transactions. In this repository, plan a bo
 Use structured JSON editing and preserve unrelated author changes. Do not invent a parallel schema or bypass runtime validation with a custom parser.
 
 For a playable project, set `settings.json` `play.launch` to the stable internal
-ID of its primary `campaign` or `roleplay`. The filename is not the content ID.
-Queryless Web and desktop launches resolve this contract before catalog
-fallbacks, and packaging must reject a target that is not present in the
-shipped project documents. Fixed Dialogue is appropriate for intentional
-cutscenes and endings, not as the default interaction loop of an AI roleplay
-project.
+ID of its primary `dialogue`, `campaign`, or `roleplay`. The filename is not the
+content ID. Queryless Web and desktop launches resolve this contract before
+catalog fallbacks, and packaging must reject a target that is not present in the
+shipped project documents. Prefer `dialogue` for the normal visual-novel loop;
+use Campaign and Roleplay only when the project intentionally needs them.
 
 For a new multi-node real-time chapter in this repository, prefer the
 schema-backed blueprint compiler over hand-copying full Roleplay and Quality

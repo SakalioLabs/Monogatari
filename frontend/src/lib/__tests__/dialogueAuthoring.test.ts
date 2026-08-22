@@ -20,6 +20,8 @@ function node(overrides: Partial<DialogueNodeDefinition> = {}): DialogueNodeDefi
     use_llm: false,
     llm_prompt: null,
     llm_system_prompt: null,
+    response_generation: null,
+    free_talk: null,
     is_ending: false,
     ending_type: null,
     ...overrides,

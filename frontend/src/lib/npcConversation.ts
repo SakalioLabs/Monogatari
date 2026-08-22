@@ -51,6 +51,7 @@ export function buildWebNpcChatMessages(
   locale: string,
   history: NpcPromptHistoryMessage[],
   knowledgeEntries: KnowledgeEntryDefinition[] = [],
+  containedContext: string | null = null,
 ): WebGpuChatMessage[] {
   const conversation = history
     .filter((message) => (message.role === 'player' || message.role === 'character') && message.content.trim())
@@ -61,7 +62,7 @@ export function buildWebNpcChatMessages(
     }))
 
   return [
-    { role: 'system', content: buildWebNpcSystemPrompt(character, locale, knowledgeEntries) },
+    { role: 'system', content: buildWebNpcSystemPrompt(character, locale, knowledgeEntries, containedContext) },
     ...conversation,
   ]
 }
@@ -70,6 +71,7 @@ export function buildWebNpcSystemPrompt(
   character: StoryCharacterInfo,
   locale: string,
   knowledgeEntries: KnowledgeEntryDefinition[] = [],
+  containedContext: string | null = null,
 ): string {
   const personality = safeJson(character.personality)
   const knowledge = resolvedKnowledgeLines(character, knowledgeEntries)
@@ -87,6 +89,13 @@ export function buildWebNpcSystemPrompt(
     character.background ? `Background: ${boundedText(character.background, 1_000)}` : '',
     personality ? `Personality: ${boundedText(personality, 800)}` : '',
     knowledge.length > 0 ? `Pinned knowledge:\n${knowledge.join('\n')}` : '',
+    containedContext?.trim()
+      ? [
+        'Contained chapter conversation:',
+        `- Stay within this authored scene boundary: ${boundedText(containedContext, 1_500)}`,
+        '- Do not change or promise to change relationship scores, events, unlocks, chapter outcomes, or story routes.',
+      ].join('\n')
+      : '',
   ].filter(Boolean)
 
   return boundedText(sections.join('\n\n'), 4_500)

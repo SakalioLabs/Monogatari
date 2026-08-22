@@ -8,7 +8,9 @@ import {
   type DialogueDefinition as BrowserDialogueDefinition,
   type StoryDialogueInfo,
   type WebDialogueChoice,
+  type WebDialogueFreeTalk,
   type WebDialogueNode,
+  type WebDialogueResponseGeneration,
 } from './storyContent'
 import { hasTauriRuntime, invokeCommand } from './tauri'
 
@@ -33,8 +35,29 @@ export interface DialogueNodeDefinition {
   use_llm: boolean
   llm_prompt: string | null
   llm_system_prompt: string | null
+  response_generation: DialogueResponseGenerationDefinition | null
+  free_talk: DialogueFreeTalkDefinition | null
   is_ending: boolean
   ending_type: string | null
+}
+
+export interface DialogueResponseGenerationDefinition {
+  character_id: string | null
+  context: string
+  grounding_markers: string[]
+  forbidden_markers: string[]
+  max_characters: number
+  max_sentences: number
+}
+
+export interface DialogueFreeTalkDefinition {
+  character_id: string
+  context: string
+  title: string | null
+  opening_text: string | null
+  fallback_text: string
+  max_turns: number
+  max_characters: number
 }
 
 export interface DialogueDefinition {
@@ -215,9 +238,14 @@ export function validateDialogueDefinition(
     }
     validateSource(issues, `Node "${nodeId}" condition`, node.condition, 2000)
     validateSource(issues, `Node "${nodeId}" script`, node.script, 20000)
+    if (node.use_llm && node.response_generation) {
+      issues.push(`Node "${nodeId}" cannot combine a legacy LLM prompt with a controlled character reply.`)
+    }
     if (node.use_llm && !node.llm_prompt) issues.push(`Node "${nodeId}" enables LLM generation without a prompt.`)
     validateSource(issues, `Node "${nodeId}" LLM prompt`, node.llm_prompt, 20000)
     validateSource(issues, `Node "${nodeId}" LLM system prompt`, node.llm_system_prompt, 20000)
+    validateResponseGeneration(issues, nodeId, node, knownCharacters)
+    validateFreeTalk(issues, nodeId, node.free_talk, knownCharacters)
 
     node.choices.forEach((choice, choiceIndex) => {
       const label = `Node "${nodeId}" choice ${choiceIndex + 1}`
@@ -258,6 +286,71 @@ export function validateDialogueDefinition(
   return [...new Set(issues)]
 }
 
+function validateResponseGeneration(
+  issues: string[],
+  nodeId: string,
+  node: DialogueNodeDefinition,
+  knownCharacters: Set<string>,
+): void {
+  const generation = node.response_generation
+  if (!generation) return
+  const characterId = generation.character_id || node.speaker_id
+  if (!characterId) {
+    issues.push(`Node "${nodeId}" controlled character reply needs a speaker.`)
+  } else if (!portableId(characterId)) {
+    issues.push(`Node "${nodeId}" controlled reply character "${characterId}" is not portable.`)
+  } else if (knownCharacters.size > 0 && !knownCharacters.has(characterId)) {
+    issues.push(`Node "${nodeId}" controlled reply references unknown character "${characterId}".`)
+  }
+  if (node.speaker_id && generation.character_id && node.speaker_id !== generation.character_id) {
+    issues.push(`Node "${nodeId}" controlled reply character must match its speaker.`)
+  }
+  validateText(issues, `Node "${nodeId}" controlled reply context`, generation.context, 1, 4096)
+  validateGenerationMarkers(issues, `Node "${nodeId}" grounding markers`, generation.grounding_markers)
+  validateGenerationMarkers(issues, `Node "${nodeId}" forbidden markers`, generation.forbidden_markers)
+  if (!Number.isInteger(generation.max_characters) || generation.max_characters < 40 || generation.max_characters > 600) {
+    issues.push(`Node "${nodeId}" controlled reply maximum length must be 40-600 characters.`)
+  }
+  if (!Number.isInteger(generation.max_sentences) || generation.max_sentences < 1 || generation.max_sentences > 6) {
+    issues.push(`Node "${nodeId}" controlled reply sentence limit must be 1-6.`)
+  }
+}
+
+function validateFreeTalk(
+  issues: string[],
+  nodeId: string,
+  freeTalk: DialogueFreeTalkDefinition | null,
+  knownCharacters: Set<string>,
+): void {
+  if (!freeTalk) return
+  if (!portableId(freeTalk.character_id)) {
+    issues.push(`Node "${nodeId}" free talk character "${freeTalk.character_id}" is not portable.`)
+  } else if (knownCharacters.size > 0 && !knownCharacters.has(freeTalk.character_id)) {
+    issues.push(`Node "${nodeId}" free talk references unknown character "${freeTalk.character_id}".`)
+  }
+  validateText(issues, `Node "${nodeId}" free talk context`, freeTalk.context, 1, 4096)
+  if (freeTalk.title !== null) validateText(issues, `Node "${nodeId}" free talk title`, freeTalk.title, 1, 128)
+  if (freeTalk.opening_text !== null) validateText(issues, `Node "${nodeId}" free talk opening`, freeTalk.opening_text, 1, 2048)
+  validateText(issues, `Node "${nodeId}" free talk fallback`, freeTalk.fallback_text, 1, 2048)
+  if (!Number.isInteger(freeTalk.max_turns) || freeTalk.max_turns < 1 || freeTalk.max_turns > 12) {
+    issues.push(`Node "${nodeId}" free talk turns must be 1-12.`)
+  }
+  if (!Number.isInteger(freeTalk.max_characters) || freeTalk.max_characters < 40 || freeTalk.max_characters > 600) {
+    issues.push(`Node "${nodeId}" free talk maximum length must be 40-600 characters.`)
+  }
+}
+
+function validateGenerationMarkers(issues: string[], label: string, markers: string[]): void {
+  if (markers.length > 16) issues.push(`${label} can contain at most 16 entries.`)
+  const seen = new Set<string>()
+  markers.forEach((marker) => {
+    validateText(issues, label, marker, 1, 128)
+    const key = marker.toLocaleLowerCase()
+    if (seen.has(key)) issues.push(`${label} cannot contain duplicate entries.`)
+    seen.add(key)
+  })
+}
+
 async function browserCatalogSnapshot(): Promise<DialogueAuthoringCatalogSnapshot> {
   const draftActive = loadBrowserDialogueDrafts() !== null
   const dialogues = await loadStoryDialogues()
@@ -281,7 +374,7 @@ function snapshotFromEntries(entries: DialogueAuthoringEntry[]): DialogueAuthori
   const choiceCount = entries.reduce((count, dialogue) => count
     + Object.values(dialogue.nodes).reduce((nodeCount, node) => nodeCount + node.choices.length, 0), 0)
   const llmNodeCount = entries.reduce((count, dialogue) => count
-    + Object.values(dialogue.nodes).filter((node) => node.use_llm).length, 0)
+    + Object.values(dialogue.nodes).filter((node) => node.use_llm || node.response_generation !== null).length, 0)
   return {
     schema: DIALOGUE_AUTHORING_CATALOG_SCHEMA,
     catalog_fingerprint: browserFingerprint(entries.map((dialogue) => ({
@@ -326,8 +419,37 @@ function nodeFromWeb(node: WebDialogueNode): DialogueNodeDefinition {
     use_llm: Boolean(node.use_llm),
     llm_prompt: node.llm_prompt || null,
     llm_system_prompt: node.llm_system_prompt || null,
+    response_generation: responseGenerationFromWeb(node.response_generation),
+    free_talk: freeTalkFromWeb(node.free_talk),
     is_ending: Boolean(node.is_ending),
     ending_type: node.ending_type || null,
+  }
+}
+
+function responseGenerationFromWeb(
+  value: WebDialogueResponseGeneration | null | undefined,
+): DialogueResponseGenerationDefinition | null {
+  if (!value) return null
+  return {
+    character_id: optionalText(value.character_id),
+    context: value.context || '',
+    grounding_markers: normalizeMarkerList(value.grounding_markers),
+    forbidden_markers: normalizeMarkerList(value.forbidden_markers),
+    max_characters: integerValue(value.max_characters, 240),
+    max_sentences: integerValue(value.max_sentences, 3),
+  }
+}
+
+function freeTalkFromWeb(value: WebDialogueFreeTalk | null | undefined): DialogueFreeTalkDefinition | null {
+  if (!value) return null
+  return {
+    character_id: value.character_id || '',
+    context: value.context || '',
+    title: optionalText(value.title),
+    opening_text: optionalText(value.opening_text),
+    fallback_text: value.fallback_text || '',
+    max_turns: integerValue(value.max_turns, 4),
+    max_characters: integerValue(value.max_characters, 240),
   }
 }
 
@@ -358,8 +480,37 @@ function normalizeNode(node: DialogueNodeDefinition): DialogueNodeDefinition {
     use_llm: Boolean(node.use_llm),
     llm_prompt: optionalText(node.llm_prompt),
     llm_system_prompt: optionalText(node.llm_system_prompt),
+    response_generation: normalizeResponseGeneration(node.response_generation),
+    free_talk: normalizeFreeTalk(node.free_talk),
     is_ending: Boolean(node.is_ending),
     ending_type: optionalText(node.ending_type),
+  }
+}
+
+function normalizeResponseGeneration(
+  value: DialogueResponseGenerationDefinition | null,
+): DialogueResponseGenerationDefinition | null {
+  if (!value) return null
+  return {
+    character_id: optionalText(value.character_id),
+    context: value.context.trim(),
+    grounding_markers: normalizeMarkerList(value.grounding_markers),
+    forbidden_markers: normalizeMarkerList(value.forbidden_markers),
+    max_characters: integerValue(value.max_characters, 240),
+    max_sentences: integerValue(value.max_sentences, 3),
+  }
+}
+
+function normalizeFreeTalk(value: DialogueFreeTalkDefinition | null): DialogueFreeTalkDefinition | null {
+  if (!value) return null
+  return {
+    character_id: value.character_id.trim(),
+    context: value.context.trim(),
+    title: optionalText(value.title),
+    opening_text: optionalText(value.opening_text),
+    fallback_text: value.fallback_text.trim(),
+    max_turns: integerValue(value.max_turns, 4),
+    max_characters: integerValue(value.max_characters, 240),
   }
 }
 
@@ -377,6 +528,22 @@ function browserDialogueDefinition(dialogue: DialogueDefinition): BrowserDialogu
 function optionalText(value: string | null | undefined): string | null {
   const normalized = value?.trim() || ''
   return normalized || null
+}
+
+function normalizeMarkerList(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  const seen = new Set<string>()
+  return value.flatMap((entry) => {
+    const marker = typeof entry === 'string' ? entry.trim() : ''
+    if (!marker || seen.has(marker.toLocaleLowerCase())) return []
+    seen.add(marker.toLocaleLowerCase())
+    return [marker]
+  })
+}
+
+function integerValue(value: unknown, fallback: number): number {
+  const number = Number(value)
+  return Number.isFinite(number) ? Math.round(number) : fallback
 }
 
 function portableId(value: string): boolean {

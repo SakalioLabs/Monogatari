@@ -106,7 +106,8 @@
               <span class="node-heading">
                 <b>{{ nodeId }}</b>
                 <em v-if="draft.start_node_id === nodeId">{{ t('dialogue.start', 'Start') }}</em>
-                <em v-if="draft.nodes[nodeId].use_llm" class="llm">LLM</em>
+                <em v-if="draft.nodes[nodeId].use_llm || draft.nodes[nodeId].response_generation" class="llm">LLM</em>
+                <em v-if="draft.nodes[nodeId].free_talk" class="talk">{{ t('dialogue.free-talk-badge', 'Talk') }}</em>
                 <em v-if="flowMode(draft.nodes[nodeId]) === 'end'" class="end">{{ t('dialogue.end', 'End') }}</em>
                 <small>{{ draft.nodes[nodeId].speaker_id || t('dialogue.narrator', 'Narrator') }}</small>
               </span>
@@ -325,10 +326,85 @@
           </section>
 
           <section class="property-section">
-            <span class="eyebrow">{{ t('dialogue.llm-generation', 'LLM Generation') }}</span>
+            <span class="eyebrow">{{ t('dialogue.controlled-reply', 'Controlled Character Reply') }}</span>
             <label class="check-field">
-              <input v-model="selectedNode.use_llm" type="checkbox" />
-              <span>{{ t('dialogue.generate-runtime', 'Generate node text at runtime') }}</span>
+              <input :checked="Boolean(selectedNode.response_generation)" type="checkbox" @change="toggleControlledResponse($event)" />
+              <span>{{ t('dialogue.controlled-reply-enable', 'Generate this character reaction without changing its authored route') }}</span>
+            </label>
+            <template v-if="selectedNode.response_generation">
+              <label class="form-field">
+                <span>{{ t('dialogue.controlled-context', 'Story beat') }}</span>
+                <textarea v-model="selectedNode.response_generation.context" class="input" rows="4" maxlength="4096"></textarea>
+                <small>{{ t('dialogue.controlled-fallback', 'The node dialogue text remains the safe fallback.') }}</small>
+              </label>
+              <label class="form-field">
+                <span>{{ t('dialogue.grounding-markers', 'Grounding markers') }}</span>
+                <input :value="markerListText(selectedNode.response_generation.grounding_markers)" class="input" maxlength="2048" @input="setGenerationMarkers('grounding_markers', $event)" />
+              </label>
+              <label class="form-field">
+                <span>{{ t('dialogue.forbidden-markers', 'Forbidden markers') }}</span>
+                <input :value="markerListText(selectedNode.response_generation.forbidden_markers)" class="input" maxlength="2048" @input="setGenerationMarkers('forbidden_markers', $event)" />
+              </label>
+              <div class="field-grid">
+                <label class="form-field">
+                  <span>{{ t('dialogue.max-characters', 'Max characters') }}</span>
+                  <input v-model.number="selectedNode.response_generation.max_characters" class="input" type="number" min="40" max="600" step="1" />
+                </label>
+                <label class="form-field">
+                  <span>{{ t('dialogue.max-sentences', 'Max sentences') }}</span>
+                  <input v-model.number="selectedNode.response_generation.max_sentences" class="input" type="number" min="1" max="6" step="1" />
+                </label>
+              </div>
+            </template>
+          </section>
+
+          <section class="property-section">
+            <span class="eyebrow">{{ t('dialogue.free-talk', 'Chapter Free Talk') }}</span>
+            <label class="check-field">
+              <input :checked="Boolean(selectedNode.free_talk)" type="checkbox" @change="toggleFreeTalk($event)" />
+              <span>{{ t('dialogue.free-talk-enable', 'Offer a contained conversation before the player continues') }}</span>
+            </label>
+            <template v-if="selectedNode.free_talk">
+              <label class="form-field">
+                <span>{{ t('dialogue.free-talk-character', 'Character') }}</span>
+                <select v-model="selectedNode.free_talk.character_id" class="input">
+                  <option v-for="character in characters" :key="character.id" :value="character.id">{{ character.name }} · {{ character.id }}</option>
+                </select>
+              </label>
+              <label class="form-field">
+                <span>{{ t('dialogue.free-talk-context', 'Scene boundary') }}</span>
+                <textarea v-model="selectedNode.free_talk.context" class="input" rows="3" maxlength="4096"></textarea>
+              </label>
+              <label class="form-field">
+                <span>{{ t('dialogue.free-talk-title', 'Entry label') }}</span>
+                <input v-model="selectedNode.free_talk.title" class="input" maxlength="128" />
+              </label>
+              <label class="form-field">
+                <span>{{ t('dialogue.free-talk-opening', 'Opening line') }}</span>
+                <textarea v-model="selectedNode.free_talk.opening_text" class="input" rows="2" maxlength="2048"></textarea>
+              </label>
+              <label class="form-field">
+                <span>{{ t('dialogue.free-talk-fallback', 'Safe fallback') }}</span>
+                <textarea v-model="selectedNode.free_talk.fallback_text" class="input" rows="2" maxlength="2048"></textarea>
+              </label>
+              <div class="field-grid">
+                <label class="form-field">
+                  <span>{{ t('dialogue.free-talk-turns', 'Max turns') }}</span>
+                  <input v-model.number="selectedNode.free_talk.max_turns" class="input" type="number" min="1" max="12" step="1" />
+                </label>
+                <label class="form-field">
+                  <span>{{ t('dialogue.max-characters', 'Max characters') }}</span>
+                  <input v-model.number="selectedNode.free_talk.max_characters" class="input" type="number" min="40" max="600" step="1" />
+                </label>
+              </div>
+            </template>
+          </section>
+
+          <section class="property-section">
+            <span class="eyebrow">{{ t('dialogue.legacy-llm', 'Legacy LLM Generation') }}</span>
+            <label class="check-field">
+              <input :checked="selectedNode.use_llm" type="checkbox" @change="toggleLegacyGeneration($event)" />
+              <span>{{ t('dialogue.generate-runtime', 'Generate node text from an advanced prompt') }}</span>
             </label>
             <template v-if="selectedNode.use_llm">
               <label class="form-field">
@@ -481,6 +557,70 @@ const canPreview = computed(() => Boolean(selectedDialogueId.value && !dirty.val
 
 function truncate(value: string, length: number): string {
   return value.length > length ? `${value.slice(0, length)}...` : value
+}
+
+function toggleControlledResponse(event: Event) {
+  if (!selectedNode.value) return
+  const enabled = (event.target as HTMLInputElement).checked
+  if (!enabled) {
+    selectedNode.value.response_generation = null
+    return
+  }
+  selectedNode.value.use_llm = false
+  selectedNode.value.response_generation = {
+    character_id: null,
+    context: '',
+    grounding_markers: [],
+    forbidden_markers: [],
+    max_characters: 240,
+    max_sentences: 3,
+  }
+}
+
+function toggleFreeTalk(event: Event) {
+  if (!selectedNode.value) return
+  const enabled = (event.target as HTMLInputElement).checked
+  if (!enabled) {
+    selectedNode.value.free_talk = null
+    return
+  }
+  selectedNode.value.free_talk = {
+    character_id: selectedNode.value.speaker_id || characters.value[0]?.id || '',
+    context: '',
+    title: null,
+    opening_text: null,
+    fallback_text: '',
+    max_turns: 4,
+    max_characters: 240,
+  }
+}
+
+function toggleLegacyGeneration(event: Event) {
+  if (!selectedNode.value) return
+  selectedNode.value.use_llm = (event.target as HTMLInputElement).checked
+  if (selectedNode.value.use_llm) selectedNode.value.response_generation = null
+}
+
+function markerListText(markers: string[]): string {
+  return markers.join(', ')
+}
+
+function setGenerationMarkers(
+  field: 'grounding_markers' | 'forbidden_markers',
+  event: Event,
+) {
+  const generation = selectedNode.value?.response_generation
+  if (!generation) return
+  const seen = new Set<string>()
+  generation[field] = (event.target as HTMLInputElement).value
+    .split(/[\n,]/)
+    .map(marker => marker.trim())
+    .filter((marker) => {
+      const key = marker.toLocaleLowerCase()
+      if (!marker || seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
 }
 
 function setDraft(definition: DialogueDefinition, dialogueId: string | null, isSaved = true) {
@@ -863,6 +1003,7 @@ onUnmounted(() => {
 .node-heading b { overflow: hidden; font-family: var(--font-mono); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .node-heading em { padding: 2px 5px; border-radius: 3px; background: rgba(34, 197, 94, 0.12); color: #86efac; font-size: 8px; font-style: normal; font-weight: 900; text-transform: uppercase; }
 .node-heading em.llm { background: rgba(96, 165, 250, 0.14); color: #93c5fd; }
+.node-heading em.talk { background: rgba(74, 222, 128, 0.14); color: #86efac; }
 .node-heading em.end { background: rgba(192, 132, 252, 0.14); color: #d8b4fe; }
 .node-heading small { margin-left: auto; color: var(--brand-light); font-size: 9px; }
 .node-text { display: -webkit-box; margin-top: 8px; overflow: hidden; color: var(--text-secondary); font-size: 11px; line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }

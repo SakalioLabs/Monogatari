@@ -2,15 +2,14 @@
 
 ## Overview
 
-Monogatari is an AI-native visual novel and scene-roleplay engine built with Rust (Tauri 2.x) and Vue 3 + TypeScript. Its primary loop is free-form player input inside authored scene nodes: a model performs the NPC, an independent evaluator proposes score and evidence changes, and a deterministic state machine alone selects later nodes and endings. The workbench and Agent interfaces author and validate the same project contracts used by Web/PWA and Windows packages; fixed Dialogue remains available for intentionally scripted sequences.
+Monogatari is an AI-native visual novel and optional scene-roleplay engine built with Rust (Tauri 2.x) and Vue 3 + TypeScript. Its primary loop is an authored Dialogue graph: players select fixed options, the graph alone owns every later node and ending, and a model may supply only a bounded in-character wording variant for the current node. Free-form roleplay remains available for explicitly authored special scenes or chapter checkpoints, never as an unmarked replacement for the main route. The workbench and Agent interfaces author and validate the same project contracts used by Web/PWA and Windows packages.
 
 Project startup is content-addressed by `settings.json` through
-`play.launch = { kind: "campaign" | "roleplay", id }`. Web builds copy that
+`play.launch = { kind: "dialogue" | "campaign" | "roleplay", id }`. Web builds copy that
 target into `project-assets.json`; desktop builds read it from the active
 project configuration. Explicit authoring previews take precedence, while a
-queryless `/game` launch starts the configured real-time campaign or Roleplay.
-Scripted Dialogue remains available for authored cutscenes and endings, but is
-not the default interaction path.
+queryless `/game` launch starts the configured authored Dialogue, campaign, or
+special Roleplay. A Dialogue is the recommended default project entry.
 
 ## System Architecture
 

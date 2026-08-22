@@ -695,8 +695,8 @@ fn has_tool_marker(value: &str) -> bool {
         "\"function\":\"",
         "\"function\": \"",
     ]
-        .iter()
-        .any(|marker| value.contains(marker))
+    .iter()
+    .any(|marker| value.contains(marker))
 }
 
 fn has_state_marker(value: &str) -> bool {

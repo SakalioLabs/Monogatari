@@ -68,6 +68,7 @@ fn main() {
             commands::dialogue::advance_dialogue,
             commands::dialogue::select_choice,
             commands::dialogue::get_dialogue_state,
+            commands::dialogue::send_dialogue_free_talk_message,
             commands::dialogue::load_dialogues,
             commands::knowledge::search_knowledge,
             commands::knowledge::load_knowledge,

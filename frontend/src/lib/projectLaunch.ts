@@ -1,14 +1,17 @@
 import { hasTauriRuntime, invokeCommand } from './tauri'
 import type { RoleplayCampaignDefinition } from './roleplayCampaign'
 import type { SceneRoleplayDefinition } from './sceneRoleplay'
+import type { StoryDialogueInfo } from './storyContent'
 
 export type ProjectLaunchTarget =
   | { kind: 'campaign'; id: string }
   | { kind: 'roleplay'; id: string }
+  | { kind: 'dialogue'; id: string }
 
 export type ResolvedProjectLaunch =
   | { kind: 'campaign'; definition: RoleplayCampaignDefinition }
   | { kind: 'roleplay'; definition: SceneRoleplayDefinition }
+  | { kind: 'dialogue'; definition: StoryDialogueInfo }
   | null
 
 interface ProjectConfigState {
@@ -23,7 +26,7 @@ interface WebProjectManifest {
 export function parseProjectLaunchTarget(value: unknown): ProjectLaunchTarget | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
   const candidate = value as Record<string, unknown>
-  if (candidate.kind !== 'campaign' && candidate.kind !== 'roleplay') return null
+  if (candidate.kind !== 'campaign' && candidate.kind !== 'roleplay' && candidate.kind !== 'dialogue') return null
   if (typeof candidate.id !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(candidate.id)) {
     return null
   }
@@ -34,6 +37,7 @@ export function resolveProjectLaunch(
   target: ProjectLaunchTarget | null,
   campaigns: RoleplayCampaignDefinition[],
   roleplays: SceneRoleplayDefinition[],
+  dialogues: StoryDialogueInfo[],
 ): ResolvedProjectLaunch {
   if (target?.kind === 'campaign') {
     const definition = campaigns.find(candidate => candidate.id === target.id)
@@ -43,8 +47,13 @@ export function resolveProjectLaunch(
     const definition = roleplays.find(candidate => candidate.id === target.id)
     if (definition) return { kind: 'roleplay', definition }
   }
+  if (target?.kind === 'dialogue') {
+    const definition = dialogues.find(candidate => candidate.id === target.id)
+    if (definition) return { kind: 'dialogue', definition }
+  }
   if (campaigns[0]) return { kind: 'campaign', definition: campaigns[0] }
   if (roleplays[0]) return { kind: 'roleplay', definition: roleplays[0] }
+  if (dialogues[0]) return { kind: 'dialogue', definition: dialogues[0] }
   return null
 }
 

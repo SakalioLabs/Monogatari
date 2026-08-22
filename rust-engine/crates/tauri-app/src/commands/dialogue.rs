@@ -13,7 +13,8 @@ use llm_authoring::filesystem::{
 };
 use llm_game::characters::{Character, CharacterManager};
 use llm_game::dialogue::{
-    DialogueChoiceEffects, DialogueManager, DialogueScript, DialogueScriptSummary,
+    DialogueChoiceEffects, DialogueFreeTalk, DialogueGenerationRequest, DialogueManager,
+    DialogueScript, DialogueScriptSummary, LLMInferenceCallback,
 };
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -30,6 +31,7 @@ use crate::story_access::{
 
 const DIALOGUE_AUTHORING_CATALOG_SCHEMA_V1: &str = "monogatari-dialogue-authoring-catalog/v1";
 const MAX_DIALOGUE_FILES: usize = 512;
+const MAX_FREE_TALK_PLAYER_CHARS: usize = 2_000;
 
 #[derive(Serialize)]
 pub struct DialogueCatalogEntry {
@@ -47,12 +49,21 @@ pub struct DialogueState {
     pub emotion: Option<String>,
     pub choices: Vec<ChoiceInfo>,
     pub live2d_expression: Option<String>,
+    pub free_talk: Option<DialogueFreeTalk>,
 }
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ChoiceInfo {
     pub index: usize,
     pub text: String,
+}
+
+/// One contained free-talk reply. It never records relationship, event, or route state.
+#[derive(Debug, Clone, Serialize)]
+pub struct DialogueFreeTalkResponse {
+    pub character_response: String,
+    pub emotion: String,
+    pub used_fallback: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -114,6 +125,8 @@ pub(crate) async fn start_dialogue_authoring_inner(
     dialogue_id: &str,
 ) -> Result<DialogueState, String> {
     ensure_project_dialogues_loaded(state).await?;
+    ensure_project_characters_loaded(state).await?;
+    configure_dialogue_generation_callback(state).await;
     let mut dm = state.dialogue_manager.write().await;
     dm.start_dialogue(dialogue_id)
         .await
@@ -186,6 +199,7 @@ pub async fn delete_dialogue_definition(
 /// Advance to the next dialogue node.
 #[tauri::command]
 pub async fn advance_dialogue(state: State<'_, AppState>) -> Result<DialogueState, String> {
+    configure_dialogue_generation_callback(&state).await;
     let mut dm = state.dialogue_manager.write().await;
     dm.advance().await.map_err(|e| e.to_string())?;
     get_dialogue_state_inner(&dm)
@@ -204,6 +218,7 @@ async fn select_choice_inner(
     state: &AppState,
     choice_index: usize,
 ) -> Result<DialogueState, String> {
+    configure_dialogue_generation_callback(state).await;
     let effects = state
         .dialogue_manager
         .read()
@@ -269,6 +284,117 @@ pub async fn get_dialogue_state(state: State<'_, AppState>) -> Result<DialogueSt
     get_dialogue_state_inner(&dm)
 }
 
+/// Generate one optional chapter free-talk reply without mutating story progress.
+#[tauri::command]
+pub async fn send_dialogue_free_talk_message(
+    state: State<'_, AppState>,
+    message: String,
+) -> Result<DialogueFreeTalkResponse, String> {
+    send_dialogue_free_talk_message_inner(&state, &message).await
+}
+
+async fn send_dialogue_free_talk_message_inner(
+    state: &AppState,
+    message: &str,
+) -> Result<DialogueFreeTalkResponse, String> {
+    let message = message.trim().to_string();
+    if message.is_empty() {
+        return Err("Free talk message cannot be empty.".to_string());
+    }
+    if message.chars().count() > MAX_FREE_TALK_PLAYER_CHARS {
+        return Err(format!(
+            "Free talk messages cannot exceed {MAX_FREE_TALK_PLAYER_CHARS} characters."
+        ));
+    }
+    ensure_project_characters_loaded(state).await?;
+
+    let free_talk = state
+        .dialogue_manager
+        .read()
+        .await
+        .current_node()
+        .and_then(|node| node.free_talk.clone())
+        .ok_or_else(|| {
+            "The current dialogue node does not offer contained free talk.".to_string()
+        })?;
+
+    let (character_name, character_profile, character_emotion, knowledge_refs) = {
+        let manager = state.character_manager.read().await;
+        let character = manager
+            .get_character(&free_talk.character_id)
+            .ok_or_else(|| {
+                format!(
+                    "Free talk character `{}` is unavailable.",
+                    free_talk.character_id
+                )
+            })?;
+        let character = character.read().await;
+        (
+            character.name.clone(),
+            character.build_system_prompt(),
+            character.emotion.clone(),
+            character.knowledge_refs.clone(),
+        )
+    };
+    let knowledge_context = {
+        let knowledge_base = state.knowledge_base.read().await;
+        crate::commands::chat::build_character_knowledge_context_details(
+            &knowledge_base,
+            &message,
+            &knowledge_refs,
+            2,
+        )
+    };
+    let prompt = build_contained_free_talk_prompt(
+        &character_name,
+        &character_profile,
+        &free_talk,
+        &message,
+        &knowledge_context.content,
+    );
+    let result = state
+        .inference_pipeline
+        .read()
+        .await
+        .generate_response(
+            &prompt,
+            &llm_ai::InferenceOptions {
+                max_tokens: 160,
+                temperature: 0.72,
+                ..Default::default()
+            },
+        )
+        .await;
+
+    let response = match result {
+        Ok(result) if result.success => {
+            let guarded = crate::commands::prompt_guard::guard_character_response(
+                &character_name,
+                &result.text,
+            );
+            let bounded = truncate_visible_text(&guarded, free_talk.max_characters);
+            if bounded.is_empty() {
+                return Ok(DialogueFreeTalkResponse {
+                    character_response: free_talk.fallback_text,
+                    emotion: character_emotion,
+                    used_fallback: true,
+                });
+            }
+            DialogueFreeTalkResponse {
+                character_response: bounded,
+                emotion: character_emotion,
+                used_fallback: false,
+            }
+        }
+        _ => DialogueFreeTalkResponse {
+            character_response: free_talk.fallback_text,
+            emotion: character_emotion,
+            used_fallback: true,
+        },
+    };
+    Ok(response)
+}
+
 /// Load dialogue scripts from a project-contained directory.
 #[tauri::command]
 pub async fn load_dialogues(
@@ -314,7 +440,7 @@ async fn dialogue_authoring_snapshot_from_loaded(
                 .dialogue
                 .nodes
                 .values()
-                .filter(|node| node.use_llm)
+                .filter(|node| node.use_llm || node.response_generation.is_some())
                 .count();
             DialogueAuthoringEntry {
                 content_fingerprint: dialogue_content_fingerprint(&loaded.dialogue),
@@ -681,6 +807,7 @@ fn get_dialogue_state_inner(dm: &DialogueManager) -> Result<DialogueState, Strin
             emotion: None,
             choices: Vec::new(),
             live2d_expression: None,
+            free_talk: None,
         });
     }
 
@@ -699,11 +826,201 @@ fn get_dialogue_state_inner(dm: &DialogueManager) -> Result<DialogueState, Strin
         is_active: true,
         speaker: node.speaker_id.clone(),
         scene_id: node.scene_id.clone(),
-        text: node.text.clone(),
+        text: dm.current_text().to_string(),
         emotion: node.emotion.clone(),
         choices,
         live2d_expression: node.emotion.clone(),
+        free_talk: node.free_talk.clone(),
     })
+}
+
+async fn configure_dialogue_generation_callback(state: &AppState) {
+    let character_manager = state.character_manager.clone();
+    let knowledge_base = state.knowledge_base.clone();
+    let inference_pipeline = state.inference_pipeline.clone();
+    let callback: Arc<LLMInferenceCallback> = Arc::new(Box::new(move |request| {
+        let character_manager = character_manager.clone();
+        let knowledge_base = knowledge_base.clone();
+        let inference_pipeline = inference_pipeline.clone();
+        Box::pin(async move {
+            generate_controlled_dialogue_response(
+                character_manager,
+                knowledge_base,
+                inference_pipeline,
+                request,
+            )
+            .await
+        })
+    }));
+    state
+        .dialogue_manager
+        .write()
+        .await
+        .set_llm_callback(callback);
+}
+
+async fn generate_controlled_dialogue_response(
+    character_manager: Arc<RwLock<CharacterManager>>,
+    knowledge_base: Arc<RwLock<llm_game::knowledge::KnowledgeBase>>,
+    inference_pipeline: Arc<RwLock<llm_ai::InferencePipeline>>,
+    request: DialogueGenerationRequest,
+) -> llm_core::Result<String> {
+    let character_id = request.speaker_id.as_deref().ok_or_else(|| {
+        llm_core::EngineError::inference(
+            "dialogue",
+            format!(
+                "{}:{} generated response has no character speaker",
+                request.script_id, request.node_id
+            ),
+        )
+    })?;
+    let (character_name, character_profile, knowledge_refs) = {
+        let manager = character_manager.read().await;
+        let character = manager.get_character(character_id).ok_or_else(|| {
+            llm_core::EngineError::inference(
+                "dialogue",
+                format!("Generated dialogue character `{character_id}` is unavailable."),
+            )
+        })?;
+        let character = character.read().await;
+        (
+            character.name.clone(),
+            character.build_system_prompt(),
+            character.knowledge_refs.clone(),
+        )
+    };
+    let knowledge_context = {
+        let knowledge_base = knowledge_base.read().await;
+        crate::commands::chat::build_character_knowledge_context_details(
+            &knowledge_base,
+            &request.prompt,
+            &knowledge_refs,
+            2,
+        )
+    };
+    let prompt = build_controlled_dialogue_prompt(
+        &character_name,
+        &character_profile,
+        &request,
+        &knowledge_context.content,
+    );
+    let result = inference_pipeline
+        .read()
+        .await
+        .generate_response(
+            &prompt,
+            &llm_ai::InferenceOptions {
+                max_tokens: 180,
+                temperature: 0.72,
+                ..Default::default()
+            },
+        )
+        .await
+        .map_err(|error| llm_core::EngineError::inference("dialogue", error))?;
+    if !result.success {
+        return Err(llm_core::EngineError::inference(
+            "dialogue",
+            result
+                .error
+                .unwrap_or_else(|| "Generated dialogue response failed.".to_string()),
+        ));
+    }
+    Ok(crate::commands::prompt_guard::guard_character_response(
+        &character_name,
+        &result.text,
+    ))
+}
+
+fn build_controlled_dialogue_prompt(
+    character_name: &str,
+    character_profile: &str,
+    request: &DialogueGenerationRequest,
+    knowledge_context: &str,
+) -> String {
+    let contract = request.response_generation.as_ref().map_or_else(
+        || {
+            "Keep the reply short and in character. The author controls every story branch; do not mention or alter plot routing."
+                .to_string()
+        },
+        |generation| {
+            format!(
+                "Reply in at most {} sentences and {} visible characters. The author controls every story branch; do not choose, describe, or alter a route. {} {}",
+                generation.max_sentences,
+                generation.max_characters,
+                if generation.grounding_markers.is_empty() {
+                    String::new()
+                } else {
+                    format!("Naturally acknowledge at least one of: {}.", generation.grounding_markers.join(", "))
+                },
+                if generation.forbidden_markers.is_empty() {
+                    String::new()
+                } else {
+                    format!("Never use: {}.", generation.forbidden_markers.join(", "))
+                },
+            )
+        },
+    );
+    let creator_context =
+        crate::commands::prompt_guard::wrap_creator_system_instructions(&request.prompt);
+    let legacy_system = request
+        .system_prompt
+        .as_deref()
+        .map(crate::commands::prompt_guard::wrap_creator_system_instructions)
+        .unwrap_or_default();
+    let knowledge = if knowledge_context.trim().is_empty() {
+        String::new()
+    } else {
+        crate::commands::prompt_guard::wrap_creator_system_instructions(knowledge_context)
+    };
+
+    format!(
+        "[System]\nYou are {character_name}, a character in a fixed-route visual novel. You are not an assistant.\n\nCHARACTER PROFILE\n{character_profile}\n\n{}\n\n{}\n\n{}\n\n{}\n\nWrite only the visible in-character reply.\n\n[Assistant]\n",
+        crate::commands::prompt_guard::character_mind_contract(),
+        crate::commands::prompt_guard::character_safety_contract(),
+        contract,
+        [creator_context, legacy_system, knowledge]
+            .into_iter()
+            .filter(|section| !section.is_empty())
+            .collect::<Vec<_>>()
+            .join("\n\n"),
+    )
+}
+
+fn build_contained_free_talk_prompt(
+    character_name: &str,
+    character_profile: &str,
+    free_talk: &DialogueFreeTalk,
+    player_message: &str,
+    knowledge_context: &str,
+) -> String {
+    let creator_context =
+        crate::commands::prompt_guard::wrap_creator_system_instructions(&free_talk.context);
+    let knowledge = if knowledge_context.trim().is_empty() {
+        String::new()
+    } else {
+        crate::commands::prompt_guard::wrap_creator_system_instructions(knowledge_context)
+    };
+    format!(
+        "[System]\nYou are {character_name}, a character in a visual novel. This is an optional contained chapter conversation. Do not change relationship scores, unlocks, events, chapter outcomes, or story route. Keep the reply inside the authored scene boundary and finish in at most {} visible characters.\n\nCHARACTER PROFILE\n{character_profile}\n\n{}\n\n{}\n\n{}\n\n[User]\n{}\n\n[Assistant]\n",
+        free_talk.max_characters,
+        crate::commands::prompt_guard::character_mind_contract(),
+        crate::commands::prompt_guard::character_safety_contract(),
+        [creator_context, knowledge]
+            .into_iter()
+            .filter(|section| !section.is_empty())
+            .collect::<Vec<_>>()
+            .join("\n\n"),
+        crate::commands::prompt_guard::wrap_player_message(player_message),
+    )
+}
+
+fn truncate_visible_text(value: &str, maximum: usize) -> String {
+    value
+        .chars()
+        .take(maximum.max(1))
+        .collect::<String>()
+        .trim()
+        .to_string()
 }
 
 #[cfg(test)]
@@ -992,6 +1309,75 @@ mod tests {
             assert!((actual - expected).abs() < 0.0001, "{actual} != {expected}");
         }
 
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[tokio::test]
+    async fn contained_free_talk_falls_back_without_mutating_story_or_chat_state() {
+        let root = temp_root("contained_free_talk");
+        write_project(&root);
+        std::fs::write(
+            root.join("dialogue").join("intro.json"),
+            r#"{
+              "id":"intro","title":"Intro","start_node_id":"start",
+              "nodes":{
+                "start":{
+                  "speaker_id":"sakura","text":"Authored line.",
+                  "free_talk":{
+                    "character_id":"sakura",
+                    "context":"Sakura is waiting beside the bridge. The chapter route is fixed.",
+                    "fallback_text":"Sakura looks back toward the bridge and waits for the story to continue.",
+                    "max_turns":2,
+                    "max_characters":160
+                  }
+                }
+              }
+            }"#,
+        )
+        .unwrap();
+        let state = authoring_state(&root).await;
+        start_dialogue_authoring_inner(&state, "intro")
+            .await
+            .unwrap();
+        let before_runtime = state.dialogue_manager.read().await.runtime_state();
+        let before_relationship = state
+            .character_manager
+            .read()
+            .await
+            .get_character("sakura")
+            .unwrap()
+            .read()
+            .await
+            .relationships
+            .get("player")
+            .copied();
+
+        let response = send_dialogue_free_talk_message_inner(&state, "What comes next?")
+            .await
+            .unwrap();
+
+        assert!(response.used_fallback);
+        assert_eq!(
+            response.character_response,
+            "Sakura looks back toward the bridge and waits for the story to continue."
+        );
+        assert_eq!(
+            state.dialogue_manager.read().await.runtime_state(),
+            before_runtime
+        );
+        assert!(state.chat_sessions.read().await.is_empty());
+        let after_relationship = state
+            .character_manager
+            .read()
+            .await
+            .get_character("sakura")
+            .unwrap()
+            .read()
+            .await
+            .relationships
+            .get("player")
+            .copied();
+        assert_eq!(after_relationship, before_relationship);
         std::fs::remove_dir_all(root).unwrap();
     }
 }

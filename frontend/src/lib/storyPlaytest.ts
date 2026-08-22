@@ -1,5 +1,5 @@
 import { evaluateLocalCondition, type LocalConditionValue } from './localCondition'
-import type { StoryDialogueInfo, WebDialogueNode } from './storyContent'
+import type { StoryDialogueInfo, WebDialogueFreeTalk, WebDialogueNode } from './storyContent'
 
 export interface DialogueState {
   is_active: boolean
@@ -9,6 +9,7 @@ export interface DialogueState {
   emotion: string | null
   choices: { index: number; text: string }[]
   live2d_expression: string | null
+  free_talk: WebDialogueFreeTalk | null
 }
 
 export interface BrowserDialogueRuntime {
@@ -171,6 +172,7 @@ export function inactiveDialogueState(): DialogueState {
     emotion: null,
     choices: [],
     live2d_expression: null,
+    free_talk: null,
   }
 }
 
@@ -246,6 +248,7 @@ function dialogueState(node: WebDialogueNode, runtime: BrowserDialogueRuntime): 
     emotion: node.emotion || null,
     choices: availableChoices(node, runtime).map(({ choice, index }) => ({ index, text: choice.text })),
     live2d_expression: node.emotion || null,
+    free_talk: node.free_talk || null,
   }
 }
 

@@ -229,7 +229,7 @@ export function createSourceInvariantVerifier({
       [responsiveShellSource, 'dist/404.html', 'verify built static-hosting fallback shell metadata'],
       [responsiveShellSource, '@media (width<=860px)', 'verify built compact-shell CSS media output'],
       [responsiveShellSource, '@media (max-width: 860px)', 'verify the compact App shell breakpoint'],
-      [responsiveShellSource, 'min-height: 100svh', 'verify small viewport height shell rules'],
+      [responsiveShellSource, 'height: 100svh', 'verify small viewport height shell rules'],
       [responsiveShellSource, 'grid-template-columns: var(--sidebar-width) minmax(0, 1fr)', 'verify stable desktop sidebar and shrinkable workspace tracks'],
       [responsiveShellSource, 'grid-template-columns: repeat(5, minmax(0, 1fr))', 'verify stable mobile navigation tracks'],
     ]
@@ -1501,7 +1501,7 @@ export function createSourceInvariantVerifier({
       ['Project path must be a local filesystem path, not a URI', 'reject URI-shaped project path input'],
       ['Engine project path does not exist', 'reject missing project roots before initialization'],
       ['Engine project path is not a directory', 'reject file paths before initialization'],
-      ['state.set_project_data_root(path).await', 'bind only the validated project root into app state'],
+      ['state.set_project_data_root(path.clone()).await', 'bind only the validated project root into app state'],
       ['engine_project_paths_resolve_existing_relative_dirs', 'test relative project root resolution'],
       ['engine_project_paths_reject_uri_and_control_input', 'test URI and control-character rejection'],
       ['engine_project_root_validation_requires_existing_directory', 'test missing and file project root rejection'],

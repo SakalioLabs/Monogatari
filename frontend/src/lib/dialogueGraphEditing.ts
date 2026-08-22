@@ -148,6 +148,8 @@ export function createDialogueNode(
     use_llm: false,
     llm_prompt: null,
     llm_system_prompt: null,
+    response_generation: null,
+    free_talk: null,
     is_ending: false,
     ending_type: null,
   }
@@ -419,6 +421,8 @@ export function deriveDialogueCharacters(
   for (const dialogue of catalog.dialogues) {
     for (const node of Object.values(dialogue.nodes)) {
       if (node.speaker_id) ids.add(node.speaker_id)
+      if (node.response_generation?.character_id) ids.add(node.response_generation.character_id)
+      if (node.free_talk?.character_id) ids.add(node.free_talk.character_id)
       node.choices.forEach((choice) => {
         Object.keys(choice.relationship_changes).forEach((id) => ids.add(id))
       })
@@ -447,6 +451,14 @@ function cloneDialogueNode(node: DialogueNodeDefinition): DialogueNodeDefinition
   return {
     ...node,
     choices: node.choices.map(cloneDialogueChoice),
+    response_generation: node.response_generation
+      ? {
+        ...node.response_generation,
+        grounding_markers: [...node.response_generation.grounding_markers],
+        forbidden_markers: [...node.response_generation.forbidden_markers],
+      }
+      : null,
+    free_talk: node.free_talk ? { ...node.free_talk } : null,
   }
 }
 

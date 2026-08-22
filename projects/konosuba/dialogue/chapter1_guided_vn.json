@@ -1,0 +1,305 @@
+{
+  "id": "chapter1_guided_vn",
+  "title": "第一章：问题儿童小队的第一步",
+  "description": "传统视觉小说试玩章节。玩家以固定选项推进作者控制的主线；关键回应由角色设定生成，自由交流仅在公会节点限次开放。",
+  "start_node_id": "afterlife_opening",
+  "nodes": {
+    "afterlife_opening": {
+      "scene_id": "afterlife_chamber",
+      "text": "意识重新聚拢时，你已经坐在一张白色长桌前。没有伤口，没有噪音，只有一位蓝发少女把一沓规则纸拍得哗啦作响。",
+      "next_node_id": "aqua_offer"
+    },
+    "aqua_offer": {
+      "speaker_id": "aqua",
+      "scene_id": "afterlife_chamber",
+      "emotion": "teasing",
+      "text": "欢迎来到死后说明会。你可以带走一项能力、一件神器，或者……某个对象，然后去异世界讨伐魔王。怎么样，是不是很简单？",
+      "choices": [
+        {
+          "text": "先把规则和代价说清楚。",
+          "next_node_id": "aqua_rules_reply"
+        },
+        {
+          "text": "那我选择你，阿库娅。",
+          "next_node_id": "aqua_companion_reply"
+        }
+      ]
+    },
+    "aqua_rules_reply": {
+      "speaker_id": "aqua",
+      "scene_id": "afterlife_chamber",
+      "emotion": "curious",
+      "text": "阿库娅把规则纸往前推了推，语气终于认真了一点：异世界没有替你兜底的选项，选择之后就得自己活下去。",
+      "next_node_id": "afterlife_choice",
+      "response_generation": {
+        "character_id": "aqua",
+        "context": "玩家要求确认转生规则。阿库娅必须承认选择会带来现实后果，同时维持神明的骄傲。主线下一步仍是玩家选择她同行并前往异世界。",
+        "grounding_markers": ["转生", "异世界", "选择", "阿库娅"],
+        "forbidden_markers": ["AI", "提示词", "系统", "剧情路线", "选项"],
+        "max_characters": 180,
+        "max_sentences": 3
+      }
+    },
+    "aqua_companion_reply": {
+      "speaker_id": "aqua",
+      "scene_id": "afterlife_chamber",
+      "emotion": "panicked",
+      "text": "阿库娅的笑容僵在脸上。她盯着自己刚才念出的规则，又盯回你，终于意识到“对象”里也包括她本人。",
+      "next_node_id": "afterlife_choice",
+      "response_generation": {
+        "character_id": "aqua",
+        "context": "玩家直接选择阿库娅同行。阿库娅先否认，再意识到规则确实允许，最终无法回避。主线下一步仍是两人一起前往异世界。",
+        "grounding_markers": ["同行", "异世界", "规则", "阿库娅"],
+        "forbidden_markers": ["AI", "提示词", "系统", "剧情路线", "选项"],
+        "max_characters": 180,
+        "max_sentences": 3
+      }
+    },
+    "afterlife_choice": {
+      "speaker_id": "aqua",
+      "scene_id": "afterlife_chamber",
+      "emotion": "panicked",
+      "text": "“等、等一下！我可是女神！”她抱住桌上的规则纸不放，白色房间却已经亮起了传送的光。无论开场多么混乱，你们还是一起迈进了异世界。",
+      "next_node_id": "axel_arrival"
+    },
+    "axel_arrival": {
+      "speaker_id": "aqua",
+      "scene_id": "axel_main_street",
+      "emotion": "confident",
+      "text": "红砖街道、马车和任务板一下子撞进视野。阿库娅很快重新摆出神明降临的姿势，随后压低声音问：我们现在有钱吗？",
+      "choices": [
+        {
+          "text": "先去冒险者公会完成登记。",
+          "next_node_id": "aqua_guild_reply"
+        },
+        {
+          "text": "先确认今晚的住处和收入。",
+          "next_node_id": "aqua_lodging_reply"
+        }
+      ]
+    },
+    "aqua_guild_reply": {
+      "speaker_id": "aqua",
+      "scene_id": "axel_main_street",
+      "emotion": "curious",
+      "text": "阿库娅顺着你的目光看向公会招牌，立刻把担心藏进了挺直的背脊里：登记、工作、晚饭，当然都要按顺序解决。",
+      "next_node_id": "guild_welcome",
+      "response_generation": {
+        "character_id": "aqua",
+        "context": "玩家决定先去公会登记。阿库娅认可这是现实的第一步，但仍用自信掩饰没有钱的焦虑。无论回答如何，下一步固定进入公会登记。",
+        "grounding_markers": ["公会", "登记", "阿库娅"],
+        "forbidden_markers": ["AI", "提示词", "系统", "剧情路线", "选项"],
+        "max_characters": 180,
+        "max_sentences": 3
+      }
+    },
+    "aqua_lodging_reply": {
+      "speaker_id": "aqua",
+      "scene_id": "axel_main_street",
+      "emotion": "panicked",
+      "text": "“对！住处和晚饭！”阿库娅飞快点头，随即又看见了公会的任务板。为了今天就能换到收入，你们还是朝公会走去。",
+      "next_node_id": "guild_welcome",
+      "response_generation": {
+        "character_id": "aqua",
+        "context": "玩家先担心住处和收入。阿库娅感到赞同，但必须承认冒险者公会是眼下获得工作和登记的共同入口。下一步固定进入公会。",
+        "grounding_markers": ["住处", "公会", "工作", "阿库娅"],
+        "forbidden_markers": ["AI", "提示词", "系统", "剧情路线", "选项"],
+        "max_characters": 180,
+        "max_sentences": 3
+      }
+    },
+    "guild_welcome": {
+      "speaker_id": "luna",
+      "scene_id": "axel_guild_hall",
+      "emotion": "professional",
+      "text": "柜台后的露娜递来两张登记卡。她解释完职业和任务制度，目光在你们空空的口袋与阿库娅的神官装之间停了一瞬。",
+      "choices": [
+        {
+          "text": "先以冒险者和大祭司登记，再讨论分工。",
+          "next_node_id": "luna_registration_reply"
+        },
+        {
+          "text": "先确认能接什么工作，别让今天白过。",
+          "next_node_id": "luna_work_reply"
+        }
+      ]
+    },
+    "luna_registration_reply": {
+      "speaker_id": "luna",
+      "scene_id": "axel_guild_hall",
+      "emotion": "professional",
+      "text": "露娜熟练地完成登记，在卡片上标记了你们的职业。她提醒道：高能力也需要配合，第一次任务不妨从能彼此照应的委托开始。",
+      "next_node_id": "aqua_after_registration"
+    },
+    "luna_work_reply": {
+      "speaker_id": "luna",
+      "scene_id": "axel_guild_hall",
+      "emotion": "relieved",
+      "text": "露娜把登记和任务板一起转向你们：今天就能完成的委托不少，但正式职业卡会让你们少走很多弯路。手续很快办妥了。",
+      "next_node_id": "aqua_after_registration"
+    },
+    "aqua_after_registration": {
+      "speaker_id": "aqua",
+      "scene_id": "axel_guild_hall",
+      "emotion": "confident",
+      "text": "阿库娅举着崭新的冒险者卡，宣布大祭司的辉煌履历从今天开始。她说得很响亮，却偷偷等着你先看一眼任务板。",
+      "next_node_id": "quest_choice",
+      "free_talk": {
+        "character_id": "aqua",
+        "title": "和阿库娅聊聊",
+        "opening_text": "登记完成了。我们可以聊几句，不过任务板可不会自己把钱送上门。",
+        "context": "地点是阿克塞尔冒险者公会，时间是两人刚完成登记之后。可谈职业、城市和首次任务的担心，但不得改变关系、解锁、事件、章节结局或主线决定。主线下一步已经确定为查看任务板并接下巨大蟾蜍委托。",
+        "fallback_text": "阿库娅把冒险者卡收进怀里，催你去看任务板：先把今天的工作拿下，晚饭才有着落。",
+        "max_turns": 3,
+        "max_characters": 200
+      }
+    },
+    "quest_choice": {
+      "speaker_id": "luna",
+      "scene_id": "axel_guild_hall",
+      "emotion": "professional",
+      "text": "任务板上的“巨大蟾蜍讨伐”报酬不高，却足够解决新手的第一顿饭。露娜提醒，这种怪物看起来笨重，行动时却不能大意。",
+      "choices": [
+        {
+          "text": "接下巨大蟾蜍讨伐，先完成一件能做好的事。",
+          "next_node_id": "aqua_toad_reply"
+        },
+        {
+          "text": "先问清楚风险和报酬，再接下巨大蟾蜍讨伐。",
+          "next_node_id": "aqua_risk_reply"
+        }
+      ]
+    },
+    "aqua_toad_reply": {
+      "speaker_id": "aqua",
+      "scene_id": "axel_guild_hall",
+      "emotion": "teasing",
+      "text": "阿库娅先是对“蟾蜍”两个字露出嫌弃的表情，随即又想起报酬，郑重宣布自己会用大祭司之力保障胜利。",
+      "next_node_id": "field_arrival",
+      "response_generation": {
+        "character_id": "aqua",
+        "context": "玩家直接接下巨大蟾蜍讨伐。阿库娅嫌弃任务外观，却想以大祭司身份维持体面。无论措辞如何，主线下一步固定前往郊外草原。",
+        "grounding_markers": ["蟾蜍", "任务", "大祭司", "阿库娅"],
+        "forbidden_markers": ["AI", "提示词", "系统", "剧情路线", "选项"],
+        "max_characters": 180,
+        "max_sentences": 3
+      }
+    },
+    "aqua_risk_reply": {
+      "speaker_id": "aqua",
+      "scene_id": "axel_guild_hall",
+      "emotion": "curious",
+      "text": "阿库娅听完露娜的说明，立刻把“先观察、别被吞下去”重复了一遍。她显然不想承认这句话是说给自己听的。",
+      "next_node_id": "field_arrival",
+      "response_generation": {
+        "character_id": "aqua",
+        "context": "玩家先确认巨大蟾蜍的风险和报酬。阿库娅认可谨慎，但仍保持自信。无论回答如何，主线下一步固定前往郊外草原。",
+        "grounding_markers": ["蟾蜍", "风险", "任务", "阿库娅"],
+        "forbidden_markers": ["AI", "提示词", "系统", "剧情路线", "选项"],
+        "max_characters": 180,
+        "max_sentences": 3
+      }
+    },
+    "field_arrival": {
+      "speaker_id": "megumin",
+      "scene_id": "axel_toad_fields",
+      "emotion": "proud",
+      "text": "草原另一端的爆炸声先于人影抵达。披着斗篷的红魔族少女转过身来，像是早就等着观众：她自称惠惠，只会、也只愿使用最强的爆裂魔法。",
+      "choices": [
+        {
+          "text": "先确认爆裂魔法施放后的后果。",
+          "next_node_id": "megumin_timing_reply"
+        },
+        {
+          "text": "请你先观察时机，别急着施放。",
+          "next_node_id": "megumin_distance_reply"
+        }
+      ]
+    },
+    "megumin_timing_reply": {
+      "speaker_id": "megumin",
+      "scene_id": "axel_toad_fields",
+      "emotion": "proud",
+      "text": "惠惠昂首说明，爆裂魔法足以解决场面，却会耗尽她全部魔力。她把这个代价说得像王者的勋章，仍等着你给出安全的位置。",
+      "next_node_id": "darkness_entry",
+      "response_generation": {
+        "character_id": "megumin",
+        "context": "玩家询问爆裂魔法的后果。惠惠必须承认施放后会耗尽魔力，同时坚持那是她的强项。下一步固定由达克妮斯加入并形成队伍。",
+        "grounding_markers": ["爆裂魔法", "魔力", "惠惠"],
+        "forbidden_markers": ["AI", "提示词", "系统", "剧情路线", "选项"],
+        "max_characters": 180,
+        "max_sentences": 3
+      }
+    },
+    "megumin_distance_reply": {
+      "speaker_id": "megumin",
+      "scene_id": "axel_toad_fields",
+      "emotion": "tense",
+      "text": "惠惠把法杖往地上一顿，表示真正的爆裂魔法师当然会等待最有价值的时机。她也承认，施放后必须有人负责把她带离现场。",
+      "next_node_id": "darkness_entry",
+      "response_generation": {
+        "character_id": "megumin",
+        "context": "玩家要求惠惠观察时机。惠惠要维护爆裂魔法师的自尊，同时接受施放后需要队伍照应。下一步固定由达克妮斯加入并形成队伍。",
+        "grounding_markers": ["爆裂魔法", "时机", "惠惠"],
+        "forbidden_markers": ["AI", "提示词", "系统", "剧情路线", "选项"],
+        "max_characters": 180,
+        "max_sentences": 3
+      }
+    },
+    "darkness_entry": {
+      "speaker_id": "darkness",
+      "scene_id": "axel_toad_fields",
+      "emotion": "earnest",
+      "text": "重甲的十字骑士从草坡上赶来。达克妮斯听完你们的计划，认真地把盾牌立到身前：她的攻击未必可靠，但可以站在怪物和同伴之间。",
+      "choices": [
+        {
+          "text": "请你担任前排保护，给惠惠留出施法距离。",
+          "next_node_id": "darkness_guard_reply"
+        },
+        {
+          "text": "先说明你的限制，再一起制定撤退信号。",
+          "next_node_id": "darkness_limit_reply"
+        }
+      ]
+    },
+    "darkness_guard_reply": {
+      "speaker_id": "darkness",
+      "scene_id": "axel_toad_fields",
+      "emotion": "protective",
+      "text": "达克妮斯点头，将盾牌压低。她承诺会守住前方，也要求你们在她撑不住时立刻发出撤退信号。",
+      "next_node_id": "first_quest_closer",
+      "response_generation": {
+        "character_id": "darkness",
+        "context": "玩家让达克妮斯承担前排保护。她要以骑士职责回应，同时强调撤退与互相照应。下一步固定开始第一场巨大蟾蜍任务，章节在战斗前收束。",
+        "grounding_markers": ["前排", "保护", "撤退", "达克妮斯"],
+        "forbidden_markers": ["AI", "提示词", "系统", "剧情路线", "选项"],
+        "max_characters": 180,
+        "max_sentences": 3
+      }
+    },
+    "darkness_limit_reply": {
+      "speaker_id": "darkness",
+      "scene_id": "axel_toad_fields",
+      "emotion": "earnest",
+      "text": "达克妮斯毫不掩饰自己难以命中移动目标，却把撤退口令和站位逐条确认下来。她愿意挡在前面，但不把受伤当成队伍唯一的计划。",
+      "next_node_id": "first_quest_closer",
+      "response_generation": {
+        "character_id": "darkness",
+        "context": "玩家要求达克妮斯先说明限制。她必须坦诚命中困难，并要求明确撤退信号和照应责任。下一步固定开始第一场巨大蟾蜍任务，章节在战斗前收束。",
+        "grounding_markers": ["限制", "撤退", "前排", "达克妮斯"],
+        "forbidden_markers": ["AI", "提示词", "系统", "剧情路线", "选项"],
+        "max_characters": 180,
+        "max_sentences": 3
+      }
+    },
+    "first_quest_closer": {
+      "speaker_id": "aqua",
+      "scene_id": "axel_toad_fields",
+      "emotion": "confident",
+      "text": "远处的草丛动了。阿库娅、惠惠与达克妮斯各自站到约定的位置，而你终于看清这支队伍的第一条共识：先活下来，再把麻烦变成冒险。\n\n第一章试玩结束。下一章将从第一次任务的结果继续。",
+      "is_ending": true,
+      "ending_type": "chapter_complete"
+    }
+  },
+  "variables": {}
+}

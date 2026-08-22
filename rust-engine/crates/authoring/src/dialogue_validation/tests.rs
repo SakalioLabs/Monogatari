@@ -18,6 +18,8 @@ fn node(text: &str, is_ending: bool) -> DialogueNode {
         use_llm: false,
         llm_prompt: None,
         llm_system_prompt: None,
+        response_generation: None,
+        free_talk: None,
         is_ending,
         ending_type: None,
     }
@@ -150,6 +152,74 @@ fn validation_accepts_a_bounded_referenced_dialogue() {
     assert!(result.valid, "{:?}", result.issues);
     assert_eq!(result.error_count, 0);
     assert!(format_dialogue_validation_errors(&result).is_empty());
+}
+
+#[test]
+fn validation_accepts_controlled_replies_and_contained_free_talk() {
+    let mut dialogue = valid_dialogue();
+    let start = dialogue.nodes.get_mut("start").unwrap();
+    start.speaker_id = Some("aoi".to_string());
+    start.response_generation = Some(llm_game::dialogue::DialogueResponseGeneration {
+        character_id: None,
+        context: "Aoi acknowledges the lantern and keeps the team on the authored path."
+            .to_string(),
+        grounding_markers: vec!["lantern".to_string()],
+        forbidden_markers: vec!["route".to_string()],
+        max_characters: 180,
+        max_sentences: 2,
+    });
+    start.free_talk = Some(llm_game::dialogue::DialogueFreeTalk {
+        character_id: "aoi".to_string(),
+        context: "This is a quiet checkpoint before the team crosses the bridge.".to_string(),
+        title: Some("Talk with Aoi".to_string()),
+        opening_text: Some("The bridge is still ahead of us.".to_string()),
+        fallback_text: "Aoi nods and points back toward the bridge.".to_string(),
+        max_turns: 3,
+        max_characters: 180,
+    });
+
+    let result = validate_dialogue_script(&dialogue, &HashSet::from(["aoi".to_string()]));
+
+    assert!(result.valid, "{:?}", result.issues);
+}
+
+#[test]
+fn validation_rejects_unbounded_or_ambiguous_generation_contracts() {
+    let mut dialogue = valid_dialogue();
+    let start = dialogue.nodes.get_mut("start").unwrap();
+    start.use_llm = true;
+    start.response_generation = Some(llm_game::dialogue::DialogueResponseGeneration {
+        character_id: None,
+        context: String::new(),
+        grounding_markers: vec!["same".to_string(), "same".to_string()],
+        forbidden_markers: Vec::new(),
+        max_characters: 10,
+        max_sentences: 0,
+    });
+    start.free_talk = Some(llm_game::dialogue::DialogueFreeTalk {
+        character_id: "missing".to_string(),
+        context: String::new(),
+        title: None,
+        opening_text: None,
+        fallback_text: String::new(),
+        max_turns: 0,
+        max_characters: 10,
+    });
+
+    let result = validate_dialogue_script(&dialogue, &HashSet::new());
+    let issue_codes = codes(&result);
+
+    assert!(issue_codes.contains("dialogue_generation_mode_conflict"));
+    assert!(issue_codes.contains("dialogue_generation_character_missing"));
+    assert!(issue_codes.contains("dialogue_generation_context_invalid"));
+    assert!(issue_codes.contains("dialogue_generation_grounding_markers_invalid"));
+    assert!(issue_codes.contains("dialogue_generation_max_characters_invalid"));
+    assert!(issue_codes.contains("dialogue_generation_max_sentences_invalid"));
+    assert!(issue_codes.contains("dialogue_free_talk_character_missing"));
+    assert!(issue_codes.contains("dialogue_free_talk_context_invalid"));
+    assert!(issue_codes.contains("dialogue_free_talk_fallback_invalid"));
+    assert!(issue_codes.contains("dialogue_free_talk_max_turns_invalid"));
+    assert!(issue_codes.contains("dialogue_free_talk_max_characters_invalid"));
 }
 
 #[test]

@@ -425,14 +425,18 @@ async function verifyProjectLaunch(manifest, distDir, issues) {
     issues.push('project-assets.json launch must be an object or null')
     return
   }
-  if (!['campaign', 'roleplay'].includes(launch.kind)
+  if (!['campaign', 'roleplay', 'dialogue'].includes(launch.kind)
     || typeof launch.id !== 'string'
     || !/^[A-Za-z0-9_-]{1,128}$/.test(launch.id)) {
-    issues.push('project-assets.json launch must identify a portable campaign or roleplay id')
+    issues.push('project-assets.json launch must identify a portable campaign, roleplay, or dialogue id')
     return
   }
 
-  const field = launch.kind === 'campaign' ? 'campaign_files' : 'roleplay_files'
+  const field = launch.kind === 'campaign'
+    ? 'campaign_files'
+    : launch.kind === 'roleplay'
+      ? 'roleplay_files'
+      : 'dialogue_files'
   const paths = manifest[field]
   if (!Array.isArray(paths)) {
     issues.push(`project-assets.json ${field} must be an array`)

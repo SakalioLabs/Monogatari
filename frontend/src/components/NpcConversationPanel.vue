@@ -13,7 +13,7 @@
             <img v-if="avatarUrl" :src="avatarUrl" :alt="character.name" />
             <div v-else class="npc-avatar-fallback">{{ initials(character.name) }}</div>
             <div class="npc-title-copy">
-              <span class="npc-eyebrow"><MessageCircleMore :size="13" aria-hidden="true" />{{ t('npc.title', 'LLM NPC') }}</span>
+              <span class="npc-eyebrow"><MessageCircleMore :size="13" aria-hidden="true" />{{ isContainedTalk ? (containedTalk?.title || t('npc.chapter-talk', 'Chapter Talk')) : t('npc.title', 'LLM NPC') }}</span>
               <h2>{{ character.name }}</h2>
             </div>
           </div>
@@ -77,6 +77,7 @@
           </div>
           <p v-if="runtimeIssue" class="npc-error" role="alert">{{ runtimeIssue }}</p>
           <p v-if="errorMessage" class="npc-error" role="alert">{{ errorMessage }}</p>
+          <button v-if="isContainedTalk" class="npc-return" type="button" @click="emit('close')"><ArrowRight :size="15" />{{ t('npc.return-to-story', 'Continue story') }}</button>
           <div class="npc-input-row">
             <textarea
               ref="inputElement"
@@ -84,7 +85,7 @@
               data-testid="npc-input"
               rows="2"
               maxlength="4000"
-              :disabled="Boolean(runtimeIssue) || isPreparing || isGenerating"
+              :disabled="Boolean(runtimeIssue) || isPreparing || isGenerating || containedTurnsExhausted"
               :placeholder="t('npc.placeholder', 'Message {name}', { name: character.name })"
               @keydown.enter.exact.stop.prevent="sendMessage"
             ></textarea>
@@ -106,6 +107,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import {
+  ArrowRight,
   LoaderCircle,
   MessageCircleMore,
   MonitorCog,
@@ -133,7 +135,7 @@ import {
   type NpcConversationMessage,
   type NpcDesktopChatResponse,
 } from '../lib/npcConversation'
-import type { StoryCharacterInfo } from '../lib/storyContent'
+import type { StoryCharacterInfo, WebDialogueFreeTalk } from '../lib/storyContent'
 import { invokeCommand } from '../lib/tauri'
 import { detectWebGpuSupport, generateWebGpuChat } from '../lib/webgpuInference'
 
@@ -142,6 +144,7 @@ const props = defineProps<{
   character: StoryCharacterInfo | null
   desktopRuntime: boolean
   locale: string
+  containedTalk?: WebDialogueFreeTalk | null
 }>()
 
 const emit = defineEmits<{
@@ -170,6 +173,19 @@ let messageSequence = 0
 let generationSequence = 0
 const authoringApiAvailable = ref(false)
 const authoringApiRuntime = ref<AuthoringApiRuntime | null>(null)
+
+interface ContainedTalkResponse {
+  character_response: string
+  emotion: string
+  used_fallback: boolean
+}
+
+const containedTalk = computed(() => props.containedTalk ?? null)
+const isContainedTalk = computed(() => Boolean(containedTalk.value))
+const containedTurns = computed(() => messages.value.filter((message) => message.role === 'player').length)
+const containedTurnsExhausted = computed(() => Boolean(
+  props.containedTalk && containedTurns.value >= Math.max(1, props.containedTalk.max_turns || 4),
+))
 
 const runtimeKind = computed(() => props.desktopRuntime
   ? 'tauri'
@@ -204,11 +220,12 @@ const canSend = computed(() => Boolean(
   && inputText.value.trim()
   && !runtimeIssue.value
   && !isPreparing.value
-  && !isGenerating.value,
+  && !isGenerating.value
+  && !containedTurnsExhausted.value,
 ))
 
 watch(
-  () => [props.open, props.character?.id] as const,
+  () => [props.open, props.character?.id, props.containedTalk?.context] as const,
   ([open]) => {
     if (open) void prepareConversation()
   },
@@ -225,7 +242,10 @@ async function prepareConversation() {
   storyChanged.value = false
 
   try {
-    if (props.desktopRuntime) {
+    if (isContainedTalk.value && props.desktopRuntime) {
+      messages.value = containedOpeningMessages(character)
+      knowledgeEvidenceCount.value = uniqueKnowledgeRefs(character).length
+    } else if (props.desktopRuntime) {
       const history = await invokeCommand<unknown>('get_chat_history', { characterId: character.id })
       if (requestId !== loadSequence) return
       messages.value = normalizeNpcHistory(history)
@@ -239,7 +259,9 @@ async function prepareConversation() {
       authoringApiRuntime.value = apiRuntime
       authoringApiAvailable.value = Boolean(apiRuntime)
       if (requestId !== loadSequence) return
-      messages.value = [...(browserSessions.get(character.id) || [])]
+      messages.value = isContainedTalk.value
+        ? containedOpeningMessages(character)
+        : [...(browserSessions.get(character.id) || [])]
       knowledgeEvidenceCount.value = countResolvedNpcKnowledge(character, activeKnowledge)
     }
   } catch (error) {
@@ -278,7 +300,22 @@ async function sendMessage() {
   scrollToBottom()
 
   try {
-    if (props.desktopRuntime) {
+    if (props.desktopRuntime && isContainedTalk.value) {
+      const response = await invokeCommand<ContainedTalkResponse>('send_dialogue_free_talk_message', {
+        message: text,
+      })
+      const replyMessage = createNpcConversationMessage(
+        'character',
+        boundedContainedReply(response.character_response),
+        response.emotion?.trim() || character.emotion || 'neutral',
+        new Date().toISOString(),
+        ++messageSequence,
+      )
+      if (props.character?.id === character.id) {
+        messages.value.push(replyMessage)
+        emit('emotion', replyMessage.emotion || 'neutral')
+      }
+    } else if (props.desktopRuntime) {
       const response = await invokeCommand<NpcDesktopChatResponse>('send_chat_message', {
         characterId: character.id,
         message: text,
@@ -310,7 +347,13 @@ async function sendMessage() {
         ? generateAuthoringApiChat
         : generateWebGpuChat
       const generated = await generateChat(
-        buildWebNpcChatMessages(character, props.locale, messages.value, activeKnowledge),
+        buildWebNpcChatMessages(
+          character,
+          props.locale,
+          messages.value,
+          activeKnowledge,
+          props.containedTalk?.context || null,
+        ),
         {
           maxNewTokens: 96,
           maxContextCharacters: 6_000,
@@ -330,7 +373,7 @@ async function sendMessage() {
           },
         },
       )
-      const content = sanitizeWebNpcReply(rawReply || generated)
+      const content = boundedContainedReply(sanitizeWebNpcReply(rawReply || generated))
       const emotion = character.emotion || 'neutral'
       const replyMessage = createNpcConversationMessage(
         'character',
@@ -340,7 +383,7 @@ async function sendMessage() {
         ++messageSequence,
       )
       const session = [...requestMessages, replyMessage]
-      browserSessions.set(character.id, session)
+      if (!isContainedTalk.value) browserSessions.set(character.id, session)
       if (props.character?.id === character.id && requestId === generationSequence) {
         messages.value = session
         emit('emotion', emotion)
@@ -348,10 +391,23 @@ async function sendMessage() {
     }
   } catch (error) {
     if (props.character?.id === character.id && requestId === generationSequence) {
-      messages.value = previousMessages
-      persistBrowserSession(character.id)
-      inputText.value = text
-      errorMessage.value = withErrorDetail(t('npc.generation-error', 'Reply generation failed.'), error)
+      if (isContainedTalk.value) {
+        messages.value = [
+          ...requestMessages,
+          createNpcConversationMessage(
+            'character',
+            props.containedTalk?.fallback_text || t('npc.free-talk-fallback', 'The character waits quietly.'),
+            character.emotion || 'neutral',
+            new Date().toISOString(),
+            ++messageSequence,
+          ),
+        ]
+      } else {
+        messages.value = previousMessages
+        persistBrowserSession(character.id)
+        inputText.value = text
+        errorMessage.value = withErrorDetail(t('npc.generation-error', 'Reply generation failed.'), error)
+      }
     }
   } finally {
     if (requestId === generationSequence) {
@@ -368,12 +424,15 @@ async function clearConversation() {
   if (!character || isGenerating.value || isPreparing.value) return
   errorMessage.value = null
   try {
-    if (props.desktopRuntime) {
+    if (isContainedTalk.value) {
+      messages.value = containedOpeningMessages(character)
+    } else if (props.desktopRuntime) {
       await invokeCommand<void>('clear_chat_history', { characterId: character.id })
+      messages.value = []
     } else {
       browserSessions.set(character.id, [])
+      messages.value = []
     }
-    messages.value = []
     relationshipDelta.value = 0
     storyChanged.value = false
   } catch (error) {
@@ -391,7 +450,25 @@ function browserKnowledgeEntries(): Promise<KnowledgeEntryDefinition[]> {
 }
 
 function persistBrowserSession(characterId: string) {
-  if (!props.desktopRuntime) browserSessions.set(characterId, [...messages.value])
+  if (!props.desktopRuntime && !isContainedTalk.value) browserSessions.set(characterId, [...messages.value])
+}
+
+function containedOpeningMessages(character: StoryCharacterInfo): NpcConversationMessage[] {
+  const opening = props.containedTalk?.opening_text?.trim()
+  if (!opening) return []
+  return [createNpcConversationMessage(
+    'character',
+    opening,
+    character.emotion || 'neutral',
+    new Date().toISOString(),
+    ++messageSequence,
+  )]
+}
+
+function boundedContainedReply(value: string): string {
+  const limit = props.containedTalk?.max_characters
+  if (!limit || !isContainedTalk.value) return value
+  return [...value].slice(0, Math.max(1, limit)).join('').trim()
 }
 
 function uniqueKnowledgeRefs(character: StoryCharacterInfo): string[] {
@@ -474,7 +551,8 @@ function withErrorDetail(summary: string, error: unknown): string {
 .npc-evidence span,
 .npc-generating,
 .npc-input-row,
-.npc-send {
+.npc-send,
+.npc-return {
   display: flex;
   align-items: center;
 }
@@ -612,6 +690,22 @@ function withErrorDetail(summary: string, error: unknown): string {
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
+
+.npc-return {
+  justify-content: center;
+  gap: 7px;
+  min-height: 34px;
+  margin: 0 0 8px;
+  border: 1px solid var(--border, rgba(235, 231, 214, 0.2));
+  border-radius: 5px;
+  background: var(--surface-2, #222829);
+  color: var(--text-secondary, #c9ccc7);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.npc-return:hover { border-color: var(--brand, #d8b969); color: var(--brand-light, #f0d78e); }
 
 .npc-message.player p {
   border-color: rgba(216, 185, 105, 0.42);

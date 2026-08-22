@@ -19,8 +19,8 @@
   },
   "play": {
     "launch": {
-      "kind": "campaign",
-      "id": "konosuba_volume6"
+      "kind": "dialogue",
+      "id": "chapter1_guided_vn"
     }
   },
   "ai": {

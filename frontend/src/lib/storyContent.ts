@@ -68,6 +68,25 @@ export interface WebDialogueChoice {
   condition?: string | null
 }
 
+export interface WebDialogueResponseGeneration {
+  character_id?: string | null
+  context: string
+  grounding_markers?: string[]
+  forbidden_markers?: string[]
+  max_characters?: number
+  max_sentences?: number
+}
+
+export interface WebDialogueFreeTalk {
+  character_id: string
+  context: string
+  title?: string | null
+  opening_text?: string | null
+  fallback_text: string
+  max_turns?: number
+  max_characters?: number
+}
+
 export interface WebDialogueNode {
   speaker_id?: string | null
   scene_id?: string | null
@@ -80,6 +99,8 @@ export interface WebDialogueNode {
   use_llm?: boolean
   llm_prompt?: string | null
   llm_system_prompt?: string | null
+  response_generation?: WebDialogueResponseGeneration | null
+  free_talk?: WebDialogueFreeTalk | null
   is_ending?: boolean
   ending_type?: string | null
 }

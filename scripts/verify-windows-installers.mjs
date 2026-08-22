@@ -20,6 +20,10 @@ const maximumPayloadEntries = 30_000
 const maximumPayloadBytes = 16 * 1024 * 1024 * 1024
 const expectedSignerFragment = 'SakalioLabs'
 const expectedMsiUpgradeCode = 'c4c2d20f-f307-5c7b-91e6-5edeea14fdd0'
+const windowsPowerShellModulePath = [
+  path.join(process.env.ProgramFiles ?? 'C:\\Program Files', 'WindowsPowerShell', 'Modules'),
+  path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'Modules'),
+].join(path.delimiter)
 const prohibitedProjectEntries = [
   'data',
   'campaigns',
@@ -215,11 +219,10 @@ $nsisVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($nsisPath)
     cwd: root,
     encoding: 'utf8',
     windowsHide: true,
-    env: {
-      ...process.env,
+    env: windowsPowerShellEnvironment({
       MONOGATARI_AUDIT_MSI: msiPath,
       MONOGATARI_AUDIT_NSIS: nsisPath,
-    },
+    }),
   }).trim()
   return JSON.parse(output)
 }
@@ -486,9 +489,18 @@ $signature = Get-AuthenticodeSignature -LiteralPath $env:MONOGATARI_AUDIT_FILE
     cwd: root,
     encoding: 'utf8',
     windowsHide: true,
-    env: { ...process.env, MONOGATARI_AUDIT_FILE: file },
+    env: windowsPowerShellEnvironment({ MONOGATARI_AUDIT_FILE: file }),
   }).trim()
   return JSON.parse(output)
+}
+
+function windowsPowerShellEnvironment(extra) {
+  return {
+    ...process.env,
+    // Windows PowerShell cannot load PowerShell 7 modules inherited from host tools.
+    PSModulePath: windowsPowerShellModulePath,
+    ...extra,
+  }
 }
 
 function validateSignatureSet(entries, unsignedAllowed, label) {

@@ -16,8 +16,8 @@ const tauriAppDirectory = path.join(repositoryRoot, 'rust-engine', 'crates', 'ta
 test('every checked-in Tauri command declaration is registered exactly once', async () => {
   const evidence = await collectTauriCommandRegistrationEvidence({ tauriAppDirectory })
   assert.deepEqual(evidence.issues, [])
-  assert.equal(evidence.declaredCount, 127)
-  assert.equal(evidence.registeredCount, 127)
+  assert.equal(evidence.declaredCount, 128)
+  assert.equal(evidence.registeredCount, 128)
   assert.equal(evidence.commandFileCount, 27)
 })
 

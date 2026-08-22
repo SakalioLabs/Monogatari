@@ -133,6 +133,48 @@ describe('NpcConversationPanel', () => {
     expect(mocks.invokeCommand).toHaveBeenCalledWith('clear_chat_history', { characterId: 'echo_nine' })
   })
 
+  it('keeps a chapter free-talk turn outside the persistent NPC and story channels', async () => {
+    mocks.invokeCommand.mockResolvedValue({
+      character_response: '先把这段路走完，之后再问我。',
+      emotion: 'steady',
+      used_fallback: false,
+    })
+    const wrapper = mount(NpcConversationPanel, {
+      props: {
+        open: true,
+        character,
+        desktopRuntime: true,
+        locale: 'zh-CN',
+        containedTalk: {
+          character_id: 'echo_nine',
+          context: '玩家正在穿过潮汐站的外廊。',
+          title: '章节短谈',
+          opening_text: '别停下，潮声会掩盖脚步。',
+          fallback_text: '她望向潮水，没有再补充。',
+          max_turns: 1,
+          max_characters: 80,
+        },
+      },
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('别停下，潮声会掩盖脚步。')
+    await wrapper.get('[data-testid="npc-input"]').setValue('你害怕吗？')
+    await wrapper.get('[data-testid="npc-send"]').trigger('click')
+    await flushPromises()
+
+    expect(mocks.invokeCommand).toHaveBeenCalledWith('send_dialogue_free_talk_message', {
+      message: '你害怕吗？',
+    })
+    expect(mocks.invokeCommand).not.toHaveBeenCalledWith('send_chat_message', expect.anything())
+    expect(wrapper.text()).toContain('先把这段路走完，之后再问我。')
+    expect(wrapper.emitted('storyProgress')).toBeUndefined()
+    expect(wrapper.get('[data-testid="npc-input"]').attributes()).toHaveProperty('disabled')
+
+    await wrapper.get('.npc-return').trigger('click')
+    expect(wrapper.emitted('close')).toHaveLength(1)
+  })
+
   it('prefers the configured API runtime over the local browser model', async () => {
     mocks.loadAuthoringApiRuntime.mockResolvedValue({
       schema: 'monogatari-authoring-inference-runtime/v1',

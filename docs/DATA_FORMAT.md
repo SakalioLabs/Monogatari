@@ -117,6 +117,46 @@ Dialogues are stored in `rust-engine/data/dialogue/`.
 
 Dialogue node map keys are authoritative node IDs. An optional nested `id` is accepted only when it matches the map key and is omitted from canonical author saves. Every linear and choice target must exist, all nodes must be reachable from `start_node_id`, a node cannot combine `next_node_id` with choices, and an explicit ending cannot have outgoing transitions. Speakers and relationship targets must reference project characters; relationship deltas are finite values in `-1..1`. Node and choice conditions, entry scripts, text, variables, and LLM prompts are bounded. `use_llm: true` requires `llm_prompt`. Unknown fields are rejected.
 
+### Controlled Character Replies And Chapter Talk
+
+Traditional visual-novel routes use authored nodes and fixed choices as the source of truth. A node may optionally request a character-specific wording variant without giving the model route, relationship, event, unlock, or variable authority:
+
+```json
+{
+  "speaker_id": "guide",
+  "text": "The bridge remains ahead.",
+  "next_node_id": "bridge_choice",
+  "response_generation": {
+    "character_id": "guide",
+    "context": "The guide acknowledges the lantern and keeps the party moving toward the bridge.",
+    "grounding_markers": ["lantern", "bridge"],
+    "forbidden_markers": ["system", "route"],
+    "max_characters": 180,
+    "max_sentences": 3
+  }
+}
+```
+
+`response_generation.character_id` defaults to `speaker_id` and must match it when both are present. `context` is a bounded author-owned beat. `grounding_markers` require at least one natural match in an accepted reply; `forbidden_markers` reject a reply; visible text is capped at 40-600 characters and 1-6 sentences. Desktop and browser runtimes use the authored `text` whenever inference is unavailable, rejected, or fails the contract. The graph cursor, flags, variables, relationships, events, and all next-node decisions remain unchanged by generation.
+
+An authored checkpoint may also expose a contained free conversation while leaving the active Dialogue node in place:
+
+```json
+{
+  "free_talk": {
+    "character_id": "guide",
+    "context": "The party is resting beside the bridge before the fixed next scene.",
+    "title": "Talk with the guide",
+    "opening_text": "We have a moment before we move on.",
+    "fallback_text": "The guide checks the lantern and gestures toward the bridge.",
+    "max_turns": 3,
+    "max_characters": 180
+  }
+}
+```
+
+Free talk permits 1-12 player turns and each reply is capped at 40-600 characters. It has no chat-history persistence and never writes relationships, Story Events, unlocks, flags, variables, chapter outcomes, or dialogue routing. Closing the panel resumes the exact node that opened it.
+
 The Dialogue Editor consumes `monogatari-dialogue-authoring-catalog/v1` snapshots. Desktop saves compare the observed whole-catalog fingerprint, stage a bounded JSON replacement, reload and validate every script, roll back failures, then hot-reload the runtime catalog while retaining dialogue-local flags and variables. Deletion is rejected while a Story Event unlocks the dialogue or an ending references it. Browser builds persist a complete local dialogue draft catalog that Playtest can play directly.
 
 ## Knowledge Format

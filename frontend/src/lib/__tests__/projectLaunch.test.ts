@@ -14,6 +14,7 @@ import {
 
 const campaign = (id: string) => ({ id, entries: [] }) as never
 const roleplay = (id: string) => ({ id, nodes: [] }) as never
+const dialogue = (id: string) => ({ id, nodes: {} }) as never
 
 describe('project launch contract', () => {
   beforeEach(() => {
@@ -22,33 +23,44 @@ describe('project launch contract', () => {
     vi.restoreAllMocks()
   })
 
-  it('accepts only bounded portable campaign and roleplay targets', () => {
+  it('accepts only bounded portable campaign, roleplay, and dialogue targets', () => {
     expect(parseProjectLaunchTarget({ kind: 'campaign', id: 'volume6_campaign' }))
       .toEqual({ kind: 'campaign', id: 'volume6_campaign' })
     expect(parseProjectLaunchTarget({ kind: 'roleplay', id: 'chapter2_roleplay' }))
       .toEqual({ kind: 'roleplay', id: 'chapter2_roleplay' })
-    expect(parseProjectLaunchTarget({ kind: 'dialogue', id: 'intro' })).toBeNull()
+    expect(parseProjectLaunchTarget({ kind: 'dialogue', id: 'intro' }))
+      .toEqual({ kind: 'dialogue', id: 'intro' })
     expect(parseProjectLaunchTarget({ kind: 'campaign', id: '../outside' })).toBeNull()
   })
 
   it('resolves the configured live target before deterministic catalog fallbacks', () => {
     const campaigns = [campaign('volume1_campaign'), campaign('volume6_campaign')]
     const roleplays = [roleplay('chapter1_roleplay')]
+    const dialogues = [dialogue('chapter1_guided_vn')]
 
     expect(resolveProjectLaunch(
       { kind: 'campaign', id: 'volume6_campaign' },
       campaigns,
       roleplays,
+      dialogues,
     )).toEqual({ kind: 'campaign', definition: campaigns[1] })
     expect(resolveProjectLaunch(
       { kind: 'roleplay', id: 'chapter1_roleplay' },
       campaigns,
       roleplays,
+      dialogues,
     )).toEqual({ kind: 'roleplay', definition: roleplays[0] })
+    expect(resolveProjectLaunch(
+      { kind: 'dialogue', id: 'chapter1_guided_vn' },
+      campaigns,
+      roleplays,
+      dialogues,
+    )).toEqual({ kind: 'dialogue', definition: dialogues[0] })
     expect(resolveProjectLaunch(
       { kind: 'campaign', id: 'missing' },
       campaigns,
       roleplays,
+      dialogues,
     )).toEqual({ kind: 'campaign', definition: campaigns[0] })
   })
 

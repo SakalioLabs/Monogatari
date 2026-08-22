@@ -94,12 +94,24 @@
             <span v-if="isTyping" class="cursor"></span>
           </p>
 
+          <div v-if="dialogueState.free_talk" class="dialogue-tools">
+            <button class="free-talk-trigger" :disabled="isDialogueTransitioning" @click="openContainedTalk">
+              <MessageCircleMore :size="15" />
+              <span>{{ dialogueState.free_talk.title || t('game.chapter-talk', 'Talk') }}</span>
+            </button>
+          </div>
+
+          <p v-if="isDialogueTransitioning" class="dialogue-generation" role="status">
+            <span class="loading-spinner"></span>{{ t('game.character-responding', 'Character responding') }}
+          </p>
+
           <div v-if="dialogueState.choices.length > 0" class="choices">
             <button
               v-for="(choice, idx) in dialogueState.choices"
               :key="choice.index"
               class="choice-btn"
               :style="{ animationDelay: `${idx * 0.06}s` }"
+              :disabled="isDialogueTransitioning"
               @click="selectChoice(choice.index)"
             >
               <span class="choice-number">{{ idx + 1 }}</span>
@@ -107,7 +119,7 @@
             </button>
           </div>
 
-          <button v-else class="advance-hint" @click="advanceDialogue">
+          <button v-else class="advance-hint" :disabled="isDialogueTransitioning" @click="advanceDialogue">
             {{ isTyping ? t('game.complete-line', 'Complete line') : t('game.continue-text', 'Continue') }}
           </button>
         </div>
@@ -124,6 +136,16 @@
         </div>
       </section>
     </main>
+
+    <NpcConversationPanel
+      :open="showContainedTalk"
+      :character="containedTalkCharacter"
+      :desktop-runtime="desktopRuntime"
+      :locale="locale"
+      :contained-talk="dialogueState?.free_talk || null"
+      @close="showContainedTalk = false"
+      @emotion="applyNpcEmotion"
+    />
 
     <Transition name="fade">
       <div v-if="toastMessage" class="toast" @click="toastMessage = null">{{ toastMessage }}</div>
@@ -325,12 +347,21 @@ import {
 } from '@lucide/vue'
 import Live2DCanvas from '../components/Live2DCanvas.vue'
 import CharacterModelView from '../components/CharacterModelView.vue'
+import NpcConversationPanel from '../components/NpcConversationPanel.vue'
 import SceneRoleplayPanel from '../components/SceneRoleplayPanel.vue'
 import { hasTauriRuntime, invokeCommand } from '../lib/tauri'
 import { useI18n } from '../lib/i18n'
 import { resolveAssetUrl } from '../lib/assets'
 import { selectCharacterRendererAsset } from '../lib/rendererAssets'
 import { reloadStoryEventCatalog } from '../lib/storyEvents'
+import {
+  buildControlledDialogueMessages,
+  resolveControlledDialogueText,
+} from '../lib/controlledDialogueResponse'
+import {
+  generateAuthoringApiChat,
+  loadAuthoringApiRuntime,
+} from '../lib/authoringInference'
 import { loadStoryContentAccess, type StoryContentAccessEntry, type StoryContentAccessSnapshot } from '../lib/storyAccess'
 import { createStoryTextPlaybackController } from '../lib/storyTextPlayback'
 import {
@@ -357,6 +388,7 @@ import {
   scenePresentationStyles,
   type ScenePresentation,
 } from '../lib/scenePresentation'
+import { generateWebGpuChat } from '../lib/webgpuInference'
 import {
   loadSceneRoleplays,
   startBrowserSceneRoleplay,
@@ -459,6 +491,8 @@ const saves = ref<SaveInfo[]>([])
 const errorMessage = ref<string | null>(null)
 const toastMessage = ref<string | null>(null)
 const isLoading = ref(false)
+const isDialogueTransitioning = ref(false)
+const showContainedTalk = ref(false)
 const failedRendererAssets = ref<Record<string, true>>({})
 const storyScenes = ref<StorySceneInfo[]>([])
 const storyDialogues = ref<StoryDialogueInfo[]>([])
@@ -565,6 +599,12 @@ const currentModel3dPath = computed(() =>
 const currentSpritePath = computed(() =>
   currentRendererAsset.value.mode === 'sprite' ? currentRendererAsset.value.resolvedUrl : null
 )
+const containedTalkCharacter = computed(() => {
+  const characterId = dialogueState.value?.free_talk?.character_id
+  return characterId
+    ? characters.value.find((character) => character.id === characterId) || null
+    : null
+})
 const activeLibraryItems = computed(() => {
   if (libraryTab.value === 'campaigns') return storyCampaigns.value.length
   if (libraryTab.value === 'roleplays') return storyRoleplays.value.length
@@ -652,7 +692,9 @@ async function updateDialogueState() {
       emotion: null,
       choices: [],
       live2d_expression: null,
+      free_talk: null,
     })
+    showContainedTalk.value = false
     if (dialogueState.value?.live2d_expression) {
       currentExpression.value = dialogueState.value.live2d_expression
     }
@@ -891,10 +933,12 @@ async function restartActiveRoleplay() {
 
 async function startStoryDialogue(dialogue: StoryDialogueInfo, previewNodeId?: string | null) {
   isLoading.value = true
+  isDialogueTransitioning.value = true
   errorMessage.value = null
   try {
     activeRoleplaySnapshot.value = null
     activeCampaignSnapshot.value = null
+    showContainedTalk.value = false
     if (hasTauriRuntime()) {
       dialogueState.value = await invokeCommand<DialogueState>('start_dialogue', { dialogueId: dialogue.id })
     } else {
@@ -911,14 +955,17 @@ async function startStoryDialogue(dialogue: StoryDialogueInfo, previewNodeId?: s
     errorMessage.value = t('game.unable-start-dialogue', 'Unable to start dialogue: {error}', { error: String(e) })
   } finally {
     isLoading.value = false
+    isDialogueTransitioning.value = false
   }
 }
 
 async function startEnding(ending: StoryEndingInfo) {
   isLoading.value = true
+  isDialogueTransitioning.value = true
   errorMessage.value = null
   try {
     activeRoleplaySnapshot.value = null
+    showContainedTalk.value = false
     const fallbackScene = storyScenes.value.find((scene) => scene.id === ending.scene_id) || activeScene.value
     if (!fallbackScene) throw new Error(t('game.ending-scene-unavailable', 'Ending scene {id} is unavailable', { id: ending.scene_id }))
     const fallbackDialogue = storyDialogues.value.find((dialogue) => dialogue.id === ending.dialogue_id)
@@ -944,10 +991,13 @@ async function startEnding(ending: StoryEndingInfo) {
     errorMessage.value = String(error)
   } finally {
     isLoading.value = false
+    isDialogueTransitioning.value = false
   }
 }
 
 async function selectChoice(index: number) {
+  if (isDialogueTransitioning.value) return
+  isDialogueTransitioning.value = true
   try {
     if (!hasTauriRuntime() && webActiveDialogue.value) {
       if (!webDialogueRuntime.value) throw new Error('Browser dialogue runtime is unavailable.')
@@ -955,18 +1005,22 @@ async function selectChoice(index: number) {
       applyBrowserChoiceRelationships(transition.relationship_changes)
       await applyBrowserDialogueTransition(transition)
       syncCurrentCharacter()
-      typewriterEffect(transition.state.text)
+      typewriterEffect(dialogueState.value?.text || transition.state.text)
     } else {
       await invokeCommand<void>('select_choice', { choiceIndex: index })
       await updateDialogueState()
     }
   } catch (e) {
     errorMessage.value = String(e)
+  } finally {
+    isDialogueTransitioning.value = false
   }
 }
 
 async function advanceDialogue() {
   if (textPlayback.complete()) return
+  if (isDialogueTransitioning.value) return
+  isDialogueTransitioning.value = true
   try {
     if (!hasTauriRuntime() && webActiveDialogue.value) {
       if (!webDialogueRuntime.value) throw new Error('Browser dialogue runtime is unavailable.')
@@ -975,7 +1029,7 @@ async function advanceDialogue() {
       await applyBrowserDialogueTransition(transition)
       if (transition.state.is_active) {
         syncCurrentCharacter()
-        typewriterEffect(transition.state.text)
+        typewriterEffect(dialogueState.value?.text || transition.state.text)
       } else {
         displayedText.value = ''
       }
@@ -985,6 +1039,8 @@ async function advanceDialogue() {
     }
   } catch (e) {
     errorMessage.value = String(e)
+  } finally {
+    isDialogueTransitioning.value = false
   }
 }
 
@@ -992,8 +1048,51 @@ async function applyBrowserDialogueTransition(transition: BrowserDialogueTransit
   webDialogueRuntime.value = transition.runtime
   webDialogueFlags.value = transition.runtime.flags
   dialogueState.value = transition.state
+  showContainedTalk.value = false
   await syncDialogueScene(transition.state)
+  await hydrateBrowserControlledReply(transition)
   if (transition.completed) webActiveDialogue.value = null
+}
+
+async function hydrateBrowserControlledReply(transition: BrowserDialogueTransition) {
+  const nodeId = transition.runtime.node_id
+  const node = nodeId ? webActiveDialogue.value?.nodes?.[nodeId] : null
+  const generation = node?.response_generation
+  const characterId = generation?.character_id || node?.speaker_id
+  const character = characterId
+    ? characters.value.find((candidate) => candidate.id === characterId) || null
+    : null
+  if (!generation || !character || !dialogueState.value?.is_active) return
+
+  let rawResponse = ''
+  try {
+    const messages = buildControlledDialogueMessages(character, locale.value, generation)
+    const apiRuntime = await loadAuthoringApiRuntime()
+    rawResponse = apiRuntime
+      ? await generateAuthoringApiChat(messages, {
+        maxNewTokens: 160,
+        maxContextCharacters: 5_000,
+        recoveryMaxContextCharacters: 2_000,
+      })
+      : await generateWebGpuChat(messages, {
+        maxNewTokens: 160,
+        maxContextCharacters: 5_000,
+        recoveryMaxContextCharacters: 2_000,
+      })
+  } catch (error) {
+    console.warn('Controlled dialogue generation fell back to authored text.', error)
+  }
+
+  if (!dialogueState.value?.is_active || webDialogueRuntime.value?.node_id !== nodeId) return
+  dialogueState.value = {
+    ...dialogueState.value,
+    text: resolveControlledDialogueText(rawResponse, dialogueState.value.text, generation),
+  }
+}
+
+function openContainedTalk() {
+  if (!dialogueState.value?.free_talk || !containedTalkCharacter.value || isDialogueTransitioning.value) return
+  showContainedTalk.value = true
 }
 
 async function syncDialogueScene(state: DialogueState | null) {
@@ -1225,6 +1324,7 @@ async function startPrimaryDynamicStory() {
     projectLaunchTarget.value,
     storyCampaigns.value,
     storyRoleplays.value,
+    storyDialogues.value,
   )
   if (launch?.kind === 'campaign') {
     if (route.query.authoring === '1') {
@@ -1238,11 +1338,18 @@ async function startPrimaryDynamicStory() {
       await replaceAuthoringPreview('previewRoleplay', launch.definition.id)
     }
     await startSceneRoleplay(launch.definition)
+    return
+  }
+  if (launch?.kind === 'dialogue') {
+    if (route.query.authoring === '1') {
+      await replaceAuthoringPreview('previewDialogue', launch.definition.id)
+    }
+    await startStoryDialogue(launch.definition)
   }
 }
 
 async function replaceAuthoringPreview(
-  key: 'previewCampaign' | 'previewRoleplay',
+  key: 'previewCampaign' | 'previewRoleplay' | 'previewDialogue',
   id: string,
 ) {
   const query = { ...route.query }
@@ -1500,6 +1607,43 @@ onUnmounted(() => {
   line-height: 1.75;
   white-space: pre-wrap;
 }
+
+.dialogue-tools {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.free-talk-trigger,
+.dialogue-generation {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(216, 185, 105, 0.1);
+  color: var(--brand-light);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.free-talk-trigger {
+  padding: 7px 10px;
+  cursor: pointer;
+}
+
+.free-talk-trigger:hover:not(:disabled) { border-color: var(--brand); }
+.free-talk-trigger:disabled,
+.choice-btn:disabled,
+.advance-hint:disabled { cursor: wait; opacity: 0.58; }
+
+.dialogue-generation {
+  margin: 12px 0 0;
+  padding: 7px 10px;
+}
+
+.dialogue-generation .loading-spinner { width: 13px; height: 13px; }
 
 .cursor {
   display: inline-block;

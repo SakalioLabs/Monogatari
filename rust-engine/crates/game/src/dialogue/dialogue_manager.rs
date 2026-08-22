@@ -10,14 +10,24 @@ use tracing::{debug, info};
 use llm_core::{normalize_script_state_key, normalize_script_state_map, Result};
 use llm_scripting::ScriptEngine;
 
-use super::dialogue_node::{Choice, DialogueNode};
+use super::dialogue_node::{Choice, DialogueNode, DialogueResponseGeneration};
 use super::dialogue_script::DialogueScript;
+
+/// One bounded generation request for the currently active dialogue node.
+#[derive(Debug, Clone)]
+pub struct DialogueGenerationRequest {
+    pub script_id: String,
+    pub node_id: String,
+    pub speaker_id: Option<String>,
+    pub prompt: String,
+    pub system_prompt: Option<String>,
+    pub response_generation: Option<DialogueResponseGeneration>,
+}
 
 /// Callback type for LLM-generated dialogue content.
 pub type LLMInferenceCallback = Box<
     dyn Fn(
-            String,
-            Option<String>,
+            DialogueGenerationRequest,
         ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<String>> + Send>>
         + Send
         + Sync,
@@ -49,6 +59,9 @@ pub struct DialogueRuntimeState {
     pub flags: HashMap<String, bool>,
     #[serde(default)]
     pub variables: HashMap<String, serde_json::Value>,
+    /// The bounded generated text currently shown for this cursor, if any.
+    #[serde(default)]
+    pub rendered_text: Option<String>,
 }
 
 /// Stable authoring/runtime metadata for a loaded dialogue script.
@@ -80,6 +93,8 @@ pub struct DialogueManager {
     flags: HashMap<String, bool>,
     /// Shared game variables.
     variables: HashMap<String, serde_json::Value>,
+    /// Current visible text after a bounded generated response is accepted.
+    rendered_text: Option<String>,
     /// Callback for LLM inference.
     llm_callback: Option<Arc<LLMInferenceCallback>>,
     /// Event sender for UI updates.
@@ -95,6 +110,7 @@ impl DialogueManager {
             current_node_id: None,
             flags: HashMap::new(),
             variables: HashMap::new(),
+            rendered_text: None,
             llm_callback: None,
             event_sender: None,
         }
@@ -157,6 +173,7 @@ impl DialogueManager {
         self.active_script_id = Some(script_id.to_string());
         self.current_node_id = Some(start_node_id);
         self.variables = variables;
+        self.rendered_text = None;
 
         debug!("Started dialogue: {title}");
         if let Err(error) = self.process_current_node().await {
@@ -188,6 +205,7 @@ impl DialogueManager {
         if let Some(next_id) = &node.next_node_id {
             let previous_state = self.runtime_state();
             self.current_node_id = Some(next_id.clone());
+            self.rendered_text = None;
             if let Err(error) = self.process_current_node().await {
                 self.restore_runtime_state_unchecked(previous_state);
                 return Err(error);
@@ -282,6 +300,7 @@ impl DialogueManager {
         self.flags.insert(choice_flag, true);
 
         self.current_node_id = Some(choice.next_node_id.clone());
+        self.rendered_text = None;
         if let Err(error) = self.process_current_node().await {
             self.restore_runtime_state_unchecked(previous_state);
             return Err(error);
@@ -317,18 +336,28 @@ impl DialogueManager {
             self.execute_script(script_expr)?;
         }
 
-        // Handle LLM-generated content
+        // Generated wording is bounded to this node. It never selects a route.
         let mut text = node.text.clone();
-        if node.use_llm {
-            if let (Some(callback), Some(prompt)) = (&self.llm_callback, &node.llm_prompt) {
-                match callback(prompt.clone(), node.llm_system_prompt.clone()).await {
-                    Ok(llm_text) => text = llm_text,
-                    Err(e) => {
-                        debug!("LLM inference failed, using fallback text: {}", e);
+        if let (Some(callback), Some(request)) = (
+            &self.llm_callback,
+            generation_request(&script_id, &current_id, &node),
+        ) {
+            match callback(request).await {
+                Ok(llm_text) => {
+                    if let Some(generated) =
+                        bounded_generated_response(&llm_text, node.response_generation.as_ref())
+                    {
+                        text = generated;
+                    } else {
+                        debug!("Generated dialogue response failed contract checks; using fallback text");
                     }
+                }
+                Err(error) => {
+                    debug!("LLM inference failed, using fallback text: {}", error);
                 }
             }
         }
+        self.rendered_text = Some(text.clone());
 
         // Send event
         if let Some(sender) = &self.event_sender {
@@ -362,6 +391,7 @@ impl DialogueManager {
     async fn end_dialogue(&mut self) -> Result<()> {
         self.active_script_id = None;
         self.current_node_id = None;
+        self.rendered_text = None;
 
         if let Some(sender) = &self.event_sender {
             let _ = sender.send(DialogueEvent::DialogueEnd);
@@ -381,7 +411,7 @@ impl DialogueManager {
 
         Some((
             node.speaker_id.clone(),
-            node.text.clone(),
+            self.current_text().to_string(),
             node.emotion.clone(),
         ))
     }
@@ -398,6 +428,7 @@ impl DialogueManager {
             current_node_id: self.current_node_id.clone(),
             flags: self.flags.clone(),
             variables: self.variables.clone(),
+            rendered_text: self.rendered_text.clone(),
         }
     }
 
@@ -451,6 +482,7 @@ impl DialogueManager {
         self.current_node_id = state.current_node_id;
         self.flags = state.flags;
         self.variables = state.variables;
+        self.rendered_text = state.rendered_text;
     }
 
     /// Load dialogue state from persistence.
@@ -572,6 +604,14 @@ impl DialogueManager {
         self.scripts.get(script_id)?.nodes.get(node_id)
     }
 
+    /// Return the authored fallback or the accepted bounded generated response.
+    pub fn current_text(&self) -> &str {
+        self.rendered_text
+            .as_deref()
+            .or_else(|| self.current_node().map(|node| node.text.as_str()))
+            .unwrap_or_default()
+    }
+
     /// Check if a dialogue is currently active.
     pub fn is_active(&self) -> bool {
         self.active_script_id.is_some()
@@ -619,6 +659,7 @@ impl DialogueManager {
         self.scripts = replacement;
         self.active_script_id = None;
         self.current_node_id = None;
+        self.rendered_text = None;
         Ok(count)
     }
 
@@ -632,6 +673,97 @@ impl DialogueManager {
     pub fn has_script(&self, script_id: &str) -> bool {
         self.scripts.contains_key(script_id)
     }
+}
+
+fn generation_request(
+    script_id: &str,
+    node_id: &str,
+    node: &DialogueNode,
+) -> Option<DialogueGenerationRequest> {
+    if let Some(contract) = node.response_generation.clone() {
+        return Some(DialogueGenerationRequest {
+            script_id: script_id.to_string(),
+            node_id: node_id.to_string(),
+            speaker_id: contract
+                .character_id
+                .clone()
+                .or_else(|| node.speaker_id.clone()),
+            prompt: contract.context.clone(),
+            system_prompt: None,
+            response_generation: Some(contract),
+        });
+    }
+
+    if !node.use_llm {
+        return None;
+    }
+    node.llm_prompt
+        .clone()
+        .map(|prompt| DialogueGenerationRequest {
+            script_id: script_id.to_string(),
+            node_id: node_id.to_string(),
+            speaker_id: node.speaker_id.clone(),
+            prompt,
+            system_prompt: node.llm_system_prompt.clone(),
+            response_generation: None,
+        })
+}
+
+fn bounded_generated_response(
+    raw_response: &str,
+    contract: Option<&DialogueResponseGeneration>,
+) -> Option<String> {
+    let mut text = raw_response.trim().to_string();
+    if text.is_empty() {
+        return None;
+    }
+
+    let Some(contract) = contract else {
+        return Some(text);
+    };
+
+    if contract
+        .forbidden_markers
+        .iter()
+        .any(|marker| contains_marker(&text, marker))
+    {
+        return None;
+    }
+    if !contract.grounding_markers.is_empty()
+        && !contract
+            .grounding_markers
+            .iter()
+            .any(|marker| contains_marker(&text, marker))
+    {
+        return None;
+    }
+
+    text = truncate_after_sentences(&text, contract.max_sentences.max(1));
+    text = truncate_to_characters(&text, contract.max_characters.max(1));
+    let text = text.trim().to_string();
+    (!text.is_empty()).then_some(text)
+}
+
+fn contains_marker(value: &str, marker: &str) -> bool {
+    let marker = marker.trim();
+    !marker.is_empty() && value.to_lowercase().contains(&marker.to_lowercase())
+}
+
+fn truncate_after_sentences(value: &str, maximum: usize) -> String {
+    let mut sentence_count = 0;
+    for (index, character) in value.char_indices() {
+        if matches!(character, '.' | '!' | '?' | '。' | '！' | '？') {
+            sentence_count += 1;
+            if sentence_count >= maximum {
+                return value[..index + character.len_utf8()].to_string();
+            }
+        }
+    }
+    value.to_string()
+}
+
+fn truncate_to_characters(value: &str, maximum: usize) -> String {
+    value.chars().take(maximum).collect()
 }
 
 fn normalize_legacy_dialogue_script(script: &str) -> String {
@@ -763,6 +895,90 @@ mod tests {
         assert_eq!(effects.source_node_id, "start");
         assert_eq!(effects.relationship_changes.get("sakura"), Some(&0.4));
         assert_eq!(manager.current_node().unwrap().text, "Thank you");
+    }
+
+    #[tokio::test]
+    async fn controlled_generation_changes_only_visible_text_and_keeps_the_authored_route() {
+        let script: DialogueScript = serde_json::from_value(serde_json::json!({
+            "id": "controlled",
+            "title": "Controlled",
+            "start_node_id": "start",
+            "nodes": {
+                "start": {
+                    "speaker_id": "aoi",
+                    "text": "Fallback acknowledgement.",
+                    "next_node_id": "end",
+                    "response_generation": {
+                        "context": "Aoi acknowledges the lantern before the bridge.",
+                        "grounding_markers": ["lantern"],
+                        "forbidden_markers": ["route"],
+                        "max_characters": 120,
+                        "max_sentences": 2
+                    }
+                },
+                "end": {"text": "The bridge remains ahead."}
+            }
+        }))
+        .unwrap();
+        let callback: Arc<LLMInferenceCallback> = Arc::new(Box::new(|request| {
+            assert_eq!(request.script_id, "controlled");
+            assert_eq!(request.node_id, "start");
+            assert_eq!(request.speaker_id.as_deref(), Some("aoi"));
+            Box::pin(async { Ok("Aoi steadies the lantern and nods once.".to_string()) })
+        }));
+        let mut manager = DialogueManager::new();
+        manager.set_llm_callback(callback);
+        manager.scripts.insert(script.id.clone(), script);
+
+        manager.start_dialogue("controlled").await.unwrap();
+
+        assert_eq!(
+            manager.runtime_state().current_node_id.as_deref(),
+            Some("start")
+        );
+        assert_eq!(
+            manager.current_text(),
+            "Aoi steadies the lantern and nods once."
+        );
+        manager.advance().await.unwrap();
+        assert_eq!(
+            manager.runtime_state().current_node_id.as_deref(),
+            Some("end")
+        );
+        assert_eq!(manager.current_text(), "The bridge remains ahead.");
+    }
+
+    #[tokio::test]
+    async fn controlled_generation_uses_authored_fallback_when_contract_rejects_output() {
+        let script: DialogueScript = serde_json::from_value(serde_json::json!({
+            "id": "controlled_fallback",
+            "title": "Controlled fallback",
+            "start_node_id": "start",
+            "nodes": {
+                "start": {
+                    "speaker_id": "aoi",
+                    "text": "Fallback acknowledgement.",
+                    "response_generation": {
+                        "context": "Aoi acknowledges the lantern.",
+                        "grounding_markers": ["lantern"],
+                        "forbidden_markers": ["AI"],
+                        "max_characters": 120,
+                        "max_sentences": 2
+                    }
+                }
+            }
+        }))
+        .unwrap();
+        let callback: Arc<LLMInferenceCallback> = Arc::new(Box::new(|_| {
+            Box::pin(async { Ok("As an AI, I cannot hold the lantern.".to_string()) })
+        }));
+        let mut manager = DialogueManager::new();
+        manager.set_llm_callback(callback);
+        manager.scripts.insert(script.id.clone(), script);
+
+        manager.start_dialogue("controlled_fallback").await.unwrap();
+
+        assert_eq!(manager.current_text(), "Fallback acknowledgement.");
     }
 
     #[tokio::test]

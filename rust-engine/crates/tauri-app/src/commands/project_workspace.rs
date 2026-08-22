@@ -223,8 +223,9 @@ fn sample_projects() -> Vec<SampleProjectEntry> {
         SampleProjectEntry {
             id: "konosuba".to_string(),
             title: "KonoSuba".to_string(),
-            description: "多章节 Campaign 与 Scene Roleplay 综合示例。项目内容通过独立项目包分发。"
-                .to_string(),
+            description:
+                "传统视觉小说主线、角色受控回应与章节短谈综合示例。项目内容通过独立项目包分发。"
+                    .to_string(),
             package_file_name: "monogatari-konosuba-sample.monogatari".to_string(),
         },
     ]

@@ -214,6 +214,7 @@ async fn restore_game_save(
         current_node_id: save.current_node_id.clone(),
         flags: save.flags.clone(),
         variables: save.variables.clone(),
+        rendered_text: None,
     });
     let dialogue_state = state
         .dialogue_manager
