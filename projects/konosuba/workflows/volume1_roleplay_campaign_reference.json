@@ -1,0 +1,40 @@
+{
+  "id": "volume1_roleplay_campaign_reference",
+  "name": "第一卷：可选实时角色扮演战役",
+  "nodes": [
+    {
+      "config": {},
+      "connections": [
+        "volume1_campaign"
+      ],
+      "id": "start",
+      "label": "开始第一卷自由模式",
+      "node_type": "start",
+      "x": 120,
+      "y": 240
+    },
+    {
+      "config": {
+        "campaign_id": "konosuba_volume1"
+      },
+      "connections": [
+        "end"
+      ],
+      "id": "volume1_campaign",
+      "label": "KonoSuba 第一卷战役",
+      "node_type": "roleplay_campaign_entry",
+      "x": 420,
+      "y": 240
+    },
+    {
+      "config": {},
+      "connections": [],
+      "id": "end",
+      "label": "战役参考完成",
+      "node_type": "end",
+      "x": 720,
+      "y": 240
+    }
+  ],
+  "start_node_id": "start"
+}

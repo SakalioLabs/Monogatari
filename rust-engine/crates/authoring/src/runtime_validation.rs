@@ -30,7 +30,10 @@ use crate::story_content_validation::{
     load_scene_documents, load_story_ending_sources, scene_ids, validate_ending_references,
 };
 use crate::story_events::StoryEventCatalog;
-use crate::workflow_validation::{load_project_workflows, validate_workflow_references};
+use crate::workflow_validation::{
+    load_project_workflows, validate_workflow_references, validate_workflow_story_references,
+    WorkflowStoryReferenceCatalog,
+};
 
 pub const CORE_RUNTIME_VALIDATION_SCHEMA_V1: &str = "monogatari-core-runtime-validation/v1";
 
@@ -155,11 +158,18 @@ pub async fn load_core_runtime_project(project_root: &Path) -> Result<CoreRuntim
         &story_content,
         &mut issues,
     );
+    let dialogue_scripts = dialogues.scripts();
+    let workflow_story_catalog = WorkflowStoryReferenceCatalog::from_project_content(
+        &dialogue_scripts,
+        &scene_roleplay_content.definitions,
+        &roleplay_campaigns,
+    );
     let workflow_content = validate_workflows(
         project_root,
         &story_events,
         &story_content.scene_ids,
         &character_ids,
+        &workflow_story_catalog,
         &mut issues,
     );
     let quality_suite_count = validate_quality_suites(
@@ -225,6 +235,7 @@ fn validate_workflows(
     story_events: &StoryEventCatalog,
     scene_ids: &HashSet<String>,
     character_ids: &HashSet<String>,
+    story_catalog: &WorkflowStoryReferenceCatalog,
     issues: &mut Vec<CoreRuntimeValidationIssue>,
 ) -> ValidatedWorkflowContent {
     let workflows = match load_project_workflows(project_root, story_events) {
@@ -240,6 +251,16 @@ fn validate_workflows(
     for (code, path, message) in validate_workflow_references(&workflows, scene_ids, character_ids)
     {
         issues.push(issue(code, Some(path), message));
+    }
+    for loaded in &workflows {
+        for validation_issue in validate_workflow_story_references(&loaded.workflow, story_catalog)
+        {
+            issues.push(issue(
+                validation_issue.code,
+                Some(loaded.source_path.clone()),
+                validation_issue.message,
+            ));
+        }
     }
     let paths = workflows
         .iter()

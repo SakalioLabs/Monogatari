@@ -1,0 +1,86 @@
+{
+  "id": "blue_frame_story_reference",
+  "name": "Blue Frame Content Entry Map",
+  "nodes": [
+    {
+      "config": {},
+      "connections": [
+        "choose_experience"
+      ],
+      "id": "start",
+      "label": "Start Blue Frame",
+      "node_type": "start",
+      "x": 80,
+      "y": 260
+    },
+    {
+      "config": {
+        "choices": [
+          "Guided visual-novel route",
+          "Single free-talk investigation",
+          "Full live investigation campaign"
+        ]
+      },
+      "connections": [
+        "guided_dialogue",
+        "free_talk_scene",
+        "live_campaign"
+      ],
+      "id": "choose_experience",
+      "label": "Choose the authored experience",
+      "node_type": "choice",
+      "x": 330,
+      "y": 260
+    },
+    {
+      "config": {
+        "dialogue_id": "blue_frame_dialogue",
+        "entry_node_id": "start"
+      },
+      "connections": [
+        "complete"
+      ],
+      "id": "guided_dialogue",
+      "label": "Guided Blue Frame dialogue",
+      "node_type": "dialogue_entry",
+      "x": 620,
+      "y": 80
+    },
+    {
+      "config": {
+        "roleplay_id": "blue_frame_roleplay"
+      },
+      "connections": [
+        "complete"
+      ],
+      "id": "free_talk_scene",
+      "label": "Blue Frame free-talk investigation",
+      "node_type": "scene_roleplay_entry",
+      "x": 620,
+      "y": 260
+    },
+    {
+      "config": {
+        "campaign_id": "blue_frame_campaign"
+      },
+      "connections": [
+        "complete"
+      ],
+      "id": "live_campaign",
+      "label": "Blue Frame live investigation campaign",
+      "node_type": "roleplay_campaign_entry",
+      "x": 620,
+      "y": 440
+    },
+    {
+      "config": {},
+      "connections": [],
+      "id": "complete",
+      "label": "Reference complete",
+      "node_type": "end",
+      "x": 900,
+      "y": 260
+    }
+  ],
+  "start_node_id": "start"
+}

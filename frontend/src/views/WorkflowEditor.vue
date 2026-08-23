@@ -271,6 +271,15 @@
                 />
               </div>
 
+              <button
+                v-if="storyPreviewTarget(selectedNode)"
+                type="button"
+                class="related-editor-btn"
+                @click="openStoryPreview(selectedNode)"
+              >
+                <Play :size="13" />{{ t('workflow.preview-on-stage', 'Preview on stage') }}
+              </button>
+
               <div class="connection-editor">
                 <div class="section-title-row compact">
                   <div><span class="eyebrow">{{ t('workflow.connections', 'Connections') }}</span><h3>{{ t('workflow.outgoing', 'Outgoing') }}</h3></div>
@@ -485,6 +494,10 @@ import {
   type StoryCharacterInfo,
   type StorySceneInfo,
 } from '../lib/storyContent'
+import { loadDialogueAuthoringCatalog, type DialogueAuthoringEntry } from '../lib/dialogueAuthoring'
+import { loadSceneRoleplayAuthoringCatalog } from '../lib/sceneRoleplayAuthoring'
+import type { SceneRoleplayDefinition } from '../lib/sceneRoleplay'
+import { loadRoleplayCampaigns, type RoleplayCampaignDefinition } from '../lib/roleplayCampaign'
 import { loadStoryEventCatalog, type StoryEventDefinition } from '../lib/storyEvents'
 import {
   createDefaultWorkflowFlow,
@@ -509,6 +522,7 @@ import {
   workflowNumericFieldStep as numericFieldStep,
   workflowOutputPortPoint,
   workflowOutputPorts,
+  workflowStoryPreviewTarget as resolveStoryPreviewTarget,
   WORKFLOW_NODE_WIDTH as NODE_WIDTH,
   type WorkflowOutputPort,
   type WorkflowFileSummary,
@@ -570,6 +584,9 @@ const nodeTypes = ref<WorkflowNodeTypeInfo[]>([])
 const storyEvents = ref<StoryEventDefinition[]>([])
 const storyScenes = ref<StorySceneInfo[]>([])
 const storyCharacters = ref<StoryCharacterInfo[]>([])
+const storyDialogues = ref<DialogueAuthoringEntry[]>([])
+const storyRoleplays = ref<SceneRoleplayDefinition[]>([])
+const storyCampaigns = ref<RoleplayCampaignDefinition[]>([])
 const canvasRef = ref<HTMLDivElement>()
 const validationResult = ref<WorkflowValidationResult | null>(null)
 const validationMessage = ref('')
@@ -719,6 +736,9 @@ const executionHeading = computed(() => {
 function nodeTypeLabel(type: string): string {
   if (type === 'start') return t('workflow.node.start', 'Start')
   if (type === 'dialogue') return t('workflow.node.dialogue', 'Dialogue')
+  if (type === 'dialogue_entry') return t('workflow.node.dialogue-entry', 'Dialogue entry')
+  if (type === 'scene_roleplay_entry') return t('workflow.node.scene-roleplay-entry', 'Free talk entry')
+  if (type === 'roleplay_campaign_entry') return t('workflow.node.roleplay-campaign-entry', 'Roleplay campaign entry')
   if (type === 'choice') return t('workflow.node.choice', 'Choice')
   if (type === 'condition') return t('workflow.node.condition', 'Condition')
   if (type === 'set_variable') return t('workflow.node.set-variable', 'Set variable')
@@ -744,6 +764,9 @@ function nodeTypeLabel(type: string): string {
 function nodeTypeDescription(type: string): string {
   if (type === 'start') return t('workflow.node-desc.start', 'Workflow entry point')
   if (type === 'dialogue') return t('workflow.node-desc.dialogue', 'Show character dialogue')
+  if (type === 'dialogue_entry') return t('workflow.node-desc.dialogue-entry', 'Reference an authored dialogue node and preview it on stage')
+  if (type === 'scene_roleplay_entry') return t('workflow.node-desc.scene-roleplay-entry', 'Reference an authored free-talk scene and preview it on stage')
+  if (type === 'roleplay_campaign_entry') return t('workflow.node-desc.roleplay-campaign-entry', 'Reference an authored roleplay campaign and preview it on stage')
   if (type === 'choice') return t('workflow.node-desc.choice', 'Present player choices')
   if (type === 'condition') return t('workflow.node-desc.condition', 'Branch by expression')
   if (type === 'set_variable') return t('workflow.node-desc.set-variable', 'Set a game variable')
@@ -769,6 +792,7 @@ function nodeTypeDescription(type: string): string {
 function nodeCategoryLabel(category: string): string {
   if (category === 'flow') return t('workflow.category.flow', 'Flow')
   if (category === 'content') return t('workflow.category.content', 'Content')
+  if (category === 'story') return t('workflow.category.story', 'Story')
   if (category === 'logic') return t('workflow.category.logic', 'Logic')
   if (category === 'ai') return t('workflow.category.ai', 'AI')
   if (category === 'character') return t('workflow.category.character', 'Character')
@@ -794,6 +818,10 @@ function configFieldLabel(field: string): string {
   if (field === 'event_id') return t('workflow.field.event-id', 'Event ID')
   if (field === 'event_type') return t('workflow.field.event-type', 'Event type')
   if (field === 'scene_id') return t('workflow.field.scene-id', 'Scene ID')
+  if (field === 'dialogue_id') return t('workflow.field.dialogue-id', 'Dialogue ID')
+  if (field === 'entry_node_id') return t('workflow.field.entry-node-id', 'Entry node ID')
+  if (field === 'roleplay_id') return t('workflow.field.roleplay-id', 'Free talk ID')
+  if (field === 'campaign_id') return t('workflow.field.campaign-id', 'Campaign ID')
   if (field === 'emotion') return t('workflow.field.emotion', 'Emotion')
   if (field === 'delta') return t('workflow.field.delta', 'Delta')
   if (field === 'speaker') return t('workflow.field.speaker', 'Speaker')
@@ -846,6 +874,29 @@ function configFieldOptions(node: WorkflowNode, field: string): WorkflowSelectOp
   if (field === 'scene_id') {
     return storyScenes.value.map(scene => ({ value: scene.id, label: `${scene.name} / ${scene.id}` }))
   }
+  if (field === 'dialogue_id') {
+    return storyDialogues.value.map(dialogue => ({ value: dialogue.id, label: `${dialogue.title} / ${dialogue.id}` }))
+  }
+  if (field === 'entry_node_id') {
+    const dialogueId = String(node.config.dialogue_id || '')
+    const dialogue = storyDialogues.value.find(candidate => candidate.id === dialogueId)
+    if (!dialogue) return []
+    return Object.entries(dialogue.nodes).map(([nodeId, dialogueNode]) => {
+      const speaker = typeof dialogueNode.speaker_id === 'string' && dialogueNode.speaker_id.trim()
+        ? ` / ${dialogueNode.speaker_id.trim()}`
+        : ''
+      const text = typeof dialogueNode.text === 'string'
+        ? dialogueNode.text.replace(/\s+/g, ' ').trim().slice(0, 42)
+        : ''
+      return { value: nodeId, label: `${nodeId}${speaker}${text ? ` - ${text}` : ''}` }
+    })
+  }
+  if (field === 'roleplay_id') {
+    return storyRoleplays.value.map(roleplay => ({ value: roleplay.id, label: `${roleplay.title} / ${roleplay.id}` }))
+  }
+  if (field === 'campaign_id') {
+    return storyCampaigns.value.map(campaign => ({ value: campaign.id, label: `${campaign.title} / ${campaign.id}` }))
+  }
   if (field === 'character_id' || (field === 'speaker' && node.node_type === 'dialogue')) {
     return storyCharacters.value.map(character => ({ value: character.id, label: `${character.name} / ${character.id}` }))
   }
@@ -867,6 +918,10 @@ function configFieldOptions(node: WorkflowNode, field: string): WorkflowSelectOp
 
 function configFieldPlaceholder(field: string): string {
   if (field === 'scene_id') return t('workflow.select-scene', 'Select scene')
+  if (field === 'dialogue_id') return t('workflow.select-dialogue', 'Select dialogue')
+  if (field === 'entry_node_id') return t('workflow.select-entry-node', 'Select dialogue node')
+  if (field === 'roleplay_id') return t('workflow.select-roleplay', 'Select free talk')
+  if (field === 'campaign_id') return t('workflow.select-campaign', 'Select campaign')
   if (field === 'character_id' || field === 'speaker') return t('workflow.select-character', 'Select character')
   if (field === 'workflow_path') return t('workflow.select-workflow', 'Select workflow')
   return t('workflow.select-value', 'Select value')
@@ -880,8 +935,55 @@ function openSceneComposer(sceneId: string) {
   void router.push({ path: '/scene-editor', query: { scene: sceneId } })
 }
 
+function storyPreviewTarget(node: WorkflowNode) {
+  return resolveStoryPreviewTarget(node)
+}
+
+function openStoryPreview(node: WorkflowNode) {
+  const target = storyPreviewTarget(node)
+  if (!target) return
+  if (target.kind === 'dialogue') {
+    void router.push({
+      path: '/game',
+      query: {
+        previewDialogue: target.dialogueId,
+        previewNode: target.entryNodeId,
+        authoring: '1',
+        source: 'workflow',
+      },
+    })
+    return
+  }
+  if (target.kind === 'scene-roleplay') {
+    void router.push({
+      path: '/game',
+      query: {
+        previewRoleplay: target.roleplayId,
+        authoring: '1',
+        source: 'workflow',
+      },
+    })
+    return
+  }
+  void router.push({
+    path: '/game',
+    query: {
+      previewCampaign: target.campaignId,
+      authoring: '1',
+      source: 'workflow',
+    },
+  })
+}
+
 function updateConfigFromSelect(node: WorkflowNode, field: string, value: string) {
   updateConfig(field, value)
+  if (field === 'dialogue_id') {
+    const dialogue = storyDialogues.value.find(candidate => candidate.id === value)
+    const currentEntryId = String(node.config.entry_node_id || '')
+    if (dialogue && !Object.prototype.hasOwnProperty.call(dialogue.nodes, currentEntryId)) {
+      node.config.entry_node_id = dialogue.start_node_id
+    }
+  }
   if (field === 'workflow_path') {
     const file = workflowFiles.value.find(candidate => candidate.path === value)
     if (file) node.config.workflow_id = file.workflow_id
@@ -1000,6 +1102,10 @@ function workflowIssueMessage(issue: WorkflowValidationIssue): string {
   if (issue.code === 'node_config_missing') return t('workflow.issue.node-config-missing', 'A required node field is missing.')
   if (issue.code === 'node_event_unknown') return t('workflow.issue.node-event-unknown', 'The selected story event is not in the active project catalog.')
   if (issue.code === 'node_event_character_mismatch') return t('workflow.issue.node-event-character-mismatch', 'The selected story event is unavailable for this character.')
+  if (issue.code === 'node_dialogue_unknown') return t('workflow.issue.node-dialogue-unknown', 'The selected dialogue is not in the active project catalog.')
+  if (issue.code === 'node_dialogue_entry_unknown') return t('workflow.issue.node-dialogue-entry-unknown', 'The selected dialogue node is not in the active project catalog.')
+  if (issue.code === 'node_roleplay_unknown') return t('workflow.issue.node-roleplay-unknown', 'The selected free-talk scene is not in the active project catalog.')
+  if (issue.code === 'node_campaign_unknown') return t('workflow.issue.node-campaign-unknown', 'The selected campaign is not in the active project catalog.')
   if (issue.code === 'node_state_key_invalid') return t('workflow.issue.node-state-key-invalid', 'A state key is invalid.')
   if (issue.code === 'node_condition_invalid') return t('workflow.issue.node-condition-invalid', 'The condition expression is invalid.')
   if (issue.code === 'connection_empty') return t('workflow.issue.connection-empty', 'A connection has no target.')
@@ -1558,16 +1664,21 @@ onBeforeRouteLeave((_to, _from, next) => {
 
 onMounted(async () => {
   try {
-    const [loadedNodeTypes, eventCatalog, scenes, characters] = await Promise.all([
+    const [loadedNodeTypes, eventCatalog, scenes, characters, dialogueCatalog, roleplayCatalog] = await Promise.all([
       invokeCommand<WorkflowNodeTypeInfo[]>('get_workflow_nodes', undefined, fallbackNodeTypes),
       loadStoryEventCatalog(),
       loadStoryScenes(),
       loadStoryCharacters(),
+      loadDialogueAuthoringCatalog(),
+      loadSceneRoleplayAuthoringCatalog(),
     ])
     nodeTypes.value = loadedNodeTypes
     storyEvents.value = eventCatalog.events
     storyScenes.value = scenes
     storyCharacters.value = characters
+    storyDialogues.value = dialogueCatalog.dialogues
+    storyRoleplays.value = roleplayCatalog.roleplays.map(entry => entry.definition)
+    storyCampaigns.value = await loadRoleplayCampaigns(storyRoleplays.value)
   } catch (error) {
     nodeTypes.value = fallbackNodeTypes
     showWorkflowNotice(t('workflow.error.catalogs', 'Unable to load authoring catalogs: {error}', { error: formatWorkflowError(error) }), 'error')

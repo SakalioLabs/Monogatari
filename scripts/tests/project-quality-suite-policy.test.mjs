@@ -35,7 +35,7 @@ test('checked-in Quality Suites return source-bound passing evidence', async () 
     },
     {
       suiteCount: 5,
-      scenarioCount: 47,
+      scenarioCount: 48,
       defaultScenarioCount: 29,
       sourceDataRootLabel: 'data',
     },

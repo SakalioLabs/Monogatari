@@ -22,7 +22,7 @@ fn exposes_one_authoritative_workflow_node_catalog() {
         .map(|entry| entry.node_type.as_str())
         .collect::<std::collections::HashSet<_>>();
 
-    assert_eq!(catalog.len(), 21);
+    assert_eq!(catalog.len(), 24);
     assert_eq!(unique_types.len(), catalog.len());
     assert!(catalog.iter().all(|entry| {
         !entry.node_type.is_empty()
@@ -139,4 +139,57 @@ fn resolves_trigger_nodes_against_the_shared_event_catalog() {
         .issues
         .iter()
         .any(|issue| issue.code == "node_event_unknown"));
+}
+
+#[test]
+fn resolves_story_entries_against_the_active_project_catalog() {
+    let mut story_catalog = WorkflowStoryReferenceCatalog::default();
+    story_catalog.register_dialogue("chapter_one", ["opening", "guild"]);
+    story_catalog.register_roleplay("guild_free_talk");
+    story_catalog.register_campaign("volume_one");
+
+    let mut dialogue = node("dialogue", "dialogue_entry", &["roleplay"]);
+    dialogue.config = json!({"dialogue_id":"chapter_one", "entry_node_id":"opening"});
+    let mut roleplay = node("roleplay", "scene_roleplay_entry", &["campaign"]);
+    roleplay.config = json!({"roleplay_id":"guild_free_talk"});
+    let mut campaign = node("campaign", "roleplay_campaign_entry", &["end"]);
+    campaign.config = json!({"campaign_id":"volume_one"});
+    let workflow = Workflow {
+        id: "story_entries".into(),
+        name: "Story entries".into(),
+        start_node_id: "start".into(),
+        nodes: vec![
+            node("start", "start", &["dialogue"]),
+            dialogue,
+            roleplay,
+            campaign,
+            node("end", "end", &[]),
+        ],
+    };
+
+    let result = validate_workflow_with_project_catalog(
+        &workflow,
+        &StoryEventCatalog::default(),
+        &story_catalog,
+    );
+    assert!(result.valid, "{:?}", result.issues);
+    assert!(workflow_uses_story_entries(&workflow));
+
+    let mut invalid = workflow.clone();
+    invalid.nodes[1].config = json!({"dialogue_id":"chapter_one", "entry_node_id":"missing"});
+    invalid.nodes[2].config = json!({"roleplay_id":"missing_roleplay"});
+    invalid.nodes[3].config = json!({"campaign_id":"missing_campaign"});
+    let invalid_result = validate_workflow_with_project_catalog(
+        &invalid,
+        &StoryEventCatalog::default(),
+        &story_catalog,
+    );
+    let codes = invalid_result
+        .issues
+        .iter()
+        .map(|issue| issue.code.as_str())
+        .collect::<Vec<_>>();
+    assert!(codes.contains(&"node_dialogue_entry_unknown"));
+    assert!(codes.contains(&"node_roleplay_unknown"));
+    assert!(codes.contains(&"node_campaign_unknown"));
 }

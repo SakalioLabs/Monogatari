@@ -284,6 +284,60 @@
           "作为AI"
         ]
       }
+    },
+    {
+      "id": "chapter1-guided-vn-workflow-reference",
+      "category": "workflow_coverage",
+      "description": "The Chapter 1 reference workflow points at the actual controlled dialogue checkpoints, including the bounded guild free-talk node.",
+      "messages": [
+        {
+          "role": "player",
+          "content": "校验第一章固定剧情和限次自由对话入口。"
+        }
+      ],
+      "workflow_path": "workflows/chapter1_guided_vn_reference.json",
+      "workflow_max_steps": 16,
+      "workflow_choice_selections": [
+        {}
+      ],
+      "expect": {
+        "min_workflow_coverage_percent": 100,
+        "expected_workflow_unvisited_nodes": [],
+        "required_workflow_nodes": [
+          "start",
+          "afterlife_opening",
+          "axel_arrival",
+          "guild_free_talk",
+          "field_arrival",
+          "first_quest_closer",
+          "end"
+        ]
+      }
+    },
+    {
+      "id": "volume1-roleplay-campaign-workflow-reference",
+      "category": "workflow_coverage",
+      "description": "The optional live roleplay campaign has an explicit, inspectable workflow entry instead of hidden sample-only data.",
+      "messages": [
+        {
+          "role": "player",
+          "content": "校验第一卷实时角色扮演战役入口。"
+        }
+      ],
+      "workflow_path": "workflows/volume1_roleplay_campaign_reference.json",
+      "workflow_max_steps": 8,
+      "workflow_choice_selections": [
+        {}
+      ],
+      "expect": {
+        "min_workflow_coverage_percent": 100,
+        "expected_workflow_unvisited_nodes": [],
+        "required_workflow_nodes": [
+          "start",
+          "volume1_campaign",
+          "end"
+        ]
+      }
     }
   ]
 }

@@ -9,6 +9,7 @@ use std::path::PathBuf;
 use llm_scripting::validate_condition_source;
 use tauri::State;
 
+use crate::commands::dialogue::ensure_project_dialogues_loaded;
 use crate::commands::story_events::apply_story_event_definition;
 use crate::commands::{chat, prompt_guard};
 use crate::state::AppState;
@@ -17,6 +18,8 @@ use crate::story_events::{
     EventScoreSnapshot, EventTriggerContext, StoryEventCatalog, StoryEventDefinition,
 };
 
+use llm_authoring::campaign_validation::load_project_roleplay_campaigns;
+use llm_authoring::scene_roleplay_validation::load_project_scene_roleplays;
 use llm_authoring::workflow_documents::{
     list_project_workflow_summaries, load_project_workflow, save_project_workflow,
 };
@@ -35,7 +38,9 @@ use llm_authoring::workflow_preview::{
 #[cfg(test)]
 use llm_authoring::workflow_validation::validate_workflow_graph as validate_workflow_inner;
 use llm_authoring::workflow_validation::{
-    format_validation_errors, validate_workflow_with_catalog, workflow_node_types,
+    format_validation_errors, validate_workflow_with_catalog,
+    validate_workflow_with_project_catalog, workflow_node_types, workflow_uses_story_entries,
+    WorkflowStoryReferenceCatalog,
 };
 pub use llm_authoring::workflow_validation::{
     Workflow, WorkflowFileSummary, WorkflowNode, WorkflowNodeTypeInfo, WorkflowRunContext,
@@ -54,8 +59,37 @@ pub async fn validate_workflow(
     state: State<'_, AppState>,
     workflow: Workflow,
 ) -> Result<WorkflowValidationResult, String> {
+    validate_project_workflow(&state, &workflow).await
+}
+
+async fn validate_project_workflow(
+    state: &AppState,
+    workflow: &Workflow,
+) -> Result<WorkflowValidationResult, String> {
+    if !workflow_uses_story_entries(workflow) {
+        let event_catalog = state.story_event_catalog.read().await;
+        return Ok(validate_workflow_with_catalog(workflow, &event_catalog));
+    }
+
+    ensure_project_dialogues_loaded(state).await?;
+    let dialogues = state.dialogue_manager.read().await.scripts();
+    let project_root = state.current_project_data_root().await?;
+    let roleplays = load_project_scene_roleplays(&project_root)?
+        .into_iter()
+        .map(|loaded| loaded.definition)
+        .collect::<Vec<_>>();
+    let campaigns = load_project_roleplay_campaigns(&project_root)?
+        .into_iter()
+        .map(|loaded| loaded.definition)
+        .collect::<Vec<_>>();
+    let story_catalog =
+        WorkflowStoryReferenceCatalog::from_project_content(&dialogues, &roleplays, &campaigns);
     let event_catalog = state.story_event_catalog.read().await;
-    Ok(validate_workflow_with_catalog(&workflow, &event_catalog))
+    Ok(validate_workflow_with_project_catalog(
+        workflow,
+        &event_catalog,
+        &story_catalog,
+    ))
 }
 
 /// Execute a workflow graph from its configured start node and return a trace.
@@ -88,6 +122,10 @@ pub(crate) async fn execute_workflow_inner(
 ) -> Result<WorkflowExecutionReport, String> {
     let event_catalog = state.story_event_catalog.read().await.clone();
     let choice_selections = choice_selections.unwrap_or_default();
+    let validation = validate_project_workflow(state, &workflow).await?;
+    if !validation.valid {
+        return Err(format_validation_errors(&validation));
+    }
     if run_context.as_ref().is_some_and(|context| context.enabled) {
         let environment = workflow_preview_environment(state, &workflow).await?;
         return execute_workflow_preview(
@@ -101,11 +139,6 @@ pub(crate) async fn execute_workflow_inner(
                 ..WorkflowPreviewOptions::default()
             },
         );
-    }
-
-    let validation = validate_workflow_with_catalog(&workflow, &event_catalog);
-    if !validation.valid {
-        return Err(format_validation_errors(&validation));
     }
 
     let node_lookup: HashMap<String, WorkflowNode> = workflow
@@ -283,6 +316,22 @@ async fn execute_workflow_node_inner(
                 "emotion": emotion,
             }))
         }
+        "dialogue_entry" => Ok(serde_json::json!({
+            "action": "dialogue_entry",
+            "dialogue_id": config_string(&node.config, &["dialogue_id"]).unwrap_or_default(),
+            "entry_node_id": config_string(&node.config, &["entry_node_id"]).unwrap_or_default(),
+            "status": "ready_for_stage_preview",
+        })),
+        "scene_roleplay_entry" => Ok(serde_json::json!({
+            "action": "scene_roleplay_entry",
+            "roleplay_id": config_string(&node.config, &["roleplay_id"]).unwrap_or_default(),
+            "status": "ready_for_stage_preview",
+        })),
+        "roleplay_campaign_entry" => Ok(serde_json::json!({
+            "action": "roleplay_campaign_entry",
+            "campaign_id": config_string(&node.config, &["campaign_id"]).unwrap_or_default(),
+            "status": "ready_for_stage_preview",
+        })),
         "choice" => {
             let choices = config_string_list(&node.config, "choices");
             Ok(serde_json::json!({
@@ -863,6 +912,10 @@ pub async fn save_workflow(
     path: String,
 ) -> Result<String, String> {
     let _authoring_guard = state.story_content_authoring_lock.lock().await;
+    let validation = validate_project_workflow(&state, &workflow).await?;
+    if !validation.valid {
+        return Err(format_validation_errors(&validation));
+    }
     let project_root = state.current_project_data_root().await?;
     save_project_workflow(&project_root, &workflow, &path).await?;
     Ok("Workflow saved".to_string())
@@ -1249,6 +1302,47 @@ mod tests {
         assert_eq!(dialogue["action"], "dialogue");
         assert_eq!(dialogue["speaker"], "sakura");
         assert_eq!(dialogue["emotion"], "happy");
+
+        let dialogue_entry = execute_workflow_node_inner(
+            &state,
+            node(
+                "dialogue_entry",
+                "dialogue_entry",
+                vec![],
+                serde_json::json!({"dialogue_id":"chapter_one", "entry_node_id":"opening"}),
+            ),
+        )
+        .await
+        .unwrap();
+        assert_eq!(dialogue_entry["action"], "dialogue_entry");
+        assert_eq!(dialogue_entry["entry_node_id"], "opening");
+        assert_eq!(dialogue_entry["status"], "ready_for_stage_preview");
+
+        let roleplay_entry = execute_workflow_node_inner(
+            &state,
+            node(
+                "roleplay_entry",
+                "scene_roleplay_entry",
+                vec![],
+                serde_json::json!({"roleplay_id":"guild_free_talk"}),
+            ),
+        )
+        .await
+        .unwrap();
+        assert_eq!(roleplay_entry["action"], "scene_roleplay_entry");
+
+        let campaign_entry = execute_workflow_node_inner(
+            &state,
+            node(
+                "campaign_entry",
+                "roleplay_campaign_entry",
+                vec![],
+                serde_json::json!({"campaign_id":"volume_one"}),
+            ),
+        )
+        .await
+        .unwrap();
+        assert_eq!(campaign_entry["action"], "roleplay_campaign_entry");
 
         let choice = execute_workflow_node_inner(
             &state,

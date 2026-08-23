@@ -138,6 +138,9 @@ export function verifyProjectWorkflowShape(workflow, label, storyEvents = new Ma
   const knownTypes = new Set([
     'start',
     'dialogue',
+    'dialogue_entry',
+    'scene_roleplay_entry',
+    'roleplay_campaign_entry',
     'choice',
     'condition',
     'set_variable',
@@ -246,6 +249,12 @@ function workflowRequiredFields(nodeType) {
     case 'dialogue':
     case 'narration':
       return ['text']
+    case 'dialogue_entry':
+      return ['dialogue_id', 'entry_node_id']
+    case 'scene_roleplay_entry':
+      return ['roleplay_id']
+    case 'roleplay_campaign_entry':
+      return ['campaign_id']
     case 'choice':
       return ['choices']
     case 'condition':

@@ -17,7 +17,7 @@ const boundaries = { repositoryRoot, rustDirectory }
 test('checked-in Workflow catalogs return cross-root passing evidence', async () => {
   const evidence = await collectProjectWorkflowEvidence(boundaries)
   assert.deepEqual(evidence.issues, [])
-  assert.equal(evidence.workflowCount, 10)
+  assert.equal(evidence.workflowCount, 12)
 })
 
 test('pure Workflow shape validation reports graph, state, condition, and Event drift', () => {

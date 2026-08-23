@@ -66,6 +66,11 @@ export interface WorkflowConnectionUpdate {
     | 'output_gap'
 }
 
+export type WorkflowStoryPreviewTarget =
+  | { kind: 'dialogue'; dialogueId: string; entryNodeId: string }
+  | { kind: 'scene-roleplay'; roleplayId: string }
+  | { kind: 'roleplay-campaign'; campaignId: string }
+
 export const WORKFLOW_NODE_WIDTH = 214
 export const WORKFLOW_NODE_HEIGHT = 92
 export const WORKFLOW_PORT_HIT_RADIUS = 16
@@ -75,6 +80,9 @@ const WORKFLOW_PORT_ROW_HEIGHT = 24
 const DEFAULT_WORKFLOW_NODE_TYPES: readonly WorkflowNodeTypeInfo[] = [
   { node_type: 'start', label: 'Start', description: 'Starting point of the workflow', category: 'flow', configurable_fields: [] },
   { node_type: 'dialogue', label: 'Dialogue', description: 'Show dialogue text from a character', category: 'content', configurable_fields: ['speaker', 'text', 'emotion', 'use_llm'] },
+  { node_type: 'dialogue_entry', label: 'Dialogue Entry', description: 'Reference a real Dialogue node for authoring and stage preview', category: 'story', configurable_fields: ['dialogue_id', 'entry_node_id'] },
+  { node_type: 'scene_roleplay_entry', label: 'Free Talk Entry', description: 'Reference a real free-talk Scene Roleplay for authoring and stage preview', category: 'story', configurable_fields: ['roleplay_id'] },
+  { node_type: 'roleplay_campaign_entry', label: 'Roleplay Campaign Entry', description: 'Reference a real multi-scene Roleplay Campaign for authoring and stage preview', category: 'story', configurable_fields: ['campaign_id'] },
   { node_type: 'choice', label: 'Choice', description: 'Present choices to the player', category: 'content', configurable_fields: ['choices'] },
   { node_type: 'condition', label: 'Condition', description: 'Branch based on a condition', category: 'flow', configurable_fields: ['condition'] },
   { node_type: 'set_variable', label: 'Set Variable', description: 'Set a game variable', category: 'logic', configurable_fields: ['variable_name', 'value'] },
@@ -135,6 +143,9 @@ export function workflowNodeIcon(nodeType: string): string {
   const icons: Record<string, string> = {
     start: 'ST',
     dialogue: 'DG',
+    dialogue_entry: 'VN',
+    scene_roleplay_entry: 'RP',
+    roleplay_campaign_entry: 'CP',
     choice: 'CH',
     condition: 'IF',
     set_variable: 'VR',
@@ -148,6 +159,27 @@ export function workflowNodeIcon(nodeType: string): string {
     end: 'EN',
   }
   return icons[nodeType] || 'ND'
+}
+
+function workflowConfigString(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null
+}
+
+export function workflowStoryPreviewTarget(node: Pick<WorkflowNode, 'node_type' | 'config'>): WorkflowStoryPreviewTarget | null {
+  if (node.node_type === 'dialogue_entry') {
+    const dialogueId = workflowConfigString(node.config.dialogue_id)
+    const entryNodeId = workflowConfigString(node.config.entry_node_id)
+    return dialogueId && entryNodeId ? { kind: 'dialogue', dialogueId, entryNodeId } : null
+  }
+  if (node.node_type === 'scene_roleplay_entry') {
+    const roleplayId = workflowConfigString(node.config.roleplay_id)
+    return roleplayId ? { kind: 'scene-roleplay', roleplayId } : null
+  }
+  if (node.node_type === 'roleplay_campaign_entry') {
+    const campaignId = workflowConfigString(node.config.campaign_id)
+    return campaignId ? { kind: 'roleplay-campaign', campaignId } : null
+  }
+  return null
 }
 
 export function workflowConfigFields(

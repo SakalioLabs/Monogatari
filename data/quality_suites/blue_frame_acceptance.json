@@ -363,6 +363,42 @@
       ],
       "workflow_max_steps": 32,
       "workflow_path": "workflows/blue_frame_route.json"
+    },
+    {
+      "category": "workflow_coverage",
+      "description": "Three content-entry choices cover the guided visual-novel route, the bounded free-talk scene, and the optional live campaign without duplicating their authored data.",
+      "expect": {
+        "expected_workflow_unvisited_nodes": [],
+        "min_workflow_coverage_percent": 100,
+        "required_workflow_nodes": [
+          "start",
+          "choose_experience",
+          "guided_dialogue",
+          "free_talk_scene",
+          "live_campaign",
+          "complete"
+        ]
+      },
+      "id": "blue-frame-content-entry-reference-coverage",
+      "messages": [
+        {
+          "content": "覆盖蓝色定格的剧情、自由对话和战役入口。",
+          "role": "player"
+        }
+      ],
+      "workflow_choice_selections": [
+        {
+          "choose_experience": 0
+        },
+        {
+          "choose_experience": 1
+        },
+        {
+          "choose_experience": 2
+        }
+      ],
+      "workflow_max_steps": 16,
+      "workflow_path": "workflows/blue_frame_story_reference.json"
     }
   ],
   "version": "0.1.0"

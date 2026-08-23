@@ -276,6 +276,49 @@ test('Workflow canvas delegates drag and connection gestures', async ({ page }) 
   await expect(sceneField.locator('option')).not.toHaveCount(1)
 })
 
+test('Workflow Story entries select authored content and preview it on stage', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 })
+  await page.goto('/editor')
+
+  const palette = page.locator('.node-palette')
+  const properties = page.locator('.properties-panel')
+  await expect(palette.getByRole('heading', { name: 'Story' })).toBeVisible()
+
+  await palette.locator('.palette-node').filter({ hasText: 'Dialogue Entry' }).click()
+  const dialogueId = properties.locator('.property-group').filter({ hasText: 'Dialogue ID' }).locator('select')
+  await expect.poll(() => dialogueId.locator('option').count()).toBeGreaterThan(1)
+  await dialogueId.selectOption('blue_frame_dialogue')
+
+  const entryNodeId = properties.locator('.property-group').filter({ hasText: 'Entry node ID' }).locator('select')
+  await expect.poll(() => entryNodeId.locator('option').count()).toBeGreaterThan(1)
+  await entryNodeId.selectOption('start')
+  await expect(properties.getByRole('button', { name: 'Preview on stage' })).toBeVisible()
+
+  await palette.locator('.palette-node').filter({ hasText: 'Free Talk Entry' }).click()
+  const roleplayId = properties.locator('.property-group').filter({ hasText: 'Free talk ID' }).locator('select')
+  await expect.poll(() => roleplayId.locator('option').count()).toBeGreaterThan(1)
+  await roleplayId.selectOption('blue_frame_roleplay')
+  await expect(properties.getByRole('button', { name: 'Preview on stage' })).toBeVisible()
+
+  await palette.locator('.palette-node').filter({ hasText: 'Roleplay Campaign Entry' }).click()
+  const campaignId = properties.locator('.property-group').filter({ hasText: 'Campaign ID' }).locator('select')
+  await expect.poll(() => campaignId.locator('option').count()).toBeGreaterThan(1)
+  await campaignId.selectOption('blue_frame_campaign')
+  await expect(properties.getByRole('button', { name: 'Preview on stage' })).toBeVisible()
+
+  await page.locator('.workflow-node.node-type-dialogue_entry').click()
+  await properties.getByRole('button', { name: 'Preview on stage' }).click()
+  await expect(page.getByRole('heading', { name: 'Discard unsaved changes?' })).toBeVisible()
+  await page.getByRole('button', { name: 'Discard' }).click()
+  await expect(page).toHaveURL(/previewDialogue=blue_frame_dialogue/)
+  await expect(page).toHaveURL(/previewNode=start/)
+  await expect(page).toHaveURL(/source=workflow/)
+  await expect(page.locator('.dialogue-text')).toContainText('信标警报解除后的第七天')
+
+  await page.getByRole('button', { name: 'Return to editor' }).click()
+  await expect(page).toHaveURL(/\/(?:workflow|editor)$/)
+})
+
 test('character authoring persists a validated browser draft across reloads', async ({ page }) => {
   await page.goto('/character-editor')
   const createCharacter = page.getByTitle('Create Character')

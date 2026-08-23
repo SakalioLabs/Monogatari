@@ -408,7 +408,7 @@ Workflows are stored as JSON files and loaded via the Workflow Editor.
 ```
 
 ### Node Types
-See the Workflow Editor documentation for all 21 available node types and their configurable fields.
+The Workflow Editor provides 24 node types. Alongside generic flow, content, AI, character, and media nodes, three Story entry nodes keep project content authoritative: `dialogue_entry` references a Dialogue ID plus an exact `entry_node_id`, `scene_roleplay_entry` references one free-talk Scene Roleplay, and `roleplay_campaign_entry` references one Campaign. They do not copy script text or dynamic-scene rules into the Workflow. Project validation resolves every referenced ID and Dialogue node; the editor supplies catalog selectors and can open the referenced content in the stage preview.
 
 ## Quality Suite Format
 

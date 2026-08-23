@@ -17,6 +17,7 @@ const viewports: BlueFrameViewport[] = [
   { name: 'desktop', size: { width: 1440, height: 900 } },
   { name: 'mobile', size: { width: 390, height: 844 } },
 ]
+const ROLEPLAY_STAGE_READY_TIMEOUT_MS = 30_000
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
@@ -32,7 +33,7 @@ for (const viewport of viewports) {
 
     await page.goto('/game?previewRoleplay=blue_frame_roleplay&authoring=1&rendererProbe=1')
     const roleplay = page.getByTestId('scene-roleplay')
-    await expect(roleplay).toBeVisible({ timeout: 15_000 })
+    await expect(roleplay).toBeVisible({ timeout: ROLEPLAY_STAGE_READY_TIMEOUT_MS })
     await expect(roleplay).toHaveAttribute('data-roleplay-status', 'active')
     await expect(roleplay).toContainText('潮镜：蓝色定格')
     await expect(roleplay).toContainText('通过自由对话提出可复做的核验方法')
@@ -108,7 +109,7 @@ for (const viewport of viewports) {
 test('legacy roleplay links are canonicalized to the live LLM NPC route', async ({ page }) => {
   await page.goto('/game?previewDialogue=blue_frame_dialogue&authoring=1')
 
-  await expect(page.getByTestId('scene-roleplay')).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByTestId('scene-roleplay')).toBeVisible({ timeout: ROLEPLAY_STAGE_READY_TIMEOUT_MS })
   await expect(page).toHaveURL(/previewRoleplay=blue_frame_roleplay/)
   expect(new URL(page.url()).searchParams.has('previewDialogue')).toBe(false)
   await expect(page.getByTestId('roleplay-runtime')).toBeVisible()

@@ -66,7 +66,7 @@ test('checked-in Workflow node catalogs remain structurally equivalent', async (
 
   const rustCatalog = extractRustWorkflowNodeCatalog(rustSource)
   const browserCatalog = extractBrowserWorkflowNodeCatalog(browserSource)
-  assert.equal(rustCatalog.length, 21)
+  assert.equal(rustCatalog.length, 24)
   assert.deepEqual(browserCatalog, rustCatalog)
   assert.deepEqual(
     rustCatalog.find((entry) => entry.nodeType === 'dialogue')?.configurableFields,

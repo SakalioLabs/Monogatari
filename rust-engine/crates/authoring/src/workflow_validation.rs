@@ -3,6 +3,9 @@
 use crate::conversation_quality::ConversationEvaluation;
 use crate::story_events::StoryEventCatalog;
 use llm_core::normalize_script_state_key;
+use llm_game::campaign::RoleplayCampaignDefinition;
+use llm_game::dialogue::DialogueScript;
+use llm_game::scene_roleplay::SceneRoleplayDefinition;
 use llm_scripting::validate_condition_source;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -59,6 +62,53 @@ pub struct WorkflowNodeTypeInfo {
     pub configurable_fields: Vec<String>,
 }
 
+/// Project content that a Workflow can reference without duplicating story data.
+#[derive(Debug, Clone, Default)]
+pub struct WorkflowStoryReferenceCatalog {
+    dialogue_node_ids: HashMap<String, HashSet<String>>,
+    roleplay_ids: HashSet<String>,
+    campaign_ids: HashSet<String>,
+}
+
+impl WorkflowStoryReferenceCatalog {
+    pub fn from_project_content(
+        dialogues: &[DialogueScript],
+        roleplays: &[SceneRoleplayDefinition],
+        campaigns: &[RoleplayCampaignDefinition],
+    ) -> Self {
+        let mut catalog = Self::default();
+        for dialogue in dialogues {
+            catalog.register_dialogue(&dialogue.id, dialogue.nodes.keys().cloned());
+        }
+        for roleplay in roleplays {
+            catalog.register_roleplay(&roleplay.id);
+        }
+        for campaign in campaigns {
+            catalog.register_campaign(&campaign.id);
+        }
+        catalog
+    }
+
+    pub fn register_dialogue<I, S>(&mut self, dialogue_id: impl Into<String>, node_ids: I)
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        self.dialogue_node_ids.insert(
+            dialogue_id.into(),
+            node_ids.into_iter().map(Into::into).collect(),
+        );
+    }
+
+    pub fn register_roleplay(&mut self, roleplay_id: impl Into<String>) {
+        self.roleplay_ids.insert(roleplay_id.into());
+    }
+
+    pub fn register_campaign(&mut self, campaign_id: impl Into<String>) {
+        self.campaign_ids.insert(campaign_id.into());
+    }
+}
+
 /// Return the authoritative Workflow node catalog shared by every Rust transport.
 pub fn workflow_node_types() -> Vec<WorkflowNodeTypeInfo> {
     fn node_type(
@@ -94,6 +144,27 @@ pub fn workflow_node_types() -> Vec<WorkflowNodeTypeInfo> {
             "Show dialogue text from a character",
             "content",
             &["speaker", "text", "emotion", "use_llm"],
+        ),
+        node_type(
+            "dialogue_entry",
+            "Dialogue Entry",
+            "Reference a real Dialogue node for authoring and stage preview",
+            "story",
+            &["dialogue_id", "entry_node_id"],
+        ),
+        node_type(
+            "scene_roleplay_entry",
+            "Free Talk Entry",
+            "Reference a real free-talk Scene Roleplay for authoring and stage preview",
+            "story",
+            &["roleplay_id"],
+        ),
+        node_type(
+            "roleplay_campaign_entry",
+            "Roleplay Campaign Entry",
+            "Reference a real multi-scene Roleplay Campaign for authoring and stage preview",
+            "story",
+            &["campaign_id"],
         ),
         node_type(
             "choice",
@@ -424,6 +495,94 @@ pub fn validate_workflow_references(
     issues
 }
 
+pub fn is_story_entry_node_type(node_type: &str) -> bool {
+    matches!(
+        node_type,
+        "dialogue_entry" | "scene_roleplay_entry" | "roleplay_campaign_entry"
+    )
+}
+
+pub fn workflow_uses_story_entries(workflow: &Workflow) -> bool {
+    workflow
+        .nodes
+        .iter()
+        .any(|node| is_story_entry_node_type(&node.node_type))
+}
+
+pub fn validate_workflow_story_references(
+    workflow: &Workflow,
+    story_catalog: &WorkflowStoryReferenceCatalog,
+) -> Vec<WorkflowValidationIssue> {
+    let mut issues = Vec::new();
+    for node in &workflow.nodes {
+        match node.node_type.as_str() {
+            "dialogue_entry" => {
+                let Some(dialogue_id) = config_string(&node.config, &["dialogue_id"]) else {
+                    continue;
+                };
+                let Some(node_ids) = story_catalog.dialogue_node_ids.get(&dialogue_id) else {
+                    push_issue(
+                        &mut issues,
+                        "error",
+                        "node_dialogue_unknown",
+                        Some(node.id.clone()),
+                        format!("Dialogue `{dialogue_id}` is not in the active project catalog."),
+                    );
+                    continue;
+                };
+                let Some(entry_node_id) = config_string(&node.config, &["entry_node_id"]) else {
+                    continue;
+                };
+                if !node_ids.contains(&entry_node_id) {
+                    push_issue(
+                        &mut issues,
+                        "error",
+                        "node_dialogue_entry_unknown",
+                        Some(node.id.clone()),
+                        format!(
+                            "Dialogue `{dialogue_id}` does not contain entry node `{entry_node_id}`."
+                        ),
+                    );
+                }
+            }
+            "scene_roleplay_entry" => {
+                let Some(roleplay_id) = config_string(&node.config, &["roleplay_id"]) else {
+                    continue;
+                };
+                if !story_catalog.roleplay_ids.contains(&roleplay_id) {
+                    push_issue(
+                        &mut issues,
+                        "error",
+                        "node_roleplay_unknown",
+                        Some(node.id.clone()),
+                        format!(
+                            "Scene Roleplay `{roleplay_id}` is not in the active project catalog."
+                        ),
+                    );
+                }
+            }
+            "roleplay_campaign_entry" => {
+                let Some(campaign_id) = config_string(&node.config, &["campaign_id"]) else {
+                    continue;
+                };
+                if !story_catalog.campaign_ids.contains(&campaign_id) {
+                    push_issue(
+                        &mut issues,
+                        "error",
+                        "node_campaign_unknown",
+                        Some(node.id.clone()),
+                        format!(
+                            "Roleplay Campaign `{campaign_id}` is not in the active project catalog."
+                        ),
+                    );
+                }
+            }
+            _ => {}
+        }
+    }
+    issues
+}
+
 fn source_label(root: &Path, path: &Path) -> String {
     let resolved_root = root.canonicalize().unwrap_or_else(|_| root.to_path_buf());
     path.strip_prefix(&resolved_root)
@@ -748,6 +907,29 @@ pub fn validate_workflow_with_catalog(
     result
 }
 
+pub fn validate_workflow_with_project_catalog(
+    workflow: &Workflow,
+    event_catalog: &StoryEventCatalog,
+    story_catalog: &WorkflowStoryReferenceCatalog,
+) -> WorkflowValidationResult {
+    let mut result = validate_workflow_with_catalog(workflow, event_catalog);
+    result
+        .issues
+        .extend(validate_workflow_story_references(workflow, story_catalog));
+    result.error_count = result
+        .issues
+        .iter()
+        .filter(|issue| issue.severity == "error")
+        .count();
+    result.warning_count = result
+        .issues
+        .iter()
+        .filter(|issue| issue.severity == "warning")
+        .count();
+    result.valid = result.error_count == 0;
+    result
+}
+
 fn warn_unreachable_nodes(
     workflow: &Workflow,
     node_lookup: &HashMap<&str, &WorkflowNode>,
@@ -868,6 +1050,9 @@ pub fn known_node_types() -> HashSet<&'static str> {
     HashSet::from([
         "start",
         "dialogue",
+        "dialogue_entry",
+        "scene_roleplay_entry",
+        "roleplay_campaign_entry",
         "choice",
         "condition",
         "set_variable",
@@ -893,6 +1078,9 @@ pub fn known_node_types() -> HashSet<&'static str> {
 pub fn required_fields(node_type: &str) -> &'static [&'static str] {
     match node_type {
         "dialogue" => &["text"],
+        "dialogue_entry" => &["dialogue_id", "entry_node_id"],
+        "scene_roleplay_entry" => &["roleplay_id"],
+        "roleplay_campaign_entry" => &["campaign_id"],
         "choice" => &["choices"],
         "condition" => &["condition"],
         "set_variable" => &["variable_name", "value"],

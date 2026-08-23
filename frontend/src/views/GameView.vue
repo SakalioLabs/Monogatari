@@ -419,6 +419,10 @@ const previewExitLabel = computed(() => authoringPreview.value
   : t('game.home', 'Home'))
 
 function exitPreview() {
+  if (authoringPreview.value && route.query.source === 'workflow') {
+    void router.push('/workflow')
+    return
+  }
   if (authoringPreview.value && typeof route.query.previewRoleplay === 'string') {
     void router.push({ path: '/roleplay-editor', query: { roleplay: route.query.previewRoleplay } })
     return

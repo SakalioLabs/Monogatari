@@ -49,6 +49,9 @@ interface LocalWorkflowState {
 const WORKFLOW_PREVIEW_NODE_TYPES = new Set([
   'start',
   'dialogue',
+  'dialogue_entry',
+  'scene_roleplay_entry',
+  'roleplay_campaign_entry',
   'choice',
   'condition',
   'set_variable',
@@ -72,6 +75,9 @@ const WORKFLOW_PREVIEW_NODE_TYPES = new Set([
 
 const WORKFLOW_REQUIRED_FIELDS: Record<string, string[]> = {
   dialogue: ['text'],
+  dialogue_entry: ['dialogue_id', 'entry_node_id'],
+  scene_roleplay_entry: ['roleplay_id'],
+  roleplay_campaign_entry: ['campaign_id'],
   choice: ['choices'],
   condition: ['condition'],
   set_variable: ['variable_name', 'value'],
@@ -454,6 +460,25 @@ function localNodeOutput(
         speaker: node.config.speaker_id || node.config.speaker || 'Narrator',
         text: node.config.text || '',
         emotion: node.config.emotion || null,
+      }
+    case 'dialogue_entry':
+      return {
+        action: 'dialogue_entry',
+        dialogue_id: String(node.config.dialogue_id || ''),
+        entry_node_id: String(node.config.entry_node_id || ''),
+        status: 'ready_for_stage_preview',
+      }
+    case 'scene_roleplay_entry':
+      return {
+        action: 'scene_roleplay_entry',
+        roleplay_id: String(node.config.roleplay_id || ''),
+        status: 'ready_for_stage_preview',
+      }
+    case 'roleplay_campaign_entry':
+      return {
+        action: 'roleplay_campaign_entry',
+        campaign_id: String(node.config.campaign_id || ''),
+        status: 'ready_for_stage_preview',
       }
     case 'choice':
       return { action: 'choice', choices: arrayConfig(node.config.choices), connection_count: node.connections.length }

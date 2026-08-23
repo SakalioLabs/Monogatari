@@ -1,6 +1,7 @@
 ## [0.9.5] - 2026-07-08
 
 ### Added
+- Added first-class Workflow Story entry nodes for exact Dialogue checkpoints, free-talk Scene Roleplays, and multi-scene Campaigns. References are catalog-selected, validated by desktop/core/MCP paths, provider-free previewable, and open the real stage preview without copying authored story data. Tideglass and KonoSuba now ship reference workflows that expose their actual scripted, bounded free-talk, and optional campaign content.
 - Fixed imported-project assets to resolve against the active project root at runtime while retaining portable project-relative authoring paths. The desktop asset protocol now authorizes only successfully activated project directories, allowing Scene backgrounds, character sprites, portraits, Live2D models, and 3D models to render consistently across Playtest, editing, galleries, and NPC conversations.
 - Fixed the Windows project-creation dialog to remain viewport-centered, localized the Scene Roleplay editor in Chinese and enrolled it in strict UI translation checks, kept empty auto-created roleplay drafts from trapping navigation, added an authoring-preview return path, and normalized Workflow input/output ports to identical circular geometry.
 - Added per-scene stage composition for bottom, top, and side dialogue layouts, independently adjustable character framing, live Scene Editor preview, Workflow-to-Scene editing, and a shared schema for human and Agent-authored projects.

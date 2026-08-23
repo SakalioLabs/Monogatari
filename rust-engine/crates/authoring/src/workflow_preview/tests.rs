@@ -178,6 +178,45 @@ fn random_branches_are_deterministic_and_injectable() {
     assert_eq!(seeded_a.executed_node_ids, seeded_b.executed_node_ids);
 }
 
+#[test]
+fn previews_story_entries_without_duplicating_project_content() {
+    let report = execute_workflow_preview(
+        &workflow(vec![
+            node("start", "start", &["dialogue"], json!({})),
+            node(
+                "dialogue",
+                "dialogue_entry",
+                &["roleplay"],
+                json!({"dialogue_id":"chapter_one", "entry_node_id":"opening"}),
+            ),
+            node(
+                "roleplay",
+                "scene_roleplay_entry",
+                &["campaign"],
+                json!({"roleplay_id":"guild_free_talk"}),
+            ),
+            node(
+                "campaign",
+                "roleplay_campaign_entry",
+                &["end"],
+                json!({"campaign_id":"volume_one"}),
+            ),
+            node("end", "end", &[], json!({})),
+        ]),
+        &StoryEventCatalog::default(),
+        WorkflowPreviewEnvironment::default(),
+        WorkflowPreviewOptions::default(),
+    )
+    .unwrap();
+
+    assert!(report.completed);
+    assert_eq!(report.steps[1].output["action"], "dialogue_entry");
+    assert_eq!(report.steps[1].output["entry_node_id"], "opening");
+    assert_eq!(report.steps[2].output["roleplay_id"], "guild_free_talk");
+    assert_eq!(report.steps[3].output["campaign_id"], "volume_one");
+    assert_eq!(report.steps[3].output["status"], "ready_for_stage_preview");
+}
+
 #[tokio::test]
 async fn project_preview_binds_execution_to_exact_workflow_source() {
     let root = project_root("source");

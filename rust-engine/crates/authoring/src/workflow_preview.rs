@@ -10,6 +10,7 @@ use serde_json::{json, Value};
 
 use crate::conversation_quality::ConversationEvaluation;
 use crate::prompt_guard;
+use crate::runtime_validation::load_core_runtime_project;
 use crate::story_events::{EventScoreSnapshot, EventTriggerContext, StoryEventCatalog};
 use crate::workflow_documents::load_project_workflow_document;
 use crate::workflow_execution_policy::{
@@ -19,8 +20,9 @@ use crate::workflow_execution_policy::{
 };
 pub use crate::workflow_execution_policy::{WorkflowExecutionReport, WorkflowExecutionStep};
 use crate::workflow_validation::{
-    format_validation_errors, validate_workflow_with_catalog, Workflow, WorkflowNode,
-    WorkflowRunContext,
+    format_validation_errors, validate_workflow_with_catalog,
+    validate_workflow_with_project_catalog, workflow_uses_story_entries, Workflow, WorkflowNode,
+    WorkflowRunContext, WorkflowStoryReferenceCatalog,
 };
 use llm_scripting::{validate_condition_source, ScriptEngine};
 
@@ -117,6 +119,22 @@ pub async fn execute_project_workflow_preview(
 ) -> Result<ProjectWorkflowPreviewReport, String> {
     let loaded = load_project_workflow_document(project_root, requested_path).await?;
     let event_catalog = StoryEventCatalog::load_from_project_root(project_root)?;
+    if workflow_uses_story_entries(&loaded.workflow) {
+        let project = load_core_runtime_project(project_root).await?;
+        let story_catalog = WorkflowStoryReferenceCatalog::from_project_content(
+            &project.dialogues.scripts(),
+            &project.scene_roleplays,
+            &project.roleplay_campaigns,
+        );
+        let validation = validate_workflow_with_project_catalog(
+            &loaded.workflow,
+            &event_catalog,
+            &story_catalog,
+        );
+        if !validation.valid {
+            return Err(format_validation_errors(&validation));
+        }
+    }
     let report = execute_workflow_preview(&loaded.workflow, &event_catalog, environment, options)?;
     Ok(ProjectWorkflowPreviewReport {
         source_path: loaded.source_path,
@@ -316,6 +334,22 @@ fn execute_preview_node(
                 .unwrap_or_else(|| "Narrator".to_string()),
             "text": config_string(&node.config, &["text"]).unwrap_or_default(),
             "emotion": config_string(&node.config, &["emotion"]),
+        })),
+        "dialogue_entry" => Ok(json!({
+            "action": "dialogue_entry",
+            "dialogue_id": config_string(&node.config, &["dialogue_id"]).unwrap_or_default(),
+            "entry_node_id": config_string(&node.config, &["entry_node_id"]).unwrap_or_default(),
+            "status": "ready_for_stage_preview",
+        })),
+        "scene_roleplay_entry" => Ok(json!({
+            "action": "scene_roleplay_entry",
+            "roleplay_id": config_string(&node.config, &["roleplay_id"]).unwrap_or_default(),
+            "status": "ready_for_stage_preview",
+        })),
+        "roleplay_campaign_entry" => Ok(json!({
+            "action": "roleplay_campaign_entry",
+            "campaign_id": config_string(&node.config, &["campaign_id"]).unwrap_or_default(),
+            "status": "ready_for_stage_preview",
         })),
         "choice" => Ok(json!({
             "action": "choice",

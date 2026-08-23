@@ -22,6 +22,7 @@ import {
   workflowNodeAtPoint,
   workflowOutputPorts,
   workflowNumericFieldStep,
+  workflowStoryPreviewTarget,
   WORKFLOW_NODE_HEIGHT,
   WORKFLOW_NODE_WIDTH,
   type WorkflowNodeTypeInfo,
@@ -55,7 +56,7 @@ describe('workflow authoring contracts', () => {
   it('mirrors the authoritative node catalog fields and returns isolated copies', () => {
     const first = createDefaultWorkflowNodeTypes()
     const second = createDefaultWorkflowNodeTypes()
-    expect(first).toHaveLength(21)
+    expect(first).toHaveLength(24)
     expect(new Set(first.map((entry) => entry.node_type)).size).toBe(first.length)
     expect(first.find((entry) => entry.node_type === 'dialogue')?.configurable_fields)
       .toEqual(['speaker', 'text', 'emotion', 'use_llm'])
@@ -72,6 +73,26 @@ describe('workflow authoring contracts', () => {
     expect(isWorkflowNumericField('max_tokens')).toBe(true)
     expect(workflowNumericFieldStep('max_tokens')).toBe('1')
     expect(workflowNumericFieldStep('threshold')).toBe('0.05')
+  })
+
+  it('derives stage-preview targets only from complete story-entry references', () => {
+    expect(workflowStoryPreviewTarget(node('dialogue-entry', {
+      node_type: 'dialogue_entry',
+      config: { dialogue_id: 'chapter_one', entry_node_id: 'opening' },
+    }))).toEqual({ kind: 'dialogue', dialogueId: 'chapter_one', entryNodeId: 'opening' })
+    expect(workflowStoryPreviewTarget(node('roleplay-entry', {
+      node_type: 'scene_roleplay_entry',
+      config: { roleplay_id: 'guild_free_talk' },
+    }))).toEqual({ kind: 'scene-roleplay', roleplayId: 'guild_free_talk' })
+    expect(workflowStoryPreviewTarget(node('campaign-entry', {
+      node_type: 'roleplay_campaign_entry',
+      config: { campaign_id: 'volume_one' },
+    }))).toEqual({ kind: 'roleplay-campaign', campaignId: 'volume_one' })
+    expect(workflowStoryPreviewTarget(node('incomplete', {
+      node_type: 'dialogue_entry',
+      config: { dialogue_id: 'chapter_one' },
+    }))).toBeNull()
+    expect(workflowStoryPreviewTarget(node('plain-dialogue'))).toBeNull()
   })
 
   it('builds deterministic connection geometry and bezier paths', () => {

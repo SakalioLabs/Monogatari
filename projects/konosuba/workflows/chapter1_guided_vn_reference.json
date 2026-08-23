@@ -1,0 +1,97 @@
+{
+  "id": "chapter1_guided_vn_reference",
+  "name": "第一章：固定剧情与限次自由对话",
+  "nodes": [
+    {
+      "config": {},
+      "connections": [
+        "afterlife_opening"
+      ],
+      "id": "start",
+      "label": "开始第一章",
+      "node_type": "start",
+      "x": 80,
+      "y": 260
+    },
+    {
+      "config": {
+        "dialogue_id": "chapter1_guided_vn",
+        "entry_node_id": "afterlife_opening"
+      },
+      "connections": [
+        "axel_arrival"
+      ],
+      "id": "afterlife_opening",
+      "label": "死后大厅：选择转生同行者",
+      "node_type": "dialogue_entry",
+      "x": 340,
+      "y": 260
+    },
+    {
+      "config": {
+        "dialogue_id": "chapter1_guided_vn",
+        "entry_node_id": "axel_arrival"
+      },
+      "connections": [
+        "guild_free_talk"
+      ],
+      "id": "axel_arrival",
+      "label": "阿克塞尔：固定剧情推进",
+      "node_type": "dialogue_entry",
+      "x": 620,
+      "y": 260
+    },
+    {
+      "config": {
+        "dialogue_id": "chapter1_guided_vn",
+        "entry_node_id": "aqua_after_registration"
+      },
+      "connections": [
+        "field_arrival"
+      ],
+      "id": "guild_free_talk",
+      "label": "公会：阿库娅限次自由对话",
+      "node_type": "dialogue_entry",
+      "x": 900,
+      "y": 260
+    },
+    {
+      "config": {
+        "dialogue_id": "chapter1_guided_vn",
+        "entry_node_id": "field_arrival"
+      },
+      "connections": [
+        "first_quest_closer"
+      ],
+      "id": "field_arrival",
+      "label": "巨蛙原野：固定任务分支",
+      "node_type": "dialogue_entry",
+      "x": 1180,
+      "y": 260
+    },
+    {
+      "config": {
+        "dialogue_id": "chapter1_guided_vn",
+        "entry_node_id": "first_quest_closer"
+      },
+      "connections": [
+        "end"
+      ],
+      "id": "first_quest_closer",
+      "label": "第一份委托：章节收束",
+      "node_type": "dialogue_entry",
+      "x": 1460,
+      "y": 260
+    },
+    {
+      "config": {},
+      "connections": [],
+      "id": "end",
+      "label": "第一章完成",
+      "node_type": "end",
+      "x": 1740,
+      "y": 260
+    }
+  ],
+  "start_node_id": "start"
+}
